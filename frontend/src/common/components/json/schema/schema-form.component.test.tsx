@@ -402,8 +402,8 @@ test('checkbox groups preserve value types and enforce the maximum number of cho
 });
 
 test.each([
-  ['time', '09:15:00'],
-  [undefined, '09:15'],
+  ['time', /^09:15:00(Z|[+-]\d{2}:\d{2})$/],
+  [undefined, /^09:15$/],
 ])('normalizes time only when required by the schema (%s)', async (format, expected) => {
   const onSubmit = vi.fn();
   render(
@@ -416,7 +416,22 @@ test.each([
   fireEvent.change(screen.getByLabelText('Tid'), { target: { value: '09:15' } });
   fireEvent.click(screen.getByRole('button', { name: 'Lägg till' }));
   await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
-  expect(onSubmit.mock.calls[0][0]).toEqual({ time: expected });
+  expect(onSubmit.mock.calls[0][0].time).toMatch(expected);
+});
+
+test('keeps a stored full-time in the value while showing hours and minutes', async () => {
+  const onSubmit = vi.fn();
+  render(
+    <SchemaForm
+      schema={{ type: 'object', properties: { time: { type: 'string', title: 'Tid', format: 'time' } } }}
+      formData={{ time: '09:15:00+02:00' }}
+      onSubmit={onSubmit}
+    />
+  );
+  expect((screen.getByLabelText('Tid') as HTMLInputElement).value).toBe('09:15');
+  fireEvent.click(screen.getByRole('button', { name: 'Lägg till' }));
+  await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+  expect(onSubmit.mock.calls[0][0]).toEqual({ time: '09:15:00+02:00' });
 });
 
 test('marks sections complete or incomplete once a save has been attempted', async () => {

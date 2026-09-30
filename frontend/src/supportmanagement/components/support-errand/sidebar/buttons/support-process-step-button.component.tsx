@@ -1,5 +1,11 @@
+import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import {
+  completeSupportDecision,
+  getSupportDecisions,
+  isSupportDecisionDraft,
+} from '@supportmanagement/services/support-decision-service';
 import {
   closeSupportErrand,
   getSupportErrandById,
@@ -10,17 +16,18 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import {
+  awaitedGateOfStep,
   getSupportErrandProcess,
   isSupportProcessCompleted,
+  isSupportProcessFailed,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
-  supportProcessAwaitingSignals,
   SupportProcessStep,
   SupportProcessStepName,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { ArrowRight } from 'lucide-react';
-import { FC, ReactElement, useState } from 'react';
+import { FC, ReactElement, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -36,6 +43,8 @@ interface ProcessAction {
   takesErrand?: boolean;
   /** The tab whose unsaved work the step leaves behind, if it has one. */
   unsavedTabKey?: string;
+  requiresDecisionOutcome?: boolean;
+  completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
   resolution?: Resolution;
@@ -98,8 +107,17 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     needsSignal: true,
     tabKey: 'followup',
     unsavedTabKey: 'decision',
+    requiresDecisionOutcome: true,
+    completesDecision: true,
   },
   [SupportProcessStep.FOLLOW_UP]: {
+    key: 'close_errand',
+    variant: 'primary',
+    needsSignal: true,
+    closesErrand: true,
+    resolution: Resolution.CLOSED,
+  },
+  [SupportProcessStep.CLOSING]: {
     key: 'close_errand',
     variant: 'primary',
     needsSignal: true,
@@ -122,19 +140,50 @@ export const SupportProcessStepButton: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const decisionTabHoldsDecision = useSupportStore((s) => s.tabsWithContent['decision']);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { handleSubmit, reset } = useFormContext();
   const [running, setRunning] = useState<string>();
+  const [decisions, setDecisions] = useState<Decision[]>();
 
   const process = getSupportErrandProcess(supportErrand);
   const step = supportProcessStepName(process);
   const stepAction = step ? STEP_ACTIONS[step] : undefined;
-  const awaitingSignal = supportProcessAwaitingSignals(process)[0];
+  const awaitingSignal = awaitedGateOfStep(process, step);
+  const errandId = supportErrand?.id;
+  const modified = supportErrand?.modified;
+
+  useEffect(() => {
+    if (!errandId || !stepAction?.requiresDecisionOutcome) return;
+    getSupportDecisions(errandId, municipalityId)
+      .then(setDecisions)
+      .catch(() => setDecisions(undefined));
+  }, [errandId, municipalityId, modified, decisionTabHoldsDecision, stepAction?.requiresDecisionOutcome]);
 
   if (!supportErrand?.id) {
     return null;
   }
+
+  const processIsOver = isSupportProcessCompleted(process) || isSupportProcessFailed(process);
+
+  const signalIsRequired = (action: ProcessAction): boolean =>
+    action.needsSignal && !action.completesDecision && !processIsOver;
+
+  const decisionsOnErrand = async (): Promise<Decision[] | undefined> => {
+    if (decisions) return decisions;
+
+    const read = await getSupportDecisions(supportErrand.id!, municipalityId).catch(() => undefined);
+    if (read) setDecisions(read);
+    return read;
+  };
+
+  const sendSignal = (errandId: string, signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
+
+  const sendSignalToleratingAStepAlreadyLeft = (errandId: string, signal: string) =>
+    sendSignal(errandId, signal).catch((error) => {
+      if (!isSupportProcessSignalStale(error)) throw error;
+    });
 
   const takeErrand = async () => {
     await onSubmit?.();
@@ -159,10 +208,10 @@ export const SupportProcessStepButton: FC<{
     errandId: string,
     action: ProcessAction
   ): Promise<SupportErrand | undefined> => {
-    if (action.needsSignal) {
+    if (action.needsSignal && !processIsOver) {
       const onClosure = await errandOnNextStep(errandId, municipalityId, SupportProcessStep.FOLLOW_UP);
       const closureProcess = getSupportErrandProcess(onClosure);
-      const closureSignal = supportProcessAwaitingSignals(closureProcess)[0];
+      const closureSignal = awaitedGateOfStep(closureProcess, SupportProcessStep.CLOSING);
 
       if (closureSignal?.name) {
         await sendSupportProcessSignal(errandId, municipalityId, closureSignal.name);
@@ -176,15 +225,21 @@ export const SupportProcessStepButton: FC<{
     return (await getSupportErrandById(errandId, municipalityId)).errand;
   };
 
-  const run = async (action: ProcessAction) => {
+  const run = async (action: ProcessAction, decisionsInHand = decisions) => {
     setRunning(action.key);
     try {
       if (action.takesErrand) {
         await takeErrand();
       }
 
-      if (action.needsSignal) {
-        await sendSupportProcessSignal(supportErrand.id!, municipalityId, awaitingSignal.name!);
+      const draftDecision = decisionsInHand?.find(isSupportDecisionDraft);
+      if (action.completesDecision && draftDecision?.id) {
+        await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
+      }
+
+      if (action.needsSignal && awaitingSignal?.name) {
+        const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
+        await send(supportErrand.id!, awaitingSignal.name);
       }
 
       const stepped = action.closesErrand
@@ -222,7 +277,7 @@ export const SupportProcessStepButton: FC<{
   const unsavedBehind = (action: ProcessAction): boolean =>
     !!action.unsavedTabKey && !!unsavedTabs[action.unsavedTabKey];
 
-  const ask = (action: ProcessAction) =>
+  const ask = (action: ProcessAction, decisionsInHand = decisions) =>
     confirm
       .showConfirmation(
         t(`common:process.actions.${action.key}.confirm_title`),
@@ -238,11 +293,45 @@ export const SupportProcessStepButton: FC<{
         t('common:process.actions.confirm_no'),
         'primary'
       )
+      .then((confirmed) => (confirmed ? run(action, decisionsInHand) : undefined));
+
+  const askForAnOutcomeFirst = () =>
+    confirm
+      .showConfirmation(
+        t('common:process.actions.missing_outcome.title'),
+        t('common:process.actions.missing_outcome.text'),
+        t('common:process.actions.missing_outcome.go_to_decision'),
+        t('common:process.actions.missing_outcome.cancel'),
+        'info',
+        'info'
+      )
       .then((confirmed) => {
-        if (confirmed) run(action);
+        if (confirmed) setActiveTabKey('decision');
       });
 
-  const start = (action: ProcessAction) => (action.confirms === false ? run(action) : ask(action));
+  const start = async (action: ProcessAction) => {
+    if (!action.requiresDecisionOutcome) {
+      return action.confirms === false ? run(action) : ask(action);
+    }
+
+    const onErrand = await decisionsOnErrand();
+    if (!onErrand) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:process.actions.decision_unread'),
+        status: 'error',
+      });
+      return;
+    }
+
+    if (!onErrand.some((decision) => !!decision.outcome)) {
+      askForAnOutcomeFirst();
+      return;
+    }
+
+    return action.confirms === false ? run(action, onErrand) : ask(action, onErrand);
+  };
 
   const actionButton = (action: ProcessAction) => (
     <Button
@@ -252,15 +341,22 @@ export const SupportProcessStepButton: FC<{
       color={action.color}
       rightIcon={action.icon}
       loading={running === action.key}
-      disabled={disabled || !canEdit || !!running || (action.needsSignal && !awaitingSignal?.name)}
-      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
+      disabled={disabled || !canEdit || !!running || (signalIsRequired(action) && !awaitingSignal?.name)}
+      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
     >
       {t(`common:process.actions.${action.key}.label`)}
     </Button>
   );
 
-  const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status);
+  const errandIsClosed = supportErrand.status === Status.SOLVED;
+  const nothingLeftToDo =
+    (stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status)) ||
+    (stepAction?.closesErrand && errandIsClosed);
 
-  return stepAction && !startsAgain ? actionButton(stepAction) : null;
+  if (!stepAction || nothingLeftToDo) {
+    return null;
+  }
+
+  return actionButton(stepAction);
 };

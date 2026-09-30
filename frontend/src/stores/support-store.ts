@@ -16,8 +16,8 @@ interface SupportState {
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: (SupportNotification | CaseDataNotification)[];
   activeTabKey?: string;
-  /** Tabs holding a resource of their own, written but not yet saved. Keyed by tab key. */
   unsavedTabs: Record<string, boolean>;
+  tabsWithContent: Record<string, boolean>;
 }
 
 interface SupportActions {
@@ -29,6 +29,7 @@ interface SupportActions {
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
   setUnsavedTab: (key: string, unsaved: boolean) => void;
+  setTabHasContent: (key: string, hasContent: boolean) => void;
   reset: () => void;
 }
 
@@ -43,7 +44,14 @@ const initialState: SupportState = {
   notifications: [],
   activeTabKey: 'basics',
   unsavedTabs: {},
+  tabsWithContent: {},
 };
+
+const flagsWithChange = (
+  flags: Record<string, boolean>,
+  key: string,
+  value: boolean
+): Record<string, boolean> | undefined => (flags[key] === value ? undefined : { ...flags, [key]: value });
 
 export const useSupportStore = create<SupportStore>((set) => ({
   ...initialState,
@@ -54,11 +62,15 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
-  // The same state is handed back when nothing changed, so a tab reporting what the store already
-  // knows does not wake its subscribers.
   setUnsavedTab: (key, unsaved) =>
-    set((state) =>
-      state.unsavedTabs[key] === unsaved ? state : { unsavedTabs: { ...state.unsavedTabs, [key]: unsaved } }
-    ),
+    set((state) => {
+      const unsavedTabs = flagsWithChange(state.unsavedTabs, key, unsaved);
+      return unsavedTabs ? { unsavedTabs } : state;
+    }),
+  setTabHasContent: (key, hasContent) =>
+    set((state) => {
+      const tabsWithContent = flagsWithChange(state.tabsWithContent, key, hasContent);
+      return tabsWithContent ? { tabsWithContent } : state;
+    }),
   reset: () => set(initialState),
 }));

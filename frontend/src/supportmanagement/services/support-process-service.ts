@@ -44,13 +44,16 @@ export const isSupportProcessFailed = (process: ErrandProcess | undefined): bool
 export const isSupportProcessCompleted = (process: ErrandProcess | undefined): boolean =>
   process?.processStatus === SupportProcessStatus.COMPLETED;
 
+export const isSupportProcessWorking = (process: ErrandProcess | undefined): boolean =>
+  process?.processStatus === SupportProcessStatus.RUNNING || process?.processStatus === SupportProcessStatus.RETRYING;
+
 /**
  * The step the process is at, named as the process model names it. A step the model has not named
  * falls back to the process itself rather than to the model's own identifier, which says nothing to
  * a handler.
  */
 export const supportProcessStepLabel = (process: ErrandProcess | undefined): string =>
-  process?.currentActivityName || process?.processKey || '';
+  process?.currentActivityId || process?.processKey || '';
 
 /**
  * The steps the AoT process runs, in the order the business describes them. The process model has
@@ -68,32 +71,47 @@ export const SupportProcessStep = {
 
 export type SupportProcessStepName = (typeof SupportProcessStep)[keyof typeof SupportProcessStep];
 
-const SUPPORT_PROCESS_STEPS: { name: SupportProcessStepName; translationKey: string; activityIds: string[] }[] = [
+const SUPPORT_PROCESS_STEPS: {
+  name: SupportProcessStepName;
+  translationKey: string;
+  activityIds: string[];
+  gate: string;
+}[] = [
   {
     name: SupportProcessStep.REGISTRATION,
     translationKey: 'common:process.steps.registration',
     activityIds: ['registration_phase', 'register_phase'],
+    gate: 'registration_completed',
   },
-  { name: SupportProcessStep.REVIEW, translationKey: 'common:process.steps.review', activityIds: ['review_phase'] },
+  {
+    name: SupportProcessStep.REVIEW,
+    translationKey: 'common:process.steps.review',
+    activityIds: ['review_phase'],
+    gate: 'review_completed',
+  },
   {
     name: SupportProcessStep.INVESTIGATION,
     translationKey: 'common:process.steps.investigation',
     activityIds: ['investigation_phase'],
+    gate: 'investigation_completed',
   },
   {
     name: SupportProcessStep.DECISION,
     translationKey: 'common:process.steps.decision',
     activityIds: ['decision_phase'],
+    gate: 'decision_completed',
   },
   {
     name: SupportProcessStep.FOLLOW_UP,
     translationKey: 'common:process.steps.follow_up',
     activityIds: ['follow_up_phase'],
+    gate: 'follow_up_completed',
   },
   {
     name: SupportProcessStep.CLOSING,
     translationKey: 'common:process.steps.closing',
     activityIds: ['closure_phase', 'closing_phase', 'complete_phase'],
+    gate: 'closure_completed',
   },
 ];
 
@@ -115,11 +133,6 @@ export const supportProcessStepIndex = (process: ErrandProcess | undefined): num
 export const supportProcessStepName = (process: ErrandProcess | undefined): SupportProcessStepName | undefined =>
   SUPPORT_PROCESS_STEPS[supportProcessStepIndex(process)]?.name;
 
-export const supportProcessErrorText = (process: ErrandProcess | undefined): string => {
-  const parts = [process?.error?.code, process?.error?.message].filter(Boolean);
-  return parts.join(': ');
-};
-
 export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
   apiService
     .get<PageProcessActivity>(`supportprocess/${municipalityId}/${errandId}/activities`)
@@ -129,25 +142,37 @@ export const getSupportProcessActivities = (errandId: string, municipalityId: st
       throw e;
     });
 
-/**
- * Whether the process has reached a step - being in it counts, and so does having passed it. A
- * process the mapping cannot place, and an errand without a process at all, has reached nothing.
- */
-export const hasReachedSupportProcessStep = (
+export const supportProcessStepKeyOfGate = (gate: string | undefined): string | undefined =>
+  SUPPORT_PROCESS_STEPS.find((candidate) => candidate.gate === gate)?.translationKey;
+
+const gateOfSupportProcessStep = (step: SupportProcessStepName): string | undefined =>
+  SUPPORT_PROCESS_STEPS.find((candidate) => candidate.name === step)?.gate;
+
+const gateHasBeenSent = (gate: string | undefined, activities: ProcessActivity[]): boolean =>
+  !!gate && activities.some((activity) => activity.activityId === gate);
+
+export const hasVisitedSupportProcessStep = (
   step: SupportProcessStepName,
-  process: ErrandProcess | undefined
-): boolean => {
-  const current = supportProcessStepIndex(process);
-  if (current < 0) return false;
-  return current >= SUPPORT_PROCESS_STEPS.findIndex((candidate) => candidate.name === step);
-};
+  process: ErrandProcess | undefined,
+  activities: ProcessActivity[]
+): boolean =>
+  Boolean(process) &&
+  (supportProcessStepName(process) === step || gateHasBeenSent(gateOfSupportProcessStep(step), activities));
 
 /**
  * What the process waits for from the handler right now. The names come from the process model and
  * are relayed as they are, so a gate added to the model shows up here without a change in Draken.
  */
-export const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
+const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
   process?.awaitingSignals ?? [];
+
+export const awaitedGateOfStep = (
+  process: ErrandProcess | undefined,
+  step: SupportProcessStepName | undefined
+): ProcessSignal | undefined => {
+  const gate = step && gateOfSupportProcessStep(step);
+  return supportProcessAwaitingSignals(process).find((signal) => signal.name === gate);
+};
 
 export const sendSupportProcessSignal = (errandId: string, municipalityId: string, signal: string): Promise<void> =>
   apiService
