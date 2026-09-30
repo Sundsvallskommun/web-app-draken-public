@@ -18,6 +18,7 @@ import { mockMetaData } from './fixtures/mockMetadata';
 import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockEmptySupportErrand,
   mockFacilitiesData,
@@ -34,6 +35,7 @@ test.describe('Errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });

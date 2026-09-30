@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
-import type { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { JsonNode, JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { RJSFSchema } from '@rjsf/utils';
 import { cleanup, render, screen } from '@testing-library/react';
 import { act } from 'react';
@@ -51,9 +51,9 @@ test('shows loading before a schema failure and then explains which document cou
 test('displays the saved data read-only when the optional UI schema is unavailable', async () => {
   const schema: RJSFSchema = { type: 'object', properties: { answer: { type: 'string', title: 'Svar' } } };
   // The shared display must still accept the existing Support Management API contract.
-  const jsonParameters: JsonParameter[] = [
-    { key: 'Document', schemaId: 'schema-id', value: { answer: 'Sparat svar' } },
-  ];
+  // The generated contract types value as Jackson's JsonNode, but the API sends the saved form data as plain JSON.
+  const savedFormData = { answer: 'Sparat svar' } as unknown as JsonNode;
+  const jsonParameters: JsonParameter[] = [{ key: 'Document', schemaId: 'schema-id', value: savedFormData }];
   vi.mocked(getRjsfSchema).mockResolvedValue(schema);
   vi.mocked(getUiSchemaForSchema).mockRejectedValue(new Error('No UI schema'));
   render(<JsonParametersDisplay municipalityId="2281" jsonParameters={jsonParameters} />);

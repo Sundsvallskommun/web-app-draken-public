@@ -20,6 +20,7 @@ import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures
 import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockEnv } from '../fixtures/mock-env';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand page', () => {
@@ -28,6 +29,9 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
+    // The errand log loads notifications to mark notified events.
+    await mockRoute('**/supportnotifications/2281', [], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute(
       `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`,
@@ -287,7 +291,8 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator(`[aria-label="${mockSidebarButtons[2].label}"]`).click();
-    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(mockSupportHistory.totalElements);
+    // Events sharing a requestGroupId are one entry in the log, so there are fewer entries than events.
+    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(5);
     await page.locator('[data-cy="history-log"] div button').first().click();
     await page.locator('[data-cy="history-table-details-close-button"]').filter({ hasText: 'Stäng' }).click();
   });

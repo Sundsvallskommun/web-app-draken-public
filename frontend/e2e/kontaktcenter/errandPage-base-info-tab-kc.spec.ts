@@ -24,6 +24,7 @@ import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockEnv } from '../fixtures/mock-env';
 import type { Page } from '@playwright/test';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { CONFIRM_DIALOG } from '../utils/modal';
 
 // Local corrected helpers (the shared utils/stakeholder-search.ts variants assert
@@ -215,6 +216,7 @@ test.describe('Errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand, {
       method: 'GET',
     });

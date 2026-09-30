@@ -22,9 +22,17 @@ export class SupportHistoryController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
+    @QueryParam('page') page: number,
+    @QueryParam('size') size: number,
+    @QueryParam('sort') sort: string,
     @Res() response: Response<PageEvent, any>,
   ): Promise<Response<PageEvent, any>> {
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/events?page=0&size=100&sort=created%2Cdesc`;
+    const query = new URLSearchParams({
+      page: String(page ?? 0),
+      size: String(size ?? 100),
+      sort: sort || 'created,desc',
+    }).toString();
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/events?${query}`;
     const res = await this.apiService.get<PageEvent>({ url }, req.user);
     return response.status(200).send(res.data);
   }
