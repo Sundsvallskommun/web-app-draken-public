@@ -133,26 +133,35 @@ export class SupportDecisionController {
 
   private async clearTerms(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
     const decision = await this.readDecision(ref, user);
-    for (const term of decision.terms ?? []) {
-      await this.apiService.delete<void>(
-        { url: `${this.decisionUrl(ref)}/terms/${term.id}`, baseURL: apiURL(this.SERVICE), propagateClientError: true },
-        user,
-      );
-    }
+
+    await Promise.all(
+      (decision.terms ?? []).map(term =>
+        this.apiService.delete<void>(
+          {
+            url: `${this.decisionUrl(ref)}/terms/${term.id}`,
+            baseURL: apiURL(this.SERVICE),
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
   }
 
   private async writeTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
-    for (const [index, text] of terms.entries()) {
-      await this.apiService.post<DecisionTerm, DecisionTerm>(
-        {
-          url: `${this.decisionUrl(ref)}/terms`,
-          baseURL: apiURL(this.SERVICE),
-          data: { sortOrder: index + 1, text },
-          propagateClientError: true,
-        },
-        user,
-      );
-    }
+    await Promise.all(
+      terms.map((text, index) =>
+        this.apiService.post<DecisionTerm, DecisionTerm>(
+          {
+            url: `${this.decisionUrl(ref)}/terms`,
+            baseURL: apiURL(this.SERVICE),
+            data: { sortOrder: index + 1, text },
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
   }
 
   private async replaceTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {

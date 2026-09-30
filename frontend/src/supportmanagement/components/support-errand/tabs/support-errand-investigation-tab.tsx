@@ -162,7 +162,7 @@ export const SupportErrandInvestigationTab: React.FC<{
   useEffect(() => {
     if (isLoading || error || investigation || !inStep || !canEdit || startedAutomatically.current) return;
     startedAutomatically.current = true;
-    start().then(forgetAStartThatFailed);
+    void start().then(forgetAStartThatFailed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 

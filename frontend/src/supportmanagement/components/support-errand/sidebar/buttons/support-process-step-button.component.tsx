@@ -293,9 +293,7 @@ export const SupportProcessStepButton: FC<{
         t('common:process.actions.confirm_no'),
         'primary'
       )
-      .then((confirmed) => {
-        if (confirmed) run(action, decisionsInHand);
-      });
+      .then((confirmed) => (confirmed ? run(action, decisionsInHand) : undefined));
 
   const askForAnOutcomeFirst = () =>
     confirm
@@ -344,7 +342,7 @@ export const SupportProcessStepButton: FC<{
       rightIcon={action.icon}
       loading={running === action.key}
       disabled={disabled || !canEdit || !!running || (signalIsRequired(action) && !awaitingSignal?.name)}
-      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
+      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
     >
       {t(`common:process.actions.${action.key}.label`)}
