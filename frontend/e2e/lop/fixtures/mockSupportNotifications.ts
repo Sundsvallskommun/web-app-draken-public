@@ -56,8 +56,3 @@ export const mockNotifications = [
     events: [],
   },
 ];
-
-export const mockAcknowledgeResult = {
-  acknowledged: ['bb893d57-04e9-44af-a271-aff5df530bba'],
-  failed: [],
-};

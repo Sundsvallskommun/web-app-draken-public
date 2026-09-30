@@ -22,10 +22,6 @@ import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 import { ensureErrandSubscription } from './support-subscription-service';
-export interface Customer {
-  id: string;
-  type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
-}
 
 export enum ExternalIdType {
   PRIVATE = 'PRIVATE',
