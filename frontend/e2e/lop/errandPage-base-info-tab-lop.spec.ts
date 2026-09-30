@@ -253,10 +253,12 @@ test.describe('Errand page', () => {
     // not count as a change.
     await expect(page.locator('[data-cy="labelCategory-input"]')).toHaveValue(ksk.id);
     await expect(page.locator(`[data-cy="labelType-input"][placeholder="${silentCall.displayName}"]`)).toBeVisible();
+    await expect(page.locator('[data-cy="labelType-input"]')).toBeEnabled();
     await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara ärende' })).toBeDisabled();
 
-    // A department without anything below it is a complete classification on its own.
+    // A department without anything below it is a complete classification on its own, with no type to pick.
     await page.locator('[data-cy="labelCategory-input"]').selectOption(tradeUnion.displayName);
+    await expect(page.locator('[data-cy="labelType-input"]')).toBeDisabled();
     await expect(page.locator('[data-cy="labelType-error"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara ärende' })).toBeEnabled();
 

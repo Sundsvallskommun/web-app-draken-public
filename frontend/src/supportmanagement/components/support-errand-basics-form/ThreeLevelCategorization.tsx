@@ -182,7 +182,6 @@ export const ThreeLevelCategorization: FC<{
           </FormLabel>
 
           <Combobox
-            disabled={isSupportErrandLocked(supportErrand) || (!!selectedCategory && !hasTypes(selectedCategory))}
             data-cy="labelType-wrapper"
             className="w-full text-dark-primary"
             variant="primary"
@@ -191,7 +190,13 @@ export const ThreeLevelCategorization: FC<{
             value={selectedLabels.subType?.id ?? selectedLabels.type?.id ?? ''}
             onSelect={handleTypeSelect}
           >
-            <Combobox.Input data-cy="labelType-input" className="w-full" />
+            {/* The input, not the Combobox itself, is what takes `disabled`. There is nothing to choose until
+                a verksamhet with ärendetyper below it is selected. */}
+            <Combobox.Input
+              data-cy="labelType-input"
+              className="w-full"
+              disabled={isSupportErrandLocked(supportErrand) || !hasTypes(selectedCategory)}
+            />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
               {selectableTypes.map((typeLabel) =>
                 (typeLabel.labels?.length ?? 0) > 0 ? (
