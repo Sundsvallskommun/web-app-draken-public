@@ -192,7 +192,7 @@ export const CasedataDecisionTab: FC<{
 
   useEffect(() => {
     if (!hasFtServices) return;
-    (async () => {
+    void (async () => {
       const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
       setServiceSchema(schema);
     })();

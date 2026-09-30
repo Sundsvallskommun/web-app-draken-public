@@ -164,9 +164,9 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
+        void getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        triggerErrandPhaseChange(municipalityId, errand!);
+        void triggerErrandPhaseChange(municipalityId, errand!);
         pollDisplayPhase();
       })
       .catch(() => {

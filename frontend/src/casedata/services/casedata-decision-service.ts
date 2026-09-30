@@ -508,7 +508,7 @@ export const renderPdf: (
 ) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
   const renderBody: TemplateSelector = buildPdfTemplate(errand, formData, templateType, services);
 
-  return apiService
+  return await apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
     .then((res) => {
       const pdfBase64 = res.data.data.output;
@@ -547,7 +547,7 @@ export const renderHtml: (
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };
-  return apiService
+  return await apiService
     .post<ApiResponse<Render>, TemplateSelector>('render', renderBody)
     .then((res) => {
       const htmlBase64 = res.data.data.output;

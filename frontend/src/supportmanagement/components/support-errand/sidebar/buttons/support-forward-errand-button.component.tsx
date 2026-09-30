@@ -178,7 +178,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
         }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e: Error) => {
         toastMessage({
@@ -206,7 +206,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const handleHandoverSuccess = () => {
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
-    getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+    void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
     setTimeout(() => {
       window.close();
     }, 2000);
@@ -223,14 +223,14 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       setValue('message', '', { shouldValidate: true, shouldDirty: false });
       setValue('messageBodyPlaintext', '');
 
-      getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
+      void getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
       });
 
       if (recipient === 'EMAIL') {
-        getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
+        void getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
           setValue('message', sanitized(text), { shouldValidate: true, shouldDirty: false });
         });
       }
@@ -477,7 +477,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                         )
                         .then((confirmed) => {
                           if (confirmed) {
-                            handleForwardErrand(getValues());
+                            void handleForwardErrand(getValues());
                           }
                         });
                     }}

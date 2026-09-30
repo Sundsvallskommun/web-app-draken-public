@@ -23,10 +23,10 @@ import { v4 as uuidv4 } from 'uuid';
 export type HandoverStep = 1 | 2;
 
 /** Target namespaces of the casedata forward flow (MEX and PT). Every other namespace uses the handover. */
-const CASEDATA_FORWARD_NAMESPACES = ['SBK_MEX', 'SBK_PARKING_PERMIT'];
+const CASEDATA_FORWARD_NAMESPACES = new Set(['SBK_MEX', 'SBK_PARKING_PERMIT']);
 
 export const isCasedataForwardTarget = (namespace?: string): boolean =>
-  !!namespace && CASEDATA_FORWARD_NAMESPACES.includes(namespace);
+  !!namespace && CASEDATA_FORWARD_NAMESPACES.has(namespace);
 
 /**
  * TEMPORARY – per-namespace categorization model during the migration to labels.
@@ -114,7 +114,7 @@ export const useSupportHandover = ({
     // The casedata namespaces (MEX, PT) are targets too, so the list is needed even without useHandover.
     const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
     if (shouldLoadTargets) {
-      getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
+      void getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
         setNamespaceConfigs(configs);
         setTargetsLoaded(true);
       });
@@ -184,7 +184,7 @@ export const useSupportHandover = ({
       if (cachedMetadata) {
         setTargetMetadata(cachedMetadata);
       } else {
-        getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
+        void getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
           setMetadataCache((prev) => ({ ...prev, [namespace]: metadata }));
           // Ignore a result that resolved after the user switched to another target.
           if (selectedNamespaceRef.current === namespace) {

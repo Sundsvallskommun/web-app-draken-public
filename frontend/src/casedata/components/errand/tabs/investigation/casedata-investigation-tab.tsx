@@ -186,7 +186,7 @@ export const CasedataInvestigationTab: FC<{
             setFirstOutcomeChange(false);
             setValue('outcome', newOutcome, { shouldDirty: true });
             trigger('outcome');
-            outcomeModalCallback(newOutcome);
+            void outcomeModalCallback(newOutcome);
           }
           return confirmed ? () => true : () => {};
         });
@@ -220,7 +220,7 @@ export const CasedataInvestigationTab: FC<{
         decision?.decisionType === 'RECOMMENDED' &&
         decision?.decisionOutcome === 'REJECTION'
       ) {
-        appendPhrases();
+        void appendPhrases();
       }
     }
     reset({
@@ -229,7 +229,7 @@ export const CasedataInvestigationTab: FC<{
     });
     setValue('errandNumber', props.errand.errandNumber);
     if (isFTErrand(props.errand) && !decision) {
-      fetchInvestigationSkeleton(props.errand).then((skeleton) => {
+      void fetchInvestigationSkeleton(props.errand).then((skeleton) => {
         if (skeleton) {
           skipNextOnChange.current = true;
           setValue('description', skeleton, { shouldDirty: false });
@@ -415,7 +415,7 @@ export const CasedataInvestigationTab: FC<{
               color="primary"
               type="button"
               onClick={handleSubmit(() => {
-                save(getValues());
+                void save(getValues());
               })}
               disabled={!allowed || isErrandLocked(errand) || !formState.isValid}
               leftIcon={<Check className="mr-sm" />}
@@ -440,7 +440,7 @@ export const CasedataInvestigationTab: FC<{
                       if (confirmed) {
                         const skeleton = await fetchInvestigationSkeleton(props.errand);
                         setValue('description', skeleton);
-                        save(getValues());
+                        void save(getValues());
                       }
                       return confirmed ? () => true : () => {};
                     });
