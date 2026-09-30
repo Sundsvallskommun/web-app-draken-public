@@ -27,7 +27,6 @@ import {
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
@@ -35,7 +34,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { isAllowedHandoverTarget, MEX_HANDOVER_TARGET } from '@/services/handover-targets.service';
+import { getCasedataForwardTarget, isAllowedHandoverTarget } from '@/services/handover-targets.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
 import {
@@ -719,7 +718,8 @@ export class SupportErrandController {
       logger.error('No errand id found, it is needed to forward errand.');
       return response.status(400).send('Errand id missing');
     }
-    if (data.department !== MEX_HANDOVER_TARGET || !isAllowedHandoverTarget(data.department)) {
+    const forwardTarget = getCasedataForwardTarget(data.department);
+    if (!forwardTarget || !isAllowedHandoverTarget(forwardTarget.namespace)) {
       logger.error(`Forward target ${data.department} is not in HANDOVER_TARGETS`);
       return response.status(403).send('Forward target not allowed');
     }
@@ -751,12 +751,15 @@ export class SupportErrandController {
     }
 
     const caseDataErrand: Partial<CasedataErrandDTO> = {
-      caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
+      caseType: forwardTarget.caseType as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: toCasedataChannel(existingSupportErrand.data.channel),
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: toFacilities(existingSupportErrand.data.parameters),
+      status: {
+        statusType: ErrandStatus.ArendeInkommit,
+      },
       statuses: [
         {
           statusType: ErrandStatus.ArendeInkommit,

@@ -17,13 +17,16 @@ import { deleteDecisionAttachment, sendDecisionAttachment } from './casedata-att
 import { getErrand, isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
-export const lawMappingPT: Law[] = [
-  {
-    heading: '13 kap. 8 § trafikförordningen',
-    sfs: 'Trafikförordningen (1998:1276)',
-    chapter: '13',
-    article: '8',
-  },
+const parkingPermitLaw: Law = {
+  heading: '13 kap. 8 § trafikförordningen',
+  sfs: 'Trafikförordningen (1998:1276)',
+  chapter: '13',
+  article: '8',
+};
+
+// Lagrum selectable for the RPH investigation (förslag till beslut).
+export const investigationLawMappingPT: Law[] = [
+  parkingPermitLaw,
   {
     heading: '20§ förvaltningslagen',
     sfs: 'Förvaltningslagen (2017:900)',
@@ -32,23 +35,33 @@ export const lawMappingPT: Law[] = [
   },
 ];
 
+// Lagrum selectable on the decision tab, one list per case-type family. Förvaltningslagen applies to all of them.
+const lawMappingForvaltningslagen: Law[] = [
+  { heading: '20 § Förvaltningslagen', sfs: 'Förvaltningslagen (2017:900)', chapter: '', article: '20' },
+  { heading: '44 § Förvaltningslagen', sfs: 'Förvaltningslagen (2017:900)', chapter: '', article: '44' },
+  { heading: '45 § Förvaltningslagen', sfs: 'Förvaltningslagen (2017:900)', chapter: '', article: '45' },
+];
+
+const lawMappingPT: Law[] = [parkingPermitLaw, ...lawMappingForvaltningslagen];
+
 const lawMappingFT: Law[] = [
-  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '1' },
-  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '5' },
-  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '6' },
-  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '7' },
-  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '8' },
-  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '9' },
-  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '10' },
-  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '12' },
-  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '13' },
-  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '16' },
+  { heading: '6 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '6' },
+  { heading: '7 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '7' },
+  { heading: '8 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '8' },
+  { heading: '9 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '9' },
+  { heading: '10 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '10' },
+  { heading: '12 § lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '12' },
+  ...lawMappingForvaltningslagen,
 ];
 
 const lawMappingRFT: Law[] = [
-  { heading: '1§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '1' },
-  { heading: '2§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '2' },
-  { heading: '3§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '3' },
+  { heading: '1 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '1' },
+  { heading: '4 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '4' },
+  { heading: '5 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '5' },
+  { heading: '6 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '6' },
+  { heading: '7 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '7' },
+  { heading: '9 § lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '9' },
+  ...lawMappingForvaltningslagen,
 ];
 
 export const getLawMapping = (errand: IErrand): Law[] => {
@@ -59,12 +72,11 @@ export const getLawMapping = (errand: IErrand): Law[] => {
       ? lawMappingFT
       : lawMappingPT;
 
-    const existingLaws =
-      errand.decisions
-        ?.flatMap((d) => d.law || [])
-        .filter(
-          (existingLaw) => existingLaw.heading && !baseLawMapping.some((l) => l.heading === existingLaw.heading)
-        ) || [];
+    // Lagrum already saved on the decision stay selectable even when no longer offered (e.g. older headings).
+    // Only the FINAL decision counts: the investigation's lagrum use their own headings and would show up as duplicates.
+    const existingLaws = (getFinalDecisonWithHighestId(errand.decisions ?? [])?.law ?? []).filter(
+      (existingLaw) => existingLaw.heading && !baseLawMapping.some((l) => l.heading === existingLaw.heading)
+    );
 
     const uniqueExistingLaws = existingLaws.filter(
       (law, index, self) => index === self.findIndex((l) => l.heading === law.heading)
@@ -142,11 +154,11 @@ export const saveDecision: (
     description: formData.description,
     law: formData.law,
     validFrom:
-      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+      isPTErrand(errand) && isApprovingOutcome(formData.outcome)
         ? dayjs(formData.validFrom).startOf('day').toISOString()
         : '',
     validTo:
-      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+      isPTErrand(errand) && isApprovingOutcome(formData.outcome)
         ? dayjs(formData.validTo).endOf('day').toISOString()
         : '',
     decidedAt: dayjs().toISOString(),
@@ -220,14 +232,55 @@ export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) 
       return 'Bifall';
     case DecisionOutcomes.Rejection:
       return 'Avslag';
+    case DecisionOutcomes.ConditionalApproval:
+      return 'Bifall med villkor';
     case DecisionOutcomes.Cancellation:
       return 'Ärendet avskrivs';
     case DecisionOutcomes.Dismissal:
       return 'Ärendet avvisas';
+    case DecisionOutcomes.Revocation:
+      return 'Återkallelse av tidigare utfärdat tillstånd';
     default:
       return 'Okänt utfall';
   }
 };
+
+const parkingPermitDecisionOutcomes: DecisionOutcome[] = [
+  DecisionOutcomes.Approval,
+  DecisionOutcomes.Rejection,
+  DecisionOutcomes.Cancellation,
+  DecisionOutcomes.Dismissal,
+  DecisionOutcomes.Revocation,
+];
+
+// Färdtjänst and riksfärdtjänst also allow bifall med villkor.
+const paratransitDecisionOutcomes: DecisionOutcome[] = [
+  DecisionOutcomes.Approval,
+  DecisionOutcomes.Rejection,
+  DecisionOutcomes.ConditionalApproval,
+  DecisionOutcomes.Cancellation,
+  DecisionOutcomes.Dismissal,
+  DecisionOutcomes.Revocation,
+];
+
+const defaultDecisionOutcomes: DecisionOutcome[] = [
+  DecisionOutcomes.Approval,
+  DecisionOutcomes.Rejection,
+  DecisionOutcomes.Cancellation,
+  DecisionOutcomes.Dismissal,
+];
+
+/** The outcomes selectable on the decision tab for the errand, in display order. */
+export const getDecisionOutcomeOptions = (errand: IErrand): DecisionOutcome[] => {
+  if (!isPT()) {
+    return defaultDecisionOutcomes;
+  }
+  return isFTErrand(errand) ? paratransitDecisionOutcomes : parkingPermitDecisionOutcomes;
+};
+
+/** True for outcomes that grant the application, fully or in part (a permit or services are issued). */
+export const isApprovingOutcome = (outcome?: string): boolean =>
+  outcome === DecisionOutcomes.Approval || outcome === DecisionOutcomes.ConditionalApproval;
 
 export const getUtredningPhrases: (errand: IErrand, outcome: DecisionOutcome) => Promise<{ phrases: string }> = (
   errand,
@@ -343,14 +396,9 @@ export const buildPdfTemplate: (
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
+  // Template identifiers carry the outcome in lower case, e.g. approval, conditional_approval, revocation.
   const outcome =
-    formData.outcome === DecisionOutcomes.Approval
-      ? 'approval'
-      : formData.outcome === DecisionOutcomes.Rejection
-      ? 'rejection'
-      : formData.outcome === DecisionOutcomes.Cancellation
-      ? 'cancellation'
-      : '';
+    formData.outcome && formData.outcome !== DecisionOutcomes.Unknown ? formData.outcome.toLowerCase() : '';
 
   let identifier = `mex.decision`;
   let capacity = '';
@@ -416,7 +464,7 @@ export const buildPdfTemplate: (
   } else if (templateType === 'decision') {
     parameters['decisionText'] = wrapWithWordBreak(formData.description);
     parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
-    if (outcome === 'approval') {
+    if (isApprovingOutcome(formData.outcome)) {
       parameters['permitFirstname'] = owner?.firstName;
       parameters['permitLastname'] = owner?.lastName;
       parameters['permitEndDate'] = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
@@ -460,7 +508,7 @@ export const renderPdf: (
 ) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
   const renderBody: TemplateSelector = buildPdfTemplate(errand, formData, templateType, services);
 
-  return apiService
+  return await apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
     .then((res) => {
       const pdfBase64 = res.data.data.output;
@@ -499,7 +547,7 @@ export const renderHtml: (
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };
-  return apiService
+  return await apiService
     .post<ApiResponse<Render>, TemplateSelector>('render', renderBody)
     .then((res) => {
       const htmlBase64 = res.data.data.output;

@@ -22,8 +22,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type HandoverStep = 1 | 2;
 
-/** Target namespace of the casedata (MEX) forward flow. */
-export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
+/** Target namespaces of the casedata forward flow (MEX and PT). Every other namespace uses the handover. */
+const CASEDATA_FORWARD_NAMESPACES = new Set(['SBK_MEX', 'SBK_PARKING_PERMIT']);
+
+export const isCasedataForwardTarget = (namespace?: string): boolean =>
+  !!namespace && CASEDATA_FORWARD_NAMESPACES.has(namespace);
 
 /**
  * TEMPORARY – per-namespace categorization model during the migration to labels.
@@ -108,10 +111,10 @@ export const useSupportHandover = ({
   const [handoverError, setHandoverError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // MEX is one of the targets, so the list is needed even without useHandover.
+    // The casedata namespaces (MEX, PT) are targets too, so the list is needed even without useHandover.
     const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
     if (shouldLoadTargets) {
-      getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
+      void getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
         setNamespaceConfigs(configs);
         setTargetsLoaded(true);
       });
@@ -119,14 +122,14 @@ export const useSupportHandover = ({
   }, [active, sourceMunicipalityId]);
 
   /** Targets the errand can be handed over to, excluding the source namespace. Without useHandover
-   * only the MEX forward is available. */
+   * only the casedata forward (MEX, PT) is available. */
   const handoverTargets = useMemo(
     () =>
       namespaceConfigs.filter(
         (config) =>
           config.namespace &&
           config.namespace !== sourceNamespace &&
-          (appConfig.features.useHandover || config.namespace === MEX_DEPARTMENT_VALUE)
+          (appConfig.features.useHandover || isCasedataForwardTarget(config.namespace))
       ),
     [namespaceConfigs, sourceNamespace]
   );
@@ -181,7 +184,7 @@ export const useSupportHandover = ({
       if (cachedMetadata) {
         setTargetMetadata(cachedMetadata);
       } else {
-        getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
+        void getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
           setMetadataCache((prev) => ({ ...prev, [namespace]: metadata }));
           // Ignore a result that resolved after the user switched to another target.
           if (selectedNamespaceRef.current === namespace) {

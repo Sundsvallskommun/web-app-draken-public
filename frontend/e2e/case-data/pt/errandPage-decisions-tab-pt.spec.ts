@@ -105,6 +105,15 @@ test.describe('Decisions tab', () => {
   test('displays the correct fields', async ({ page, dismissCookieConsent }) => {
     await visitErrand(page, dismissCookieConsent);
     await expect(page.locator('[data-cy="decision-outcome-select"]')).toBeVisible();
+    // Parking permits do not offer bifall med villkor (only färdtjänst and riksfärdtjänst do).
+    await expect(page.locator('[data-cy="decision-outcome-select"] option')).toHaveText([
+      'Välj utfall',
+      'Bifall',
+      'Avslag',
+      'Ärendet avskrivs',
+      'Ärendet avvisas',
+      'Återkallelse av tidigare utfärdat tillstånd',
+    ]);
     await expect(page.locator('[data-cy="law-select"]')).toBeVisible();
     await expect(page.locator('[data-cy="law-select"]')).toContainText(
       '13 kap. 8§ Parkeringstillstånd för rörelsehindrade'
@@ -188,50 +197,58 @@ test.describe('Decisions tab', () => {
     expect(updateBody.id).toBe(1);
   });
 
-  test('can edit decision fields for rejection', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await mockRoute('**/errand/errandNumber/*', mockPTErrand_base);
-    await visitErrand(page, dismissCookieConsent);
-    await mockRoute('**/render/pdf', mockPdfRender, { method: 'POST' });
+  // Outcomes that grant nothing: no validity dates, and none are sent.
+  for (const [label, decisionOutcome] of [
+    ['Avslag', 'REJECTION'],
+    ['Återkallelse av tidigare utfärdat tillstånd', 'REVOCATION'],
+  ]) {
+    test(`can edit decision fields for ${label}`, async ({ page, mockRoute, dismissCookieConsent }) => {
+      await mockRoute('**/errand/errandNumber/*', mockPTErrand_base);
+      await visitErrand(page, dismissCookieConsent);
+      await mockRoute('**/render/pdf', mockPdfRender, { method: 'POST' });
 
-    const finalDecisionId = mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id;
-    await mockRoute(`**/decisions/${finalDecisionId}`, mockPTErrand_base, { method: 'PUT' });
+      const finalDecisionId = mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id;
+      await mockRoute(`**/decisions/${finalDecisionId}`, mockPTErrand_base, { method: 'PUT' });
 
-    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Avslag');
-    await expect(page.locator('[data-cy="validFrom-input"]')).toBeDisabled();
-    await expect(page.locator('[data-cy="validTo-input"]')).toBeDisabled();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
-    await page.keyboard.press('Control+A');
-    await page.keyboard.type('Mock text');
-    await page.locator('[data-cy="save-decision-button"]').click();
-    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
+      await page.locator('[data-cy="decision-outcome-select"]').selectOption(label);
+      await expect(page.locator('[data-cy="validFrom-input"]')).toBeDisabled();
+      await expect(page.locator('[data-cy="validTo-input"]')).toBeDisabled();
+      await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+      await page.keyboard.press('Control+A');
+      await page.keyboard.type('Mock text');
+      await page.locator('[data-cy="save-decision-button"]').click();
+      await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
 
-    const updateDecisionRequest = await page.waitForRequest(
-      (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
-    );
-    const body = updateDecisionRequest.postDataJSON();
-    expect(body.id).toBe(1);
-    expect(body.description).toContain('Mock text');
-    expect(body.decisionType).toBe('FINAL');
-    expect(body.decisionOutcome).toBe('REJECTION');
-    expect(body.decidedBy).toEqual({
-      type: 'PERSON',
-      firstName: 'My',
-      lastName: 'Testsson',
-      adAccount: 'kctest',
-      roles: ['ADMINISTRATOR'],
-      addresses: [],
-      contactInformation: [],
-      extraParameters: {},
+      const updateDecisionRequest = await page.waitForRequest(
+        (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
+      );
+      const body = updateDecisionRequest.postDataJSON();
+      expect(body.id).toBe(1);
+      expect(body.description).toContain('Mock text');
+      expect(body.decisionType).toBe('FINAL');
+      expect(body.decisionOutcome).toBe(decisionOutcome);
+      expect(body.validFrom).toBe('');
+      expect(body.validTo).toBe('');
+      expect(body.decidedBy).toEqual({
+        type: 'PERSON',
+        firstName: 'My',
+        lastName: 'Testsson',
+        adAccount: 'kctest',
+        roles: ['ADMINISTRATOR'],
+        addresses: [],
+        contactInformation: [],
+        extraParameters: {},
+      });
+      expect(body.law).toEqual([
+        {
+          heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+          sfs: 'Trafikförordningen (1998:1276)',
+          chapter: '13',
+          article: '8',
+        },
+      ]);
     });
-    expect(body.law).toEqual([
-      {
-        heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
-        sfs: 'Trafikförordningen (1998:1276)',
-        chapter: '13',
-        article: '8',
-      },
-    ]);
-  });
+  }
 
   test('can edit decision fields for approval', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrand(page, dismissCookieConsent);
@@ -321,7 +338,7 @@ test.describe('Decisions tab', () => {
     // the page and its option popup is overlapped by the wrapping tab list, which
     // intercepts a normal click. Dispatch the click directly on the resolved
     // option to bypass the coordinate hit-test.
-    await page.locator('[data-cy="law-select"]').getByText('1§ - Lag om färdtjänst').dispatchEvent('click');
+    await page.locator('[data-cy="law-select"]').getByText('6 § lag om färdtjänst').dispatchEvent('click');
     await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="validTo-input"]')).not.toBeVisible();
     await page.locator('[data-cy="decision-richtext-wrapper"]').click();
@@ -332,6 +349,43 @@ test.describe('Decisions tab', () => {
     await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toHaveCount(1);
     await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toBeEnabled();
     await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeEnabled();
+  });
+
+  test('offers and saves bifall med villkor for FT', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await mockRoute('**/errand/errandNumber/*', mockFTErrand);
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="decision-outcome-select"] option')).toHaveText([
+      'Välj utfall',
+      'Bifall',
+      'Avslag',
+      'Bifall med villkor',
+      'Ärendet avskrivs',
+      'Ärendet avvisas',
+      'Återkallelse av tidigare utfärdat tillstånd',
+    ]);
+
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall med villkor');
+    // Like approval: the approved services are shown (FT has no decision validity dates).
+    await expect(page.locator('[data-cy="decision-services-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
+    await page.locator('[data-cy="law-select"]').click();
+    // See the FT approval test above for why the option click is dispatched.
+    await page.locator('[data-cy="law-select"]').getByText('6 § lag om färdtjänst').dispatchEvent('click');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
+    await page.locator('[data-cy="save-decision-button"]').click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
+
+    const createDecisionRequest = await page.waitForRequest(
+      (req) => req.url().includes('/decisions') && req.method() === 'PATCH'
+    );
+    const body = createDecisionRequest.postDataJSON();
+    expect(body.decisionType).toBe('FINAL');
+    expect(body.decisionOutcome).toBe('CONDITIONAL_APPROVAL');
+    expect(body.validFrom).toBe('');
+    expect(body.validTo).toBe('');
   });
 
   test('shows template dropdown after outcome selection when templates exist and renders preview', async ({
