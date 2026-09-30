@@ -484,4 +484,30 @@ test.describe('errand page', () => {
       expect(forwardBody.recipient).toBe('DEPARTMENT');
     });
   }
+
+  test('Can forward to PT without a message', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {
+      method: 'POST',
+    });
+
+    await page.goto('arende/KC-00000001');
+    await dismissCookieConsent();
+
+    await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+    await page.locator('[data-cy="resolution-input"]').selectOption(mockParkingPermitTarget.displayName);
+    // The message is optional for a Draken forward, so leave the editor empty.
+    await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
+
+    await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
+    const [forwardResponse] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
+    const forwardBody = forwardResponse.request().postDataJSON();
+    expect(forwardBody.department).toBe(mockParkingPermitTarget.namespace);
+    expect(forwardBody.message).toBe('');
+    await expect(page.getByText('Ärendet vidarebefordrades')).toBeVisible();
+  });
 });

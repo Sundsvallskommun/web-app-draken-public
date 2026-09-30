@@ -757,6 +757,9 @@ export class SupportErrandController {
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: toFacilities(existingSupportErrand.data.parameters),
+      status: {
+        statusType: ErrandStatus.ArendeInkommit,
+      },
       statuses: [
         {
           statusType: ErrandStatus.ArendeInkommit,
