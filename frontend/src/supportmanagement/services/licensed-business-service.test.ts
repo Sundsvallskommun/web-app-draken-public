@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
 import {
+  ADDRESS_SEARCH_LIMIT,
   findPremisesAddress,
   getRestaurantNumbersWithAssignments,
   lookupLicensedBusinessAddress,
@@ -67,12 +68,33 @@ describe('BFF requests', () => {
     ]);
   });
 
-  test('the search returns the addresses of the page, or none', async () => {
-    respond({ [`${BASE}/addresses/search`]: { content: [address] } });
-    expect(await searchLicensedBusinessAddresses(MUNICIPALITY_ID, PREMISES.street)).toEqual([address]);
+  test('the search asks for a full page and returns it with the total number of matches', async () => {
+    respond({ [`${BASE}/addresses/search`]: { content: [address], _meta: { totalRecords: 14 } } });
+
+    expect(await searchLicensedBusinessAddresses(MUNICIPALITY_ID, PREMISES.street)).toEqual({
+      addresses: [address],
+      totalRecords: 14,
+    });
+    expect(requestedUrls()).toEqual([
+      `${BASE}/addresses/search?${new URLSearchParams({
+        query: PREMISES.street,
+        limit: String(ADDRESS_SEARCH_LIMIT),
+      })}`,
+    ]);
+  });
+
+  test('a search without paging metadata counts the addresses it got, and an empty page is none', async () => {
+    respond({ [`${BASE}/addresses/search`]: { content: [address, otherAddress] } });
+    expect(await searchLicensedBusinessAddresses(MUNICIPALITY_ID, PREMISES.street)).toEqual({
+      addresses: [address, otherAddress],
+      totalRecords: 2,
+    });
 
     respond({ [`${BASE}/addresses/search`]: {} });
-    expect(await searchLicensedBusinessAddresses(MUNICIPALITY_ID, PREMISES.street)).toEqual([]);
+    expect(await searchLicensedBusinessAddresses(MUNICIPALITY_ID, PREMISES.street)).toEqual({
+      addresses: [],
+      totalRecords: 0,
+    });
   });
 });
 
@@ -91,8 +113,11 @@ describe('findPremisesAddress', () => {
       match: 'SEARCH',
       query: PREMISES.street,
       addresses: [address, otherAddress],
+      totalRecords: 2,
     });
-    expect(requestedUrls()[1]).toBe(`${BASE}/addresses/search?${new URLSearchParams({ query: PREMISES.street })}`);
+    expect(requestedUrls()[1]).toBe(
+      `${BASE}/addresses/search?${new URLSearchParams({ query: PREMISES.street, limit: String(ADDRESS_SEARCH_LIMIT) })}`
+    );
   });
 
   test('without a postal code there is nothing to look up, so the street is searched directly', async () => {
@@ -102,6 +127,7 @@ describe('findPremisesAddress', () => {
       match: 'SEARCH',
       query: PREMISES.street,
       addresses: [],
+      totalRecords: 0,
     });
     expect(requestedUrls()).toHaveLength(1);
   });

@@ -23,11 +23,27 @@ export const lookupLicensedBusinessAddress = async (
   return res.data.data ?? null;
 };
 
-/** Free-text address search; the first page only, which is what a person picking an address reads. */
-export const searchLicensedBusinessAddresses = async (municipalityId: string, query: string): Promise<Address[]> => {
-  const params = new URLSearchParams({ query });
+/** Addresses shown per search. More matches than this means the query should be narrowed, not paged through. */
+export const ADDRESS_SEARCH_LIMIT = 12;
+
+export interface AddressSearchResult {
+  addresses: Address[];
+  /** Matches in the register; more than `addresses.length` when the search should be narrowed. */
+  totalRecords: number;
+}
+
+/**
+ * Free-text address search, first page only. The register matches on prefix: "Storgatan 1" finds
+ * Storgatan 11, 12, 13 ... and not only Storgatan 1.
+ */
+export const searchLicensedBusinessAddresses = async (
+  municipalityId: string,
+  query: string
+): Promise<AddressSearchResult> => {
+  const params = new URLSearchParams({ query, limit: String(ADDRESS_SEARCH_LIMIT) });
   const res = await apiService.get<ApiResponse<Addresses>>(`${baseUrl(municipalityId)}/addresses/search?${params}`);
-  return res.data.data?.content ?? [];
+  const addresses = res.data.data?.content ?? [];
+  return { addresses, totalRecords: res.data.data?._meta?.totalRecords ?? addresses.length };
 };
 
 const getAddressRestaurantNumbers = async (
@@ -58,7 +74,7 @@ const getRestaurantNumberAssignment = async (
  */
 export type PremisesAddressMatch =
   | { match: 'EXACT'; address: Address }
-  | { match: 'SEARCH'; query: string; addresses: Address[] };
+  | ({ match: 'SEARCH'; query: string } & AddressSearchResult);
 
 /**
  * Finds the premises in the register: an exact lookup when both street and postal code are known,
@@ -76,8 +92,8 @@ export const findPremisesAddress = async (
     if (address) return { match: 'EXACT', address };
   }
 
-  const addresses = await searchLicensedBusinessAddresses(municipalityId, premises.street);
-  return { match: 'SEARCH', query: premises.street, addresses };
+  const result = await searchLicensedBusinessAddresses(municipalityId, premises.street);
+  return { match: 'SEARCH', query: premises.street, ...result };
 };
 
 export interface RestaurantNumberWithAssignment extends AddressRestaurantNumber {

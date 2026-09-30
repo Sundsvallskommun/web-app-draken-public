@@ -60,6 +60,7 @@ describe('usePremisesRestaurantNumbers', () => {
       match: 'SEARCH',
       query: PREMISES.street,
       addresses: [address, otherAddress],
+      totalRecords: 2,
     });
 
     const { result } = renderHook(() => usePremisesRestaurantNumbers(MUNICIPALITY_ID, PREMISES));
@@ -78,7 +79,10 @@ describe('usePremisesRestaurantNumbers', () => {
 
   test('a free-text search replaces the match and clears the picked address', async () => {
     vi.mocked(findPremisesAddress).mockResolvedValue({ match: 'EXACT', address });
-    vi.mocked(searchLicensedBusinessAddresses).mockResolvedValue([otherAddress]);
+    vi.mocked(searchLicensedBusinessAddresses).mockResolvedValue({
+      addresses: [address, otherAddress],
+      totalRecords: 2,
+    });
 
     const { result } = renderHook(() => usePremisesRestaurantNumbers(MUNICIPALITY_ID, PREMISES));
     await waitFor(() => expect(result.current.restaurantNumbers).toEqual(numbers));
@@ -89,10 +93,46 @@ describe('usePremisesRestaurantNumbers', () => {
     expect(result.current.match).toEqual({
       match: 'SEARCH',
       query: mockEnv.mockCompanyAddress.street,
-      addresses: [otherAddress],
+      addresses: [address, otherAddress],
+      totalRecords: 2,
     });
     expect(result.current.address).toBeUndefined();
     expect(result.current.restaurantNumbers).toEqual([]);
+  });
+
+  test('a fallback search with a single hit loads the restaurant numbers of that address', async () => {
+    vi.mocked(findPremisesAddress).mockResolvedValue({
+      match: 'SEARCH',
+      query: PREMISES.street,
+      addresses: [otherAddress],
+      totalRecords: 1,
+    });
+
+    const { result } = renderHook(() => usePremisesRestaurantNumbers(MUNICIPALITY_ID, PREMISES));
+    await waitFor(() => expect(result.current.restaurantNumbers).toEqual(numbers));
+
+    expect(result.current.address).toEqual(otherAddress);
+    expect(vi.mocked(getRestaurantNumbersWithAssignments).mock.calls).toEqual([[MUNICIPALITY_ID, otherAddress.id]]);
+  });
+
+  test('a free-text search with a single hit loads the restaurant numbers of that address', async () => {
+    vi.mocked(findPremisesAddress).mockResolvedValue({
+      match: 'SEARCH',
+      query: PREMISES.street,
+      addresses: [address, otherAddress],
+      totalRecords: 2,
+    });
+    vi.mocked(searchLicensedBusinessAddresses).mockResolvedValue({ addresses: [otherAddress], totalRecords: 1 });
+
+    const { result } = renderHook(() => usePremisesRestaurantNumbers(MUNICIPALITY_ID, PREMISES));
+    await settled(result);
+    expect(getRestaurantNumbersWithAssignments).not.toHaveBeenCalled();
+
+    act(() => result.current.search(mockEnv.mockCompanyAddress.street));
+    await waitFor(() => expect(result.current.restaurantNumbers).toEqual(numbers));
+
+    expect(result.current.address).toEqual(otherAddress);
+    expect(vi.mocked(getRestaurantNumbersWithAssignments).mock.calls).toEqual([[MUNICIPALITY_ID, otherAddress.id]]);
   });
 
   test('a blank search is ignored', async () => {
@@ -126,7 +166,12 @@ describe('usePremisesRestaurantNumbers', () => {
     let resolveFirst: (value: Awaited<ReturnType<typeof findPremisesAddress>>) => void = () => undefined;
     vi.mocked(findPremisesAddress)
       .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
-      .mockResolvedValueOnce({ match: 'SEARCH', query: mockEnv.mockCompanyAddress.street, addresses: [otherAddress] });
+      .mockResolvedValueOnce({
+        match: 'SEARCH',
+        query: mockEnv.mockCompanyAddress.street,
+        addresses: [otherAddress],
+        totalRecords: 1,
+      });
 
     const { result, rerender } = renderHook(({ premises }) => usePremisesRestaurantNumbers(MUNICIPALITY_ID, premises), {
       initialProps: { premises: PREMISES },
@@ -140,7 +185,10 @@ describe('usePremisesRestaurantNumbers', () => {
       match: 'SEARCH',
       query: mockEnv.mockCompanyAddress.street,
       addresses: [otherAddress],
+      totalRecords: 1,
     });
-    expect(getRestaurantNumbersWithAssignments).not.toHaveBeenCalled();
+    // Only the current search's single hit is loaded; the stale exact match never is.
+    await waitFor(() => expect(result.current.address).toEqual(otherAddress));
+    expect(vi.mocked(getRestaurantNumbersWithAssignments).mock.calls).toEqual([[MUNICIPALITY_ID, otherAddress.id]]);
   });
 });

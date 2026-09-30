@@ -27,9 +27,16 @@ export interface PremisesRestaurantNumbers {
 
 /**
  * Finds the premises address in LicensedBusiness and loads the restaurant numbers there, each with its
- * most recent assignment. An exact match loads the numbers straight away; search results wait for
- * the person to pick an address.
+ * most recent assignment. An exact match, or a search with a single hit, loads the numbers straight
+ * away; several search results wait for the person to pick an address.
  */
+/** The address a match settles on by itself: the exact match, or the only search result. */
+const soleAddress = (match: PremisesAddressMatch | undefined): Address | undefined => {
+  if (match?.match === 'EXACT') return match.address;
+  if (match?.match === 'SEARCH' && match.addresses.length === 1) return match.addresses[0];
+  return undefined;
+};
+
 export const usePremisesRestaurantNumbers = (
   municipalityId: string | undefined,
   premises: PremisesAddress | undefined
@@ -85,7 +92,8 @@ export const usePremisesRestaurantNumbers = (
       const found = await findPremisesAddress(municipalityId, { street, postalCode });
       if (!isCurrent()) return;
       setMatch(found);
-      if (found?.match === 'EXACT') await loadRestaurantNumbers(found.address, isCurrent);
+      const sole = soleAddress(found);
+      if (sole) await loadRestaurantNumbers(sole, isCurrent);
     }, 'Serveringsställen kunde inte hämtas');
   }, [municipalityId, street, postalCode, run, loadRestaurantNumbers]);
 
@@ -101,13 +109,18 @@ export const usePremisesRestaurantNumbers = (
       const trimmed = query.trim();
       if (!municipalityId || !trimmed) return;
       void run(async (isCurrent) => {
+        setMatch(undefined);
         setAddress(undefined);
         setRestaurantNumbers([]);
-        const addresses = await searchLicensedBusinessAddresses(municipalityId, trimmed);
-        if (isCurrent()) setMatch({ match: 'SEARCH', query: trimmed, addresses });
+        const result = await searchLicensedBusinessAddresses(municipalityId, trimmed);
+        if (!isCurrent()) return;
+        const found: PremisesAddressMatch = { match: 'SEARCH', query: trimmed, ...result };
+        setMatch(found);
+        const sole = soleAddress(found);
+        if (sole) await loadRestaurantNumbers(sole, isCurrent);
       }, 'Adressökningen misslyckades');
     },
-    [municipalityId, run]
+    [municipalityId, run, loadRestaurantNumbers]
   );
 
   return { loading, error, match, address, restaurantNumbers, selectAddress, search };

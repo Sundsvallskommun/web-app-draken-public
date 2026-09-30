@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { Address } from '@common/data-contracts/licensed-business/data-contracts';
 import type { RestaurantNumberWithAssignment } from '@supportmanagement/services/licensed-business-service';
 import type { PremisesAddress } from '@supportmanagement/services/support-premises-address-service';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -13,13 +14,13 @@ vi.mock('./use-premises-restaurant-numbers', () => ({ usePremisesRestaurantNumbe
 const MUNICIPALITY_ID = '2281';
 const PREMISES: PremisesAddress = { ...mockEnv.mockPremisesAddress, source: 'FORM' };
 
-const address = {
+const address: Address = {
   id: mockEnv.mockLicensedBusinessAddressId,
   streetAddress: mockEnv.mockPremisesAddress.street,
   postalCode: mockEnv.mockPremisesAddress.postalCode,
   postalArea: mockEnv.mockPremisesAddress.city,
 };
-const otherAddress = {
+const otherAddress: Address = {
   ...address,
   id: mockEnv.mockSecondaryLicensedBusinessAddressId,
   streetAddress: mockEnv.mockCompanyAddress.street,
@@ -68,10 +69,39 @@ test('shows the restaurant numbers at the matched address with their latest assi
   expect(screen.getByText(mockEnv.mockPremisesName)).toBeTruthy();
   expect(screen.getByText('Aktivt')).toBeTruthy();
   expect(screen.getByText(mockEnv.mockCompanyName, { exact: false })).toBeTruthy();
-  expect(screen.getByText('2026-01-01 – tills vidare · Aktiv')).toBeTruthy();
+  expect(screen.getByText('2026-01-01 – tills vidare · Pågående')).toBeTruthy();
   expect(screen.getByText('Ledigt')).toBeTruthy();
   expect(screen.getByText('Aldrig tilldelat')).toBeTruthy();
   expect(vi.mocked(usePremisesRestaurantNumbers).mock.calls[0]).toEqual([MUNICIPALITY_ID, PREMISES]);
+});
+
+test('assignment statuses are shown in Swedish, and an unknown one as sent', () => {
+  const withAssignmentStatus = (status: string, validTo?: string): RestaurantNumberWithAssignment => ({
+    ...activeNumber,
+    assignment: { ...activeNumber.assignment, validTo, status },
+  });
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(
+    state({
+      match: { match: 'EXACT', address },
+      address,
+      restaurantNumbers: [withAssignmentStatus('ENDED', '2026-06-30'), withAssignmentStatus('SUSPENDED')],
+    })
+  );
+
+  render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
+
+  expect(screen.getByText('2026-01-01 – 2026-06-30 · Avslutad')).toBeTruthy();
+  expect(screen.getByText('2026-01-01 – tills vidare · SUSPENDED')).toBeTruthy();
+});
+
+test('explains that the section only shows what is registered, and that creating happens at the decision', () => {
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(state({}));
+
+  render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
+
+  expect(screen.getByText(/Visar bara vad som redan finns registrerat på adressen/).textContent).toContain(
+    'skapas i beslutssteget'
+  );
 });
 
 test('says where the premises address came from', () => {
@@ -79,25 +109,107 @@ test('says where the premises address came from', () => {
 
   render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={{ ...PREMISES, source: 'OWNER' }} />);
 
-  expect(screen.getByText(/ärendeägarens adress/).textContent).toContain(mockEnv.mockPremisesAddress.street);
+  expect(screen.getByText(/^Ärendeägarens adress:/).textContent).toContain(mockEnv.mockPremisesAddress.street);
 });
 
-test('search results are listed for the person to pick one', () => {
+test('shows the premises address as information, with the postal code written with its space', () => {
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(state({}));
+  const postalCode = mockEnv.mockPremisesAddress.postalCode;
+
+  render(
+    <PremisesSection
+      municipalityId={MUNICIPALITY_ID}
+      premises={{ ...PREMISES, postalCode: postalCode.replace(/\s/g, '') }}
+    />
+  );
+
+  expect(screen.getByText(/^Adress i ansökan:/).textContent).toBe(
+    `Adress i ansökan: ${PREMISES.street}, ${postalCode} ${PREMISES.city}`
+  );
+});
+
+/** The premises street with another house number, e.g. Testgatan 11. */
+const onStreet = (houseNumber: number, postalCode: string = address.postalCode): Address => ({
+  ...address,
+  id: `${address.id}-${houseNumber}-${postalCode}`,
+  streetAddress: mockEnv.mockPremisesAddress.street.replace(/\d+$/, String(houseNumber)),
+  postalCode,
+});
+
+const searchMatch = (addresses: Address[], totalRecords = addresses.length) => ({
+  match: 'SEARCH' as const,
+  query: PREMISES.street,
+  addresses,
+  totalRecords,
+});
+
+const resultRows = () =>
+  Array.from(document.querySelectorAll('[data-cy="premises-address-results"] tbody tr')).map((row) =>
+    Array.from(row.querySelectorAll('td'))
+      .slice(0, 2)
+      .map((cell) => cell.textContent)
+      .join(' | ')
+  );
+
+const showButton = (result: Address) =>
+  screen.getByRole('button', {
+    name: `Visa serveringsställen på ${result.streetAddress}, ${result.postalCode} ${result.postalArea}`,
+  });
+
+test('search results are listed in a table for the person to pick one', () => {
   const selectAddress = vi.fn();
   vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(
-    state({ match: { match: 'SEARCH', query: PREMISES.street, addresses: [address, otherAddress] }, selectAddress })
+    state({ match: searchMatch([address, otherAddress]), selectAddress })
   );
 
   render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
-  fireEvent.click(screen.getByText(mockEnv.mockCompanyAddress.street, { exact: false }));
+  fireEvent.click(showButton(otherAddress));
 
   expect(selectAddress).toHaveBeenCalledWith(otherAddress);
+  expect(screen.getByText(/2 adresser för/)).toBeTruthy();
+});
+
+test('search results are sorted by street, house numbers as numbers, then postal code', () => {
+  // The company postal code sorts before the premises one (000 01 < 000 02).
+  const lower = mockEnv.mockCompanyAddress.postalCode;
+  const higher = address.postalCode;
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(
+    state({ match: searchMatch([onStreet(12, higher), onStreet(11), onStreet(2), onStreet(12, lower)]) })
+  );
+
+  render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
+
+  const street = (n: number) => onStreet(n).streetAddress;
+  expect(resultRows()).toEqual([
+    `${street(2)} | ${higher}`,
+    `${street(11)} | ${higher}`,
+    `${street(12)} | ${lower}`,
+    `${street(12)} | ${higher}`,
+  ]);
+});
+
+test('a result page smaller than the number of matches asks for a narrower search', () => {
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(state({ match: searchMatch([address, otherAddress], 14) }));
+
+  render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
+
+  expect(screen.getByText(/Visar 2 av 14 adresser/)).toBeTruthy();
+});
+
+test('the picked address stays marked in the results, with its restaurant numbers below', () => {
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(
+    state({ match: searchMatch([address, otherAddress]), address: otherAddress, restaurantNumbers: [activeNumber] })
+  );
+
+  render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
+
+  expect(screen.getByText('Vald')).toBeTruthy();
+  expect(showButton(address)).toBeTruthy();
+  expect(screen.getByText(mockEnv.mockRestaurantNumber)).toBeTruthy();
 });
 
 test('a search without hits says so', () => {
-  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(
-    state({ match: { match: 'SEARCH', query: PREMISES.street, addresses: [] } })
-  );
+  vi.mocked(usePremisesRestaurantNumbers).mockReturnValue(state({ match: searchMatch([]) }));
 
   render(<PremisesSection municipalityId={MUNICIPALITY_ID} premises={PREMISES} />);
 
