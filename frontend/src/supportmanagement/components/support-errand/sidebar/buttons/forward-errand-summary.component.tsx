@@ -45,8 +45,10 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
           <span className="font-bold text-small">Ärendetyp</span>
           <span className="text-small">
             {appConfig.features.useThreeLevelCategorization
-              ? `${getLabelCategory(errand!, metadata!)?.displayName || ''}${
-                  getLabelType(errand!)?.displayName ? ` - ${getLabelType(errand!)?.displayName}` : ''
+              ? `${getLabelCategory(errand!, metadata)?.displayName || ''}${
+                  getLabelType(errand!, metadata)?.displayName
+                    ? ` - ${getLabelType(errand!, metadata)?.displayName}`
+                    : ''
                 }`
               : metadata?.categories
                   ?.find((category) => category.name === errand?.category)

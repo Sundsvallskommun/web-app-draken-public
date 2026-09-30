@@ -43,6 +43,14 @@ vi.mock('@/services/message.service', async () => {
 
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 
+// setup.ts pins APPLICATION to KC; wrapping the lookup lets a test create an errand as another drake.
+vi.mock('@/services/support-errand.service', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/services/support-errand.service')>();
+  return { ...actual, getNewErrandDefaults: vi.fn(actual.getNewErrandDefaults) };
+});
+
+import { getNewErrandDefaults, NEW_ERRAND_DEFAULTS } from '@/services/support-errand.service';
+
 const SUPPORT_SERVICE = apiServiceName('supportmanagement');
 const CITIZEN_SERVICE = apiServiceName('citizen');
 const MUNICIPALITY_ID = mockMunicipalityId;
@@ -324,8 +332,7 @@ describe('SupportErrandController', () => {
       expect(config.data).toEqual({
         reporterUserId: mockAdUsername,
         assignedUserId: mockAdUsername,
-        // setup.ts pins APPLICATION to KC, which configures a classification but no labels.
-        classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' },
+        // setup.ts pins APPLICATION to KC, which configures labels only; the empty label metadata resolves none.
         labels: [],
         priority: 'MEDIUM',
         status: 'NEW',
@@ -334,6 +341,36 @@ describe('SupportErrandController', () => {
       });
       expect(res.statusCode).toBe(201);
       expect(res.body).toEqual({ id: mockSupportErrandId });
+    });
+
+    it('creates an errand for a label-based drake with default labels and no classification', async () => {
+      const { controller, api } = makeController();
+      const labelStructure = [
+        {
+          resourcePath: 'SALARY',
+          classification: 'CATEGORY',
+          labels: [
+            {
+              resourcePath: 'SALARY/UNCATEGORIZED',
+              classification: 'TYPE',
+              labels: [{ resourcePath: 'SALARY/UNCATEGORIZED/UNCATEGORIZED', classification: 'SUBTYPE' }],
+            },
+          ],
+        },
+      ];
+      api.get.mockResolvedValue({ data: { labelStructure }, message: 'success' });
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+      vi.mocked(getNewErrandDefaults).mockReturnValueOnce(NEW_ERRAND_DEFAULTS.LOP);
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+
+      const [config] = api.post.mock.calls[0];
+      expect(config.data).not.toHaveProperty('classification');
+      expect(config.data.labels.map((label: { resourcePath: string }) => label.resourcePath)).toEqual([
+        'SALARY',
+        'SALARY/UNCATEGORIZED',
+        'SALARY/UNCATEGORIZED/UNCATEGORIZED',
+      ]);
     });
 
     it('fetches the label metadata before creating the errand', async () => {

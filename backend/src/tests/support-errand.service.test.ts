@@ -12,6 +12,7 @@ import {
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
+  resolveErrandLabelPath,
   sanitizeQuery,
   stripErrandVersions,
   stripParameterVersions,
@@ -195,10 +196,19 @@ describe('support-errand.service', () => {
   });
 
   describe('getNewErrandDefaults', () => {
-    it('returns the classification configured for each drake', () => {
-      expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
-      expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
+    it('returns the classification configured for each classification-based drake', () => {
       expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
+      expect(getNewErrandDefaults('ROB')?.classification).toEqual({ category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' });
+    });
+
+    it('gives the label-based drakes labels and no classification', () => {
+      for (const application of ['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'SE']) {
+        expect(getNewErrandDefaults(application)).not.toHaveProperty('classification');
+        expect(getNewErrandDefaults(application)?.labels).toBeDefined();
+      }
+      expect(getNewErrandDefaults('LOP')).toEqual({
+        labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
+      });
     });
 
     it('covers every configured drake', () => {
@@ -206,7 +216,6 @@ describe('support-errand.service', () => {
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
       expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
     });
@@ -246,6 +255,47 @@ describe('support-errand.service', () => {
     it('returns an empty list when the category is missing or the structure is absent', () => {
       expect(resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toEqual([]);
       expect(resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toEqual([]);
+    });
+  });
+
+  describe('resolveErrandLabelPath', () => {
+    const silentCall = { ...label('KSK/KONTAKT_SUNDSVALL/SILENT_CALL'), id: 'silent-call' };
+    const kontaktSundsvall = { ...label('KSK/KONTAKT_SUNDSVALL', [silentCall]), id: 'kontakt-sundsvall' };
+    const ksk = { ...label('KSK', [kontaktSundsvall]), id: 'ksk' };
+    const tradeUnion = { ...label('TRADE_UNION'), id: 'trade-union' };
+    const structure = [tradeUnion, ksk];
+    // An errand stores copies of its labels, without the children of the tree.
+    const onErrand = (...labels: Label[]) => labels.map(errandLabel => ({ ...errandLabel, labels: undefined }));
+    const resourcePaths = (labels: Label[]) => labels.map(l => l.resourcePath);
+
+    it('returns the branch of the tree the labels sit on, top level first', () => {
+      expect(resourcePaths(resolveErrandLabelPath(onErrand(silentCall, ksk, kontaktSundsvall), structure))).toEqual([
+        'KSK',
+        'KSK/KONTAKT_SUNDSVALL',
+        'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
+      ]);
+      expect(resourcePaths(resolveErrandLabelPath(onErrand(tradeUnion), structure))).toEqual(['TRADE_UNION']);
+    });
+
+    it('fills in the ancestors when the errand only carries its most specific label', () => {
+      expect(resourcePaths(resolveErrandLabelPath(onErrand(silentCall), structure))).toEqual([
+        'KSK',
+        'KSK/KONTAKT_SUNDSVALL',
+        'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
+      ]);
+    });
+
+    it('matches on resource path when the id is not in the tree', () => {
+      expect(resourcePaths(resolveErrandLabelPath(onErrand({ ...kontaktSundsvall, id: 'an-old-id' }), structure))).toEqual([
+        'KSK',
+        'KSK/KONTAKT_SUNDSVALL',
+      ]);
+    });
+
+    it('returns an empty list when nothing matches or there is nothing to match', () => {
+      expect(resolveErrandLabelPath([{ ...label('UNKNOWN'), id: 'unknown' }], structure)).toEqual([]);
+      expect(resolveErrandLabelPath([], structure)).toEqual([]);
+      expect(resolveErrandLabelPath(onErrand(ksk), undefined)).toEqual([]);
     });
   });
 

@@ -100,6 +100,42 @@ export const getSelectableSubTypes = (
   return types.flatMap((type) => getSelectableLabels(type.labels));
 };
 
+/**
+ * Resolves the labels stored on an errand to their branch of the metadata label tree, from the top
+ * level down: index 0 is the first level (verksamhet), 1 the second and 2 the third.
+ *
+ * Levels are positions in the tree, not the labels' own `classification`: one namespace names its
+ * levels CATEGORY/TYPE/SUBTYPE, another DEPARTMENT/CATEGORY/TYPE. Labels are matched on id, with
+ * resource path as fallback, and never by splitting the path (see `isLabelPathDeprecated`). The
+ * branch to the deepest matching label is returned, ancestors included, so an errand that only
+ * carries its leaf label still resolves fully. Returns an empty list when nothing matches or the
+ * metadata is not loaded yet.
+ */
+export const resolveErrandLabelPath = (
+  errandLabels: Label[] | undefined,
+  metadata: SupportMetadata | undefined
+): Label[] => {
+  const errandLabelIds = new Set((errandLabels ?? []).map((label) => label.id).filter((id): id is string => !!id));
+  const errandLabelPaths = new Set(
+    (errandLabels ?? []).map((label) => label.resourcePath).filter((path): path is string => !!path)
+  );
+  const isOnErrand = (label: Label) =>
+    (!!label.id && errandLabelIds.has(label.id)) || (!!label.resourcePath && errandLabelPaths.has(label.resourcePath));
+
+  const findDeepestBranch = (levelLabels: Label[], ancestors: Label[]): Label[] =>
+    levelLabels.reduce<Label[]>((deepestBranch, label) => {
+      const branchToLabel = [...ancestors, label];
+      const branchBelow = findDeepestBranch(label.labels ?? [], branchToLabel);
+      const candidate = branchBelow.length > 0 ? branchBelow : isOnErrand(label) ? branchToLabel : [];
+      return candidate.length > deepestBranch.length ? candidate : deepestBranch;
+    }, []);
+
+  if (errandLabelIds.size === 0 && errandLabelPaths.size === 0) {
+    return [];
+  }
+  return findDeepestBranch(metadata?.labels?.labelStructure ?? [], []);
+};
+
 /** Display names of the given labels, de-duplicated and with missing names dropped. */
 export const getUniqueLabelDisplayNames = (labels: Label[]): string[] =>
   Array.from(new Set(labels.map((label) => label.displayName).filter((name): name is string => !!name)));

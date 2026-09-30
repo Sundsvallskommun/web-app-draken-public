@@ -7,6 +7,7 @@ import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
+  getLabelTypeOrCategory,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
   SupportErrand,
@@ -129,7 +130,8 @@ export const SupportErrandComponent: FC = () => {
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
-      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+      // Not awaited: getSupportNotesCount never rejects, it resolves to 0 on failure.
+      void getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
     }
@@ -168,7 +170,7 @@ export const SupportErrandComponent: FC = () => {
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                             {appConfig.features.useThreeLevelCategorization
-                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
+                              ? getLabelTypeOrCategory(supportErrand!, supportMetadata)?.displayName ??
                                 '(Ärendetyp saknas)'
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}

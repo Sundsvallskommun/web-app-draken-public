@@ -624,7 +624,7 @@ export class SupportErrandController {
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      classification: errandDefaults?.classification,
+      ...(errandDefaults?.classification && { classification: errandDefaults.classification }),
       labels: errandDefaults?.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, errandDefaults.labels) : [],
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,

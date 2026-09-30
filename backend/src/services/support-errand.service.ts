@@ -17,6 +17,7 @@ import {
   ContactChannel,
   Errand,
   ErrandAttachment,
+  ErrandLabel,
   Label,
   Parameter,
   Stakeholder as SupportStakeholder,
@@ -181,40 +182,27 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
 export type LabelSpec = { category: string; type: string; subType?: string };
 
 export interface NewErrandDefaults {
-  classification: { category: string; type: string };
+  classification?: { category: string; type: string };
   labels?: LabelSpec;
 }
 
-// Default classification and labels applied to a new empty errand, per application (drake).
-// Applications without a `labels` entry get no default labels.
+// Default classification or labels applied to a new empty errand, per application (drake).
+// Label-based applications classify errands with labels only and get no default classification.
+// Applications without an entry get neither.
 export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
-  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
+  KC: { labels: { category: 'KSK', type: 'KSK/NO_CASE_SPECIFIED' } },
   KA: {
-    classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
     labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
   },
   LOP: {
-    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
     labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
   },
-  IK: {
-    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
-    labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
-  },
+  IK: { labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' } },
   MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
   ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
-  SE: {
-    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-    labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-  },
-  BOU: {
-    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-    labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-  },
-  LOK: {
-    classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-    labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-  },
+  SE: { labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' } },
+  BOU: { labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' } },
+  LOK: { labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' } },
 };
 
 export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];
@@ -233,6 +221,35 @@ export const resolveDefaultLabels = (labelStructure: Label[] | undefined, names:
   const subTypeObject = typeObject.labels?.find(l => l.resourcePath === names.subType);
   if (!subTypeObject) return [categoryObject, typeObject];
   return [categoryObject, typeObject, subTypeObject];
+};
+
+/**
+ * Resolves the labels stored on an errand to their branch of the metadata label tree, from the top
+ * level down: index 0 is the first level (verksamhet), 1 the second and 2 the third.
+ *
+ * Levels are positions in the tree, not the labels' own `classification`: one namespace names its
+ * levels CATEGORY/TYPE/SUBTYPE, another DEPARTMENT/CATEGORY/TYPE. Labels are matched on id, with
+ * resource path as fallback, and never by splitting the path, since a resource path is not reliably
+ * a chain of the resource names above it. The branch to the deepest matching label is returned,
+ * ancestors included, so an errand that only carries its leaf label still resolves fully.
+ */
+export const resolveErrandLabelPath = (errandLabels: ErrandLabel[] | undefined, labelStructure: Label[] | undefined): Label[] => {
+  const ids = new Set(errandLabels?.map(errandLabel => errandLabel.id));
+  const resourcePaths = new Set(errandLabels?.map(errandLabel => errandLabel.resourcePath));
+  let deepestBranch: Label[] = [];
+
+  // Visits every label in the tree, keeping the longest branch that ends in a label the errand carries.
+  const visit = (label: Label, ancestors: Label[]) => {
+    const branch = [...ancestors, label];
+    const carriedByErrand = (!!label.id && ids.has(label.id)) || (!!label.resourcePath && resourcePaths.has(label.resourcePath));
+    if (carriedByErrand && branch.length > deepestBranch.length) {
+      deepestBranch = branch;
+    }
+    label.labels?.forEach(child => visit(child, branch));
+  };
+
+  labelStructure?.forEach(topLevelLabel => visit(topLevelLabel, []));
+  return deepestBranch;
 };
 
 /** Maps SupportManagement contact channels onto CaseData contact information, dropping unknown types. */
