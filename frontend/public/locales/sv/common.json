@@ -44,7 +44,10 @@
     "registeredBy": "Registrerad av",
     "priority": "Prioritet",
     "reminder": "Påminnelse",
-    "responsible": "Ansvarig"
+    "responsible": "Ansvarig",
+    "process": {
+      "label": "Process-fas"
+    }
   },
   "tabs": {
     "investigation": "Utredning",
