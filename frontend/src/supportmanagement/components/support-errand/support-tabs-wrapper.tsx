@@ -291,11 +291,13 @@ export const SupportTabsWrapper: FC<{
       messageTree,
       messages,
       municipalityId,
+      processActivities,
       props.setUnsavedFacility,
       supportAttachments,
       supportConversations,
       supportErrand,
       t,
+      tabsWithContent,
     ]
   );
 

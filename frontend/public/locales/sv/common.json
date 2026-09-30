@@ -196,7 +196,8 @@
         "text": "Ärendet kan inte gå vidare till uppföljning förrän ett beslut med utfall är sparat i beslutsfliken.",
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
-      }
+      },
+      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",

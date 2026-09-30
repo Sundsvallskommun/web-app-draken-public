@@ -26,12 +26,12 @@ class SupportDecisionFieldsDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(512)
+  @MaxLength(255)
   legalBasis?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(512)
+  @MaxLength(64)
   delegationReference?: string;
 
   @IsOptional()
@@ -133,26 +133,35 @@ export class SupportDecisionController {
 
   private async clearTerms(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
     const decision = await this.readDecision(ref, user);
-    for (const term of decision.terms ?? []) {
-      await this.apiService.delete<void>(
-        { url: `${this.decisionUrl(ref)}/terms/${term.id}`, baseURL: apiURL(this.SERVICE), propagateClientError: true },
-        user,
-      );
-    }
+
+    await Promise.all(
+      (decision.terms ?? []).map(term =>
+        this.apiService.delete<void>(
+          {
+            url: `${this.decisionUrl(ref)}/terms/${term.id}`,
+            baseURL: apiURL(this.SERVICE),
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
   }
 
   private async writeTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
-    for (const [index, text] of terms.entries()) {
-      await this.apiService.post<DecisionTerm, DecisionTerm>(
-        {
-          url: `${this.decisionUrl(ref)}/terms`,
-          baseURL: apiURL(this.SERVICE),
-          data: { sortOrder: index + 1, text },
-          propagateClientError: true,
-        },
-        user,
-      );
-    }
+    await Promise.all(
+      terms.map((text, index) =>
+        this.apiService.post<DecisionTerm, DecisionTerm>(
+          {
+            url: `${this.decisionUrl(ref)}/terms`,
+            baseURL: apiURL(this.SERVICE),
+            data: { sortOrder: index + 1, text },
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
   }
 
   private async replaceTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
@@ -239,6 +248,10 @@ export class SupportDecisionController {
     const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
     const { terms, ...decision } = data;
     const current = await this.readDecision(ref, req.user);
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be updated');
+    }
     const written = await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
 
     if (!terms) {
@@ -265,8 +278,13 @@ export class SupportDecisionController {
 
     const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
     const current = await this.readDecision(ref, req.user);
+
     if (current.status === COMPLETED_STATUS) {
       return response.status(200).send(current);
+    }
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be completed');
     }
 
     return response.status(200).send(await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user));

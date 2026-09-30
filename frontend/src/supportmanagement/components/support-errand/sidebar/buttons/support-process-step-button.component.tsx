@@ -170,8 +170,13 @@ export const SupportProcessStepButton: FC<{
   const signalIsRequired = (action: ProcessAction): boolean =>
     action.needsSignal && !action.completesDecision && !processIsOver;
 
-  const decisionOutcomeIsMissing = decisions !== undefined && !decisions.some((decision) => !!decision.outcome);
-  const draftDecision = decisions?.find(isSupportDecisionDraft);
+  const decisionsOnErrand = async (): Promise<Decision[] | undefined> => {
+    if (decisions) return decisions;
+
+    const read = await getSupportDecisions(supportErrand.id!, municipalityId).catch(() => undefined);
+    if (read) setDecisions(read);
+    return read;
+  };
 
   const sendSignal = (errandId: string, signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
 
@@ -220,13 +225,14 @@ export const SupportProcessStepButton: FC<{
     return (await getSupportErrandById(errandId, municipalityId)).errand;
   };
 
-  const run = async (action: ProcessAction) => {
+  const run = async (action: ProcessAction, decisionsInHand = decisions) => {
     setRunning(action.key);
     try {
       if (action.takesErrand) {
         await takeErrand();
       }
 
+      const draftDecision = decisionsInHand?.find(isSupportDecisionDraft);
       if (action.completesDecision && draftDecision?.id) {
         await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
       }
@@ -271,7 +277,7 @@ export const SupportProcessStepButton: FC<{
   const unsavedBehind = (action: ProcessAction): boolean =>
     !!action.unsavedTabKey && !!unsavedTabs[action.unsavedTabKey];
 
-  const ask = (action: ProcessAction) =>
+  const ask = (action: ProcessAction, decisionsInHand = decisions) =>
     confirm
       .showConfirmation(
         t(`common:process.actions.${action.key}.confirm_title`),
@@ -287,9 +293,7 @@ export const SupportProcessStepButton: FC<{
         t('common:process.actions.confirm_no'),
         'primary'
       )
-      .then((confirmed) => {
-        if (confirmed) run(action);
-      });
+      .then((confirmed) => (confirmed ? run(action, decisionsInHand) : undefined));
 
   const askForAnOutcomeFirst = () =>
     confirm
@@ -305,18 +309,28 @@ export const SupportProcessStepButton: FC<{
         if (confirmed) setActiveTabKey('decision');
       });
 
-  const start = (action: ProcessAction) => {
-    if (action.requiresDecisionOutcome && decisionOutcomeIsMissing) {
+  const start = async (action: ProcessAction) => {
+    if (!action.requiresDecisionOutcome) {
+      return action.confirms === false ? run(action) : ask(action);
+    }
+
+    const onErrand = await decisionsOnErrand();
+    if (!onErrand) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:process.actions.decision_unread'),
+        status: 'error',
+      });
+      return;
+    }
+
+    if (!onErrand.some((decision) => !!decision.outcome)) {
       askForAnOutcomeFirst();
       return;
     }
 
-    if (action.confirms === false) {
-      run(action);
-      return;
-    }
-
-    ask(action);
+    return action.confirms === false ? run(action, onErrand) : ask(action, onErrand);
   };
 
   const actionButton = (action: ProcessAction) => (
@@ -328,7 +342,7 @@ export const SupportProcessStepButton: FC<{
       rightIcon={action.icon}
       loading={running === action.key}
       disabled={disabled || !canEdit || !!running || (signalIsRequired(action) && !awaitingSignal?.name)}
-      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
+      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
     >
       {t(`common:process.actions.${action.key}.label`)}
