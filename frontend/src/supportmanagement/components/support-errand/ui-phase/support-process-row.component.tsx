@@ -1,16 +1,17 @@
 'use client';
 
 import { Badge, Icon, Label, ProgressStepper, Spinner } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { supportProcessErrorMessage } from '@supportmanagement/services/support-process-messages';
 import {
   getSupportErrandProcess,
   isSupportProcessCompleted,
   isSupportProcessFailed,
+  supportProcessActivityKey,
+  supportProcessName,
   supportProcessStatusKey,
   supportProcessStepIndex,
   supportProcessStepKeys,
-  supportProcessStepLabel,
 } from '@supportmanagement/services/support-process-service';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
@@ -27,22 +28,32 @@ const ProcessStateIcon: FC<{ failed: boolean; completed: boolean; working: boole
   return <Badge rounded counter={1} color="vattjom" inverted />;
 };
 
-/** The activity the process reports, for a step the six-step row does not cover. */
-const CurrentActivity: FC<{ failed: boolean; completed: boolean; working: boolean; label: string }> = ({
-  failed,
-  completed,
-  working,
-  label,
-}) => (
+/**
+ * The activity the process reports, for a step the six-step row does not cover. The model's own
+ * identifier is kept as the title: it is what the team that owns the process goes by, and it stays
+ * readable even when the activity is one the translations do not name.
+ */
+const CurrentActivity: FC<{
+  failed: boolean;
+  completed: boolean;
+  working: boolean;
+  label: string;
+  activityId?: string;
+}> = ({ failed, completed, working, label, activityId }) => (
   <>
     <ProcessStateIcon failed={failed} completed={completed} working={working} />
-    {label ? <span className="font-bold">{label}</span> : null}
+    {label ? (
+      <span className="font-bold" title={activityId} data-cy="process-activity">
+        {label}
+      </span>
+    ) : null}
   </>
 );
 
 export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const process = getSupportErrandProcess(supportErrand);
 
   if (!process) return null;
@@ -53,6 +64,10 @@ export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
   const errorMessage = supportProcessErrorMessage(process);
   const statusKey = supportProcessStatusKey(process.processStatus);
   const steps = supportProcessStepKeys().map((key) => t(key));
+  const activityKey = supportProcessActivityKey(process.currentActivityId);
+  const activityLabel = activityKey
+    ? t(activityKey)
+    : supportProcessName(process.processKey, supportMetadata) || t('common:process.activities.unknown');
   // A step counts as done when it comes before the current one, so a finished process is one step
   // past the last: then every step, the last one included, is ticked off.
   const currentStep = completed ? steps.length : stepIndex;
@@ -75,7 +90,8 @@ export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
           failed={failed}
           completed={completed}
           working={working}
-          label={supportProcessStepLabel(process)}
+          label={activityLabel}
+          activityId={process.currentActivityId}
         />
       )}
       <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>

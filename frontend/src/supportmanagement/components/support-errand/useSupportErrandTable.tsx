@@ -17,9 +17,10 @@ import {
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import {
   getSupportErrandProcess,
+  supportProcessActivityKey,
+  supportProcessName,
   supportProcessStepIndex,
   supportProcessStepKeys,
-  supportProcessStepLabel,
 } from '@supportmanagement/services/support-process-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
@@ -36,8 +37,10 @@ export const useSupportErrandTable = (statuses: Status[]) => {
     const process = getSupportErrandProcess(errand);
     if (!process) return '';
 
-    const stepKey = supportProcessStepKeys()[supportProcessStepIndex(process)];
-    return stepKey ? t(stepKey) : supportProcessStepLabel(process);
+    const activityKey =
+      supportProcessStepKeys()[supportProcessStepIndex(process)] ??
+      supportProcessActivityKey(process.currentActivityId);
+    return activityKey ? t(activityKey) : supportProcessName(process.processKey, supportMetadata);
   };
 
   const processLabels = appConfig.features.useProcess

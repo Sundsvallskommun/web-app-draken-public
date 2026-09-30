@@ -46,7 +46,7 @@
     "reminder": "Påminnelse",
     "responsible": "Ansvarig",
     "process": {
-      "label": "Process-fas"
+      "label": "Process"
     }
   },
   "tabs": {
@@ -149,7 +149,9 @@
       "step_taken_by": "{{step}} markerades som klar av {{by}}",
       "step_taken": "{{step}} markerades som klar",
       "stepped_by": "Ärendet stegades vidare av {{by}}",
-      "reported": "Processen rapporterade {{activity}}"
+      "reported": "Processen rapporterade {{activity}}",
+      "cancelled": "Processen avbröts",
+      "cancelled_by": "Processen avbröts av {{by}}"
     },
     "actions": {
       "confirm_no": "Nej",
@@ -204,6 +206,14 @@
       "concurrent_tasks": "Två steg i processen kördes samtidigt och slog ut varandra. Felet sitter i processmodellen.",
       "unknown": "Processen stannade på ett tekniskt fel.",
       "upstream_refused": "Processen fastnade mot tjänsten {{service}}, som svarade {{status}}. Det behöver rättas av teamet som förvaltar processen."
+    },
+    "activities": {
+      "create_decision": "Skapar beslut",
+      "check_decision": "Kontrollerar beslut",
+      "create_asset": "Skapar tillstånd",
+      "complete_process": "Avslutar processen",
+      "cancel_process": "Avbryter processen",
+      "unknown": "Tekniskt steg"
     }
   },
   "decision": {
