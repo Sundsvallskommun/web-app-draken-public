@@ -25,4 +25,12 @@ export const mockEnv = {
   mockPremisesAddress: { street: 'Testgatan 2', postalCode: '000 02', city: 'Teststad' },
   // A non-owner stakeholder's address, distinct from both of the above.
   mockContactAddress: { street: 'Testgatan 3', postalCode: '000 03', city: 'Teststad' },
+  // LicensedBusiness (serveringsställen) identifiers; they do not identify any real premises.
+  mockLicensedBusinessAddressId: '9ce333ec-a473-438b-8406-a71e957dc107',
+  mockSecondaryLicensedBusinessAddressId: '5d4c3b2a-1908-4f7e-8d6c-5b4a39281706',
+  mockRestaurantNumberId: '7b1d2c3e-4f50-4a61-8b72-9c83d4e5f601',
+  mockRestaurantNumber: '22810001',
+  mockSecondaryRestaurantNumber: '22810002',
+  mockAssignmentId: '3f2e1d0c-b9a8-4765-8432-10fedcba9876',
+  mockPremisesName: 'Testkrogen',
 } as const;
