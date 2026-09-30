@@ -234,23 +234,22 @@ export const resolveDefaultLabels = (labelStructure: Label[] | undefined, names:
  * ancestors included, so an errand that only carries its leaf label still resolves fully.
  */
 export const resolveErrandLabelPath = (errandLabels: ErrandLabel[] | undefined, labelStructure: Label[] | undefined): Label[] => {
-  const errandLabelIds = new Set((errandLabels ?? []).map(label => label.id).filter((id): id is string => !!id));
-  const errandLabelPaths = new Set((errandLabels ?? []).map(label => label.resourcePath).filter((path): path is string => !!path));
-  const isOnErrand = (label: Label) =>
-    (!!label.id && errandLabelIds.has(label.id)) || (!!label.resourcePath && errandLabelPaths.has(label.resourcePath));
+  const ids = new Set(errandLabels?.map(errandLabel => errandLabel.id));
+  const resourcePaths = new Set(errandLabels?.map(errandLabel => errandLabel.resourcePath));
+  let deepestBranch: Label[] = [];
 
-  const findDeepestBranch = (levelLabels: Label[], ancestors: Label[]): Label[] =>
-    levelLabels.reduce<Label[]>((deepestBranch, label) => {
-      const branchToLabel = [...ancestors, label];
-      const branchBelow = findDeepestBranch(label.labels ?? [], branchToLabel);
-      const candidate = branchBelow.length > 0 ? branchBelow : isOnErrand(label) ? branchToLabel : [];
-      return candidate.length > deepestBranch.length ? candidate : deepestBranch;
-    }, []);
+  // Visits every label in the tree, keeping the longest branch that ends in a label the errand carries.
+  const visit = (label: Label, ancestors: Label[]) => {
+    const branch = [...ancestors, label];
+    const carriedByErrand = (!!label.id && ids.has(label.id)) || (!!label.resourcePath && resourcePaths.has(label.resourcePath));
+    if (carriedByErrand && branch.length > deepestBranch.length) {
+      deepestBranch = branch;
+    }
+    label.labels?.forEach(child => visit(child, branch));
+  };
 
-  if (errandLabelIds.size === 0 && errandLabelPaths.size === 0) {
-    return [];
-  }
-  return findDeepestBranch(labelStructure ?? [], []);
+  labelStructure?.forEach(topLevelLabel => visit(topLevelLabel, []));
+  return deepestBranch;
 };
 
 /** Maps SupportManagement contact channels onto CaseData contact information, dropping unknown types. */

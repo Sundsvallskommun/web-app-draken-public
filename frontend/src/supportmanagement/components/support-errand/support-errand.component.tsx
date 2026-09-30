@@ -130,7 +130,8 @@ export const SupportErrandComponent: FC = () => {
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
-      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+      // Not awaited: getSupportNotesCount never rejects, it resolves to 0 on failure.
+      void getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
     }

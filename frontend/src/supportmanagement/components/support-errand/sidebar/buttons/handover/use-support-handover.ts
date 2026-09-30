@@ -110,7 +110,8 @@ export const useSupportHandover = ({
     // MEX is one of the targets, so the list is needed even without useHandover.
     const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
     if (shouldLoadTargets) {
-      getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
+      // Not awaited: getNamespaceConfigs never rejects, it resolves to an empty list on failure.
+      void getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
         setNamespaceConfigs(configs);
         setTargetsLoaded(true);
       });
@@ -180,7 +181,8 @@ export const useSupportHandover = ({
       if (cachedMetadata) {
         setTargetMetadata(cachedMetadata);
       } else {
-        getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
+        // Not awaited: getNamespaceMetadata never rejects, it resolves to an empty object on failure.
+        void getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
           setMetadataCache((prev) => ({ ...prev, [namespace]: metadata }));
           // Ignore a result that resolved after the user switched to another target.
           if (selectedNamespaceRef.current === namespace) {
