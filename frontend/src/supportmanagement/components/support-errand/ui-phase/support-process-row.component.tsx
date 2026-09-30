@@ -16,8 +16,6 @@ import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useSupportProcessPoller } from './use-support-process-poller';
-
 const ProcessStateIcon: FC<{ failed: boolean; completed: boolean; working: boolean }> = ({
   failed,
   completed,
@@ -42,11 +40,10 @@ const CurrentActivity: FC<{ failed: boolean; completed: boolean; working: boolea
   </>
 );
 
-export const SupportProcessRow = () => {
+export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const process = getSupportErrandProcess(supportErrand);
-  const working = useSupportProcessPoller();
 
   if (!process) return null;
 

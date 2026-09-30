@@ -7,7 +7,6 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
-import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { ArrowRight } from 'lucide-react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -55,8 +54,9 @@ export const SupportStartProcessButtonComponent: FC<{
     }
   };
 
-  // An errand driven by a process starts its handling from its own step, so the two ways in never compete.
-  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
+  // A drake that runs processes starts its handling from the process step, so the two ways in never
+  // compete - not even in the seconds before the process has reported itself.
+  if (appConfig.features.useProcess) {
     return null;
   }
 

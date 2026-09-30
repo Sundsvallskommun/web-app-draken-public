@@ -5,6 +5,7 @@ import { useSupportStore } from '@stores/index';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 
 import { SupportProcessRow } from './support-process-row.component';
+import { useSupportProcessPoller } from './use-support-process-poller';
 
 /**
  * Where the errand stands, as the process reports it. An errand without a process - one registered
@@ -13,10 +14,11 @@ import { SupportProcessRow } from './support-process-row.component';
  */
 export const SupportUiPhaseWrapper = () => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const working = useSupportProcessPoller();
 
   if (!appConfig.features.useProcess || !hasSupportErrandProcess(supportErrand)) {
     return null;
   }
 
-  return <SupportProcessRow />;
+  return <SupportProcessRow working={working} />;
 };
