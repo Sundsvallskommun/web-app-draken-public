@@ -179,9 +179,9 @@ export const SupportErrandDecisionTab: FC<{
     const written = {
       outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
       decidedByRole,
-      legalBasis: legalBasis || undefined,
-      delegationReference: delegationReference || undefined,
-      justification: justification || undefined,
+      legalBasis,
+      delegationReference,
+      justification,
       terms: writtenTerms,
     };
 

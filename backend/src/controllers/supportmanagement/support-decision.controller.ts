@@ -26,12 +26,12 @@ class SupportDecisionFieldsDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(512)
+  @MaxLength(255)
   legalBasis?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(512)
+  @MaxLength(64)
   delegationReference?: string;
 
   @IsOptional()
