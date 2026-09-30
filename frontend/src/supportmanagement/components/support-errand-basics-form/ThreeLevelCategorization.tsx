@@ -5,47 +5,57 @@ import {
   getLabelDisplayName,
   getSelectableLabels,
   getSelectableTypesForCategory,
+  resolveErrandLabelPath,
 } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-const CLASSIFICATIONS = {
-  CATEGORY: 'CATEGORY',
-  TYPE: 'TYPE',
-  SUBTYPE: 'SUBTYPE',
-} as const;
+/**
+ * The selected label at each level of the label tree: verksamhet, ärendetyp and undertyp. The levels
+ * are positions in the tree, not the labels' own classification, which differs between namespaces
+ * (CATEGORY/TYPE/SUBTYPE in one, DEPARTMENT/CATEGORY/TYPE in another).
+ */
+interface SelectedLabels {
+  category?: Label;
+  type?: Label;
+  subType?: Label;
+}
 
-type Classification = (typeof CLASSIFICATIONS)[keyof typeof CLASSIFICATIONS];
-type SelectedLabels = Partial<Record<Classification, Label>>;
+/** Form fields that back the validation of the selection. They are not rendered as inputs. */
+const CATEGORIZATION_FIELDS = ['category', 'type', 'subType'] as const;
 
-const getSelectedLabels = (errandLabels: Label[]): SelectedLabels => {
-  const category = errandLabels.find((l) => l.classification === CLASSIFICATIONS.CATEGORY);
-  const type = errandLabels.find((l) => l.classification === CLASSIFICATIONS.TYPE);
-  const subtype = errandLabels.find((l) => l.classification === CLASSIFICATIONS.SUBTYPE);
+const toSelectedLabels = ([category, type, subType]: Label[]): SelectedLabels => ({ category, type, subType });
 
-  const selected: SelectedLabels = {};
-  if (category) {
-    selected.CATEGORY = category;
-    if (type) {
-      selected.TYPE = type;
-      if (subtype) {
-        selected.SUBTYPE = subtype;
-      }
-    }
-  }
-  return selected;
-};
+const hasTypes = (category?: Label): boolean => (category?.labels?.length ?? 0) > 0;
 
-const getErrandLabelId = (errand: SupportErrand, classification: Classification): string | undefined =>
-  (errand.labels ?? []).find((l) => l.classification === classification)?.id;
+/**
+ * The form requires a category and a type, holding the resource paths of the selected labels. A
+ * verksamhet without ärendetyper is a complete classification on its own, so it then stands in for
+ * the type as well.
+ */
+const toFormValues = ({
+  category,
+  type,
+  subType,
+}: SelectedLabels): Record<(typeof CATEGORIZATION_FIELDS)[number], string> => ({
+  category: category?.resourcePath ?? '',
+  type: type?.resourcePath ?? (category && !hasTypes(category) ? category.resourcePath ?? '' : ''),
+  subType: subType?.resourcePath ?? '',
+});
+
+const isCompleteSelection = ({ category, type }: SelectedLabels): boolean =>
+  !!category && (!!type || !hasTypes(category));
+
+const toErrandLabels = ({ category, type, subType }: SelectedLabels): Label[] =>
+  [category, type, subType].filter((label): label is Label => !!label);
 
 export const ThreeLevelCategorization: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata;
 }> = ({ supportErrand, supportMetadata }) => {
-  const { getValues, setValue, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
+  const { register, resetField, setValue, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
   const { errors } = formState;
   const { t } = useTranslation();
 
@@ -59,15 +69,27 @@ export const ThreeLevelCategorization: FC<{
     [supportMetadata?.labels?.labelStructure]
   );
 
+  // The labels set on the errand, matched level by level against the label tree.
+  const errandSelection = useMemo(
+    () => toSelectedLabels(resolveErrandLabelPath(supportErrand?.labels, supportMetadata)),
+    [supportErrand?.labels, supportMetadata]
+  );
+
   useEffect(() => {
-    if (supportErrand) {
-      setSelectedLabels(getSelectedLabels(supportErrand.labels ?? []));
-    }
-  }, [supportErrand]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedLabels(errandSelection);
+    // A reset of the form drops field registrations, so the fields are registered again before
+    // resetField sets them to the errand's labels without marking the form as changed.
+    const formValues = toFormValues(errandSelection);
+    CATEGORIZATION_FIELDS.forEach((field) => {
+      register(field);
+      resetField(field, { defaultValue: formValues[field] });
+    });
+  }, [errandSelection, register, resetField]);
 
   const selectedCategory = useMemo(
-    () => categoriesList.find((category) => category.id === selectedLabels.CATEGORY?.id),
-    [categoriesList, selectedLabels.CATEGORY?.id]
+    () => categoriesList.find((category) => category.id === selectedLabels.category?.id),
+    [categoriesList, selectedLabels.category?.id]
   );
 
   const typesList = useMemo(
@@ -77,82 +99,48 @@ export const ThreeLevelCategorization: FC<{
   );
 
   // `categoriesList` and `typesList` deliberately keep every label, deprecated ones included, since
-  // they back the lookups further down (handleCategoryChange, findType, findSubType) which must keep
-  // resolving the classification of an existing errand. Only the option lists rendered below are
-  // filtered. The labels already set on the errand are kept even when deprecated, so an existing
-  // errand still shows its own classification; they can be deselected but not picked again.
+  // they back the lookups in handleCategoryChange and handleTypeSelect. Only the option lists rendered
+  // below are filtered. The labels already set on the errand are kept even when deprecated, so an
+  // existing errand still shows its own classification; they can be deselected but not picked again.
   const selectableCategories = useMemo(
-    () => getSelectableLabels(categoriesList, [selectedLabels.CATEGORY?.id]),
-    [categoriesList, selectedLabels.CATEGORY?.id]
+    () => getSelectableLabels(categoriesList, [selectedLabels.category?.id]),
+    [categoriesList, selectedLabels.category?.id]
   );
 
   const selectableTypes = useMemo(
-    () => getSelectableTypesForCategory(selectedCategory, [selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]),
-    [selectedCategory, selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]
+    () => getSelectableTypesForCategory(selectedCategory, [selectedLabels.type?.id, selectedLabels.subType?.id]),
+    [selectedCategory, selectedLabels.type?.id, selectedLabels.subType?.id]
   );
 
-  useEffect(() => {
-    if (selectedLabels.CATEGORY && selectedLabels.TYPE) {
-      const labels = [selectedLabels.CATEGORY, selectedLabels.TYPE];
-      if (selectedLabels.SUBTYPE) {
-        labels.push(selectedLabels.SUBTYPE);
-      }
-      setValue('labels', labels);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLabels]);
+  // Dirty state is judged against the errand's own labels, which resetField made the default values.
+  // Only a complete selection is written to `labels`, so an unfinished change never leaves the labels
+  // of the previous selection behind.
+  const selectLabels = (selection: SelectedLabels) => {
+    setSelectedLabels(selection);
+    const formValues = toFormValues(selection);
+    CATEGORIZATION_FIELDS.forEach((field) => setValue(field, formValues[field], { shouldDirty: true }));
+    setValue('labels', isCompleteSelection(selection) ? toErrandLabels(selection) : []);
+    trigger([...CATEGORIZATION_FIELDS]);
+  };
 
   const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
-    setSelectedLabels({ CATEGORY: selectedCategory! });
-    setValue('category', selectedCategory?.resourcePath ?? '', { shouldDirty: true });
-    setValue('type', '' as any, { shouldDirty: true });
-    setValue('subType', '' as any, { shouldDirty: true });
-    trigger(['category', 'type', 'subType']);
-  };
-
-  const findType = (value: string): Label | undefined => {
-    if (typesList.length > 0) {
-      return (
-        typesList.find((type) => type.labels?.some((label) => label.id === value)) ||
-        typesList.find((type) => type.id === value)
-      );
-    }
-    return supportErrand.labels?.find((l) => l.classification === CLASSIFICATIONS.TYPE && l.id === value);
-  };
-
-  const findSubType = (value: string, type?: Label): Label | undefined => {
-    if (type?.labels?.length) {
-      return type.labels.find((label) => label.id === value);
-    }
-    return supportErrand.labels?.find((l) => l.classification === CLASSIFICATIONS.SUBTYPE && l.id === value);
+    selectLabels({ category: categoriesList.find((category) => category.id === e.currentTarget.value) });
   };
 
   const handleTypeSelect = (e: { target: { value: string | string[] } }) => {
     const value = Array.isArray(e.target.value) ? e.target.value[0] : e.target.value;
-    const type = findType(value);
+    const type =
+      typesList.find((typeLabel) => typeLabel.labels?.some((label) => label.id === value)) ||
+      typesList.find((typeLabel) => typeLabel.id === value);
     if (!type) return;
 
-    const subType = findSubType(value, type);
-    const isTypeDirty = getErrandLabelId(supportErrand, CLASSIFICATIONS.TYPE) !== type.id;
-
-    if (subType) {
-      setSelectedLabels((prev) => ({ ...prev, TYPE: type, SUBTYPE: subType }));
-      const isSubTypeDirty = getErrandLabelId(supportErrand, CLASSIFICATIONS.SUBTYPE) !== subType.id;
-      setValue('type', type.resourcePath ?? '', { shouldDirty: isTypeDirty });
-      setValue('subType', subType.resourcePath ?? '', { shouldDirty: isSubTypeDirty });
-      trigger(['type', 'subType']);
-    } else {
-      setSelectedLabels((prev) => ({ ...prev, TYPE: type, SUBTYPE: undefined }));
-      setValue('type', type.resourcePath ?? '', { shouldDirty: isTypeDirty });
-      trigger('type');
-    }
+    selectLabels({ category: selectedCategory, type, subType: type.labels?.find((label) => label.id === value) });
   };
 
-  const typePlaceholder = getValues().subType
-    ? getLabelDisplayName(selectedLabels.SUBTYPE, supportMetadata)
-    : getValues().type
-    ? getLabelDisplayName(selectedLabels.TYPE, supportMetadata)
+  const typePlaceholder = selectedLabels.subType
+    ? getLabelDisplayName(selectedLabels.subType, supportMetadata)
+    : selectedLabels.type
+    ? getLabelDisplayName(selectedLabels.type, supportMetadata)
     : 'Välj ärendetyp';
 
   return (
@@ -167,7 +155,7 @@ export const ThreeLevelCategorization: FC<{
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
-            value={selectedLabels.CATEGORY?.id}
+            value={selectedLabels.category?.id}
             onChange={handleCategoryChange}
           >
             <Select.Option value="">Välj verksamhet</Select.Option>
@@ -194,13 +182,13 @@ export const ThreeLevelCategorization: FC<{
           </FormLabel>
 
           <Combobox
-            disabled={isSupportErrandLocked(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand) || (!!selectedCategory && !hasTypes(selectedCategory))}
             data-cy="labelType-wrapper"
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
             placeholder={typePlaceholder}
-            value={selectedLabels.SUBTYPE?.id ?? selectedLabels.TYPE?.id ?? ''}
+            value={selectedLabels.subType?.id ?? selectedLabels.type?.id ?? ''}
             onSelect={handleTypeSelect}
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />

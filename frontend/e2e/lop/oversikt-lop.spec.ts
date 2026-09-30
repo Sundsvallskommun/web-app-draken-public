@@ -50,6 +50,38 @@ test.describe('Overview errands lop', () => {
     );
   });
 
+  test('shows labels, or the classification of an errand that has no labels', async ({ page, mockRoute }) => {
+    // Backward compatibility: errands registered before the switch to labels only have a classification.
+    const classification = { category: 'ELECTRICITY_SERVANET', type: 'ELECTRICITY_SERVANET.EMPLOYMENT' };
+    const labelErrand = { ...mockSupportErrands.content[0], classification };
+    const classificationErrand = {
+      ...mockSupportErrands.content[0],
+      id: 'e2e-classification-errand',
+      errandNumber: 'LOP-CLASSIFICATION',
+      labels: [],
+      classification,
+    };
+    await mockRoute(
+      '**/supporterrands/2281?page=0*',
+      { ...mockSupportErrands, content: [labelErrand, classificationErrand] },
+      { method: 'GET' }
+    );
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supporterrands/2281?page=0') && resp.status() === 200),
+      page.reload(),
+    ]);
+
+    const rows = page.locator('[data-cy="main-table"] .sk-table-tbody-tr');
+    const labelRow = rows.filter({ hasText: labelErrand.errandNumber });
+    await expect(labelRow).toContainText('Pension');
+    await expect(labelRow).toContainText('Verksamhetsförändringar');
+    await expect(labelRow).not.toContainText('Elnät/Servanet');
+
+    const classificationRow = rows.filter({ hasText: classificationErrand.errandNumber });
+    await expect(classificationRow).toContainText('Elnät/Servanet');
+    await expect(classificationRow).toContainText('Anställning');
+  });
+
   test('displays the correct table header', async ({ page }) => {
     const headerRow = page.locator('[data-cy="main-table"] .sk-table-thead-tr').first();
     await expect(headerRow.locator('th').nth(0).locator('span').first()).toHaveText('Status');

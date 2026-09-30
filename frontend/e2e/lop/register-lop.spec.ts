@@ -108,8 +108,7 @@ test.describe('register page', () => {
     const request = response.request();
     const requestBody = request.postDataJSON();
 
-    expect(requestBody.classification.category).toBe(labelCat!.resourcePath!);
-    expect(requestBody.classification.type).toBe(labelType!.resourcePath!);
+    expect(requestBody).not.toHaveProperty('classification');
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelCat!.resourcePath!);
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelType!.resourcePath!);
     expect(requestBody.channel).toBe('PHONE');
@@ -118,10 +117,6 @@ test.describe('register page', () => {
     expect(requestBody).toEqual({
       assignedUserId: mockEmptySupportErrand.assignedUserId,
       businessRelated: false,
-      classification: {
-        category: labelCat?.resourcePath,
-        type: labelType?.resourcePath,
-      },
       externalTags: mockEmptySupportErrand.externalTags,
       labels: [labelCat, labelType],
       channel: 'PHONE',

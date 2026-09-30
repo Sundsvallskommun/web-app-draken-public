@@ -30,14 +30,13 @@ export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
  *
  * These namespaces still use TWO-level categorization (category/type) in the handover modal:
  *   - CONTACTCENTER     (Kontaktcenter)
- *   - CONTACTSUNDSVALL  (Kontakt Sundsvall)
  *   - ROB
  * Every other target namespace uses THREE-level categorization (labels).
  *
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
  */
-const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
+const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'ROB'];
 
 const defaultIncludes = (): HandoverInclude => ({
   stakeholders: true,
@@ -222,14 +221,13 @@ export const useSupportHandover = ({
 
   const buildRequest = useCallback(
     (target: NamespaceConfig): HandoverErrandRequest => {
-      // Three-level targets classify via the label tree. Mirror how a three-level errand is saved:
-      // classification holds the category/type *resourcePaths*, and labels holds the label UUIDs
-      // (category + type + optional subtype). Both are required by the backend.
-      const categoryLabel = threeLevelLabels.find((label) => label.classification === 'CATEGORY');
-      const typeLabel = threeLevelLabels.find((label) => label.classification === 'TYPE');
+      // Three-level targets classify via the label tree: labels holds the UUIDs of the chosen labels,
+      // top level first. The backend also requires a classification, which holds the resource paths
+      // of the first two levels (the levels are positions, whatever the target names them).
+      const [firstLevelLabel, secondLevelLabel] = threeLevelLabels;
       const classification = targetUsesLabels
-        ? categoryLabel && typeLabel
-          ? { category: categoryLabel.resourcePath, type: typeLabel.resourcePath }
+        ? firstLevelLabel
+          ? { category: firstLevelLabel.resourcePath, type: secondLevelLabel?.resourcePath }
           : undefined
         : mappingCategory || mappingType
         ? { category: mappingCategory || undefined, type: mappingType || undefined }
@@ -290,8 +288,8 @@ export const useSupportHandover = ({
   const requiredMappingsAnswered = useMemo(() => {
     const mappingRequired = preview?.mappingRequired;
     if (targetUsesLabels) {
-      // Three-level requires at least category + type (the label tree sets them together).
-      if (threeLevelLabels.length < 2) {
+      // The three-level categorization only reports complete selections, so any labels will do.
+      if (threeLevelLabels.length === 0) {
         return false;
       }
     } else {
