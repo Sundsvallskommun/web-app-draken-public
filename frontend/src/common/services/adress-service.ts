@@ -2,7 +2,7 @@ import { ApiResponse, apiService, Data } from '@common/services/api-service';
 import { formatOrgNr, luhnCheck, OrgNumberFormat } from '@common/services/helper-service';
 import { CLegalEntity2WithId } from 'src/data-contracts/backend/data-contracts';
 
-export interface CitizenAddressData extends Data {
+interface CitizenAddressData extends Data {
   personId: string;
   givenname: string;
   lastname: string;
@@ -122,7 +122,7 @@ interface EmployedPersonData {
   companyId: number;
 }
 
-export const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
+const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
   luhnCheck(ssn) && ((ssn.length === 12 && parseInt(ssn[4]) < 2) || (ssn.length === 10 && parseInt(ssn[2]) < 2));
 
 export const isValidOrgNumber: (ssn: string) => boolean = (ssn) => {
@@ -165,9 +165,7 @@ export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> =
         });
 };
 
-export const isValidADUsername: (username: string) => boolean = (username) => username?.length === 8;
-
-export const parseAdministrationInfo: (orgTree: string) => {
+const parseAdministrationInfo: (orgTree: string) => {
   administrationCode: string;
   administrationName: string;
 } = (orgTree) => {
@@ -277,4 +275,23 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult | unde
             } as AddressResult;
           }
         });
+};
+
+const getOrganizationPartyId = async (orgNr: string): Promise<string | undefined> => {
+  try {
+    const res = await apiService.post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>('organization', { orgNr });
+    return res.data.data.partyId;
+  } catch (error) {
+    console.error('Failed to fetch organization partyId:', error);
+    return undefined;
+  }
+};
+
+// A stakeholder's partyId is its personId when it was looked up. Organizations added by hand only
+// carry an organization number, so their partyId has to be fetched from the party register.
+export const resolvePartyId = async (personId?: string, organizationNumber?: string): Promise<string | undefined> => {
+  if (personId) {
+    return personId;
+  }
+  return organizationNumber ? getOrganizationPartyId(organizationNumber) : undefined;
 };

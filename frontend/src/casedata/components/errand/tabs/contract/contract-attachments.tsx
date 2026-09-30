@@ -26,6 +26,7 @@ export const ContractAttachments: FC<{
   const [openingId, setOpeningId] = useState<string | undefined>(undefined);
 
   const contractId = existingContract?.contractId ?? '';
+  const errandId = errand?.id?.toString();
 
   // Attachment content is no longer part of the contract payload, so the list is built from the
   // metadata the contract already carries and the bytes are fetched only when a file is opened.
@@ -69,7 +70,7 @@ export const ContractAttachments: FC<{
       .showConfirmation('Ta bort signerat avtal?', 'Vill du ta bort denna bilaga?', 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          deleteSignedContractAttachment(municipalityId, contractId, Number.parseInt(file.id))
+          deleteSignedContractAttachment(municipalityId, contractId, Number.parseInt(file.id), errandId)
             .then(refreshErrand)
             .then(() => {
               toastMessage(
@@ -138,7 +139,7 @@ export const ContractAttachments: FC<{
           maxFileSizeMB={MAX_FILE_SIZE_MB}
           onChange={(e) => {
             const uploads = e.target.value;
-            saveSignedContractAttachment(municipalityId, contractId, uploads, '')
+            saveSignedContractAttachment(municipalityId, contractId, uploads, '', errandId)
               .then((res) => {
                 if (!res) {
                   throw new Error('Error saving attachment');

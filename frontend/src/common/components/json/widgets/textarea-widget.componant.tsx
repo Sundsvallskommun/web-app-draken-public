@@ -1,19 +1,11 @@
 'use client';
-import TextEditor from '@common/components/dynamic-text-editor';
+
 import type { WidgetProps } from '@rjsf/utils';
 
-export function TextareaWidget({ value, onChange, options }: WidgetProps) {
-  const customClassName = (options as any)?.className || 'case-description-editor w-full max-w-[40rem] h-[10rem]';
-  const markupValue = typeof value === 'string' ? value : '';
+import { RjsfTextEditor } from './rjsf-text-editor.componant';
 
+export function TextareaWidget(props: WidgetProps) {
   return (
-    <TextEditor
-      className={customClassName}
-      disableToolbar
-      value={{ markup: markupValue }}
-      onChange={(event) => {
-        onChange(event.target.value.markup ?? '');
-      }}
-    />
+    <RjsfTextEditor {...props} defaultClassName="case-description-editor max-w-[40rem] h-[10rem]" disableToolbar />
   );
 }

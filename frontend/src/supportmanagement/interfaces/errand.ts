@@ -66,19 +66,3 @@ export interface RegisterSupportErrandFormModel {
   facilities?: [];
   parameters?: CParameter[];
 }
-
-export interface UpdateSupportErrandFormModel {
-  id: string;
-  caseId: string;
-  category: string;
-  type: string;
-  contactReason: string;
-  contactReasonDescription: string;
-  businessRelated: boolean;
-  municipalityId: string;
-  channel: string;
-  description: string;
-  attachments: { file: File | undefined }[];
-  newAttachment: FileList | undefined;
-  facilities?: [];
-}

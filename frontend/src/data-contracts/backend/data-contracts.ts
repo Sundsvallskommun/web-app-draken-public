@@ -156,30 +156,6 @@ export interface CPageBillingRecord {
   empty?: boolean;
 }
 
-export interface ExtraParametersDto {
-  "application.reason"?: string;
-  "application.role"?: ExtraParametersDtoApplicationRoleEnum;
-  "application.applicant.capacity"?: string;
-  "application.applicant.testimonial"?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
-  "application.applicant.signingAbility"?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
-  "disability.aid"?: string;
-  "disability.walkingAbility"?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
-  "disability.walkingDistance.beforeRest"?: string;
-  "disability.walkingDistance.max"?: string;
-  "disability.duration"?: string;
-  "disability.canBeAloneWhileParking"?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
-  "disability.canBeAloneWhileParking.note"?: string;
-  "consent.contact.doctor"?: ExtraParametersDtoConsentContactDoctorEnum;
-  "consent.view.transportationServiceDetails"?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
-  "application.lostPermit.policeReportNumber"?: string;
-  "application.renewal.changedCircumstances"?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
-  "application.renewal.expirationDate"?: string;
-  "application.renewal.medicalConfirmationRequired"?: string;
-  "artefact.permit.number"?: string;
-  "artefact.permit.status"?: string;
-  "application.supplement.dueDate"?: string;
-}
-
 export interface Attachment {
   id?: number;
   category: string;
@@ -193,7 +169,6 @@ export interface Attachment {
   extraParameters?: any;
   municipalityId?: string;
   errandId?: number;
-  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
   decisionId?: number;
   namespace?: string;
   channel?: AttachmentChannelEnum;
@@ -235,11 +210,6 @@ export interface StatusDTO {
   statusType: string;
   description: string;
   created: string;
-}
-
-export interface ContactInfo {
-  contactType: string;
-  value: string;
 }
 
 export interface CAddressDTO {
@@ -347,9 +317,9 @@ export interface CasedataNotificationDto {
   description: string;
   content?: string;
   expires?: string;
-  acknowledged?: string;
-  globalAcknowledged?: string;
-  errandId: string;
+  acknowledged?: boolean;
+  globalAcknowledged?: boolean;
+  errandId: number;
   errandNumber?: string;
 }
 
@@ -546,6 +516,25 @@ export interface ForwardFormDto {
   messageBodyPlaintext: string;
 }
 
+export interface HandoverPreviewDto {
+  targetNamespace: string;
+  targetMunicipalityId: string;
+}
+
+export interface HandoverTargetDto {
+  namespace: string;
+  municipalityId?: string;
+}
+
+export interface HandoverErrandDto {
+  target: HandoverTargetDto;
+  mapping: object;
+  overrides?: object;
+  include?: object;
+  sourceHandling?: object;
+  message?: string;
+}
+
 export interface SupportMessageDto {
   /** @minLength 1 */
   contactMeans: string;
@@ -635,47 +624,6 @@ export enum CBillingRecordStatusEnum {
   APPROVED = "APPROVED",
   INVOICED = "INVOICED",
   REJECTED = "REJECTED",
-}
-
-export enum ExtraParametersDtoApplicationRoleEnum {
-  SELF = "SELF",
-  GUARDIAN = "GUARDIAN",
-  CUSTODIAN = "CUSTODIAN",
-}
-
-export enum ExtraParametersDtoApplicationApplicantTestimonialEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoApplicationApplicantSigningAbilityEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoDisabilityWalkingAbilityEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoConsentContactDoctorEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
-  Y = "Y",
-  N = "N",
 }
 
 export enum AttachmentChannelEnum {

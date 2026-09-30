@@ -36,25 +36,6 @@ export const deleteErrandNote: (
   });
 };
 
-export const signErrandNote: (
-  municipalityId: string,
-  errandId: string,
-  note: CreateErrandNoteDto
-) => Promise<AxiosResponse<boolean>> = (municipalityId, errandId, note) => {
-  if (!note || !note.id) {
-    console.error('No note id found, cannot sign. Returning.');
-  }
-  if (!note.extraParameters) {
-    note.extraParameters = {};
-  }
-  note.extraParameters['signed'] = 'true';
-  const url = `casedata/${municipalityId}/errands/${errandId}/notes/${note.id}`;
-  return apiService.patch<boolean, CreateErrandNoteDto>(url, note).catch((e) => {
-    console.error('Something went wrong when signing note: ', note.id);
-    throw e;
-  });
-};
-
 export const fetchNote: (
   municipalityId: string,
   errandId: number,

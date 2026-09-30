@@ -14,9 +14,7 @@ const yupSuspendForm = yup.object().shape({
   comment: yup.string(),
 });
 
-export type RECIPIENT = 'DEPARTMENT' | 'EMAIL';
-
-export interface SuspendFormProps {
+interface SuspendFormProps {
   date: string;
   comment: string;
 }

@@ -11,16 +11,21 @@ import { getLastUpdatedAdministrator } from './stakeholder.service';
 const CASEDATA_SERVICE = apiServiceName('case-data');
 const CONTRACT_SERVICE = apiServiceName('contract');
 
-export const validateContractAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (
+/** `expectedContractId`, when set, additionally requires the errand to own that contract. */
+export const validateContractAction: (municipalityId: string, errandId: string, user: User, expectedContractId?: string) => Promise<boolean> = async (
   municipalityId,
   errandId,
   user,
+  expectedContractId,
 ) => {
   let allowed = false;
   const apiService = new ApiService();
   const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(CASEDATA_SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
+  if (expectedContractId && existingErrand.data.extraParameters?.find(p => p.key === 'contractId')?.values?.[0] !== expectedContractId) {
+    return false;
+  }
   if (existingErrand.data.extraParameters?.find(p => p.key === 'process.displayPhase')?.values?.[0] === UiPhase.registrerad) {
     allowed = true;
   }

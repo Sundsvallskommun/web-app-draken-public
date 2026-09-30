@@ -7,8 +7,12 @@
     "src/**/*.{ts,tsx}",
     "e2e/**/*.{ts,tsx}"
   ],
+  "exclude": [
+    "enumMembers"
+  ],
   "ignore": [
-    "src/data-contracts/**"
+    "src/data-contracts/**",
+    "src/common/data-contracts/**"
   ],
   "ignoreDependencies": [
     "sharp",

@@ -11,7 +11,7 @@ import { notificationNational_UppgiftFieldTemplate } from './paratransit-notific
 
 // Nyckeln som fritextfältet läser/sparar. E-tjänsten skickar in restexten på denna
 // extraParameter-nyckel. Måste matcha exakt det e-tjänsten skickar.
-export const NATIONAL_ESERVICE_JOURNEY_FIELD = 'personal.journeyText';
+const NATIONAL_ESERVICE_JOURNEY_FIELD = 'personal.journeyText';
 
 // Variant av den nationella riksfärdtjänstmallen (Ansökan riksfärdtjänst) som används
 // när ärendet kommit in via e-tjänsten (Channels.ESERVICE). E-tjänsten saknar stöd för

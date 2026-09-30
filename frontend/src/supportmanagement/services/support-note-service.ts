@@ -2,7 +2,7 @@ import { apiService } from '@common/services/api-service';
 
 import { ensureErrandSubscription } from './support-subscription-service';
 
-export interface SupportNoteDto {
+interface SupportNoteDto {
   context: string;
   role?: string;
   partyId: string;

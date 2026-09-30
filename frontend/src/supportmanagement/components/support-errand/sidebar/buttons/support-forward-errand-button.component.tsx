@@ -3,7 +3,7 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -51,7 +51,11 @@ const yupForwardForm = yup.object().shape(
         },
         then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
       }),
-    department: yup.string().required('Verksamhet är obligatoriskt'),
+    department: yup.string().when('recipient', {
+      is: 'DEPARTMENT',
+      then: (schema) => schema.required('Verksamhet är obligatoriskt'),
+      otherwise: (schema) => schema.optional(),
+    }),
     message: yup.string(),
     messageBodyPlaintext: yup.string().when('recipient', {
       is: 'EMAIL',
@@ -77,6 +81,14 @@ const yupForwardForm = yup.object().shape(
     ['messageBodyPlaintext', 'recipient'],
   ]
 );
+
+const getDefaultValues = (): ForwardFormProps => ({
+  recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
+  emails: [],
+  department: '',
+  message: '',
+  messageBodyPlaintext: '',
+});
 
 export interface ForwardFormProps {
   recipient: string;
@@ -118,20 +130,13 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     formState: { errors },
   } = useForm<ForwardFormProps>({
     resolver: yupResolver(yupForwardForm) as any,
-    defaultValues: {
-      recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
-      emails: [],
-      department: 'SBK_MEX',
-      message: '',
-      messageBodyPlaintext: '',
-    },
+    defaultValues: getDefaultValues(),
     mode: 'onChange',
   });
 
   const { recipient, message, messageBodyPlaintext, emails, department } = watch();
 
-  // Routing: under "Draken" the target dropdown lists MEX (the existing casedata forward) plus the
-  // supportmanagement namespaces. MEX keeps the old flow; any other namespace uses the new handover.
+  // Routing: MEX uses the casedata forward flow, every other namespace uses the handover.
   const handoverTarget =
     appConfig.features.useHandover && recipient === 'DEPARTMENT' && department !== MEX_DEPARTMENT_VALUE
       ? handover.handoverTargets.find((target) => target.namespace === department)
@@ -236,13 +241,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const handleModal = () => {
     setShowModal(!showModal);
     handover.reset();
-    reset({
-      recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
-      emails: [],
-      department: 'SBK_MEX',
-      message: '',
-      messageBodyPlaintext: '',
-    });
+    reset(getDefaultValues());
   };
 
   if (!appConfig.features.useEscalation) {
@@ -331,14 +330,18 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                     aria-label="Välj verksamhet"
                     {...register('department')}
                   >
-                    <Select.Option value="SBK_MEX">Mark och exploatering (MEX)</Select.Option>
-                    {appConfig.features.useHandover &&
-                      handover.handoverTargets.map((target) => (
-                        <Select.Option key={target.namespace} value={target.namespace}>
-                          {target.displayName || target.namespace}
-                        </Select.Option>
-                      ))}
+                    <Select.Option value="">Välj verksamhet</Select.Option>
+                    {handover.handoverTargets.map((target) => (
+                      <Select.Option key={target.namespace} value={target.namespace}>
+                        {target.displayName || target.namespace}
+                      </Select.Option>
+                    ))}
                   </Select>
+                  {handover.targetsLoaded && handover.handoverTargets.length === 0 && (
+                    <small className="text-small" data-cy="handover-no-targets">
+                      Inga verksamheter är konfigurerade för överlämning. Använd e-post.
+                    </small>
+                  )}
                 </FormControl>
               ) : null}
               {recipient !== '' && <Divider />}

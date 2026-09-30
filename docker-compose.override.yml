@@ -2,8 +2,6 @@ version: '3'
 services:
   backend:
     environment:
-      # Required
-      SUPPORTMANAGEMENT_TEST_EMAIL: ${SUPPORTMANAGEMENT_TEST_EMAIL:?err}
       # Groups that are allowed to login
       AUTHORIZED_GROUPS: ${AUTHORIZED_GROUPS:?err}
       ADMIN_GROUP: ${ADMIN_GROUP:?err}
@@ -23,9 +21,7 @@ services:
       SAML_CALLBACK_URL: ${SAML_CALLBACK_URL:?err}
       SAML_LOGOUT_CALLBACK_URL: ${SAML_LOGOUT_CALLBACK_URL:?err}
       SAML_FAILURE_REDIRECT: ${SAML_FAILURE_REDIRECT:?err}
-      SAML_FAILURE_REDIRECT_MESSAGE: ${SAML_FAILURE_REDIRECT_MESSAGE:?err}
       SAML_SUCCESS_REDIRECT: ${SAML_SUCCESS_REDIRECT:?err}
-      SAML_LOGOUT_REDIRECT: ${SAML_LOGOUT_REDIRECT:?err}
       # IDP entry and cert
       SAML_ENTRY_SSO: ${SAML_ENTRY_SSO:?err}
       SAML_IDP_PUBLIC_CERT: ${SAML_IDP_PUBLIC_CERT:?err}

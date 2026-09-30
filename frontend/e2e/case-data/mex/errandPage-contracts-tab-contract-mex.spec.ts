@@ -649,6 +649,62 @@ test.describe('Errand page contracts tab', () => {
     await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toContainText('Manuell Intressent');
   });
 
+  test('resolves partyId for a manually added organization used as invoice recipient', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // An organization entered by hand only has an organization number; its partyId must be looked up
+    // before it is saved as a contract party.
+    const mockOrganizationPartyId = 'b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e';
+    const mockErrandWithManualOrganization = structuredClone(mockMexErrand_base);
+    mockErrandWithManualOrganization.data.stakeholders.push({
+      id: 9998,
+      version: 1,
+      created: '2024-05-17T10:50:17.25221+02:00',
+      updated: '2024-05-17T10:50:17.252221+02:00',
+      type: 'ORGANIZATION',
+      firstName: '',
+      lastName: '',
+      organizationName: 'Manuellt Företag AB',
+      organizationNumber: '556677-8899',
+      roles: ['CONTACT_PERSON'],
+      personId: '',
+      personalNumber: '',
+      addresses: [],
+      address: { streetAddress: '' },
+      contactInformation: [],
+      extraParameters: {},
+    });
+    await mockRoute('**/organization', { data: { partyId: mockOrganizationPartyId }, message: 'success' }, { method: 'POST' });
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent, mockErrandWithManualOrganization);
+
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9998');
+    await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    const organizationRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(organizationRow.locator('[data-cy="party-0-name"]')).toContainText('Manuellt Företag AB');
+    await expect(organizationRow.locator('[data-cy="party-0-role"]')).toContainText('Fakturamottagare');
+
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+    const postContractRequest = page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const leaseAgreement: Contract = (await postContractRequest).postDataJSON();
+    const billingParty = leaseAgreement.stakeholders.find((s) =>
+      s.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+    );
+    expect(billingParty.organizationNumber).toBe('556677-8899');
+    expect(billingParty.partyId).toBe(mockOrganizationPartyId);
+  });
+
   test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
 

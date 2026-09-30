@@ -3,7 +3,7 @@
  * support-management APIs — see AttachmentChannelEnum / ErrandAttachmentChannelEnum
  * in the backend data-contracts) to a Swedish display label shown in the UI.
  */
-export enum AttachmentChannelLabels {
+enum AttachmentChannelLabels {
   EMAIL = 'E-post',
   ESERVICE = 'E-tjänst',
   WEB_UI = 'Draken',

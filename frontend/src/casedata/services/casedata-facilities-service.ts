@@ -4,24 +4,6 @@ import { FacilityAddressDTO, FacilityDTO } from '@common/interfaces/facilities';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { removeMunicipalityName } from '@common/services/facilities-service';
 
-export const getFacilities: (municipalityId: string, errandId: string) => Promise<FacilityDTO[]> = (
-  municipalityId,
-  errandId
-) => {
-  if (!errandId || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch. Returning empty list.');
-    return Promise.resolve([]);
-  }
-  const url = `casedata/${municipalityId}/errand/${errandId}`;
-  return apiService
-    .get<ApiResponse<ApiErrand>>(url)
-    .then((res) => res.data.data.facilities)
-    .catch((e) => {
-      console.error('Something went wrong when fetching facilities for errand: ', errandId);
-      throw e;
-    });
-};
-
 export const saveFacilities = (municipalityId: string, errandId: number, estate: FacilityDTO[]) => {
   if (!errandId || !municipalityId) {
     console.error('No errand id or municipality id found, cannot save. Returning.');
@@ -37,13 +19,7 @@ export const saveFacilities = (municipalityId: string, errandId: number, estate:
     });
 };
 
-export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) => {
-  return {
-    address: makeAddress(estate),
-  };
-};
-
-export const makeAddress: (estate: EstateInfoSearch) => FacilityAddressDTO = (estate) => {
+const makeAddress: (estate: EstateInfoSearch) => FacilityAddressDTO = (estate) => {
   return {
     propertyDesignation: estate.designation,
   };

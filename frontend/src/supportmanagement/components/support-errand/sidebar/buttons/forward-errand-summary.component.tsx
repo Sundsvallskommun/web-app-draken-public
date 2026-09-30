@@ -2,7 +2,7 @@
 
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { prettyTime } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Button } from '@sk-web-gui/react';
 import {

@@ -26,10 +26,3 @@ export class FeatureFlagsApiResponse implements ApiResponse<FeatureFlag[]> {
   @IsString()
   message!: string;
 }
-export class FeatureFlagApiResponse implements ApiResponse<FeatureFlag> {
-  @ValidateNested()
-  @Type(() => FeatureFlag)
-  data!: FeatureFlag;
-  @IsString()
-  message!: string;
-}

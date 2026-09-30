@@ -5,12 +5,12 @@ import { RelationWithErrandNumber } from '@common/services/relations-service';
 
 import { MessageNode } from './casedata-message-service';
 
-export interface Identifier {
+interface Identifier {
   type?: string;
   value: string;
 }
 
-export interface ReadBy {
+interface ReadBy {
   identifier?: Identifier;
   readAt?: string;
 }
@@ -65,7 +65,7 @@ export const getConversationMessages: (
     });
 };
 
-export const createConversation = async (
+const createConversation = async (
   municipalityId: string,
   errandId: number,
   topic: string,
@@ -172,13 +172,16 @@ export const getOrCreateConversationId = async (
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' || contactMeans === 'katla' ? 'INTERNAL' : 'EXTERNAL';
 
-  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
+  const selectedEntry =
+    contactMeans === 'draken'
+      ? relationErrands.find((entry) => entry.otherResourceId === selectedRelationId)
+      : undefined;
 
   const conversations = await getConversations(municipalityId, errand.id);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
 
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
+    (conv: any) => conv.type === 'INTERNAL' && conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
   );
 
   const existingRelationlessConversation = conversations.data.find(

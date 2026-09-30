@@ -1,4 +1,5 @@
 import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   Address,
@@ -28,6 +29,7 @@ import {
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
+import { resolvePartyId } from '@common/services/adress-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -42,12 +44,11 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import dayjs from 'dayjs';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import ContractForm from './contract-form';
+import { ContractForm } from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
 interface CasedataContractProps {
@@ -57,13 +58,21 @@ interface CasedataContractProps {
 
 export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
+  const errand = useCasedataStore((s) => s.errand);
+
+  // In an uppsägning errand the contract is already ACTIVE and every field outside "Uppsägning anmälan"
+  // is rendered read-only. The ACTIVE-status rules below exist to enforce completeness when a contract
+  // is activated, so applying them here would demand values in inputs the handläggare cannot reach -
+  // whichever of those fields the existing contract happens to lack blocks the termination from being
+  // saved at all.
+  const isTerminationErrand = errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE;
 
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
       currentPeriod: yup.object().when(['type', 'status'], {
         is: (type: ContractType, status: Status) =>
-          type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
+          !isTerminationErrand && type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
         then: (schema) =>
           schema.shape({
             startDate: yup.date().required('Startdatum måste anges'),
@@ -86,20 +95,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
           }),
       }),
+      // Slutdatum får ligga bakåt i tiden (uppsägningsärenden kan registreras i efterhand).
       endDate: yup
         .date()
         .nullable()
-        .transform((value, original) => (original === '' ? null : value))
-        .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
-          if (!value) return true;
-          const selected = dayjs(value).startOf('day');
-          // Keep an already-saved endDate valid even if it's now in the past; only a
-          // newly chosen past date is rejected. This avoids blocking re-saves of contracts
-          // that were terminated earlier.
-          const original = existingContract?.endDate;
-          if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
-          return !selected.isBefore(dayjs().startOf('day'));
-        }),
+        .transform((value, original) => (original === '' ? null : value)),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -141,7 +141,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       }),
       invoicing: yup.object().when(['type', 'leaseType', 'status'], {
         is: (type: ContractType, leaseType: LeaseType, status: Status) =>
-          hasRecurringFee(type, leaseType) && status === Status.ACTIVE,
+          !isTerminationErrand && hasRecurringFee(type, leaseType) && status === Status.ACTIVE,
         then: (schema) =>
           schema.shape({
             invoiceInterval: yup
@@ -155,6 +155,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           }),
       }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
+        if (isTerminationErrand) return schema;
         if (status !== Status.ACTIVE) return schema;
 
         const baseSchema = schema.of(
@@ -235,7 +236,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     })
     .required();
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
   const [loading, setIsLoading] = useState<string>();
   const toastMessage = useSnackbar();
@@ -282,11 +282,12 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   };
 
   // Handler to add a new party
-  const handleAddParty = (stakeholderId: string, roles: StakeholderRole[]) => {
+  const handleAddParty = async (stakeholderId: string, roles: StakeholderRole[]) => {
     const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
     if (!stakeholder) return;
 
-    const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
+    const partyId = await resolvePartyId(stakeholder.personId, stakeholder.organizationNumber);
+    const contractStakeholder = errandStakeholderToContractStakeholder({ ...stakeholder, personId: partyId }, roles);
     const current = (contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[];
     const appended = [...current, contractStakeholder];
     updateStakeholders(reconcileParties(appended, appended.length - 1));

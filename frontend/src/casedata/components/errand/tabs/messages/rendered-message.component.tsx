@@ -11,7 +11,7 @@ import {
 } from '@casedata/services/casedata-message-types';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import { formatMessage, sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';

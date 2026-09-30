@@ -52,6 +52,7 @@ export const SupportErrandComponent: FC = () => {
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
+  const initiatingErrand = useRef(false);
 
   const initialFocus = useRef<HTMLButtonElement>(null);
   const setInitialFocus = () => {
@@ -100,7 +101,8 @@ export const SupportErrandComponent: FC = () => {
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
+      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !initiatingErrand.current) {
+        initiatingErrand.current = true;
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
@@ -111,6 +113,7 @@ export const SupportErrandComponent: FC = () => {
           )
           .catch((e) => {
             console.error('Error when initiating errand:', e);
+            initiatingErrand.current = false;
             setIsLoading(false);
             toastMessage({
               position: 'bottom',

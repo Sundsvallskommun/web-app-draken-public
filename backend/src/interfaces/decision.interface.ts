@@ -12,7 +12,7 @@ import {
 import { Attachment } from './attachment.interface';
 import { GenericExtraParameters } from './extra-parameters.interface';
 
-export class LawDTO implements Law {
+class LawDTO implements Law {
   @IsString()
   heading!: string;
   @IsString()

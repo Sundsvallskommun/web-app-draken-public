@@ -11,7 +11,7 @@ export interface ApiResponse<T = unknown> {
   message: string;
 }
 
-export const handleError = (error: AxiosError<ApiResponse>) => {
+const handleError = (error: AxiosError<ApiResponse>) => {
   if (globalThis.window !== undefined) {
     if (error?.response?.status === 401 && !globalThis.window.location.pathname.includes('login')) {
       const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';

@@ -7,7 +7,7 @@ import {
 } from '@supportmanagement/interfaces/supportEvent';
 import dayjs from 'dayjs';
 
-export const parseChange: (
+const parseChange: (
   event: SupportEvent,
   errandId: string,
   municipalityId: string,

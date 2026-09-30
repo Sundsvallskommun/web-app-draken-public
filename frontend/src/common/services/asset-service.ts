@@ -1,16 +1,6 @@
 import { Asset, AssetUpdateRequest, DraftAssetUpdateRequest } from '@common/interfaces/asset';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import {
-  getLatestSchema,
-  getSchema,
-  getUiSchema,
-  JsonSchemaResponse,
-  UiSchemaResponse,
-} from '@common/services/jsonschema-service';
 import type { RJSFSchema } from '@rjsf/utils';
-
-export { getLatestSchema, getSchema, getUiSchema };
-export type { JsonSchemaResponse, UiSchemaResponse };
 
 export type GetAssetsParams = {
   partyId?: string;

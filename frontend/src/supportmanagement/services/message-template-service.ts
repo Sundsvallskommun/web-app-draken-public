@@ -17,9 +17,6 @@
 
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { base64Decode } from '@common/services/helper-service';
-import { EMAIL_INFORMATION_TEXT } from '@common/services/message-template-body-service';
-
-export { EMAIL_INFORMATION_TEXT };
 
 export interface TemplateApiResponse {
   identifier?: string;
@@ -52,7 +49,7 @@ async function fetchTemplate(identifier: string): Promise<string | null> {
   }
 }
 
-export interface TemplateInfo {
+interface TemplateInfo {
   identifier: string;
   name: string;
   content: string;
@@ -135,30 +132,6 @@ async function fetchContentWithSignature(
   return replaceTemplateParameters(result, parameters);
 }
 
-export async function getEmailTemplate(
-  app: string,
-  variant: string = 'default',
-  parameters: Record<string, string> = {}
-): Promise<string | null> {
-  const appLower = app.toLowerCase();
-  const contentId = `${appLower}.email.${variant}`;
-  const signatureId = `${appLower}.email.signature`;
-
-  return fetchContentWithSignature(contentId, signatureId, parameters);
-}
-
-export async function getSmsTemplate(
-  app: string,
-  variant: string = 'default',
-  parameters: Record<string, string> = {}
-): Promise<string | null> {
-  const appLower = app.toLowerCase();
-  const contentId = `${appLower}.sms.${variant}`;
-  const signatureId = `${appLower}.sms.signature`;
-
-  return fetchContentWithSignature(contentId, signatureId, parameters);
-}
-
 export async function getClosingTemplate(app: string, parameters: Record<string, string> = {}): Promise<string | null> {
   const appLower = app.toLowerCase();
   const signatureId = `${appLower}.email.signature`;
@@ -169,13 +142,4 @@ export async function getClosingTemplate(app: string, parameters: Record<string,
   }
 
   return fetchContentWithSignature('default.email.closing', signatureId, parameters);
-}
-
-export async function getInternalSignature(parameters: Record<string, string> = {}): Promise<string | null> {
-  const signature = await fetchTemplate('internal.signature');
-  if (!signature) {
-    return null;
-  }
-
-  return replaceTemplateParameters(signature, parameters);
 }

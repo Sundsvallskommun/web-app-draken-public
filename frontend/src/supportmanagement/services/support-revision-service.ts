@@ -173,7 +173,7 @@ const parseExternalTagDiff: (d: SupportRevisionDifference) => { title: string; d
   return { title: `${itemType} ${operation}`, description: `<p>${details}</p>` };
 };
 
-export const parseDiff: (
+const parseDiff: (
   d: SupportRevisionDifference,
   keyMapper: { [key: string]: string },
   admins: Admin[]

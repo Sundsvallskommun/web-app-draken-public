@@ -1,6 +1,6 @@
 import { prettyTime } from '@common/services/helper-service';
 import { getReferredFromErrands, ReferredFromErrandResponse } from '@common/services/relations-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { Channels, ExternalIdType } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';

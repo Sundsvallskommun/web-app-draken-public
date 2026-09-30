@@ -3,7 +3,22 @@ import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import FormData from 'form-data';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import {
+  Body,
+  BodyParam,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  QueryParam,
+  Req,
+  Res,
+  UploadedFiles,
+  UseBefore,
+} from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
@@ -197,16 +212,19 @@ export class CasedataContractsController {
   }
 
   /**
-   * Attachment writes are gated the same way as contract writes. The errand id is not on the
-   * request, so it is resolved from the contract itself. Fails closed: a contract without an
-   * errandId extra parameter cannot be authorised, mirroring create/update which reject with 400.
+   * Attachment writes are gated the same way as contract writes. The errand id comes from the
+   * contract's errandId extra parameter; contracts migrated from the old system have none until
+   * they are saved here, and fall back to the caller's claim, trusted only if that errand points
+   * back at this contract. Fails closed when neither link exists.
    */
-  private async assertAttachmentActionAllowed(contractId: string, req: RequestWithUser): Promise<void> {
+  private async assertAttachmentActionAllowed(contractId: string, claimedErrandId: string | undefined, req: RequestWithUser): Promise<void> {
     const errandId = await getContractErrandId(MUNICIPALITY_ID!, contractId, req.user);
-    if (!errandId) {
+    if (!errandId && !claimedErrandId) {
       throw new HttpException(400, 'Missing errand id');
     }
-    const allowed = await validateContractAction(MUNICIPALITY_ID!, errandId, req.user);
+    const allowed = errandId
+      ? await validateContractAction(MUNICIPALITY_ID!, errandId, req.user)
+      : await validateContractAction(MUNICIPALITY_ID!, claimedErrandId!, req.user, contractId);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -236,8 +254,9 @@ export class CasedataContractsController {
     @Param('contractId') contractId: string,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Body() attachmentData: AttachmentMetadata,
+    @BodyParam('errandId') errandId: string,
   ): Promise<{ data: boolean; message: string }> {
-    await this.assertAttachmentActionAllowed(contractId, req);
+    await this.assertAttachmentActionAllowed(contractId, errandId, req);
     // fileUploadOptions drops disallowed mime types silently (multer's fileFilter calls back with
     // false rather than an error), so an unsupported file arrives here as an empty list.
     if (!files || files.length === 0) {
@@ -279,12 +298,13 @@ export class CasedataContractsController {
     @Req() req: RequestWithUser,
     @Param('contractId') contractId: string,
     @Param('attachmentId') attachmentId: number,
+    @QueryParam('errandId') errandId: string,
   ): Promise<{ data: boolean; message: string }> {
     const baseURL = apiURL(this.SERVICE);
     if (!attachmentId || !contractId) {
       throw new HttpException(400, 'Id not found. Cannot delete signed contract attachment without id.');
     }
-    await this.assertAttachmentActionAllowed(contractId, req);
+    await this.assertAttachmentActionAllowed(contractId, errandId, req);
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
     // The Contract API answers 204 with an empty body.
     await this.apiService.delete<void>({ url, baseURL }, req.user).catch(e => {

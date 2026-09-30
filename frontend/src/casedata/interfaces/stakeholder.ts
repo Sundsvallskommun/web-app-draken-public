@@ -1,10 +1,8 @@
-import { Data } from '@common/services/api-service';
-
 import { Address } from './address';
 import { Role } from './role';
 
 export type ContactInfoType = 'CELLPHONE' | 'PHONE' | 'EMAIL';
-export interface ContactInfo {
+interface ContactInfo {
   contactType: ContactInfoType;
   value: string;
 }
@@ -37,10 +35,6 @@ export interface Stakeholder extends CreateStakeholderDto {
   id: string;
   created: string;
   updated: string;
-}
-
-export interface StakeholderData extends Data {
-  data: Stakeholder[];
 }
 
 export interface CasedataOwnerOrContact {

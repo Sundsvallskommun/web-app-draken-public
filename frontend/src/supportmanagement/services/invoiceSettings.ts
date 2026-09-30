@@ -4,7 +4,7 @@ import { CAccountInformation } from 'src/data-contracts/backend/data-contracts';
 import { invoiceData2025 } from './invoiceData-2025';
 import { invoiceData2026 } from './invoiceData-2026';
 
-export interface CustomerIdentity {
+interface CustomerIdentity {
   companyId: number;
   displayOrder: number;
   name: string;
@@ -29,7 +29,7 @@ export interface InvoiceActivity {
   default: string;
 }
 
-export interface InvoiceRow {
+interface InvoiceRow {
   costPerUnit: number;
   description: string;
   visible: boolean;
@@ -37,7 +37,7 @@ export interface InvoiceRow {
   accountInformationRows: AccountInformationRow[];
 }
 
-export interface AccountInformationRow {
+interface AccountInformationRow {
   amountFromParent: boolean;
   amount?: number;
   project?: string;
@@ -50,12 +50,12 @@ export interface InvoiceType {
   external: InvoiceTypeExternal;
 }
 
-export interface InvoiceTypeInternal {
+interface InvoiceTypeInternal {
   invoiceRows: InvoiceRow[];
   accountInformation: CAccountInformation;
 }
 
-export interface InvoiceTypeExternal {
+interface InvoiceTypeExternal {
   invoiceRows: InvoiceRow[];
   accountInformation: CAccountInformation;
 }

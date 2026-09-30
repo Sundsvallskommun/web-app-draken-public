@@ -1,6 +1,15 @@
 // Mock data for the supportmanagement -> supportmanagement handover flow (KC -> another namespace).
 
+// The backend delivers the MEX forward as a namespace config like any other target.
+export const mockMexTarget = {
+  namespace: 'SBK_MEX',
+  municipalityId: '2281',
+  displayName: 'Mark och exploatering (MEX)',
+  shortCode: 'MEX',
+};
+
 export const mockNamespaceConfigs = [
+  mockMexTarget,
   {
     namespace: 'ROB',
     municipalityId: '2281',

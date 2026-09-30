@@ -1,7 +1,7 @@
 import { mockEnv } from '../../fixtures/mock-env';
 
 // This person number is for test purposes, from the Swedish Tax Agency
-export const MOCK_PERSON_NUMBER = mockEnv.mockPersonNumber;
+const MOCK_PERSON_NUMBER = mockEnv.mockPersonNumber;
 export const mockEstateInfo11 = {
   data: {
     designation: 'TESTSTAD 1:1',

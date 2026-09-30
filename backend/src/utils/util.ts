@@ -4,26 +4,6 @@ import utc from 'dayjs/plugin/utc';
 
 import { logger } from './logger';
 dayjs.extend(utc);
-/**
- * @method isEmpty
- * @param {String | Number | Object} value
- * @returns {Boolean} true & false
- * @description this value is Empty Check
- */
-
-export const isEmpty = (value: string | number | object): boolean => {
-  if (value === null) {
-    return true;
-  } else if (typeof value !== 'number' && value === '') {
-    return true;
-  } else if (typeof value === 'undefined' || value === undefined) {
-    return true;
-  } else if (value !== null && typeof value === 'object' && !Object.keys(value).length) {
-    return true;
-  } else {
-    return false;
-  }
-};
 
 export const apiURL = (...parts: string[]): string => {
   const urlParts = [API_BASE_URL!, ...parts];
@@ -60,14 +40,6 @@ export const formatOrgNr = (orgNr: string, format: OrgNumberFormat = OrgNumberFo
   return format === OrgNumberFormat.DASH ? orgNumber.substring(0, 6) + '-' + orgNumber.substring(6, 10) : orgNumber;
 };
 
-export const toBase64: (data: File | Blob) => Promise<string> = data =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(data);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-
 export const withRetries: <T>(retries: number, func: () => Promise<T>) => Promise<T | boolean> = (retries, func) => {
   return func().catch(_e => {
     if (retries > 0) {
@@ -88,10 +60,6 @@ export const latestBy = (list: any[], timeField: string) =>
 
 export const base64Encode = (str: string) => {
   return Buffer.from(str, 'utf-8').toString('base64');
-};
-
-export const base64Decode = (base64: string) => {
-  return Buffer.from(base64, 'base64').toString();
 };
 
 export const toOffsetDateTime = (date: Dayjs) => encodeURIComponent(date.format('YYYY-MM-DDTHH:mm:ss.SSSZ'));
@@ -164,12 +132,3 @@ export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): str
 
   return cleaned.flat();
 }
-export const base64ToByteArray = (base64: string) => {
-  const byteCharacters = atob(base64);
-
-  const byteNumbers = new Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-  return new Uint8Array(byteNumbers);
-};

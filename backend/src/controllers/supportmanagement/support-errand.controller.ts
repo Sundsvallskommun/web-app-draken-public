@@ -35,6 +35,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { isAllowedHandoverTarget, MEX_HANDOVER_TARGET } from '@/services/handover-targets.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
 import {
@@ -52,15 +53,7 @@ import {
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
-export { SupportStakeholderRole };
-
-export enum CustomerType {
-  PRIVATE,
-  ENTERPRISE,
-  EMPLOYEE,
-}
-
-export enum Status {
+enum Status {
   NEW = 'NEW',
   ONGOING = 'ONGOING',
   PENDING = 'PENDING',
@@ -68,39 +61,14 @@ export enum Status {
   SOLVED = 'SOLVED',
 }
 
-export enum StatusLabel {
-  NEW = 'Inkommet',
-  ONGOING = 'Pågående',
-  PENDING = 'Komplettering',
-  ASSIGNED = 'Tilldelat',
-  SOLVED = 'Avslutat',
-}
-
-export enum Resolution {
-  INFORMED = 'INFORMED',
-  ESCALATED = 'ESCALATED',
-  CONNECTED = 'CONNECTED',
-}
-
-export enum ResolutionLabel {
-  INFORMED = 'Informerat',
-  ESCALATED = 'Överlämnat',
-  CONNECTED = 'Kopplat',
-}
-
-export interface SupportErrandParameters {
-  name: string;
-  value: string;
-}
-
-export class CExternalTag implements ExternalTag {
+class CExternalTag implements ExternalTag {
   @IsString()
   key!: string;
   @IsString()
   value!: string;
 }
 
-export class CParameter implements Parameter {
+class CParameter implements Parameter {
   @IsString()
   key!: string;
   @IsString()
@@ -750,6 +718,10 @@ export class SupportErrandController {
       console.error('No errand id found, it is needed to forward errand.');
       logger.error('No errand id found, it is needed to forward errand.');
       return response.status(400).send('Errand id missing');
+    }
+    if (data.department !== MEX_HANDOVER_TARGET || !isAllowedHandoverTarget(data.department)) {
+      logger.error(`Forward target ${data.department} is not in HANDOVER_TARGETS`);
+      return response.status(403).send('Forward target not allowed');
     }
     const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
     const supportBaseURL = apiURL(this.SERVICE);

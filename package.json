@@ -5,10 +5,12 @@
     "prepare": "husky",
     "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
     "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
+    "lint:strict": "yarn --cwd frontend lint:strict && yarn --cwd backend lint:strict",
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
+    "format:check": "yarn --cwd frontend format:check && yarn --cwd backend format:check",
     "test": "yarn --cwd backend test",
-    "verify": "yarn type-check && yarn lint && yarn knip && yarn test"
+    "verify": "yarn type-check && yarn lint:strict && yarn format:check && yarn knip && yarn test"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

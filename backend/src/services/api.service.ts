@@ -16,7 +16,7 @@ export class ApiResponse<T> {
 // upstream 4xx responses are re-thrown with their original status and message instead of a generic
 // 500. When `followLocation` is false, a Location header on the response is not followed - needed
 // for endpoints whose created resource is a binary stream rather than JSON.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean; followLocation?: boolean };
+type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean; followLocation?: boolean };
 
 const apiTokenService = new ApiTokenService();
 

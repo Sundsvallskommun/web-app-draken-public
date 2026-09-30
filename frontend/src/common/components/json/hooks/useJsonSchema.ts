@@ -12,7 +12,7 @@ interface UseJsonSchemaResult {
 export function useJsonSchema(municipalityId: string, schemaId: string): UseJsonSchemaResult {
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(municipalityId && schemaId));
   const [error, setError] = useState<string | null>(null);
 
   const fetchSchemas = useCallback(async () => {
