@@ -11,7 +11,7 @@ export const mockMexTarget = {
 export const mockParkingPermitTarget = {
   namespace: 'SBK_PARKING_PERMIT',
   municipalityId: '2281',
-  displayName: 'Färdtjänst (PT)',
+  displayName: 'Parkeringstillstånd (PT)',
   shortCode: 'PT',
 };
 
