@@ -5,10 +5,8 @@ import { apiServiceName } from '@/config/api-config';
 import { CaseStatusResponse } from '@/data-contracts/casestatus/data-contracts';
 import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-contracts/relations/data-contracts';
 import {
-  Category,
   ContactChannel,
   Errand as SupportManagementErrand,
-  ErrandLabel,
   MetadataResponse,
   Role,
   Stakeholder as SupportStakeholder,
@@ -18,6 +16,7 @@ import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { OrganizationService } from '@/services/organization.service';
+import { resolveErrandLabelPath } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
@@ -256,18 +255,18 @@ export class RelationsController {
     return res?.data ?? null;
   }
 
-  private resolveClassification(errand: SupportManagementErrand, categories: Category[]): ResolvedClassification {
+  private resolveClassification(errand: SupportManagementErrand, metadata: MetadataResponse | null | undefined): ResolvedClassification {
     const labels = errand.labels ?? [];
     if (labels.length > 0) {
-      const labelLevel = (classification: string) => {
-        const label = labels.find((l: ErrandLabel) => l.classification === classification);
-        return level(label?.resourceName, label?.displayName);
-      };
-      return toResolvedClassification(labelLevel('CATEGORY'), labelLevel('TYPE'), labelLevel('SUBTYPE'));
+      // The levels are positions in the source namespace's label tree, whatever that namespace calls them.
+      const [category, type, subType] = resolveErrandLabelPath(labels, metadata?.labels?.labelStructure).map(label =>
+        level(label.resourceName, label.displayName),
+      );
+      return toResolvedClassification(category ?? level(), type ?? level(), subType ?? level());
     }
 
     const classification = errand.classification;
-    const category = categories.find(c => c.name === classification?.category);
+    const category = (metadata?.categories ?? []).find(c => c.name === classification?.category);
     const type = category?.types?.find(t => t.name === classification?.type);
     return toResolvedClassification(level(classification?.category, category?.displayName), level(classification?.type, type?.displayName), level());
   }
@@ -380,7 +379,7 @@ export class RelationsController {
         }
         const metadata = metadataCache.get(namespaceName);
 
-        const classification = this.resolveClassification(errand, metadata?.categories ?? []);
+        const classification = this.resolveClassification(errand, metadata);
 
         const response: ReferredFromErrandResponse = {
           errandNumber: errand.errandNumber ?? '',

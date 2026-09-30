@@ -1,5 +1,5 @@
 import { RelationsController } from '@/controllers/relations.controller';
-import { Category, Errand as SupportManagementErrand, MetadataResponse } from '@/data-contracts/supportmanagement/data-contracts';
+import { Category, Errand as SupportManagementErrand, Label, MetadataResponse } from '@/data-contracts/supportmanagement/data-contracts';
 
 import { mockReq } from './helpers/http';
 import {
@@ -16,16 +16,27 @@ interface ApiStub {
   get: ReturnType<typeof vi.fn>;
 }
 
-// A labels namespace keeps its classification as resource paths and has no categories in its metadata;
-// a classification namespace is the other way around.
-const labelCategory = { classification: 'CATEGORY', resourceName: 'BOU', displayName: 'Barn och utbildning', resourcePath: 'BOU' };
-const labelType = { classification: 'TYPE', resourceName: 'UNCATEGORIZED', displayName: 'Okategoriserat', resourcePath: 'BOU/UNCATEGORIZED' };
+// A labels namespace has a label tree and no categories in its metadata; a classification namespace is
+// the other way around.
+const labelCategory = { id: 'bou', classification: 'CATEGORY', resourceName: 'BOU', displayName: 'Barn och utbildning', resourcePath: 'BOU' };
+const labelType = {
+  id: 'bou-uncategorized',
+  classification: 'TYPE',
+  resourceName: 'UNCATEGORIZED',
+  displayName: 'Okategoriserat',
+  resourcePath: 'BOU/UNCATEGORIZED',
+};
 const labelSubType = {
+  id: 'bou-school-transport',
   classification: 'SUBTYPE',
   resourceName: 'SCHOOL_TRANSPORT',
   displayName: 'Skolskjuts',
   resourcePath: 'BOU/UNCATEGORIZED/SCHOOL_TRANSPORT',
 };
+
+// The source namespace's label tree, which the labels on the source errand are resolved against.
+const labelMetadata = (labelStructure: Label[] = [{ ...labelCategory, labels: [{ ...labelType, labels: [labelSubType] }] }]) =>
+  ({ categories: [], labels: { labelStructure } }) as MetadataResponse;
 
 const categories: Category[] = [
   { name: 'ADMINISTRATION', displayName: 'Administration', types: [{ name: 'GENERAL', displayName: 'Allmän fråga' }] } as Category,
@@ -84,7 +95,7 @@ describe('RelationsController referred-from classification', () => {
   it('reads the display names off the labels when the source namespace classifies with labels', async () => {
     const result = await referredFrom(
       errand({ classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' }, labels: [labelCategory, labelType] }),
-      { categories: [] } as MetadataResponse,
+      labelMetadata(),
     );
 
     expect(result.classificationCategory).toBe('BOU');
@@ -95,25 +106,62 @@ describe('RelationsController referred-from classification', () => {
   });
 
   it('includes the subtype when the source errand has a third label level', async () => {
-    const result = await referredFrom(errand({ labels: [labelCategory, labelType, labelSubType] }), { categories: [] } as MetadataResponse);
+    const result = await referredFrom(errand({ labels: [labelCategory, labelType, labelSubType] }), labelMetadata());
 
     expect(result.classificationSubType).toBe('SCHOOL_TRANSPORT');
     expect(result.classificationSubTypeDisplayName).toBe('Skolskjuts');
   });
 
   it('leaves the subtype empty when the source errand has only two label levels', async () => {
-    const result = await referredFrom(errand({ labels: [labelCategory, labelType] }), { categories: [] } as MetadataResponse);
+    const result = await referredFrom(errand({ labels: [labelCategory, labelType] }), labelMetadata());
 
     expect(result.classificationSubType).toBe('');
     expect(result.classificationSubTypeDisplayName).toBe('');
   });
 
   it('falls back to the label name when a label carries no display name', async () => {
-    const result = await referredFrom(errand({ labels: [{ classification: 'TYPE', resourceName: 'UNCATEGORIZED' }] }), {
-      categories: [],
-    } as MetadataResponse);
+    const result = await referredFrom(
+      errand({ labels: [labelCategory, labelType] }),
+      labelMetadata([{ ...labelCategory, labels: [{ ...labelType, displayName: undefined }] }]),
+    );
 
     expect(result.classificationTypeDisplayName).toBe('UNCATEGORIZED');
+  });
+
+  it('reads the levels by their position in the label tree, whatever the namespace calls them', async () => {
+    // KC names its levels DEPARTMENT/CATEGORY/TYPE rather than CATEGORY/TYPE/SUBTYPE.
+    const silentCall = {
+      id: 'silent-call',
+      classification: 'TYPE',
+      resourceName: 'SILENT_CALL',
+      displayName: 'Tyst samtal',
+      resourcePath: 'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
+    };
+    const kontaktSundsvall = {
+      id: 'kontakt-sundsvall',
+      classification: 'CATEGORY',
+      resourceName: 'KONTAKT_SUNDSVALL',
+      displayName: 'Kontakt Sundsvall',
+      resourcePath: 'KSK/KONTAKT_SUNDSVALL',
+    };
+    const ksk = { id: 'ksk', classification: 'DEPARTMENT', resourceName: 'KSK', displayName: 'KSK', resourcePath: 'KSK' };
+
+    const result = await referredFrom(
+      errand({ labels: [silentCall, kontaktSundsvall, ksk] }),
+      labelMetadata([{ ...ksk, labels: [{ ...kontaktSundsvall, labels: [silentCall] }] }]),
+    );
+
+    expect(result.classificationCategoryDisplayName).toBe('KSK');
+    expect(result.classificationType).toBe('KONTAKT_SUNDSVALL');
+    expect(result.classificationTypeDisplayName).toBe('Kontakt Sundsvall');
+    expect(result.classificationSubTypeDisplayName).toBe('Tyst samtal');
+  });
+
+  it('returns empty display names when the labels are not in the source label tree', async () => {
+    const result = await referredFrom(errand({ labels: [labelCategory, labelType] }), labelMetadata([]));
+
+    expect(result.classificationCategoryDisplayName).toBe('');
+    expect(result.classificationTypeDisplayName).toBe('');
   });
 
   it('resolves against the metadata categories when the source namespace has no labels', async () => {
