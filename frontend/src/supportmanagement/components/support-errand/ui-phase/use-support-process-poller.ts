@@ -18,6 +18,7 @@ export const useSupportProcessPoller = (): boolean => {
   const working = isSupportProcessWorking(process);
   const starting = appConfig.features.useProcess && !process;
   const attempts = working ? POLL_ATTEMPTS_WHILE_WORKING : POLL_ATTEMPTS_WHILE_STARTING;
+  const writtenAt = starting ? supportErrand?.modified : undefined;
 
   useEffect(() => {
     if (!errandId || (!working && !starting)) return undefined;
@@ -40,7 +41,7 @@ export const useSupportProcessPoller = (): boolean => {
       stopped = true;
       clearTimeout(timer);
     };
-  }, [errandId, municipalityId, working, starting, attempts, setSupportErrand]);
+  }, [errandId, municipalityId, working, starting, attempts, writtenAt, setSupportErrand]);
 
   return working;
 };
