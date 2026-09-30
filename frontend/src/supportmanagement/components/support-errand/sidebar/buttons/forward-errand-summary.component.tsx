@@ -40,7 +40,7 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
 
   return (
     <>
-      <div className="flex flex-row gap-80">
+      <div className="flex flex-row flex-wrap gap-x-80 gap-y-16">
         <div className="flex flex-col">
           <span className="font-bold text-small">Ärendetyp</span>
           <span className="text-small">
@@ -54,6 +54,14 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
           </span>
         </div>
         <div className="flex flex-col">
+          <span className="font-bold text-small">Inkom via</span>
+          <span className="text-small">{Channels[errand?.channel as keyof typeof Channels]}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-small">Registrerades</span>
+          <span className="text-small">{prettyTime(errand?.created || '')}</span>
+        </div>
+        <div className="flex flex-col">
           <span className="font-bold text-small">Ärendenummer</span>
           <span className="text-small">{errand?.errandNumber}</span>
         </div>
@@ -62,14 +70,6 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
           <div className="flex text-small items-center gap-4">
             <PriorityComponent priority={findPriorityLabelForPriorityKey(errand?.priority || '')} />
           </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-small">Inkom via</span>
-          <span className="text-small">{Channels[errand?.channel as keyof typeof Channels]}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-small">Registrerat</span>
-          <span className="text-small">{prettyTime(errand?.created || '')}</span>
         </div>
       </div>
       <div className="flex flex-col">

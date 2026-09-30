@@ -44,7 +44,12 @@ const getErrandLabelId = (errand: SupportErrand, classification: Classification)
 export const ThreeLevelCategorization: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata;
-}> = ({ supportErrand, supportMetadata }) => {
+  /** Label of the first level. Defaults to the registration view's "Verksamhet*"; the handover modal
+   * passes "Kategori" so it does not collide with the receiving namespace's own "Verksamhet" field. */
+  categoryLabel?: string;
+  /** Placeholder of the first-level select. */
+  categoryPlaceholder?: string;
+}> = ({ supportErrand, supportMetadata, categoryLabel = 'Verksamhet*', categoryPlaceholder = 'Välj verksamhet' }) => {
   const { getValues, setValue, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
   const { errors } = formState;
   const { t } = useTranslation();
@@ -159,7 +164,7 @@ export const ThreeLevelCategorization: FC<{
     <>
       <div className="flex my-md gap-xl w-1/2">
         <FormControl id="labelCategory" className="w-full">
-          <FormLabel>Verksamhet*</FormLabel>
+          <FormLabel>{categoryLabel}</FormLabel>
           <Select
             disabled={isSupportErrandLocked(supportErrand)}
             readOnly={!supportMetadata}
@@ -170,7 +175,7 @@ export const ThreeLevelCategorization: FC<{
             value={selectedLabels.CATEGORY?.id}
             onChange={handleCategoryChange}
           >
-            <Select.Option value="">Välj verksamhet</Select.Option>
+            <Select.Option value="">{categoryPlaceholder}</Select.Option>
             {selectableCategories.map((label: Label) => (
               <Select.Option value={label.id} key={`label-${label.id}`}>
                 {getLabelDisplayName(label, supportMetadata)}
