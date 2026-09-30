@@ -248,6 +248,10 @@ export class SupportDecisionController {
     const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
     const { terms, ...decision } = data;
     const current = await this.readDecision(ref, req.user);
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be updated');
+    }
     const written = await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
 
     if (!terms) {
@@ -274,8 +278,13 @@ export class SupportDecisionController {
 
     const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
     const current = await this.readDecision(ref, req.user);
+
     if (current.status === COMPLETED_STATUS) {
       return response.status(200).send(current);
+    }
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be completed');
     }
 
     return response.status(200).send(await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user));
