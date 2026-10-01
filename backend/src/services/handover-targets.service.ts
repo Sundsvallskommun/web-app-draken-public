@@ -18,7 +18,7 @@ const CASEDATA_FORWARD_TARGETS: CasedataForwardTarget[] = [
   },
   {
     namespace: 'SBK_PARKING_PERMIT',
-    displayName: 'Parkeringstillstånd (PT)',
+    displayName: 'Parkeringstillstånd/Färdtjänst',
     shortCode: 'PT',
     caseType: FTCaseType.PARATRANSIT_FROM_KS,
   },

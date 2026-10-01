@@ -233,7 +233,7 @@ export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) 
     case DecisionOutcomes.Rejection:
       return 'Avslag';
     case DecisionOutcomes.ConditionalApproval:
-      return 'Bifall med villkor';
+      return 'Bifall/Avslag';
     case DecisionOutcomes.Cancellation:
       return 'Ärendet avskrivs';
     case DecisionOutcomes.Dismissal:
@@ -253,7 +253,7 @@ const parkingPermitDecisionOutcomes: DecisionOutcome[] = [
   DecisionOutcomes.Revocation,
 ];
 
-// Färdtjänst and riksfärdtjänst also allow bifall med villkor.
+// Färdtjänst and riksfärdtjänst also allow bifall/Avslag.
 const paratransitDecisionOutcomes: DecisionOutcome[] = [
   DecisionOutcomes.Approval,
   DecisionOutcomes.Rejection,
