@@ -17,6 +17,10 @@ export const mockEnv = {
   // (avoids strict-mode collisions when asserting per-stakeholder phone). PTS test range.
   mockSecondaryPhoneNumber: '0701740636',
   mockAdUsername: 'abc01abc',
+  mockFirstName: 'Test',
+  mockLastName: 'Testsson',
+  // Shaped like an errand number; it does not identify any real errand.
+  mockErrandNumber: 'AOT-26010000',
   mockCompanyName: 'Testbolaget AB',
   // Fake addresses: no real street, and Swedish postal codes never start with 0. Postal codes keep the
   // space users often type, so code under test can show it normalizes.
