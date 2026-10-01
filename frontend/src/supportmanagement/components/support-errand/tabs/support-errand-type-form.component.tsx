@@ -2,7 +2,9 @@
 
 import { useJsonSchemaByName } from '@common/components/json/hooks/useJsonSchemaByName';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
+import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import type { RJSFValidationError } from '@rjsf/utils';
 import { Alert, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { jsonParameterForSchema, upsertJsonParameter } from '@supportmanagement/services/support-errand-schema-service';
@@ -41,6 +43,8 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
   );
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<readonly SchemaFormError[]>([]);
+  const idPrefix = schemaName.replace(/[^\w-]/g, '_');
 
   const storedValue = JSON.stringify(storedParameter?.value ?? {});
   useEffect(() => {
@@ -55,6 +59,7 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
       const errandId = supportErrand.id;
       if (!schemaId || !errandId) return;
 
+      setValidationErrors([]);
       setSubmitting(true);
       try {
         await saveSupportErrandJsonParameters(
@@ -76,6 +81,13 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
       }
     },
     [municipalityId, schemaId, schemaName, setSupportErrand, supportErrand, toastMessage]
+  );
+
+  const handleError = useCallback(
+    (errors: RJSFValidationError[]) => {
+      setValidationErrors(schema ? getSchemaFormErrors(schema, errors, idPrefix) : []);
+    },
+    [idPrefix, schema]
   );
 
   if (loading) {
@@ -118,7 +130,9 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
       formData={formData}
       onChange={(data: Record<string, unknown>) => setFormData(data)}
       onSubmit={handleSubmit}
-      idPrefix={schemaName.replace(/[^\w-]/g, '_')}
+      onError={handleError}
+      validationErrors={validationErrors}
+      idPrefix={idPrefix}
       sectionOpening="first"
       disabled={readOnly}
       submitButtonOptions={{ label: 'Spara ärendeuppgifter', leadingIcon: false, loading: submitting }}

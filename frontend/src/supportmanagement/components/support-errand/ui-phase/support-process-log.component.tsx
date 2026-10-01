@@ -3,6 +3,7 @@
 import type { ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, Modal, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { supportProcessActivityMessage } from '@supportmanagement/services/support-process-messages';
 import {
   getSupportProcessActivities,
   hasSupportErrandProcess,
@@ -12,23 +13,24 @@ import { Info } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const activityHeading = (activity: ProcessActivity): string =>
-  activity.activityName || activity.activityId || activity.activityType;
+const ProcessActivityRow: FC<{ activity: ProcessActivity }> = ({ activity }) => {
+  const { t } = useTranslation();
+  const message = supportProcessActivityMessage(activity);
+  const step = message.stepKey ? t(message.stepKey) : undefined;
+  const reportedActivity = message.activityKey ? t(message.activityKey) : message.values?.activity;
 
-const ProcessActivityRow: FC<{ activity: ProcessActivity }> = ({ activity }) => (
-  <li className="border-b-1 last:border-b-0 py-8">
-    <div className="flex justify-between gap-16">
-      <span className="font-bold">{activityHeading(activity)}</span>
-      <time dateTime={activity.occurredAt} className="text-small text-dark-secondary whitespace-nowrap">
-        {dayjs(activity.occurredAt).format('YYYY-MM-DD HH:mm:ss')}
-      </time>
-    </div>
-    {activity.message ? <p className="text-small my-0">{activity.message}</p> : null}
-    <p className="text-small text-dark-secondary my-0">
-      {[activity.activityType, activity.severity, activity.errorCode].filter(Boolean).join(' · ')}
-    </p>
-  </li>
-);
+  return (
+    <li className="border-b-1 last:border-b-0 py-8">
+      <div className="flex justify-between gap-16">
+        <span className="font-bold">{t(message.key, { ...message.values, step, activity: reportedActivity })}</span>
+        <time dateTime={activity.occurredAt} className="text-small text-dark-secondary whitespace-nowrap">
+          {dayjs(activity.occurredAt).format('YYYY-MM-DD HH:mm:ss')}
+        </time>
+      </div>
+      {message.detail ? <p className="text-small text-dark-secondary my-0">{message.detail}</p> : null}
+    </li>
+  );
+};
 
 export const SupportProcessLog = () => {
   const { t } = useTranslation();

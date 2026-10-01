@@ -15,8 +15,13 @@ import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from 
 import {
   createSupportDecision,
   getSupportDecisions,
+  isSupportDecisionDraft,
   isSupportDecisionLocked,
+  outcomeForTerms,
+  outcomeWithoutConditions,
+  selectableSupportDecisionOutcomes,
   SUPPORT_DECISION_ROLE_KEYS,
+  updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import dayjs from 'dayjs';
 import { Plus, Trash } from 'lucide-react';
@@ -25,6 +30,9 @@ import { useTranslation } from 'react-i18next';
 
 const outcomeLabel = (outcomes: DecisionOutcome[], name: string | undefined): string =>
   outcomes.find((outcome) => outcome.name === name)?.displayName || name || '';
+
+const termTexts = (decision: Decision | undefined): string[] =>
+  [...(decision?.terms ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((term) => term.text ?? '');
 
 const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> = ({ decision, outcomes }) => {
   const { t } = useTranslation();
@@ -71,7 +79,11 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
   );
 };
 
-export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => void }> = ({ setUnsaved }) => {
+export const SupportErrandDecisionTab: FC<{
+  setUnsaved: (unsaved: boolean) => void;
+  setHasContent: (hasContent: boolean) => void;
+  writable: boolean;
+}> = ({ setUnsaved, setHasContent, writable }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -110,15 +122,50 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
     return () => {
       current = false;
     };
-  }, [supportErrand?.id, municipalityId]);
+  }, [supportErrand?.id, municipalityId, supportErrand?.process?.currentActivityId]);
 
-  // A decision is written once, with its own button, so anything filled in is still unsaved.
-  const edited =
-    !decisions.length && (!!outcome || !!legalBasis || !!delegationReference || !!justification || terms.some(Boolean));
+  const decision = decisions[0];
+  const editable = writable && (!decision || isSupportDecisionDraft(decision));
+
+  const fillFormFrom = (draft: Decision) => {
+    setOutcome(outcomeWithoutConditions(draft.outcome));
+    setDecidedByRole(draft.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
+    setLegalBasis(draft.legalBasis ?? '');
+    setDelegationReference(draft.delegationReference ?? '');
+    setJustification(draft.justification ?? '');
+    setTerms(termTexts(draft));
+  };
+
+  useEffect(() => {
+    if (decision) fillFormFrom(decision);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decision?.id, decision?.version]);
+
+  const formInHand = () => ({
+    outcome,
+    legalBasis,
+    delegationReference,
+    justification,
+    terms: terms.filter(Boolean),
+  });
+
+  const formAsSaved = () => ({
+    outcome: outcomeWithoutConditions(decision?.outcome),
+    legalBasis: decision?.legalBasis ?? '',
+    delegationReference: decision?.delegationReference ?? '',
+    justification: decision?.justification ?? '',
+    terms: termTexts(decision),
+  });
+
+  const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
 
   useEffect(() => {
     setUnsaved(edited);
   }, [edited, setUnsaved]);
+
+  useEffect(() => {
+    setHasContent(decisions.length > 0);
+  }, [decisions, setHasContent]);
 
   const setTerm = (index: number, value: string) =>
     setTerms((current) => current.map((term, position) => (position === index ? value : term)));
@@ -128,16 +175,23 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
   const save = () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
-    createSupportDecision(supportErrand.id, municipalityId, {
-      outcome,
+    const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
+    const written = {
+      outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
       decidedByRole,
-      legalBasis: legalBasis || undefined,
-      delegationReference: delegationReference || undefined,
-      justification: justification || undefined,
-      terms: terms.map((term) => term.trim()).filter(Boolean),
-    })
-      .then((decision) => {
-        setDecisions([decision]);
+      legalBasis,
+      delegationReference,
+      justification,
+      terms: writtenTerms,
+    };
+
+    const saving = decision?.id
+      ? updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
+      : createSupportDecision(supportErrand.id, municipalityId, written);
+
+    saving
+      .then((saved) => {
+        setDecisions([saved]);
         setIsSaving(false);
         toastMessage({
           position: 'bottom',
@@ -157,8 +211,6 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
       });
   };
 
-  const decision = decisions[0];
-
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <h2 className="text-h2-md">{t('common:decision.heading')}</h2>
@@ -166,9 +218,15 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
       {isLoading ? <Spinner size={3} aria-label={t('common:decision.loading')} /> : null}
       {error ? <p>{t('common:decision.error')}</p> : null}
 
-      {!isLoading && !error && decision ? <DecisionSummary decision={decision} outcomes={outcomes} /> : null}
+      {!isLoading && !error && decision && !editable ? (
+        <DecisionSummary decision={decision} outcomes={outcomes} />
+      ) : null}
 
-      {!isLoading && !error && !decision ? (
+      {!isLoading && !error && !decision && !writable ? (
+        <p className="m-0">{t('common:decision.step_passed')}</p>
+      ) : null}
+
+      {!isLoading && !error && editable ? (
         <div className="flex flex-col gap-16 max-w-[48rem]">
           <FormControl id="decision-outcome" className="w-full" required>
             <FormLabel>{t('common:decision.outcome')}</FormLabel>
@@ -179,8 +237,10 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
               disabled={!canEdit}
               data-cy="decision-outcome"
             >
-              <Select.Option value="">{t('common:decision.outcome_placeholder')}</Select.Option>
-              {outcomes.map((option) => (
+              <Select.Option value="" disabled>
+                {t('common:decision.outcome_placeholder')}
+              </Select.Option>
+              {selectableSupportDecisionOutcomes(outcomes).map((option) => (
                 <Select.Option key={option.name} value={option.name}>
                   {option.displayName || option.name}
                 </Select.Option>

@@ -11,20 +11,15 @@ import {
   startSupportInvestigation,
   SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
-import {
-  getSupportErrandProcess,
-  hasReachedSupportProcessStep,
-  SupportProcessStep,
-} from '@supportmanagement/services/support-process-service';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
   [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 const asDate = (value: string | undefined): string =>
-  value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '–';
+  value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
 
 const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="flex flex-col">
@@ -49,7 +44,12 @@ const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ sectio
   );
 };
 
-export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boolean) => void }> = ({ setUnsaved }) => {
+export const SupportErrandInvestigationTab: React.FC<{
+  setUnsaved: (unsaved: boolean) => void;
+  setHasContent: (hasContent: boolean) => void;
+  inStep: boolean;
+  writable: boolean;
+}> = ({ setUnsaved, setHasContent, inStep, writable }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -71,17 +71,21 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
-  const inInvestigationStep = hasReachedSupportProcessStep(
-    SupportProcessStep.INVESTIGATION,
-    getSupportErrandProcess(supportErrand)
-  );
   const startedAutomatically = useRef(false);
-  const readOnly = !canEdit || isSupportInvestigationCompleted(investigation);
+  const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   const receive = (result: Investigation | undefined) => {
     setInvestigation(result);
     load(result);
   };
+
+  const receiveKeepingUnsavedEdits = useCallback(
+    (result: Investigation | undefined) => {
+      setInvestigation(result);
+      merge(result);
+    },
+    [merge]
+  );
 
   useEffect(() => {
     if (!errandId) return undefined;
@@ -89,11 +93,7 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
     getSupportInvestigation(errandId, municipalityId)
       .then((result) => {
         if (!current) return;
-        // The investigation is read again every time the errand changes, saving the errand
-        // included, so what the handler has written but not yet saved is kept: the errand and the
-        // investigation are saved with their own buttons.
-        setInvestigation(result);
-        merge(result);
+        receiveKeepingUnsavedEdits(result);
         setIsLoading(false);
       })
       .catch(() => {
@@ -104,12 +104,15 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
     return () => {
       current = false;
     };
-  }, [errandId, municipalityId, modified, merge]);
+  }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
-  // The investigation is saved with its own button, so the wrapper warns before the page is left.
   useEffect(() => {
     setUnsaved(edited);
   }, [edited, setUnsaved]);
+
+  useEffect(() => {
+    setHasContent(Boolean(investigation));
+  }, [investigation, setHasContent]);
 
   const reportFailure = (failure: unknown) =>
     toastMessage({
@@ -126,6 +129,10 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
     getSupportInvestigation(errandId, municipalityId)
       .then(receive)
       .catch(() => undefined);
+  };
+
+  const forgetAStartThatFailed = (started: Investigation | undefined) => {
+    if (!started) startedAutomatically.current = false;
   };
 
   const start = (): Promise<Investigation | undefined> => {
@@ -153,13 +160,11 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
   };
 
   useEffect(() => {
-    if (isLoading || error || investigation || !inInvestigationStep || !canEdit || startedAutomatically.current) return;
+    if (isLoading || error || investigation || !inStep || !canEdit || startedAutomatically.current) return;
     startedAutomatically.current = true;
-    start().then((started) => {
-      if (!started) startedAutomatically.current = false;
-    });
+    void start().then(forgetAStartThatFailed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, error, investigation, inInvestigationStep, canEdit]);
+  }, [isLoading, error, investigation, inStep, canEdit]);
 
   const save = () => {
     if (!errandId || !investigation?.id) return;
@@ -199,11 +204,15 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}
       {error ? <p>{t('common:investigation.error')}</p> : null}
 
-      {!isLoading && !error && !investigation && inInvestigationStep ? (
+      {!isLoading && !error && !investigation && inStep ? (
         <Spinner size={3} aria-label={t('common:investigation.starting')} />
       ) : null}
 
-      {!isLoading && !error && !investigation && !inInvestigationStep ? (
+      {!isLoading && !error && !investigation && !inStep && !writable ? (
+        <p className="m-0">{t('common:investigation.step_passed')}</p>
+      ) : null}
+
+      {!isLoading && !error && !investigation && !inStep && writable ? (
         <div className="flex flex-col gap-16 max-w-[48rem]">
           <p className="m-0">{t('common:investigation.not_started')}</p>
           <div>

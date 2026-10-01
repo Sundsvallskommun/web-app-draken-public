@@ -44,7 +44,10 @@
     "registeredBy": "Registrerad av",
     "priority": "Prioritet",
     "reminder": "Påminnelse",
-    "responsible": "Ansvarig"
+    "responsible": "Ansvarig",
+    "process": {
+      "label": "Process"
+    }
   },
   "tabs": {
     "investigation": "Utredning",
@@ -118,7 +121,8 @@
     "starting": "Utredningen påbörjas",
     "section_not_built": "Den här delen av utredningen är inte byggd än.",
     "unsaved": "Osparade ändringar",
-    "saving": "Sparar"
+    "saving": "Sparar",
+    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här."
   },
   "process": {
     "steps": {
@@ -141,7 +145,13 @@
       "heading": "Processlogg",
       "loading": "Hämtar processloggen",
       "error": "Processloggen kunde inte hämtas.",
-      "empty": "Processen har inte loggat något än."
+      "empty": "Processen har inte loggat något än.",
+      "step_taken_by": "{{step}} markerades som klar av {{by}}",
+      "step_taken": "{{step}} markerades som klar",
+      "stepped_by": "Ärendet stegades vidare av {{by}}",
+      "reported": "Processen rapporterade {{activity}}",
+      "cancelled": "Processen avbröts",
+      "cancelled_by": "Processen avbröts av {{by}}"
     },
     "actions": {
       "confirm_no": "Nej",
@@ -182,7 +192,28 @@
         "confirm_yes": "Ja, avsluta",
         "done": "Ärendet är avslutat.",
         "error": "Ärendet kunde inte avslutas."
-      }
+      },
+      "missing_outcome": {
+        "title": "Utfall saknas",
+        "text": "Ärendet kan inte gå vidare till uppföljning förrän ett beslut med utfall är sparat i beslutsfliken.",
+        "go_to_decision": "Till beslutsfliken",
+        "cancel": "Avbryt"
+      },
+      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund."
+    },
+    "trouble": {
+      "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
+      "concurrent_tasks": "Två steg i processen kördes samtidigt och slog ut varandra. Felet sitter i processmodellen.",
+      "unknown": "Processen stannade på ett tekniskt fel.",
+      "upstream_refused": "Processen fastnade mot tjänsten {{service}}, som svarade {{status}}. Det behöver rättas av teamet som förvaltar processen."
+    },
+    "activities": {
+      "create_decision": "Skapar beslut",
+      "check_decision": "Kontrollerar beslut",
+      "create_asset": "Skapar tillstånd",
+      "complete_process": "Avslutar processen",
+      "cancel_process": "Avbryter processen",
+      "unknown": "Tekniskt steg"
     }
   },
   "decision": {
@@ -217,6 +248,7 @@
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
     "empty_value": "—",
-    "unsaved": "Osparade ändringar"
+    "unsaved": "Osparade ändringar",
+    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
   }
 }

@@ -1,3 +1,4 @@
+import type { ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
@@ -22,9 +23,11 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import {
   getSupportErrandProcess,
-  hasReachedSupportProcessStep,
+  getSupportProcessActivities,
+  hasVisitedSupportProcessStep,
   SupportProcessStep,
   SupportProcessStepName,
+  supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -52,16 +55,25 @@ export const SupportTabsWrapper: FC<{
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
-  // The investigation and the decision are resources of their own, saved with their own buttons, so
-  // they are tracked apart from the errand form - in the store, since the sidebar asks about them too.
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
+  const tabsWithContent = useSupportStore((s) => s.tabsWithContent);
+  const setTabHasContent = useSupportStore((s) => s.setTabHasContent);
+  const setInvestigationContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('investigation', hasContent),
+    [setTabHasContent]
+  );
+  const setDecisionContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('decision', hasContent),
+    [setTabHasContent]
+  );
   const setUnsavedInvestigation = useCallback(
     (unsaved: boolean) => setUnsavedTab('investigation', unsaved),
     [setUnsavedTab]
   );
   const setUnsavedDecision = useCallback((unsaved: boolean) => setUnsavedTab('decision', unsaved), [setUnsavedTab]);
   const confirm = useConfirm();
+  const [processActivities, setProcessActivities] = useState<ProcessActivity[]>([]);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -75,6 +87,19 @@ export const SupportTabsWrapper: FC<{
       setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
     }
   }, [methods]);
+
+  const errandId = supportErrand?.id;
+  const stepTheProcessReports = supportErrand?.process?.currentActivityId;
+  const processStatus = supportErrand?.process?.processStatus;
+
+  const readProcessLog = useCallback(() => {
+    if (!appConfig.features.useProcess || !errandId) return;
+    getSupportProcessActivities(errandId, municipalityId)
+      .then(setProcessActivities)
+      .catch(() => setProcessActivities([]));
+  }, [errandId, municipalityId]);
+
+  useEffect(readProcessLog, [readProcessLog, supportErrand?.modified, stepTheProcessReports, processStatus]);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -130,7 +155,19 @@ export const SupportTabsWrapper: FC<{
   const process = getSupportErrandProcess(supportErrand);
 
   const awaitsStep = (step: SupportProcessStepName): boolean =>
-    appConfig.features.useProcess && Boolean(process) && !hasReachedSupportProcessStep(step, process);
+    appConfig.features.useProcess && !hasVisitedSupportProcessStep(step, process, processActivities);
+
+  const tabHoldsSomethingToRead = (key: string): boolean => !!tabsWithContent[key];
+
+  const tabIsClosed = (step: SupportProcessStepName, key: string): boolean =>
+    awaitsStep(step) && !tabHoldsSomethingToRead(key);
+
+  const standsInStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && Boolean(process) && supportProcessStepName(process) === step;
+
+  const nothingCloses = (): boolean => !appConfig.features.useProcess;
+
+  const writableInSteps = (...steps: SupportProcessStepName[]): boolean => nothingCloses() || steps.some(standsInStep);
 
   const tabs: {
     key: string;
@@ -188,15 +225,28 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'investigation',
         label: t('common:tabs.investigation'),
-        content: supportErrand && <SupportErrandInvestigationTab setUnsaved={setUnsavedInvestigation} />,
-        disabled: awaitsStep(SupportProcessStep.INVESTIGATION),
+        content: supportErrand && (
+          <SupportErrandInvestigationTab
+            setUnsaved={setUnsavedInvestigation}
+            setHasContent={setInvestigationContent}
+            inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
+            writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.INVESTIGATION, 'investigation'),
         visibleFor: appConfig.features.useInvestigationTab,
       },
       {
         key: 'decision',
         label: t('common:tabs.decision'),
-        content: supportErrand && <SupportErrandDecisionTab setUnsaved={setUnsavedDecision} />,
-        disabled: awaitsStep(SupportProcessStep.DECISION),
+        content: supportErrand && (
+          <SupportErrandDecisionTab
+            setUnsaved={setUnsavedDecision}
+            setHasContent={setDecisionContent}
+            writable={writableInSteps(SupportProcessStep.DECISION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.DECISION, 'decision'),
         visibleFor: appConfig.features.useDecisionTab,
       },
       {
@@ -241,25 +291,23 @@ export const SupportTabsWrapper: FC<{
       messageTree,
       messages,
       municipalityId,
+      processActivities,
       props.setUnsavedFacility,
       supportAttachments,
       supportConversations,
       supportErrand,
       t,
+      tabsWithContent,
     ]
   );
 
   const [activeTab, setActiveTab] = useState(0);
 
-  /** What the tab being left is holding, written but not yet saved. */
   const unsavedInActiveTab = (): boolean => !!activeTabKey && !!unsavedTabs[activeTabKey];
 
-  /**
-   * Tabs moves itself when its button is clicked, unless the button brings its own handler, so the
-   * tab is changed from here alone - and declining the question leaves the tab where it stands.
-   */
   const changeTab = (key: string) => {
-    if (key === activeTabKey) {
+    const tabIsAlreadyOpen = key === activeTabKey;
+    if (tabIsAlreadyOpen) {
       return;
     }
 
