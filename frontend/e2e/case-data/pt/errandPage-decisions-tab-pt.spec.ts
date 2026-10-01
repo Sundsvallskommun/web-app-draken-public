@@ -351,7 +351,7 @@ test.describe('Decisions tab', () => {
     await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeEnabled();
   });
 
-  test('offers and saves bifall med villkor for FT', async ({ page, mockRoute, dismissCookieConsent }) => {
+  test('offers and saves bifall/Avslag for FT', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/errand/errandNumber/*', mockFTErrand);
     await visitErrand(page, dismissCookieConsent);
 
@@ -359,13 +359,13 @@ test.describe('Decisions tab', () => {
       'Välj utfall',
       'Bifall',
       'Avslag',
-      'Bifall med villkor',
+      'Bifall/Avslag',
       'Ärendet avskrivs',
       'Ärendet avvisas',
       'Återkallelse av tidigare utfärdat tillstånd',
     ]);
 
-    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall med villkor');
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall/Avslag');
     // Like approval: the approved services are shown (FT has no decision validity dates).
     await expect(page.locator('[data-cy="decision-services-disclosure"]')).toBeVisible();
     await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
