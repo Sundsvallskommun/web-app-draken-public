@@ -15,13 +15,7 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
-import {
-  getSupportErrandProcess,
-  supportProcessActivityKey,
-  supportProcessName,
-  supportProcessStepIndex,
-  supportProcessStepKeys,
-} from '@supportmanagement/services/support-process-service';
+import { getSupportErrandProcess, supportProcessPhaseKey } from '@supportmanagement/services/support-process-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -34,13 +28,8 @@ export const useSupportErrandTable = (statuses: Status[]) => {
   const administrators = useUserStore((s) => s.administrators);
 
   const processPhase = (errand: SupportErrand): string => {
-    const process = getSupportErrandProcess(errand);
-    if (!process) return '';
-
-    const activityKey =
-      supportProcessStepKeys()[supportProcessStepIndex(process)] ??
-      supportProcessActivityKey(process.currentActivityId);
-    return activityKey ? t(activityKey) : supportProcessName(process.processKey, supportMetadata);
+    const phaseKey = supportProcessPhaseKey(getSupportErrandProcess(errand));
+    return phaseKey ? t(phaseKey) : '';
   };
 
   const processLabels = appConfig.features.useProcess

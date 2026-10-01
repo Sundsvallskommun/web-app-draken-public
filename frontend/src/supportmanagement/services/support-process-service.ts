@@ -158,6 +158,21 @@ export const supportProcessStepIndex = (process: ErrandProcess | undefined): num
 export const supportProcessStepName = (process: ErrandProcess | undefined): SupportProcessStepName | undefined =>
   SUPPORT_PROCESS_STEPS[supportProcessStepIndex(process)]?.name;
 
+const PHASE_OF_EXTERNAL_TASK: Record<string, SupportProcessStepName> = {
+  external_task_create_decision: SupportProcessStep.DECISION,
+  external_task_check_decision: SupportProcessStep.DECISION,
+  external_task_create_asset: SupportProcessStep.DECISION,
+  external_task_complete_process: SupportProcessStep.CLOSING,
+};
+
+export const supportProcessPhaseKey = (process: ErrandProcess | undefined): string | undefined => {
+  const stepKey = supportProcessStepKeys()[supportProcessStepIndex(process)];
+  if (stepKey) return stepKey;
+
+  const phase = process?.currentActivityId ? PHASE_OF_EXTERNAL_TASK[process.currentActivityId] : undefined;
+  return SUPPORT_PROCESS_STEPS.find((step) => step.name === phase)?.translationKey;
+};
+
 export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
   apiService
     .get<PageProcessActivity>(`supportprocess/${municipalityId}/${errandId}/activities`)

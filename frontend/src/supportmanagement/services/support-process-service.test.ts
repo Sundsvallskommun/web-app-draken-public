@@ -1,8 +1,8 @@
-import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { ErrandProcess, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { expect, test } from 'vitest';
 
 import type { SupportMetadata } from './support-metadata-service';
-import { supportProcessActivityKey, supportProcessName } from './support-process-service';
+import { supportProcessActivityKey, supportProcessName, supportProcessPhaseKey } from './support-process-service';
 
 const label = (displayName: string, processKey?: string, labels: Label[] = []): Label => ({
   classification: 'CATEGORY',
@@ -57,4 +57,30 @@ test('a process no errand type starts has no name, and neither has one without m
   expect(supportProcessName('supervision', metadata)).toBe('');
   expect(supportProcessName('alcohol-serving', undefined)).toBe('');
   expect(supportProcessName(undefined, metadata)).toBe('');
+});
+
+const standingIn = (currentActivityId: string, processStatus = 'WAITING') =>
+  ({ currentActivityId, processStatus } as ErrandProcess);
+
+test('the phase of a process is the step it stands in', () => {
+  expect(supportProcessPhaseKey(standingIn('review_phase'))).toBe('common:process.steps.review');
+});
+
+test('a step the process runs by itself is shown as the phase it runs in, not as itself', () => {
+  expect(supportProcessPhaseKey(standingIn('external_task_create_decision'))).toBe('common:process.steps.decision');
+  expect(supportProcessPhaseKey(standingIn('external_task_check_decision'))).toBe('common:process.steps.decision');
+  expect(supportProcessPhaseKey(standingIn('external_task_create_asset'))).toBe('common:process.steps.decision');
+  expect(supportProcessPhaseKey(standingIn('external_task_complete_process'))).toBe('common:process.steps.closing');
+});
+
+test('a cancellation belongs to no phase, and neither does an activity added to the model since', () => {
+  expect(supportProcessPhaseKey(standingIn('external_task_cancel_process'))).toBeUndefined();
+  expect(supportProcessPhaseKey(standingIn('external_task_notify_police'))).toBeUndefined();
+  expect(supportProcessPhaseKey(undefined)).toBeUndefined();
+});
+
+test('a finished process is in the last phase, whichever activity it ended on', () => {
+  expect(supportProcessPhaseKey(standingIn('external_task_complete_process', 'COMPLETED'))).toBe(
+    'common:process.steps.closing'
+  );
 });
