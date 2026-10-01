@@ -62,7 +62,7 @@ const errand = (
 
 describe('JA - the premises are at the owner', () => {
   test('uses the PRIMARY stakeholder address, not another stakeholder', () => {
-    expect(getPremisesAddress(errand({ besoksadressSammaSomForetaget: 'JA' }), NAMESPACE)).toEqual({
+    expect(getPremisesAddress(errand({ besoksadressSammaSomArendeagare: 'JA' }), NAMESPACE)).toEqual({
       street: COMPANY.street,
       postalCode: withoutSpaces(COMPANY.postalCode),
       city: COMPANY.city,
@@ -73,21 +73,23 @@ describe('JA - the premises are at the owner', () => {
   test('an owner without an address is no address', () => {
     const owner = { ...OWNER, address: '', zipCode: '', city: '' };
 
-    expect(getPremisesAddress(errand({ besoksadressSammaSomForetaget: 'JA' }, [owner]), NAMESPACE)).toBeUndefined();
+    expect(getPremisesAddress(errand({ besoksadressSammaSomArendeagare: 'JA' }, [owner]), NAMESPACE)).toBeUndefined();
   });
 
   test('an errand without an owner is no address', () => {
-    expect(getPremisesAddress(errand({ besoksadressSammaSomForetaget: 'JA' }, [REPORTER]), NAMESPACE)).toBeUndefined();
+    expect(
+      getPremisesAddress(errand({ besoksadressSammaSomArendeagare: 'JA' }, [REPORTER]), NAMESPACE)
+    ).toBeUndefined();
   });
 
   test('a stale besoksadress left behind does not win over the owner', () => {
-    const formData = { besoksadressSammaSomForetaget: 'JA', besoksadress: BESOKSADRESS };
+    const formData = { besoksadressSammaSomArendeagare: 'JA', besoksadress: BESOKSADRESS };
 
     expect(getPremisesAddress(errand(formData), NAMESPACE)?.street).toBe(COMPANY.street);
   });
 
   test('does not fall back to besoksadress when the owner has no address', () => {
-    const formData = { besoksadressSammaSomForetaget: 'JA', besoksadress: BESOKSADRESS };
+    const formData = { besoksadressSammaSomArendeagare: 'JA', besoksadress: BESOKSADRESS };
     const owner = { ...OWNER, address: undefined };
 
     expect(getPremisesAddress(errand(formData, [owner]), NAMESPACE)).toBeUndefined();
@@ -96,13 +98,13 @@ describe('JA - the premises are at the owner', () => {
 
 describe('NEJ or no question - the premises are in the form', () => {
   test('NEJ uses besoksadress', () => {
-    const formData = { besoksadressSammaSomForetaget: 'NEJ', besoksadress: BESOKSADRESS };
+    const formData = { besoksadressSammaSomArendeagare: 'NEJ', besoksadress: BESOKSADRESS };
 
     expect(getPremisesAddress(errand(formData), NAMESPACE)).toEqual(FORM_ADDRESS);
   });
 
   test('NEJ on a draft without besoksadress is no address, not the owner', () => {
-    expect(getPremisesAddress(errand({ besoksadressSammaSomForetaget: 'NEJ' }), NAMESPACE)).toBeUndefined();
+    expect(getPremisesAddress(errand({ besoksadressSammaSomArendeagare: 'NEJ' }), NAMESPACE)).toBeUndefined();
   });
 
   test('an absent question uses besoksadress', () => {
@@ -117,7 +119,7 @@ describe('NEJ or no question - the premises are in the form', () => {
 
   test('extra fields in besoksadress (tobacco) are ignored', () => {
     const formData = {
-      besoksadressSammaSomForetaget: 'NEJ',
+      besoksadressSammaSomArendeagare: 'NEJ',
       besoksadress: { ...BESOKSADRESS, telefonnummer: mockEnv.mockPhoneNumber, ePost: mockEnv.mockEmail },
     };
 
@@ -170,13 +172,13 @@ describe.each([
 ])('%s', (schemaName, asksQuestion) => {
   if (asksQuestion) {
     test('JA uses the owner', () => {
-      const formData = { besoksadressSammaSomForetaget: 'JA' };
+      const formData = { besoksadressSammaSomArendeagare: 'JA' };
 
       expect(getPremisesAddress(errandFor(schemaName, formData), NAMESPACE)?.source).toBe('OWNER');
     });
 
     test('NEJ uses besoksadress', () => {
-      const formData = { besoksadressSammaSomForetaget: 'NEJ', besoksadress: BESOKSADRESS };
+      const formData = { besoksadressSammaSomArendeagare: 'NEJ', besoksadress: BESOKSADRESS };
 
       expect(getPremisesAddress(errandFor(schemaName, formData), NAMESPACE)?.source).toBe('FORM');
     });

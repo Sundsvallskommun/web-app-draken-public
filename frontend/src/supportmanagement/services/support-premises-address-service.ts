@@ -51,7 +51,7 @@ const fromOwner = (errand: PremisesAddressErrand): PremisesAddress | undefined =
 /**
  * The address of the serving/sales premises (besöksadress) of an AoT errand.
  *
- * `besoksadressSammaSomForetaget: "JA"` means the premises are at the owner's address; anything else,
+ * `besoksadressSammaSomArendeagare: "JA"` means the premises are at the owner's address; anything else,
  * including the question being absent, means the form's own `besoksadress`. The chosen source is
  * final: when it holds no usable address the result is undefined, never the other source — a stale
  * `besoksadress` left behind after answering JA is not the premises.
@@ -65,5 +65,5 @@ export const getPremisesAddress = (
   const value = jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value;
   const formData = value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
 
-  return formData?.besoksadressSammaSomForetaget === 'JA' ? fromOwner(errand) : fromForm(formData);
+  return formData?.besoksadressSammaSomArendeagare === 'JA' ? fromOwner(errand) : fromForm(formData);
 };
