@@ -17,11 +17,12 @@ const ProcessActivityRow: FC<{ activity: ProcessActivity }> = ({ activity }) => 
   const { t } = useTranslation();
   const message = supportProcessActivityMessage(activity);
   const step = message.stepKey ? t(message.stepKey) : undefined;
+  const reportedActivity = message.activityKey ? t(message.activityKey) : message.values?.activity;
 
   return (
     <li className="border-b-1 last:border-b-0 py-8">
       <div className="flex justify-between gap-16">
-        <span className="font-bold">{t(message.key, { ...message.values, step })}</span>
+        <span className="font-bold">{t(message.key, { ...message.values, step, activity: reportedActivity })}</span>
         <time dateTime={activity.occurredAt} className="text-small text-dark-secondary whitespace-nowrap">
           {dayjs(activity.occurredAt).format('YYYY-MM-DD HH:mm:ss')}
         </time>

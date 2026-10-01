@@ -1,15 +1,17 @@
 import type { ErrandProcess, ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import { supportProcessStepKeyOfGate } from './support-process-service';
+import { supportProcessActivityKey, supportProcessStepKeyOfGate } from './support-process-service';
 
 export interface SupportProcessMessage {
   key: string;
   values?: Record<string, string>;
   stepKey?: string;
+  activityKey?: string;
   detail?: string;
 }
 
 const CONCURRENT_TASKS = 'CONCURRENT_EXTERNAL_TASKS';
+const CANCELLATION = 'process_cancelled';
 const MISSING_ROLE = /has no stakeholder with role '([^']+)'/;
 const SIGNAL_SENDER = /sent by (\S+)/;
 const HTTP_STATUS = /^\d{3}$/;
@@ -66,6 +68,12 @@ export const supportProcessActivityMessage = (activity: ProcessActivity): Suppor
 
   if (activity.activityType === 'SIGNAL') {
     const by = senderOfSignal(activity.message ?? '');
+
+    if (activity.activityId === CANCELLATION) {
+      if (by) return { key: 'common:process.log.cancelled_by', values: { by }, detail };
+      return { key: 'common:process.log.cancelled', detail };
+    }
+
     const stepKey = supportProcessStepKeyOfGate(activity.activityId);
 
     if (stepKey && by) return { key: 'common:process.log.step_taken_by', values: { by }, stepKey, detail };
@@ -75,6 +83,7 @@ export const supportProcessActivityMessage = (activity: ProcessActivity): Suppor
 
   return {
     key: 'common:process.log.reported',
+    activityKey: supportProcessActivityKey(activity.activityId),
     values: { activity: activity.activityName || activity.activityId || '' },
     detail,
   };

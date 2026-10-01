@@ -2,6 +2,7 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
+import { Label } from '@sk-web-gui/react';
 import { useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -14,6 +15,7 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
+import { getSupportErrandProcess, supportProcessPhaseKey } from '@supportmanagement/services/support-process-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +26,28 @@ export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
+
+  const processPhase = (errand: SupportErrand): string => {
+    const phaseKey = supportProcessPhaseKey(getSupportErrandProcess(errand));
+    return phaseKey ? t(phaseKey) : '';
+  };
+
+  const processLabels = appConfig.features.useProcess
+    ? [
+        {
+          label: t('common:overview.process.label'),
+          screenReaderOnly: false,
+          sortable: false,
+          shownForStatus: All.ALL,
+          render: (errand: SupportErrand) =>
+            processPhase(errand).length > 0 && (
+              <Label rounded className={`max-h-full h-auto text-center text-xs whitespace-nowrap`}>
+                {processPhase(errand)}
+              </Label>
+            ),
+        },
+      ]
+    : [];
 
   const labels = [
     {
@@ -168,6 +192,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
         <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
       ),
     },
+    ...processLabels,
     {
       label: t('common:overview.responsible'),
       screenReaderOnly: false,

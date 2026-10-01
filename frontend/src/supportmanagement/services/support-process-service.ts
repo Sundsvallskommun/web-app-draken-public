@@ -1,5 +1,6 @@
 import type {
   ErrandProcess,
+  Label,
   PageProcessActivity,
   ProcessActivity,
   ProcessSignal,
@@ -7,6 +8,7 @@ import type {
 import { apiService } from '@common/services/api-service';
 
 import { SupportErrand } from './support-errand-service';
+import type { SupportMetadata } from './support-metadata-service';
 
 const SupportProcessStatus = {
   RUNNING: 'RUNNING',
@@ -46,14 +48,6 @@ export const isSupportProcessCompleted = (process: ErrandProcess | undefined): b
 
 export const isSupportProcessWorking = (process: ErrandProcess | undefined): boolean =>
   process?.processStatus === SupportProcessStatus.RUNNING || process?.processStatus === SupportProcessStatus.RETRYING;
-
-/**
- * The step the process is at, named as the process model names it. A step the model has not named
- * falls back to the process itself rather than to the model's own identifier, which says nothing to
- * a handler.
- */
-export const supportProcessStepLabel = (process: ErrandProcess | undefined): string =>
-  process?.currentActivityId || process?.processKey || '';
 
 /**
  * The steps the AoT process runs, in the order the business describes them. The process model has
@@ -117,6 +111,37 @@ const SUPPORT_PROCESS_STEPS: {
 
 export const supportProcessStepKeys = (): string[] => SUPPORT_PROCESS_STEPS.map((step) => step.translationKey);
 
+const EXTERNAL_TASK_KEYS: Record<string, string> = {
+  external_task_create_decision: 'common:process.activities.create_decision',
+  external_task_check_decision: 'common:process.activities.check_decision',
+  external_task_create_asset: 'common:process.activities.create_asset',
+  external_task_complete_process: 'common:process.activities.complete_process',
+  external_task_cancel_process: 'common:process.activities.cancel_process',
+};
+
+const ACTIVITY_KEYS = new Map<string, string>([
+  ...SUPPORT_PROCESS_STEPS.flatMap((step) => step.activityIds.map((id) => [id, step.translationKey] as const)),
+  ...Object.entries(EXTERNAL_TASK_KEYS),
+]);
+
+export const supportProcessActivityKey = (activityId: string | undefined): string | undefined =>
+  activityId ? ACTIVITY_KEYS.get(activityId) : undefined;
+
+const PROCESS_KEY_ATTRIBUTE = 'processKey';
+
+const labelWithItsOwn = (label: Label): Label[] => [label, ...(label.labels ?? []).flatMap(labelWithItsOwn)];
+
+const startsProcess = (label: Label, processKey: string): boolean =>
+  label.attributes?.some((attribute) => attribute.key === PROCESS_KEY_ATTRIBUTE && attribute.value === processKey) ===
+  true;
+
+export const supportProcessName = (processKey: string | undefined, metadata: SupportMetadata | undefined): string => {
+  if (!processKey) return '';
+
+  const labels = (metadata?.labels?.labelStructure ?? []).flatMap(labelWithItsOwn);
+  return labels.find((label) => startsProcess(label, processKey))?.displayName ?? '';
+};
+
 /**
  * Which of the steps the process is at, or -1 for an activity the mapping does not know. A finished
  * process is at the last step whichever activity it ended on, since its errand is done.
@@ -132,6 +157,21 @@ export const supportProcessStepIndex = (process: ErrandProcess | undefined): num
 /** The step the process stands in, or undefined for an activity the mapping does not know. */
 export const supportProcessStepName = (process: ErrandProcess | undefined): SupportProcessStepName | undefined =>
   SUPPORT_PROCESS_STEPS[supportProcessStepIndex(process)]?.name;
+
+const PHASE_OF_EXTERNAL_TASK: Record<string, SupportProcessStepName> = {
+  external_task_create_decision: SupportProcessStep.DECISION,
+  external_task_check_decision: SupportProcessStep.DECISION,
+  external_task_create_asset: SupportProcessStep.DECISION,
+  external_task_complete_process: SupportProcessStep.CLOSING,
+};
+
+export const supportProcessPhaseKey = (process: ErrandProcess | undefined): string | undefined => {
+  const stepKey = supportProcessStepKeys()[supportProcessStepIndex(process)];
+  if (stepKey) return stepKey;
+
+  const phase = process?.currentActivityId ? PHASE_OF_EXTERNAL_TASK[process.currentActivityId] : undefined;
+  return SUPPORT_PROCESS_STEPS.find((step) => step.name === phase)?.translationKey;
+};
 
 export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
   apiService
