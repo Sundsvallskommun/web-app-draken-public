@@ -152,6 +152,18 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const attachmentCount = countAttachment(supportAttachments ?? []);
+  // A file written from another tab, such as the underlay of a statement, is counted as new until the
+  // handler has had the attachments open (adjusting state during render, not in an effect).
+  const [seenAttachmentCount, setSeenAttachmentCount] = useState(attachmentCount);
+  if (activeTabKey === 'attachments' && seenAttachmentCount !== attachmentCount) {
+    setSeenAttachmentCount(attachmentCount);
+  }
+  const newAttachmentCount = Math.max(0, attachmentCount - seenAttachmentCount);
+  const attachmentTabLabel = `Bilagor (${attachmentCount}${
+    newAttachmentCount > 0 ? `, ${newAttachmentCount} ${newAttachmentCount === 1 ? 'ny' : 'nya'}` : ''
+  })`;
+
   const process = getSupportErrandProcess(supportErrand);
 
   const awaitsStep = (step: SupportProcessStepName): boolean =>
@@ -217,7 +229,7 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'attachments',
-        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        label: attachmentTabLabel,
         content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
         disabled: false,
         visibleFor: true,
@@ -286,6 +298,7 @@ export const SupportTabsWrapper: FC<{
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      attachmentTabLabel,
       conversationMessageTree,
       messageTabLabel,
       messageTree,

@@ -26,6 +26,11 @@ import {
   SupportProcessStepName,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
+import {
+  getSupportStatements,
+  isSupportStatementAwaitingAnswer,
+  isSupportStatementUnsent,
+} from '@supportmanagement/services/support-statement-service';
 import { ArrowRight } from 'lucide-react';
 import { FC, ReactElement, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -44,6 +49,7 @@ interface ProcessAction {
   /** The tab whose unsaved work the step leaves behind, if it has one. */
   unsavedTabKey?: string;
   requiresDecisionOutcome?: boolean;
+  requiresAnsweredStatements?: boolean;
   completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
@@ -100,6 +106,7 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     needsSignal: true,
     tabKey: 'decision',
     unsavedTabKey: 'investigation',
+    requiresAnsweredStatements: true,
   },
   [SupportProcessStep.DECISION]: {
     key: 'start_follow_up',
@@ -295,6 +302,53 @@ export const SupportProcessStepButton: FC<{
       )
       .then((confirmed) => (confirmed ? run(action, decisionsInHand) : undefined));
 
+  /**
+   * Whether the statements leave the way to a decision open. One still out with a counterparty closes
+   * it: the decision would rest on an answer nobody has given. One prepared but never sent is worth
+   * asking about, since it holds up nothing, and a settled one - answered, opposed, never replied to
+   * or withdrawn - stands in nobody's way.
+   */
+  const statementsAllowADecision = async (): Promise<boolean> => {
+    if (!errandId) return false;
+
+    const onErrand = await getSupportStatements(errandId, municipalityId).catch(() => undefined);
+    if (!onErrand) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:process.actions.statements_unread'),
+        status: 'error',
+      });
+      return false;
+    }
+
+    if (onErrand.some(isSupportStatementAwaitingAnswer)) {
+      const goToStatements = await confirm.showConfirmation(
+        t('common:process.actions.awaiting_statements.title'),
+        t('common:process.actions.awaiting_statements.text'),
+        t('common:process.actions.awaiting_statements.go_to_investigation'),
+        t('common:process.actions.awaiting_statements.cancel'),
+        'info',
+        'info'
+      );
+      if (goToStatements) setActiveTabKey('investigation');
+      return false;
+    }
+
+    if (onErrand.some(isSupportStatementUnsent)) {
+      return confirm.showConfirmation(
+        t('common:process.actions.unsent_statements.title'),
+        t('common:process.actions.unsent_statements.text'),
+        t('common:process.actions.unsent_statements.confirm_yes'),
+        t('common:process.actions.unsent_statements.cancel'),
+        'info',
+        'info'
+      );
+    }
+
+    return true;
+  };
+
   const askForAnOutcomeFirst = () =>
     confirm
       .showConfirmation(
@@ -310,6 +364,8 @@ export const SupportProcessStepButton: FC<{
       });
 
   const start = async (action: ProcessAction) => {
+    if (action.requiresAnsweredStatements && !(await statementsAllowADecision())) return;
+
     if (!action.requiresDecisionOutcome) {
       return action.confirms === false ? run(action) : ask(action);
     }
