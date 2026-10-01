@@ -1,6 +1,7 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
+import { useFeatureFlag } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
@@ -12,7 +13,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { Fragment, useEffect, useState } from 'react';
 
 import { PageHeader } from './page-header.component';
-import { userMenuGroups } from './userMenuGroups';
+import { getUserMenuGroups } from './userMenuGroups';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
@@ -25,6 +26,8 @@ export default function Layout({ title, children }: { title: string; children: R
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
+  const errorReportingEnabled = useFeatureFlag('useErrorReporting');
+  const userMenuGroups = getUserMenuGroups(errorReportingEnabled);
 
   useEffect(() => {
     setHostName(window.location.hostname);

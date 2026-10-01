@@ -39,6 +39,7 @@ interface AppConfigFeatures {
   useServices: boolean;
   useAppeal: boolean;
   useHandover: boolean;
+  useErrorReporting: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -87,6 +88,8 @@ export const appConfig: AppConfig = {
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
+    // Fail closed: error reporting must be explicitly enabled by a runtime flag for this Drake.
+    useErrorReporting: false,
   },
 };
 

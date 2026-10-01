@@ -20,9 +20,7 @@ import { mockNotifications } from './fixtures/mockSupportNotifications';
 
 test.describe('Overview support errand', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
@@ -196,6 +194,25 @@ test.describe('Overview support errand', () => {
     await expect(page.locator(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`)).toBeVisible();
     await expect(page.locator(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`)).toBeVisible();
     await expect(page.locator(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`)).toBeVisible();
+  });
+
+  test('keeps error reporting hidden when the feature flag is missing', async ({ page }) => {
+    await page.locator('[data-cy="avatar-aside"]').click();
+
+    await expect(page.getByText('Rapportera fel', { exact: true })).toHaveCount(0);
+  });
+
+  test('shows error reporting when enabled for the current Drake', async ({ page, mockRoute }) => {
+    await mockRoute('**/featureflags', [{ name: 'useErrorReporting', enabled: true }], { method: 'GET' });
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes('featureflags') && response.status() === 200),
+      page.reload(),
+    ]);
+
+    await page.locator('[data-cy="avatar-aside"]').click();
+    await page.getByText('Rapportera fel', { exact: true }).click();
+
+    await expect(page.getByRole('dialog', { name: 'Rapportera fel' })).toBeVisible();
   });
 
   //SIDEBAR USE
