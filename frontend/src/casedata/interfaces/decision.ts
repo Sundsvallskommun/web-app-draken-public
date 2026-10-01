@@ -37,7 +37,7 @@ export type DecisionOutcome = `${DecisionOutcomes}`;
 export enum DecisionOutcomeKey {
   'Bifall' = 'APPROVAL',
   'Avslag' = 'REJECTION',
-  'Bifall med villkor' = 'CONDITIONAL_APPROVAL',
+  'Bifall/Avslag' = 'CONDITIONAL_APPROVAL',
   'Ärendet avskrivs' = 'CANCELLATION',
   'Ärendet avvisas' = 'DISMISSAL',
   'Återkallelse av tidigare utfärdat tillstånd' = 'REVOCATION',
