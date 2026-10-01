@@ -61,7 +61,7 @@ export const schemaNameForErrand = (
 
 /** `key` is the schema name, which is what Katla files the answers under. */
 export const jsonParameterForSchema = (
-  errand: SupportErrand | undefined,
+  errand: Pick<SupportErrand, 'jsonParameters'> | undefined,
   schemaName: string | undefined
 ): CJsonParameter | undefined =>
   schemaName ? errand?.jsonParameters?.find((parameter) => parameter.key === schemaName) : undefined;

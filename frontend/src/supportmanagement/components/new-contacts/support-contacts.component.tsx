@@ -1,6 +1,7 @@
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
+import { SupportErrandPremisesSection } from '@supportmanagement/components/premises/support-errand-premises-section.component';
 import {
   emptyContact,
   ExternalIdType,
@@ -323,6 +324,9 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
         contact.externalId &&
         supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId) ? (
           <PartyAssetsSection partyId={contact.externalId} />
+        ) : null}
+        {appConfig.features.useLicensedBusiness && supportErrand?.id && contact.role === 'PRIMARY' ? (
+          <SupportErrandPremisesSection />
         ) : null}
       </div>
     );
