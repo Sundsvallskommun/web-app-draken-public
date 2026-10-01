@@ -1,6 +1,7 @@
+import type { ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
-import { cx, Tabs } from '@sk-web-gui/react';
+import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
@@ -20,14 +21,26 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
+import {
+  getSupportErrandProcess,
+  getSupportProcessActivities,
+  hasVisitedSupportProcessStep,
+  SupportProcessStep,
+  SupportProcessStepName,
+  supportProcessStepName,
+} from '@supportmanagement/services/support-process-service';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
+import { SupportErrandDecisionTab } from './tabs/support-errand-decision-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
+import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
+import { SupportErrandInvestigationTab } from './tabs/support-errand-investigation-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
@@ -38,9 +51,29 @@ export const SupportTabsWrapper: FC<{
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
+  const tabsWithContent = useSupportStore((s) => s.tabsWithContent);
+  const setTabHasContent = useSupportStore((s) => s.setTabHasContent);
+  const setInvestigationContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('investigation', hasContent),
+    [setTabHasContent]
+  );
+  const setDecisionContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('decision', hasContent),
+    [setTabHasContent]
+  );
+  const setUnsavedInvestigation = useCallback(
+    (unsaved: boolean) => setUnsavedTab('investigation', unsaved),
+    [setUnsavedTab]
+  );
+  const setUnsavedDecision = useCallback((unsaved: boolean) => setUnsavedTab('decision', unsaved), [setUnsavedTab]);
+  const confirm = useConfirm();
+  const [processActivities, setProcessActivities] = useState<ProcessActivity[]>([]);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -54,6 +87,19 @@ export const SupportTabsWrapper: FC<{
       setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
     }
   }, [methods]);
+
+  const errandId = supportErrand?.id;
+  const stepTheProcessReports = supportErrand?.process?.currentActivityId;
+  const processStatus = supportErrand?.process?.processStatus;
+
+  const readProcessLog = useCallback(() => {
+    if (!appConfig.features.useProcess || !errandId) return;
+    getSupportProcessActivities(errandId, municipalityId)
+      .then(setProcessActivities)
+      .catch(() => setProcessActivities([]));
+  }, [errandId, municipalityId]);
+
+  useEffect(readProcessLog, [readProcessLog, supportErrand?.modified, stepTheProcessReports, processStatus]);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -106,6 +152,35 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const attachmentCount = countAttachment(supportAttachments ?? []);
+  // A file written from another tab, such as the underlay of a statement, is counted as new until the
+  // handler has had the attachments open (adjusting state during render, not in an effect).
+  const [seenAttachmentCount, setSeenAttachmentCount] = useState(attachmentCount);
+  if (activeTabKey === 'attachments' && seenAttachmentCount !== attachmentCount) {
+    setSeenAttachmentCount(attachmentCount);
+  }
+  const newAttachmentCount = Math.max(0, attachmentCount - seenAttachmentCount);
+  const attachmentTabLabel = `Bilagor (${attachmentCount}${
+    newAttachmentCount > 0 ? `, ${newAttachmentCount} ${newAttachmentCount === 1 ? 'ny' : 'nya'}` : ''
+  })`;
+
+  const process = getSupportErrandProcess(supportErrand);
+
+  const awaitsStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && !hasVisitedSupportProcessStep(step, process, processActivities);
+
+  const tabHoldsSomethingToRead = (key: string): boolean => !!tabsWithContent[key];
+
+  const tabIsClosed = (step: SupportProcessStepName, key: string): boolean =>
+    awaitsStep(step) && !tabHoldsSomethingToRead(key);
+
+  const standsInStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && Boolean(process) && supportProcessStepName(process) === step;
+
+  const nothingCloses = (): boolean => !appConfig.features.useProcess;
+
+  const writableInSteps = (...steps: SupportProcessStepName[]): boolean => nothingCloses() || steps.some(standsInStep);
+
   const tabs: {
     key: string;
     label: string;
@@ -154,10 +229,44 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'attachments',
-        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        label: attachmentTabLabel,
         content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
         disabled: false,
         visibleFor: true,
+      },
+      {
+        key: 'investigation',
+        label: t('common:tabs.investigation'),
+        content: supportErrand && (
+          <SupportErrandInvestigationTab
+            setUnsaved={setUnsavedInvestigation}
+            setHasContent={setInvestigationContent}
+            inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
+            writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.INVESTIGATION, 'investigation'),
+        visibleFor: appConfig.features.useInvestigationTab,
+      },
+      {
+        key: 'decision',
+        label: t('common:tabs.decision'),
+        content: supportErrand && (
+          <SupportErrandDecisionTab
+            setUnsaved={setUnsavedDecision}
+            setHasContent={setDecisionContent}
+            writable={writableInSteps(SupportProcessStep.DECISION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.DECISION, 'decision'),
+        visibleFor: appConfig.features.useDecisionTab,
+      },
+      {
+        key: 'followup',
+        label: t('common:tabs.followup'),
+        content: supportErrand && <SupportErrandFollowUpTab />,
+        disabled: awaitsStep(SupportProcessStep.FOLLOW_UP),
+        visibleFor: appConfig.features.useFollowUpTab,
       },
       {
         key: 'services',
@@ -189,19 +298,50 @@ export const SupportTabsWrapper: FC<{
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      attachmentTabLabel,
       conversationMessageTree,
       messageTabLabel,
       messageTree,
       messages,
       municipalityId,
+      processActivities,
       props.setUnsavedFacility,
       supportAttachments,
       supportConversations,
       supportErrand,
+      t,
+      tabsWithContent,
     ]
   );
 
   const [activeTab, setActiveTab] = useState(0);
+
+  const unsavedInActiveTab = (): boolean => !!activeTabKey && !!unsavedTabs[activeTabKey];
+
+  const changeTab = (key: string) => {
+    const tabIsAlreadyOpen = key === activeTabKey;
+    if (tabIsAlreadyOpen) {
+      return;
+    }
+
+    if (!unsavedInActiveTab()) {
+      setActiveTabKey(key);
+      return;
+    }
+
+    confirm
+      .showConfirmation(
+        t('common:tabs.unsaved_title'),
+        t(`common:tabs.unsaved_${activeTabKey}`),
+        t('common:tabs.unsaved_leave'),
+        t('common:tabs.unsaved_stay'),
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (confirmed) setActiveTabKey(key);
+      });
+  };
 
   useEffect(() => {
     const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.key === activeTabKey);
@@ -211,22 +351,23 @@ export const SupportTabsWrapper: FC<{
   return (
     <>
       <div className="mb-xl">
-        <WarnIfUnsavedChanges showWarning={unsavedChanges}>
+        <WarnIfUnsavedChanges showWarning={unsavedChanges || Object.values(unsavedTabs).some(Boolean)}>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
             current={activeTab}
-            onTabChange={(e) => {
-              setActiveTabKey(tabs.filter((tab) => tab.visibleFor)[e].key);
-            }}
             size={'sm'}
           >
             {tabs
               .filter((tab) => tab.visibleFor)
               .map((tab, index) => (
                 <Tabs.Item key={tab.key}>
-                  <Tabs.Button disabled={tab.disabled} className={cx('text-base', index === 0 && 'ml-8')}>
+                  <Tabs.Button
+                    disabled={tab.disabled}
+                    onClick={() => changeTab(tab.key)}
+                    className={cx('text-base', index === 0 && 'ml-8')}
+                  >
                     {tab.label}
                   </Tabs.Button>
                   <Tabs.Content>{tab.content}</Tabs.Content>

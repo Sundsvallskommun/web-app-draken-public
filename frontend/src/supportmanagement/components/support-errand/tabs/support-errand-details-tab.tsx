@@ -1,13 +1,49 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
-import { Table } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useCompanyEngagements } from '@common/hooks/use-company-engagements';
+import { useCompanyProfile } from '@common/hooks/use-company-profile';
+import { appConfig } from '@config/appconfig';
+import { Alert, Spinner, Table } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
+import { namespaceHasPbiRole } from '@supportmanagement/services/support-pbi-service';
+import { useMemo, useState } from 'react';
+
+import { SupportErrandBusinessDescriptionDrawer } from './support-errand-business-description-drawer.component';
+import { SupportErrandCompanyEngagements } from './support-errand-company-engagements.component';
+import { SupportErrandTypeForm } from './support-errand-type-form.component';
+import { useSupportPbi } from './use-support-pbi';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+
+  const usesTypeForm = appConfig.features.useDetailsTab;
+  const loadsTypeForm = usesTypeForm && !supportMetadata;
+  const typeSchemaName = usesTypeForm ? schemaNameForErrand(supportErrand, supportMetadata?.namespace) : undefined;
+  const showsTypeForm = !loadsTypeForm && !!typeSchemaName && !!municipalityId;
+  const otherJsonParameters = useMemo(
+    () => supportErrand.jsonParameters?.filter((parameter) => parameter.key !== typeSchemaName) ?? [],
+    [supportErrand.jsonParameters, typeSchemaName]
+  );
+  const showsJsonParameters = !loadsTypeForm && otherJsonParameters.length > 0 && !!municipalityId;
+  // Nothing to show under either heading: the type form needs a saved errand type, other documents need a filed parameter.
+  const showsNoJsonParameters = !loadsTypeForm && !showsTypeForm && !showsJsonParameters;
+
+  const organizationStakeholder = supportErrand.stakeholders?.find(
+    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+  );
+  const organizationPartyId = organizationStakeholder?.externalId;
+  const companyInformation = appConfig.features.useCompanyInformation ? organizationPartyId : undefined;
+  const marksPbi = !!companyInformation && namespaceHasPbiRole(supportMetadata);
+  const pbi = useSupportPbi(marksPbi);
+  const plainEngagements = useCompanyEngagements(marksPbi ? undefined : companyInformation);
+  const companyEngagements = pbi.candidates ?? plainEngagements;
+  const showsCompanyEngagements = companyEngagements.length > 0;
+  const companyProfile = useCompanyProfile(companyInformation);
+  const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
 
   const simpleParams = useMemo(
     () =>
@@ -100,13 +136,54 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
+        {loadsTypeForm ? (
+          <div className="flex items-center gap-md p-16">
+            <Spinner size={2} />
+            <span>Laddar ärendeuppgifter...</span>
+          </div>
+        ) : null}
+        {showsNoJsonParameters ? (
+          <Alert type="info" className="mx-16" data-cy="no-json-parameters-notice">
+            <Alert.Icon />
+            <Alert.Content>
+              <Alert.Content.Description>
+                Ärendet har inga ärendeuppgifter. Det kan bero på att ingen ärendetyp har valts och sparats ännu.
+              </Alert.Content.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+        {showsTypeForm ? (
           <div className="p-16">
-            <JsonParametersDisplay
-              jsonParameters={supportErrand.jsonParameters as any}
+            <SupportErrandTypeForm
+              supportErrand={supportErrand}
               municipalityId={municipalityId}
+              schemaName={typeSchemaName}
             />
           </div>
+        ) : null}
+        {showsJsonParameters && municipalityId ? (
+          <div className={showsCompanyEngagements ? 'px-16 pt-16' : 'p-16'}>
+            <JsonParametersDisplay jsonParameters={otherJsonParameters as any} municipalityId={municipalityId} />
+          </div>
+        ) : null}
+        {showsCompanyEngagements ? (
+          <div className={showsJsonParameters ? 'px-16 pb-16' : 'p-16'}>
+            <SupportErrandCompanyEngagements
+              engagements={companyEngagements}
+              initiallyOpen={!showsJsonParameters}
+              companyName={companyProfile?.name ?? organizationStakeholder?.organizationName}
+              onShowBusinessDescription={companyProfile ? () => setShowsBusinessDescription(true) : undefined}
+              pbiMarking={pbi.marking}
+              pbiNotice={pbi.notice}
+            />
+          </div>
+        ) : null}
+        {companyProfile ? (
+          <SupportErrandBusinessDescriptionDrawer
+            show={showsBusinessDescription}
+            profile={companyProfile}
+            onClose={() => setShowsBusinessDescription(false)}
+          />
         ) : null}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
 import {
   Channels,
+  ResolutionLabelAOT,
   ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
@@ -59,6 +60,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       ...Object.entries(ResolutionLabelIK),
       ...Object.entries(ResolutionLabelLOK),
       ...Object.entries(ResolutionLabelBOU),
+      ...Object.entries(ResolutionLabelAOT),
     ].forEach((e) => {
       _km[e[0]] = e[1];
     });
