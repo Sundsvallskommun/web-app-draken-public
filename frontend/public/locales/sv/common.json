@@ -199,7 +199,20 @@
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       },
-      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund."
+      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
+      "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",
+      "awaiting_statements": {
+        "title": "Remisser väntar på svar",
+        "text": "Ärendet har remisser som är skickade men ännu inte avgjorda. Registrera svaret, eller återkalla remissen, innan ärendet går vidare till beslut.",
+        "go_to_investigation": "Till utredningsfliken",
+        "cancel": "Avbryt"
+      },
+      "unsent_statements": {
+        "title": "Remisser som inte har skickats",
+        "text": "Det finns påbörjade remisser som inte har skickats. Ingen väntar på dem, men de blir kvar som utkast på ärendet. Vill du gå vidare till beslut ändå?",
+        "confirm_yes": "Gå vidare",
+        "cancel": "Avbryt"
+      }
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -250,5 +263,60 @@
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
+  },
+  "statements": {
+    "description": "Hantera varje remiss på ett ställe: välj instans, skapa underlag (PDF), och registrera status och utfall när svaret kommer. Om en instans avstyrker på saklig grund kan det utgöra skäl för avslag.",
+    "loading": "Hämtar remisser",
+    "empty": "Inga remisser tillagda ännu. Klicka \"Lägg till remiss\" för att börja hantera en remiss.",
+    "add": "Lägg till remiss",
+    "remove": "Ta bort remiss",
+    "open": "Öppna",
+    "counterparty": "Remissinstans",
+    "counterparty_placeholder": "Välj instans...",
+    "choose_counterparty_first": "Välj remissinstans ovan för att skapa ett underlag.",
+    "choose_counterparty_first_short": "Välj remissinstans först",
+    "text": "Remisstext",
+    "generate": "Generera PDF",
+    "generated": "Underlaget har skapats och registrerats som bilaga på ärendet. Ladda ner det från fliken Bilagor. Status satt till \"Skapad\".",
+    "upload": "Ladda upp svar",
+    "tagged_as": "Taggas automatiskt som {{purpose}}",
+    "attachment_request": "Skapat underlag",
+    "attachment_response": "Uppladdat svar",
+    "attachment_title": "Remiss - {{counterparty}} - {{errandNumber}}",
+    "attachment_filename": "Remiss - {{counterparty}} - {{errandNumber}}.pdf",
+    "sent_at": "Datum skickad",
+    "responded_at": "Datum svar",
+    "status_label": "Status",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall...",
+    "response_text": "Yttrande / kommentar",
+    "response_text_placeholder": "Sammanfatta vad instansen anfört i sitt yttrande...",
+    "status": {
+      "draft": "Skapad",
+      "active": "Skickad",
+      "completed": "Besvarad",
+      "cancelled": "Återkallad"
+    },
+    "validation": {
+      "counterparty": "Välj remissinstans.",
+      "question": "Remisstexten kan inte vara tom.",
+      "outcome_required": "Välj utfall innan remissen markeras som besvarad.",
+      "outcome_needs_completed": "Ett utfall kan bara registreras när remissen är besvarad.",
+      "responded_at": "Ange datum för svaret.",
+      "sent_at": "Ange datum då remissen skickades.",
+      "underlay_missing": "Skapa underlaget innan remissen markeras som skickad.",
+      "response_missing": "Ladda upp instansens svar."
+    },
+    "toast": {
+      "read_failed": "Remisserna kunde inte hämtas.",
+      "add_failed": "Remissen kunde inte läggas till.",
+      "save_failed": "Remissen kunde inte sparas.",
+      "generate_failed": "Underlaget kunde inte skapas.",
+      "upload_failed": "Svaret kunde inte laddas upp.",
+      "remove_failed": "Remissen kunde inte tas bort.",
+      "open_failed": "Bilagan kunde inte öppnas.",
+      "incomplete": "Kontrollera remisserna innan du sparar utredningen."
+    },
+    "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp."
   }
 }
