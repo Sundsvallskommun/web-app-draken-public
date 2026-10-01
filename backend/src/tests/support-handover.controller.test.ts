@@ -86,7 +86,7 @@ describe('SupportHandoverController', () => {
       expect(namespaces(res.body)).toEqual([mockDepartment, mockParkingPermitDepartment, mockHandoverNamespace]);
       expect((res.body as NamespaceConfig[])[1]).toEqual({
         namespace: mockParkingPermitDepartment,
-        displayName: 'Parkeringstillstånd (PT)',
+        displayName: 'Parkeringstillstånd/Färdtjänst',
         shortCode: 'PT',
         municipalityId: mockMunicipalityId,
       });
