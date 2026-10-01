@@ -5,6 +5,7 @@ import {
   supportStatementDocumentWith,
   supportStatementTemplateParameters,
   supportStatementTemplates,
+  supportStatementTextIsUnchanged,
 } from './support-statement-template-service';
 
 const RENDERED = [
@@ -57,7 +58,8 @@ test('the premises are read from the errand, and the owner stands in when they s
   const owner = {
     role: 'PRIMARY',
     organizationName: 'Krogen Exempel AB',
-    externalId: '556676-3081',
+    externalId: 'd5727c45-8c19-42a0-a04a-5ef11d108618',
+    parameters: [{ key: 'organizationNumber', values: ['556676-3081'] }],
     address: 'Storgatan 1',
     zipCode: '852 30',
     city: 'Sundsvall',
@@ -93,4 +95,42 @@ test('the premises are read from the errand, and the owner stands in when they s
     premisesStreet: 'Kyrkogatan 6',
     premisesPostalAddress: '852 31 Sundsvall',
   });
+});
+
+test('the premises name is read whether the form wrote it plainly or as a field of its own', () => {
+  const owner = { role: 'PRIMARY', organizationName: 'Krogen Exempel AB' };
+  const named = (serveringsstalletsNamn: unknown) =>
+    supportStatementTemplateParameters({
+      errand: { stakeholders: [owner], jsonParameters: [{ value: { serveringsstalletsNamn } }] } as never,
+      handlerName: 'Anna Andersson',
+      counterpartyName: 'Kronofogden',
+      dueAt: '2026-10-22',
+    }).premisesName;
+
+  expect(named({ namn: 'Testrestaurangen' })).toBe('Testrestaurangen');
+  expect(named('Testrestaurangen')).toBe('Testrestaurangen');
+  expect(named(undefined)).toBe('Krogen Exempel AB');
+});
+
+test('the premises are the owner’s under either name the question has had', () => {
+  const owner = { role: 'PRIMARY', address: 'Storgatan 1', zipCode: '852 30', city: 'Sundsvall' };
+  const asked = (question: string) =>
+    supportStatementTemplateParameters({
+      errand: { stakeholders: [owner], jsonParameters: [{ value: { [question]: 'JA' } }] } as never,
+      handlerName: 'Anna Andersson',
+      counterpartyName: 'Kronofogden',
+      dueAt: '2026-10-22',
+    }).premisesStreet;
+
+  expect(asked('besoksadressSammaSomForetaget')).toBe('Storgatan 1');
+  expect(asked('besoksadressSammaSomArendeagare')).toBe('Storgatan 1');
+});
+
+test('a text the editor rewrote is still the text the template wrote', () => {
+  const template = '<h1>Remiss</h1><p>Svar senast 2026-10-22.</p>';
+  const rewritten = '<h1>Remiss</h1>\n<p>Svar senast 2026-10-22.</p>&nbsp;';
+
+  expect(supportStatementTextIsUnchanged(rewritten, template)).toBe(true);
+  expect(supportStatementTextIsUnchanged('<h1>Remiss</h1><p>Svar senast 2026-11-01.</p>', template)).toBe(false);
+  expect(supportStatementTextIsUnchanged(`${template}<p>Eget tillägg.</p>`, template)).toBe(false);
 });

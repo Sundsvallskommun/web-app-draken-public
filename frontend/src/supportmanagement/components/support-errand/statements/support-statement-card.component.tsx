@@ -41,10 +41,12 @@ import {
 } from '@supportmanagement/services/support-statement-service';
 import {
   type SupportStatementDocument,
+  supportStatementDocumentIsEmpty,
   supportStatementDocumentOf,
   supportStatementDocumentWith,
   supportStatementTemplateParameters,
   supportStatementTemplates,
+  supportStatementTextIsUnchanged,
 } from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
 import { FC, useRef, useState } from 'react';
@@ -124,7 +126,6 @@ export const SupportStatementCard: FC<{
     errandNumber,
   });
 
-  /** A file written here lands among the attachments of the errand, which the attachment tab reads. */
   const refreshAttachments = () =>
     getSupportAttachments(errandId, municipalityId)
       .then(setSupportAttachments)
@@ -135,10 +136,7 @@ export const SupportStatementCard: FC<{
     onFormChange(changes);
   };
 
-  const chooseTemplate = async (identifier: string) => {
-    setTemplateIdentifier(identifier);
-    if (!identifier) return;
-
+  const fetchTemplate = async (identifier: string, dueAt: string) => {
     setBusy(true);
     try {
       const html = await renderSupportStatementTemplate(
@@ -147,18 +145,36 @@ export const SupportStatementCard: FC<{
           errand: supportErrand,
           handlerName: `${user.firstName} ${user.lastName}`.trim(),
           counterpartyName: form.counterpartyName,
-          dueAt: form.dueAt,
+          dueAt,
         })
       );
       const rendered = supportStatementDocumentOf(html);
+      if (supportStatementDocumentIsEmpty(rendered)) {
+        console.error('The rendered template held no text to write in', { identifier, length: html.length });
+        throw new Error('The rendered template held no text to write in');
+      }
+
       setRenderedTemplate(rendered);
       set({ question: rendered.content });
     } catch {
       setTemplateIdentifier('');
+      setRenderedTemplate(undefined);
       toastMessage(getToastOptions({ message: t('common:statements.toast.template_failed'), status: 'error' }));
     } finally {
       setBusy(false);
     }
+  };
+
+  const chooseTemplate = (identifier: string) => {
+    setTemplateIdentifier(identifier);
+    if (identifier) void fetchTemplate(identifier, form.dueAt);
+  };
+
+  const changeDueAt = (dueAt: string) => {
+    set({ dueAt });
+
+    const untouched = renderedTemplate && supportStatementTextIsUnchanged(form.question, renderedTemplate.content);
+    if (templateIdentifier && untouched) void fetchTemplate(templateIdentifier, dueAt);
   };
 
   const chooseCounterparty = async (counterpartyName: string) => {
@@ -315,7 +331,7 @@ export const SupportStatementCard: FC<{
                 value={templateIdentifier}
                 disabled={!editable}
                 data-cy="statement-template"
-                onChange={(e) => void chooseTemplate(e.currentTarget.value)}
+                onChange={(e) => chooseTemplate(e.currentTarget.value)}
               >
                 <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
                 {templates.map((template) => (
@@ -332,9 +348,18 @@ export const SupportStatementCard: FC<{
                 value={form.dueAt}
                 disabled={!editable}
                 data-cy="statement-due-at"
-                onChange={(e) => set({ dueAt: e.currentTarget.value })}
+                onChange={(e) => changeDueAt(e.currentTarget.value)}
               />
             </FormControl>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!editable || !templateIdentifier}
+              data-cy="statement-template-refetch"
+              onClick={() => void fetchTemplate(templateIdentifier, form.dueAt)}
+            >
+              {t('common:statements.template_again')}
+            </Button>
           </div>
           <FormControl className="w-full">
             <FormLabel>{t('common:statements.text')}</FormLabel>

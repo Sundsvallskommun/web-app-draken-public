@@ -37,13 +37,23 @@ interface SupportStatementPremises {
   postalAddress: string;
 }
 
+const textOf = (value: unknown, key: string): string => {
+  if (typeof value === 'string') return value;
+  const field = (value as Record<string, unknown> | undefined)?.[key];
+  return typeof field === 'string' ? field : '';
+};
+
+const organizationNumberOf = (owner: { parameters?: { key?: string; values?: string[] }[] } | undefined): string =>
+  owner?.parameters?.find((parameter) => parameter.key === 'organizationNumber')?.values?.[0] ?? '';
+
 const supportStatementPremises = (errand: SupportErrand | undefined): SupportStatementPremises => {
   const document = (errand?.jsonParameters ?? []).map((parameter) => parameter.value).find(Boolean) as
     | Record<string, unknown>
     | undefined;
   const owner = errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
 
-  const atTheCompany = document?.besoksadressSammaSomForetaget === 'JA';
+  const atTheCompany =
+    document?.besoksadressSammaSomForetaget === 'JA' || document?.besoksadressSammaSomArendeagare === 'JA';
   const address = (document?.besoksadress ?? document?.serveringsstalletsBesoksadress) as
     | Record<string, string>
     | undefined;
@@ -53,7 +63,7 @@ const supportStatementPremises = (errand: SupportErrand | undefined): SupportSta
   const city = atTheCompany ? owner?.city ?? '' : address?.postort ?? '';
 
   return {
-    name: (document?.serveringsstalletsNamn as string) ?? owner?.organizationName ?? '',
+    name: textOf(document?.serveringsstalletsNamn, 'namn') || owner?.organizationName || '',
     street,
     postalAddress: [postalCode, city].filter(Boolean).join(' '),
   };
@@ -78,7 +88,7 @@ export const supportStatementTemplateParameters = (facts: SupportStatementTempla
     premisesStreet: premises.street,
     premisesPostalAddress: premises.postalAddress,
     applicantName: owner?.organizationName ?? '',
-    applicantOrgNumber: owner?.externalId ?? '',
+    applicantOrgNumber: organizationNumberOf(owner),
     replyDeadline: facts.dueAt,
     recipientName: facts.counterpartyName,
     recipientStreet: '',
@@ -96,8 +106,21 @@ export interface SupportStatementDocument {
 
 export const supportStatementDocumentOf = (html: string): SupportStatementDocument => {
   const content = CONTENT_SECTION.exec(html)?.[1];
-  return content ? { frame: html, content } : { frame: '', content: html };
+  return content?.trim() ? { frame: html, content } : { frame: '', content: html };
 };
+
+const asPlainText = (markup: string): string =>
+  markup
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const supportStatementTextIsUnchanged = (markup: string, template: string): boolean =>
+  asPlainText(markup) === asPlainText(template);
+
+export const supportStatementDocumentIsEmpty = (document: SupportStatementDocument): boolean =>
+  document.content.replace(/<[^>]*>/g, '').trim().length === 0;
 
 export const supportStatementDocumentWith = (document: SupportStatementDocument, content: string): string =>
   document.frame ? document.frame.replace(CONTENT_SECTION, `<div class="content">${content}</div>`) : content;

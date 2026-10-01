@@ -321,6 +321,7 @@
     "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp.",
     "template": "Välj mall",
     "template_placeholder": "Välj mall...",
-    "due_at": "Svar önskas senast"
+    "due_at": "Svar önskas senast",
+    "template_again": "Hämta mallen igen"
   }
 }

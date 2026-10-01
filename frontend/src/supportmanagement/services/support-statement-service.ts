@@ -265,7 +265,14 @@ export const renderSupportStatementTemplate = (
       identifier,
       parameters,
     })
-    .then((res) => base64Decode(res.data.data.output))
+    .then((res) => {
+      const rendered = base64Decode(res.data?.data?.output ?? '');
+      if (!rendered) {
+        console.error('The template rendered nothing', { identifier, answer: res.data });
+        throw new Error('The template rendered nothing');
+      }
+      return rendered;
+    })
     .catch((e) => {
       console.error('Something went wrong when rendering the template');
       throw e;
