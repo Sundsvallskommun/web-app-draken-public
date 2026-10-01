@@ -315,8 +315,12 @@
       "upload_failed": "Svaret kunde inte laddas upp.",
       "remove_failed": "Remissen kunde inte tas bort.",
       "open_failed": "Bilagan kunde inte öppnas.",
-      "incomplete": "Kontrollera remisserna innan du sparar utredningen."
+      "incomplete": "Kontrollera remisserna innan du sparar utredningen.",
+      "template_failed": "Mallen kunde inte hämtas."
     },
-    "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp."
+    "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp.",
+    "template": "Välj mall",
+    "template_placeholder": "Välj mall...",
+    "due_at": "Svar önskas senast"
   }
 }

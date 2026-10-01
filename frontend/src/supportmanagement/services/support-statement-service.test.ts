@@ -2,9 +2,11 @@ import { expect, test } from 'vitest';
 
 import type { SupportMetadata } from './support-metadata-service';
 import {
+  attachmentsOfKind,
   isSupportStatementAwaitingAnswer,
   isSupportStatementRemovable,
   isSupportStatementUnsent,
+  supportStatementAttachmentPurpose,
   supportStatementEdited,
   type SupportStatementForm,
   supportStatementForm,
@@ -20,6 +22,7 @@ const metadata = {
 
 const filledIn = (changes: Partial<SupportStatementForm> = {}): SupportStatementForm => ({
   counterpartyName: 'Polismyndigheten',
+  dueAt: '2026-10-22',
   question: '<p>Yttrande begärs.</p>',
   responseText: '',
   sentAt: '2026-10-01',
@@ -58,13 +61,13 @@ test('dates are read from the service as the date field writes them', () => {
 });
 
 const withUnderlay = {
-  attachments: [{ id: 'a1', fileName: 'remiss.pdf', purpose: { name: 'STATEMENT_REQUEST' } }],
+  attachments: [{ id: 'a1', fileName: 'remiss.pdf', purpose: { name: 'REFERRAL_POLICE_REQUEST' } }],
 };
 
 const withUnderlayAndAnswer = {
   attachments: [
-    { id: 'a1', fileName: 'remiss.pdf', purpose: { name: 'STATEMENT_REQUEST' } },
-    { id: 'a2', fileName: 'svar.pdf', purpose: { name: 'STATEMENT_RESPONSE' } },
+    { id: 'a1', fileName: 'remiss.pdf', purpose: { name: 'REFERRAL_POLICE_REQUEST' } },
+    { id: 'a2', fileName: 'svar.pdf', purpose: { name: 'REFERRAL_POLICE_RESPONSE' } },
   ],
 };
 
@@ -137,4 +140,28 @@ test('a withdrawn statement is asked for nothing beyond its counterparty and tex
   expect(supportStatementProblem(filledIn({ status: 'CANCELLED', outcome: 'SUPPORTS' }), {}, metadata)).toBe(
     'common:statements.validation.outcome_needs_completed'
   );
+});
+
+test('a document is filed under the authority the statement concerns', () => {
+  expect(supportStatementAttachmentPurpose('Polismyndigheten', 'REQUEST')).toBe('REFERRAL_POLICE_REQUEST');
+  expect(supportStatementAttachmentPurpose('Kronofogden', 'RESPONSE')).toBe('REFERRAL_ENFORCEMENT_AUTHORITY_RESPONSE');
+});
+
+test('an authority without purposes of its own still files its documents somewhere', () => {
+  expect(supportStatementAttachmentPurpose('Länsstyrelsen', 'REQUEST')).toBe('STATEMENT_REQUEST');
+  expect(supportStatementAttachmentPurpose(undefined, 'RESPONSE')).toBe('STATEMENT_RESPONSE');
+});
+
+test('a document keeps its place in the card whichever authority it was filed under', () => {
+  const statement = {
+    attachments: [
+      { id: 'a', purpose: { name: 'REFERRAL_TAX_AGENCY_REQUEST' } },
+      { id: 'b', purpose: { name: 'STATEMENT_RESPONSE' } },
+      { id: 'c', purpose: { name: 'LEASE_AGREEMENT' } },
+      { id: 'd' },
+    ],
+  };
+
+  expect(attachmentsOfKind(statement, 'REQUEST').map((a) => a.id)).toEqual(['a']);
+  expect(attachmentsOfKind(statement, 'RESPONSE').map((a) => a.id)).toEqual(['b']);
 });

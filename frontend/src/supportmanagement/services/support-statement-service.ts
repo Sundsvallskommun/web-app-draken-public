@@ -4,9 +4,11 @@ import type {
   StatementOutcome,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 
 import type { SupportMetadata } from './support-metadata-service';
+import { supportStatementCounterpartyKey } from './support-statement-counterparties';
 
 export const SupportStatementStatus = {
   DRAFT: 'DRAFT',
@@ -25,17 +27,41 @@ export const SUPPORT_STATEMENT_STATUSES: { status: SupportStatementStatusName; t
   { status: SupportStatementStatus.CANCELLED, translationKey: 'common:statements.status.cancelled' },
 ];
 
-/** What an attachment of a statement is for. Both are registered as attachment purposes of the namespace. */
-export const SupportStatementPurpose = {
-  REQUEST: 'STATEMENT_REQUEST',
-  RESPONSE: 'STATEMENT_RESPONSE',
+export const SupportStatementAttachmentKind = {
+  REQUEST: 'REQUEST',
+  RESPONSE: 'RESPONSE',
 } as const;
 
-export type SupportStatementPurposeName = (typeof SupportStatementPurpose)[keyof typeof SupportStatementPurpose];
+export type SupportStatementAttachmentKindName =
+  (typeof SupportStatementAttachmentKind)[keyof typeof SupportStatementAttachmentKind];
 
-/** What the handler fills in for one statement. Dates are held as the date field writes them. */
+export const supportStatementAttachmentPurpose = (
+  counterpartyName: string | undefined,
+  kind: SupportStatementAttachmentKindName
+): string => {
+  const key = supportStatementCounterpartyKey(counterpartyName);
+  return key ? `REFERRAL_${key}_${kind}` : `STATEMENT_${kind}`;
+};
+
+const kindOfPurpose = (purposeName: string | undefined): SupportStatementAttachmentKindName | undefined => {
+  if (purposeName?.endsWith(`_${SupportStatementAttachmentKind.REQUEST}`)) {
+    return SupportStatementAttachmentKind.REQUEST;
+  }
+  if (purposeName?.endsWith(`_${SupportStatementAttachmentKind.RESPONSE}`)) {
+    return SupportStatementAttachmentKind.RESPONSE;
+  }
+  return undefined;
+};
+
+export const supportStatementPurposeDisplayName = (
+  purposeName: string,
+  metadata: SupportMetadata | undefined
+): string =>
+  (metadata?.attachmentPurposes ?? []).find((purpose) => purpose.name === purposeName)?.displayName ?? purposeName;
+
 export interface SupportStatementForm {
   counterpartyName: string;
+  dueAt: string;
   question: string;
   responseText: string;
   sentAt: string;
@@ -52,6 +78,7 @@ const asTimestamp = (value: string): string | undefined =>
 
 export const supportStatementForm = (statement: Statement): SupportStatementForm => ({
   counterpartyName: statement.counterpartyName ?? '',
+  dueAt: asDateField(statement.dueAt),
   question: statement.question ?? '',
   responseText: statement.responseText ?? '',
   sentAt: asDateField(statement.sentAt),
@@ -62,6 +89,7 @@ export const supportStatementForm = (statement: Statement): SupportStatementForm
 
 export const supportStatementFields = (form: SupportStatementForm, title: string): SupportStatementFields => ({
   counterpartyName: form.counterpartyName,
+  dueAt: asTimestamp(form.dueAt),
   title,
   question: form.question,
   responseText: form.responseText,
@@ -83,35 +111,15 @@ export const supportStatementUnderlayProblem = (form: SupportStatementForm): str
   return undefined;
 };
 
-/**
- * A statement the counterparty has answered stays on the errand: the answer is a document of the
- * case, and removing the statement would take it with it.
- */
 export const isSupportStatementRemovable = (statement: Statement): boolean =>
-  attachmentsForPurpose(statement, SupportStatementPurpose.RESPONSE).length === 0;
+  attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE).length === 0;
 
-/**
- * A statement the errand still waits on. The service keeps the settled states apart from this one by
- * itself: a COMPLETED statement cannot exist without an outcome, and a CANCELLED one cannot be given
- * one at all. Both are therefore settled - including an opposing statement, one with nothing to
- * object to, and one that was never replied to - while an ACTIVE statement is out with a counterparty
- * who has yet to say anything.
- */
 export const isSupportStatementAwaitingAnswer = (statement: Statement): boolean =>
   statement.status === SupportStatementStatus.ACTIVE;
 
-/** A statement that was prepared but never sent. Nobody is waiting for it, and nobody has answered. */
 export const isSupportStatementUnsent = (statement: Statement): boolean =>
   !statement.status || statement.status === SupportStatementStatus.DRAFT;
 
-/**
- * What keeps the statement from being saved, named by its message. The comment is the one field left
- * optional, and each demand is made where it becomes meaningful: a statement that has been sent has
- * an underlay and a date, and a concluded one carries its outcome. The answer and its date are asked
- * for only when the outcome means that the counterparty answered - an outcome registered as not
- * answered, such as a statement never replied to, has neither. A withdrawn statement is asked for
- * nothing further, since the service lets one be cancelled straight from the draft.
- */
 export const supportStatementProblem = (
   form: SupportStatementForm,
   statement: Statement,
@@ -127,7 +135,7 @@ export const supportStatementProblem = (
   const wasSent = form.status === SupportStatementStatus.ACTIVE || form.status === SupportStatementStatus.COMPLETED;
 
   if (wasSent) {
-    if (attachmentsForPurpose(statement, SupportStatementPurpose.REQUEST).length === 0) {
+    if (attachmentsOfKind(statement, SupportStatementAttachmentKind.REQUEST).length === 0) {
       return 'common:statements.validation.underlay_missing';
     }
     if (!form.sentAt) return 'common:statements.validation.sent_at';
@@ -136,7 +144,7 @@ export const supportStatementProblem = (
   if (form.status === SupportStatementStatus.COMPLETED) {
     if (!form.outcome) return 'common:statements.validation.outcome_required';
     if (outcomeMeansResponded(form.outcome, metadata)) {
-      if (attachmentsForPurpose(statement, SupportStatementPurpose.RESPONSE).length === 0) {
+      if (attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE).length === 0) {
         return 'common:statements.validation.response_missing';
       }
       if (!form.respondedAt) return 'common:statements.validation.responded_at';
@@ -163,7 +171,6 @@ export interface SupportStatementFields {
   status?: SupportStatementStatusName;
 }
 
-/** A statement is started as a draft, and the service decides that, so no status is sent with it. */
 export type NewSupportStatement = Omit<SupportStatementFields, 'status'>;
 
 const statementsUrl = (errandId: string, municipalityId: string) => `supportstatements/${municipalityId}/${errandId}`;
@@ -213,13 +220,12 @@ export const deleteSupportStatement = (errandId: string, municipalityId: string,
       throw e;
     });
 
-/** Puts the file on the errand, links it to the statement and marks what it is for. */
 export const uploadSupportStatementAttachment = (
   errandId: string,
   municipalityId: string,
   statementId: string,
   file: File,
-  purpose: SupportStatementPurposeName
+  purpose: string
 ): Promise<Statement> => {
   const form = new FormData();
   form.append('files', file);
@@ -236,27 +242,37 @@ export const uploadSupportStatementAttachment = (
     });
 };
 
-/** The outcomes the namespace has registered, in the order it gives them. */
 export const selectableSupportStatementOutcomes = (metadata: SupportMetadata | undefined): StatementOutcome[] =>
   [...(metadata?.statementOutcomes ?? [])]
     .filter((outcome) => !outcome.deprecated)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-/**
- * Whether the outcome means that the counterparty answered. The service refuses to complete a statement
- * carrying such an outcome without a date of response, so the form asks for one before it is saved.
- */
 const outcomeMeansResponded = (outcome: string | undefined, metadata: SupportMetadata | undefined): boolean =>
   selectableSupportStatementOutcomes(metadata).find((candidate) => candidate.name === outcome)?.responded === true;
 
-export const attachmentsForPurpose = (
+export const attachmentsOfKind = (
   statement: Statement | undefined,
-  purpose: SupportStatementPurposeName
-): ErrandAttachment[] => (statement?.attachments ?? []).filter((attachment) => attachment.purpose?.name === purpose);
+  kind: SupportStatementAttachmentKindName
+): ErrandAttachment[] =>
+  (statement?.attachments ?? []).filter((attachment) => kindOfPurpose(attachment.purpose?.name) === kind);
+
+export const renderSupportStatementTemplate = (
+  identifier: string,
+  parameters: Record<string, unknown>
+): Promise<string> =>
+  apiService
+    .post<{ data: { output: string } }, { identifier: string; parameters: Record<string, unknown> }>('render', {
+      identifier,
+      parameters,
+    })
+    .then((res) => base64Decode(res.data.data.output))
+    .catch((e) => {
+      console.error('Something went wrong when rendering the template');
+      throw e;
+    });
 
 const RENDER_PDF_URL = 'render/direct/pdf';
 
-/** Renders what stands in the editor as a PDF, without storing a template for it. */
 export const renderSupportStatementPdf = (html: string): Promise<string> =>
   apiService
     .post<{ data: { output: string } }, { content: string; parameters: Record<string, string> }>(RENDER_PDF_URL, {

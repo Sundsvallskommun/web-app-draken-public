@@ -1,4 +1,4 @@
-import { IsIn, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsISO8601, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import FormData from 'form-data';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -17,7 +17,7 @@ import { apiURL } from '@/utils/util';
 
 const DRAFT_STATUS = 'DRAFT';
 const STATUSES = [DRAFT_STATUS, 'ACTIVE', 'COMPLETED', 'CANCELLED'];
-const PURPOSES = ['STATEMENT_REQUEST', 'STATEMENT_RESPONSE'];
+const PURPOSE_PATTERN = /^[A-Z_]+_(REQUEST|RESPONSE)$/;
 
 class SupportStatementFieldsDto {
   @IsOptional()
@@ -89,7 +89,7 @@ export class UpdateSupportStatementDto extends SupportStatementFieldsDto {
 export class StatementAttachmentDto {
   @IsString()
   @MinLength(1)
-  @IsIn(PURPOSES)
+  @Matches(PURPOSE_PATTERN)
   purpose!: string;
 }
 
@@ -261,7 +261,7 @@ export class SupportStatementController {
     if (!file) {
       throw new HttpException(400, 'A file is required');
     }
-    if (!data.purpose || !PURPOSES.includes(data.purpose)) {
+    if (!data.purpose || !PURPOSE_PATTERN.test(data.purpose)) {
       throw new HttpException(400, 'A known attachment purpose is required');
     }
 

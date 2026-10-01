@@ -14,32 +14,41 @@ import {
   Textarea,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
+import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
-  attachmentsForPurpose,
+  attachmentsOfKind,
   createSupportStatement,
   deleteSupportStatement,
   isSupportStatementRemovable,
   pdfFileFromBase64,
   renderSupportStatementPdf,
+  renderSupportStatementTemplate,
   selectableSupportStatementOutcomes,
   SUPPORT_STATEMENT_STATUSES,
   SUPPORT_STATEMENT_TYPE,
+  SupportStatementAttachmentKind,
+  supportStatementAttachmentPurpose,
   supportStatementFields,
   type SupportStatementForm,
-  SupportStatementPurpose,
+  supportStatementPurposeDisplayName,
   SupportStatementStatus,
   type SupportStatementStatusName,
   supportStatementUnderlayProblem,
   updateSupportStatement,
   uploadSupportStatementAttachment,
 } from '@supportmanagement/services/support-statement-service';
+import {
+  type SupportStatementDocument,
+  supportStatementDocumentOf,
+  supportStatementDocumentWith,
+  supportStatementTemplateParameters,
+  supportStatementTemplates,
+} from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
 import { FC, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { SUPPORT_STATEMENT_COUNTERPARTIES } from './support-statement-counterparties';
 
 const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
   name,
@@ -88,16 +97,25 @@ export const SupportStatementCard: FC<{
   const toastMessage = useSnackbar();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const user = useUserStore((s) => s.user);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [templateIdentifier, setTemplateIdentifier] = useState('');
+  const [renderedTemplate, setRenderedTemplate] = useState<SupportStatementDocument>();
 
   const statementId = statement.id;
   const outcomes = selectableSupportStatementOutcomes(supportMetadata);
-  const requests = attachmentsForPurpose(statement, SupportStatementPurpose.REQUEST);
-  const responses = attachmentsForPurpose(statement, SupportStatementPurpose.RESPONSE);
+  const requests = attachmentsOfKind(statement, SupportStatementAttachmentKind.REQUEST);
+  const responses = attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE);
+  const responsePurpose = supportStatementAttachmentPurpose(
+    form.counterpartyName,
+    SupportStatementAttachmentKind.RESPONSE
+  );
   const counterpartyChosen = form.counterpartyName.length > 0;
+  const templates = supportStatementTemplates(form.counterpartyName);
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
 
@@ -117,10 +135,32 @@ export const SupportStatementCard: FC<{
     onFormChange(changes);
   };
 
-  /**
-   * The service takes no statement without a counterparty, so the card lives on its own until one is
-   * chosen and the statement is written at that moment rather than when the card was opened.
-   */
+  const chooseTemplate = async (identifier: string) => {
+    setTemplateIdentifier(identifier);
+    if (!identifier) return;
+
+    setBusy(true);
+    try {
+      const html = await renderSupportStatementTemplate(
+        identifier,
+        supportStatementTemplateParameters({
+          errand: supportErrand,
+          handlerName: `${user.firstName} ${user.lastName}`.trim(),
+          counterpartyName: form.counterpartyName,
+          dueAt: form.dueAt,
+        })
+      );
+      const rendered = supportStatementDocumentOf(html);
+      setRenderedTemplate(rendered);
+      set({ question: rendered.content });
+    } catch {
+      setTemplateIdentifier('');
+      toastMessage(getToastOptions({ message: t('common:statements.toast.template_failed'), status: 'error' }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const chooseCounterparty = async (counterpartyName: string) => {
     set({ counterpartyName });
     if (!counterpartyName || statementId) return;
@@ -153,7 +193,9 @@ export const SupportStatementCard: FC<{
         statementId,
         supportStatementFields(form, titleOfStatement)
       );
-      const output = await renderSupportStatementPdf(form.question);
+      const output = await renderSupportStatementPdf(
+        supportStatementDocumentWith(renderedTemplate ?? { frame: '', content: '' }, form.question)
+      );
       const filename = t('common:statements.attachment_filename', {
         counterparty: form.counterpartyName,
         errandNumber,
@@ -164,7 +206,7 @@ export const SupportStatementCard: FC<{
           municipalityId,
           statementId,
           pdfFileFromBase64(output, filename),
-          SupportStatementPurpose.REQUEST
+          supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST)
         )
       );
       await refreshAttachments();
@@ -182,15 +224,7 @@ export const SupportStatementCard: FC<{
 
     setBusy(true);
     try {
-      onChanged(
-        await uploadSupportStatementAttachment(
-          errandId,
-          municipalityId,
-          statementId,
-          file,
-          SupportStatementPurpose.RESPONSE
-        )
-      );
+      onChanged(await uploadSupportStatementAttachment(errandId, municipalityId, statementId, file, responsePurpose));
       onFormChange({ status: SupportStatementStatus.COMPLETED });
       await refreshAttachments();
     } catch {
@@ -251,8 +285,8 @@ export const SupportStatementCard: FC<{
           >
             <Select.Option value="">{t('common:statements.counterparty_placeholder')}</Select.Option>
             {SUPPORT_STATEMENT_COUNTERPARTIES.map((counterparty) => (
-              <Select.Option key={counterparty} value={counterparty}>
-                {counterparty}
+              <Select.Option key={counterparty.key} value={counterparty.name}>
+                {counterparty.name}
               </Select.Option>
             ))}
           </Select>
@@ -274,6 +308,34 @@ export const SupportStatementCard: FC<{
 
       {counterpartyChosen ? (
         <div className="flex flex-col gap-12">
+          <div className="flex flex-wrap items-end gap-16">
+            <FormControl className="grow">
+              <FormLabel>{t('common:statements.template')}</FormLabel>
+              <Select
+                value={templateIdentifier}
+                disabled={!editable}
+                data-cy="statement-template"
+                onChange={(e) => void chooseTemplate(e.currentTarget.value)}
+              >
+                <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
+                {templates.map((template) => (
+                  <Select.Option key={template.identifier} value={template.identifier}>
+                    {template.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl>
+              <FormLabel>{t('common:statements.due_at')}</FormLabel>
+              <Input
+                type="date"
+                value={form.dueAt}
+                disabled={!editable}
+                data-cy="statement-due-at"
+                onChange={(e) => set({ dueAt: e.currentTarget.value })}
+              />
+            </FormControl>
+          </div>
           <FormControl className="w-full">
             <FormLabel>{t('common:statements.text')}</FormLabel>
             <TextEditor
@@ -317,11 +379,11 @@ export const SupportStatementCard: FC<{
         <AttachmentRow
           key={attachment.id}
           name={attachment.fileName ?? ''}
-          note={
+          note={`${
             requests.includes(attachment)
               ? t('common:statements.attachment_request')
               : t('common:statements.attachment_response')
-          }
+          } · ${supportStatementPurposeDisplayName(attachment.purpose?.name ?? '', supportMetadata)}`}
           openLabel={t('common:statements.open')}
           onOpen={() => void open(attachment)}
         />
@@ -340,7 +402,9 @@ export const SupportStatementCard: FC<{
         </Button>
         <span className="text-small text-dark-secondary">
           {statementId
-            ? t('common:statements.tagged_as', { purpose: t('common:statements.attachment_response') })
+            ? t('common:statements.tagged_as', {
+                purpose: supportStatementPurposeDisplayName(responsePurpose, supportMetadata),
+              })
             : t('common:statements.choose_counterparty_first_short')}
         </span>
         <input
