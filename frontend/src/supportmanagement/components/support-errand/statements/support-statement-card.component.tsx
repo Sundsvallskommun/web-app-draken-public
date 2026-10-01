@@ -277,7 +277,7 @@ export const SupportStatementCard: FC<{
           <FormControl className="w-full">
             <FormLabel>{t('common:statements.text')}</FormLabel>
             <TextEditor
-              className="mb-0 h-[32rem]"
+              className="mb-0 text-editor-with-toolbar"
               value={{ markup: form.question }}
               readOnly={!editable}
               onChange={(e: { target: { value: { markup?: string } } }) =>
