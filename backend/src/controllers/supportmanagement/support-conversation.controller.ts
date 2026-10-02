@@ -23,6 +23,12 @@ interface ResponseData {
   message: string;
 }
 
+const communicationTypeOfConversation = (conversation: Conversation | undefined): string | undefined => {
+  if (!conversation) return undefined;
+
+  return conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+};
+
 @Controller()
 export class SupportConversationController {
   private apiService = new ApiService();
@@ -82,7 +88,7 @@ export class SupportConversationController {
       .catch(() => undefined);
 
     const topic = conversation?.topic;
-    const communicationType = conversation ? (conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR') : undefined;
+    const communicationType = communicationTypeOfConversation(conversation);
 
     url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);

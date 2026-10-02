@@ -180,7 +180,7 @@ export const SupportErrandDecisionTab: FC<{
 
   const removeTerm = (index: number) => setTerms((current) => current.filter((_, position) => position !== index));
 
-  const save = () => {
+  const save = async () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
     const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
@@ -200,37 +200,34 @@ export const SupportErrandDecisionTab: FC<{
       terms: writtenTerms,
     });
 
-    const saving = decision?.id
-      ? updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
-      : createSupportDecision(supportErrand.id, municipalityId, written);
+    try {
+      const saved = decision?.id
+        ? await updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
+        : await createSupportDecision(supportErrand.id, municipalityId, written);
 
-    saving
-      .then((saved) => {
-        setDecisions([saved]);
-        setIsSaving(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: t('common:decision.saved'),
-          status: 'success',
-        });
-      })
-      .catch((error) => {
-        setIsSaving(false);
-        if (isSupportDecisionLockedError(error)) {
-          getSupportDecisions(supportErrand.id!, municipalityId)
-            .then(setDecisions)
-            .catch(() => undefined);
-        }
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: t(
-            isSupportDecisionLockedError(error) ? 'common:decision.locked_error' : 'common:decision.save_error'
-          ),
-          status: 'error',
-        });
+      setDecisions([saved]);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:decision.saved'),
+        status: 'success',
       });
+    } catch (error) {
+      const isLocked = isSupportDecisionLockedError(error);
+      if (isLocked) {
+        const inHand = await getSupportDecisions(supportErrand.id, municipalityId).catch(() => undefined);
+        if (inHand) setDecisions(inHand);
+      }
+
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t(isLocked ? 'common:decision.locked_error' : 'common:decision.save_error'),
+        status: 'error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

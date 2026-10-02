@@ -56,6 +56,8 @@ const RESUMED_ELSEWHERE = new Set([Status.SUSPENDED, Status.SOLVED, Status.REOPE
 
 const A_MOVE_IS_FORGOTTEN_AFTER = 120000;
 
+const NO_GATE_TO_LEAVE_BY = 'no gate to leave by';
+
 const FIRST_REPORT_DELAY = 300;
 const REPORT_BACKOFF = 1.8;
 const LONGEST_REPORT_DELAY = 2500;
@@ -264,6 +266,55 @@ export const SupportProcessStepButton: FC<{
     return (await getSupportErrandById(errandId, municipalityId)).errand;
   };
 
+  const tellTheHandler = (message: string, status: 'success' | 'error') =>
+    toastMessage({ position: 'bottom', closeable: false, message, status });
+
+  const concludeAnyDraftDecision = async (
+    action: ProcessAction,
+    decisionsInHand: Decision[] | undefined
+  ): Promise<boolean> => {
+    const draft = action.completesDecision ? decisionsInHand?.find(isSupportDecisionDraft) : undefined;
+    if (!draft?.id) return false;
+
+    await completeSupportDecision(supportErrand.id!, municipalityId, draft.id);
+    return true;
+  };
+
+  const leaveTheStep = async (action: ProcessAction): Promise<boolean | typeof NO_GATE_TO_LEAVE_BY> => {
+    const gate = await gateToLeaveTheStep(action);
+    if (!gate?.name) return signalIsRequired(action) ? NO_GATE_TO_LEAVE_BY : false;
+
+    const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
+    await send(supportErrand.id!, gate.name);
+    return true;
+  };
+
+  const errandAfterTheStep = async (action: ProcessAction): Promise<SupportErrand | undefined> => {
+    if (action.closesErrand) return closeThroughRemainingGates(supportErrand.id!, action);
+
+    return (await getSupportErrandById(supportErrand.id!, municipalityId).catch(() => ({ errand: undefined }))).errand;
+  };
+
+  const watchTheProcessUnlessItHasMoved = (stepped: SupportErrand | undefined) => {
+    const hasMovedAlready = !!stepped && supportProcessStepName(getSupportErrandProcess(stepped)) !== step;
+    if (hasMovedAlready) return;
+
+    setProcessSignal({ errandId: supportErrand.id!, at: Date.now() });
+  };
+
+  const recoverFromAFailedStep = async (action: ProcessAction, error: unknown) => {
+    awaitedMove.current = undefined;
+    tellTheHandler(
+      isSupportProcessSignalStale(error)
+        ? t('common:process.actions.stale')
+        : t(`common:process.actions.${action.key}.error`),
+      'error'
+    );
+
+    const updated = await getSupportErrandById(supportErrand.id!, municipalityId).catch(() => undefined);
+    if (updated) setSupportErrand(updated.errand);
+  };
+
   const run = async (action: ProcessAction, decisionsInHand = decisions) => {
     setRunning(action.key);
     try {
@@ -271,66 +322,31 @@ export const SupportProcessStepButton: FC<{
         await takeErrand();
       }
 
-      const draftDecision = decisionsInHand?.find(isSupportDecisionDraft);
-      const decisionWasConcluded = Boolean(action.completesDecision && draftDecision?.id);
-      if (decisionWasConcluded) {
-        await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision!.id!);
-      }
-
-      const gate = await gateToLeaveTheStep(action);
-      if (signalIsRequired(action) && !gate?.name) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: t('common:process.actions.not_ready'),
-          status: 'error',
-        });
+      const decisionWasConcluded = await concludeAnyDraftDecision(action, decisionsInHand);
+      const signalWasSent = await leaveTheStep(action);
+      if (signalWasSent === NO_GATE_TO_LEAVE_BY) {
+        tellTheHandler(t('common:process.actions.not_ready'), 'error');
         return;
-      }
-
-      const signalWasSent = Boolean(gate?.name);
-      if (gate?.name) {
-        const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
-        await send(supportErrand.id!, gate.name);
       }
 
       if (action.tabKey && step) {
         awaitedMove.current = { from: step, tabKey: action.tabKey, at: Date.now() };
       }
 
-      const stepped = action.closesErrand
-        ? await closeThroughRemainingGates(supportErrand.id!, action)
-        : (await getSupportErrandById(supportErrand.id!, municipalityId).catch(() => ({ errand: undefined }))).errand;
-
+      const stepped = await errandAfterTheStep(action);
       if (stepped) {
         setSupportErrand(stepped);
         reset(stepped);
       }
 
-      const hasMovedAlready = !!stepped && supportProcessStepName(getSupportErrandProcess(stepped)) !== step;
-      if ((signalWasSent || decisionWasConcluded) && !hasMovedAlready) {
-        setProcessSignal({ errandId: supportErrand.id!, at: Date.now() });
+      if (signalWasSent || decisionWasConcluded) {
+        watchTheProcessUnlessItHasMoved(stepped);
       }
 
       if (action.tabKey && !awaitedMove.current) setActiveTabKey(action.tabKey);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: t(`common:process.actions.${action.key}.done`),
-        status: 'success',
-      });
+      tellTheHandler(t(`common:process.actions.${action.key}.done`), 'success');
     } catch (error) {
-      awaitedMove.current = undefined;
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: isSupportProcessSignalStale(error)
-          ? t('common:process.actions.stale')
-          : t(`common:process.actions.${action.key}.error`),
-        status: 'error',
-      });
-      const updated = await getSupportErrandById(supportErrand.id!, municipalityId).catch(() => undefined);
-      if (updated) setSupportErrand(updated.errand);
+      await recoverFromAFailedStep(action, error);
     } finally {
       setRunning(undefined);
     }
