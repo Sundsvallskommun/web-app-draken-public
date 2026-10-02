@@ -67,3 +67,14 @@ export const getPremisesAddress = (
 
   return formData?.besoksadressSammaSomArendeagare === 'JA' ? fromOwner(errand) : fromForm(formData);
 };
+
+// The premises address arrives with the space stripped from its postal code; show it as written in Sweden.
+const formatPostalCode = (postalCode?: string) => postalCode?.replace(/^(\d{3})(\d{2})$/, '$1 $2');
+
+export const formatAddress = (address: { streetAddress?: string; postalCode?: string; postalArea?: string }) =>
+  [address.streetAddress, [formatPostalCode(address.postalCode), address.postalArea].filter(Boolean).join(' ')]
+    .filter(Boolean)
+    .join(', ');
+
+export const formatPremisesAddress = (premises: PremisesAddress) =>
+  formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city });
