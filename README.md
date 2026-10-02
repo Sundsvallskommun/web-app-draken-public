@@ -248,6 +248,36 @@ Redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrek
 - `SAML_IDP_PUBLIC_CERT` ska stämma överens med IDPens cert
 - `SAML_PRIVATE_KEY` och `SAML_PUBLIC_KEY` behöver bara fyllas i korrekt om man kör mot en riktig IDP
 
+### Lokal fake-IdP (valfritt)
+
+Har du repot `web-app-fake-idp-admin` utcheckat bredvid det här projektet (med en `.env` skapad
+från dess `.env.example`) kan IdP:n startas i Docker från repots rot:
+
+```bash
+yarn idp:up    # IdP + admin-UI på http://localhost:7001
+yarn idp:logs
+yarn idp:down
+```
+
+Vill du kunna köra `docker compose up` direkt, skapa en `.env` i repots rot (ignoreras av git):
+
+```bash
+echo 'COMPOSE_FILE=docker-compose.idp.yml' > .env
+```
+
+Keycloak, LDAP och testapparna från fake-IdP-repot startar inte som standard, men kan startas med
+`docker compose -f docker-compose.idp.yml --profile keycloak up`.
+
+Peka sedan backendens env-fil mot den:
+
+```bash
+SAML_ENTRY_SSO=http://localhost:7001/api/saml/idp/sso
+SAML_LOGOUT_URL=http://localhost:7001/api/saml/idp/logout
+SAML_IDP_PUBLIC_CERT=<samma värde som SAML_IDP_PUBLIC_CERT i ../web-app-fake-idp-admin/.env>
+```
+
+Användare (och grupper som matchar `AUTHORIZED_GROUPS`) läggs upp i admin-UI:t.
+
 ### Starta utvecklingsserver
 
 Backend (kör från `backend/`):

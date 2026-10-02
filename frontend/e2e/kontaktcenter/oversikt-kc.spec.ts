@@ -31,6 +31,7 @@ test.describe('Overview support errand', () => {
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/supportnotifications/2281', mockNotifications, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
+    await mockRoute('**/countsupporterrands/2281*', { count: mockSupportErrands.content.length }, { method: 'GET' });
     await page.goto('oversikt/');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -200,33 +201,20 @@ test.describe('Overview support errand', () => {
 
   //SIDEBAR USE
   test('allows to switch between errand statuses in sidebar', async ({ page, mockRoute }) => {
-    await mockRoute('**/supporterrands/2281?page=0*', mockOngoingSupportErrands, { method: 'GET' });
-    await page.locator(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`).click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
-    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
-      mockOngoingSupportErrands.content.length
-    );
+    const switchStatus = async (statusName: string, errands: { content: unknown[] }) => {
+      await mockRoute('**/supporterrands/2281?page=0*', errands, { method: 'GET' });
+      // Wait for this list request, started before the click so a fast response is not missed.
+      await Promise.all([
+        page.waitForResponse((resp) => resp.url().includes('/supporterrands/2281?page=0') && resp.status() === 200),
+        page.locator(`[aria-label="status-button-${statusName}"]`).click(),
+      ]);
+      await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(errands.content.length);
+    };
 
-    await mockRoute('**/supporterrands/2281?page=0*', mockSuspendedSupportErrands, { method: 'GET' });
-    await page.locator(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`).click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
-    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
-      mockSuspendedSupportErrands.content.length
-    );
-
-    await mockRoute('**/supporterrands/2281?page=0*', mockSolvedSupportErrands, { method: 'GET' });
-    await page.locator(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`).click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
-    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
-      mockSolvedSupportErrands.content.length
-    );
-
-    await mockRoute('**/supporterrands/2281?page=0*', mockSupportErrands, { method: 'GET' });
-    await page.locator(`[aria-label="status-button-${mockMetaData.statuses[0].name}"]`).click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
-    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
-      mockSupportErrands.content.length
-    );
+    await switchStatus(mockMetaData.statuses[1].name, mockOngoingSupportErrands);
+    await switchStatus(mockMetaData.statuses[2].name, mockSuspendedSupportErrands);
+    await switchStatus(mockMetaData.statuses[3].name, mockSolvedSupportErrands);
+    await switchStatus(mockMetaData.statuses[0].name, mockSupportErrands);
   });
 
   //SEARCH
