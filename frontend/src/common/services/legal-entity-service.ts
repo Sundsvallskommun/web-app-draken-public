@@ -3,7 +3,6 @@
 import { apiService } from '@common/services/api-service';
 import {
   LegalEntityEngagement,
-  LegalEntityEngagementsApiResponse,
   LegalEntityProfile,
   LegalEntityProfileApiResponse,
 } from 'src/data-contracts/backend/data-contracts';
@@ -27,11 +26,6 @@ export const companyDescriptionParagraphs = (profile: LegalEntityProfile): strin
     .split(/\r?\n+/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-
-export const getCompanyEngagementsByPartyId = async (partyId: string): Promise<LegalEntityEngagement[]> => {
-  const res = await apiService.get<LegalEntityEngagementsApiResponse>(`legalentity/${partyId}/engagements`);
-  return res.data.data.engagements ?? [];
-};
 
 export const engagementRoles = (engagement: LegalEntityEngagement): string =>
   (engagement.relations ?? [])

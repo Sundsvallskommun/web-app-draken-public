@@ -21,10 +21,10 @@ const errandUrl = `${MUNICIPALITY_ID}/${mockSupportNamespace}/errands/${mockSupp
 
 const applicantCompany = { role: 'PRIMARY', externalIdType: 'COMPANY', externalId: mockOrganizationPartyId, organizationName: 'Testbolaget AB' };
 const markedPbi = {
-  role: 'PBI',
+  role: 'CONTACT',
   externalIdType: 'PRIVATE',
   externalId: mockSecondaryCitizenPartyId,
-  parameters: [{ key: 'note', values: ['x'], version: 2 }],
+  parameters: [{ key: 'PBI', values: ['true'], version: 2 }],
 };
 
 const engagements = [
@@ -139,7 +139,7 @@ describe('fetchCandidates', () => {
 });
 
 describe('markPbi', () => {
-  it('adds the person as a PBI stakeholder, with the party id and no personal number', async () => {
+  it('adds a person not on the errand as a contact carrying the PBI parameter, with the party id and no personal number', async () => {
     const { controller, api } = makeController([applicantCompany, markedPbi]);
     const req = mockReq();
     const res = mockRes();
@@ -154,18 +154,44 @@ describe('markPbi', () => {
     expect(Object.keys(config.data)).toEqual(['stakeholders']);
     expect(config.data.stakeholders).toEqual([
       applicantCompany,
-      { ...markedPbi, parameters: [{ key: 'note', values: ['x'] }] },
+      { ...markedPbi, parameters: [{ key: 'PBI', values: ['true'] }] },
       {
-        role: 'PBI',
+        role: 'CONTACT',
         externalId: mockCitizenPartyId,
         externalIdType: 'PRIVATE',
         firstName: mockFirstName,
         lastName: mockLastName,
         contactChannels: [],
-        parameters: [],
+        parameters: [{ key: 'PBI', values: ['true'] }],
       },
     ]);
     expect(JSON.stringify(config.data)).not.toContain(mockPersonNumber);
+  });
+
+  it('puts the PBI parameter on the stakeholder the person already is, keeping its role', async () => {
+    const owner = {
+      role: 'PRIMARY',
+      externalIdType: 'PRIVATE',
+      externalId: mockCitizenPartyId,
+      parameters: [{ key: 'title', values: ['VD'] }],
+    };
+    const { controller, api } = makeController([applicantCompany, owner]);
+    const res = mockRes();
+
+    await controller.markPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { partyId: mockCitizenPartyId }, res);
+
+    expect(res.statusCode).toBe(201);
+    const [config] = api.patch.mock.calls[0];
+    expect(config.data.stakeholders).toEqual([
+      applicantCompany,
+      {
+        ...owner,
+        parameters: [
+          { key: 'title', values: ['VD'] },
+          { key: 'PBI', values: ['true'] },
+        ],
+      },
+    ]);
   });
 
   it('refuses a person who is not engaged in the applicant company', async () => {
@@ -199,9 +225,17 @@ describe('markPbi', () => {
 });
 
 describe('unmarkPbi', () => {
-  it('removes only the PBI stakeholder with that party id', async () => {
-    const contactWithSameParty = { role: 'CONTACT', externalIdType: 'PRIVATE', externalId: mockSecondaryCitizenPartyId };
-    const { controller, api } = makeController([applicantCompany, contactWithSameParty, markedPbi]);
+  it('removes only the PBI parameter, keeping the stakeholder', async () => {
+    const owner = {
+      role: 'PRIMARY',
+      externalIdType: 'PRIVATE',
+      externalId: mockCitizenPartyId,
+      parameters: [
+        { key: 'title', values: ['VD'] },
+        { key: 'PBI', values: ['true'] },
+      ],
+    };
+    const { controller, api } = makeController([applicantCompany, owner, markedPbi]);
     const res = mockRes();
 
     await controller.unmarkPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, res);
@@ -209,7 +243,7 @@ describe('unmarkPbi', () => {
     expect(res.statusCode).toBe(204);
     const [config] = api.patch.mock.calls[0];
     expect(config.headers).toEqual({ 'If-Match': '"7"' });
-    expect(config.data.stakeholders).toEqual([applicantCompany, contactWithSameParty]);
+    expect(config.data.stakeholders).toEqual([applicantCompany, owner, { ...markedPbi, parameters: [] }]);
   });
 
   it('answers 404 and writes nothing when the person is not marked', async () => {
