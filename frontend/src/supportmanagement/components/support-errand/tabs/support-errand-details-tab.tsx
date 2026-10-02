@@ -1,12 +1,10 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
-import { useCompanyEngagements } from '@common/hooks/use-company-engagements';
 import { useCompanyProfile } from '@common/hooks/use-company-profile';
 import { appConfig } from '@config/appconfig';
 import { Alert, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { namespaceHasPbiRole } from '@supportmanagement/services/support-pbi-service';
 import { useMemo, useState } from 'react';
 
 import { SupportErrandBusinessDescriptionDrawer } from './support-errand-business-description-drawer.component';
@@ -37,10 +35,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   );
   const organizationPartyId = organizationStakeholder?.externalId;
   const companyInformation = appConfig.features.useCompanyInformation ? organizationPartyId : undefined;
-  const marksPbi = !!companyInformation && namespaceHasPbiRole(supportMetadata);
-  const pbi = useSupportPbi(marksPbi);
-  const plainEngagements = useCompanyEngagements(marksPbi ? undefined : companyInformation);
-  const companyEngagements = pbi.candidates ?? plainEngagements;
+  const pbi = useSupportPbi(!!companyInformation);
+  const companyEngagements = pbi.candidates ?? [];
   const showsCompanyEngagements = companyEngagements.length > 0;
   const companyProfile = useCompanyProfile(companyInformation);
   const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
