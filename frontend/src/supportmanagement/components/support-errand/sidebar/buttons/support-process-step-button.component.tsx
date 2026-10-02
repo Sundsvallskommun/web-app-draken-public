@@ -1,4 +1,4 @@
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Decision, ProcessSignal } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -18,6 +18,7 @@ import {
 import {
   awaitedGateOfStep,
   getSupportErrandProcess,
+  getSupportErrandProcessState,
   isSupportProcessCompleted,
   isSupportProcessFailed,
   isSupportProcessSignalStale,
@@ -27,7 +28,7 @@ import {
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { ArrowRight } from 'lucide-react';
-import { FC, ReactElement, useEffect, useState } from 'react';
+import { FC, ReactElement, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -53,8 +54,12 @@ interface ProcessAction {
 /** Parked, solved and reopened errands are picked up from their own buttons, never started again. */
 const RESUMED_ELSEWHERE = new Set([Status.SUSPENDED, Status.SOLVED, Status.REOPENED]);
 
-const SIGNAL_REPORT_ATTEMPTS = 12;
-const SIGNAL_REPORT_INTERVAL = 2500;
+const A_MOVE_IS_FORGOTTEN_AFTER = 120000;
+
+const FIRST_REPORT_DELAY = 300;
+const REPORT_BACKOFF = 1.8;
+const LONGEST_REPORT_DELAY = 2500;
+const SIGNAL_REPORT_WINDOW = 30000;
 
 const waitFor = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -63,13 +68,19 @@ const errandOnNextStep = async (
   municipalityId: string,
   leaving: SupportProcessStepName | undefined
 ): Promise<SupportErrand | undefined> => {
-  for (let attempt = 0; attempt < SIGNAL_REPORT_ATTEMPTS; attempt++) {
-    await waitFor(SIGNAL_REPORT_INTERVAL);
-    const { errand } = await getSupportErrandById(errandId, municipalityId);
-    if (!errand) continue;
+  const until = Date.now() + SIGNAL_REPORT_WINDOW;
+  let delay = FIRST_REPORT_DELAY;
 
-    const process = getSupportErrandProcess(errand);
-    if (isSupportProcessCompleted(process) || supportProcessStepName(process) !== leaving) return errand;
+  while (Date.now() < until) {
+    const state = await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined);
+    const process = state?.process;
+
+    if (process && (isSupportProcessCompleted(process) || supportProcessStepName(process) !== leaving)) {
+      return (await getSupportErrandById(errandId, municipalityId).catch(() => ({ errand: undefined }))).errand;
+    }
+
+    await waitFor(delay);
+    delay = Math.min(delay * REPORT_BACKOFF, LONGEST_REPORT_DELAY);
   }
   return undefined;
 };
@@ -139,6 +150,8 @@ export const SupportProcessStepButton: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
+  const setProcessSignal = useSupportStore((s) => s.setProcessSignal);
+  const processSignal = useSupportStore((s) => s.processSignal);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const decisionTabHoldsDecision = useSupportStore((s) => s.tabsWithContent['decision']);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -146,13 +159,30 @@ export const SupportProcessStepButton: FC<{
   const { handleSubmit, reset } = useFormContext();
   const [running, setRunning] = useState<string>();
   const [decisions, setDecisions] = useState<Decision[]>();
+  const awaitedMove = useRef<{ from: SupportProcessStepName; tabKey: string; at: number } | undefined>(undefined);
 
   const process = getSupportErrandProcess(supportErrand);
   const step = supportProcessStepName(process);
   const stepAction = step ? STEP_ACTIONS[step] : undefined;
   const awaitingSignal = awaitedGateOfStep(process, step);
   const errandId = supportErrand?.id;
+
+  const signalIsOutstanding = Boolean(processSignal && errandId && processSignal.errandId === errandId);
   const modified = supportErrand?.modified;
+
+  useEffect(() => {
+    const move = awaitedMove.current;
+    if (!move) return;
+
+    if (Date.now() - move.at > A_MOVE_IS_FORGOTTEN_AFTER) {
+      awaitedMove.current = undefined;
+      return;
+    }
+    if (!step || step === move.from) return;
+
+    awaitedMove.current = undefined;
+    setActiveTabKey(move.tabKey);
+  }, [step, setActiveTabKey]);
 
   useEffect(() => {
     if (!errandId || !stepAction?.requiresDecisionOutcome) return;
@@ -180,6 +210,13 @@ export const SupportProcessStepButton: FC<{
 
   const sendSignal = (errandId: string, signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
 
+  const gateToLeaveTheStep = async (action: ProcessAction): Promise<ProcessSignal | undefined> => {
+    if (!action.needsSignal) return undefined;
+
+    const state = await getSupportErrandProcessState(supportErrand.id!, municipalityId).catch(() => undefined);
+    return awaitedGateOfStep(state?.process ?? process, step);
+  };
+
   const sendSignalToleratingAStepAlreadyLeft = (errandId: string, signal: string) =>
     sendSignal(errandId, signal).catch((error) => {
       if (!isSupportProcessSignalStale(error)) throw error;
@@ -188,17 +225,19 @@ export const SupportProcessStepButton: FC<{
   const takeErrand = async () => {
     await onSubmit?.();
 
-    if (!supportErrand.assignedUserId) {
-      const currentAdmin = administrators.find((a) => a.adAccount === user.username);
-      if (currentAdmin) {
-        await setSupportErrandAdmin(
-          supportErrand.id!,
-          municipalityId,
-          currentAdmin.adAccount,
-          Status.ONGOING,
-          currentAdmin.adAccount
-        );
-      }
+    const currentAdmin = supportErrand.assignedUserId
+      ? undefined
+      : administrators.find((a) => a.adAccount === user.username);
+
+    if (currentAdmin) {
+      await setSupportErrandAdmin(
+        supportErrand.id!,
+        municipalityId,
+        currentAdmin.adAccount,
+        Status.ONGOING,
+        currentAdmin.adAccount
+      );
+      return;
     }
 
     await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.ONGOING);
@@ -233,25 +272,47 @@ export const SupportProcessStepButton: FC<{
       }
 
       const draftDecision = decisionsInHand?.find(isSupportDecisionDraft);
-      if (action.completesDecision && draftDecision?.id) {
-        await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
+      const decisionWasConcluded = Boolean(action.completesDecision && draftDecision?.id);
+      if (decisionWasConcluded) {
+        await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision!.id!);
       }
 
-      if (action.needsSignal && awaitingSignal?.name) {
+      const gate = await gateToLeaveTheStep(action);
+      if (signalIsRequired(action) && !gate?.name) {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: t('common:process.actions.not_ready'),
+          status: 'error',
+        });
+        return;
+      }
+
+      const signalWasSent = Boolean(gate?.name);
+      if (gate?.name) {
         const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
-        await send(supportErrand.id!, awaitingSignal.name);
+        await send(supportErrand.id!, gate.name);
+      }
+
+      if (action.tabKey && step) {
+        awaitedMove.current = { from: step, tabKey: action.tabKey, at: Date.now() };
       }
 
       const stepped = action.closesErrand
         ? await closeThroughRemainingGates(supportErrand.id!, action)
-        : (await errandOnNextStep(supportErrand.id!, municipalityId, step)) ??
-          (await getSupportErrandById(supportErrand.id!, municipalityId)).errand;
+        : (await getSupportErrandById(supportErrand.id!, municipalityId).catch(() => ({ errand: undefined }))).errand;
 
       if (stepped) {
         setSupportErrand(stepped);
         reset(stepped);
       }
-      if (action.tabKey) setActiveTabKey(action.tabKey);
+
+      const hasMovedAlready = !!stepped && supportProcessStepName(getSupportErrandProcess(stepped)) !== step;
+      if ((signalWasSent || decisionWasConcluded) && !hasMovedAlready) {
+        setProcessSignal({ errandId: supportErrand.id!, at: Date.now() });
+      }
+
+      if (action.tabKey && !awaitedMove.current) setActiveTabKey(action.tabKey);
       toastMessage({
         position: 'bottom',
         closeable: false,
@@ -259,6 +320,7 @@ export const SupportProcessStepButton: FC<{
         status: 'success',
       });
     } catch (error) {
+      awaitedMove.current = undefined;
       toastMessage({
         position: 'bottom',
         closeable: false,
@@ -340,8 +402,10 @@ export const SupportProcessStepButton: FC<{
       variant={action.variant}
       color={action.color}
       rightIcon={action.icon}
-      loading={running === action.key}
-      disabled={disabled || !canEdit || !!running || (signalIsRequired(action) && !awaitingSignal?.name)}
+      loading={running === action.key || signalIsOutstanding}
+      disabled={
+        disabled || !canEdit || !!running || signalIsOutstanding || (signalIsRequired(action) && !awaitingSignal?.name)
+      }
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
     >
