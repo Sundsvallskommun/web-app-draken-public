@@ -156,6 +156,7 @@
     "actions": {
       "confirm_no": "Nej",
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
+      "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
       "start_handling": {
         "label": "Starta handläggning",
         "done": "Handläggning startad",
@@ -208,6 +209,7 @@
       "upstream_refused": "Processen fastnade mot tjänsten {{service}}, som svarade {{status}}. Det behöver rättas av teamet som förvaltar processen."
     },
     "activities": {
+      "notify_processing_started": "Meddelar att handläggningen startat",
       "create_decision": "Skapar beslut",
       "check_decision": "Kontrollerar beslut",
       "create_asset": "Skapar tillstånd",
@@ -247,6 +249,7 @@
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
+    "locked_error": "Beslutet kan inte längre ändras. Det är slutfört eller processen har avslutats.",
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
