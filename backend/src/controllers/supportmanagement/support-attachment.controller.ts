@@ -1,11 +1,12 @@
 import { IsOptional, IsString } from 'class-validator';
 import FormData from 'form-data';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { ErrandAttachmentChannelEnum } from '@/data-contracts/supportmanagement/data-contracts';
+import { ErrandAttachmentChannelEnum, UpdateErrandAttachmentRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
@@ -17,6 +18,7 @@ interface SupportAttachment {
   id: string;
   fileName: string;
   mimeType: string;
+  purpose?: { id?: string; name?: string; displayName?: string };
 }
 interface SingleSupportAttachment {
   errandAttachmentHeader: {
@@ -32,6 +34,15 @@ class SupportAttachmentDto {
   name!: string;
   @IsOptional()
   files!: Express.Multer.File[];
+  /** Id of an attachment purpose in the namespace's metadata. */
+  @IsOptional()
+  @IsString()
+  purposeId?: string;
+}
+
+class UpdateSupportAttachmentDto {
+  @IsString()
+  purposeId!: string;
 }
 
 @Controller()
@@ -69,6 +80,31 @@ export class SupportAttachmentController {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments`;
     const res = await this.apiService.get<SupportAttachment[]>({ url }, req.user);
     return response.status(200).send(res.data);
+  }
+
+  @Patch('/supportattachments/:municipalityId/errands/:id/attachments/:attachmentId')
+  @OpenAPI({ summary: 'Change the purpose of an attachment' })
+  @UseBefore(authMiddleware)
+  async updateSupportAttachmentPurpose(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Body() body: UpdateSupportAttachmentDto,
+    @Res() response: any,
+  ): Promise<{ message: string }> {
+    await validateRequestBody(UpdateSupportAttachmentDto, body);
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
+    await this.setPurpose(url, body.purposeId, req);
+    return response.status(200).send({ message: 'success' });
+  }
+
+  private async setPurpose(attachmentUrl: string, purposeId: string, req: RequestWithUser): Promise<void> {
+    const data: UpdateErrandAttachmentRequest = { purpose: { id: purposeId } };
+    await this.apiService.patch<any, UpdateErrandAttachmentRequest>({ url: attachmentUrl, data }, req.user).catch(e => {
+      logger.error(`Error when setting purpose on attachment ${attachmentUrl}`);
+      throw e;
+    });
   }
 
   @Delete('/supportattachments/:municipalityId/errands/:id/attachments/:attachmentId')
@@ -110,12 +146,22 @@ export class SupportAttachmentController {
       throw new Error('File missing');
     }
     const res = await this.apiService
-      .post<any, FormData>({ url, data, headers: { 'Content-Type': data.getHeaders()['content-type'] } }, req.user)
+      .post<
+        any,
+        FormData
+      >({ url, data, headers: { 'Content-Type': data.getHeaders()['content-type'] }, followLocation: !attachmentDto.purposeId }, req.user)
       .catch(e => {
         logger.error(`Error when saving attachment on errand ${id}`);
         logger.error(e);
         throw e;
       });
+
+    if (attachmentDto.purposeId) {
+      const attachmentId = res.location && new URL(res.location, 'http://unused').pathname.split('/').filter(Boolean).pop();
+      if (!attachmentId) throw new HttpException(502, 'No attachment id in response when saving attachment');
+      await this.setPurpose(`${url}/${decodeURIComponent(attachmentId)}`, attachmentDto.purposeId, req);
+      return response.status(201).send({ id: attachmentId });
+    }
     return response.status(201).send(res.data);
   }
 }
