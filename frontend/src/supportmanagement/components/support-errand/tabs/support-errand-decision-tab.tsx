@@ -17,6 +17,7 @@ import {
   getSupportDecisions,
   isSupportDecisionDraft,
   isSupportDecisionLocked,
+  isSupportDecisionLockedError,
   outcomeForTerms,
   outcomeWithoutConditions,
   selectableSupportDecisionOutcomes,
@@ -200,12 +201,19 @@ export const SupportErrandDecisionTab: FC<{
           status: 'success',
         });
       })
-      .catch(() => {
+      .catch((error) => {
         setIsSaving(false);
+        if (isSupportDecisionLockedError(error)) {
+          getSupportDecisions(supportErrand.id!, municipalityId)
+            .then(setDecisions)
+            .catch(() => undefined);
+        }
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: t('common:decision.save_error'),
+          message: t(
+            isSupportDecisionLockedError(error) ? 'common:decision.locked_error' : 'common:decision.save_error'
+          ),
           status: 'error',
         });
       });

@@ -39,6 +39,10 @@ export const outcomeForTerms = (outcome: string, terms: string[], outcomes: Deci
   return outcomes.some((candidate) => candidate.name === withConditions) ? withConditions : plain;
 };
 
+/** Support Management answers 409 when a decision may no longer be changed, and locks it itself. */
+export const isSupportDecisionLockedError = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === 409;
+
 export const getSupportDecisions = (errandId: string, municipalityId: string): Promise<Decision[]> =>
   apiService
     .get<Decision[]>(`supportdecisions/${municipalityId}/${errandId}`)
