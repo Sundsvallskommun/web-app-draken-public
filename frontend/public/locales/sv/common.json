@@ -55,7 +55,7 @@
     "followup": "Uppföljning",
     "unsaved_title": "Du har osparade ändringar",
     "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
-    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslut.",
     "unsaved_leave": "Byt flik ändå",
     "unsaved_stay": "Stanna kvar"
   },
@@ -218,6 +218,7 @@
   },
   "decision": {
     "heading": "Beslut",
+    "intro": "Fatta beslutet utifrån underlaget ovan.",
     "loading": "Hämtar beslut",
     "error": "Beslutet kunde inte hämtas.",
     "locked": "Låst",
@@ -229,11 +230,15 @@
     "decided_at": "Beslutsdatum",
     "legal_basis": "Lagrum",
     "delegation": "Delegationspunkt",
-    "justification": "Motivering",
+    "justification": "Beslutsmotivering",
+    "justification_help": "Detta blir beslutets skäl.",
+    "justification_placeholder": "Motivera beslutet...",
     "terms": "Villkor",
-    "outcome": "Utfall",
-    "outcome_placeholder": "Välj utfall",
-    "role": "Beslutsfattare enligt delegationsordning",
+    "outcome": "Beslut",
+    "outcome_placeholder": "Välj beslut...",
+    "role": "Välj beslutsfattare",
+    "role_help": "Ange vem som fattar beslutet enligt delegationsordningen.",
+    "role_placeholder": "Välj beslutsfattare...",
     "roles": {
       "handlaggare": "Handläggare",
       "utskottet": "Utskottet",
@@ -243,12 +248,45 @@
     "add_term": "Lägg till villkor",
     "term_label": "Villkor {{number}}",
     "remove_term": "Ta bort villkor {{number}}",
-    "save": "Spara beslutet",
+    "save": "Spara beslut",
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
-    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
+    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
+    "basis": {
+      "heading": "Beslutsunderlag",
+      "intro": "En sammanställning av de uppgifter beslutet ska grundas på, hämtade från ärendet.",
+      "errand": {
+        "heading": "Vad ärendet avser",
+        "type": "Ärendetyp",
+        "number": "Ärendenummer"
+      },
+      "holder": {
+        "heading": "Tillståndshavare",
+        "organization": "Organisation",
+        "organization_number": "Organisationsnummer",
+        "name": "Namn",
+        "address": "Adress",
+        "phone": "Telefon",
+        "email": "E-post",
+        "missing": "Ärendet saknar ärendeägare."
+      },
+      "premises": {
+        "heading": "Serveringsställe",
+        "address": "Besöksadress",
+        "same_as_owner": "samma som ärendeägarens adress",
+        "rest": "Namn, kontaktuppgifter, antal platser och serveringsansvariga hämtas från ärendeuppgifterna och visas här när det är beslutat hur formulärets nycklar ska hanteras."
+      },
+      "operation": "Verksamheten",
+      "serving_hours": "Begärda serveringstider",
+      "serving": "Servering",
+      "financing": "Finansiering",
+      "referrals": "Remissvar",
+      "from_form": "Uppgifterna hämtas från ärendeuppgifterna och visas här när det är beslutat hur formulärets nycklar ska hanteras.",
+      "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
+      "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
+    }
   }
 }

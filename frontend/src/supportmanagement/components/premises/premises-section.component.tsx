@@ -3,7 +3,11 @@
 import type { Address, Assignment } from '@common/data-contracts/licensed-business/data-contracts';
 import { Button, Icon, Label, SearchField, Spinner, Table } from '@sk-web-gui/react';
 import type { RestaurantNumberWithAssignment } from '@supportmanagement/services/licensed-business-service';
-import type { PremisesAddress } from '@supportmanagement/services/support-premises-address-service';
+import {
+  formatAddress,
+  formatPremisesAddress,
+  type PremisesAddress,
+} from '@supportmanagement/services/support-premises-address-service';
 import { Store } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 
@@ -22,17 +26,6 @@ const NUMBER_STATUS: Record<string, { label: string; color: 'gronsta' | 'tertiar
 // LicensedBusiness documents only ACTIVE; ENDED is what the register returns once validTo has passed.
 // A status not listed here is shown as sent, so a new one is visible rather than hidden.
 const ASSIGNMENT_STATUS: Record<string, string> = { ACTIVE: 'Pågående', ENDED: 'Avslutad' };
-
-// The premises address arrives with the space stripped from its postal code; show it as written in Sweden.
-const formatPostalCode = (postalCode?: string) => postalCode?.replace(/^(\d{3})(\d{2})$/, '$1 $2');
-
-const formatAddress = (address: { streetAddress?: string; postalCode?: string; postalArea?: string }) =>
-  [address.streetAddress, [formatPostalCode(address.postalCode), address.postalArea].filter(Boolean).join(' ')]
-    .filter(Boolean)
-    .join(', ');
-
-const formatPremisesAddress = (premises: PremisesAddress) =>
-  formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city });
 
 const formatPeriod = (validFrom?: string, validTo?: string) =>
   validFrom || validTo ? `${validFrom ?? ''} – ${validTo ?? 'tills vidare'}` : '-';
