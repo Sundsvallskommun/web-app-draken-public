@@ -22,8 +22,11 @@ import {
   outcomeWithoutConditions,
   selectableSupportDecisionOutcomes,
   SUPPORT_DECISION_ROLE_KEYS,
+  supportDecisionPermitType,
+  supportDecisionWithoutBlanks,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import { getLabelType, getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { Plus, Trash } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
@@ -101,6 +104,8 @@ export const SupportErrandDecisionTab: FC<{
   const [legalBasis, setLegalBasis] = useState('');
   const [delegationReference, setDelegationReference] = useState('');
   const [justification, setJustification] = useState('');
+  const [validFrom, setValidFrom] = useState('');
+  const [validTo, setValidTo] = useState('');
   const [terms, setTerms] = useState<string[]>([]);
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
@@ -133,6 +138,8 @@ export const SupportErrandDecisionTab: FC<{
     setDecidedByRole(draft.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
     setLegalBasis(draft.legalBasis ?? '');
     setDelegationReference(draft.delegationReference ?? '');
+    setValidFrom(draft.validFrom ?? '');
+    setValidTo(draft.validTo ?? '');
     setJustification(draft.justification ?? '');
     setTerms(termTexts(draft));
   };
@@ -177,14 +184,21 @@ export const SupportErrandDecisionTab: FC<{
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
     const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
-    const written = {
+    const typeLabel = getMostSpecificLabelType(supportErrand);
+    const permitType = supportDecisionPermitType(typeLabel, supportErrand.process?.processKey);
+    const permitName = getLabelType(supportErrand)?.displayName;
+    const written = supportDecisionWithoutBlanks({
       outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
+      type: permitType,
+      title: permitName ? t('common:decision.title_for', { permit: permitName.toLocaleLowerCase('sv-SE') }) : undefined,
       decidedByRole,
       legalBasis,
       delegationReference,
       justification,
+      validFrom,
+      validTo,
       terms: writtenTerms,
-    };
+    });
 
     const saving = decision?.id
       ? updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
@@ -286,6 +300,30 @@ export const SupportErrandDecisionTab: FC<{
               disabled={!canEdit}
             />
           </FormControl>
+
+          <div className="flex gap-16">
+            <FormControl id="decision-valid-from" className="w-full">
+              <FormLabel>{t('common:decision.valid_from')}</FormLabel>
+              <Input
+                type="date"
+                value={validFrom}
+                onChange={(event) => setValidFrom(event.target.value)}
+                disabled={!canEdit}
+                data-cy="decision-valid-from"
+              />
+            </FormControl>
+
+            <FormControl id="decision-valid-to" className="w-full">
+              <FormLabel>{t('common:decision.valid_to')}</FormLabel>
+              <Input
+                type="date"
+                value={validTo}
+                onChange={(event) => setValidTo(event.target.value)}
+                disabled={!canEdit}
+                data-cy="decision-valid-to"
+              />
+            </FormControl>
+          </div>
 
           <FormControl id="decision-justification" className="w-full">
             <FormLabel>{t('common:decision.justification')}</FormLabel>

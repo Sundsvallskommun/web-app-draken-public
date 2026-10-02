@@ -250,6 +250,9 @@
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
     "locked_error": "Beslutet kan inte längre ändras. Det är slutfört eller processen har avslutats.",
+    "title_for": "Beslut om {{permit}}",
+    "valid_from": "Gäller från",
+    "valid_to": "Gäller till (lämna tomt för tills vidare)",
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
