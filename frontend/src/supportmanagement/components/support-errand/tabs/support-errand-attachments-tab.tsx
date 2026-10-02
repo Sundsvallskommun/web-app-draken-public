@@ -82,7 +82,7 @@ export const SupportErrandAttachmentsTab: FC<{
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [selectedAttachment, setSelectedAttachment] = useState<SupportAttachment>();
   const [attachmentTypeExists, setAttachmentTypeExists] = useState(false);
-  const removeConfirm = useConfirm();
+  const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
   const [editingPurposeId, setEditingPurposeId] = useState<string>();
@@ -255,7 +255,7 @@ export const SupportErrandAttachmentsTab: FC<{
   };
 
   const onDelete = () => {
-    removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
+    confirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
         return deleteSupportAttachment(supportErrand!.id!.toString(), municipalityId, selectedAttachment!.id!)
           ?.then(() => {
@@ -290,8 +290,25 @@ export const SupportErrandAttachmentsTab: FC<{
   const changePurpose = (attachment: SupportAttachment, purposeId: string) => {
     setEditingPurposeId(undefined);
     if (!purposeId || purposeId === attachment.purpose?.id) return;
-    updateSupportAttachmentPurpose(supportErrand!.id!.toString(), municipalityId, attachment.id, purposeId)
-      .then(() => props.update())
+    const purposeLabel = purposes.find((p) => p.id === purposeId)?.label;
+    confirm
+      .showConfirmation(
+        'Ändra typ av bilaga?',
+        `Vill du ändra typ av bilaga för ${attachment.fileName} till ${purposeLabel}?`,
+        'Ja',
+        'Nej',
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (!confirmed) return;
+        return updateSupportAttachmentPurpose(
+          supportErrand!.id!.toString(),
+          municipalityId,
+          attachment.id,
+          purposeId
+        ).then(() => props.update());
+      })
       .catch(() => {
         toastMessage({
           position: 'bottom',
