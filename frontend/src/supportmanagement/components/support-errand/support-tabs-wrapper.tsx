@@ -135,12 +135,15 @@ export const SupportTabsWrapper: FC<{
     }
   };
 
+  // Keyed on the errand rather than on the object holding it: a process being watched writes the
+  // errand every few seconds, and reading its messages, attachments and conversations again each time
+  // costs a dozen requests upstream for an errand that has not changed.
   useEffect(() => {
     if (supportErrand?.id) {
       getMessagesAndConversations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand]);
+  }, [supportErrand?.id, supportErrand?.modified]);
 
   const conversationMessageCountSummary = useMemo(
     () => getConversationMessageCountSummary(conversationReadByCounts, supportErrand?.errandNumber ?? ''),

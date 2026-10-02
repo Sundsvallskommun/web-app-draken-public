@@ -75,11 +75,16 @@ export class SupportConversationController {
     @Param('conversationId') conversationId: string,
   ): Promise<ResponseData> {
     const baseURL = apiURL(this.SERVICE);
-    let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations`;
-    const resConversation = await this.apiService.get<Conversation[]>({ url, baseURL }, req.user);
+    // The conversation is read on its own rather than looked up in a listing of them all: the messages
+    // of every conversation are fetched when an errand is opened, and each of those fetches asked
+    // Support Management for the whole list to find one topic.
+    let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}`;
+    const conversation = await this.apiService
+      .get<Conversation>({ url, baseURL }, req.user)
+      .then(res => res.data)
+      .catch(() => undefined);
 
-    const conversation = resConversation.data.find(item => item.id === conversationId);
-    const topic = conversation ? conversation.topic : undefined;
+    const topic = conversation?.topic;
     const communicationType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
 
     url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
