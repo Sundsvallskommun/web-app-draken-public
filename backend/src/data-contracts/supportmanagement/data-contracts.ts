@@ -2264,6 +2264,8 @@ export interface Decision {
   terms?: DecisionTerm[];
   /** Attachments of the errand linked to this decision */
   attachments?: ErrandAttachment[];
+  /** Parameters of the decision, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the decision */
   createdBy?: string;
   /** User who last modified the decision */

@@ -64,6 +64,8 @@ const renderBasis = (supportErrand: SupportErrand) =>
   render(<SupportErrandDecisionBasis supportErrand={supportErrand} supportMetadata={METADATA} />);
 
 const value = (row: string) => document.querySelector(`[data-cy="decision-basis-${row}"]`)?.textContent;
+const label = (row: string) =>
+  document.querySelector(`[data-cy="decision-basis-${row}"]`)?.previousElementSibling?.textContent;
 
 afterEach(cleanup);
 
@@ -109,20 +111,21 @@ test('shows the premises address filled in on the form', () => {
   );
 
   expect(value('premises-address')).toBe(`${PREMISES.street}, ${PREMISES.postalCode} ${PREMISES.city}`);
+  expect(label('premises-address')).toBe('common:decision.basis.premises.address_from.FORM');
 });
 
 test('premises at the owner address are marked as such', () => {
   renderBasis(errand(company, { besoksadressSammaSomArendeagare: 'JA' }));
 
-  expect(value('premises-address')).toBe(
-    `${COMPANY.street}, ${COMPANY.postalCode} ${COMPANY.city} (common:decision.basis.premises.same_as_owner)`
-  );
+  expect(value('premises-address')).toBe(`${COMPANY.street}, ${COMPANY.postalCode} ${COMPANY.city}`);
+  expect(label('premises-address')).toBe('common:decision.basis.premises.address_from.OWNER');
 });
 
 test('an errand without a premises address shows a dash', () => {
   renderBasis(errand(company));
 
   expect(value('premises-address')).toBe('common:decision.empty_value');
+  expect(label('premises-address')).toBe('common:decision.basis.premises.address');
 });
 
 test('the sections read from the form are placeholders until its keys are settled', () => {
@@ -136,4 +139,16 @@ test('the sections read from the form are placeholders until its keys are settle
   expect(document.querySelector('[data-cy="decision-basis-referrals"]')?.textContent).toContain(
     'common:decision.basis.not_built'
   );
+});
+
+test('what handles the premises is shown in the premises section', () => {
+  render(
+    <SupportErrandDecisionBasis
+      supportErrand={errand(company)}
+      supportMetadata={METADATA}
+      premisesHandling={<span data-cy="premises-handling" />}
+    />
+  );
+
+  expect(document.querySelector('[data-cy="decision-basis-premises"] [data-cy="premises-handling"]')).toBeTruthy();
 });

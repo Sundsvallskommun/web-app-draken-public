@@ -1,5 +1,6 @@
 import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
+import { appConfig } from '@config/appconfig';
 import {
   Button,
   Divider,
@@ -14,6 +15,12 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
+import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
+import {
+  type DecisionPremises as DecisionPremisesValue,
+  fromDecisionParameters,
+} from '@supportmanagement/services/support-decision-premises-service';
 import {
   createSupportDecision,
   getSupportDecisions,
@@ -25,9 +32,10 @@ import {
   SUPPORT_DECISION_ROLE_KEYS,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import { formatAddress, getPremisesAddress } from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
 import { CircleCheck, Plus, Trash } from 'lucide-react';
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
@@ -42,9 +50,24 @@ const DecisionCard: FC<{ children: ReactNode }> = ({ children }) => (
   <div className="border-1 rounded-12 p-16">{children}</div>
 );
 
+/** Address and restaurant number (or "new") as text. */
+const usePremisesText = () => {
+  const { t } = useTranslation();
+
+  return (premises: DecisionPremisesValue): string =>
+    [
+      formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city }),
+      premises.restaurantNumber
+        ? t('common:decision.premises.number', { number: premises.restaurantNumber })
+        : t('common:decision.premises.new_number'),
+    ].join(' · ');
+};
+
 const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> = ({ decision, outcomes }) => {
   const { t } = useTranslation();
+  const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
+  const premises = fromDecisionParameters(decision.parameters);
 
   return (
     <div className="flex flex-col gap-16" data-cy="decision-summary">
@@ -66,6 +89,14 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
         <dd className="m-0">{decision.legalBasis || empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.delegation')}</dt>
         <dd className="m-0">{decision.delegationReference || empty}</dd>
+        {premises ? (
+          <>
+            <dt className="text-dark-secondary">{t('common:decision.premises.label')}</dt>
+            <dd className="m-0" data-cy="decision-summary-premises">
+              {premisesText(premises)}
+            </dd>
+          </>
+        ) : null}
       </dl>
       {decision.justification ? (
         <div>
@@ -112,6 +143,23 @@ export const SupportErrandDecisionTab: FC<{
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
 
+  const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
+  const [opened, setOpened] = useState(isActive);
+  if (isActive && !opened) setOpened(true);
+  const handlesPremises = appConfig.features.useLicensedBusiness;
+  const premises = useMemo(
+    () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
+    [supportErrand, supportMetadata?.namespace]
+  );
+  const savedPremises = useMemo(() => fromDecisionParameters(decisions[0]?.parameters), [decisions]);
+  const decisionPremises = useDecisionPremises(
+    handlesPremises && opened ? municipalityId : undefined,
+    premises,
+    savedPremises
+  );
+  const premisesText = usePremisesText();
+  const premisesToSend = fromDecisionParameters(decisionPremises.parameters) ?? savedPremises;
+
   useEffect(() => {
     if (!supportErrand?.id) return;
     // The errand can change under a request in flight; only the latest one is allowed to answer.
@@ -156,6 +204,7 @@ export const SupportErrandDecisionTab: FC<{
     delegationReference,
     justification,
     terms: terms.filter(Boolean),
+    premises: premisesToSend ?? null,
   });
 
   const formAsSaved = () => ({
@@ -165,6 +214,7 @@ export const SupportErrandDecisionTab: FC<{
     delegationReference: decision?.delegationReference ?? '',
     justification: decision?.justification ?? '',
     terms: termTexts(decision),
+    premises: savedPremises ?? null,
   });
 
   const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
@@ -193,6 +243,7 @@ export const SupportErrandDecisionTab: FC<{
       delegationReference,
       justification,
       terms: writtenTerms,
+      parameters: decisionPremises.parameters,
     };
 
     const saving = decision?.id
@@ -225,7 +276,15 @@ export const SupportErrandDecisionTab: FC<{
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       {supportErrand ? (
         <>
-          <SupportErrandDecisionBasis supportErrand={supportErrand} supportMetadata={supportMetadata} />
+          <SupportErrandDecisionBasis
+            supportErrand={supportErrand}
+            supportMetadata={supportMetadata}
+            premisesHandling={
+              handlesPremises ? (
+                <DecisionPremises state={decisionPremises} readOnly={!canEdit || isLoading || error || !editable} />
+              ) : undefined
+            }
+          />
           <Divider />
         </>
       ) : null}
@@ -377,6 +436,14 @@ export const SupportErrandDecisionTab: FC<{
               </Select>
             </FormControl>
           </DecisionCard>
+
+          {handlesPremises ? (
+            <p className="text-small text-dark-secondary m-0" data-cy="decision-premises-to-send">
+              {premisesToSend
+                ? t('common:decision.premises.sent', { premises: premisesText(premisesToSend) })
+                : t('common:decision.premises.not_chosen')}
+            </p>
+          ) : null}
 
           <SaveRow
             label={t('common:decision.save')}
