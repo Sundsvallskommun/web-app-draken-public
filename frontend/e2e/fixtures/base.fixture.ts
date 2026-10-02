@@ -1,9 +1,14 @@
 import { test as base, Route } from '@playwright/test';
+import { ACE_JSAPI_SCRIPT_PATTERN } from '../blocks/ace/fake-jsapi';
 import { mockEnv } from './mock-env';
 
 type MockRouteOptions = {
   method?: string;
   status?: number;
+};
+
+type AutoFixtures = {
+  blockAceJsApi: void;
 };
 
 type BaseFixtures = {
@@ -17,7 +22,18 @@ type BaseFixtures = {
   env: typeof mockEnv;
 };
 
-export const test = base.extend<BaseFixtures>({
+export const test = base.extend<BaseFixtures & AutoFixtures>({
+  // A build with ACE configured (NEXT_PUBLIC_ACE_ORIGIN) loads Telia's JS API on every page. Fail that
+  // request at once instead of letting it reach the network, so specs do not depend on DNS or timeouts.
+  // The `ace` fixture (e2e/blocks/ace) serves a fake bundle instead, which takes precedence over this route.
+  blockAceJsApi: [
+    async ({ context }, use) => {
+      await context.route(ACE_JSAPI_SCRIPT_PATTERN, (route) => route.abort('connectionrefused'));
+      await use();
+    },
+    { auto: true },
+  ],
+
   env: async ({}, use) => {
     await use(mockEnv);
   },

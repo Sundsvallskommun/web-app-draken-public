@@ -1,38 +1,19 @@
 import { test, expect } from '../fixtures/base.fixture';
-import { mockAdmins } from '../case-data/fixtures/mockAdmins';
-import { mockMe } from '../case-data/fixtures/mockMe';
-import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockMetaData } from './fixtures/mockMetadata';
-import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
-import {
-  mockEmptySupportErrand,
-  mockSupportAttachments,
-  mockSupportErrand,
-  mockSupportMessages,
-  mockSupportNotes,
-} from './fixtures/mockSupportErrands';
-import { CONFIRM_DIALOG } from '../utils/modal';
+import { mockSupportAttachments, mockSupportErrand } from './fixtures/mockSupportErrands';
+import { mockKcErrandPage, mockKcSession } from './blocks/kc-routes';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
+import { dismissToasts, waitForDialogOpened, waitForModalOverlaysGone } from '../blocks/ui';
 
-test.describe.skip('Errand page support attachments tab', () => {
-  test.beforeEach(async ({ page, mockRoute }) => {
-    await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
-    await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
-    await mockRoute('**/me', mockMe, { method: 'GET' });
-    await mockRoute('**/featureflags', [], { method: 'GET' });
-    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
-      method: 'GET',
-    });
-    await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
-    await mockRoute('**/supportmessage/2281/errands/*/communication', mockSupportMessages, { method: 'GET' });
-    await mockRoute('**/supportnotes/2281/*', mockSupportNotes, { method: 'GET' });
-    await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
-    await mockRoute('**/personid', mockPersonIdResponse, { method: 'POST' });
-    await mockRoute('**/address', mockAdressResponse, { method: 'POST' });
-    await mockRoute(`**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand, { method: 'PATCH' });
+test.describe('Errand page support attachments tab', () => {
+  test.beforeEach(async ({ page, dismissCookieConsent }) => {
+    await mockKcSession(page);
+    await mockKcErrandPage(page, mockSupportErrand);
 
-    await page.goto('arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
-    await page.locator('.sk-cookie-consent-btn-wrapper').getByText('Godkänn alla').click();
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200),
+      page.goto(`arende/${mockSupportErrand.errandNumber}`),
+    ]);
+    await dismissCookieConsent();
     const attachmentsTab = page.locator('.sk-tabs-list button').nth(2);
     await expect(attachmentsTab).toHaveText(`Bilagor (${mockSupportAttachments.length})`);
     await attachmentsTab.click({ force: true });
@@ -45,53 +26,63 @@ test.describe.skip('Errand page support attachments tab', () => {
   });
 
   test('Can handle attachment alternatives', async ({ page, mockRoute }) => {
+    const imageMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/bmp',
+      'image/svg+xml',
+      'image/webp',
+      'image/tiff',
+    ];
     for (const attachment of mockSupportAttachments) {
-      await mockRoute(
-        `**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments/${attachment.id}`,
-        attachment,
-        { method: 'GET' }
-      );
-      await mockRoute(
-        `**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments/${attachment.id}`,
-        attachment,
-        { method: 'DELETE' }
-      );
+      const attachmentUrl = `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments/${attachment.id}`;
+      await mockRoute(attachmentUrl, attachment, { method: 'GET' });
+      await mockRoute(attachmentUrl, attachment, { method: 'DELETE' });
+      const options = page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`);
       await expect(page.locator(`[data-cy="attachment-${attachment.id}"]`)).toBeVisible();
+      await dismissToasts(page);
 
-      await page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).click();
-      const openButton = page.locator(`[data-cy="open-attachment-${attachment.id}"]`);
+      await options.click();
+      const openButton = page.locator(`[data-cy="open-attachment-${attachment.id}"]`).filter({ hasText: 'Öppna' });
       await expect(openButton).toBeVisible();
-      await openButton.filter({ hasText: 'Öppna' }).click();
 
-      const imageMimeTypes = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/gif',
-        'image/bmp',
-        'image/svg+xml',
-        'image/webp',
-        'image/tiff',
-      ];
-      if (imageMimeTypes.find((type) => type === attachment.mimeType)) {
-        await page.waitForResponse((resp) =>
-          resp.url().includes(`supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments/${attachment.id}`)
-        );
-        await expect(page.locator('img')).toBeVisible();
-        await page.locator('.modal-close-btn').click();
+      if (imageMimeTypes.includes(attachment.mimeType)) {
+        // Start waiting before the click, or a fast response is missed.
+        await Promise.all([
+          page.waitForResponse((resp) => resp.url().includes(`/attachments/${attachment.id}`)),
+          openButton.click(),
+        ]);
+        const preview = page.locator(MODAL_DIALOG);
+        await waitForDialogOpened(preview);
+        await expect(preview.locator('img')).toBeVisible();
+        await preview.locator('.sk-modal-dialog-close').click();
+        await waitForModalOverlaysGone(page);
+      } else {
+        await openButton.click();
       }
-      await page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).click();
+
+      await options.click();
       const deleteButton = page.locator(`[data-cy="delete-attachment-${attachment.id}"]`);
       await expect(deleteButton).toBeVisible();
       await deleteButton.filter({ hasText: 'Ta bort' }).click();
-      await expect(page.locator(`${CONFIRM_DIALOG} button.sk-btn-secondary`).filter({ hasText: 'Nej' })).toBeVisible();
-      await page.locator(`${CONFIRM_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Ja' }).click();
+      const confirm = page.locator(CONFIRM_DIALOG);
+      await waitForDialogOpened(confirm);
+      await expect(confirm.locator('button.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes(`/attachments/${attachment.id}`) && resp.request().method() === 'DELETE'
+        ),
+        confirm.locator('button.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+      ]);
+      await waitForModalOverlaysGone(page);
     }
   });
 
   test('Can upload attachment/attachments', async ({ page, mockRoute }) => {
     await mockRoute(
-      '**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments',
+      `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments`,
       'attachment.txt',
       { method: 'POST' }
     );
