@@ -18,6 +18,7 @@ interface SupportState {
   activeTabKey?: string;
   unsavedTabs: Record<string, boolean>;
   tabsWithContent: Record<string, boolean>;
+  processSignal: { errandId: string; at: number } | undefined;
 }
 
 interface SupportActions {
@@ -30,6 +31,7 @@ interface SupportActions {
   setActiveTabKey: (activeTabKey: string) => void;
   setUnsavedTab: (key: string, unsaved: boolean) => void;
   setTabHasContent: (key: string, hasContent: boolean) => void;
+  setProcessSignal: (processSignal: { errandId: string; at: number } | undefined) => void;
   reset: () => void;
 }
 
@@ -45,6 +47,7 @@ const initialState: SupportState = {
   activeTabKey: 'basics',
   unsavedTabs: {},
   tabsWithContent: {},
+  processSignal: undefined,
 };
 
 const flagsWithChange = (
@@ -62,6 +65,7 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
+  setProcessSignal: (processSignal) => set({ processSignal }),
   setUnsavedTab: (key, unsaved) =>
     set((state) => {
       const unsavedTabs = flagsWithChange(state.unsavedTabs, key, unsaved);

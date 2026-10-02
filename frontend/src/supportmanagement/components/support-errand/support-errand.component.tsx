@@ -151,7 +151,8 @@ export const SupportErrandComponent: FC = () => {
         setNotesCount(res);
       });
     }
-  }, [supportErrand, municipalityId, setNotesCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportErrand?.id, municipalityId, setNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 
