@@ -53,7 +53,9 @@ const FORM_SECTIONS = ['operation', 'serving_hours', 'serving', 'financing'];
 export const SupportErrandDecisionBasis: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata | undefined;
-}> = ({ supportErrand, supportMetadata }) => {
+  /** Rendered in the premises section. */
+  premisesHandling?: ReactNode;
+}> = ({ supportErrand, supportMetadata, premisesHandling }) => {
   const { t } = useTranslation();
 
   const owner = supportErrand.customer?.[0];
@@ -111,15 +113,10 @@ export const SupportErrandDecisionBasis: FC<{
   const premisesRows: BasisRow[] = [
     {
       key: 'address',
-      label: t('common:decision.basis.premises.address'),
-      value: premises ? (
-        <>
-          {formatPremisesAddress(premises)}
-          {premises.source === 'OWNER' ? (
-            <span className="text-dark-secondary"> ({t('common:decision.basis.premises.same_as_owner')})</span>
-          ) : null}
-        </>
-      ) : null,
+      label: premises
+        ? t(`common:decision.basis.premises.address_from.${premises.source}`)
+        : t('common:decision.basis.premises.address'),
+      value: premises ? formatPremisesAddress(premises) : null,
     },
   ];
 
@@ -150,6 +147,7 @@ export const SupportErrandDecisionBasis: FC<{
 
       <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
         <BasisRows section="premises" rows={premisesRows} />
+        {premisesHandling}
         <BasisNote>{t('common:decision.basis.premises.rest')}</BasisNote>
       </BasisSection>
 

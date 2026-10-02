@@ -1,4 +1,5 @@
-import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type as TypeTransformer } from 'class-transformer';
+import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -17,6 +18,19 @@ import { apiURL } from '@/utils/util';
 const MANUAL_METHOD = 'MANUAL';
 const DRAFT_STATUS = 'DRAFT';
 const COMPLETED_STATUS = 'COMPLETED';
+
+/** Metadata read by the process that acts on the decision. */
+class SupportDecisionParameterDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  key!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(3000, { each: true })
+  values!: string[];
+}
 
 class SupportDecisionFieldsDto {
   @IsOptional()
@@ -47,6 +61,12 @@ class SupportDecisionFieldsDto {
   @IsArray()
   @IsString({ each: true })
   terms?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => SupportDecisionParameterDto)
+  parameters?: SupportDecisionParameterDto[];
 }
 
 export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {

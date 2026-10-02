@@ -1,4 +1,4 @@
-import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Decision, DecisionOutcome, Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
 export interface SupportDecisionInput {
@@ -8,6 +8,8 @@ export interface SupportDecisionInput {
   delegationReference?: string;
   justification?: string;
   terms?: string[];
+  /** Metadata for the process, e.g. the premises. */
+  parameters?: Pick<Parameter, 'key' | 'values'>[];
 }
 
 /**
