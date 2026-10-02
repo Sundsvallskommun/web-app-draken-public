@@ -75,9 +75,6 @@ export class SupportConversationController {
     @Param('conversationId') conversationId: string,
   ): Promise<ResponseData> {
     const baseURL = apiURL(this.SERVICE);
-    // The conversation is read on its own rather than looked up in a listing of them all: the messages
-    // of every conversation are fetched when an errand is opened, and each of those fetches asked
-    // Support Management for the whole list to find one topic.
     let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}`;
     const conversation = await this.apiService
       .get<Conversation>({ url, baseURL }, req.user)
@@ -85,7 +82,7 @@ export class SupportConversationController {
       .catch(() => undefined);
 
     const topic = conversation?.topic;
-    const communicationType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+    const communicationType = conversation ? (conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR') : undefined;
 
     url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);

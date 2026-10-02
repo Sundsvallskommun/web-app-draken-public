@@ -150,4 +150,13 @@ describe('SupportConversationController conversation lookup', () => {
 
     expect(result.data).toEqual([expect.objectContaining({ messageId: 'a-message' })]);
   });
+
+  it('leaves a conversation it could not read without a channel rather than calling it the one the citizen sees', async () => {
+    const { controller, api } = makeController();
+    api.get.mockRejectedValueOnce(new Error('gone')).mockResolvedValueOnce({ data: { content: [{ id: 'a-message' }] }, message: 'success' });
+
+    const result = await controller.returnAllMessages(mockReq(), mockSupportErrandId, mockMunicipalityId, mockConversationId);
+
+    expect(result.data[0].communicationType).toBeUndefined();
+  });
 });
