@@ -16,6 +16,8 @@ interface SupportState {
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: (SupportNotification | CaseDataNotification)[];
   activeTabKey?: string;
+  unsavedTabs: Record<string, boolean>;
+  tabsWithContent: Record<string, boolean>;
 }
 
 interface SupportActions {
@@ -26,6 +28,8 @@ interface SupportActions {
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
+  setUnsavedTab: (key: string, unsaved: boolean) => void;
+  setTabHasContent: (key: string, hasContent: boolean) => void;
   reset: () => void;
 }
 
@@ -39,7 +43,15 @@ const initialState: SupportState = {
   stakeholderCustomers: [],
   notifications: [],
   activeTabKey: 'basics',
+  unsavedTabs: {},
+  tabsWithContent: {},
 };
+
+const flagsWithChange = (
+  flags: Record<string, boolean>,
+  key: string,
+  value: boolean
+): Record<string, boolean> | undefined => (flags[key] === value ? undefined : { ...flags, [key]: value });
 
 export const useSupportStore = create<SupportStore>((set) => ({
   ...initialState,
@@ -50,5 +62,15 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
+  setUnsavedTab: (key, unsaved) =>
+    set((state) => {
+      const unsavedTabs = flagsWithChange(state.unsavedTabs, key, unsaved);
+      return unsavedTabs ? { unsavedTabs } : state;
+    }),
+  setTabHasContent: (key, hasContent) =>
+    set((state) => {
+      const tabsWithContent = flagsWithChange(state.tabsWithContent, key, hasContent);
+      return tabsWithContent ? { tabsWithContent } : state;
+    }),
   reset: () => set(initialState),
 }));

@@ -5,7 +5,15 @@ export interface AppConfig {
   isCaseData: boolean;
   isSupportManagement: boolean;
   reopenSupportErrandLimit: string;
+  /** TODO: Remove testCustomer as soon as customers are fetched from the API. Dev/test-only shortcut into the customer view. */
+  testCustomer?: TestCustomer;
   features: AppConfigFeatures;
+}
+
+// TODO: Remove as soon as customers are fetched from the API.
+interface TestCustomer {
+  customerId: string;
+  name: string;
 }
 
 interface AppConfigFeatures {
@@ -27,18 +35,27 @@ interface AppConfigFeatures {
   useSmsContactChannel: boolean;
   useStakeholderRelations: boolean;
   useRolesForStakeholders: boolean;
+  useCompanyInformation: boolean;
+  useSingleErrandTypeLabel: boolean;
   useDetailsTab: boolean;
+  useInvestigationTab: boolean;
+  useDecisionTab: boolean;
+  useFollowUpTab: boolean;
   useEscalation: boolean;
   useRequireContactChannel: boolean;
   useRelations: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
+  useProcess: boolean;
   useClosingMessageCheckbox: boolean;
   useMultipleContactChannels: boolean;
   useClosedAsDefaultResolution: boolean;
   useServices: boolean;
   useAppeal: boolean;
   useHandover: boolean;
+  useOverviewNotice: boolean;
+  useCustomerPages: boolean;
+  useLicensedBusiness: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -51,11 +68,18 @@ const envBool = (val: string | undefined): boolean => {
   }
 };
 
+// TODO: Remove as soon as customers are fetched from the API.
+const testCustomerFromEnv = (): TestCustomer | undefined => {
+  const customerId = process.env.NEXT_PUBLIC_TEST_CUSTOMER_ID;
+  return customerId ? { customerId, name: process.env.NEXT_PUBLIC_TEST_CUSTOMER_NAME || customerId } : undefined;
+};
+
 export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
   isCaseData: envBool(process.env.NEXT_PUBLIC_IS_CASEDATA),
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
+  testCustomer: testCustomerFromEnv(), // TODO: Remove as soon as customers are fetched from the API.
   features: {
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
@@ -75,18 +99,27 @@ export const appConfig: AppConfig = {
     useSmsContactChannel: envBool(process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL),
     useStakeholderRelations: envBool(process.env.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS),
     useRolesForStakeholders: envBool(process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS),
+    useCompanyInformation: envBool(process.env.NEXT_PUBLIC_USE_COMPANY_INFORMATION),
+    useSingleErrandTypeLabel: envBool(process.env.NEXT_PUBLIC_USE_SINGLE_ERRAND_TYPE_LABEL),
     useDetailsTab: envBool(process.env.NEXT_PUBLIC_USE_DETAILS_TAB),
+    useInvestigationTab: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION_TAB),
+    useDecisionTab: envBool(process.env.NEXT_PUBLIC_USE_DECISION_TAB),
+    useFollowUpTab: envBool(process.env.NEXT_PUBLIC_USE_FOLLOWUP_TAB),
     useEscalation: envBool(process.env.NEXT_PUBLIC_USE_ESCALATION),
     useRequireContactChannel: envBool(process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL),
     useRelations: envBool(process.env.NEXT_PUBLIC_USE_RELATIONS),
     useMyPages: envBool(process.env.NEXT_PUBLIC_USE_MY_PAGES),
     useUiPhases: envBool(process.env.NEXT_PUBLIC_USE_UI_PHASES),
+    useProcess: envBool(process.env.NEXT_PUBLIC_USE_PROCESS),
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),
     useMultipleContactChannels: envBool(process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS),
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
+    useOverviewNotice: envBool(process.env.NEXT_PUBLIC_USE_OVERVIEW_NOTICE),
+    useCustomerPages: envBool(process.env.NEXT_PUBLIC_USE_CUSTOMER_PAGES),
+    useLicensedBusiness: envBool(process.env.NEXT_PUBLIC_USE_LICENSED_BUSINESS),
   },
 };
 

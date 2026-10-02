@@ -1,3 +1,4 @@
+import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
@@ -13,7 +14,8 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
-import { useParams, useRouter } from 'next/navigation';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -22,6 +24,8 @@ import { SupportErrandSummary } from '../support-errand-basics-form/support-erra
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
+import { SupportProcessLog } from './ui-phase/support-process-log.component';
+import { SupportUiPhaseWrapper } from './ui-phase/support-ui-phase-wrapper';
 
 let formSchema = yup
   .object({
@@ -46,6 +50,22 @@ export const SupportErrandComponent: FC = () => {
   const { setNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
+  const pathName = usePathname() ?? '';
+  const { theme } = useGui();
+
+  const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
+
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende')) &&
+    (!followsProcess || hasSupportErrandProcess(supportErrand));
+  const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
+  const uiPhaseSection = (
+    <div className="flex items-center justify-between">
+      {uiPhaseRow}
+      {followsProcess ? <SupportProcessLog /> : null}
+    </div>
+  );
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(formSchema) as any,
@@ -62,8 +82,6 @@ export const SupportErrandComponent: FC = () => {
   };
   const router = useRouter();
   const setUser = useUserStore((s) => s.setUser);
-
-  const { theme } = useGui();
 
   useEffect(() => {
     setCategoriesList(supportMetadata?.categories);
@@ -151,6 +169,11 @@ export const SupportErrandComponent: FC = () => {
   return (
     <FormProvider {...methods}>
       <div className="grow shrink overflow-y-hidden">
+        {showUiPhases ? (
+          <div className="sticky top-0 z-10 flex bg-background-100 border-b-1 border-divider p-12 md:px-32 md:py-20 xl:px-80 overflow-y-auto">
+            <div className="w-full">{uiPhaseSection}</div>
+          </div>
+        ) : null}
         <div className="flex justify-end w-full pl-24 md:pl-40 h-full">
           <div className="flex justify-center overflow-y-auto w-full grow max-lg:mr-[5.6rem]">
             <main
@@ -190,7 +213,6 @@ export const SupportErrandComponent: FC = () => {
                     )}
                   </div>
                 </section>
-
                 <section className="bg-transparent pb-4">
                   <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
                     <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />

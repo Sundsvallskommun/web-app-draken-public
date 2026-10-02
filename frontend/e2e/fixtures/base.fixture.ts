@@ -1,5 +1,5 @@
 import { test as base, Route } from '@playwright/test';
-import { mockEnv } from './mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 
 type MockRouteOptions = {
   method?: string;

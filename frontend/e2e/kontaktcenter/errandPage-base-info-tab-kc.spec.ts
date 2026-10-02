@@ -22,7 +22,7 @@ import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
-import { mockEnv } from '../fixtures/mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 import type { Page } from '@playwright/test';
 import { CONFIRM_DIALOG } from '../utils/modal';
 
