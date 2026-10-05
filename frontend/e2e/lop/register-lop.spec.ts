@@ -57,14 +57,12 @@ test.describe('register page', () => {
   });
 
   test('does not offer deprecated labels when registering a new errand', async ({ page }) => {
-    // labelCategory-input is a <select> whose options stay hidden until opened, so count the option
-    // elements instead of asserting on their visibility.
-    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
     // The category itself is deprecated, so neither it nor anything below it may be picked.
-    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
-    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Utgangen verksamhet', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('option', { name: 'Utgangstest', exact: true })).toBeVisible();
 
-    await categorySelect.selectOption('Utgangstest');
+    await page.getByRole('option', { name: 'Utgangstest', exact: true }).click();
     await page.locator('[data-cy="labelType-wrapper"]').click();
     await expect(page.getByRole('option', { name: 'Aktiv typ', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Utgangen typ', exact: true })).toHaveCount(0);
@@ -92,7 +90,8 @@ test.describe('register page', () => {
     expect(labelType).toBeDefined();
     expect(labelType?.displayName).toBeDefined();
 
-    await page.locator('[data-cy="labelCategory-input"]').selectOption(labelCat!.displayName!);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: labelCat!.displayName!, exact: true }).click();
     await page.locator('[data-cy="labelType-wrapper"]').click();
     await page.getByRole('option', { name: labelType!.displayName!, exact: true }).click();
     await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();

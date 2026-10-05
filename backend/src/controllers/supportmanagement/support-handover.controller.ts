@@ -21,8 +21,7 @@ import ApiService from '@/services/api.service';
 import {
   getAllowedHandoverTargets,
   getCasedataForwardTarget,
-  getLabelCategorizationTarget,
-  HandoverTargetConfig,
+  getLabelTarget,
   isAllowedHandoverTarget,
   isCasedataForwardTarget,
 } from '@/services/handover-targets.service';
@@ -79,7 +78,7 @@ export class SupportHandoverController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<HandoverTargetConfig[]> {
+  ): Promise<NamespaceConfig[]> {
     const allowedTargets = getAllowedHandoverTargets();
     if (allowedTargets.length === 0) {
       return response.status(200).send([]);
@@ -90,20 +89,18 @@ export class SupportHandoverController {
     const needsNamespaceConfigs = allowedTargets.some(target => !isCasedataForwardTarget(target));
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
     const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
-    const toNamespaceConfig = (target: string): HandoverTargetConfig | undefined => {
+    const toNamespaceConfig = (target: string): NamespaceConfig | undefined => {
       const forwardTarget = getCasedataForwardTarget(target);
       if (forwardTarget) {
         const { namespace, displayName, shortCode } = forwardTarget;
         return { namespace, displayName, shortCode, municipalityId };
       }
-      const config = configs.find(config => config.namespace === target);
-      const categorizationRoot = getLabelCategorizationTarget(target)?.categorizationRoot;
-      return config && categorizationRoot ? { ...config, categorizationRoot } : config;
+      return configs.find(config => config.namespace === target);
     };
     const targets = allowedTargets
       .filter(target => target !== this.namespace)
       .map(toNamespaceConfig)
-      .filter((config): config is HandoverTargetConfig => config !== undefined);
+      .filter((config): config is NamespaceConfig => config !== undefined);
     return response.status(200).send(targets);
   }
 
@@ -118,7 +115,7 @@ export class SupportHandoverController {
   ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${namespace}/metadata`;
     const res = await this.apiService.get<MetadataResponse>({ url }, req.user);
-    return response.status(200).send(withCategorizationLabels(res.data, getLabelCategorizationTarget(namespace)?.categorizationRoot));
+    return response.status(200).send(withCategorizationLabels(res.data, getLabelTarget(namespace)?.categorizationRoot));
   }
 
   @Post('/supporterrands/:municipalityId/:id/handover/preview')
@@ -157,8 +154,8 @@ export class SupportHandoverController {
     }
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
     const { message, ...rest } = data;
-    // SupportManagement requires a classification; a label-categorization target gets its new-errand placeholder.
-    const placeholder = getLabelCategorizationTarget(data.target?.namespace)?.classification;
+    // SupportManagement requires a classification; a label target gets its new-errand placeholder.
+    const placeholder = getLabelTarget(data.target?.namespace)?.classification;
     const handoverRequest =
       placeholder && !rest.mapping?.classification ? { ...rest, mapping: { ...rest.mapping, classification: placeholder } } : rest;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;

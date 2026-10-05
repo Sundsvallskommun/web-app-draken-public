@@ -9,9 +9,8 @@ export interface AppConfig {
 }
 
 interface AppConfigFeatures {
-  useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
-  /** Label tree under a ROOT node (KS: DEPARTMENT -> CATEGORY -> TYPE); replaces the two flags above. */
+  /** Categorization in the label tree (KS: DEPARTMENT > CATEGORY > TYPE, LOP: CATEGORY > TYPE > SUBTYPE). */
   useLabelCategorization: boolean;
   useExplanationOfTheCause: boolean;
   useReasonForContact: boolean;
@@ -59,9 +58,11 @@ export const appConfig: AppConfig = {
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
-    useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
-    useLabelCategorization: envBool(process.env.NEXT_PUBLIC_USE_LABEL_CATEGORIZATION),
+    // NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION is the former name; drop it once every deployment uses the new one.
+    useLabelCategorization:
+      envBool(process.env.NEXT_PUBLIC_USE_LABEL_CATEGORIZATION) ||
+      envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
     useReasonForContact: envBool(process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT),
     useBusinessCase: envBool(process.env.NEXT_PUBLIC_USE_BUSINESS_CASE),

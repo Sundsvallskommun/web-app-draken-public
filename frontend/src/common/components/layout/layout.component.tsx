@@ -73,8 +73,6 @@ export default function Layout({ title, children }: { title: string; children: R
             <span className="font-bold ml-8">
               {appConfig.features.useLabelCategorization
                 ? supportErrand && getLabelCategorizationHeading(supportErrand, supportMetadata)
-                : appConfig.features.useThreeLevelCategorization
-                ? supportErrand?.labels?.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
                 : supportMetadata?.categories
                     ?.find((t) => t.name === supportErrand?.category)
                     ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||

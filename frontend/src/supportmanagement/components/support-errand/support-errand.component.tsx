@@ -179,9 +179,6 @@ export const SupportErrandComponent: FC = () => {
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                             {appConfig.features.useLabelCategorization
                               ? getLabelCategorizationHeading(supportErrand!, supportMetadata)
-                              : appConfig.features.useThreeLevelCategorization
-                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                                '(Ärendetyp saknas)'
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>

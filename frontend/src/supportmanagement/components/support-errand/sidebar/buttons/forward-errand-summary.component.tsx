@@ -12,8 +12,6 @@ import {
 import {
   Channels,
   findPriorityLabelForPriorityKey,
-  getLabelCategory,
-  getLabelType,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getCategorizationLabels } from '@supportmanagement/services/support-errand-service';
@@ -57,10 +55,6 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
                 : getCategorizationLabels(errand!)
                     .map((label) => getLabelDisplayName(label, metadata))
                     .join(' - ')
-              : appConfig.features.useThreeLevelCategorization
-              ? `${getLabelCategory(errand!, metadata!)?.displayName || ''}${
-                  getLabelType(errand!)?.displayName ? ` - ${getLabelType(errand!)?.displayName}` : ''
-                }`
               : metadata?.categories
                   ?.find((category) => category.name === errand?.category)
                   ?.types?.find((type) => type.name === errand?.type)?.displayName || errand?.type}

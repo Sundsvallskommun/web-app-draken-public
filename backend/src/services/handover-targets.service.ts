@@ -1,4 +1,3 @@
-import { NamespaceConfig } from '@/data-contracts/supportmanagement/data-contracts';
 import { FTCaseType, MEXCaseType } from '@/interfaces/case-type.interface';
 
 import { getNewErrandDefaults } from './support-errand.service';
@@ -44,22 +43,24 @@ export const getAllowedHandoverTargets = (): string[] =>
 export const isAllowedHandoverTarget = (namespace?: string): boolean => !!namespace && getAllowedHandoverTargets().includes(namespace);
 
 /**
- * Targets whose label tree sits under a ROOT label, and the application whose new-errand classification a
- * handed-over errand gets (SupportManagement requires one).
+ * Targets categorized in their label tree: the application whose new-errand classification a handed-over
+ * errand gets (SupportManagement requires one), and the ROOT label the tree sits under, when it does.
  */
-const LABEL_CATEGORIZATION_TARGETS: Record<string, { categorizationRoot: string; application: string }> = {
-  CONTACTSUNDSVALL: { categorizationRoot: 'CATEGORIZATION_ROOT', application: 'KC' },
+const LABEL_TARGETS: Record<string, { application: string; categorizationRoot?: string }> = {
+  CONTACTSUNDSVALL: { application: 'KC', categorizationRoot: 'CATEGORIZATION_ROOT' },
+  SALARYANDPENSION: { application: 'LOP' },
+  CONTACTANGE: { application: 'KA' },
+  INTERNALSERVICE: { application: 'IK' },
+  LOK: { application: 'LOK' },
+  BOU: { application: 'BOU' },
 };
 
-export interface LabelCategorizationTarget {
-  categorizationRoot: string;
+export interface LabelTarget {
+  categorizationRoot?: string;
   classification?: { category: string; type: string };
 }
 
-export const getLabelCategorizationTarget = (namespace?: string): LabelCategorizationTarget | undefined => {
-  const target = namespace ? LABEL_CATEGORIZATION_TARGETS[namespace] : undefined;
+export const getLabelTarget = (namespace?: string): LabelTarget | undefined => {
+  const target = namespace ? LABEL_TARGETS[namespace] : undefined;
   return target && { categorizationRoot: target.categorizationRoot, classification: getNewErrandDefaults(target.application)?.classification };
 };
-
-/** Namespace config plus, for a label-categorization target, the ROOT label holding its tree. */
-export type HandoverTargetConfig = NamespaceConfig & { categorizationRoot?: string };

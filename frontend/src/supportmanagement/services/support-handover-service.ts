@@ -30,16 +30,13 @@ const toHandoverError = (error: unknown): HandoverError => {
   return new HandoverError(message, status);
 };
 
-/** Namespace config plus, for a label-categorization target, the ROOT label holding its tree. */
-export type HandoverTarget = NamespaceConfig & { categorizationRoot?: string };
-
 /**
  * Lists namespace configurations the errand can be handed over to. Filtering by write access is
  * enforced by the execute endpoint (4xx), so all configs are returned here.
  */
-export const getNamespaceConfigs = (municipalityId: string): Promise<HandoverTarget[]> => {
+export const getNamespaceConfigs = (municipalityId: string): Promise<NamespaceConfig[]> => {
   return apiService
-    .get<HandoverTarget[]>(`supportnamespaceconfigs/${municipalityId}`)
+    .get<NamespaceConfig[]>(`supportnamespaceconfigs/${municipalityId}`)
     .then((res) => res.data ?? [])
     .catch(() => []);
 };

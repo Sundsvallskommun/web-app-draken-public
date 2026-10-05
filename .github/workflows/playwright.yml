@@ -89,7 +89,7 @@ jobs:
             # wrong categorization level and feature set.
             NEXT_PUBLIC_APPLICATION: LOP
             NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
-            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_LABEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_BILLING: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
             NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true

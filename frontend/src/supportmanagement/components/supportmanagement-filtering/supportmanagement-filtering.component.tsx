@@ -136,7 +136,8 @@ const SupportManagementFiltering: FC<{
                 </>
               ) : null}
 
-              {appConfig.features.useThreeLevelCategorization ? (
+              {/* Positional on the tree (getLabelsAtDepth): the three top levels. */}
+              {appConfig.features.useLabelCategorization ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />
@@ -149,21 +150,6 @@ const SupportManagementFiltering: FC<{
                       <SupportManagementFilterLabelSubType />
                     </div>
                   ) : null}
-                </>
-              ) : null}
-
-              {/* Positional on the tree (getLabelsAtDepth): department, category, type for KS. */}
-              {appConfig.features.useLabelCategorization ? (
-                <>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelCategory />
-                  </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelType />
-                  </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelSubType />
-                  </div>
                 </>
               ) : null}
 

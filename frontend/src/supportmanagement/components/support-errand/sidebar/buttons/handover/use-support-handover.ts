@@ -5,6 +5,7 @@ import {
   HandoverPreview,
   HandoverSourceAction,
   Label,
+  NamespaceConfig,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { Resolution, Status } from '@supportmanagement/services/support-errand-service';
@@ -14,7 +15,6 @@ import {
   getNamespaceConfigs,
   getNamespaceMetadata,
   HandoverError,
-  HandoverTarget,
 } from '@supportmanagement/services/support-handover-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -34,7 +34,7 @@ export const isCasedataForwardTarget = (namespace?: string): boolean =>
  * These namespaces still use TWO-level categorization (category/type) in the handover modal:
  *   - CONTACTCENTER     (Kontaktcenter)
  *   - ROB
- * Every other target is categorized in its label tree; one with `categorizationRoot` by labels alone.
+ * Every other target is categorized in its label tree; the BFF gives those errands their classification.
  *
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
@@ -75,7 +75,7 @@ export const useSupportHandover = ({
   sourceNamespace,
   active,
 }: UseSupportHandoverArgs) => {
-  const [namespaceConfigs, setNamespaceConfigs] = useState<HandoverTarget[]>([]);
+  const [namespaceConfigs, setNamespaceConfigs] = useState<NamespaceConfig[]>([]);
   const [targetsLoaded, setTargetsLoaded] = useState(false);
   const [step, setStep] = useState<HandoverStep>(1);
 
@@ -88,7 +88,7 @@ export const useSupportHandover = ({
   const [targetMetadata, setTargetMetadata] = useState<SupportMetadata | undefined>(undefined);
   const [metadataCache, setMetadataCache] = useState<Record<string, SupportMetadata>>({});
   // The target currently being previewed – drives the categorization model (see below).
-  const [selectedTarget, setSelectedTarget] = useState<HandoverTarget | undefined>(undefined);
+  const [selectedTarget, setSelectedTarget] = useState<NamespaceConfig | undefined>(undefined);
   const selectedNamespace = selectedTarget?.namespace ?? '';
   // Mirror of the selected namespace for async guards (the state value is stale inside promise callbacks).
   const selectedNamespaceRef = useRef<string>('');
@@ -140,8 +140,6 @@ export const useSupportHandover = ({
   // TWO_LEVEL_CATEGORIZATION_NAMESPACES use category/type; every other namespace uses labels.
   // Remove this branch (always use labels) once the labels migration is complete.
   const targetUsesLabels = !!selectedNamespace && !TWO_LEVEL_CATEGORIZATION_NAMESPACES.includes(selectedNamespace);
-  // Categorized by labels alone; the BFF adds the classification placeholder.
-  const targetUsesLabelCategorization = targetUsesLabels && !!selectedTarget?.categorizationRoot;
 
   const applyPreviewDefaults = useCallback((data: HandoverPreview) => {
     const mappingRequired = data.mappingRequired;
@@ -173,7 +171,7 @@ export const useSupportHandover = ({
 
   /** Fetches (or reuses a cached) preview for the given target and advances to step 2. */
   const runPreview = useCallback(
-    async (target: HandoverTarget) => {
+    async (target: NamespaceConfig) => {
       if (!errandId || !target.namespace) {
         return;
       }
@@ -231,20 +229,12 @@ export const useSupportHandover = ({
   );
 
   const buildRequest = useCallback(
-    (target: HandoverTarget): HandoverErrandRequest => {
-      // Three-level targets also store category/type paths as classification; label-categorization
-      // targets get theirs from the BFF.
-      const categoryLabel = targetLabels.find((label) => label.classification === 'CATEGORY');
-      const typeLabel = targetLabels.find((label) => label.classification === 'TYPE');
-      const classification = targetUsesLabelCategorization
-        ? undefined
-        : targetUsesLabels
-        ? categoryLabel && typeLabel
-          ? { category: categoryLabel.resourcePath, type: typeLabel.resourcePath }
-          : undefined
-        : mappingCategory || mappingType
-        ? { category: mappingCategory || undefined, type: mappingType || undefined }
-        : undefined;
+    (target: NamespaceConfig): HandoverErrandRequest => {
+      // Label targets get their classification from the BFF (the placeholder their new errands start with).
+      const classification =
+        !targetUsesLabels && (mappingCategory || mappingType)
+          ? { category: mappingCategory || undefined, type: mappingType || undefined }
+          : undefined;
       const labels = targetUsesLabels ? targetLabels.map((label) => label.id).filter((id): id is string => !!id) : [];
 
       return {
@@ -269,21 +259,13 @@ export const useSupportHandover = ({
         },
       };
     },
-    [
-      sourceMunicipalityId,
-      targetUsesLabels,
-      targetUsesLabelCategorization,
-      mappingCategory,
-      mappingType,
-      targetLabels,
-      mappingContactReason,
-    ]
+    [sourceMunicipalityId, targetUsesLabels, mappingCategory, mappingType, targetLabels, mappingContactReason]
   );
 
   /** Executes the handover. Returns the result on success (caller closes the modal like the MEX
    * forward); on 4xx keeps step 2 and exposes the error. */
   const runHandover = useCallback(
-    async (target: HandoverTarget): Promise<HandoverErrand | undefined> => {
+    async (target: NamespaceConfig): Promise<HandoverErrand | undefined> => {
       if (!errandId) {
         return undefined;
       }
@@ -307,11 +289,7 @@ export const useSupportHandover = ({
   const requiredMappingsAnswered = useMemo(() => {
     const mappingRequired = preview?.mappingRequired;
     if (targetUsesLabels) {
-      // Three-level targets need category and type for their classification.
-      const hasCategoryAndType = ['CATEGORY', 'TYPE'].every((classification) =>
-        targetLabels.some((label) => label.classification === classification)
-      );
-      if (!isCompletePath(targetLabels) || (!targetUsesLabelCategorization && !hasCategoryAndType)) {
+      if (!isCompletePath(targetLabels)) {
         return false;
       }
     } else {
@@ -328,15 +306,7 @@ export const useSupportHandover = ({
       return false;
     }
     return true;
-  }, [
-    preview,
-    targetUsesLabels,
-    targetUsesLabelCategorization,
-    mappingCategory,
-    mappingType,
-    mappingContactReason,
-    targetLabels,
-  ]);
+  }, [preview, targetUsesLabels, mappingCategory, mappingType, mappingContactReason, targetLabels]);
 
   return {
     namespaceConfigs,
@@ -349,7 +319,6 @@ export const useSupportHandover = ({
     previewError,
     targetMetadata,
     targetUsesLabels,
-    targetUsesLabelCategorization,
     mapping: {
       category: mappingCategory,
       type: mappingType,

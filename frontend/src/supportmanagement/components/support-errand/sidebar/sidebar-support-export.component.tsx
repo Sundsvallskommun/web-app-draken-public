@@ -4,14 +4,7 @@ import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { showsLegacyClassification } from '@supportmanagement/services/legacy-classification-service';
-import {
-  Channels,
-  getLabelCategory,
-  getLabelSubType,
-  getLabelType,
-  Status,
-} from '@supportmanagement/services/support-errand-service';
-import { getLabelDepartment } from '@supportmanagement/services/support-errand-service';
+import { Channels, getCategorizationLabels, Status } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -52,8 +45,8 @@ export const SidebarSupportExport: React.FC = () => {
 
     // LEGACY_CLASSIFICATION
     const usesClassification = appConfig.features.useTwoLevelCategorization || showsLegacyClassification(errand);
-    // With a DEPARTMENT level the three slots hold department, category and type.
-    const usesDepartmentLevel = appConfig.features.useLabelCategorization && !usesClassification;
+    // The three slots hold the top three levels of the label path.
+    const [topLabel, secondLabel, thirdLabel] = getCategorizationLabels(errand);
 
     const errandCategory = supportMetadata?.categories?.find(
       (category) => category.name === errand.classification?.category
@@ -66,21 +59,9 @@ export const SidebarSupportExport: React.FC = () => {
         fileName: attachment.fileName,
         mimeType: attachment.mimeType,
       })),
-      caseLabel: usesClassification
-        ? errandType?.displayName
-        : usesDepartmentLevel
-        ? getLabelCategory(errand, supportMetadata!)?.displayName
-        : getLabelType(errand)?.displayName,
-      category: usesClassification
-        ? errandCategory?.displayName
-        : usesDepartmentLevel
-        ? getLabelDepartment(errand)?.displayName
-        : getLabelCategory(errand, supportMetadata!)?.displayName,
-      subTypeLabel: usesClassification
-        ? undefined
-        : usesDepartmentLevel
-        ? getLabelType(errand)?.displayName
-        : getLabelSubType(errand)?.displayName,
+      caseLabel: usesClassification ? errandType?.displayName : secondLabel?.displayName,
+      category: usesClassification ? errandCategory?.displayName : topLabel?.displayName,
+      subTypeLabel: usesClassification ? undefined : thirdLabel?.displayName,
       channelLabel: errand.channel ? Channels[errand.channel as keyof typeof Channels] : undefined,
       statusLabel:
         supportMetadata?.statuses?.find((status) => status.name === errand.status)?.displayName ?? errand.status,

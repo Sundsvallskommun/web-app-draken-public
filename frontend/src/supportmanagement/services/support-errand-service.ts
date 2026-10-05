@@ -207,9 +207,6 @@ export const getLabelType = (errand: SupportErrand) => {
   return errand.labels?.find((label) => label.classification === 'TYPE');
 };
 
-export const getLabelDepartment = (errand: SupportErrand) =>
-  errand.labels?.find((label) => label.classification === 'DEPARTMENT');
-
 /** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
 export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
   CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
@@ -667,10 +664,7 @@ const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand
         ? labelPath('CATEGORY') || labelPath('DEPARTMENT')
         : classificationValue(e.classification?.category),
       type: appConfig.features.useLabelCategorization ? labelPath('TYPE') : classificationValue(e.classification?.type),
-      subType:
-        appConfig.features.useThreeLevelCategorization || appConfig.features.useLabelCategorization
-          ? labelPath('SUBTYPE')
-          : '',
+      subType: appConfig.features.useLabelCategorization ? labelPath('SUBTYPE') : '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
