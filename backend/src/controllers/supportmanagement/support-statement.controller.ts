@@ -19,6 +19,12 @@ const DRAFT_STATUS = 'DRAFT';
 const STATUSES = [DRAFT_STATUS, 'ACTIVE', 'COMPLETED', 'CANCELLED'];
 const PURPOSE_PATTERN = /^[A-Z_]+_(REQUEST|RESPONSE)$/;
 
+/** Support Management names the attachment it created in the Location header, so nothing has to be guessed. */
+const attachmentIdOfLocation = (location: string | undefined): string | undefined => {
+  const last = location && new URL(location, 'http://unused').pathname.split('/').filter(Boolean).pop();
+  return last ? decodeURIComponent(last) : undefined;
+};
+
 class SupportStatementFieldsDto {
   @IsOptional()
   @IsString()
@@ -266,12 +272,10 @@ export class SupportStatementController {
     }
 
     const baseURL = apiURL(this.SERVICE);
-    const before = await this.readStatement(municipalityId, id, statementId, req.user);
-    const known = new Set((before.attachments ?? []).map(attachment => attachment.id));
-
     const form = new FormData();
     form.append('attachment', file.buffer, { filename: file.originalname });
-    await this.apiService.post<void, FormData>(
+
+    const created = await this.apiService.post<void, FormData>(
       {
         url: `${this.statementsUrl(municipalityId, id)}/${statementId}/attachments`,
         baseURL,
@@ -283,15 +287,14 @@ export class SupportStatementController {
       req.user,
     );
 
-    const after = await this.readStatement(municipalityId, id, statementId, req.user);
-    const uploaded = (after.attachments ?? []).find(attachment => attachment.id && !known.has(attachment.id));
-    if (!uploaded?.id) {
-      throw new HttpException(502, 'Support Management did not return the attachment that was uploaded');
+    const attachmentId = attachmentIdOfLocation(created.location);
+    if (!attachmentId) {
+      throw new HttpException(502, 'Support Management did not say which attachment it created');
     }
 
     await this.apiService.patch<ErrandAttachment, { purpose: { id: string } }>(
       {
-        url: `${municipalityId}/${this.namespace}/errands/${id}/attachments/${uploaded.id}`,
+        url: `${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`,
         baseURL,
         data: { purpose: { id: await this.purposeId(municipalityId, data.purpose, req.user) } },
         propagateClientError: true,
