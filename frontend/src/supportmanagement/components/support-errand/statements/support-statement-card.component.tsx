@@ -246,6 +246,7 @@ export const SupportStatementCard: FC<{
         setPeople(candidates);
         setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
       } catch {
+        peopleAskedFor.current = false;
         toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
       } finally {
         setBusy(false);
@@ -338,6 +339,12 @@ export const SupportStatementCard: FC<{
 
     setBusy(true);
     try {
+      await updateSupportStatement(
+        errandId,
+        municipalityId,
+        statementId,
+        supportStatementFields(form, titleOfStatement)
+      );
       onChanged(await uploadSupportStatementAttachment(errandId, municipalityId, statementId, file, responsePurpose));
       onFormChange({ status: SupportStatementStatus.COMPLETED });
       await refreshAttachments();
