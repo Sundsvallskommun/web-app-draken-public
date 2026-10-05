@@ -85,11 +85,11 @@ const RestaurantNumbersTable: FC<{
   return (
     <Table dense scrollable data-cy="premises-restaurant-numbers">
       <Table.Header>
-        {selection ? (
+        {selection && (
           <Table.HeaderColumn>
             <span className="sr-only">Välj</span>
           </Table.HeaderColumn>
-        ) : null}
+        )}
         <Table.HeaderColumn>Nummer</Table.HeaderColumn>
         <Table.HeaderColumn>Namn</Table.HeaderColumn>
         <Table.HeaderColumn>Status</Table.HeaderColumn>
@@ -101,9 +101,9 @@ const RestaurantNumbersTable: FC<{
           const number = restaurantNumber.number;
           return (
             <Table.Row key={restaurantNumber.id ?? restaurantNumber.number ?? index} data-cy={`premises-row-${index}`}>
-              {selection ? (
+              {selection && (
                 <Table.Column>
-                  {number ? (
+                  {number && (
                     <RadioButton
                       size="sm"
                       name={CHOICE_NAME}
@@ -114,9 +114,9 @@ const RestaurantNumbersTable: FC<{
                       data-cy={`premises-choose-${index}`}
                       onChange={() => selection.onChoose({ kind: 'EXISTING', restaurantNumber: number })}
                     />
-                  ) : null}
+                  )}
                 </Table.Column>
-              ) : null}
+              )}
               <Table.Column>{number ?? '-'}</Table.Column>
               <Table.Column>{restaurantNumber.premisesName || '-'}</Table.Column>
               <Table.Column>
