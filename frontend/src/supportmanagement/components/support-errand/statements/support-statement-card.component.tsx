@@ -145,6 +145,72 @@ const PeopleChoice: FC<{
   );
 };
 
+const DeadlineField: FC<{ asked: boolean; value: string; editable: boolean; onChange: (dueAt: string) => void }> = ({
+  asked,
+  value,
+  editable,
+  onChange,
+}) => {
+  const { t } = useTranslation();
+
+  if (!asked) return null;
+
+  return (
+    <FormControl>
+      <FormLabel>{t('common:statements.due_at')}</FormLabel>
+      <Input
+        type="date"
+        value={value}
+        disabled={!editable}
+        data-cy="statement-due-at"
+        onChange={(e) => onChange(e.currentTarget.value)}
+      />
+    </FormControl>
+  );
+};
+
+const LockedNote: FC<{ shown: boolean }> = ({ shown }) => {
+  const { t } = useTranslation();
+
+  if (!shown) return null;
+
+  return (
+    <p className="text-small text-dark-secondary italic m-0" data-cy="statement-locked">
+      {t('common:statements.locked_to_underlay')}
+    </p>
+  );
+};
+
+const TemplateProblem: FC<{ problem: string | undefined; identifier: string }> = ({ problem, identifier }) => {
+  const { t } = useTranslation();
+
+  if (!problem || !identifier) return null;
+
+  return (
+    <Alert type="info" data-cy="statement-template-problem">
+      <Alert.Icon />
+      <Alert.Content>
+        <Alert.Content.Description>{t(problem)}</Alert.Content.Description>
+      </Alert.Content>
+    </Alert>
+  );
+};
+
+const GeneratedNote: FC<{ shown: boolean }> = ({ shown }) => {
+  const { t } = useTranslation();
+
+  if (!shown) return null;
+
+  return (
+    <Alert type="success" data-cy="statement-generated">
+      <Alert.Icon />
+      <Alert.Content>
+        <Alert.Content.Description>{t('common:statements.generated')}</Alert.Content.Description>
+      </Alert.Content>
+    </Alert>
+  );
+};
+
 export const SupportStatementCard: FC<{
   statement: Statement;
   form: SupportStatementForm;
@@ -203,6 +269,13 @@ export const SupportStatementCard: FC<{
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
   const removeLabel = t(removable ? 'common:statements.remove' : 'common:statements.remove_blocked');
+
+  const noteOfAttachment = (attachment: ErrandAttachment) => {
+    const kind = requests.includes(attachment)
+      ? t('common:statements.attachment_request')
+      : t('common:statements.attachment_response');
+    return `${kind} · ${supportStatementPurposeDisplayName(attachment.purpose?.name ?? '', supportMetadata)}`;
+  };
 
   const titleOfStatement = t('common:statements.attachment_title', {
     counterparty: form.counterpartyName,
@@ -447,25 +520,15 @@ export const SupportStatementCard: FC<{
                 />
               </Select>
             </FormControl>
-            {asksForADeadline ? (
-              <FormControl>
-                <FormLabel>{t('common:statements.due_at')}</FormLabel>
-                <Input
-                  type="date"
-                  value={form.dueAt}
-                  disabled={!editable}
-                  data-cy="statement-due-at"
-                  onChange={(e) => set({ dueAt: e.currentTarget.value })}
-                />
-              </FormControl>
-            ) : null}
+            <DeadlineField
+              asked={asksForADeadline}
+              value={form.dueAt}
+              editable={editable}
+              onChange={(dueAt) => set({ dueAt })}
+            />
           </div>
 
-          {underlayExists ? (
-            <p className="text-small text-dark-secondary italic m-0" data-cy="statement-locked">
-              {t('common:statements.locked_to_underlay')}
-            </p>
-          ) : null}
+          <LockedNote shown={underlayExists} />
 
           <PeopleChoice
             peopleNeeded={peopleNeeded}
@@ -484,14 +547,7 @@ export const SupportStatementCard: FC<{
             />
           ) : null}
 
-          {templateProblem && templateIdentifier ? (
-            <Alert type="info" data-cy="statement-template-problem">
-              <Alert.Icon />
-              <Alert.Content>
-                <Alert.Content.Description>{t(templateProblem)}</Alert.Content.Description>
-              </Alert.Content>
-            </Alert>
-          ) : null}
+          <TemplateProblem problem={templateProblem} identifier={templateIdentifier} />
 
           <div className="flex justify-end">
             <Button
@@ -512,24 +568,13 @@ export const SupportStatementCard: FC<{
         </p>
       )}
 
-      {generated ? (
-        <Alert type="success" data-cy="statement-generated">
-          <Alert.Icon />
-          <Alert.Content>
-            <Alert.Content.Description>{t('common:statements.generated')}</Alert.Content.Description>
-          </Alert.Content>
-        </Alert>
-      ) : null}
+      <GeneratedNote shown={generated} />
 
       {[...requests, ...responses].map((attachment) => (
         <AttachmentRow
           key={attachment.id}
           name={attachment.fileName ?? ''}
-          note={`${
-            requests.includes(attachment)
-              ? t('common:statements.attachment_request')
-              : t('common:statements.attachment_response')
-          } · ${supportStatementPurposeDisplayName(attachment.purpose?.name ?? '', supportMetadata)}`}
+          note={noteOfAttachment(attachment)}
           openLabel={t('common:statements.open')}
           onOpen={() => void open(attachment)}
         />
