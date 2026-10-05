@@ -124,6 +124,9 @@ export const supportStatementTemplates = (
 export const supportStatementTemplateNamed = (identifier: string): SupportStatementTemplate | undefined =>
   SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier);
 
+export const supportStatementTemplateOfQuestion = (question: string): SupportStatementTemplate | undefined =>
+  SUPPORT_REFERRAL_TEMPLATES.find((template) => template.name === question.trim());
+
 export const supportStatementTemplatePersons = (identifier: string): SupportReferralPersonsName =>
   supportStatementTemplateNamed(identifier)?.persons ?? SupportReferralPersons.NONE;
 

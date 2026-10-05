@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import {
   supportReferralPeople,
   SupportReferralPersons,
+  supportStatementTemplateOfQuestion,
   supportStatementTemplateParameters,
   supportStatementTemplatePersons,
   supportStatementTemplateProblem,
@@ -392,4 +393,17 @@ test('every parameter the templates require of us is sent, the rest they default
     });
     expect(Object.keys(sent).sort(), identifier).toEqual(expect.arrayContaining([...required].sort()));
   }
+});
+
+test('the template of an underlay is found again from the question it was written as', () => {
+  expect(supportStatementTemplateOfQuestion('Remiss Polismyndigheten')?.identifier).toBe('referral-police');
+  expect(supportStatementTemplateOfQuestion('  Remiss Polismyndigheten  ')?.identifier).toBe('referral-police');
+  expect(supportStatementTemplateOfQuestion('Begäran Skatteverket, tobakstillstånd PBI')?.identifier).toBe(
+    'tax-agency-request-tobacco-pbi'
+  );
+});
+
+test('a question nobody wrote from a template leaves the card without one', () => {
+  expect(supportStatementTemplateOfQuestion('')).toBeUndefined();
+  expect(supportStatementTemplateOfQuestion('Något handläggaren skrev själv')).toBeUndefined();
 });

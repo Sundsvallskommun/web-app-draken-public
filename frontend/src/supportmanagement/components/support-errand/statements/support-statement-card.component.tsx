@@ -46,13 +46,14 @@ import {
   SupportReferralPersons,
   supportStatementTemplateAsksForADeadline,
   supportStatementTemplateNamed,
+  supportStatementTemplateOfQuestion,
   supportStatementTemplateParameters,
   supportStatementTemplatePersons,
   supportStatementTemplateProblem,
   supportStatementTemplates,
 } from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
-import { FC, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
@@ -105,10 +106,11 @@ export const SupportStatementCard: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const user = useUserStore((s) => s.user);
   const fileInput = useRef<HTMLInputElement>(null);
+  const peopleAskedFor = useRef(false);
 
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [templateIdentifier, setTemplateIdentifier] = useState('');
+  const [chosenTemplate, setChosenTemplate] = useState('');
   const [people, setPeople] = useState<SupportReferralPerson[]>([]);
   const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
 
@@ -120,6 +122,9 @@ export const SupportStatementCard: FC<{
     form.counterpartyName,
     SupportStatementAttachmentKind.RESPONSE
   );
+  const underlayExists = requests.length > 0;
+  const templateOfUnderlay = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
+  const templateIdentifier = underlayExists ? templateOfUnderlay : chosenTemplate;
   const counterpartyChosen = form.counterpartyName.length > 0;
   const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
   const peopleNeeded = templateIdentifier
@@ -159,26 +164,30 @@ export const SupportStatementCard: FC<{
     person: person ?? chosenPeople[0],
   });
 
-  const readPeople = async () => {
-    setBusy(true);
-    try {
-      const candidates = supportReferralPeople(await getSupportPbiCandidates(errandId, municipalityId));
-      setPeople(candidates);
-      setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
-    } catch {
-      toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const chooseTemplate = (identifier: string) => {
-    setTemplateIdentifier(identifier);
+    setChosenTemplate(identifier);
     set({ question: identifier ? supportStatementTemplateNamed(identifier)?.name ?? identifier : '' });
-
-    const needsPeople = identifier && supportStatementTemplatePersons(identifier) !== SupportReferralPersons.NONE;
-    if (needsPeople && people.length === 0) void readPeople();
   };
+
+  useEffect(() => {
+    if (peopleNeeded === SupportReferralPersons.NONE || peopleAskedFor.current) return;
+    peopleAskedFor.current = true;
+
+    const readPeople = async () => {
+      setBusy(true);
+      try {
+        const candidates = supportReferralPeople(await getSupportPbiCandidates(errandId, municipalityId));
+        setPeople(candidates);
+        setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
+      } catch {
+        toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    void readPeople();
+  }, [peopleNeeded, errandId, municipalityId, t, toastMessage]);
 
   const togglePerson = (partyId: string) =>
     setChosenPartyIds((current) =>
@@ -302,6 +311,7 @@ export const SupportStatementCard: FC<{
     setBusy(true);
     try {
       await deleteSupportStatement(errandId, municipalityId, statementId);
+      await refreshAttachments();
       onRemoved();
     } catch {
       toastMessage(getToastOptions({ message: t('common:statements.toast.remove_failed'), status: 'error' }));
@@ -316,7 +326,7 @@ export const SupportStatementCard: FC<{
           <FormLabel>{t('common:statements.counterparty')}</FormLabel>
           <Select
             value={form.counterpartyName}
-            disabled={!editable}
+            disabled={!editable || underlayExists}
             data-cy="statement-counterparty"
             onChange={(e) => void chooseCounterparty(e.currentTarget.value)}
           >
@@ -350,16 +360,24 @@ export const SupportStatementCard: FC<{
               <FormLabel>{t('common:statements.template')}</FormLabel>
               <Select
                 value={templateIdentifier}
-                disabled={!editable}
+                disabled={!editable || underlayExists}
                 data-cy="statement-template"
                 onChange={(e) => chooseTemplate(e.currentTarget.value)}
               >
-                <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
-                {templates.map((template) => (
-                  <Select.Option key={template.identifier} value={template.identifier}>
-                    {template.name}
+                {underlayExists ? (
+                  <Select.Option value={templateIdentifier}>
+                    {supportStatementTemplateNamed(templateIdentifier)?.name ?? form.question}
                   </Select.Option>
-                ))}
+                ) : (
+                  <>
+                    <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
+                    {templates.map((template) => (
+                      <Select.Option key={template.identifier} value={template.identifier}>
+                        {template.name}
+                      </Select.Option>
+                    ))}
+                  </>
+                )}
               </Select>
             </FormControl>
             {asksForADeadline ? (
@@ -376,6 +394,12 @@ export const SupportStatementCard: FC<{
             ) : null}
           </div>
 
+          {underlayExists ? (
+            <p className="text-small text-dark-secondary italic m-0" data-cy="statement-locked">
+              {t('common:statements.locked_to_underlay')}
+            </p>
+          ) : null}
+
           {peopleNeeded !== SupportReferralPersons.NONE ? (
             <FormControl className="w-full">
               <FormLabel>
@@ -388,15 +412,16 @@ export const SupportStatementCard: FC<{
                   {t('common:statements.people_empty')}
                 </p>
               ) : (
-                <div className="flex flex-col gap-4" data-cy="statement-people">
+                <div className="flex flex-col gap-12" data-cy="statement-people">
                   {people.map((person) => (
                     <Checkbox
+                      size="sm"
                       key={person.partyId}
                       checked={chosenPartyIds.includes(person.partyId)}
                       disabled={!editable}
                       onChange={() => togglePerson(person.partyId)}
                     >
-                      {[person.name, person.roles].filter(Boolean).join(' — ')}
+                      {[person.name, person.roles].filter(Boolean).join(' - ')}
                     </Checkbox>
                   ))}
                 </div>
@@ -404,7 +429,7 @@ export const SupportStatementCard: FC<{
             </FormControl>
           ) : null}
 
-          {templateIdentifier && !templateProblem ? (
+          {!underlayExists && templateIdentifier && !templateProblem ? (
             <TemplatePdfPreview
               identifier={templateIdentifier}
               parameters={supportStatementTemplateParameters(factsFor(undefined)) as { [key: string]: string | Object }}

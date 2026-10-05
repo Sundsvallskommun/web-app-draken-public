@@ -334,6 +334,8 @@
     "people_listed": "Personer som ska räknas upp i underlaget",
     "people_one_each": "Personer att skapa ett underlag per",
     "people_empty": "Inga personer med engagemang i bolaget kunde hämtas.",
-    "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf"
+    "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf",
+    "locked_to_underlay": "Remissinstans och mall är låsta till det underlag som redan skapats. Behöver du remittera till någon annan, lägg till en ny remiss.",
+    "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen."
   }
 }
