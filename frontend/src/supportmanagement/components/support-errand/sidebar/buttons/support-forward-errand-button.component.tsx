@@ -37,7 +37,7 @@ import * as yup from 'yup';
 
 import { ForwardErrandSummary } from './forward-errand-summary.component';
 import { HandoverClassificationPlaceholder, HandoverReview } from './handover/handover-review.component';
-import { MEX_DEPARTMENT_VALUE, useSupportHandover } from './handover/use-support-handover';
+import { isCasedataForwardTarget, useSupportHandover } from './handover/use-support-handover';
 
 const yupForwardForm = yup.object().shape(
   {
@@ -136,13 +136,13 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
 
   const { recipient, message, messageBodyPlaintext, emails, department } = watch();
 
-  // Routing: MEX uses the casedata forward flow, every other namespace uses the handover.
+  // Routing: the casedata namespaces (MEX, PT) use the casedata forward flow, every other namespace uses the handover.
   const handoverTarget =
-    appConfig.features.useHandover && recipient === 'DEPARTMENT' && department !== MEX_DEPARTMENT_VALUE
+    appConfig.features.useHandover && recipient === 'DEPARTMENT' && !isCasedataForwardTarget(department)
       ? handover.handoverTargets.find((target) => target.namespace === department)
       : undefined;
   const isHandover = !!handoverTarget;
-  const isMexTarget = recipient === 'DEPARTMENT' && department === MEX_DEPARTMENT_VALUE;
+  const isCasedataForward = recipient === 'DEPARTMENT' && isCasedataForwardTarget(department);
 
   // Selecting a target namespace immediately fetches the preview and advances to step 2 – no extra
   // "Nästa" click. Cached previews are reused, so switching back and forth keeps earlier choices.
@@ -178,7 +178,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
         }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e: Error) => {
         toastMessage({
@@ -206,7 +206,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const handleHandoverSuccess = () => {
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
-    getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+    void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
     setTimeout(() => {
       window.close();
     }, 2000);
@@ -223,14 +223,14 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       setValue('message', '', { shouldValidate: true, shouldDirty: false });
       setValue('messageBodyPlaintext', '');
 
-      getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
+      void getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
       });
 
       if (recipient === 'EMAIL') {
-        getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
+        void getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
           setValue('message', sanitized(text), { shouldValidate: true, shouldDirty: false });
         });
       }
@@ -359,7 +359,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
 
                   {/* Categorization at the receiver. The MEX (casedata) forward has no such choice, so the
                       section is only shown for handover targets and before a target is chosen. */}
-                  {!isMexTarget && (
+                  {!isCasedataForward && (
                     <div className="flex flex-col gap-8 py-12" data-cy="handover-classification-section">
                       <h4 className="text-h4-md">Så ska ärendet registreras hos mottagaren</h4>
                       <span>
@@ -506,7 +506,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                         )
                         .then((confirmed) => {
                           if (confirmed) {
-                            handleForwardErrand(getValues());
+                            void handleForwardErrand(getValues());
                           }
                         });
                     }}
