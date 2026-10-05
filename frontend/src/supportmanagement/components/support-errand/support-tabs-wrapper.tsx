@@ -167,9 +167,8 @@ export const SupportTabsWrapper: FC<{
   const newAttachmentCount = attachmentsAreLoaded
     ? Math.max(0, attachmentCount - (countWhenLastSeen.current ?? attachmentCount))
     : 0;
-  const attachmentTabLabel = `Bilagor (${attachmentCount}${
-    newAttachmentCount > 0 ? `, ${newAttachmentCount} ${newAttachmentCount === 1 ? 'ny' : 'nya'}` : ''
-  })`;
+  const newAttachmentNote = newAttachmentCount === 1 ? ', 1 ny' : `, ${newAttachmentCount} nya`;
+  const attachmentTabLabel = `Bilagor (${attachmentCount}${newAttachmentCount > 0 ? newAttachmentNote : ''})`;
 
   const process = getSupportErrandProcess(supportErrand);
 

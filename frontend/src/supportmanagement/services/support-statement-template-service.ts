@@ -147,7 +147,7 @@ const splitName = (name: string): { firstName: string; lastName: string } => {
   const parts = name.trim().split(/\s+/);
   return parts.length < 2
     ? { firstName: name.trim(), lastName: '' }
-    : { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+    : { firstName: parts.slice(0, -1).join(' '), lastName: parts.at(-1) ?? '' };
 };
 
 export const supportReferralPeople = (candidates: SupportPbiCandidate[]): SupportReferralPerson[] =>

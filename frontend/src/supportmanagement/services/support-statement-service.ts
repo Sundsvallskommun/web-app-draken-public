@@ -140,6 +140,31 @@ export const isSupportStatementAwaitingAnswer = (statement: Statement): boolean 
 export const isSupportStatementUnsent = (statement: Statement): boolean =>
   !statement.status || statement.status === SupportStatementStatus.DRAFT;
 
+const hasLeftTheUnit = (form: SupportStatementForm): boolean =>
+  form.status === SupportStatementStatus.ACTIVE || form.status === SupportStatementStatus.COMPLETED;
+
+const problemOfASentStatement = (form: SupportStatementForm, statement: Statement): string | undefined => {
+  if (attachmentsOfKind(statement, SupportStatementAttachmentKind.REQUEST).length === 0) {
+    return 'common:statements.validation.underlay_missing';
+  }
+  if (!form.sentAt) return 'common:statements.validation.sent_at';
+  return undefined;
+};
+
+const problemOfAnAnsweredStatement = (
+  form: SupportStatementForm,
+  statement: Statement,
+  metadata: SupportMetadata | undefined
+): string | undefined => {
+  if (!form.outcome) return 'common:statements.validation.outcome_required';
+  if (!outcomeMeansResponded(form.outcome, metadata)) return undefined;
+  if (attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE).length === 0) {
+    return 'common:statements.validation.response_missing';
+  }
+  if (!form.respondedAt) return 'common:statements.validation.responded_at';
+  return undefined;
+};
+
 export const supportStatementProblem = (
   form: SupportStatementForm,
   statement: Statement,
@@ -152,26 +177,11 @@ export const supportStatementProblem = (
     return 'common:statements.validation.outcome_needs_completed';
   }
 
-  const wasSent = form.status === SupportStatementStatus.ACTIVE || form.status === SupportStatementStatus.COMPLETED;
+  const sent = hasLeftTheUnit(form) ? problemOfASentStatement(form, statement) : undefined;
+  if (sent) return sent;
 
-  if (wasSent) {
-    if (attachmentsOfKind(statement, SupportStatementAttachmentKind.REQUEST).length === 0) {
-      return 'common:statements.validation.underlay_missing';
-    }
-    if (!form.sentAt) return 'common:statements.validation.sent_at';
-  }
-
-  if (form.status === SupportStatementStatus.COMPLETED) {
-    if (!form.outcome) return 'common:statements.validation.outcome_required';
-    if (outcomeMeansResponded(form.outcome, metadata)) {
-      if (attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE).length === 0) {
-        return 'common:statements.validation.response_missing';
-      }
-      if (!form.respondedAt) return 'common:statements.validation.responded_at';
-    }
-  }
-
-  return undefined;
+  if (form.status !== SupportStatementStatus.COMPLETED) return undefined;
+  return problemOfAnAnsweredStatement(form, statement, metadata);
 };
 
 /** What a statement of this namespace is: a referral to an authority. */
@@ -281,6 +291,6 @@ export const renderSupportStatementPdf = (identifier: string, parameters: Record
 
 export const pdfFileFromBase64 = (base64: string, filename: string): File => {
   const binary = window.atob(base64);
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const bytes = Uint8Array.from(binary, (character) => character.codePointAt(0) ?? 0);
   return new File([bytes], filename, { type: 'application/pdf' });
 };

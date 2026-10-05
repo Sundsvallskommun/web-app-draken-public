@@ -44,6 +44,8 @@ import {
   supportReferralPeople,
   type SupportReferralPerson,
   SupportReferralPersons,
+  type SupportReferralPersonsName,
+  type SupportStatementTemplate,
   supportStatementTemplateAsksForADeadline,
   supportStatementTemplateNamed,
   supportStatementTemplateOfQuestion,
@@ -75,6 +77,73 @@ const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen:
     </Button>
   </div>
 );
+
+const TemplateOptions: FC<{
+  locked: boolean;
+  identifier: string;
+  question: string;
+  templates: SupportStatementTemplate[];
+}> = ({ locked, identifier, question, templates }) => {
+  const { t } = useTranslation();
+
+  if (locked) {
+    return (
+      <Select.Option value={identifier}>{supportStatementTemplateNamed(identifier)?.name ?? question}</Select.Option>
+    );
+  }
+
+  return (
+    <>
+      <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
+      {templates.map((template) => (
+        <Select.Option key={template.identifier} value={template.identifier}>
+          {template.name}
+        </Select.Option>
+      ))}
+    </>
+  );
+};
+
+const PeopleChoice: FC<{
+  peopleNeeded: SupportReferralPersonsName;
+  people: SupportReferralPerson[];
+  chosenPartyIds: string[];
+  editable: boolean;
+  onToggle: (partyId: string) => void;
+}> = ({ peopleNeeded, people, chosenPartyIds, editable, onToggle }) => {
+  const { t } = useTranslation();
+
+  if (peopleNeeded === SupportReferralPersons.NONE) return null;
+
+  return (
+    <FormControl className="w-full">
+      <FormLabel>
+        {peopleNeeded === SupportReferralPersons.ONE_EACH
+          ? t('common:statements.people_one_each')
+          : t('common:statements.people_listed')}
+      </FormLabel>
+      {people.length === 0 ? (
+        <p className="text-small text-dark-secondary italic m-0" data-cy="statement-people-empty">
+          {t('common:statements.people_empty')}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-12" data-cy="statement-people">
+          {people.map((person) => (
+            <Checkbox
+              size="sm"
+              key={person.partyId}
+              checked={chosenPartyIds.includes(person.partyId)}
+              disabled={!editable}
+              onChange={() => onToggle(person.partyId)}
+            >
+              {[person.name, person.roles].filter(Boolean).join(' - ')}
+            </Checkbox>
+          ))}
+        </div>
+      )}
+    </FormControl>
+  );
+};
 
 export const SupportStatementCard: FC<{
   statement: Statement;
@@ -127,16 +196,13 @@ export const SupportStatementCard: FC<{
   const templateIdentifier = underlayExists ? templateOfUnderlay : chosenTemplate;
   const counterpartyChosen = form.counterpartyName.length > 0;
   const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
-  const peopleNeeded = templateIdentifier
-    ? supportStatementTemplatePersons(templateIdentifier)
-    : SupportReferralPersons.NONE;
+  const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
   const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
-  const asksForADeadline = !!templateIdentifier && supportStatementTemplateAsksForADeadline(templateIdentifier);
-  const templateProblem = templateIdentifier
-    ? supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople)
-    : 'common:statements.validation.template';
+  const asksForADeadline = supportStatementTemplateAsksForADeadline(templateIdentifier);
+  const templateProblem = supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople);
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
+  const removeLabel = t(removable ? 'common:statements.remove' : 'common:statements.remove_blocked');
 
   const titleOfStatement = t('common:statements.attachment_title', {
     counterparty: form.counterpartyName,
@@ -238,23 +304,25 @@ export const SupportStatementCard: FC<{
 
       const oneForEach = peopleNeeded === SupportReferralPersons.ONE_EACH ? chosenPeople : [undefined];
       const purpose = supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST);
-      let written = statement;
 
-      for (const person of oneForEach) {
-        const output = await renderSupportStatementPdf(
-          templateIdentifier,
-          supportStatementTemplateParameters(factsFor(person))
-        );
-        written = await uploadSupportStatementAttachment(
-          errandId,
-          municipalityId,
-          statementId,
-          pdfFileFromBase64(output, filenameFor(person)),
-          purpose
-        );
-      }
+      const documents = await Promise.all(
+        oneForEach.map(async (person) =>
+          pdfFileFromBase64(
+            await renderSupportStatementPdf(templateIdentifier, supportStatementTemplateParameters(factsFor(person))),
+            filenameFor(person)
+          )
+        )
+      );
 
-      onChanged(written);
+      const fileEachInTurn = async ([next, ...rest]: File[], written: Statement): Promise<Statement> =>
+        next === undefined
+          ? written
+          : fileEachInTurn(
+              rest,
+              await uploadSupportStatementAttachment(errandId, municipalityId, statementId, next, purpose)
+            );
+
+      onChanged(await fileEachInTurn(documents, statement));
       await refreshAttachments();
       setGenerated(true);
     } catch {
@@ -344,8 +412,8 @@ export const SupportStatementCard: FC<{
           variant="tertiary"
           color="error"
           disabled={!editable || !removable}
-          aria-label={removable ? t('common:statements.remove') : t('common:statements.remove_blocked')}
-          title={removable ? t('common:statements.remove') : t('common:statements.remove_blocked')}
+          aria-label={removeLabel}
+          title={removeLabel}
           data-cy="statement-remove"
           onClick={() => void remove()}
         >
@@ -364,20 +432,12 @@ export const SupportStatementCard: FC<{
                 data-cy="statement-template"
                 onChange={(e) => chooseTemplate(e.currentTarget.value)}
               >
-                {underlayExists ? (
-                  <Select.Option value={templateIdentifier}>
-                    {supportStatementTemplateNamed(templateIdentifier)?.name ?? form.question}
-                  </Select.Option>
-                ) : (
-                  <>
-                    <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
-                    {templates.map((template) => (
-                      <Select.Option key={template.identifier} value={template.identifier}>
-                        {template.name}
-                      </Select.Option>
-                    ))}
-                  </>
-                )}
+                <TemplateOptions
+                  locked={underlayExists}
+                  identifier={templateIdentifier}
+                  question={form.question}
+                  templates={templates}
+                />
               </Select>
             </FormControl>
             {asksForADeadline ? (
@@ -400,34 +460,13 @@ export const SupportStatementCard: FC<{
             </p>
           ) : null}
 
-          {peopleNeeded !== SupportReferralPersons.NONE ? (
-            <FormControl className="w-full">
-              <FormLabel>
-                {peopleNeeded === SupportReferralPersons.ONE_EACH
-                  ? t('common:statements.people_one_each')
-                  : t('common:statements.people_listed')}
-              </FormLabel>
-              {people.length === 0 ? (
-                <p className="text-small text-dark-secondary italic m-0" data-cy="statement-people-empty">
-                  {t('common:statements.people_empty')}
-                </p>
-              ) : (
-                <div className="flex flex-col gap-12" data-cy="statement-people">
-                  {people.map((person) => (
-                    <Checkbox
-                      size="sm"
-                      key={person.partyId}
-                      checked={chosenPartyIds.includes(person.partyId)}
-                      disabled={!editable}
-                      onChange={() => togglePerson(person.partyId)}
-                    >
-                      {[person.name, person.roles].filter(Boolean).join(' - ')}
-                    </Checkbox>
-                  ))}
-                </div>
-              )}
-            </FormControl>
-          ) : null}
+          <PeopleChoice
+            peopleNeeded={peopleNeeded}
+            people={people}
+            chosenPartyIds={chosenPartyIds}
+            editable={editable}
+            onToggle={togglePerson}
+          />
 
           {!underlayExists && templateIdentifier && !templateProblem ? (
             <TemplatePdfPreview

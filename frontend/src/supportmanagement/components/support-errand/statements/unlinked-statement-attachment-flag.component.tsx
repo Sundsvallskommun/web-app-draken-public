@@ -15,9 +15,8 @@ export const UnlinkedStatementAttachmentFlag: FC<{ fileName: string }> = ({ file
       onMouseEnter={() => setShown(true)}
       onMouseLeave={() => setShown(false)}
     >
-      <span
-        role="img"
-        tabIndex={0}
+      <button
+        type="button"
         aria-label={`${note} ${fileName}`}
         data-cy="attachment-unlinked"
         className="w-12 h-12 rounded-full bg-warning-surface-primary"
