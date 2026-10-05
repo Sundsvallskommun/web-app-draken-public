@@ -4,8 +4,8 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.5           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-enhetschef`      | 1.6           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-sol-lss`         | 1.4           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
@@ -55,6 +55,13 @@ vägrar byta `schemaId` på ett befintligt dokument.
 Samma dag publicerades `2281_utredning-enhetschef_1.5`, som ersätter 1.4: även lagrummen krävs först vid
 klarmarkering, så en enhetschef kan spara ett helt tomt utkast. 1.4 hann användas några timmar i testmiljön;
 utredningar som skapades då sitter kvar på 1.4 och kräver därför fortfarande ett valt lagrum.
+
+Version 1.6 av enhetschefsutredningen och 1.4 av SoL/LSS-utredningen byter titeln på orsaksområdet
+`procedures_routines_guidelines` från "Procedurer, rutiner och riktlinjer" till "Processer, rutiner, arbetssätt,
+riktlinjer". Värdet är detsamma, så sparade dokument behöver ingen migrering, men de visar titeln från det schema
+de är bundna till. Den 5 oktober 2026 publicerades `2281_utredning-enhetschef_1.6` och `2281_utredning-sol-lss_1.4`
+i testmiljön, med oförändrade UI-scheman lagda på de nya ID:na. Schema och UI Schema lästes tillbaka och var
+identiska med artefakterna, och `versions/latest` pekar på dem. Inget har publicerats i produktionsmiljön.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 

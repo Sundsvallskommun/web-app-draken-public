@@ -1,8 +1,8 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.5",
+  "version": "1.6",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.5",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.6",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
@@ -83,7 +83,7 @@
             },
             {
               "const": "procedures_routines_guidelines",
-              "title": "Procedurer, rutiner och riktlinjer"
+              "title": "Processer, rutiner, arbetssätt, riktlinjer"
             },
             {
               "const": "technology_equipment",
@@ -799,5 +799,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.5 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.6 of the unit manager investigation schema"
 }

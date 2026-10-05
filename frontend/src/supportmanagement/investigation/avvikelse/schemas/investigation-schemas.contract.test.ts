@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.5',
+    version: '1.6',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -20,7 +20,7 @@ const artifacts = [
   },
   {
     name: 'utredning-sol-lss',
-    version: '1.3',
+    version: '1.4',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
