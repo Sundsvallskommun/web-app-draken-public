@@ -3,9 +3,11 @@ import { expect, test } from 'vitest';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   attachmentsOfKind,
+  isStatementAttachmentWithoutItsStatement,
   isSupportStatementAwaitingAnswer,
   isSupportStatementRemovable,
   isSupportStatementUnsent,
+  supportStatementAttachmentIds,
   supportStatementAttachmentPurpose,
   supportStatementEdited,
   type SupportStatementForm,
@@ -164,4 +166,38 @@ test('a document keeps its place in the card whichever authority it was filed un
 
   expect(attachmentsOfKind(statement, 'REQUEST').map((a) => a.id)).toEqual(['a']);
   expect(attachmentsOfKind(statement, 'RESPONSE').map((a) => a.id)).toEqual(['b']);
+});
+
+test('the attachments a referral still owns are collected across every referral on the errand', () => {
+  const ids = supportStatementAttachmentIds([
+    withUnderlay as never,
+    { attachments: [{ id: 'b1' }, { fileName: 'utan id.pdf' }] } as never,
+    {} as never,
+  ]);
+
+  expect([...ids].sort()).toEqual(['a1', 'b1']);
+});
+
+test('an underlay whose referral was removed is flagged, an ordinary attachment is not', () => {
+  const linked = supportStatementAttachmentIds([withUnderlay as never]);
+
+  expect(
+    isStatementAttachmentWithoutItsStatement({ id: 'a1', purpose: { name: 'REFERRAL_POLICE_REQUEST' } }, linked)
+  ).toBe(false);
+  expect(
+    isStatementAttachmentWithoutItsStatement({ id: 'a9', purpose: { name: 'REFERRAL_POLICE_REQUEST' } }, linked)
+  ).toBe(true);
+  expect(isStatementAttachmentWithoutItsStatement({ id: 'a9', purpose: { name: 'STATEMENT_RESPONSE' } }, linked)).toBe(
+    true
+  );
+});
+
+test('a file that never belonged to a referral is left alone, whatever it is called', () => {
+  const linked = supportStatementAttachmentIds([]);
+
+  expect(isStatementAttachmentWithoutItsStatement({ id: 'c1', purpose: { name: 'FLOOR_PLAN' } }, linked)).toBe(false);
+  expect(isStatementAttachmentWithoutItsStatement({ id: 'c2' }, linked)).toBe(false);
+  expect(isStatementAttachmentWithoutItsStatement({ id: 'c3', purpose: { name: 'REFERRAL_POLICE' } }, linked)).toBe(
+    false
+  );
 });

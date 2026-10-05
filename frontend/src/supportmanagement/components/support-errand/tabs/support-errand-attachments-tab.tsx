@@ -35,11 +35,18 @@ import {
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportStatements,
+  isStatementAttachmentWithoutItsStatement,
+  supportStatementAttachmentIds,
+} from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { Ellipsis, Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
+import { UnlinkedStatementAttachmentFlag } from '../statements/unlinked-statement-attachment-flag.component';
 
 interface SingleAttachment {
   file: File | undefined;
@@ -58,6 +65,8 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachments: [],
   attachmentList: [],
 };
+
+const EMPTY_STATEMENT_ATTACHMENTS = new Set<string>();
 
 export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
@@ -87,6 +96,7 @@ export const SupportErrandAttachmentsTab: FC<{
   const [dragDrop, setDragDrop] = useState<boolean>(false);
   const [editingPurposeId, setEditingPurposeId] = useState<string>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [statementAttachmentIds, setStatementAttachmentIds] = useState<Set<string>>(EMPTY_STATEMENT_ATTACHMENTS);
 
   const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {
@@ -178,6 +188,22 @@ export const SupportErrandAttachmentsTab: FC<{
   useEffect(() => {
     setSizeError(false);
   }, [attachments]);
+
+  useEffect(() => {
+    const errandId = supportErrand?.id?.toString();
+    if (!errandId) return;
+
+    let abandoned = false;
+    getSupportStatements(errandId, municipalityId)
+      .then((statements) => {
+        if (!abandoned) setStatementAttachmentIds(supportStatementAttachmentIds(statements));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      abandoned = true;
+    };
+  }, [supportErrand?.id, municipalityId, supportAttachments]);
 
   useEffect(() => {
     if (!supportErrand?.id || !supportAttachments?.length) return;
@@ -512,6 +538,10 @@ export const SupportErrandAttachmentsTab: FC<{
                     </div>
                   </div>
                 </div>
+
+                {isStatementAttachmentWithoutItsStatement(attachment, statementAttachmentIds) ? (
+                  <UnlinkedStatementAttachmentFlag fileName={attachment.fileName} />
+                ) : null}
 
                 {purposes.length > 0 &&
                   (editingPurposeId === attachment.id ? (

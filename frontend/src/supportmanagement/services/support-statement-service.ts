@@ -53,6 +53,28 @@ const kindOfPurpose = (purposeName: string | undefined): SupportStatementAttachm
   return undefined;
 };
 
+const STATEMENT_PURPOSE_PREFIXES = ['REFERRAL_', 'STATEMENT_'];
+
+const isStatementPurpose = (purposeName: string | undefined): boolean =>
+  !!purposeName &&
+  STATEMENT_PURPOSE_PREFIXES.some((prefix) => purposeName.startsWith(prefix)) &&
+  kindOfPurpose(purposeName) !== undefined;
+
+export const supportStatementAttachmentIds = (statements: Statement[]): Set<string> =>
+  new Set(
+    statements
+      .flatMap((statement) => statement.attachments ?? [])
+      .map((attachment) => attachment.id)
+      .filter((id): id is string => !!id)
+  );
+
+/** A file the referral left behind: the referral was removed, the attachment on the errand was not. */
+export const isStatementAttachmentWithoutItsStatement = (
+  attachment: { id?: string; purpose?: { name?: string } },
+  statementAttachmentIds: Set<string>
+): boolean =>
+  isStatementPurpose(attachment.purpose?.name) && !!attachment.id && !statementAttachmentIds.has(attachment.id);
+
 export const supportStatementPurposeDisplayName = (
   purposeName: string,
   metadata: SupportMetadata | undefined
