@@ -32,7 +32,7 @@ export function OversiktPageClient() {
               return <AttestationTab />;
             }
             if (municipalityId) {
-              return <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />;
+              return <OngoingSupportErrands />;
             }
             return null;
           })()}

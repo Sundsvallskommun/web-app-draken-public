@@ -12,3 +12,5 @@ export interface ErrandNotesTabFormModel {
   partyId?: string;
   text: string;
 }
+
+export type NoteType = 'PUBLIC' | 'INTERNAL' | 'UNKNOWN';
