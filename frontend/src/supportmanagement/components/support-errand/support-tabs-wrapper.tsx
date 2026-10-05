@@ -29,7 +29,7 @@ import {
   SupportProcessStepName,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -152,14 +152,21 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const attachmentsAreLoaded = !!supportAttachments;
   const attachmentCount = countAttachment(supportAttachments ?? []);
-  // A file written from another tab, such as the underlay of a statement, is counted as new until the
-  // handler has had the attachments open (adjusting state during render, not in an effect).
-  const [seenAttachmentCount, setSeenAttachmentCount] = useState(attachmentCount);
-  if (activeTabKey === 'attachments' && seenAttachmentCount !== attachmentCount) {
-    setSeenAttachmentCount(attachmentCount);
+  const countWhenLastSeen = useRef<number | undefined>(undefined);
+  const countBecomesTheBaseline =
+    countWhenLastSeen.current === undefined ||
+    activeTabKey === 'attachments' ||
+    attachmentCount < countWhenLastSeen.current;
+
+  if (attachmentsAreLoaded && countBecomesTheBaseline) {
+    countWhenLastSeen.current = attachmentCount;
   }
-  const newAttachmentCount = Math.max(0, attachmentCount - seenAttachmentCount);
+
+  const newAttachmentCount = attachmentsAreLoaded
+    ? Math.max(0, attachmentCount - (countWhenLastSeen.current ?? attachmentCount))
+    : 0;
   const attachmentTabLabel = `Bilagor (${attachmentCount}${
     newAttachmentCount > 0 ? `, ${newAttachmentCount} ${newAttachmentCount === 1 ? 'ny' : 'nya'}` : ''
   })`;
