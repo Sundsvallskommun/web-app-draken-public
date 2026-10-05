@@ -14,11 +14,12 @@ import {
   Input,
   Modal,
   PopupMenu,
+  Select,
   Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   deleteSupportAttachment,
@@ -27,6 +28,7 @@ import {
   saveSupportAttachments,
   SingleSupportAttachment,
   SupportAttachment,
+  updateSupportAttachmentPurpose,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportErrandById,
@@ -34,13 +36,14 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
-import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import { Ellipsis, Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 interface SingleAttachment {
   file: File | undefined;
+  purposeId?: string;
 }
 interface SupportAttachmentFormModel {
   id?: string;
@@ -63,6 +66,11 @@ export const SupportErrandAttachmentsTab: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const attachmentPurposes = useMetadataStore((s) => s.supportMetadata?.attachmentPurposes);
+  const purposes = (attachmentPurposes ?? [])
+    .filter((p) => p.id && !p.deprecated)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((p) => ({ id: p.id!, label: p.displayName || p.name }));
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);
   const [modalFetching, setModalFetching] = useState(false);
@@ -77,6 +85,7 @@ export const SupportErrandAttachmentsTab: FC<{
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
+  const [editingPurposeId, setEditingPurposeId] = useState<string>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   const modalFocus = useRef<HTMLButtonElement>(null);
@@ -278,6 +287,21 @@ export const SupportErrandAttachmentsTab: FC<{
     });
   };
 
+  const changePurpose = (attachment: SupportAttachment, purposeId: string) => {
+    setEditingPurposeId(undefined);
+    if (!purposeId || purposeId === attachment.purpose?.id) return;
+    updateSupportAttachmentPurpose(supportErrand!.id!.toString(), municipalityId, attachment.id, purposeId)
+      .then(() => props.update())
+      .catch(() => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Bilagetypen kunde inte sparas',
+          status: 'error',
+        });
+      });
+  };
+
   const editAttachmentModal = (
     <Modal
       className="w-[84rem]"
@@ -338,6 +362,7 @@ export const SupportErrandAttachmentsTab: FC<{
                     helperText="Maximal filstorlek: 10 MB"
                     dragDrop={dragDrop}
                     allowMultiple={isKC() ? true : false}
+                    purposes={purposes}
                   />
                 </FormControl>
 
@@ -360,8 +385,9 @@ export const SupportErrandAttachmentsTab: FC<{
                   onClick={(e) => {
                     e.preventDefault();
                     const vals: SupportAttachmentFormModel = getValues();
-                    const attachmentsData: { file: File }[] = vals.attachments.map((a) => ({
+                    const attachmentsData: { file: File; purposeId?: string }[] = vals.attachments.map((a) => ({
                       file: a.file!,
+                      purposeId: a.purposeId || undefined,
                     }));
                     setIsLoading(true);
                     saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
@@ -487,6 +513,37 @@ export const SupportErrandAttachmentsTab: FC<{
                   </div>
                 </div>
 
+                {purposes.length > 0 &&
+                  (editingPurposeId === attachment.id ? (
+                    <Select
+                      data-cy={`attachment-purpose-${attachment.id}`}
+                      aria-label={`Typ av bilaga för ${attachment.fileName}`}
+                      className="self-center w-[28rem] max-w-[40%]"
+                      autoFocus
+                      value={attachment.purpose?.id ?? ''}
+                      onChange={(e) => changePurpose(attachment, e.target.value)}
+                      onBlur={() => setEditingPurposeId(undefined)}
+                    >
+                      <Select.Option value="">Välj typ av bilaga</Select.Option>
+                      {purposes.map((purpose) => (
+                        <Select.Option key={purpose.id} value={purpose.id}>
+                          {purpose.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <p
+                      data-cy={`attachment-purpose-text-${attachment.id}`}
+                      className={`self-center ${attachment.purpose ? '' : 'text-dark-disabled'}`}
+                    >
+                      {attachment.purpose
+                        ? purposes.find((p) => p.id === attachment.purpose?.id)?.label ||
+                          attachment.purpose.displayName ||
+                          attachment.purpose.name
+                        : 'Ingen typ vald'}
+                    </p>
+                  ))}
+
                 <div className="self-center relative">
                   <PopupMenu>
                     <PopupMenu.Button
@@ -515,6 +572,19 @@ export const SupportErrandAttachmentsTab: FC<{
                             </Button>
                           </PopupMenu.Item>
                         </PopupMenu.Group>
+                        {!isSupportErrandLocked(supportErrand!) && purposes.length > 0 && (
+                          <PopupMenu.Group>
+                            <PopupMenu.Item>
+                              <Button
+                                data-cy={`edit-attachment-${attachment.id}`}
+                                leftIcon={<Pencil />}
+                                onClick={() => setEditingPurposeId(attachment.id)}
+                              >
+                                Ändra
+                              </Button>
+                            </PopupMenu.Item>
+                          </PopupMenu.Group>
+                        )}
                         {!isSupportErrandLocked(supportErrand!) && (
                           <PopupMenu.Group>
                             <PopupMenu.Item>

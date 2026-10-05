@@ -10,6 +10,8 @@ import ApiTokenService from './api-token.service';
 export class ApiResponse<T> {
   data!: T;
   message!: string;
+  /** The Location of a created resource, set only when the caller opted out of following it. */
+  location?: string;
 }
 
 // Extends AxiosRequestConfig with two per-request flags. When `propagateClientError` is true,
@@ -116,7 +118,8 @@ class ApiService {
     };
     try {
       const res = await this.instance(preparedConfig);
-      return { data: res.data, message: 'success' };
+      const location = axiosConfig.followLocation === false ? (res.headers?.location as string | undefined) : undefined;
+      return { data: res.data, message: 'success', ...(location ? { location } : {}) };
     } catch (error: unknown | AxiosError) {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);

@@ -6,7 +6,7 @@ import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { CitizenExtended, PersonGuidBatch } from '@/data-contracts/citizen/data-contracts';
 import { OrganizationEngagement } from '@/data-contracts/legalentity/data-contracts';
-import { Errand, Stakeholder } from '@/data-contracts/supportmanagement/data-contracts';
+import { Errand, Parameter, Stakeholder } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -18,7 +18,9 @@ import { stripErrandVersions } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck } from '@/utils/util';
 
-const PBI_ROLE = 'PBI';
+const PBI_PARAMETER = 'PBI';
+const PBI_CONTACT_ROLE = 'CONTACT';
+const pbiParameter: Parameter = { key: PBI_PARAMETER, values: ['true'] };
 
 const PERSON_IDENTITY_TYPES = new Set(['PERSONNUMMER', 'SAMORDNINGSNUMMER']);
 
@@ -41,12 +43,17 @@ const isPersonIdentity = (engagement: OrganizationEngagement): boolean => {
 const companyPartyId = (errand: Errand): string | undefined =>
   errand.stakeholders?.find(stakeholder => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY')?.externalId;
 
-const isPbi = (partyId: string) => (stakeholder: Stakeholder) => stakeholder.role === PBI_ROLE && stakeholder.externalId === partyId;
+const hasPbiParameter = (stakeholder: Stakeholder): boolean =>
+  !!stakeholder.parameters?.some(parameter => parameter.key === PBI_PARAMETER && parameter.values?.includes('true'));
 
+const isPbi = (partyId: string) => (stakeholder: Stakeholder) => stakeholder.externalId === partyId && hasPbiParameter(stakeholder);
+
+const withoutPbiParameter = (stakeholder: Stakeholder): Parameter[] =>
+  (stakeholder.parameters ?? []).filter(parameter => parameter.key !== PBI_PARAMETER);
 const markedPartyIds = (errand: Errand): Set<string> =>
   new Set(
     (errand.stakeholders ?? [])
-      .filter(stakeholder => stakeholder.role === PBI_ROLE && stakeholder.externalId)
+      .filter(stakeholder => hasPbiParameter(stakeholder) && stakeholder.externalId)
       .map(stakeholder => stakeholder.externalId as string),
   );
 
@@ -166,15 +173,24 @@ export class SupportPbiController {
       throw new HttpException(400, 'The person is not engaged in the applicant company');
     }
 
-    const pbi: Stakeholder = {
-      role: PBI_ROLE,
-      externalId: data.partyId,
-      externalIdType: 'PRIVATE',
-      ...(await this.personName(municipalityId, data.partyId, req.user)),
-      contactChannels: [],
-      parameters: [],
-    };
-    await this.writeStakeholders(municipalityId, errand, [...stakeholders, pbi], req.user);
+    const existing = stakeholders.findIndex(stakeholder => stakeholder.externalId === data.partyId);
+    const marked: Stakeholder[] =
+      existing >= 0
+        ? stakeholders.map((stakeholder, index) =>
+            index === existing ? { ...stakeholder, parameters: [...withoutPbiParameter(stakeholder), pbiParameter] } : stakeholder,
+          )
+        : [
+            ...stakeholders,
+            {
+              role: PBI_CONTACT_ROLE,
+              externalId: data.partyId,
+              externalIdType: 'PRIVATE',
+              ...(await this.personName(municipalityId, data.partyId, req.user)),
+              contactChannels: [],
+              parameters: [pbiParameter],
+            },
+          ];
+    await this.writeStakeholders(municipalityId, errand, marked, req.user);
     return response.status(201).send({ partyId: data.partyId });
   }
 
@@ -199,7 +215,7 @@ export class SupportPbiController {
     await this.writeStakeholders(
       municipalityId,
       errand,
-      stakeholders.filter(stakeholder => !isPbi(partyId)(stakeholder)),
+      stakeholders.map(stakeholder => (isPbi(partyId)(stakeholder) ? { ...stakeholder, parameters: withoutPbiParameter(stakeholder) } : stakeholder)),
       req.user,
     );
     return response.status(204).send();
