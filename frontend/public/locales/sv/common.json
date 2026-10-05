@@ -281,7 +281,6 @@
     "counterparty_placeholder": "Välj instans...",
     "choose_counterparty_first": "Välj remissinstans ovan för att skapa ett underlag.",
     "choose_counterparty_first_short": "Välj remissinstans först",
-    "text": "Remisstext",
     "generate": "Generera PDF",
     "generated": "Underlaget har skapats och registrerats som bilaga på ärendet. Ladda ner det från fliken Bilagor. Status satt till \"Skapad\".",
     "upload": "Ladda upp svar",
@@ -305,13 +304,16 @@
     },
     "validation": {
       "counterparty": "Välj remissinstans.",
-      "question": "Remisstexten kan inte vara tom.",
       "outcome_required": "Välj utfall innan remissen markeras som besvarad.",
       "outcome_needs_completed": "Ett utfall kan bara registreras när remissen är besvarad.",
       "responded_at": "Ange datum för svaret.",
       "sent_at": "Ange datum då remissen skickades.",
       "underlay_missing": "Skapa underlaget innan remissen markeras som skickad.",
-      "response_missing": "Ladda upp instansens svar."
+      "response_missing": "Ladda upp instansens svar.",
+      "template": "Välj en mall för underlaget.",
+      "people": "Välj minst en person.",
+      "people_without_identity": "En av de valda personerna saknar personnummer. Mallen kan inte skapas utan det.",
+      "due_at": "Ange datum då svaret senast ska komma in."
     },
     "toast": {
       "read_failed": "Remisserna kunde inte hämtas.",
@@ -322,12 +324,16 @@
       "remove_failed": "Remissen kunde inte tas bort.",
       "open_failed": "Bilagan kunde inte öppnas.",
       "incomplete": "Kontrollera remisserna innan du sparar utredningen.",
-      "template_failed": "Mallen kunde inte hämtas."
+      "people_failed": "Personerna i bolaget kunde inte hämtas."
     },
     "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp.",
     "template": "Välj mall",
     "template_placeholder": "Välj mall...",
     "due_at": "Svar önskas senast",
-    "template_again": "Hämta mallen igen"
+    "preview": "Förhandsgranskning",
+    "people_listed": "Personer som ska räknas upp i underlaget",
+    "people_one_each": "Personer att skapa ett underlag per",
+    "people_empty": "Inga personer med engagemang i bolaget kunde hämtas.",
+    "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf"
   }
 }

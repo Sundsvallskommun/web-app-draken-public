@@ -38,9 +38,9 @@ test('a statement without a counterparty cannot be saved', () => {
   );
 });
 
-test('markup without words is an empty statement text', () => {
-  expect(supportStatementProblem(filledIn({ question: '<p><br></p>' }), {}, metadata)).toBe(
-    'common:statements.validation.question'
+test('a statement with no template chosen has nothing to render', () => {
+  expect(supportStatementProblem(filledIn({ question: '' }), {}, metadata)).toBe(
+    'common:statements.validation.template'
   );
 });
 

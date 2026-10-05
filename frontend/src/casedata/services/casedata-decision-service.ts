@@ -99,19 +99,6 @@ export const fetchDecisionTemplates: (prefix: string, decision?: string) => Prom
     });
 };
 
-export const renderTemplatePdf: (
-  identifier: string,
-  parameters: { [key: string]: string | Object }
-) => Promise<string> = (identifier, parameters) => {
-  const body: TemplateSelector = { identifier, parameters };
-  return apiService
-    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', body)
-    .then((res) => res.data.data.output)
-    .catch(() => {
-      throw new Error('Något gick fel när förhandsgranskningen skulle skapas');
-    });
-};
-
 export const saveDecision: (
   municipalityId: string,
   errand: IErrand,

@@ -1,11 +1,12 @@
 'use client';
 
-import TextEditor from '@common/components/dynamic-text-editor';
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import type { ErrandAttachment, Statement } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Alert,
   Button,
+  Checkbox,
   FormControl,
   FormLabel,
   Input,
@@ -16,6 +17,7 @@ import {
 } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
+import { getSupportPbiCandidates } from '@supportmanagement/services/support-pbi-service';
 import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
   attachmentsOfKind,
@@ -24,7 +26,6 @@ import {
   isSupportStatementRemovable,
   pdfFileFromBase64,
   renderSupportStatementPdf,
-  renderSupportStatementTemplate,
   selectableSupportStatementOutcomes,
   SUPPORT_STATEMENT_STATUSES,
   SUPPORT_STATEMENT_TYPE,
@@ -40,13 +41,15 @@ import {
   uploadSupportStatementAttachment,
 } from '@supportmanagement/services/support-statement-service';
 import {
-  type SupportStatementDocument,
-  supportStatementDocumentIsEmpty,
-  supportStatementDocumentOf,
-  supportStatementDocumentWith,
+  supportReferralPeople,
+  type SupportReferralPerson,
+  SupportReferralPersons,
+  supportStatementTemplateAsksForADeadline,
+  supportStatementTemplateNamed,
   supportStatementTemplateParameters,
+  supportStatementTemplatePersons,
+  supportStatementTemplateProblem,
   supportStatementTemplates,
-  supportStatementTextIsUnchanged,
 } from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
 import { FC, useRef, useState } from 'react';
@@ -106,7 +109,8 @@ export const SupportStatementCard: FC<{
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [templateIdentifier, setTemplateIdentifier] = useState('');
-  const [renderedTemplate, setRenderedTemplate] = useState<SupportStatementDocument>();
+  const [people, setPeople] = useState<SupportReferralPerson[]>([]);
+  const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
 
   const statementId = statement.id;
   const outcomes = selectableSupportStatementOutcomes(supportMetadata);
@@ -117,7 +121,15 @@ export const SupportStatementCard: FC<{
     SupportStatementAttachmentKind.RESPONSE
   );
   const counterpartyChosen = form.counterpartyName.length > 0;
-  const templates = supportStatementTemplates(form.counterpartyName);
+  const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
+  const peopleNeeded = templateIdentifier
+    ? supportStatementTemplatePersons(templateIdentifier)
+    : SupportReferralPersons.NONE;
+  const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
+  const asksForADeadline = !!templateIdentifier && supportStatementTemplateAsksForADeadline(templateIdentifier);
+  const templateProblem = templateIdentifier
+    ? supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople)
+    : 'common:statements.validation.template';
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
 
@@ -136,30 +148,25 @@ export const SupportStatementCard: FC<{
     onFormChange(changes);
   };
 
-  const fetchTemplate = async (identifier: string, dueAt: string) => {
+  const factsFor = (person: SupportReferralPerson | undefined) => ({
+    identifier: templateIdentifier,
+    errand: supportErrand,
+    handlerName: `${user.firstName} ${user.lastName}`.trim(),
+    handlerEmail: user.email,
+    counterpartyName: form.counterpartyName,
+    dueAt: form.dueAt,
+    people: chosenPeople,
+    person: person ?? chosenPeople[0],
+  });
+
+  const readPeople = async () => {
     setBusy(true);
     try {
-      const html = await renderSupportStatementTemplate(
-        identifier,
-        supportStatementTemplateParameters({
-          errand: supportErrand,
-          handlerName: `${user.firstName} ${user.lastName}`.trim(),
-          counterpartyName: form.counterpartyName,
-          dueAt,
-        })
-      );
-      const rendered = supportStatementDocumentOf(html);
-      if (supportStatementDocumentIsEmpty(rendered)) {
-        console.error('The rendered template held no text to write in', { identifier, length: html.length });
-        throw new Error('The rendered template held no text to write in');
-      }
-
-      setRenderedTemplate(rendered);
-      set({ question: rendered.content });
+      const candidates = supportReferralPeople(await getSupportPbiCandidates(errandId, municipalityId));
+      setPeople(candidates);
+      setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
     } catch {
-      setTemplateIdentifier('');
-      setRenderedTemplate(undefined);
-      toastMessage(getToastOptions({ message: t('common:statements.toast.template_failed'), status: 'error' }));
+      toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
     } finally {
       setBusy(false);
     }
@@ -167,15 +174,16 @@ export const SupportStatementCard: FC<{
 
   const chooseTemplate = (identifier: string) => {
     setTemplateIdentifier(identifier);
-    if (identifier) void fetchTemplate(identifier, form.dueAt);
+    set({ question: identifier ? supportStatementTemplateNamed(identifier)?.name ?? identifier : '' });
+
+    const needsPeople = identifier && supportStatementTemplatePersons(identifier) !== SupportReferralPersons.NONE;
+    if (needsPeople && people.length === 0) void readPeople();
   };
 
-  const changeDueAt = (dueAt: string) => {
-    set({ dueAt });
-
-    const untouched = renderedTemplate && supportStatementTextIsUnchanged(form.question, renderedTemplate.content);
-    if (templateIdentifier && untouched) void fetchTemplate(templateIdentifier, dueAt);
-  };
+  const togglePerson = (partyId: string) =>
+    setChosenPartyIds((current) =>
+      current.includes(partyId) ? current.filter((chosen) => chosen !== partyId) : [...current, partyId]
+    );
 
   const chooseCounterparty = async (counterpartyName: string) => {
     set({ counterpartyName });
@@ -198,8 +206,17 @@ export const SupportStatementCard: FC<{
     }
   };
 
+  const filenameFor = (person: SupportReferralPerson | undefined) =>
+    person
+      ? t('common:statements.attachment_filename_for', {
+          template: supportStatementTemplateNamed(templateIdentifier)?.name ?? templateIdentifier,
+          person: person.name,
+          errandNumber,
+        })
+      : t('common:statements.attachment_filename', { counterparty: form.counterpartyName, errandNumber });
+
   const generate = async () => {
-    if (!statementId || supportStatementUnderlayProblem(form)) return;
+    if (!statementId || supportStatementUnderlayProblem(form) || templateProblem) return;
 
     setBusy(true);
     try {
@@ -209,22 +226,26 @@ export const SupportStatementCard: FC<{
         statementId,
         supportStatementFields(form, titleOfStatement)
       );
-      const output = await renderSupportStatementPdf(
-        supportStatementDocumentWith(renderedTemplate ?? { frame: '', content: '' }, form.question)
-      );
-      const filename = t('common:statements.attachment_filename', {
-        counterparty: form.counterpartyName,
-        errandNumber,
-      });
-      onChanged(
-        await uploadSupportStatementAttachment(
+
+      const oneForEach = peopleNeeded === SupportReferralPersons.ONE_EACH ? chosenPeople : [undefined];
+      const purpose = supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST);
+      let written = statement;
+
+      for (const person of oneForEach) {
+        const output = await renderSupportStatementPdf(
+          templateIdentifier,
+          supportStatementTemplateParameters(factsFor(person))
+        );
+        written = await uploadSupportStatementAttachment(
           errandId,
           municipalityId,
           statementId,
-          pdfFileFromBase64(output, filename),
-          supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST)
-        )
-      );
+          pdfFileFromBase64(output, filenameFor(person)),
+          purpose
+        );
+      }
+
+      onChanged(written);
       await refreshAttachments();
       setGenerated(true);
     } catch {
@@ -341,42 +362,71 @@ export const SupportStatementCard: FC<{
                 ))}
               </Select>
             </FormControl>
-            <FormControl>
-              <FormLabel>{t('common:statements.due_at')}</FormLabel>
-              <Input
-                type="date"
-                value={form.dueAt}
-                disabled={!editable}
-                data-cy="statement-due-at"
-                onChange={(e) => changeDueAt(e.currentTarget.value)}
-              />
-            </FormControl>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!editable || !templateIdentifier}
-              data-cy="statement-template-refetch"
-              onClick={() => void fetchTemplate(templateIdentifier, form.dueAt)}
-            >
-              {t('common:statements.template_again')}
-            </Button>
+            {asksForADeadline ? (
+              <FormControl>
+                <FormLabel>{t('common:statements.due_at')}</FormLabel>
+                <Input
+                  type="date"
+                  value={form.dueAt}
+                  disabled={!editable}
+                  data-cy="statement-due-at"
+                  onChange={(e) => set({ dueAt: e.currentTarget.value })}
+                />
+              </FormControl>
+            ) : null}
           </div>
-          <FormControl className="w-full">
-            <FormLabel>{t('common:statements.text')}</FormLabel>
-            <TextEditor
-              className="mb-0 text-editor-with-toolbar"
-              value={{ markup: form.question }}
-              readOnly={!editable}
-              onChange={(e: { target: { value: { markup?: string } } }) =>
-                set({ question: e.target.value.markup ?? '' })
-              }
+
+          {peopleNeeded !== SupportReferralPersons.NONE ? (
+            <FormControl className="w-full">
+              <FormLabel>
+                {peopleNeeded === SupportReferralPersons.ONE_EACH
+                  ? t('common:statements.people_one_each')
+                  : t('common:statements.people_listed')}
+              </FormLabel>
+              {people.length === 0 ? (
+                <p className="text-small text-dark-secondary italic m-0" data-cy="statement-people-empty">
+                  {t('common:statements.people_empty')}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-4" data-cy="statement-people">
+                  {people.map((person) => (
+                    <Checkbox
+                      key={person.partyId}
+                      checked={chosenPartyIds.includes(person.partyId)}
+                      disabled={!editable}
+                      onChange={() => togglePerson(person.partyId)}
+                    >
+                      {[person.name, person.roles].filter(Boolean).join(' — ')}
+                    </Checkbox>
+                  ))}
+                </div>
+              )}
+            </FormControl>
+          ) : null}
+
+          {templateIdentifier && !templateProblem ? (
+            <TemplatePdfPreview
+              identifier={templateIdentifier}
+              parameters={supportStatementTemplateParameters(factsFor(undefined)) as { [key: string]: string | Object }}
+              watermarked
+              title={t('common:statements.preview')}
             />
-          </FormControl>
+          ) : null}
+
+          {templateProblem && templateIdentifier ? (
+            <Alert type="info" data-cy="statement-template-problem">
+              <Alert.Icon />
+              <Alert.Content>
+                <Alert.Content.Description>{t(templateProblem)}</Alert.Content.Description>
+              </Alert.Content>
+            </Alert>
+          ) : null}
+
           <div className="flex justify-end">
             <Button
               type="button"
               variant="primary"
-              disabled={!editable}
+              disabled={!editable || !!templateProblem}
               data-cy="statement-generate"
               leftIcon={busy ? <Spinner size={2} /> : <Mail size={18} />}
               onClick={() => void generate()}

@@ -4,7 +4,7 @@ import type {
   StatementOutcome,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
-import { base64Decode } from '@common/services/helper-service';
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import dayjs from 'dayjs';
 
 import type { SupportMetadata } from './support-metadata-service';
@@ -99,15 +99,13 @@ export const supportStatementFields = (form: SupportStatementForm, title: string
   outcome: form.outcome || undefined,
 });
 
-const withoutMarkup = (markup: string): string => markup.replace(/<[^>]*>/g, '').trim();
-
 export const supportStatementEdited = (form: SupportStatementForm, statement: Statement): boolean =>
   JSON.stringify(form) !== JSON.stringify(supportStatementForm(statement));
 
 /** What keeps the underlay from being written at all: without these there is nothing to render. */
 export const supportStatementUnderlayProblem = (form: SupportStatementForm): string | undefined => {
   if (!form.counterpartyName) return 'common:statements.validation.counterparty';
-  if (!withoutMarkup(form.question)) return 'common:statements.validation.question';
+  if (!form.question.trim()) return 'common:statements.validation.template';
   return undefined;
 };
 
@@ -256,41 +254,8 @@ export const attachmentsOfKind = (
 ): ErrandAttachment[] =>
   (statement?.attachments ?? []).filter((attachment) => kindOfPurpose(attachment.purpose?.name) === kind);
 
-export const renderSupportStatementTemplate = (
-  identifier: string,
-  parameters: Record<string, unknown>
-): Promise<string> =>
-  apiService
-    .post<{ data: { output: string } }, { identifier: string; parameters: Record<string, unknown> }>('render', {
-      identifier,
-      parameters,
-    })
-    .then((res) => {
-      const rendered = base64Decode(res.data?.data?.output ?? '');
-      if (!rendered) {
-        console.error('The template rendered nothing', { identifier, answer: res.data });
-        throw new Error('The template rendered nothing');
-      }
-      return rendered;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when rendering the template');
-      throw e;
-    });
-
-const RENDER_PDF_URL = 'render/direct/pdf';
-
-export const renderSupportStatementPdf = (html: string): Promise<string> =>
-  apiService
-    .post<{ data: { output: string } }, { content: string; parameters: Record<string, string> }>(RENDER_PDF_URL, {
-      content: window.btoa(unescape(encodeURIComponent(html))),
-      parameters: {},
-    })
-    .then((res) => res.data.data.output)
-    .catch((e) => {
-      console.error('Something went wrong when rendering the statement');
-      throw e;
-    });
+export const renderSupportStatementPdf = (identifier: string, parameters: Record<string, unknown>): Promise<string> =>
+  renderTemplatePdf(identifier, parameters as { [key: string]: string | Object });
 
 export const pdfFileFromBase64 = (base64: string, filename: string): File => {
   const binary = window.atob(base64);
