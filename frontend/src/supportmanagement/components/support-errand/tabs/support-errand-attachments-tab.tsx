@@ -39,6 +39,7 @@ import dayjs from 'dayjs';
 import { Ellipsis, Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 interface SingleAttachment {
@@ -84,6 +85,7 @@ export const SupportErrandAttachmentsTab: FC<{
   const [attachmentTypeExists, setAttachmentTypeExists] = useState(false);
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
+  const { t } = useTranslation();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
   const [editingPurposeId, setEditingPurposeId] = useState<string>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
@@ -287,36 +289,30 @@ export const SupportErrandAttachmentsTab: FC<{
     });
   };
 
-  const changePurpose = (attachment: SupportAttachment, purposeId: string) => {
+  const changePurpose = async (attachment: SupportAttachment, purposeId: string) => {
     setEditingPurposeId(undefined);
     if (!purposeId || purposeId === attachment.purpose?.id) return;
     const purposeLabel = purposes.find((p) => p.id === purposeId)?.label;
-    confirm
-      .showConfirmation(
-        'Ändra typ av bilaga?',
-        `Vill du ändra typ av bilaga för ${attachment.fileName} till ${purposeLabel}?`,
-        'Ja',
-        'Nej',
-        'info',
-        'info'
-      )
-      .then((confirmed) => {
-        if (!confirmed) return;
-        return updateSupportAttachmentPurpose(
-          supportErrand!.id!.toString(),
-          municipalityId,
-          attachment.id,
-          purposeId
-        ).then(() => props.update());
-      })
-      .catch(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Bilagetypen kunde inte sparas',
-          status: 'error',
-        });
+    const confirmed = await confirm.showConfirmation(
+      t('common:attachments.change_purpose_title'),
+      t('common:attachments.change_purpose_body', { fileName: attachment.fileName, purpose: purposeLabel }),
+      t('common:attachments.confirm_yes'),
+      t('common:attachments.confirm_no'),
+      'info',
+      'info'
+    );
+    if (!confirmed) return;
+    try {
+      await updateSupportAttachmentPurpose(supportErrand!.id!.toString(), municipalityId, attachment.id, purposeId);
+      props.update();
+    } catch {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:attachments.change_purpose_error'),
+        status: 'error',
       });
+    }
   };
 
   const editAttachmentModal = (
@@ -534,14 +530,14 @@ export const SupportErrandAttachmentsTab: FC<{
                   (editingPurposeId === attachment.id ? (
                     <Select
                       data-cy={`attachment-purpose-${attachment.id}`}
-                      aria-label={`Typ av bilaga för ${attachment.fileName}`}
+                      aria-label={t('common:attachments.purpose_label', { fileName: attachment.fileName })}
                       className="self-center w-[28rem] max-w-[40%]"
                       autoFocus
                       value={attachment.purpose?.id ?? ''}
                       onChange={(e) => changePurpose(attachment, e.target.value)}
                       onBlur={() => setEditingPurposeId(undefined)}
                     >
-                      <Select.Option value="">Välj typ av bilaga</Select.Option>
+                      <Select.Option value="">{t('common:attachments.purpose_placeholder')}</Select.Option>
                       {purposes.map((purpose) => (
                         <Select.Option key={purpose.id} value={purpose.id}>
                           {purpose.label}
@@ -557,7 +553,7 @@ export const SupportErrandAttachmentsTab: FC<{
                         ? purposes.find((p) => p.id === attachment.purpose?.id)?.label ||
                           attachment.purpose.displayName ||
                           attachment.purpose.name
-                        : 'Ingen typ vald'}
+                        : t('common:attachments.no_purpose')}
                     </p>
                   ))}
 
@@ -597,7 +593,7 @@ export const SupportErrandAttachmentsTab: FC<{
                                 leftIcon={<Pencil />}
                                 onClick={() => setEditingPurposeId(attachment.id)}
                               >
-                                Ändra
+                                {t('common:attachments.edit')}
                               </Button>
                             </PopupMenu.Item>
                           </PopupMenu.Group>

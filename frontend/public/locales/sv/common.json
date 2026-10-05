@@ -250,5 +250,16 @@
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
+  },
+  "attachments": {
+    "edit": "Ändra",
+    "no_purpose": "Ingen typ vald",
+    "purpose_label": "Typ av bilaga för {{fileName}}",
+    "purpose_placeholder": "Välj typ av bilaga",
+    "change_purpose_title": "Ändra typ av bilaga?",
+    "change_purpose_body": "Vill du ändra typ av bilaga för {{fileName}} till {{purpose}}?",
+    "confirm_yes": "Ja",
+    "confirm_no": "Nej",
+    "change_purpose_error": "Bilagetypen kunde inte sparas"
   }
 }
