@@ -62,6 +62,30 @@ const parseLabelFilterSelections = (labelFilter: string): SupportManagementLabel
 
 const withoutFilterPrefix = (fragment: string): string => fragment.replace(/^&filter=/u, '');
 
+export interface SupportErrandStatusGroupCounts {
+  /** How many errands match in each status group, in the order the groups were asked for. */
+  counts: number[];
+}
+
+const MAX_STATUS_GROUPS = 20;
+const STATUS_NAME = /^[\w-]{1,100}$/u;
+
+/** Reads the `statusGroups` query parameter: a JSON array of non-empty arrays of status names. */
+export const parseStatusGroups = (statusGroups: string | undefined): string[][] => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(statusGroups ?? '');
+  } catch {
+    parsed = undefined;
+  }
+  const isStatusGroup = (group: unknown): group is string[] =>
+    Array.isArray(group) && group.length > 0 && group.every(status => typeof status === 'string' && STATUS_NAME.test(status));
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > MAX_STATUS_GROUPS || !parsed.every(isStatusGroup)) {
+    throw new HttpException(400, `statusGroups must be a JSON array of 1 to ${MAX_STATUS_GROUPS} non-empty arrays of status names`);
+  }
+  return parsed;
+};
+
 /**
  * Lists and counts support errands for the overview. A deployment with the search index asks it; any
  * request the index cannot answer the way the filter endpoint would goes to the filter endpoint, which
@@ -90,20 +114,42 @@ export class SupportErrandListingService {
     return response.data;
   }
 
-  /** How many errands match the criteria, answered in the filter endpoint's shape. */
-  async count(municipalityId: string, criteria: ErrandFilterInput, user: User): Promise<CountResponse> {
-    const labels = await this.readLabelCriteria(municipalityId, criteria, user);
-    const searchQuery = this.searchQueryFor(criteria, labels);
+  /**
+   * How many errands match the criteria in each group of statuses, in the order of the groups. The
+   * criteria's own status is left out, since each group stands in for it. The index answers every group
+   * from one breakdown by status; the filter endpoint is asked once per group.
+   */
+  async countByStatusGroups(
+    municipalityId: string,
+    criteria: ErrandFilterInput,
+    statusGroups: readonly (readonly string[])[],
+    user: User,
+  ): Promise<number[]> {
+    const criteriaWithoutStatus: ErrandFilterInput = { ...criteria, status: undefined };
+    const labels = await this.readLabelCriteria(municipalityId, criteriaWithoutStatus, user);
+    const searchQuery = this.searchQueryFor(criteriaWithoutStatus, labels);
     if (searchQuery !== undefined) {
-      const query = searchQuery ? `?${new URLSearchParams({ query: searchQuery }).toString()}` : '';
-      const answer = await this.search<SearchCountResponse>(`${this.errandsUrl(municipalityId)}/search/count${query}`, user);
-      if (answer) return { count: answer.count };
+      const parameters = new URLSearchParams({ groupBy: 'status' });
+      if (searchQuery) parameters.set('query', searchQuery);
+      const breakdown = await this.search<SearchCountResponse>(`${this.errandsUrl(municipalityId)}/search/count?${parameters.toString()}`, user);
+      if (breakdown) {
+        const buckets = breakdown.group?.buckets ?? [];
+        return statusGroups.map(statuses =>
+          buckets
+            .filter(bucket => bucket.value !== undefined && statuses.includes(bucket.value))
+            .reduce((sum, bucket) => sum + (bucket.count ?? 0), 0),
+        );
+      }
     }
 
-    const filter = this.filterFor(criteria, labels);
-    const query = filter ? `?${new URLSearchParams({ filter }).toString()}` : '';
-    const response = await this.dependencies.apiService.get<CountResponse>({ url: `${this.errandsUrl(municipalityId)}/count${query}` }, user);
-    return response.data;
+    return Promise.all(
+      statusGroups.map(async statuses => {
+        const filter = this.filterFor({ ...criteriaWithoutStatus, status: statuses.join(',') }, labels);
+        const query = filter ? `?${new URLSearchParams({ filter }).toString()}` : '';
+        const response = await this.dependencies.apiService.get<CountResponse>({ url: `${this.errandsUrl(municipalityId)}/count${query}` }, user);
+        return response.data.count ?? 0;
+      }),
+    );
   }
 
   private errandsUrl(municipalityId: string): string {

@@ -18,8 +18,15 @@ export const buildSupportErrandsSearchParameters = (
   return parameters.toString();
 };
 
-export const buildSupportErrandsCountSearchParameters = (filter: SupportErrandFilterQuery): string => {
-  const parameters = new URLSearchParams();
-  appendFilter(parameters, filter);
+/**
+ * Asks for the count of each group of statuses under the same filter, in one request. The filter's own
+ * status is left out, since each group stands in for it.
+ */
+export const buildSupportErrandStatusGroupCountParameters = (
+  filter: SupportErrandFilterQuery,
+  statusGroups: readonly (readonly string[])[]
+): string => {
+  const parameters = new URLSearchParams({ statusGroups: JSON.stringify(statusGroups) });
+  appendFilter(parameters, Object.fromEntries(Object.entries(filter).filter(([key]) => key !== 'status')));
   return parameters.toString();
 };

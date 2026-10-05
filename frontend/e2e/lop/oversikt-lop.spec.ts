@@ -14,10 +14,10 @@ import {
   mockSolvedSupportErrands,
   mockSupportErrands,
   mockSupportErrandsEmpty,
-  mockCount,
 } from './fixtures/mockSupportErrands';
 import { mockNotifications } from './fixtures/mockSupportNotifications';
 import { mockBillingRecords } from './fixtures/mockBillingRecords';
+import { mockStatusGroupCounts } from '../utils/status-group-counts';
 
 test.describe('Overview errands lop', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -28,7 +28,7 @@ test.describe('Overview errands lop', () => {
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
     await mockRoute('**/billing/2281/billingrecords**', mockBillingRecords, { method: 'GET' });
-    await mockRoute('**/countsupporterrands/**', mockCount, { method: 'GET' });
+    await mockStatusGroupCounts(page, 13);
     await mockRoute('**/supporterrands/2281?page=0*', mockSupportErrands, { method: 'GET' });
     await mockRoute('**/supporterrands/2281?page=1*', mockSupportErrandsEmpty, { method: 'GET' });
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });

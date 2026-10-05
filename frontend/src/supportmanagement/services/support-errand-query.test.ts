@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
+import {
+  buildSupportErrandsSearchParameters,
+  buildSupportErrandStatusGroupCountParameters,
+} from './support-errand-query';
 
 const labelSelections = [
   { groupKey: 'classification', fieldKey: 'category', resourcePath: 'CATEGORY/HSL/FIRST' },
@@ -32,13 +35,16 @@ test('preserves raw plus signs and spaces without manual or double encoding', ()
   assert.equal(new URLSearchParams(query).get('query'), 'A+B C');
 });
 
-test('uses the same filter encoding for count requests', () => {
-  const query = buildSupportErrandsCountSearchParameters({
-    labelFilter: JSON.stringify(labelSelections),
-    status: 'NEW',
-  });
+test('asks for every status group under the same filter, leaving the filter status out', () => {
+  const statusGroups = [['NEW'], ['ONGOING', 'PENDING'], ['SOLVED']];
+  const query = buildSupportErrandStatusGroupCountParameters(
+    { labelFilter: JSON.stringify(labelSelections), status: 'NEW', priority: 'HIGH' },
+    statusGroups
+  );
   const parameters = new URLSearchParams(query);
 
+  assert.deepEqual(JSON.parse(parameters.get('statusGroups') ?? ''), statusGroups);
   assert.equal(parameters.get('labelFilter'), JSON.stringify(labelSelections));
-  assert.equal(parameters.get('status'), 'NEW');
+  assert.equal(parameters.get('priority'), 'HIGH');
+  assert.equal(parameters.has('status'), false);
 });

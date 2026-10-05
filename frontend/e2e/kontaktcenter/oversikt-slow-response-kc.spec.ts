@@ -5,6 +5,7 @@ import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockOngoingSupportErrands, mockSupportErrands } from './fixtures/mockSupportErrands';
 import { mockNotifications } from './fixtures/mockSupportNotifications';
+import { mockStatusGroupCounts } from '../utils/status-group-counts';
 
 /**
  * The overview asks for errands again on every filter, sort and page change, so several requests
@@ -27,7 +28,7 @@ test.describe('Overview support errands, slow responses', () => {
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/supportnotifications/2281', mockNotifications, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
-    await mockRoute('**/countsupporterrands/**', { count: 10 }, { method: 'GET' });
+    await mockStatusGroupCounts(page, 10);
   });
 
   test.afterEach(async ({ page }) => {

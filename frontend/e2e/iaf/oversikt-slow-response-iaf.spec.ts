@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { expect, test } from '../fixtures/base.fixture';
+import { mockStatusGroupCounts } from '../utils/status-group-counts';
 
 /**
  * IAF/VOF is the instance where the overview does the most work before it can ask for errands: the
@@ -112,7 +113,7 @@ test.describe('Avvikelsens översikt, långsamma svar', () => {
     await jsonRoute(page, '**/featureflags', []);
     await jsonRoute(page, '**/users/admins', { data: [] });
     await jsonRoute(page, '**/supportnotifications/2281', []);
-    await jsonRoute(page, '**/countsupporterrands/**', { count: 10 });
+    await mockStatusGroupCounts(page, 10);
     await jsonRoute(page, '**/supportmetadata/2281', {
       categories: [],
       types: [],

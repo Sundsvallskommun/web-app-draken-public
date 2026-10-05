@@ -1,5 +1,7 @@
 import type { Page, Request, Route } from '@playwright/test';
 
+import { statusGroupCountsFor } from '../../utils/status-group-counts';
+
 /**
  * A deliberately plain SupportManagement drake.
  *
@@ -219,9 +221,8 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
     }
 
     if (method === 'GET' && path.includes('/countsupporterrands/')) {
-      // getSupportErrandsCount reads res.data.count; a bare number leaves the sidebar counters
-      // undefined and the overview stuck on its spinner.
-      await fulfillJson(route, { count: 1 });
+      // The sidebar counts every status group in one request and expects one count per group.
+      await fulfillJson(route, statusGroupCountsFor(request.url(), 1));
       return;
     }
 

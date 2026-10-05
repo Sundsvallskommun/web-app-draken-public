@@ -93,7 +93,7 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
-import { SupportErrandListingService } from '@/services/support-errand-listing.service';
+import { parseStatusGroups, SupportErrandListingService, SupportErrandStatusGroupCounts } from '@/services/support-errand-listing.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import {
   assertSupportInvestigationClassificationContext,
@@ -754,11 +754,12 @@ export class SupportErrandController {
     return response.status(200).send(errands);
   }
 
-  @Get('/countsupporterrands/:municipalityId')
-  @OpenAPI({ summary: 'Counts errands based on the provided filters' })
+  @Get('/countsupporterrands/:municipalityId/statusgroups')
+  @OpenAPI({ summary: 'Counts the errands matching the filters in each group of statuses, in the order the groups are given' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
-  async countErrands(
+  async countErrandsByStatusGroups(
     @Req() req: RequestWithUser,
+    @QueryParam('statusGroups') statusGroups: string,
     @QueryParam('query') query: string,
     @QueryParam('stakeholders') stakeholders: string,
     @QueryParam('priority') priority: string,
@@ -769,19 +770,19 @@ export class SupportErrandController {
     @QueryParam('labelSubType') labelSubType: string,
     @QueryParam('labelFilter') labelFilter: string,
     @QueryParam('channel') channel: string,
-    @QueryParam('status') status: string,
     @QueryParam('resolution') resolution: string,
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<any> {
+  ): Promise<SupportErrandStatusGroupCounts> {
     if (!municipalityId) {
       console.error('No municipality id found, needed to fetch errands.');
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
 
+    const groups = parseStatusGroups(statusGroups);
     const criteria = await this.withQueryPartyId(req, {
       query,
       stakeholders,
@@ -793,13 +794,12 @@ export class SupportErrandController {
       labelSubType,
       labelFilter,
       channel,
-      status,
       resolution,
       start,
       end,
     });
-    const count = await this.errandListing().count(municipalityId, criteria, req.user);
-    return response.status(200).send(count);
+    const counts = await this.errandListing().countByStatusGroups(municipalityId, criteria, groups, req.user);
+    return response.status(200).send({ counts });
   }
 
   @Post('/newerrand/:municipalityId')

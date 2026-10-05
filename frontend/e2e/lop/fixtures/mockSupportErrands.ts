@@ -266,13 +266,6 @@ export const mockSupportMessages = [
 
 export const mockSupportNotes = [];
 
-export const mockCount = {
-  data: {
-    count: 13,
-  },
-  message: 'ok',
-};
-
 export const mockSupportErrands = {
   content: [
     {

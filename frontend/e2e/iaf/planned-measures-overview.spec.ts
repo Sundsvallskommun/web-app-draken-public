@@ -4,6 +4,7 @@ import type { PlannedMeasuresSnapshot } from '../../src/supportmanagement/measur
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { expect, test } from '../fixtures/base.fixture';
+import { mockStatusGroupCounts } from '../utils/status-group-counts';
 
 /**
  * The planned-measures overview lives beside the errand table: a sidebar button swaps the table for a
@@ -89,7 +90,7 @@ async function installOverview(page: Page, { useMeasures = true }: { useMeasures
   ]);
   await jsonRoute(page, '**/users/admins', { data: [] });
   await jsonRoute(page, '**/supportnotifications/2281', []);
-  await jsonRoute(page, '**/countsupporterrands/**', { count: 0 });
+  await mockStatusGroupCounts(page, 0);
   await jsonRoute(page, '**/supportmetadata/2281', {
     categories: [],
     types: [],

@@ -230,10 +230,27 @@ const errandsArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
   ] as [any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any];
 };
 
-/** The same params minus `page`/`size`/`sort`, matching `countErrands`. */
-const countArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
-  const [, , ...rest] = errandsArgs(overrides);
-  return rest.slice(0, 14) as [any, any, any, any, any, any, any, any, any, any, any, any, any, any];
+/** The status groups, then the list's filter params minus `status`, matching `countErrandsByStatusGroups`. */
+const statusGroupCountArgs = (statusGroups: unknown, overrides: Partial<Record<string, unknown>> = {}) => {
+  const [, , query, stakeholders, priority, category, type, labelCategory, labelType, labelSubType, labelFilter, channel, , resolution, start, end] =
+    errandsArgs(overrides);
+  const groups = typeof statusGroups === 'string' ? statusGroups : JSON.stringify(statusGroups);
+  return [
+    groups,
+    query,
+    stakeholders,
+    priority,
+    category,
+    type,
+    labelCategory,
+    labelType,
+    labelSubType,
+    labelFilter,
+    channel,
+    resolution,
+    start,
+    end,
+  ] as [any, any, any, any, any, any, any, any, any, any, any, any, any, any];
 };
 
 const upstreamSearchQuery = (url: string): string => new URL(url, 'http://draken.local').searchParams.get('query') ?? '';
@@ -346,7 +363,7 @@ describe('SupportErrandController', () => {
       const calls = [
         (res: MockResponse) => controller.errand(req, mockSupportErrandId, '', res),
         (res: MockResponse) => controller.errands(req, ...errandsArgs(), '', res),
-        (res: MockResponse) => controller.countErrands(req, ...countArgs(), '', res),
+        (res: MockResponse) => controller.countErrandsByStatusGroups(req, ...statusGroupCountArgs([['NEW']]), '', res),
         (res: MockResponse) => controller.registerSupportErrand(req, '', {}, res),
         (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, {}, res),
         (res: MockResponse) =>
@@ -539,30 +556,44 @@ describe('SupportErrandController', () => {
     });
   });
 
-  describe('countErrands', () => {
-    it('hits the count endpoint and returns 200 with the count', async () => {
+  describe('countErrandsByStatusGroups', () => {
+    it('counts each group on the filter endpoint, the group standing in for the status', async () => {
       const { controller, api } = makeController();
-      api.get.mockResolvedValue({ data: 42, message: 'success' });
+      api.get.mockImplementation(async ({ url }: { url: string }) => ({ data: { count: url.includes('ONGOING') ? 5 : 2 }, message: 'success' }));
       const res = mockRes();
 
-      await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW' }), MUNICIPALITY_ID, res);
-
-      expect(api.get).toHaveBeenCalledWith(
-        { url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?filter=%28status%3A%27NEW%27%29` },
-        expect.anything(),
+      await controller.countErrandsByStatusGroups(
+        mockReq(),
+        ...statusGroupCountArgs([['NEW'], ['ONGOING', 'PENDING']], { priority: 'HIGH' }),
+        MUNICIPALITY_ID,
+        res,
       );
+
+      expect(api.get).toHaveBeenCalledTimes(2);
+      expect(
+        api.get.mock.calls.every(([config]) => config.url.startsWith(`${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?filter=`)),
+      ).toBe(true);
+      expect(api.get.mock.calls.map(([config]) => upstreamFilter(config.url))).toEqual([
+        "(priority:'HIGH') and (status:'NEW')",
+        "(priority:'HIGH') and (status:'ONGOING' or status:'PENDING')",
+      ]);
       expect(res.statusCode).toBe(200);
-      expect(res.body).toBe(42);
+      expect(res.body).toEqual({ counts: [2, 5] });
     });
 
-    it('omits the query string entirely when nothing is filtered on', async () => {
-      const { controller, api } = makeController();
-      api.get.mockResolvedValue({ data: 0, message: 'success' });
+    it.each(['{invalid', '[]', '[[]]', '[["NEW", "NOT A STATUS"]]', '[["NEW"], "SOLVED"]'])(
+      'rejects malformed status groups %s before asking Support Management',
+      async statusGroups => {
+        const { controller, api } = makeController();
 
-      await controller.countErrands(mockReq(), ...countArgs(), MUNICIPALITY_ID, mockRes());
-
-      expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count` }, expect.anything());
-    });
+        await expect(
+          controller.countErrandsByStatusGroups(mockReq(), ...statusGroupCountArgs(statusGroups), MUNICIPALITY_ID, mockRes()),
+        ).rejects.toMatchObject({
+          status: 400,
+        });
+        expect(api.get).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('errand search', () => {
@@ -723,33 +754,52 @@ describe('SupportErrandController', () => {
       expect(api.get).toHaveBeenCalledTimes(1);
     });
 
-    it('counts from the search index, answering in the shape of the filter endpoint', async () => {
+    it('counts every status group from one breakdown of the index', async () => {
       const { controller, api } = makeController();
       enableErrandSearch(controller);
-      api.get.mockResolvedValue({ data: { count: 9 }, message: 'success' });
+      api.get.mockResolvedValue({
+        data: {
+          count: 9,
+          group: {
+            property: 'status',
+            buckets: [
+              { value: 'NEW', count: 3 },
+              { value: 'SOLVED', count: 3 },
+              { value: 'ONGOING', count: 2 },
+              { value: 'PENDING', count: 1 },
+            ],
+            withoutValue: 0,
+            withheld: 0,
+          },
+        },
+        message: 'success',
+      });
       const res = mockRes();
 
-      await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW', priority: 'HIGH' }), MUNICIPALITY_ID, res);
+      await controller.countErrandsByStatusGroups(
+        mockReq(),
+        ...statusGroupCountArgs([['NEW'], ['ONGOING', 'PENDING'], ['SUSPENDED']], { priority: 'HIGH' }),
+        MUNICIPALITY_ID,
+        res,
+      );
 
       expect(api.get).toHaveBeenCalledTimes(1);
       const [config] = api.get.mock.calls[0];
       expect(config.url.startsWith(`${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/search/count?`)).toBe(true);
-      expect(upstreamSearchQuery(config.url)).toBe('priority:("HIGH") AND status:("NEW")');
-      expect(res.body).toEqual({ count: 9 });
+      expect(Object.fromEntries(new URL(config.url, 'http://draken.local').searchParams)).toEqual({ groupBy: 'status', query: 'priority:("HIGH")' });
+      expect(res.body).toEqual({ counts: [3, 3, 0] });
     });
 
-    it('counts on the filter endpoint while the search cluster is down', async () => {
+    it('counts each status group on the filter endpoint while the search cluster is down', async () => {
       const { controller, api } = makeController();
       enableErrandSearch(controller);
-      api.get.mockRejectedValueOnce(new HttpException(503, 'Search not available')).mockResolvedValueOnce({ data: { count: 4 }, message: 'success' });
+      api.get.mockRejectedValueOnce(new HttpException(503, 'Search not available')).mockResolvedValue({ data: { count: 4 }, message: 'success' });
       const res = mockRes();
 
-      await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW' }), MUNICIPALITY_ID, res);
+      await controller.countErrandsByStatusGroups(mockReq(), ...statusGroupCountArgs([['NEW'], ['SOLVED']]), MUNICIPALITY_ID, res);
 
-      expect(api.get.mock.calls[1][0]).toEqual({
-        url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?filter=%28status%3A%27NEW%27%29`,
-      });
-      expect(res.body).toEqual({ count: 4 });
+      expect(api.get.mock.calls.slice(1).map(([config]) => upstreamFilter(config.url))).toEqual(["(status:'NEW')", "(status:'SOLVED')"]);
+      expect(res.body).toEqual({ counts: [4, 4] });
     });
   });
 

@@ -24,7 +24,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { isSupportErrandEmpty } from './support-errand-emptiness';
 import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
-import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
+import {
+  buildSupportErrandsSearchParameters,
+  buildSupportErrandStatusGroupCountParameters,
+} from './support-errand-query';
 import {
   buildSupportErrandStatusTransitionRequest,
   SupportErrandStatusSnapshot,
@@ -537,92 +540,29 @@ export const useSupportErrands = (
           });
         });
 
-      const sidebarUpdatePromises = [
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.NEW })
-          .then((res) => {
-            if (!isLatestRequest()) return;
-            setNewSupportErrands(res);
-          })
-          .catch(() => {
-            if (!isLatestRequest()) return;
-            setNewSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Nya ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, {
-          ...filter,
-          status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
-        })
-          .then((res) => {
-            if (!isLatestRequest()) return;
-            setOngoingSupportErrands(res);
-          })
-          .catch(() => {
-            if (!isLatestRequest()) return;
-            setOngoingSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Pågående ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.SUSPENDED}` })
-          .then((res) => {
-            if (!isLatestRequest()) return;
-            setSuspendedSupportErrands(res);
-          })
-          .catch(() => {
-            if (!isLatestRequest()) return;
-            setSuspendedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Parkerade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.ASSIGNED}` })
-          .then((res) => {
-            if (!isLatestRequest()) return;
-            setAssignedSupportErrands(res);
-          })
-          .catch(() => {
-            if (!isLatestRequest()) return;
-            setAssignedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Tilldelade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.SOLVED })
-          .then((res) => {
-            if (!isLatestRequest()) return;
-            setSolvedSupportErrands(res);
-          })
-          .catch(() => {
-            if (!isLatestRequest()) return;
-            setSolvedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Avslutade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
+      // The sidebar counts every status group under the same filter, so one request answers them all.
+      const sidebarCounters = [
+        { statuses: [Status.NEW], setCount: setNewSupportErrands },
+        { statuses: isROB() ? ongoingStatusesROB : ongoingStatuses, setCount: setOngoingSupportErrands },
+        { statuses: suspendedStatuses, setCount: setSuspendedSupportErrands },
+        { statuses: assignedStatuses, setCount: setAssignedSupportErrands },
+        { statuses: [Status.SOLVED], setCount: setSolvedSupportErrands },
       ];
+      const sidebarUpdatePromise = getSupportErrandStatusGroupCounts(
+        municipalityId,
+        filter,
+        sidebarCounters.map((counter) => counter.statuses)
+      )
+        .then((counts) => {
+          if (!isLatestRequest()) return;
+          sidebarCounters.forEach((counter, index) => counter.setCount(counts[index]));
+        })
+        .catch((e) => {
+          // A failed count leaves the counters unresolved, as each failed count always has.
+          console.error('Error: could not count errands.', e);
+        });
 
-      await Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
+      await Promise.allSettled([errandPromise, sidebarUpdatePromise]);
       // A superseded round must not turn the loader off while the round that replaced it is still
       // running.
       if (isLatestRequest()) {
@@ -843,22 +783,24 @@ const getSupportErrands: (
     });
 };
 
-const getSupportErrandsCount: (municipalityId: string, filter?: SupportErrandFilterQuery) => Promise<any> = (
-  municipalityId,
-  filter = {}
-) => {
+/** How many errands match the filter in each group of statuses, in the order of the groups. */
+const getSupportErrandStatusGroupCounts = (
+  municipalityId: string,
+  filter: SupportErrandFilterQuery,
+  statusGroups: readonly (readonly string[])[]
+): Promise<number[]> => {
   if (!municipalityId) {
     return Promise.reject('Municipality id missing');
   }
-  const query = buildSupportErrandsCountSearchParameters(filter);
-  const url = `countsupporterrands/${municipalityId}?${query}`;
+  const query = buildSupportErrandStatusGroupCountParameters(filter, statusGroups);
   return apiService
-    .get<any>(url)
+    .get<{ counts: number[] }>(`countsupporterrands/${municipalityId}/statusgroups?${query}`)
     .then((res) => {
-      return res.data.count;
-    })
-    .catch((e): null => {
-      return null;
+      const counts = res.data?.counts;
+      if (!Array.isArray(counts) || counts.length !== statusGroups.length) {
+        throw new Error('Unexpected status group counts');
+      }
+      return counts;
     });
 };
 
