@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import dayjs from 'dayjs';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { ArrayObjectFieldTemplate } from '../fields/array-object-field-template.componant';
@@ -459,7 +460,7 @@ test('checkbox groups preserve value types and enforce the maximum number of cho
 });
 
 test.each([
-  ['time', '09:15:00'],
+  ['time', `09:15:00${dayjs().format('Z')}`],
   [undefined, '09:15'],
 ])('normalizes time only when required by the schema (%s)', async (format, expected) => {
   const onSubmit = vi.fn();
@@ -474,4 +475,15 @@ test.each([
   fireEvent.click(screen.getByRole('button', { name: 'Lägg till' }));
   await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
   expect(onSubmit.mock.calls[0][0]).toEqual({ time: expected });
+});
+
+test('shows a stored time with offset in a read-only form', () => {
+  render(
+    <SchemaForm
+      schema={{ type: 'object', properties: { time: { type: 'string', title: 'Tid', format: 'time' } } }}
+      formData={{ time: '10:57:00+02:00' }}
+      disabled
+    />
+  );
+  expect((screen.getByLabelText('Tid') as HTMLInputElement).value).toBe('10:57');
 });
