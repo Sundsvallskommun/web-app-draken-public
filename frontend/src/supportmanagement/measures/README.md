@@ -59,7 +59,7 @@ registrerar förslag (`accept` lämnas tomt) och formuläret säger då "Lägg t
 Listan visar beslutet som en etikett: Förslag, Godkänd, Avslagen eller Delvis godkänd. Skapa- och
 redigeringsanrop kan inte sätta `accept`; beslut sparas genom en separat, behörighetskontrollerad
 endpoint. Roller utan `decides` kan bara registrera planerade åtgärder: formuläret erbjuder inte
-"Genomförd åtgärd" och backend avvisar `executed` från dem, både vid skapande och vid redigering av
+"Genomförda åtgärder" och backend avvisar `executed` från dem, både vid skapande och vid redigering av
 ett förslag som ännu inte är godkänt. Ett godkänt eller delvis godkänt förslag får markeras som
 genomfört.
 

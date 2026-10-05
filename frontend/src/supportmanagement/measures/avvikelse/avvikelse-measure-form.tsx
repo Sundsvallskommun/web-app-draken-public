@@ -199,7 +199,7 @@ export function AvvikelseMeasureForm({
               : 'Uppdatera vad som ska göras, när det ska ske och vilket mål åtgärden har.'
             : chooseRole
             ? 'Börja med att välja vilken roll åtgärden registreras för. Välj sedan åtgärdstyp och beskriv vad som ska göras. Du kan lägga till flera åtgärder.'
-            : 'Välj åtgärdstyp och beskriv vad som ska göras. Du kan lägga till flera åtgärder.'}
+            : 'Du kan välja att lägga till flera åtgärder.'}
         </p>
         {measure?.acceptMotivation && decision && (
           <div className={`min-w-0 rounded-8 border-l-4 p-12 ${decision.motivationClassName}`}>
@@ -212,10 +212,10 @@ export function AvvikelseMeasureForm({
             Åtgärden registreras som ett förslag som den beslutande rollen tar ställning till.
           </p>
         )}
-        {!chooseRole && (
+        {measure && (
           <p data-cy="measure-registration-role">
-            {measure ? 'Åtgärden är registrerad för rollen ' : 'Åtgärden registreras för rollen '}
-            <strong>{roleLabel || 'okänd'}</strong>. Rollen kan inte ändras i efterhand.
+            Åtgärden är registrerad för rollen <strong>{roleLabel || 'okänd'}</strong>. Rollen kan inte ändras i
+            efterhand.
           </p>
         )}
       </div>
@@ -344,13 +344,16 @@ export function AvvikelseMeasureForm({
               </Select.Option>
             ))}
           </Select>
-          <FormHelperText>
-            {contentLocked
-              ? 'Åtgärdstypen är låst eftersom ett beslut har fattats.'
-              : registrationRole && types.length === 0
-              ? 'Det finns inga aktiva åtgärdstyper kopplade till den valda rollen. Kontakta administratören.'
-              : 'Du kan välja åtgärdstyper som är kopplade till registreringsrollen.'}
-          </FormHelperText>
+          {contentLocked ? (
+            <FormHelperText>Åtgärdstypen är låst eftersom ett beslut har fattats.</FormHelperText>
+          ) : (
+            registrationRole &&
+            types.length === 0 && (
+              <FormHelperText>
+                Det finns inga aktiva åtgärdstyper kopplade till den valda rollen. Kontakta administratören.
+              </FormHelperText>
+            )
+          )}
           {errorText('type')}
         </FormControl>
         <FormControl fieldset id={fieldId('timing')} invalid={Boolean(errors.timing)} className="w-full">
@@ -363,20 +366,20 @@ export function AvvikelseMeasureForm({
           </FormLabel>
           {/* Remount when the option set changes so react-hook-form re-applies the current value to the inputs. */}
           <RadioButton.Group key={canExecute ? 'timing-all' : 'timing-planned'}>
-            {canExecute && (
-              <RadioButton id={fieldId('timing')} {...register('timing')} value="executed" aria-required>
-                Genomförd åtgärd
-              </RadioButton>
-            )}
             <RadioButton
-              id={canExecute ? undefined : fieldId('timing')}
+              id={fieldId('timing')}
               {...register('timing')}
               value="planned"
               aria-required
               disabled={Boolean(measure?.executed)}
             >
-              Planerad åtgärd
+              Planerade åtgärder
             </RadioButton>
+            {canExecute && (
+              <RadioButton {...register('timing')} value="executed" aria-required>
+                Genomförda åtgärder
+              </RadioButton>
+            )}
           </RadioButton.Group>
           {measure?.executed && <FormHelperText>Åtgärden är registrerad som genomförd.</FormHelperText>}
           {!canExecute && (
@@ -437,7 +440,7 @@ export function AvvikelseMeasureForm({
         </FormControl>
         <FormControl id={fieldId('goal')} invalid={Boolean(errors.goal)} className="w-full">
           <FormLabel>
-            Vad är målet med åtgärden?
+            Beskriv syftet med åtgärden
             <Required />
           </FormLabel>
           <Textarea

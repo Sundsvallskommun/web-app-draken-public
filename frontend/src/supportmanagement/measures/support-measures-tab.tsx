@@ -164,8 +164,8 @@ export function SupportMeasuresTab({
       </h2>
       {followUp && (
         <p>
-          Här följer du upp planerade åtgärder som har godkänts helt eller delvis. Markera Utförd och ange om åtgärden
-          har lett till önskad effekt samt vad som har hänt. Åtgärdens innehåll visas skrivskyddat.
+          Här visas åtgärderna i det aktuella ärendet. Du kan lägga till nya åtgärder. För att kunna avsluta åtgärderna,
+          beskriv vilken effekt de fått. För att kunna avsluta ärendet måste alla åtgärder vara utförda.
         </p>
       )}
       {content}

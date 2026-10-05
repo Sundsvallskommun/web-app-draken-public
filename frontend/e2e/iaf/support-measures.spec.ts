@@ -235,13 +235,13 @@ test('creates a measure for an explicitly selected granted role independently of
   await expect(types.locator('option')).toHaveText(['Välj typ av åtgärd', 'Utbildning']);
   await types.selectOption(firstType);
   // A proposing role cannot report executed measures, so only the planned option exists and it is preselected.
-  await expect(page.getByLabel('Genomförd åtgärd', { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Planerad åtgärd', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('Genomförda åtgärder', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Planerade åtgärder', { exact: true })).toBeChecked();
   await expect(page.locator('[data-cy="measure-planned-only"]')).toBeVisible();
   await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Gemensam utbildning');
-  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Säkrare arbetssätt');
+  await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Säkrare arbetssätt');
   await page.getByRole('button', { name: 'Lägg till förslag till åtgärd', exact: true }).click();
   await expect(page.getByText('Säkrare arbetssätt', { exact: true })).toBeVisible();
   expect(state.writes).toEqual([
@@ -264,7 +264,7 @@ test('creates a measure for an explicitly selected granted role independently of
     .filter({ has: page.getByRole('heading', { name: 'Utbildning', exact: true }) });
   await expect(created).toContainText('Skapad av authenticated-user (HSL)');
   await expect(created.getByText('Förslag', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue('');
   expect(state.trace.puts).toEqual([]);
   expect(state.trace.errandPatches).toEqual([]);
 });
@@ -314,12 +314,12 @@ test('edits historic measures narrowly and uses the refreshed measure version fo
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
   await expect(editDialog(page).getByLabel('Åtgärd (Obligatoriskt)', { exact: true })).toHaveValue(oldType);
-  await editDialog(page).getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Ändrat mål');
+  await editDialog(page).getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Ändrat mål');
   await editDialog(page).getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   await expect(page.getByText('Ändrat mål', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
-  await editDialog(page).getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Nästa mål');
+  await editDialog(page).getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Nästa mål');
   await editDialog(page).getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   await expect(page.getByText('Nästa mål', { exact: true })).toBeVisible();
   expect(state.writes).toEqual([
@@ -333,13 +333,13 @@ test('keeps the draft and reports a version conflict', async ({ page, dismissCoo
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
   const dialog = editDialog(page);
-  await dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Mitt osparade mål');
+  await dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Mitt osparade mål');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Åtgärden kunde inte sparas');
   await expect(alert).toContainText('uppdaterats av någon annan');
   await expect(alert).toBeFocused();
-  await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
     'Mitt osparade mål'
   );
 });
@@ -356,7 +356,7 @@ test('does not claim a rebase when a new measure conflicts with a moved errand',
   await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Ny åtgärd');
-  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Nytt mål');
+  await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Nytt mål');
   await page.getByRole('button', { name: /^Lägg till/ }).click();
 
   const alert = measuresAlert(page).filter({ hasText: 'Åtgärden kunde inte sparas' });
@@ -381,7 +381,7 @@ test('rebases the open edit on the current measure so a retry succeeds', async (
   await expect(dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
     'Min ändrade beskrivning'
   );
-  await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
     'Mål satt av någon annan'
   );
 
@@ -402,7 +402,7 @@ test('warns which field it will overwrite when both writers edited the same one'
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
   const dialog = editDialog(page);
-  const goal = dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true });
+  const goal = dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true });
   await goal.fill('Mitt mål');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
 
@@ -492,20 +492,18 @@ test('skips the role step and registers for the only granted role', async ({ pag
   await expect(page.getByLabel('Registrera åtgärden för rollen (Obligatoriskt)', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '1. Välj registreringsroll' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Beskriv åtgärden/ })).toHaveCount(0);
-  await expect(page.locator('[data-cy="measure-registration-role"]')).toHaveText(
-    'Åtgärden registreras för rollen Enhetschef. Rollen kan inte ändras i efterhand.'
-  );
+  await expect(page.locator('[data-cy="measure-registration-role"]')).toHaveCount(0);
   await expect(page.locator('[data-cy="measure-proposal-notice"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Lägg till åtgärd', exact: true })).toBeVisible();
   const types = page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true });
   await expect(types).toBeEnabled();
   await expect(types.locator('option')).toHaveText(['Välj typ av åtgärd', 'Utbildning', 'Handledning']);
   await types.selectOption(secondType);
-  await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
+  await page.getByLabel('Genomförda åtgärder', { exact: true }).check();
   await page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('Ansvarig för åtgärden', { exact: true }).fill(' Anna Andersson ');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Handledning i teamet');
-  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Tydligare rutiner');
+  await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Tydligare rutiner');
   await page.getByRole('button', { name: 'Lägg till åtgärd', exact: true }).click();
   // The reload is still pending here (delayed read): the tab marks itself busy but keeps its content on screen.
   const busy = page.locator('[data-cy="support-measures-tab"] [aria-busy="true"]');
@@ -539,12 +537,12 @@ test('rejects an executed date in the future before saving', async ({ page, dism
   const state = await installMeasures(page, { singleCreationRole: true });
   await openMeasures(page, dismissCookieConsent);
   await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
-  await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
+  await page.getByLabel('Genomförda åtgärder', { exact: true }).check();
   const executed = page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true });
   await expect(executed).toHaveAttribute('max', /^\d{4}-\d{2}-\d{2}$/);
   await executed.fill('2099-01-01');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('x');
-  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('y');
+  await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('y');
   await page.getByRole('button', { name: 'Lägg till åtgärd', exact: true }).click();
   await expect(measuresAlert(page)).toContainText('Genomfört datum kan inte ligga i framtiden.');
   expect(state.writes).toEqual([]);
@@ -555,10 +553,10 @@ test('filters the list by status, decision, role, type and text', async ({ page,
   await openMeasures(page, dismissCookieConsent);
   // Add a second, executed measure so the filters have something to separate.
   await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
-  await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
+  await page.getByLabel('Genomförda åtgärder', { exact: true }).check();
   await page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Genomgång av rutin');
-  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Alla känner rutinen');
+  await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Alla känner rutinen');
   await page.getByRole('button', { name: 'Lägg till åtgärd', exact: true }).click();
   const cards = page.getByRole('list', { name: 'Registrerade åtgärder' }).getByRole('listitem');
   await expect(cards).toHaveCount(2);
@@ -638,14 +636,14 @@ test('edits in a modal while the page form stays reserved for new measures', asy
   const dialog = editDialog(page);
   await expect(dialog.getByRole('heading', { name: 'Redigera åtgärd', exact: true })).toBeVisible();
   await expect(page.getByRole('form', { name: 'Lägg till åtgärder' })).toHaveCount(1);
-  await dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Påbörjad ändring');
+  await dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Påbörjad ändring');
   await dialog.getByRole('button', { name: 'Stäng', exact: true }).click();
   await page
     .getByRole('dialog')
     .filter({ hasText: 'Avbryt redigering?' })
     .getByRole('button', { name: 'Nej, behåll', exact: true })
     .click();
-  await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
     'Påbörjad ändring'
   );
   await dialog.getByRole('button', { name: 'Avbryt redigering', exact: true }).click();
@@ -673,7 +671,7 @@ for (const registrationStatus of ['unconfigured', 'invalid'] as const) {
       )
     ).toBeVisible();
     await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
-    await editDialog(page).getByLabel('Vad är målet med åtgärden? (Obligatoriskt)').fill('Uppdaterat historiskt mål');
+    await editDialog(page).getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)').fill('Uppdaterat historiskt mål');
     await editDialog(page).getByRole('button', { name: 'Spara ändringar', exact: true }).click();
     expect(state.writes).toHaveLength(1);
     expect(state.writes[0].data).toEqual({ goal: 'Uppdaterat historiskt mål' });
@@ -749,12 +747,12 @@ test('partial approval locks the original content but lets its author report exe
     'readonly',
     ''
   );
-  await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveAttribute(
+  await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveAttribute(
     'readonly',
     ''
   );
   await expect(dialog).toContainText('Genomför endast dokumentationsdelen');
-  await dialog.getByLabel('Genomförd åtgärd', { exact: true }).check();
+  await dialog.getByLabel('Genomförda åtgärder', { exact: true }).check();
   await dialog.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true }).fill('2026-09-09');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   await expect(dialog).toHaveCount(0);
