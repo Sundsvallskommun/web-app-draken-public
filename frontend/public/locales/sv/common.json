@@ -238,7 +238,6 @@
     "outcome_placeholder": "Välj beslut...",
     "role": "Välj beslutsfattare",
     "role_help": "Ange vem som fattar beslutet enligt delegationsordningen.",
-    "role_placeholder": "Välj beslutsfattare...",
     "roles": {
       "handlaggare": "Handläggare",
       "utskottet": "Utskottet",

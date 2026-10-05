@@ -5,6 +5,7 @@ import {
   formatAddress,
   formatPremisesAddress,
   getPremisesAddress,
+  hasServingPremises,
 } from '@supportmanagement/services/support-premises-address-service';
 import { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,10 +46,13 @@ const BasisNote: FC<{ children: ReactNode }> = ({ children }) => (
 
 // Filled in on the form, so they wait for the decision on how the app reads the form's keys.
 const FORM_SECTIONS = ['operation', 'serving_hours', 'serving', 'financing'];
+// Only a serving permit has serving hours and a serving; so does its serveringsställe section.
+const SERVING_SECTIONS = ['serving_hours', 'serving'];
 
 /**
  * What the decision is based on, gathered from the errand so it can be read where the decision is
  * made. Only what the errand itself holds is shown; the sections taken from the form are placeholders.
+ * The sections about serving are left out of errands that are not about a serving permit.
  */
 export const SupportErrandDecisionBasis: FC<{
   supportErrand: SupportErrand;
@@ -59,7 +63,9 @@ export const SupportErrandDecisionBasis: FC<{
   const { t } = useTranslation();
 
   const owner = supportErrand.customer?.[0];
+  const serving = hasServingPremises(supportErrand);
   const premises = getPremisesAddress(supportErrand, supportMetadata?.namespace);
+  const formSections = serving ? FORM_SECTIONS : FORM_SECTIONS.filter((section) => !SERVING_SECTIONS.includes(section));
 
   const errandRows: BasisRow[] = [
     {
@@ -139,17 +145,19 @@ export const SupportErrandDecisionBasis: FC<{
         )}
       </BasisSection>
 
-      {FORM_SECTIONS.map((section) => (
+      {formSections.map((section) => (
         <BasisSection key={section} id={section} heading={t(`common:decision.basis.${section}`)}>
           <BasisNote>{t('common:decision.basis.from_form')}</BasisNote>
         </BasisSection>
       ))}
 
-      <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
-        <BasisRows section="premises" rows={premisesRows} />
-        {premisesHandling}
-        <BasisNote>{t('common:decision.basis.premises.rest')}</BasisNote>
-      </BasisSection>
+      {serving ? (
+        <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
+          <BasisRows section="premises" rows={premisesRows} />
+          {premisesHandling}
+          <BasisNote>{t('common:decision.basis.premises.rest')}</BasisNote>
+        </BasisSection>
+      ) : null}
 
       <BasisSection id="referrals" heading={t('common:decision.basis.referrals')}>
         <BasisNote>{t('common:decision.basis.not_built')}</BasisNote>

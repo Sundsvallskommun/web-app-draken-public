@@ -2,7 +2,7 @@ import type { CSupportStakeholder } from 'src/data-contracts/backend/data-contra
 import { describe, expect, test } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
-import { getPremisesAddress } from './support-premises-address-service';
+import { getPremisesAddress, hasServingPremises } from './support-premises-address-service';
 
 const NAMESPACE = 'AOT';
 const PERMANENT_SERVING = 'aot_alcohol_serving_permit_application_permanent_serving';
@@ -187,4 +187,25 @@ describe.each([
       expect(getPremisesAddress(errandFor(schemaName, { besoksadress: BESOKSADRESS }), NAMESPACE)?.source).toBe('FORM');
     });
   }
+});
+
+describe('hasServingPremises', () => {
+  test.each(['alcohol-serving', 'alcohol-serving-change', 'alcohol-serving-addition'])(
+    'a serving permit process (%s) has a serveringsställe',
+    (processKey) => {
+      expect(hasServingPremises({ process: { processKey } })).toBe(true);
+    }
+  );
+
+  test.each(['low-alcohol-beer-serving', 'tobacco-sales', 'e-cigarette-sales', 'supervision', 'catering-occasion'])(
+    'another process (%s) has none',
+    (processKey) => {
+      expect(hasServingPremises({ process: { processKey } })).toBe(false);
+    }
+  );
+
+  test('an errand without a process has none', () => {
+    expect(hasServingPremises({})).toBe(false);
+    expect(hasServingPremises(undefined)).toBe(false);
+  });
 });

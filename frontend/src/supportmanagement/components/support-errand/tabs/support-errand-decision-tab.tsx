@@ -32,7 +32,11 @@ import {
   SUPPORT_DECISION_ROLE_KEYS,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
-import { formatAddress, getPremisesAddress } from '@supportmanagement/services/support-premises-address-service';
+import {
+  formatAddress,
+  getPremisesAddress,
+  hasServingPremises,
+} from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
 import { CircleCheck, Plus, Trash } from 'lucide-react';
 import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
@@ -135,7 +139,7 @@ export const SupportErrandDecisionTab: FC<{
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(false);
   const [outcome, setOutcome] = useState('');
-  const [decidedByRole, setDecidedByRole] = useState('');
+  const [decidedByRole, setDecidedByRole] = useState(t(SUPPORT_DECISION_ROLE_KEYS[0]));
   const [legalBasis, setLegalBasis] = useState('');
   const [delegationReference, setDelegationReference] = useState('');
   const [justification, setJustification] = useState('');
@@ -146,7 +150,7 @@ export const SupportErrandDecisionTab: FC<{
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
   const [opened, setOpened] = useState(isActive);
   if (isActive && !opened) setOpened(true);
-  const handlesPremises = appConfig.features.useLicensedBusiness;
+  const handlesPremises = appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand);
   const premises = useMemo(
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
     [supportErrand, supportMetadata?.namespace]
@@ -185,7 +189,7 @@ export const SupportErrandDecisionTab: FC<{
 
   const fillFormFrom = (draft: Decision) => {
     setOutcome(outcomeWithoutConditions(draft.outcome));
-    setDecidedByRole(draft.decidedByRole ?? '');
+    setDecidedByRole(draft.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
     setLegalBasis(draft.legalBasis ?? '');
     setDelegationReference(draft.delegationReference ?? '');
     setJustification(draft.justification ?? '');
@@ -209,7 +213,7 @@ export const SupportErrandDecisionTab: FC<{
 
   const formAsSaved = () => ({
     outcome: outcomeWithoutConditions(decision?.outcome),
-    decidedByRole: decision?.decidedByRole ?? '',
+    decidedByRole: decision?.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]),
     legalBasis: decision?.legalBasis ?? '',
     delegationReference: decision?.delegationReference ?? '',
     justification: decision?.justification ?? '',
@@ -233,7 +237,7 @@ export const SupportErrandDecisionTab: FC<{
   const removeTerm = (index: number) => setTerms((current) => current.filter((_, position) => position !== index));
 
   const save = () => {
-    if (!supportErrand?.id || !outcome || !decidedByRole) return;
+    if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
     const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
     const written = {
@@ -413,7 +417,7 @@ export const SupportErrandDecisionTab: FC<{
           </DecisionCard>
 
           <DecisionCard>
-            <FormControl id="decision-role" className="w-full" required invalid={canEdit && !decidedByRole}>
+            <FormControl id="decision-role" className="w-full">
               <FormLabel>{t('common:decision.role')}</FormLabel>
               <FormHelperText className="p-0 m-0 text-small text-dark-secondary">
                 {t('common:decision.role_help')}
@@ -425,9 +429,6 @@ export const SupportErrandDecisionTab: FC<{
                 disabled={!canEdit}
                 data-cy="decision-role"
               >
-                <Select.Option value="" disabled>
-                  {t('common:decision.role_placeholder')}
-                </Select.Option>
                 {SUPPORT_DECISION_ROLE_KEYS.map((key) => (
                   <Select.Option key={key} value={t(key)}>
                     {t(key)}
@@ -450,7 +451,7 @@ export const SupportErrandDecisionTab: FC<{
             leftIcon={<CircleCheck size={18} />}
             loadingText={t('common:decision.saving')}
             saving={isSaving}
-            disabled={!canEdit || !outcome || !decidedByRole || isSaving}
+            disabled={!canEdit || !outcome || isSaving}
             onSave={save}
             unsaved={edited}
             unsavedTitle={t('common:decision.unsaved')}

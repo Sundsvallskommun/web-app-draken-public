@@ -14,6 +14,9 @@ export interface PremisesAddress {
 
 type PremisesAddressErrand = Pick<SupportErrand, 'labels' | 'classification' | 'jsonParameters' | 'stakeholders'>;
 
+// TODO Decide when to show the serving sections
+export const hasServingPremises = (errand: Pick<SupportErrand, 'process'> | undefined): boolean => true;
+
 const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
