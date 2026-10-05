@@ -50,28 +50,19 @@ const person = {
   emails: [],
 } as unknown as SupportStakeholderFormModel;
 
-/**
- * An errand as the store holds it: the owner both as `customer` and among the raw `stakeholders`,
- * running the serving permit process unless another is given.
- */
-const errand = (
-  owner: SupportStakeholderFormModel | undefined,
-  formData?: Record<string, unknown>,
-  processKey = 'alcohol-serving'
-): SupportErrand =>
+/** An errand as the store holds it: the owner both as `customer` and among the raw `stakeholders`. */
+const errand = (owner: SupportStakeholderFormModel | undefined, formData?: Record<string, unknown>): SupportErrand =>
   ({
     errandNumber: mockEnv.mockErrandNumber,
     labels: LABELS,
     customer: owner ? [owner] : [],
     stakeholders: owner ? [owner] : [],
     jsonParameters: formData ? [{ key: SCHEMA_NAME, value: formData, schemaId: `${SCHEMA_NAME}-id` }] : [],
-    process: { processKey },
   } as unknown as SupportErrand);
 
 const renderBasis = (supportErrand: SupportErrand) =>
   render(<SupportErrandDecisionBasis supportErrand={supportErrand} supportMetadata={METADATA} />);
 
-const section = (id: string) => document.querySelector(`[data-cy="decision-basis-${id}"]`);
 const value = (row: string) => document.querySelector(`[data-cy="decision-basis-${row}"]`)?.textContent;
 const label = (row: string) =>
   document.querySelector(`[data-cy="decision-basis-${row}"]`)?.previousElementSibling?.textContent;
@@ -150,32 +141,17 @@ test('the sections read from the form are placeholders until its keys are settle
   );
 });
 
-test('an errand that is not about a serving permit has no sections about serving', () => {
-  renderBasis(errand(company, undefined, 'tobacco-sales'));
+// hasServingPremises is a constant until it is decided what tells a serving permit from the rest.
+test.todo('an errand that is not about a serving permit has no sections about serving');
 
-  ['serving_hours', 'serving', 'premises'].forEach((id) => expect(section(id)).toBeNull());
-  ['errand', 'holder', 'operation', 'financing', 'referrals'].forEach((id) => expect(section(id)).toBeTruthy());
-});
-
-test('what handles the premises is shown in the premises section, so only on a serving permit', () => {
-  const premisesHandling = <span data-cy="premises-handling" />;
-  const { rerender } = render(
+test('what handles the premises is shown in the premises section', () => {
+  render(
     <SupportErrandDecisionBasis
       supportErrand={errand(company)}
       supportMetadata={METADATA}
-      premisesHandling={premisesHandling}
+      premisesHandling={<span data-cy="premises-handling" />}
     />
   );
 
   expect(document.querySelector('[data-cy="decision-basis-premises"] [data-cy="premises-handling"]')).toBeTruthy();
-
-  rerender(
-    <SupportErrandDecisionBasis
-      supportErrand={errand(company, undefined, 'low-alcohol-beer-serving')}
-      supportMetadata={METADATA}
-      premisesHandling={premisesHandling}
-    />
-  );
-
-  expect(document.querySelector('[data-cy="premises-handling"]')).toBeNull();
 });

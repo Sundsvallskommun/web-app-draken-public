@@ -190,22 +190,13 @@ describe.each([
 });
 
 describe('hasServingPremises', () => {
-  test.each(['alcohol-serving', 'alcohol-serving-change', 'alcohol-serving-addition'])(
-    'a serving permit process (%s) has a serveringsställe',
-    (processKey) => {
-      expect(hasServingPremises({ process: { processKey } })).toBe(true);
-    }
-  );
-
-  test.each(['low-alcohol-beer-serving', 'tobacco-sales', 'e-cigarette-sales', 'supervision', 'catering-occasion'])(
-    'another process (%s) has none',
-    (processKey) => {
-      expect(hasServingPremises({ process: { processKey } })).toBe(false);
-    }
-  );
-
-  test('an errand without a process has none', () => {
-    expect(hasServingPremises({})).toBe(false);
-    expect(hasServingPremises(undefined)).toBe(false);
+  // Until it is decided what tells a serving permit from the other errands, every errand has one.
+  test('every errand has a serveringsställe for now, with or without a process', () => {
+    expect(hasServingPremises({ process: { processKey: 'alcohol-serving' } })).toBe(true);
+    expect(hasServingPremises({ process: { processKey: 'tobacco-sales' } })).toBe(true);
+    expect(hasServingPremises({})).toBe(true);
+    expect(hasServingPremises(undefined)).toBe(true);
   });
+
+  test.todo('tobacco, folköl and supervision errands have none once the condition is known');
 });
