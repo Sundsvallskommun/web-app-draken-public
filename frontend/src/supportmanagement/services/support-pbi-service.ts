@@ -1,5 +1,4 @@
 import { apiService } from '@common/services/api-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 export interface SupportPbiCandidate extends LegalEntityEngagement {
@@ -8,10 +7,8 @@ export interface SupportPbiCandidate extends LegalEntityEngagement {
   unresolved?: boolean;
 }
 
-const SUPPORT_PBI_ROLE = 'PBI';
-
-export const namespaceHasPbiRole = (metadata: SupportMetadata | undefined): boolean =>
-  !!metadata?.roles?.some((role) => role.name === SUPPORT_PBI_ROLE);
+// The marking is a stakeholder parameter, since a stakeholder can only have one role in SupportManagement.
+export const SUPPORT_PBI_PARAMETER = 'PBI';
 
 export const getSupportPbiCandidates = (errandId: string, municipalityId: string): Promise<SupportPbiCandidate[]> =>
   apiService

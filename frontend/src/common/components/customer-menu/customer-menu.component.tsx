@@ -1,5 +1,6 @@
 import { customerPagesEnabled } from '@common/services/feature-flag-service';
 import { Button, cx, Divider } from '@sk-web-gui/react';
+import { useFeatureFlagStore } from '@stores/feature-flag-store';
 import { ChartColumn, Contact } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC } from 'react';
@@ -10,7 +11,10 @@ const customerLinks = [
 ];
 
 export const CustomerMenu: FC<{ open: boolean }> = ({ open }) => {
-  if (!customerPagesEnabled()) {
+  // Subscribing re-renders the menu once the runtime flags have been applied to appConfig.
+  const featureFlagsLoaded = useFeatureFlagStore((state) => state.loaded);
+
+  if (!featureFlagsLoaded || !customerPagesEnabled()) {
     return null;
   }
 
