@@ -117,4 +117,23 @@ describe('ApiService', () => {
       ),
     ).rejects.toMatchObject({ status: 403, message: 'Request failed' });
   });
+
+  it('surfaces only the upstream server errors the caller names, collapsing the rest into 500', async () => {
+    const searchUnavailable = { detail: 'Search not available' };
+    await expect(
+      new ApiService().get(
+        { adapter: failingAdapter(503, searchUnavailable, 'Service Unavailable'), propagateServerErrors: [503, 504], url: TOKEN_URL },
+        user,
+      ),
+    ).rejects.toMatchObject({ status: 503, message: 'Search not available' });
+    await expect(
+      new ApiService().get(
+        { adapter: failingAdapter(502, searchUnavailable, 'Bad Gateway'), propagateServerErrors: [503, 504], url: TOKEN_URL },
+        user,
+      ),
+    ).rejects.toMatchObject({ status: 500, message: 'Internal server error' });
+    await expect(
+      new ApiService().get({ adapter: failingAdapter(503, searchUnavailable, 'Service Unavailable'), url: TOKEN_URL }, user),
+    ).rejects.toMatchObject({ status: 500, message: 'Internal server error' });
+  });
 });

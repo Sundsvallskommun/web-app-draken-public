@@ -22,7 +22,7 @@ import { Body, Controller, Get, HeaderParam, HttpCode, Param, Patch, Post, Query
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { apiServiceName } from '@/config/api-config';
+import { apiServiceName, resolveSupportManagementErrandSearch } from '@/config/api-config';
 import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
@@ -75,7 +75,6 @@ import {
   assertRequestedErrandVersion,
   assertSupportErrandAdminAssignable,
   assertSupportErrandWritable,
-  buildErrandFilter,
   buildSupportErrandClassificationUpdateBody,
   ErrandFilterInput,
   findInitialSupportErrandPhase,
@@ -94,6 +93,7 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
+import { SupportErrandListingService } from '@/services/support-errand-listing.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import {
   assertSupportInvestigationClassificationContext,
@@ -102,11 +102,6 @@ import {
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
-import {
-  SupportManagementLabelFilterError,
-  SupportManagementLabelFilterSelection,
-  SupportManagementLabelFilterService,
-} from '@/services/supportmanagement-label-filter.service';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
@@ -117,12 +112,6 @@ enum Status {
   ASSIGNED = 'ASSIGNED',
   SOLVED = 'SOLVED',
 }
-
-const getLabelFilterErrorStatus = (error: SupportManagementLabelFilterError): number => {
-  if (error.source === 'selection') return 400;
-  if (error.source === 'metadata') return 502;
-  return 500;
-};
 
 const assertGenericUpdateFields = (data: Partial<SupportErrandDto>): void => {
   if (data.activePhaseId !== undefined) {
@@ -563,6 +552,7 @@ export class SupportErrandController {
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private errandSearch = resolveSupportManagementErrandSearch();
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
@@ -587,39 +577,23 @@ export class SupportErrandController {
     return '';
   }
 
-  private async buildFilterForRequest(req: RequestWithUser, municipalityId: string, input: ErrandFilterInput): Promise<string> {
-    const partyId = await this.resolveQueryPartyId(req, input.query);
-    const errandFilter = buildErrandFilter({ ...input, partyId });
-    if (!input.labelFilter) return errandFilter;
+  /** The overview's criteria, with the party id its query names, if any, resolved. */
+  private async withQueryPartyId(req: RequestWithUser, criteria: ErrandFilterInput): Promise<ErrandFilterInput> {
+    return { ...criteria, partyId: await this.resolveQueryPartyId(req, criteria.query) };
+  }
 
-    let selections: unknown;
-    try {
-      selections = JSON.parse(input.labelFilter);
-    } catch {
-      throw new HttpException(400, 'Support Management labelFilter must be a valid JSON array');
-    }
-
-    const labelFilterProfile = this.investigationPolicyService.labelFilter;
-    if (!labelFilterProfile) {
-      throw new HttpException(400, 'Support Management label filtering is not configured for this application');
-    }
-
-    try {
-      const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
-      const metadata = await this.apiService.get<SupportLabels>({ url: metadataUrl, propagateClientError: true }, req.user);
-      const labelFilter = new SupportManagementLabelFilterService(labelFilterProfile, metadata.data).buildFilter(
-        selections as readonly SupportManagementLabelFilterSelection[],
-      );
-      const clauses = [errandFilter, labelFilter].filter(Boolean).map(fragment => fragment.replace(/^&filter=/u, ''));
-      if (clauses.length === 0) return '';
-      const groupedClauses = clauses.map(clause => `(${clause})`).join(' and ');
-      return `&filter=${groupedClauses}`;
-    } catch (error) {
-      if (error instanceof SupportManagementLabelFilterError) {
-        throw new HttpException(getLabelFilterErrorStatus(error), error.message);
-      }
-      throw error;
-    }
+  /**
+   * Built per request from the controller's own collaborators, so a test that replaces `apiService`
+   * or the investigation policy reaches the listing too.
+   */
+  private errandListing(): SupportErrandListingService {
+    return new SupportErrandListingService({
+      apiService: this.apiService,
+      service: this.SERVICE,
+      namespace: this.namespace,
+      labelFilterProfile: this.investigationPolicyService.labelFilter,
+      errandSearch: this.errandSearch,
+    });
   }
 
   /**
@@ -760,7 +734,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildFilterForRequest(req, municipalityId, {
+    const criteria = await this.withQueryPartyId(req, {
       query,
       stakeholders,
       priority,
@@ -776,13 +750,8 @@ export class SupportErrandController {
       start,
       end,
     });
-    const queryParams = new URLSearchParams({ page: String(page || 0), size: String(size || 8) });
-    const filterExpression = filter.replace(/^&filter=/u, '');
-    if (filterExpression) queryParams.set('filter', filterExpression);
-    if (sort) queryParams.set('sort', sort);
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?${queryParams.toString()}`;
-    const res = await this.apiService.get<PageErrand>({ url }, req.user);
-    return response.status(200).send(res.data);
+    const errands = await this.errandListing().list(municipalityId, criteria, { page: page || 0, size: size || 8, sort }, req.user);
+    return response.status(200).send(errands);
   }
 
   @Get('/countsupporterrands/:municipalityId')
@@ -813,7 +782,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildFilterForRequest(req, municipalityId, {
+    const criteria = await this.withQueryPartyId(req, {
       query,
       stakeholders,
       priority,
@@ -829,14 +798,8 @@ export class SupportErrandController {
       start,
       end,
     });
-    const queryParams = new URLSearchParams();
-    const filterExpression = filter.replace(/^&filter=/u, '');
-    if (filterExpression) queryParams.set('filter', filterExpression);
-    const queryString = queryParams.toString();
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count${queryString ? `?${queryString}` : ''}`;
-    const res = await this.apiService.get<PageErrand>({ url }, req.user);
-    const data = res.data;
-    return response.status(200).send(data);
+    const count = await this.errandListing().count(municipalityId, criteria, req.user);
+    return response.status(200).send(count);
   }
 
   @Post('/newerrand/:municipalityId')

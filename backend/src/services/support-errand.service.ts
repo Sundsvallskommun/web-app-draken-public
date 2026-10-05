@@ -99,6 +99,17 @@ export interface ErrandFilterInput {
   end?: string;
 }
 
+/**
+ * The label resource paths the category, type and subtype filters ask for, of which an errand needs
+ * any one: a selection that none of the levels above it reaches is dropped, and a selection gives way
+ * to a selection beneath it.
+ */
+export const selectCategoryLeafPaths = ({ labelCategory, labelType, labelSubType }: ErrandFilterInput): string[] => {
+  if (!labelCategory && !labelType && !labelSubType) return [];
+  const reachablePaths = removeUnreachablePaths([labelCategory?.split(','), labelType?.split(','), labelSubType?.split(',')]);
+  return [...findLeafComponents(reachablePaths)];
+};
+
 /** Wraps a comma-separated parameter into an `or` group, e.g. `HIGH,LOW` -> `(priority:'HIGH' or priority:'LOW')`. */
 const orGroup = (field: string, csv: string): string =>
   `(${csv
@@ -111,7 +122,7 @@ const orGroup = (field: string, csv: string): string =>
  * Pure: any party-id lookup must be performed by the caller and passed in via `partyId`.
  */
 export const buildErrandFilter = (input: ErrandFilterInput): string => {
-  const { query: queryRaw, partyId, stakeholders, priority, category, type, labelCategory, labelType, labelSubType } = input;
+  const { query: queryRaw, partyId, stakeholders, priority, category, type } = input;
   const { channel, status, resolution, start, end } = input;
   const filterList: string[] = [];
 
@@ -153,18 +164,8 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
   if (type) {
     filterList.push(orGroup('type', type));
   }
-  if (labelCategory || labelType || labelSubType) {
-    const labelCategoryList = labelCategory?.split(',');
-    const labelTypeList = labelType?.split(',');
-    const labelSubTypeList = labelSubType?.split(',');
-
-    const cleanPath = removeUnreachablePaths([labelCategoryList, labelTypeList, labelSubTypeList]);
-
-    const leaves = findLeafComponents(cleanPath);
-
-    const searchString = buildCategoryFilter([...leaves]);
-    if (searchString) filterList.push(searchString);
-  }
+  const categoryFilter = buildCategoryFilter(selectCategoryLeafPaths(input));
+  if (categoryFilter) filterList.push(categoryFilter);
   if (channel) {
     filterList.push(`channel:'${channel}'`);
   }

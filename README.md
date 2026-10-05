@@ -320,6 +320,19 @@ SUPPORTMANAGEMENT_API_TARGET=sprint
 Tillåtna värden är `stable`, `sprint` och `alktsprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
 deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
 
+Sprintkontraktet (`supportmanagement-sprint/17.0`) har ett sökindex för ärenden. En sprintdeployment kan låta
+översiktens lista och sidomenyns räknare svara därifrån i stället för från filter-endpointen:
+
+```env
+SUPPORTMANAGEMENT_ERRAND_SEARCH=true
+```
+
+Slå på flaggan först när API-teamet har byggt om indexet för namespacet; ärenden som skapades innan sök infördes finns
+annars inte i indexet. Flaggan kräver `SUPPORTMANAGEMENT_API_TARGET=sprint` och stoppar annars backend vid uppstart.
+Söken matchar samma fält och på samma sätt (delsträng) som filtret gjorde. Filter-endpointen svarar fortfarande när
+indexet inte kan svara likadant: när sökklustret är nere (503), när frågan blir längre än indexets 2000 tecken och när
+en vald etikett saknas i metadatan. Ett sök som indexet ger upp efter tio sekunder (504) visas som ett fel.
+
 Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
 version vidare till Support Management. Den 2 september 2026 verifierades de publicerade OpenAPI-kontrakten för både
 `supportmanagement/15.1` och `supportmanagement-sprint/15.1`: båda deklarerar `If-Match`, svaren 409/412 och

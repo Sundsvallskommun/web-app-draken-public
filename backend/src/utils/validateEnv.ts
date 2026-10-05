@@ -33,7 +33,7 @@ import {
   SUPPORTMANAGEMENT_SENDER_SMS,
 } from '@config';
 
-import { resolveSupportManagementApiTarget } from '@/config/api-config';
+import { resolveSupportManagementApiTarget, resolveSupportManagementErrandSearch } from '@/config/api-config';
 import { resolveAssignableHandlerGroups } from '@/config/assignable-handler-groups';
 import { findUnauthorizedHandlerRoleGroups, HANDLER_ROLES_SETTING, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
@@ -159,6 +159,7 @@ const validateEnv = () => {
   } else {
     try {
       resolveSupportManagementApiTarget();
+      resolveSupportManagementErrandSearch();
       resolveSupportInvestigationHandoverTargets();
     } catch (error) {
       console.error(`\n${error instanceof Error ? error.message : 'Invalid Support Management runtime configuration'}\n`);

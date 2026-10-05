@@ -236,6 +236,13 @@ const countArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
   return rest.slice(0, 14) as [any, any, any, any, any, any, any, any, any, any, any, any, any, any];
 };
 
+const upstreamSearchQuery = (url: string): string => new URL(url, 'http://draken.local').searchParams.get('query') ?? '';
+
+/** Points the controller at the search index, as a sprint deployment with SUPPORTMANAGEMENT_ERRAND_SEARCH=true does. */
+const enableErrandSearch = (controller: SupportErrandController): void => {
+  (controller as unknown as { errandSearch: boolean }).errandSearch = true;
+};
+
 const upstreamFilter = (url: string): string => new URL(url, 'http://draken.local').searchParams.get('filter') ?? '';
 
 const routeMiddlewares = (method: 'updateSupportErrand' | 'becomeAdminForSupportErrand') =>
@@ -555,6 +562,194 @@ describe('SupportErrandController', () => {
       await controller.countErrands(mockReq(), ...countArgs(), MUNICIPALITY_ID, mockRes());
 
       expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count` }, expect.anything());
+    });
+  });
+
+  describe('errand search', () => {
+    const SEARCH_URL = `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/search?`;
+    const FILTER_URL = `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands?`;
+    const escapedHyphens = (value: string): string => value.replaceAll('-', '\\-');
+
+    it('lists from the search index with the criteria as a query, passing paging and sort through', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      const page = { content: [{ id: mockSupportErrandId }], totalElements: 1 };
+      api.get.mockResolvedValue({ data: page, message: 'success' });
+      const res = mockRes();
+
+      await controller.errands(
+        mockReq(),
+        ...errandsArgs({ page: 2, size: 25, status: 'NEW,ONGOING', channel: 'EMAIL', sort: 'touched,desc' }),
+        MUNICIPALITY_ID,
+        res,
+      );
+
+      expect(api.get).toHaveBeenCalledTimes(1);
+      const [config] = api.get.mock.calls[0];
+      expect(config.url.startsWith(SEARCH_URL)).toBe(true);
+      expect(Object.fromEntries(new URL(config.url, 'http://draken.local').searchParams)).toEqual({
+        page: '2',
+        size: '25',
+        query: 'channel:("EMAIL") AND status:("NEW" OR "ONGOING")',
+        sort: 'touched,desc',
+      });
+      expect(config).toMatchObject({ propagateClientError: true, mapUnauthorizedToForbidden: true, propagateServerErrors: [503, 504] });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual(page);
+    });
+
+    it('lists every errand without a query when nothing is filtered on', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockResolvedValue({ data: { content: [] }, message: 'success' });
+
+      await controller.errands(mockReq(), ...errandsArgs(), MUNICIPALITY_ID, mockRes());
+
+      expect(api.get.mock.calls[0][0].url).toBe(`${SEARCH_URL}page=0&size=8`);
+    });
+
+    it('matches the free text and the party id the query names in the fields the filter matched', async () => {
+      const { controller, api, organization } = makeController();
+      enableErrandSearch(controller);
+      organization.getPartyIdByOrganizationNumber.mockResolvedValue(mockOrganizationPartyId);
+      api.get.mockResolvedValue({ data: { content: [] }, message: 'success' });
+
+      await controller.errands(mockReq(), ...errandsArgs({ query: mockOrganizationNumber }), MUNICIPALITY_ID, mockRes());
+
+      const query = upstreamSearchQuery(api.get.mock.calls[0][0].url);
+      expect(query).toContain(`errandNumber:(*${escapedHyphens(mockOrganizationNumber)}*)`);
+      expect(query).toContain(`stakeholders.externalId:(*${escapedHyphens(mockOrganizationPartyId)}*)`);
+    });
+
+    it('asks for the labels of the generic selections by id', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockImplementation(async ({ url }: { url: string }) =>
+        url.includes('/metadata/labels')
+          ? { data: { labelStructure: labelFilterLabelStructure }, message: 'success' }
+          : { data: { content: [] }, message: 'success' },
+      );
+      const labelFilter = JSON.stringify([
+        { groupKey: 'classification', fieldKey: 'category', resourcePath: 'CATEGORY/HSL/REHAB' },
+        { groupKey: 'classification', fieldKey: 'type', resourcePath: 'CATEGORY/HSL/REHAB/MISSED' },
+      ]);
+
+      await controller.errands(mockReq(), ...errandsArgs({ status: 'NEW', labelFilter }), MUNICIPALITY_ID, mockRes());
+
+      expect(api.get.mock.calls[0][0].url).toBe(`${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/metadata/labels`);
+      expect(upstreamSearchQuery(api.get.mock.calls[1][0].url)).toBe('labels.metadataLabelId:("type-label-id") AND status:("NEW")');
+    });
+
+    it('resolves the category filters to label ids, which only the index needs', async () => {
+      const { controller, api } = makeController();
+      api.get.mockImplementation(async ({ url }: { url: string }) =>
+        url.includes('/metadata/labels')
+          ? { data: { labelStructure: classificationLabelStructure }, message: 'success' }
+          : { data: { content: [] }, message: 'success' },
+      );
+      const categoryFilter = { labelCategory: 'CATEGORY/HSL/REHAB', labelType: 'CATEGORY/HSL/REHAB/MISSED,CATEGORY/HSL/REHAB/OTHER' };
+
+      await controller.errands(mockReq(), ...errandsArgs(categoryFilter), MUNICIPALITY_ID, mockRes());
+      expect(api.get).toHaveBeenCalledTimes(1);
+      expect(api.get.mock.calls[0][0].url.startsWith(FILTER_URL)).toBe(true);
+
+      api.get.mockClear();
+      enableErrandSearch(controller);
+      await controller.errands(mockReq(), ...errandsArgs(categoryFilter), MUNICIPALITY_ID, mockRes());
+      expect(upstreamSearchQuery(api.get.mock.calls[1][0].url)).toBe('labels.metadataLabelId:("type-label-id" OR "other-type-label-id")');
+    });
+
+    it('asks the filter endpoint when a selected label is missing from the metadata', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockImplementation(async ({ url }: { url: string }) =>
+        url.includes('/metadata/labels')
+          ? { data: { labelStructure: classificationLabelStructure }, message: 'success' }
+          : { data: { content: [] }, message: 'success' },
+      );
+
+      await controller.errands(mockReq(), ...errandsArgs({ labelCategory: 'CATEGORY/REMOVED' }), MUNICIPALITY_ID, mockRes());
+
+      expect(api.get).toHaveBeenCalledTimes(2);
+      expect(api.get.mock.calls[1][0].url.startsWith(FILTER_URL)).toBe(true);
+      expect(upstreamFilter(api.get.mock.calls[1][0].url)).toBe("(exists(labels.metadataLabel.resourcePath:'CATEGORY/REMOVED'))");
+    });
+
+    it('asks the filter endpoint when the query is too long for the index', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockResolvedValue({ data: { content: [] }, message: 'success' });
+
+      await controller.errands(mockReq(), ...errandsArgs({ query: 'a'.repeat(200) }), MUNICIPALITY_ID, mockRes());
+
+      expect(api.get).toHaveBeenCalledTimes(1);
+      expect(api.get.mock.calls[0][0].url.startsWith(FILTER_URL)).toBe(true);
+    });
+
+    it('falls back to the filter endpoint while the search cluster is down', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      const page = { content: [{ id: mockSupportErrandId }], totalElements: 1 };
+      api.get.mockRejectedValueOnce(new HttpException(503, 'Search not available')).mockResolvedValueOnce({ data: page, message: 'success' });
+      const res = mockRes();
+
+      await controller.errands(mockReq(), ...errandsArgs({ status: 'NEW' }), MUNICIPALITY_ID, res);
+
+      expect(api.get.mock.calls[0][0].url.startsWith(SEARCH_URL)).toBe(true);
+      expect(api.get.mock.calls[1][0]).toEqual({ url: `${FILTER_URL}page=0&size=8&filter=%28status%3A%27NEW%27%29` });
+      expect(res.body).toEqual(page);
+    });
+
+    it('tells the user to narrow a search the index gave up on', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockRejectedValue(new HttpException(504, 'Gateway Timeout'));
+
+      await expect(controller.errands(mockReq(), ...errandsArgs({ query: mockFirstName }), MUNICIPALITY_ID, mockRes())).rejects.toMatchObject({
+        status: 504,
+        message: 'Sökningen tog för lång tid. Förfina sökningen och försök igen.',
+      });
+      expect(api.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes a refusal of the index on instead of asking the filter endpoint around it', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockRejectedValue(new HttpException(403, 'The query names a resource the user may not read'));
+
+      await expect(controller.errands(mockReq(), ...errandsArgs({ query: mockFirstName }), MUNICIPALITY_ID, mockRes())).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(api.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('counts from the search index, answering in the shape of the filter endpoint', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockResolvedValue({ data: { count: 9 }, message: 'success' });
+      const res = mockRes();
+
+      await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW', priority: 'HIGH' }), MUNICIPALITY_ID, res);
+
+      expect(api.get).toHaveBeenCalledTimes(1);
+      const [config] = api.get.mock.calls[0];
+      expect(config.url.startsWith(`${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/search/count?`)).toBe(true);
+      expect(upstreamSearchQuery(config.url)).toBe('priority:("HIGH") AND status:("NEW")');
+      expect(res.body).toEqual({ count: 9 });
+    });
+
+    it('counts on the filter endpoint while the search cluster is down', async () => {
+      const { controller, api } = makeController();
+      enableErrandSearch(controller);
+      api.get.mockRejectedValueOnce(new HttpException(503, 'Search not available')).mockResolvedValueOnce({ data: { count: 4 }, message: 'success' });
+      const res = mockRes();
+
+      await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW' }), MUNICIPALITY_ID, res);
+
+      expect(api.get.mock.calls[1][0]).toEqual({
+        url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?filter=%28status%3A%27NEW%27%29`,
+      });
+      expect(res.body).toEqual({ count: 4 });
     });
   });
 

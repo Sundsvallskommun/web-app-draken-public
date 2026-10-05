@@ -46,7 +46,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement-sprint',
-    version: '16.0',
+    version: '17.0',
     // Generated as the one Support Management contract application code imports,
     // so the domain keeps a single TypeScript owner.
     dataContractName: 'supportmanagement',
@@ -114,6 +114,32 @@ export const resolveSupportManagementApiTarget = (configuredTarget = process.env
   }
 
   throw new Error(`Unsupported SUPPORTMANAGEMENT_API_TARGET "${configuredTarget}". Expected one of: ${SUPPORT_MANAGEMENT_API_TARGETS.join(', ')}`);
+};
+
+/** The targets whose Support Management contract has the errand search index (sprint 17.0 and later). */
+const SUPPORT_MANAGEMENT_TARGETS_WITH_ERRAND_SEARCH: readonly SupportManagementApiTarget[] = ['sprint'];
+
+/**
+ * Whether errand lists and counts are answered by Support Management's search index instead of its
+ * filter endpoints. Off unless a deployment asks for it, because the index of a namespace has to be
+ * rebuilt before it holds the errands created ahead of it. Asking for it on a target without the
+ * index stops the backend at startup rather than failing every overview.
+ */
+export const resolveSupportManagementErrandSearch = (
+  configuredValue = process.env.SUPPORTMANAGEMENT_ERRAND_SEARCH,
+  target: SupportManagementApiTarget = resolveSupportManagementApiTarget(),
+): boolean => {
+  const value = configuredValue?.trim().toLowerCase() || 'false';
+  if (value !== 'true' && value !== 'false') {
+    throw new Error(`Unsupported SUPPORTMANAGEMENT_ERRAND_SEARCH "${configuredValue}". Expected true or false`);
+  }
+  if (value === 'false') return false;
+  if (!SUPPORT_MANAGEMENT_TARGETS_WITH_ERRAND_SEARCH.includes(target)) {
+    throw new Error(
+      `SUPPORTMANAGEMENT_ERRAND_SEARCH requires SUPPORTMANAGEMENT_API_TARGET ${SUPPORT_MANAGEMENT_TARGETS_WITH_ERRAND_SEARCH.join(' or ')}, not "${target}"`,
+    );
+  }
+  return true;
 };
 
 export function apiServiceName(name: string): string {

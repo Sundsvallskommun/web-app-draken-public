@@ -62,7 +62,9 @@ export const base64Encode = (str: string) => {
   return Buffer.from(str, 'utf-8').toString('base64');
 };
 
-export const toOffsetDateTime = (date: Dayjs) => encodeURIComponent(date.format('YYYY-MM-DDTHH:mm:ss.SSSZ'));
+export const formatOffsetDateTime = (date: Dayjs): string => date.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+
+export const toOffsetDateTime = (date: Dayjs) => encodeURIComponent(formatOffsetDateTime(date));
 
 export const isValidUrl = (string: string) => {
   let url;

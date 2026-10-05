@@ -111,6 +111,22 @@ describe('SupportManagementLabelFilterService', () => {
     expect(service.buildFilter([...selections].reverse())).toBe(expected);
   });
 
+  it('selects the same leaves per group as the filter it builds, for an endpoint that matches labels by id', () => {
+    const service = new SupportManagementLabelFilterService(iafVofProfile, iafVofMetadata);
+    const selections = [
+      selection('classification', 'type', 'CATEGORY/HSL/REHAB/ASSESSMENT'),
+      selection('reportType', 'reportType', 'REPORT_TYPE/DEVIATION'),
+      selection('classification', 'category', 'CATEGORY/HSL/REHAB'),
+      selection('classification', 'category', 'CATEGORY/SOL_LSS/PROCESS'),
+    ];
+
+    expect(service.selectLeafResourcePaths(selections)).toEqual([
+      ['REPORT_TYPE/DEVIATION'],
+      ['CATEGORY/SOL_LSS/PROCESS', 'CATEGORY/HSL/REHAB/ASSESSMENT'],
+    ]);
+    expect(service.selectLeafResourcePaths([])).toEqual([]);
+  });
+
   it('rejects an unknown group key', () => {
     const service = new SupportManagementLabelFilterService(iafVofProfile, iafVofMetadata);
 

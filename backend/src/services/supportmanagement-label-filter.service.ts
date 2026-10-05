@@ -325,6 +325,16 @@ export class SupportManagementLabelFilterService {
 
   /** Returns an appendable `&filter=...` fragment, or an empty string when no labels are selected. */
   buildFilter(selections: readonly SupportManagementLabelFilterSelection[]): string {
+    const groupClauses = this.selectLeafResourcePaths(selections).map(leaves => `(${leaves.map(labelClause).join(' or ')})`);
+    return groupClauses.length > 0 ? `&filter=${groupClauses.join(' and ')}` : '';
+  }
+
+  /**
+   * The labels an errand has to carry to match the selections: one list per profile group that has
+   * a selection, in profile order, of which the errand needs any one. A selected choice gives way to
+   * any selected choice beneath it, so picking a category and one of its types asks for that type.
+   */
+  selectLeafResourcePaths(selections: readonly SupportManagementLabelFilterSelection[]): string[][] {
     if (!Array.isArray(selections)) {
       return fail('selection', 'INVALID_SELECTION', 'Support Management label-filter selections must be an array');
     }
@@ -390,16 +400,14 @@ export class SupportManagementLabelFilterService {
       });
     }
 
-    const groupClauses = this.profile.groups.flatMap(group => {
+    return this.profile.groups.flatMap(group => {
       const choicesByPath = selectedByGroup.get(group.key);
       if (!choicesByPath?.size) return [];
       const selectedChoices = [...choicesByPath.values()];
       const leaves = selectedChoices
         .filter(choice => !selectedChoices.some(candidate => candidate.ancestors.some(ancestor => ancestor.resourcePath === choice.resourcePath)))
         .sort(compareChoices);
-      return [`(${leaves.map(choice => labelClause(choice.resourcePath)).join(' or ')})`];
+      return [leaves.map(choice => choice.resourcePath)];
     });
-
-    return groupClauses.length > 0 ? `&filter=${groupClauses.join(' and ')}` : '';
   }
 }

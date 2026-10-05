@@ -304,10 +304,10 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   missingNode?: boolean;
   valueNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
@@ -329,7 +329,7 @@ export interface JsonParameter {
    * Parameter key/name
    * @minLength 1
    * @maxLength 255
-   * @pattern [A-Za-z0-9._-]+
+   * @pattern [A-Za-z0-9_-]+
    */
   key: string;
   /**
@@ -720,11 +720,8 @@ export interface MeasureType {
   name: string;
   /** Display name for the measure type */
   displayName?: string | null;
-  /**
-   * Groups that this measure type belongs to. A group may be named once only, and a measure type belongs to at least one
-   * @minItems 1
-   */
-  measureGroups: string[];
+  /** Groups that this measure type belongs to. A group may be named once only, and a measure type belongs to at least one - a creation has to name them and an update may leave them out, but may not empty them */
+  measureGroups?: string[];
   /**
    * Sort order for the measure type
    * @format int32
@@ -745,6 +742,84 @@ export interface MeasureType {
    * @format date-time
    */
   modified?: string;
+}
+
+/** An action that references labels affected by a label move */
+export interface AffectedAction {
+  /**
+   * Action ID
+   * @example "5f79a808-0ef3-4985-99b9-b12f23e202a7"
+   */
+  id?: string;
+  /**
+   * Action name
+   * @example "SEND_EMAIL"
+   */
+  name?: string;
+  /**
+   * Human-readable display value for the action
+   * @example "Send email to assignee"
+   */
+  displayValue?: string;
+}
+
+/** Result of a label move dry-run — no changes are made */
+export interface LabelMoveDryRunResponse {
+  /**
+   * Number of errands that reference the label or any of its descendants
+   * @format int64
+   */
+  affectedErrandCount?: number;
+  /** Actions that have hasLabel conditions referencing the moved label or its descendants */
+  affectedActions?: AffectedAction[];
+}
+
+/** Job response */
+export interface JobResponse {
+  /** Job ID */
+  jobId?: string;
+  /** Job type */
+  type?: JobResponseTypeEnum;
+  /** Job status */
+  status?: JobResponseStatusEnum;
+  /**
+   * Progress percentage (0-100)
+   * @format int32
+   */
+  progress?: number;
+  /**
+   * Total number of items to process
+   * @format int32
+   */
+  total?: number;
+  /**
+   * Number of items processed so far
+   * @format int32
+   */
+  processed?: number;
+  /** Error message, populated on FAILED status */
+  message?: string;
+  /**
+   * When the job was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * When the job was last updated
+   * @format date-time
+   */
+  modified?: string;
+}
+
+/** Request for moving a label to a new parent */
+export interface LabelMoveRequest {
+  /**
+   * ID of the new parent label. Null means move to root.
+   * @example "5f79a808-0ef3-4985-99b9-b12f23e202a7"
+   */
+  newParentId?: string | null;
+  /** When true, return affected counts without making any changes. When false, starts the move as an asynchronous job. */
+  dryRun: boolean;
 }
 
 /** ExternalIdType model */
@@ -1171,9 +1246,17 @@ export interface Measure {
   addedByUser?: string;
   /** Role of the user who added the measure */
   addedByRole?: string;
-  /** Goal of the measure */
+  /**
+   * Goal of the measure
+   * @minLength 0
+   * @maxLength 3000
+   */
   goal?: string;
-  /** Description of the measure */
+  /**
+   * Description of the measure
+   * @minLength 0
+   * @maxLength 3000
+   */
   description?: string;
   /** Accept status */
   accept?: string | null;
@@ -2211,43 +2294,6 @@ export interface ErrandPurgeRequest {
   maxErrands?: number;
 }
 
-/** Job response */
-export interface JobResponse {
-  /** Job ID */
-  jobId?: string;
-  /** Job type */
-  type?: JobResponseTypeEnum;
-  /** Job status */
-  status?: JobResponseStatusEnum;
-  /**
-   * Progress percentage (0-100)
-   * @format int32
-   */
-  progress?: number;
-  /**
-   * Total number of items to process
-   * @format int32
-   */
-  total?: number;
-  /**
-   * Number of items processed so far
-   * @format int32
-   */
-  processed?: number;
-  /** Error message, populated on FAILED status */
-  message?: string;
-  /**
-   * When the job was created
-   * @format date-time
-   */
-  created?: string;
-  /**
-   * When the job was last updated
-   * @format date-time
-   */
-  modified?: string;
-}
-
 /** Validation model */
 export interface Validation {
   /** Type of metadata that the validation applies to */
@@ -2465,6 +2511,8 @@ export interface ActionDefinition {
   conditionDefinitions?: Definition[];
   /** Definitions of parameters for this action */
   parameterDefinitions?: Definition[];
+  /** The operations on an errand this action runs on. A config of this action may name a subset of these and nothing outside them */
+  operationTypes?: OperationType[];
 }
 
 /** Definition of a condition or parameter for an action */
@@ -2920,6 +2968,56 @@ export interface ErrandResourceAccess {
   level?: ErrandResourceAccessLevelEnum;
 }
 
+/** One value of the column grouped by, and how many errands carry it */
+export interface CountBucket {
+  /**
+   * The value
+   * @example "NEW"
+   */
+  value?: string;
+  /**
+   * How many of the matching errands carry it
+   * @format int64
+   * @example 91
+   */
+  count?: number;
+}
+
+/** How a count divides over one column of the errand. The buckets, withoutValue and withheld together account for the count */
+export interface CountGroup {
+  /**
+   * The property grouped by
+   * @example "status"
+   */
+  property?: string;
+  /** The values and their counts, largest first */
+  buckets?: CountBucket[];
+  /**
+   * How many of the counted errands carry nothing in the column
+   * @format int64
+   * @example 3
+   */
+  withoutValue?: number;
+  /**
+   * How many of the counted errands carry a column this user may not read
+   * @format int64
+   * @example 0
+   */
+  withheld?: number;
+}
+
+/** How many errands a search matches, and optionally how that number divides over one column */
+export interface SearchCountResponse {
+  /**
+   * Number of matching errands
+   * @format int64
+   * @example 137
+   */
+  count?: number;
+  /** The breakdown, absent unless a grouping was asked for */
+  group?: CountGroup;
+}
+
 export interface CountResponse {
   /** @format int64 */
   count?: number;
@@ -2990,14 +3088,6 @@ export enum SubscriptionTargetTypeEnum {
   NAMESPACE = "NAMESPACE",
 }
 
-/** The channel the attachment was received via */
-export enum ErrandAttachmentChannelEnum {
-  EMAIL = "EMAIL",
-  ESERVICE = "ESERVICE",
-  WEB_UI = "WEB_UI",
-  MY_PAGES = "MY_PAGES",
-}
-
 /** Job type */
 export enum JobResponseTypeEnum {
   MOVE_LABEL = "MOVE_LABEL",
@@ -3011,6 +3101,14 @@ export enum JobResponseStatusEnum {
   COMPLETED = "COMPLETED",
   STOPPED = "STOPPED",
   FAILED = "FAILED",
+}
+
+/** The channel the attachment was received via */
+export enum ErrandAttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }
 
 /** Type of metadata that the validation applies to */
