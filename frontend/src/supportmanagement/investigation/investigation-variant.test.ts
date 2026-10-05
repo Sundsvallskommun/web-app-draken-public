@@ -6,6 +6,7 @@ import { test } from 'vitest';
 
 import { defaultBasicsPlacement } from './classification-placement';
 import {
+  findHeldPhaseEntryRequirement,
   type InvestigationCapability,
   type InvestigationVariantModule,
   isDecisionTabVisible,
@@ -110,4 +111,33 @@ test('a tab waiting for a phase stays away until the errand reaches it', () => {
 
   assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('investigation')), false);
   assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('decision')), true);
+});
+
+test('the first unmet requirement for the target phase holds the move, in the order the variant lists them', () => {
+  const requirement = (actionLabel: string, phaseName: string, met: boolean) => ({
+    phaseName,
+    actionLabel,
+    isMet: () => met,
+    render: () => null,
+  });
+  const context = { errand: undefined, profile: undefined, labelStructure: [] };
+  const toDecision = (phaseName: string) => phaseName === 'DECISION';
+  const handover = requirement('Tilldela LEX-ansvarig', 'DECISION', false);
+  const completion = requirement('Utredningen är inte klar', 'DECISION', false);
+
+  assert.equal(findHeldPhaseEntryRequirement([handover, completion], toDecision, context), handover);
+  assert.equal(
+    findHeldPhaseEntryRequirement(
+      [requirement('Tilldela LEX-ansvarig', 'DECISION', true), completion],
+      toDecision,
+      context
+    ),
+    completion
+  );
+  // A requirement on another phase never holds this move, met or not.
+  assert.equal(
+    findHeldPhaseEntryRequirement([requirement('Annat', 'FOLLOW_UP', false)], toDecision, context),
+    undefined
+  );
+  assert.equal(findHeldPhaseEntryRequirement(undefined, toDecision, context), undefined);
 });

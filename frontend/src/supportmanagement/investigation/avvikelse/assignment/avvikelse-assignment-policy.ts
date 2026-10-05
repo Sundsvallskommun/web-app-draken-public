@@ -3,6 +3,7 @@ import type { SupportErrand } from '@supportmanagement/services/support-errand-s
 
 import type { InvestigationProfile } from '../../investigation-profile';
 import type { InvestigationFormData } from '../investigation-document';
+import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from '../saved-investigation-document';
 import { ACCESS_LEX_LABEL_PATH, hasErrandLabel } from './avvikelse-access-labels';
 
 interface LexAssignmentInput {
@@ -13,6 +14,10 @@ interface LexAssignmentInput {
 
 /** The document whose assessment of suspected misconduct decides the handover to LEX. */
 const UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME = 'utredning-enhetschef';
+
+/** Whether a unit manager investigation assesses the deviation as a suspected misconduct. */
+export const assessesSuspectedMisconduct = (formData: InvestigationFormData | undefined): boolean =>
+  formData?.suspectedMisconduct === 'yes';
 
 /**
  * Whether a saved unit manager investigation has to be handed to a LEX manager.
@@ -25,7 +30,7 @@ const UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME = 'utredning-enhetschef';
  * manager, but there is no access label for MAS/MAR to write.
  */
 export const shouldPromptLexAssignment = ({ formData, labels, labelStructure }: LexAssignmentInput): boolean =>
-  formData.suspectedMisconduct === 'yes' && !hasErrandLabel(labels, labelStructure, ACCESS_LEX_LABEL_PATH);
+  assessesSuspectedMisconduct(formData) && !hasErrandLabel(labels, labelStructure, ACCESS_LEX_LABEL_PATH);
 
 interface LexAssignmentRequirementInput {
   readonly errand: SupportErrand | undefined;
@@ -41,16 +46,10 @@ interface LexAssignmentRequirementInput {
  * before the decision. Only the saved document counts - an unsaved answer is not yet an assessment.
  */
 export const requiresLexAssignment = ({ errand, profile, labelStructure }: LexAssignmentRequirementInput): boolean => {
-  const key = profile?.documents.find(
-    (document) => document.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME
-  )?.key;
-  const saved: unknown = key ? errand?.jsonParameters?.find((parameter) => parameter.key === key)?.value : undefined;
-  if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return false;
-  return shouldPromptLexAssignment({
-    formData: saved as InvestigationFormData,
-    labels: errand?.labels,
-    labelStructure,
-  });
+  const key = findInvestigationDocumentBySchemaName(profile, UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME)?.key;
+  const saved = readSavedInvestigationDocument(errand, key);
+  if (!saved) return false;
+  return shouldPromptLexAssignment({ formData: saved, labels: errand?.labels, labelStructure });
 };
 
 /**

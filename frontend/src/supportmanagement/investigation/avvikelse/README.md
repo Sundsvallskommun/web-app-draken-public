@@ -362,6 +362,31 @@ vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skriv
 enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
 att känna till innan åtkomsten konfigureras om.
 
+### Till beslut först när utredningen är klar
+
+Ärendet får inte gå från Utredning till Beslut förrän den utredning det beslutas på är **sparad som klar**
+(`completed = yes`, samma markering som låser dokumentet). Vilken utredning det är avgörs av en fast regel:
+
+| Ärendet | Utredningen som ska vara klar |
+| --- | --- |
+| Rapporterat missförhållande (`eventType = MISSFORHALLANDE` eller `REPORT_TYPE/ABUSE`) | `utredning-sol-lss` (LEX) |
+| Misstänkt missförhållande (`suspectedMisconduct = yes` i enhetschefens **sparade** utredning) | `utredning-sol-lss` (LEX) |
+| Övriga | `utredning-enhetschef` |
+
+MAS/MAR:s `utredning-hsl` håller aldrig tillbaka beslutet, hur långt den än har kommit. Regeln finns i
+både frontend (`resolveDecisionInvestigation`) och BFF (`resolveIafVofDecisionInvestigationDocumentKey`).
+
+Kravet är det andra av variantens `phaseEntryRequirements`, efter LEX-tilldelningen: ett misstänkt
+missförhållande ska nå LEX innan LEX kan göra klart något. Så länge det inte är uppfyllt heter fasknappen
+Utredningen är inte klar och öppnar en dialog som säger vilken utredning som saknas. Det gäller även ett
+rapporterat missförhållande som ännu inte flyttats till LEX av Support Managements schemalagda
+`ADD_LABEL`: enhetschefen kan inte längre skicka det till beslut, eftersom LEX-utredningen inte är klar.
+
+BFF:en (`PATCH /supporterrands/:m/:id/phase`) avvisar samma fasbyte med **422** och ett meddelande som
+namnger utredningen, så regeln gäller även anrop som inte går via knappen. Där läses klarmarkeringen ur
+dokumentets bundna schema (`x-draken-completion`), inte ur ett antaget fältnamn. Med utredningen avstängd
+väntas inget in; går utredningens tillstånd inte att avgöra svarar BFF:en 503 i stället för att släppa förbi.
+
 ### Fel plats: flytta ärendet utan att ändra det inrapporterade
 
 Katla skriver platsen två gånger. Rapportörens val ligger i den inkommande JSON-parametern

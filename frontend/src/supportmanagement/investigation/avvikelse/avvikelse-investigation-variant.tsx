@@ -14,6 +14,7 @@ import type {
 } from '../investigation-variant';
 import { requiresLexAssignment } from './assignment/avvikelse-assignment-policy';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
+import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 
 /**
@@ -52,6 +53,15 @@ const ErrandLocationCard = dynamic(
 const AvvikelseReportDocument = dynamic(
   () =>
     import('./report-document/avvikelse-report-document.component').then((module) => module.AvvikelseReportDocument),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
+const InvestigationCompletionRequirement = dynamic(
+  () =>
+    import('./investigation-completion-requirement.component').then(
+      (module) => module.InvestigationCompletionRequirement
+    ),
   { loading: () => null }
 );
 
@@ -110,15 +120,28 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     isVisible: () => true,
     render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
   },
-  /**
-   * A suspected misconduct is handed to a LEX manager before it is decided. The dialog after saving the
-   * unit manager's investigation can be put off; sending the errand to the decision cannot.
-   */
-  phaseEntryRequirement: {
-    phaseName: DECISION_PHASE_NAME,
-    // The handler hands the errand over; the LEX manager sends it to the decision, as before.
-    actionLabel: 'Tilldela LEX-ansvarig',
-    isMet: (context: InvestigationPhaseEntryContext) => !requiresLexAssignment(context),
-    render: (props: InvestigationPhaseEntryRequirementProps) => <LexAssignmentRequirement {...props} />,
-  },
+  phaseEntryRequirements: [
+    /**
+     * A suspected misconduct is handed to a LEX manager before it is decided. The dialog after saving
+     * the unit manager's investigation can be put off; sending the errand to the decision cannot.
+     */
+    {
+      phaseName: DECISION_PHASE_NAME,
+      // The handler hands the errand over; the LEX manager sends it to the decision, as before.
+      actionLabel: 'Tilldela LEX-ansvarig',
+      isMet: (context: InvestigationPhaseEntryContext) => !requiresLexAssignment(context),
+      render: (props: InvestigationPhaseEntryRequirementProps) => <LexAssignmentRequirement {...props} />,
+    },
+    /**
+     * The errand is decided on a finished investigation: LEX's for a lex Sarah matter, the unit
+     * manager's otherwise. Second, because a suspected misconduct has to reach LEX before LEX can
+     * finish anything. The BFF holds the same rule.
+     */
+    {
+      phaseName: DECISION_PHASE_NAME,
+      actionLabel: 'Utredningen är inte klar',
+      isMet: isDecisionInvestigationCompleted,
+      render: (props: InvestigationPhaseEntryRequirementProps) => <InvestigationCompletionRequirement {...props} />,
+    },
+  ],
 });

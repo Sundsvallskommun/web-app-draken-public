@@ -1,7 +1,11 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
+import { resolveIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
+import { VOF_SUPPORT_INVESTIGATION_PROFILE } from '@/config/support-investigation-profile';
 import { SupportPhaseController, UpdateSupportErrandPhaseDto } from '@/controllers/supportmanagement/support-phase.controller';
+import type { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import type { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { mockReq, mockRes } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
@@ -109,6 +113,48 @@ describe('updateSupportErrandPhase', () => {
         mockRes(),
       ),
     ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('väntar på beslut') });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The rule itself is covered with `assertInvestigationCompletedBeforeDecision`; this proves the
+   * phase write asks it with the name of the phase it is moving into, and stops before writing.
+   */
+  it('refuses to move an IAF/VOF errand into the decision before its investigation is completed', async () => {
+    const policyService = {
+      iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE),
+      profile: VOF_SUPPORT_INVESTIGATION_PROFILE,
+      getState: vi.fn(async () => 'active'),
+    };
+    const documentService = { readBoundSchema: vi.fn() };
+    const controller = new SupportPhaseController(
+      policyService as unknown as SupportInvestigationPolicyService,
+      documentService as unknown as SupportJsonParameterService,
+    );
+    const { api } = makeController();
+    (controller as unknown as { apiService: ApiStub }).apiService = api;
+    const decisionPhases = [
+      { id: 'investigation', name: 'INVESTIGATION', transitions: [{ id: 'to-decision', targetPhaseId: 'decision' }] },
+      { id: 'decision', name: 'DECISION' },
+    ];
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { phases: decisionPhases }, message: 'success' };
+      return {
+        data: { id: mockSupportErrandId, phases: [{ phaseId: 'investigation' }], status: 'INQUIRY', version: 7, jsonParameters: [] },
+        message: 'success',
+        headers: { etag: '"7"' },
+      };
+    });
+
+    await expect(
+      controller.updateSupportErrandPhase(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedActivePhaseId: 'investigation', transitionId: 'to-decision' },
+        mockRes(),
+      ),
+    ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('Utredning enhetschef') });
     expect(api.patch).not.toHaveBeenCalled();
   });
 

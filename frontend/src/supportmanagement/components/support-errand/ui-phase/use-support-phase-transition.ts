@@ -2,6 +2,7 @@ import { appConfig } from '@config/appconfig';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { findHeldPhaseEntryRequirement } from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
 import {
@@ -61,21 +62,17 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   const closesErrand = !entersWorkflow && closesFromActivePhase(activePhaseId, phases);
 
   // What the investigation requires before a phase is entered is the variant's to say, not this hook's.
-  // While it is unmet for the chosen move, the button does what the requirement asks instead of moving
-  // the errand - and says so, rather than promising a phase change the handler will not get.
-  const phaseEntryRequirement = appConfig.features.useInvestigation
-    ? getInvestigationVariant()?.phaseEntryRequirement
-    : undefined;
-  const heldRequirement =
-    phaseEntryRequirement &&
-    isSupportPhaseNamed(selectedTransition?.target, phaseEntryRequirement.phaseName) &&
-    !phaseEntryRequirement.isMet({
+  // While one is unmet for the chosen move, the button does what it asks instead of moving the errand -
+  // and says so, rather than promising a phase change the handler will not get.
+  const heldRequirement = findHeldPhaseEntryRequirement(
+    appConfig.features.useInvestigation ? getInvestigationVariant()?.phaseEntryRequirements : undefined,
+    (phaseName) => isSupportPhaseNamed(selectedTransition?.target, phaseName),
+    {
       errand: supportErrand,
       profile: investigationProfile,
       labelStructure: supportMetadata?.labels?.labelStructure,
-    })
-      ? phaseEntryRequirement
-      : undefined;
+    }
+  );
 
   useEffect(() => {
     setSelectedTransitionId(availableTransitions.length === 1 ? availableTransitions[0].transition.id : '');
@@ -131,11 +128,12 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
       );
       setSupportErrand(savedErrand);
       form.reset(savedErrand);
-    } catch {
+    } catch (error) {
+      // A move the BFF refuses for a reason it names - an investigation not yet completed - says why.
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: 'Något gick fel när fasen skulle uppdateras',
+        message: supportErrandWriteErrorMessage(error, 'Något gick fel när fasen skulle uppdateras'),
         status: 'error',
       });
     } finally {

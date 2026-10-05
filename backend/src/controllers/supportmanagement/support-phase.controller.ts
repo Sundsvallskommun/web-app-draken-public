@@ -12,6 +12,9 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
+import { assertInvestigationCompletedBeforeDecision } from '@/services/support-investigation-decision-readiness';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -52,6 +55,10 @@ export class UpdateSupportErrandPhaseDto {
  * Draken never derives the target from metadata order. The client submits an explicit transition id,
  * which is resolved against the errand's active phase and fresh metadata, so a branched workflow
  * cannot be advanced by guessing.
+ *
+ * Where the IAF/VOF investigation is active, the move into the decision phase waits for the
+ * investigation the errand is decided on to be saved as completed - the button that offers the move
+ * says so, but this is where the rule holds.
  */
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
@@ -59,7 +66,17 @@ export class SupportPhaseController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
+  private readonly investigationPolicyService: SupportInvestigationPolicyService;
+  private readonly jsonParameterService: SupportJsonParameterService;
   SERVICE = apiServiceName('supportmanagement');
+
+  constructor(
+    investigationPolicyService = new SupportInvestigationPolicyService(),
+    jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+  ) {
+    this.investigationPolicyService = investigationPolicyService;
+    this.jsonParameterService = jsonParameterService;
+  }
 
   @Patch('/supporterrands/:municipalityId/:id/phase')
   @HttpCode(200)
@@ -92,6 +109,15 @@ export class SupportPhaseController {
     }
 
     const transition = resolveSupportErrandPhaseTransition(currentErrand.data, metadata.data.phases, data.transitionId);
+    await assertInvestigationCompletedBeforeDecision({
+      policyService: this.investigationPolicyService,
+      documentService: this.jsonParameterService,
+      user: req.user,
+      municipalityId,
+      errandId: id,
+      errand: currentErrand.data,
+      targetPhaseName: metadata.data.phases?.find(phase => phase.id === transition.targetPhaseId)?.name,
+    });
     // A phase carries its status with it, so a move into a phase that closes the errand is a close
     // and answers to the same rule as the close button.
     await assertMeasuresHandledBeforeClose({

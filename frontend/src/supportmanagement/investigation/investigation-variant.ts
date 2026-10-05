@@ -122,9 +122,20 @@ export interface InvestigationVariantModule {
   renderDetailsHeader?: (props: InvestigationDetailsHeaderProps) => ReactNode;
   /** The decision tab, for a variant whose investigation ends in a recorded decision. */
   readonly decisionTab?: InvestigationDecisionTabSlot;
-  /** Something that has to be done before the errand may enter a phase; a variant with none omits this. */
-  readonly phaseEntryRequirement?: InvestigationPhaseEntryRequirement;
+  /**
+   * What has to be done before the errand may enter a phase, in the order it has to be done: the first
+   * one unmet holds the phase change. A variant with none omits this.
+   */
+  readonly phaseEntryRequirements?: readonly InvestigationPhaseEntryRequirement[];
 }
+
+/** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */
+export const findHeldPhaseEntryRequirement = (
+  requirements: readonly InvestigationPhaseEntryRequirement[] | undefined,
+  isTargetPhase: (phaseName: string) => boolean,
+  context: InvestigationPhaseEntryContext
+): InvestigationPhaseEntryRequirement | undefined =>
+  requirements?.find((requirement) => isTargetPhase(requirement.phaseName) && !requirement.isMet(context));
 
 /**
  * Implementations are mutually exclusive, but two flags being on is representable and is a
