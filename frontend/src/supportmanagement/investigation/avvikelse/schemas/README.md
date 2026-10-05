@@ -175,7 +175,7 @@ SupportManagement-labels. De är inte JSON Schema-properties och sparas inte i u
 visar Draken en väljare per vald lagrumsgrupp, HSL respektive SoL/LSS; se [../README.md](../README.md#ansvarsgränser).
 
 Vanliga avvikelser redigerar klassificeringen i enhetschefsutredningen. För `eventType: MISSFORHALLANDE` flyttas
-redigeringsansvaret till SOL/LSS-utredningen, med SOL och LSS förvalda och skrivskyddade. `Spara utredning` samordnar
+redigeringsansvaret till SOL/LSS-utredningen, med SOL och LSS förvalda och skrivskyddade. Spara ärende samordnar
 dokumentets egen PUT med en smal label-PATCH som bär en klassificering per lagrumsgrupp. Om PUT:en lyckas men label-PATCH:en misslyckas rapporteras en delvis
 genomförd sparning, och ett nytt försök skickar endast label-PATCH:en.
 

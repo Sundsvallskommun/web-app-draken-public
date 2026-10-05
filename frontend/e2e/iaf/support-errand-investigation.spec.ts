@@ -361,7 +361,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(0);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -540,7 +540,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
           .locator('[data-cy="label-classification-subtype"]')
           .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
       }
-      await ownerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+      await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
       await expect.poll(() => trace.classificationPatches.length).toBe(1);
       expect(trace.puts).toHaveLength(0);
@@ -654,11 +654,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
-    await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    await expect(page.locator(managerProbabilityGroup).getByLabel(/^1 –/u)).toBeDisabled();
 
     await investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
     const hslDocument = page.locator('[data-cy="investigation-document-utredning-hsl"]');
-    await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
+    await expect(
+      hslDocument.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true })
+    ).toBeEnabled();
   });
 
   test('beslutsfliken säger att det inte finns något att besluta om för en vanlig avvikelse utan lagrum HSL', async ({
@@ -730,13 +732,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(document.locator(`#${hslDecisionKey}_ivoCaseNumber`)).toHaveCount(1);
 
     // Reporting to IVO without a Public 360 number is refused before anything is written.
-    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
     await expect(document.locator('[data-cy="schema-form-error-summary"]')).toBeVisible();
     expect(trace.puts).toHaveLength(0);
 
     await document.locator(`#${hslDecisionKey}_public360CaseNumber`).fill('P360-2026-5678');
     await document.locator(`#${hslDecisionKey}_ivoCaseNumber`).fill('IVO-2026-1234');
-    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.puts[0].key).toBe(hslDecisionKey);
@@ -816,7 +818,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .check();
     await expect(document.locator(`#${misconductDecisionKey}_ivoCaseNumber`)).toHaveCount(1);
     await document.locator(`#${misconductDecisionKey}_public360CaseNumber`).fill('P360-2026-8765');
-    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.puts[0].key).toBe(misconductDecisionKey);
@@ -850,7 +852,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       'Beslutet kan fattas först när Utredning Lex Sarah har sparats i ärendet.'
     );
     await expect(document.locator('[data-cy="investigation-decision-proposal"]')).toHaveCount(0);
-    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    await expect(document.locator(`#${misconductDecisionKey}_decisionMotivation`)).not.toBeEditable();
     expect(trace.puts).toHaveLength(0);
   });
 
@@ -893,9 +895,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
     expect(trace.puts[0].body).not.toHaveProperty(['value', 'reports']);
 
-    // Saved as completed: locked, no save button, and the report followed the save.
+    // Saved as completed: locked, read-only, and the report followed the save.
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toBeVisible();
-    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    await expect(
+      document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true })
+    ).toBeDisabled();
     await expect.poll(() => trace.reports.length).toBe(1);
     expect(trace.reports[0]).toEqual({ key: 'utredning-hsl', preview: false });
     await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText(
@@ -916,7 +920,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       expect.objectContaining({ value: expect.objectContaining({ completed: 'no' }) })
     );
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
-    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
+    await expect(
+      document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true })
+    ).toBeEnabled();
     // Unlocked and answered Nej again: the report has to wait for a new Ja.
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
   });
@@ -1234,7 +1240,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const subtypeSelect = document
       .locator(hslClassificationSelector)
       .locator('[data-cy="label-classification-subtype"]');
-    const saveButton = document.getByRole('button', { name: 'Spara utredning', exact: true });
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     const summary = document.locator('[data-cy="schema-form-error-summary"]');
     // What the investigation must contain is asserted when it is marked finished; an unfinished
     // draft may have empty fields. The scenario therefore finishes it, then empties a field in it.
@@ -1285,6 +1291,35 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect.poll(() => trace.classificationPatches.length).toBe(1);
   });
 
+  test('sparas med Spara ärende, som visar utredningen när den inte kunde sparas', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: { [managerKey]: existingManagerDocument() } });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
+    // The investigation has no save button of its own.
+    await expect(document.getByRole('button', { name: /^Spara/u })).toHaveCount(0);
+    await expect(saveButton).toBeDisabled();
+
+    // Finished, with a required field emptied, so the investigation refuses the save.
+    await document.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+    await document.locator(`#${managerKey}_riskAssessmentHsl_assessedWith`).fill('');
+    await expect(saveButton).toBeEnabled();
+
+    // Saved from another tab: the handler is taken back to the investigation, and to why.
+    await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
+    await expect(document).toBeHidden();
+    await saveButton.click();
+    await expect(page.getByText('Utredning enhetschef kunde inte sparas. Orsaken visas där.')).toBeVisible();
+    await expect(document).toBeVisible();
+    await expect(document.locator('[data-cy="schema-form-error-summary"]')).toBeFocused();
+    expect(trace.puts).toHaveLength(0);
+  });
+
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {
     const existing = existingManagerDocument();
     const trace = await installIafApiMock(page, { documents: { [managerKey]: existing } });
@@ -1296,7 +1331,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await probabilityOne.check();
     await expect(probabilityOne).toBeChecked();
 
-    const saveButton = page.getByRole('button', { name: 'Spara utredning', exact: true });
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     await expect(saveButton).toBeEnabled();
     await saveButton.click();
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
@@ -1351,7 +1386,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
     await expect.poll(() => trace.puts.length).toBe(1);
@@ -1409,7 +1444,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
     await expect.poll(() => trace.puts.length).toBe(1);
@@ -1432,7 +1467,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
     await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.'
@@ -1454,7 +1489,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toHaveCount(0);
@@ -1478,7 +1513,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(`#${managerKey}_riskAssessmentSolLss_probability`).getByLabel(/^1 –/u).check();
     // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
     await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori för varje valt lagrum.'
@@ -1532,7 +1567,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
     await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
-    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Välj underkategori för varje valt lagrum innan utredningen sparas.'
@@ -1564,11 +1599,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(sidebarSaveButton).toBeDisabled();
     await typeSelect.selectOption(iafLabelFixture.classification.medication.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
-    await expect(sidebarSaveButton).toBeDisabled();
+    // The classification is a draft of the investigation, saved with Spara ärende through the
+    // investigation's own narrow contracts - nothing is written until it is clicked.
+    await expect(sidebarSaveButton).toBeEnabled();
     expect(trace.classificationPatches).toHaveLength(0);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
 
-    await managerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await sidebarSaveButton.click();
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'Utredningen och ärendets klassificering har sparats.'
     );
@@ -1625,7 +1662,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await typeSelect.selectOption(iafLabelFixture.classification.rehab.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.missedAssessment.resourcePath);
-    await managerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'Ärendets klassificering har sparats.'
     );
@@ -1666,7 +1703,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .locator('[data-cy="label-classification-subtype"]');
     await typeSelect.selectOption(iafLabelFixture.classification.medication.id);
     await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.id);
-    await managerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'Ärendets klassificering har sparats.'
@@ -1717,7 +1754,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
 
-    const saveButton = managerDocument.getByRole('button', { name: 'Spara utredning', exact: true });
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     await saveButton.click();
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'Utredningen har sparats, men ärendets klassificering kunde inte synkroniseras'
@@ -1756,7 +1793,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .locator('[data-cy="label-classification-subtype"]')
       .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
-    await managerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'klassificering har ändrats av någon annan'
@@ -1781,7 +1818,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const probabilityFour = page.locator(managerProbabilityGroup).getByLabel(/^4 –/u);
     await probabilityFour.check();
-    const saveButton = page.getByRole('button', { name: 'Spara utredning', exact: true });
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     await saveButton.click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
@@ -1836,7 +1873,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await typeSelect.selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
-    await solLssDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       /ärendets klassificering har sparats\./iu
     );
@@ -1885,7 +1922,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await solLssDocument
       .locator('[data-cy="label-classification-subtype"]')
       .selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
-    await solLssDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
       'Utredningen och ärendets klassificering har sparats.'
@@ -1925,7 +1962,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
       const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
       await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
-      await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
       await expect(page.locator(managerProbabilityGroup).getByLabel(/^1 –/u)).toBeDisabled();
     });
   }
@@ -1945,7 +1981,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="investigation-document-notice"]:visible')).toContainText(
       'Support Management nekade åtkomst till det här utredningsdokumentet.'
     );
-    await expect(page.locator('[data-cy="schema-submit-button"]:visible')).toHaveCount(0);
+    await expect(page.locator('[data-cy="support-investigation-tab"] form:visible')).toHaveCount(0);
   });
 
   test('behåller Katlas JSON under Ärendeuppgifter men visar inte utredningsdokumenten där', async ({

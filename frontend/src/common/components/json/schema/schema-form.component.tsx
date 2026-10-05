@@ -48,6 +48,11 @@ type SchemaFormProps = {
   readonly?: boolean;
   defaultFormStateBehavior?: FormProps['experimental_defaultFormStateBehavior'];
   submitButtonOptions?: SubmitButtonOptions;
+  /**
+   * The form is submitted from elsewhere - Spara ärende in the sidebar, say - so it draws no submit
+   * button of its own. Its `submitButtonActions` are still shown.
+   */
+  withoutSubmitButton?: boolean;
   /** Rendered beside the submit button, for actions that belong with saving rather than above the form. */
   submitButtonActions?: ReactNode;
   extraContent?: React.ReactNode;
@@ -71,6 +76,7 @@ export default function SchemaForm({
   readonly,
   defaultFormStateBehavior,
   submitButtonOptions,
+  withoutSubmitButton,
   submitButtonActions,
   extraContent,
   externalFields,
@@ -179,7 +185,7 @@ export default function SchemaForm({
     experimental_defaultFormStateBehavior: defaultFormStateBehavior,
   };
 
-  const formWithoutSubmit = disabled || readonly;
+  const formWithoutSubmit = disabled || readonly || withoutSubmitButton;
   return (
     <div ref={containerRef} className="w-full min-w-0 max-w-full">
       {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
@@ -198,8 +204,9 @@ export default function SchemaForm({
           </>
         ) : undefined}
       </Form>
-      {/* The form renders no submit button when it is read-only, but the actions beside it are not
-          about saving and must stay reachable - a finished, locked document is handed on from here. */}
+      {/* The form renders no submit button when it is read-only or saved from elsewhere, but the actions
+          beside it are not about saving and must stay reachable - a finished, locked document is handed
+          on from here. */}
       {formWithoutSubmit && submitButtonActions && (
         <div className="mt-[3.2rem] flex flex-wrap items-center gap-16">{submitButtonActions}</div>
       )}

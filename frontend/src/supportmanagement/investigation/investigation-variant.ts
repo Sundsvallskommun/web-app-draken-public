@@ -17,6 +17,11 @@ export interface InvestigationTabProps {
   readonly access: InvestigationAccessState;
   readonly refreshAccess: () => void;
   onDirtyChange: (key: string, isDirty: boolean) => void;
+  /**
+   * Brings the tab into view. Spara ärende in the sidebar saves what the tab holds, so a part it
+   * could not save is shown to the handler, wherever they are.
+   */
+  readonly revealTab: () => void;
 }
 
 export interface InvestigationCategorizationControlProps {

@@ -34,6 +34,13 @@ import { CirclePause, Mail } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
+import {
+  saveParticipantsInTurn,
+  selectDirtyParticipants,
+  selectHasDirtyParticipant,
+  unsavedParticipantsMessage,
+  useErrandSaveParticipantsStore,
+} from '../errand-save/errand-save-participants';
 import { useSupportMessagingPhase } from '../tabs/messages/use-support-messaging-phase';
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
@@ -152,10 +159,8 @@ export const SidebarInfo: FC<{
     };
   }, [errandId, municipalityId]);
 
-  const onSubmit = async (): Promise<boolean> => {
-    setError(false);
-    setIsLoading(true);
-
+  /** Writes the errand's own fields; answers whether they were saved. A failure is told in a toast. */
+  const saveErrandFields = async (): Promise<boolean> => {
     try {
       await updateSupportErrand(municipalityId, getValues(), supportErrand?.version, supportErrand?.parameters);
 
@@ -219,13 +224,6 @@ export const SidebarInfo: FC<{
       if (e.error) throw new Error('Could not confirm the saved support errand');
       setSupportErrand(e.errand);
       reset(e.errand);
-
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Ärendet uppdaterades',
-        status: 'success',
-      });
       return true;
     } catch (e) {
       console.error('Error when updating errand:', e);
@@ -237,6 +235,43 @@ export const SidebarInfo: FC<{
       });
       setError(true);
       return false;
+    }
+  };
+
+  const onSubmit = async (): Promise<boolean> => {
+    setError(false);
+    setIsLoading(true);
+    try {
+      const saved = await saveErrandFields();
+      if (saved) toast('success', 'Ärendet uppdaterades');
+      return saved;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const errandFieldsDirty = hasDirtyFields(formState.dirtyFields);
+  const hasDirtyParticipant = useErrandSaveParticipantsStore(selectHasDirtyParticipant);
+
+  /**
+   * Spara ärende saves the errand's own fields, then each part of the errand that holds a draft - the
+   * investigation documents - validated and saved on its own. A part that could not be saved is shown,
+   * with why, in its own place.
+   */
+  const saveErrand = async () => {
+    setError(false);
+    setIsLoading(true);
+    try {
+      if (errandFieldsDirty && !(await saveErrandFields())) return;
+
+      const unsaved = await saveParticipantsInTurn(selectDirtyParticipants(useErrandSaveParticipantsStore.getState()));
+      if (unsaved.length > 0) {
+        setError(true);
+        toast('error', unsavedParticipantsMessage(unsaved));
+        unsaved[0].reveal();
+        return;
+      }
+      toast('success', 'Ärendet uppdaterades');
     } finally {
       setIsLoading(false);
     }
@@ -520,12 +555,11 @@ export const SidebarInfo: FC<{
             disabled={
               isLoading === true ||
               isSupportErrandLocked(supportErrand!) ||
-              !hasDirtyFields(formState.dirtyFields) ||
-              formIsNotValid
+              !(errandFieldsDirty || hasDirtyParticipant) ||
+              (errandFieldsDirty && formIsNotValid)
             }
-            onClick={handleSubmit(() => {
-              return onSubmit();
-            }, onError)}
+            // The errand's fields are validated before anything is saved; the parts validate themselves.
+            onClick={errandFieldsDirty ? handleSubmit(saveErrand, onError) : () => void saveErrand()}
             variant="primary"
             color="primary"
             loading={isLoading === true}

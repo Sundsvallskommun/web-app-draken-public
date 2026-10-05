@@ -192,7 +192,11 @@ De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admi
 ärendets version utan att röra fasen. BFF:en skickar upstream-skrivningen med If-Match på den version
 den nyss läste.
 
-`Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
+Utrednings- och beslutsdokumenten har ingen egen sparaknapp. De sparas med Spara ärende i sidomenyn, som först sparar
+ärendets egna fält och sedan varje dokument med osparade ändringar, ett i taget. Varje dokument skickas genom sitt
+formulär och valideras alltså som förut. Ett dokument som inte kan sparas visar orsaken där den alltid har visats,
+och sidomenyn tar handläggaren dit. Sparningen samordnar utredningsdokumentet med en smal PATCH av ärendets
+klassificeringslabels.
 Dokumentet sparas först och label-PATCH:en skickar endast `classifications`, en post med klassificering och
 labelreferenser per lagrumsgrupp, samt ägande `documentKey`, dokumentets ETag och förväntad ärendeversion. Backend
 verifierar därmed rätt IAF/VOF-ägardokument, att varje klassificering tillåts av dokumentets lagrum, att varje grupp

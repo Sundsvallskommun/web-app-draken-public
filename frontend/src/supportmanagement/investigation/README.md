@@ -22,7 +22,9 @@ en ny utredning är en ny modul som registreras i registret.
 En variant deklarerar den kapabilitetsflagga som slår på den (`enabledBy`) och fyller de slots
 delad kod erbjuder:
 
-- `renderTab` — innehållet i Utredningsfliken.
+- `renderTab` — innehållet i Utredningsfliken. Fliken får `revealTab`, som visar den. Den behövs eftersom en
+  variant som låter sidomenyns Spara ärende spara sina dokument (`useErrandSaveParticipant`) ska kunna visa ett
+  dokument som inte gick att spara, oavsett vilken flik handläggaren står på.
 - `renderNotice` — valfri notis ovanför flikraden, så ett trasigt tillstånd syns från vilken flik som helst.
 - `renderCategorizationControl` — valfri kategoriseringskontroll som ersätter de vanliga två-/trenivåkontrollerna.
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med

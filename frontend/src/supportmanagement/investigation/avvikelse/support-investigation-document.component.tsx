@@ -7,6 +7,7 @@ import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@commo
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
 import { Alert, Button, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useErrandSaveParticipant } from '@supportmanagement/components/support-errand/errand-save/use-errand-save-participant';
 import { AvvikelseGroupedLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-grouped-label-categorization.component';
 import {
   applyAvvikelseGroupedClassificationSelection,
@@ -125,6 +126,8 @@ interface SupportInvestigationDocumentProps {
   refreshAccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
   onSaved: (document: SavedInvestigationDocument) => void;
+  /** Brings the document into view: its tab, and the document's own tab within it. */
+  onReveal: () => void;
 }
 
 function InvestigationAlert({
@@ -164,6 +167,7 @@ export function SupportInvestigationDocument({
   refreshAccess,
   onDirtyChange,
   onSaved,
+  onReveal,
 }: Readonly<SupportInvestigationDocumentProps>) {
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
@@ -200,6 +204,10 @@ export function SupportInvestigationDocument({
   const [showLexAssignmentPrompt, setShowLexAssignmentPrompt] = useState(false);
   const [lexAssignmentVersion, setLexAssignmentVersion] = useState<number>();
   const [ownWriteVersion, setOwnWriteVersion] = useState<number>();
+  const sectionRef = useRef<HTMLElement>(null);
+  // Spara ärende in the sidebar submits this document's form and waits here for the save to finish.
+  const pendingSidebarSave = useRef<(saved: boolean) => void>(undefined);
+  const [revealRequest, setRevealRequest] = useState(0);
 
   // A version read for one errand says nothing about the next one opened in its place.
   useEffect(() => setOwnWriteVersion(undefined), [errandId]);
@@ -421,6 +429,50 @@ export function SupportInvestigationDocument({
     registerErrandField('classificationHasSubTypes');
   }, [classificationOwner, registerErrandField]);
 
+  // The document is saved with Spara ärende in the sidebar. A draft that cannot be shown or written -
+  // a document out of reach, read-only or locked - is no draft the sidebar could save.
+  const savableDraft = readable && loadState === 'ready' && !formReadonly && (isDirty || classificationDirty);
+  useErrandSaveParticipant(`investigation-document:${definition.key}`, savableDraft, {
+    label: definition.tabLabel,
+    // Submitted through the form, so it is validated exactly as it always was before it is saved.
+    save: () =>
+      new Promise<boolean>((resolve) => {
+        const form = sectionRef.current?.querySelector('form');
+        if (!form) {
+          resolve(false);
+          return;
+        }
+        pendingSidebarSave.current?.(false);
+        pendingSidebarSave.current = resolve;
+        form.requestSubmit();
+      }),
+    reveal: () => {
+      onReveal();
+      setRevealRequest((count) => count + 1);
+    },
+  });
+
+  // Once the document is in view, the handler is taken to why it was not saved. The tabs show it a
+  // render or two after they are asked to, so this waits - a few frames at most - until it is shown.
+  useEffect(() => {
+    if (revealRequest === 0) return;
+    let frame = 0;
+    let framesLeft = 10;
+    const revealWhenShown = () => {
+      const section = sectionRef.current;
+      if (!section) return;
+      if (section.getClientRects().length === 0 && framesLeft-- > 0) {
+        frame = requestAnimationFrame(revealWhenShown);
+        return;
+      }
+      const problem = section.querySelector<HTMLElement>('[data-cy="schema-form-error-summary"], [role="alert"]');
+      (problem ?? section).scrollIntoView({ block: 'start' });
+      problem?.focus({ preventScroll: true });
+    };
+    frame = requestAnimationFrame(revealWhenShown);
+    return () => cancelAnimationFrame(frame);
+  }, [revealRequest]);
+
   // Do not leave a revoked document's values in the DOM. Hooks above keep its in-memory draft.
   if (!readable) return null;
 
@@ -451,6 +503,9 @@ export function SupportInvestigationDocument({
   }
 
   const applySavedDocument = (saved: SavedSupportInvestigationDocument, advanceVersion = true) => {
+    // Read now rather than from this render: a save from the sidebar can follow the errand's own save
+    // before the document has rendered the version that left.
+    const knownVersion = useSupportStore.getState().supportErrand?.version;
     setDocumentState((current) =>
       current
         ? {
@@ -473,9 +528,7 @@ export function SupportInvestigationDocument({
     onSaved(saved.document);
     setDocumentDirty(false);
     // A report retry can perform zero writes or several writes, so its readback proves no parent baseline.
-    return advanceVersion
-      ? advanceParentVersion(supportErrand?.version, saved.parentErrandVersion)
-      : supportErrand?.version;
+    return advanceVersion ? advanceParentVersion(knownVersion, saved.parentErrandVersion) : knownVersion;
   };
 
   const applySavedClassification = (
@@ -685,10 +738,11 @@ export function SupportInvestigationDocument({
     }
   };
 
-  const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
+  /** Validates and saves the draft; answers whether it was saved. A refusal is told in the document. */
+  const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []): Promise<boolean> => {
     const reportRequested = reportAfterSave.current;
     reportAfterSave.current = false;
-    if (!municipalityId || !errandId || !readable || formReadonly || isSaving) return;
+    if (!municipalityId || !errandId || !readable || formReadonly || isSaving) return false;
 
     const normalizedData = normalizeContextualInvestigationFormData(
       definition.key,
@@ -730,8 +784,9 @@ export function SupportInvestigationDocument({
         });
       }
       setValidationErrors(errors);
-      if (errors.length > 0) return;
+      if (errors.length > 0) return false;
 
+      const errandVersion = useSupportStore.getState().supportErrand?.version;
       const savedDocument = await saveInvestigationDocumentStep({
         municipalityId,
         errandId,
@@ -740,12 +795,12 @@ export function SupportInvestigationDocument({
         value: normalizedData,
         persisted: documentState.persisted,
         etag: documentState.etag,
-        parentErrandVersion: supportErrand?.version,
+        parentErrandVersion: errandVersion,
         documentDirty: isDirty,
         classificationDirty,
         documentSavedPendingClassification,
       });
-      const classificationVersion = savedDocument ? applySavedDocument(savedDocument) : supportErrand?.version;
+      const classificationVersion = savedDocument ? applySavedDocument(savedDocument) : errandVersion;
 
       if (savedDocument && classificationDirty) {
         documentSavedForClassification = true;
@@ -775,6 +830,7 @@ export function SupportInvestigationDocument({
       if (reportRequested) await generateReportNow();
       await promptLexAssignmentIfNeeded(normalizedData);
       await rememberOwnWriteVersion();
+      return true;
     } catch (error) {
       if (isSupportInvestigationAccessDenied(error)) refreshAccess();
       setNotice({
@@ -787,13 +843,24 @@ export function SupportInvestigationDocument({
           wording,
         }),
       });
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
+  /** Submits through the form - from the sidebar or Skapa rapport - and tells the sidebar how it went. */
+  const submitDocument = (formData: InvestigationFormData, schemaErrors?: RJSFValidationError[]) => {
+    void save(formData, schemaErrors).then((saved) => {
+      const settle = pendingSidebarSave.current;
+      pendingSidebarSave.current = undefined;
+      settle?.(saved);
+    });
+  };
+
   return (
     <section
+      ref={sectionRef}
       className="min-w-0 max-w-full p-16 sm:p-24 md:p-32"
       aria-labelledby={`${definition.key}-heading`}
       data-cy={`investigation-document-${definition.key}`}
@@ -912,7 +979,7 @@ export function SupportInvestigationDocument({
       <SchemaForm
         schema={renderingSchema}
         validationErrors={validationErrors}
-        onError={(errors) => void save(documentState.formData, errors)}
+        onError={(errors) => submitDocument(documentState.formData, errors)}
         defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
@@ -948,8 +1015,10 @@ export function SupportInvestigationDocument({
             void offerInvestigationTemplateText(chosenTemplate);
           }
         }}
-        onSubmit={(formData) => void save(formData)}
+        onSubmit={(formData) => submitDocument(formData)}
         readonly={formReadonly || isSaving}
+        // Saved with Spara ärende in the sidebar, together with the rest of the errand.
+        withoutSubmitButton
         externalFields={{
           ...(completion
             ? {
@@ -994,13 +1063,7 @@ export function SupportInvestigationDocument({
               }
             : {}),
         }}
-        submitButtonOptions={{
-          label: isDecision ? 'Spara beslut' : 'Spara utredning',
-          leadingIcon: false,
-          loading: isSaving,
-          disabled: !isDirty && !classificationDirty,
-        }}
-        // Handing the errand back belongs with saving it, not above the document: the investigator
+        // Handing the errand back belongs at the foot of the document, not above it: the investigator
         // reaches it once the document is written, and it stays disabled while anything is unsaved.
         submitButtonActions={
           canReturnToManager ? (

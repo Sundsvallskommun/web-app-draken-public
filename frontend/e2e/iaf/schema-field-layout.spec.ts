@@ -113,7 +113,7 @@ test('schemafält behåller linjeringen när endast ena fältet har ett valideri
   const date = document.locator(`#${key}_eventDate`);
   const time = document.locator(`#${key}_eventTime`);
   await time.fill('12:30');
-  await document.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+  await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
   await expect(date).toHaveAttribute('aria-invalid', 'true');
   await expect(time).toHaveAttribute('aria-invalid', 'false');
   await expect(document.locator(`#${key}_eventDate__error`)).toBeVisible();

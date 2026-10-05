@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { act, createElement, Fragment, type ReactNode, useCallback, useState } from 'react';
+import { act, createElement, type ReactNode, useCallback, useState } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import WarnIfUnsavedChanges from '../../../common/utils/warnIfUnsavedChanges';
 import { useConfigStore } from '../../../stores/config-store';
 import { useSupportStore } from '../../../stores/support-store';
 import { useUserStore } from '../../../stores/user-store';
+import {
+  saveParticipantsInTurn,
+  selectDirtyParticipants,
+  useErrandSaveParticipantsStore,
+} from '../../components/support-errand/errand-save/errand-save-participants';
 import type { InvestigationAccessState } from '../investigation-access';
 import { useInvestigationProfileStore } from '../investigation-profile-store';
 import type { InvestigationFormData } from './investigation-document';
@@ -21,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   attachments: vi.fn(),
   completion: vi.fn<() => { field: string; reportsField: string } | undefined>(),
   refresh: vi.fn(),
+  revealTab: vi.fn(),
   router: { push: vi.fn(), replace: vi.fn() },
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router }));
@@ -66,15 +72,20 @@ vi.mock('@common/components/json/schema/schema-form.component', () => ({
     onSubmit: (data: InvestigationFormData) => void;
   }) =>
     createElement(
-      Fragment,
-      null,
+      'form',
+      {
+        onSubmit: (event: { preventDefault: () => void }) => {
+          event.preventDefault();
+          onSubmit(formData);
+        },
+      },
       createElement('textarea', {
         'aria-label': idPrefix,
         value: String(formData.answer ?? ''),
         readOnly: readonly,
         onChange: (event: { target: { value: string } }) => onChange({ ...formData, answer: event.target.value }),
       }),
-      createElement('button', { onClick: () => onSubmit(formData) }, 'Save document'),
+      createElement('button', { type: 'button', onClick: () => onSubmit(formData) }, 'Save document'),
       externalFields?.investigationReport
     ),
 }));
@@ -146,7 +157,12 @@ function Harness({ access }: { access: InvestigationAccessState }) {
   }, []);
   return (
     <WarnIfUnsavedChanges showWarning={Object.values(dirty).some(Boolean)}>
-      <SupportErrandInvestigationTab access={access} onDirtyChange={onDirtyChange} refreshAccess={mocks.refresh} />
+      <SupportErrandInvestigationTab
+        access={access}
+        onDirtyChange={onDirtyChange}
+        refreshAccess={mocks.refresh}
+        revealTab={mocks.revealTab}
+      />
     </WarnIfUnsavedChanges>
   );
 }
@@ -164,6 +180,7 @@ beforeEach(() => {
     etag: '"1"',
   }));
   mocks.refresh.mockClear();
+  mocks.revealTab.mockClear();
   useConfigStore.setState({ municipalityId: '2281' });
   useSupportStore.setState({
     supportErrand: { id: 'one', version: 1, category: '', type: '', subType: '', customer: [], contacts: [] },
@@ -339,4 +356,57 @@ test('a failed attachment refresh still reports the publication as successful', 
   await screen.findByText(/Rapporten report.pdf har skapats, men bilagelistan kunde inte uppdateras/);
   expect(mocks.generate).toHaveBeenCalledTimes(1);
   expect(screen.queryByText('List unavailable')).toBeNull();
+});
+
+const dirtyParticipants = () => selectDirtyParticipants(useErrandSaveParticipantsStore.getState());
+
+test('Spara ärende saves a document draft through its form', async () => {
+  mocks.save.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Sidebar answer' } },
+    etag: '"2"',
+    parentErrandVersion: 2,
+  });
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  expect(screen.queryByRole('button', { name: /Spara utredning/u })).toBeNull();
+  fireEvent.change(await screen.findByLabelText('first', { selector: 'textarea' }), {
+    target: { value: 'Sidebar answer' },
+  });
+  await waitFor(() => expect(dirtyParticipants().map(({ label }) => label)).toEqual(['first']));
+
+  expect(await saveParticipantsInTurn(dirtyParticipants())).toEqual([]);
+  expect(mocks.save).toHaveBeenCalledWith(
+    '2281',
+    'one',
+    'first',
+    { schemaId: 'schema', value: { answer: 'Sidebar answer' } },
+    1,
+    '"1"'
+  );
+  await waitFor(() => expect(dirtyParticipants()).toEqual([]));
+  expect(useSupportStore.getState().supportErrand).toMatchObject({ version: 2 });
+});
+
+test('a document Spara ärende could not save is shown with why', async () => {
+  mocks.save.mockRejectedValue(new Error('Lost connection'));
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.change(await screen.findByLabelText('first', { selector: 'textarea' }), {
+    target: { value: 'Unsaved answer' },
+  });
+  await waitFor(() => expect(dirtyParticipants()).toHaveLength(1));
+
+  const unsaved = await saveParticipantsInTurn(dirtyParticipants());
+  expect(unsaved.map(({ label }) => label)).toEqual(['first']);
+  expect(screen.getByDisplayValue('Unsaved answer')).toBeTruthy();
+  act(() => unsaved[0].reveal());
+  expect(mocks.revealTab).toHaveBeenCalledOnce();
+});
+
+test('a draft that is out of reach is no draft for Spara ärende', async () => {
+  const { rerender } = render(createElement(Harness, { access: grants() }));
+  fireEvent.change(await screen.findByLabelText('first', { selector: 'textarea' }), {
+    target: { value: 'Hidden draft' },
+  });
+  await waitFor(() => expect(dirtyParticipants()).toHaveLength(1));
+  rerender(createElement(Harness, { access: { status: 'error' } }));
+  await waitFor(() => expect(dirtyParticipants()).toEqual([]));
 });

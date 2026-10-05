@@ -45,7 +45,7 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
   investigation: {
     heading: 'Utredning',
     description:
-      'Dokumentera de olika delarna av utredningen. Varje del sparas separat och behåller sin schemaversion.',
+      'Dokumentera de olika delarna av utredningen och spara med Spara ärende. Varje del sparas separat och behåller sin schemaversion.',
     dataCy: 'support-investigation-tab',
     noticePrefix: 'investigation-tab',
     notices: {
@@ -60,7 +60,7 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
   decision: {
     heading: 'Beslut',
     description:
-      'Dokumentera beslutet som avslutar utredningen, inklusive ställningstagandet till anmälan till IVO. Beslutet sparas separat från utredningen och behåller sin schemaversion.',
+      'Dokumentera beslutet som avslutar utredningen, inklusive ställningstagandet till anmälan till IVO, och spara med Spara ärende. Beslutet sparas separat från utredningen och behåller sin schemaversion.',
     dataCy: 'support-decision-tab',
     noticePrefix: 'decision-tab',
     notices: {
@@ -95,6 +95,7 @@ function InvestigationDocuments({
   onDirtyChange,
   access,
   refreshAccess,
+  revealTab,
   placement = 'investigation',
 }: Readonly<SupportErrandInvestigationTabProps>) {
   const [activeDocumentKey, setActiveDocumentKey] = useState<string>();
@@ -271,6 +272,10 @@ function InvestigationDocuments({
                   refreshAccess={refreshAccess}
                   onDirtyChange={dirtyCallbacks[definition.key]}
                   onSaved={recordSavedDocument}
+                  onReveal={() => {
+                    revealTab();
+                    setActiveDocumentKey(definition.key);
+                  }}
                 />
               </Tabs.Content>
             </Tabs.Item>
