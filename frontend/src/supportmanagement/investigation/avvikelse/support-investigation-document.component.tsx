@@ -14,10 +14,7 @@ import {
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
-import {
-  isSoleSupportErrandVersionChange,
-  latestKnownSupportErrandVersion,
-} from '@supportmanagement/services/support-errand-write-version';
+import { latestKnownSupportErrandVersion } from '@supportmanagement/services/support-errand-write-version';
 import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -88,6 +85,7 @@ import {
   saveSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
+import { useAdvanceErrandVersion } from './use-advance-errand-version';
 import { useInvestigationTextTemplate } from './use-investigation-text-template';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -170,11 +168,7 @@ export function SupportInvestigationDocument({
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
-  const {
-    register: registerErrandField,
-    resetField: resetErrandField,
-    getValues: getErrandValues,
-  } = useFormContext<SupportErrand>();
+  const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const profile = useInvestigationProfileStore((state) => state.profile);
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
@@ -221,6 +215,7 @@ export function SupportInvestigationDocument({
   const persistedClassification = useMemo(() => getClassificationDraft(supportErrand), [supportErrand]);
 
   const setDocumentDirty = useCallback((nextDirty: boolean) => setIsDirty(nextDirty), []);
+  const advanceParentVersion = useAdvanceErrandVersion(errandId);
 
   const applyInvestigationTemplateText = useCallback(
     (template: string, text: string) => {
@@ -454,22 +449,6 @@ export function SupportInvestigationDocument({
       </div>
     );
   }
-
-  const advanceParentVersion = (expected: number | undefined, received: number) => {
-    const current = useSupportStore.getState().supportErrand;
-    if (
-      current &&
-      current.id === errandId &&
-      current.version === expected &&
-      getErrandValues('version') === expected &&
-      isSoleSupportErrandVersionChange(expected, received)
-    ) {
-      useSupportStore.setState({ supportErrand: { ...current, version: received } });
-      resetErrandField('version', { defaultValue: received });
-      return received;
-    }
-    return expected;
-  };
 
   const applySavedDocument = (saved: SavedSupportInvestigationDocument, advanceVersion = true) => {
     setDocumentState((current) =>
