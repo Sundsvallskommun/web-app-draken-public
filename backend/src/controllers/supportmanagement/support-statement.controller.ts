@@ -19,10 +19,11 @@ const DRAFT_STATUS = 'DRAFT';
 const STATUSES = [DRAFT_STATUS, 'ACTIVE', 'COMPLETED', 'CANCELLED'];
 const PURPOSE_PATTERN = /^[A-Z_]+_(REQUEST|RESPONSE)$/;
 
-/** Support Management names the attachment it created in the Location header, so nothing has to be guessed. */
+const LAST_PATH_SEGMENT = /([^/]+)\/*$/;
+
 const attachmentIdOfLocation = (location: string | undefined): string | undefined => {
-  const last = location && new URL(location, 'http://unused').pathname.split('/').filter(Boolean).pop();
-  return last ? decodeURIComponent(last) : undefined;
+  const named = location && LAST_PATH_SEGMENT.exec(new URL(location, 'https://unused').pathname)?.[1];
+  return named ? decodeURIComponent(named) : undefined;
 };
 
 class SupportStatementFieldsDto {
