@@ -9,7 +9,7 @@ import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockComments } from './fixtures/mockComments';
 import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
-import { mockMexTarget } from './fixtures/mockHandover';
+import { mockMexTarget, mockParkingPermitTarget } from './fixtures/mockHandover';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
@@ -32,7 +32,7 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
-    await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget], { method: 'GET' });
+    await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget, mockParkingPermitTarget], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
     await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {
@@ -441,7 +441,51 @@ test.describe('errand page', () => {
     );
   });
 
-  test('Can manage Vidarebefodra', async ({ page, mockRoute, dismissCookieConsent }) => {
+  // MEX and PT are both casedata forwards: same dialog, and the forward endpoint gets the target namespace.
+  for (const casedataTarget of [mockMexTarget, mockParkingPermitTarget]) {
+    test(`Can manage Vidarebefodra to ${casedataTarget.shortCode}`, async ({
+      page,
+      mockRoute,
+      dismissCookieConsent,
+    }) => {
+      await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+      await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {
+        method: 'POST',
+      });
+
+      await page.goto('arende/KC-00000001');
+      await dismissCookieConsent();
+
+      await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+      await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+      await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+      await expect(page.locator('[data-cy="resolution-input"]')).toHaveValue('');
+      await expect(
+        page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' })
+      ).toBeDisabled();
+      await page.locator('[data-cy="resolution-input"]').selectOption(casedataTarget.displayName);
+      // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
+      // into the editor before forwarding.
+      await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
+      await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
+      await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
+
+      await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
+
+      await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
+      await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+      const [forwardResponse] = await Promise.all([
+        page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
+        page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+      ]);
+      const forwardRequest = forwardResponse.request();
+      const forwardBody = forwardRequest.postDataJSON();
+      expect(forwardBody.department).toBe(casedataTarget.namespace);
+      expect(forwardBody.recipient).toBe('DEPARTMENT');
+    });
+  }
+
+  test('Can forward to PT without a message', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {
       method: 'POST',
@@ -451,30 +495,19 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
-    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
-    await expect(page.locator('[data-cy="resolution-input"]')).toHaveValue('');
-    await expect(
-      page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' })
-    ).toBeDisabled();
-    await page.locator('[data-cy="resolution-input"]').selectOption('Mark och exploatering (MEX)');
-    // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
-    // into the editor before forwarding.
+    await page.locator('[data-cy="resolution-input"]').selectOption(mockParkingPermitTarget.displayName);
+    // The message is optional for a Draken forward, so leave the editor empty.
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
-    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
-    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
 
     await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
-
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     const [forwardResponse] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
       page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
-    const forwardRequest = forwardResponse.request();
-    const forwardBody = forwardRequest.postDataJSON();
-    expect(forwardBody.department).toBe('SBK_MEX');
-    expect(forwardBody.recipient).toBe('DEPARTMENT');
+    const forwardBody = forwardResponse.request().postDataJSON();
+    expect(forwardBody.department).toBe(mockParkingPermitTarget.namespace);
+    expect(forwardBody.message).toBe('');
+    await expect(page.getByText('Ärendet vidarebefordrades')).toBeVisible();
   });
 });

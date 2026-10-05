@@ -980,8 +980,9 @@ export const forwardSupportErrand: (
   if (!data.recipient) {
     throw 'No recipient found. Cannot forward errand without recipient.';
   }
-  if (!data.message) {
-    throw 'No message found. Cannot forward errand without message.';
+  // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
+  if (data.recipient === 'EMAIL' && !data.message) {
+    throw 'No message found. Cannot forward errand by email without message.';
   }
 
   // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly

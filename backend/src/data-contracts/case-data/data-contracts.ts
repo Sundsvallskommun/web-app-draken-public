@@ -1348,6 +1348,8 @@ export enum DecisionDecisionOutcomeEnum {
   REJECTION = "REJECTION",
   DISMISSAL = "DISMISSAL",
   CANCELLATION = "CANCELLATION",
+  CONDITIONAL_APPROVAL = "CONDITIONAL_APPROVAL",
+  REVOCATION = "REVOCATION",
 }
 
 /** How the errand was created */
@@ -1415,6 +1417,8 @@ export enum PatchDecisionDecisionOutcomeEnum {
   REJECTION = "REJECTION",
   DISMISSAL = "DISMISSAL",
   CANCELLATION = "CANCELLATION",
+  CONDITIONAL_APPROVAL = "CONDITIONAL_APPROVAL",
+  REVOCATION = "REVOCATION",
 }
 
 /** If the message is inbound or outbound from the perspective of case-data/e-service. */
