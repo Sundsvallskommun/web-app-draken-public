@@ -140,7 +140,7 @@ export const SupportTabsWrapper: FC<{
       getMessagesAndConversations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand]);
+  }, [supportErrand?.id, supportErrand?.modified]);
 
   const conversationMessageCountSummary = useMemo(
     () => getConversationMessageCountSummary(conversationReadByCounts, supportErrand?.errandNumber ?? ''),

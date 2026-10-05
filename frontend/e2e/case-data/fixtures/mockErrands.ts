@@ -1,4 +1,4 @@
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 export const emptyMockErrands = {
   data: {

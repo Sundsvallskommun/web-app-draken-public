@@ -1,4 +1,4 @@
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 // This person number is for test purposes, from the Swedish Tax Agency
 const MOCK_PERSON_NUMBER = mockEnv.mockPersonNumber;

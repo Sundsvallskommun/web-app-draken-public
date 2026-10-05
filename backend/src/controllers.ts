@@ -24,6 +24,7 @@ import { EstateInfoController } from './controllers/estateInfo.controller';
 import { FeatureFlagController } from './controllers/featureflag.controller';
 import { HealthController } from './controllers/health.controller';
 import { JsonSchemaController } from './controllers/jsonschema.controller';
+import { LicensedBusinessController } from './controllers/licensed-business.controller';
 import { MessageController } from './controllers/message.controller';
 import { OrganizationController } from './controllers/organization.controller';
 import { RelationsController } from './controllers/relations.controller';
@@ -99,5 +100,6 @@ export const CONTROLLERS: NewableFunction[] = [
   FeatureFlagController,
   EmployeeController,
   OrganizationController,
+  LicensedBusinessController,
   SupportStatementController,
 ];

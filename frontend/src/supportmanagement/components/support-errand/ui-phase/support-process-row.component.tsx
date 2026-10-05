@@ -9,8 +9,8 @@ import {
   isSupportProcessFailed,
   supportProcessActivityKey,
   supportProcessName,
+  supportProcessShownStepIndex,
   supportProcessStatusKey,
-  supportProcessStepIndex,
   supportProcessStepKeys,
 } from '@supportmanagement/services/support-process-service';
 import { CircleAlert, CircleCheck } from 'lucide-react';
@@ -60,7 +60,7 @@ export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
 
   const failed = isSupportProcessFailed(process);
   const completed = isSupportProcessCompleted(process);
-  const stepIndex = supportProcessStepIndex(process);
+  const stepIndex = supportProcessShownStepIndex(process);
   const errorMessage = supportProcessErrorMessage(process);
   const statusKey = supportProcessStatusKey(process.processStatus);
   const steps = supportProcessStepKeys().map((key) => t(key));
