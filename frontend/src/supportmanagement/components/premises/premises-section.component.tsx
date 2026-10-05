@@ -1,8 +1,9 @@
 'use client';
 
 import type { Address, Assignment } from '@common/data-contracts/licensed-business/data-contracts';
-import { Button, Icon, Label, SearchField, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Icon, Label, RadioButton, SearchField, Spinner, Table } from '@sk-web-gui/react';
 import type { RestaurantNumberWithAssignment } from '@supportmanagement/services/licensed-business-service';
+import type { PremisesChoice } from '@supportmanagement/services/support-decision-premises-service';
 import {
   formatAddress,
   formatPremisesAddress,
@@ -11,7 +12,7 @@ import {
 import { Store } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 
-import { usePremisesRestaurantNumbers } from './use-premises-restaurant-numbers';
+import { type PremisesRestaurantNumbers, usePremisesRestaurantNumbers } from './use-premises-restaurant-numbers';
 
 const SOURCE_LABELS: Record<PremisesAddress['source'], string> = {
   FORM: 'Adress i ansökan',
@@ -23,8 +24,6 @@ const NUMBER_STATUS: Record<string, { label: string; color: 'gronsta' | 'tertiar
   AVAILABLE: { label: 'Ledigt', color: 'tertiary' },
 };
 
-// LicensedBusiness documents only ACTIVE; ENDED is what the register returns once validTo has passed.
-// A status not listed here is shown as sent, so a new one is visible rather than hidden.
 const ASSIGNMENT_STATUS: Record<string, string> = { ACTIVE: 'Pågående', ENDED: 'Avslutad' };
 
 const formatPeriod = (validFrom?: string, validTo?: string) =>
@@ -60,7 +59,21 @@ const AssignmentCell: FC<{ restaurantNumber: RestaurantNumberWithAssignment; ind
   );
 };
 
-const RestaurantNumbersTable: FC<{ restaurantNumbers: RestaurantNumberWithAssignment[] }> = ({ restaurantNumbers }) => {
+/** Choose a restaurant number, or a new one. */
+interface PremisesSelection {
+  choice: PremisesChoice | undefined;
+  onChoose: (choice: PremisesChoice) => void;
+  /** Where a new number would be created; without it "new" is not offered. */
+  newNumberAddress?: string;
+  disabled?: boolean;
+}
+
+const CHOICE_NAME = 'premises-restaurant-number-choice';
+
+const RestaurantNumbersTable: FC<{
+  restaurantNumbers: RestaurantNumberWithAssignment[];
+  selection?: PremisesSelection;
+}> = ({ restaurantNumbers, selection }) => {
   if (restaurantNumbers.length === 0) {
     return (
       <p className="text-dark-secondary italic m-0" data-cy="premises-no-restaurant-numbers">
@@ -72,6 +85,11 @@ const RestaurantNumbersTable: FC<{ restaurantNumbers: RestaurantNumberWithAssign
   return (
     <Table dense scrollable data-cy="premises-restaurant-numbers">
       <Table.Header>
+        {selection && (
+          <Table.HeaderColumn>
+            <span className="sr-only">Välj</span>
+          </Table.HeaderColumn>
+        )}
         <Table.HeaderColumn>Nummer</Table.HeaderColumn>
         <Table.HeaderColumn>Namn</Table.HeaderColumn>
         <Table.HeaderColumn>Status</Table.HeaderColumn>
@@ -80,9 +98,26 @@ const RestaurantNumbersTable: FC<{ restaurantNumbers: RestaurantNumberWithAssign
       <Table.Body>
         {restaurantNumbers.map((restaurantNumber, index) => {
           const status = restaurantNumber.status ? NUMBER_STATUS[restaurantNumber.status] : undefined;
+          const number = restaurantNumber.number;
           return (
             <Table.Row key={restaurantNumber.id ?? restaurantNumber.number ?? index} data-cy={`premises-row-${index}`}>
-              <Table.Column>{restaurantNumber.number ?? '-'}</Table.Column>
+              {selection && (
+                <Table.Column>
+                  {number && (
+                    <RadioButton
+                      size="sm"
+                      name={CHOICE_NAME}
+                      value={number}
+                      checked={selection.choice?.kind === 'EXISTING' && selection.choice.restaurantNumber === number}
+                      disabled={selection.disabled}
+                      aria-label={`Använd restaurangnummer ${number}`}
+                      data-cy={`premises-choose-${index}`}
+                      onChange={() => selection.onChoose({ kind: 'EXISTING', restaurantNumber: number })}
+                    />
+                  )}
+                </Table.Column>
+              )}
+              <Table.Column>{number ?? '-'}</Table.Column>
               <Table.Column>{restaurantNumber.premisesName || '-'}</Table.Column>
               <Table.Column>
                 {status ? (
@@ -104,7 +139,6 @@ const RestaurantNumbersTable: FC<{ restaurantNumbers: RestaurantNumberWithAssign
   );
 };
 
-// Street numbers compare as numbers, so Storgatan 2 comes before Storgatan 11.
 const addressCollator = new Intl.Collator('sv', { numeric: true, sensitivity: 'base' });
 
 const byStreetThenPostalCode = (a: Address, b: Address) =>
@@ -188,21 +222,32 @@ const AddressResultsTable: FC<AddressResultsTableProps> = ({ query, addresses, t
   );
 };
 
-interface PremisesSectionProps {
-  municipalityId: string | undefined;
-  /** The premises address the errand points at; without one the person searches for an address. */
+const NewNumberChoice: FC<{ selection: PremisesSelection }> = ({ selection }) =>
+  selection.newNumberAddress ? (
+    <RadioButton
+      size="sm"
+      name={CHOICE_NAME}
+      value="NEW"
+      checked={selection.choice?.kind === 'NEW'}
+      disabled={selection.disabled}
+      data-cy="premises-choose-new"
+      onChange={() => selection.onChoose({ kind: 'NEW' })}
+    >
+      Skapa nytt restaurangnummer på {selection.newNumberAddress}
+    </RadioButton>
+  ) : null;
+
+interface PremisesLookupProps {
+  /** The search starts from its street. */
   premises: PremisesAddress | undefined;
+  lookup: PremisesRestaurantNumbers;
+  /** Without it the numbers are only shown. */
+  selection?: PremisesSelection;
 }
 
-/**
- * Serveringsställen (restaurant numbers) registered at the premises address, read-only. Knows nothing
- * about the errand, so it can be placed wherever the premises address is known.
- */
-export const PremisesSection: FC<PremisesSectionProps> = ({ municipalityId, premises }) => {
-  const { loading, error, match, address, restaurantNumbers, selectAddress, search } = usePremisesRestaurantNumbers(
-    municipalityId,
-    premises
-  );
+/** Address search and the restaurant numbers at the settled address. Frameless. */
+export const PremisesLookup: FC<PremisesLookupProps> = ({ premises, lookup, selection }) => {
+  const { loading, error, match, address, restaurantNumbers, selectAddress, search } = lookup;
   const [query, setQuery] = useState(premises?.street ?? '');
   // A new premises street replaces whatever was typed (adjusting state during render, not in an effect).
   const [queryStreet, setQueryStreet] = useState(premises?.street);
@@ -231,27 +276,12 @@ export const PremisesSection: FC<PremisesSectionProps> = ({ municipalityId, prem
         <span className="text-small" data-cy="premises-selected-address">
           Serveringsställen på <strong>{formatAddress(address)}</strong>
         </span>
-        <RestaurantNumbersTable restaurantNumbers={restaurantNumbers} />
+        <RestaurantNumbersTable restaurantNumbers={restaurantNumbers} selection={selection} />
       </div>
     ) : null;
 
   return (
-    <div className="pt-12 pb-20 px-16 border-t-1 flex flex-col gap-12" data-cy="premises-section">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-8">
-          <Icon icon={<Store size={18} />} />
-          <span className="font-semibold">Serveringsställe</span>
-        </div>
-        <p className="text-small text-dark-secondary m-0" data-cy="premises-info">
-          Visar bara vad som redan finns registrerat på adressen. En ny tilldelning, och vid behov ett nytt
-          serveringsställenummer, skapas i beslutssteget.
-        </p>
-        <span className="text-small text-dark-secondary" data-cy="premises-address">
-          {premises
-            ? `${SOURCE_LABELS[premises.source]}: ${formatPremisesAddress(premises)}`
-            : 'Ärendet saknar besöksadress. Sök efter serveringsställets adress.'}
-        </span>
-      </div>
+    <>
       <SearchField
         size="md"
         value={query}
@@ -274,6 +304,39 @@ export const PremisesSection: FC<PremisesSectionProps> = ({ municipalityId, prem
       ) : null}
       {status()}
       {restaurantNumbersOfAddress()}
+      {selection && !loading && !error ? <NewNumberChoice selection={selection} /> : null}
+    </>
+  );
+};
+
+interface PremisesSectionProps {
+  municipalityId: string | undefined;
+  /** Without it the person searches for an address. */
+  premises: PremisesAddress | undefined;
+}
+
+/** Read-only restaurant numbers registered at the premises address. */
+export const PremisesSection: FC<PremisesSectionProps> = ({ municipalityId, premises }) => {
+  const lookup = usePremisesRestaurantNumbers(municipalityId, premises);
+
+  return (
+    <div className="pt-12 pb-20 px-16 border-t-1 flex flex-col gap-12" data-cy="premises-section">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-8">
+          <Icon icon={<Store size={18} />} />
+          <span className="font-semibold">Serveringsställe</span>
+        </div>
+        <p className="text-small text-dark-secondary m-0" data-cy="premises-info">
+          Visar bara vad som redan finns registrerat på adressen. En ny tilldelning, och vid behov ett nytt
+          serveringsställenummer, skapas i beslutssteget.
+        </p>
+        <span className="text-small text-dark-secondary" data-cy="premises-address">
+          {premises
+            ? `${SOURCE_LABELS[premises.source]}: ${formatPremisesAddress(premises)}`
+            : 'Ärendet saknar besöksadress. Sök efter serveringsställets adress.'}
+        </span>
+      </div>
+      <PremisesLookup premises={premises} lookup={lookup} />
     </div>
   );
 };

@@ -255,6 +255,13 @@
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
+    "premises": {
+      "label": "Serveringsställe",
+      "number": "restaurangnummer {{number}}",
+      "new_number": "nytt restaurangnummer",
+      "sent": "Serveringsställe som skickas med beslutet: {{premises}}",
+      "not_chosen": "Inget restaurangnummer är valt under Serveringsställe. Beslutet sparas utan uppgifter om serveringsställe."
+    },
     "basis": {
       "heading": "Beslutsunderlag",
       "intro": "En sammanställning av de uppgifter beslutet ska grundas på, hämtade från ärendet.",
@@ -276,7 +283,10 @@
       "premises": {
         "heading": "Serveringsställe",
         "address": "Besöksadress",
-        "same_as_owner": "samma som ärendeägarens adress",
+        "address_from": {
+          "FORM": "Besöksadress (ansökan)",
+          "OWNER": "Besöksadress (ärendeägare)"
+        },
         "rest": "Namn, kontaktuppgifter, antal platser och serveringsansvariga hämtas från ärendeuppgifterna och visas här när det är beslutat hur formulärets nycklar ska hanteras."
       },
       "operation": "Verksamheten",
