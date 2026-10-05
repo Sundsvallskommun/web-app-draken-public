@@ -1061,10 +1061,9 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     }
 
     if (method === 'GET' && /\/newerrand\/[^/]+\/options$/u.test(path)) {
-      await fulfillJson(
-        route,
-        apiResponse(scenario.registrationOptions ?? { reportTypes: [], locations: [], priorities: [] })
-      );
+      // The BFF answers with the options themselves, not wrapped in `{ data }` - wrapping them here
+      // once hid a client that read the wrapper and failed against every real backend.
+      await fulfillJson(route, scenario.registrationOptions ?? { reportTypes: [], locations: [], priorities: [] });
       return;
     }
 

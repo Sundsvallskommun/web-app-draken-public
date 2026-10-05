@@ -837,10 +837,7 @@ export interface SupportRegistrationChoice {
 
 export const getSupportRegistrationOptions: (municipalityId: string) => Promise<SupportRegistrationOptions> = (
   municipalityId
-) =>
-  apiService
-    .get<{ data: SupportRegistrationOptions }>(`newerrand/${municipalityId}/options`)
-    .then((res) => res.data.data);
+) => apiService.get<SupportRegistrationOptions>(`newerrand/${municipalityId}/options`).then((res) => res.data);
 
 export const initiateSupportErrand: (
   municipalityId: string,
