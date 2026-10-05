@@ -13,7 +13,8 @@ const registrationOptions = {
     { labelId: 'abuse', displayName: 'Missförhållande', resourcePath: 'REPORT_TYPE/ABUSE' },
   ],
   locations: [{ labelId: 'unit', displayName: 'Hemtjänst Norr', resourcePath: 'LOCATION/VOF/HEMTJANST_NORR' }],
-  priorities: ['HIGH', 'MEDIUM', 'LOW'],
+  // The handler is not asked for a priority; the BFF starts every errand at Medel.
+  priorities: [],
 };
 
 const visitRegistration = async (
@@ -54,14 +55,14 @@ test.describe('Registrering i IAF/VOF', () => {
     await form.locator('[data-cy="registration-report-type"]').selectOption('abuse');
     await expect(submit).toBeDisabled();
     await form.locator('[data-cy="registration-location"]').selectOption('unit');
-    await form.locator('[data-cy="registration-priority"]').selectOption('HIGH');
+    await expect(form.locator('[data-cy="registration-priority"]')).toHaveCount(0);
     await expect(submit).toBeEnabled();
 
     await submit.click();
 
     await expect
       .poll(() => trace.registrations)
-      .toEqual([{ reportTypeLabelId: 'abuse', locationLabelId: 'unit', priority: 'HIGH' }]);
+      .toEqual([{ reportTypeLabelId: 'abuse', locationLabelId: 'unit' }]);
     await expect(page).toHaveURL(new RegExp(`/arende/${errandNumber}$`, 'u'));
   });
 
@@ -94,7 +95,7 @@ test.describe('Registrering i IAF/VOF', () => {
     await visitRegistration(page, dismissCookieConsent);
 
     const form = page.locator('[data-cy="support-registration-form"]');
-    await expect(form.locator('[data-cy="registration-location-fixed"]')).toContainText('Hemtjänst Syd');
+    await expect(form.locator('[data-cy="registration-location-fixed"]')).toHaveValue('Hemtjänst Syd');
     await expect(form.locator('[data-cy="registration-location"]')).toHaveCount(0);
 
     await form.locator('[data-cy="registration-report-type"]').selectOption('deviation');
@@ -102,6 +103,6 @@ test.describe('Registrering i IAF/VOF', () => {
 
     await expect
       .poll(() => trace.registrations)
-      .toEqual([{ reportTypeLabelId: 'deviation', locationLabelId: 'employment-unit', priority: 'MEDIUM' }]);
+      .toEqual([{ reportTypeLabelId: 'deviation', locationLabelId: 'employment-unit' }]);
   });
 });

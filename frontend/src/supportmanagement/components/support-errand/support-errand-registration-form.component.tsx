@@ -1,22 +1,50 @@
 'use client';
 
 import { appConfig } from '@config/appconfig';
-import { Button, FormControl, FormLabel, Select, Spinner } from '@sk-web-gui/react';
+import { Alert, Button, Spinner } from '@sk-web-gui/react';
 import {
-  findPriorityLabelForPriorityKey,
   getSupportRegistrationOptions,
   initiateSupportErrand,
   type SupportRegistrationOptions,
 } from '@supportmanagement/services/support-errand-service';
+import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { FC, useEffect, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 
+import { SupportErrandRegistrationCard } from './support-errand-registration-card.component';
+import { SupportErrandRegistrationLayout } from './support-errand-registration-layout.component';
 import { initialRegistrationLocationId } from './support-errand-registration-location';
 import { RegistrationLocationField } from './support-errand-registration-location.component';
+import { RegistrationReportTypeField } from './support-errand-registration-report-type.component';
 
 interface SupportErrandRegistrationFormProps {
   municipalityId: string;
 }
+
+/** Registration opens in a tab of its own, so cancelling closes it - as CaseData's Avbryt does. */
+const CancelButton: FC = () => (
+  <Button variant="tertiary" onClick={() => window.close()}>
+    Avbryt
+  </Button>
+);
+
+/** Why there is no form to fill in, said in the frame the form would have had. */
+const RegistrationNotice: FC<{ type: 'error' | 'warning'; children: ReactNode; 'data-cy'?: string }> = ({
+  type,
+  children,
+  'data-cy': dataCy,
+}) => (
+  <SupportErrandRegistrationLayout actions={<CancelButton />}>
+    <div role="alert" data-cy={dataCy}>
+      <Alert type={type}>
+        <Alert.Icon />
+        <Alert.Content>
+          <Alert.Content.Description>{children}</Alert.Content.Description>
+        </Alert.Content>
+      </Alert>
+    </div>
+  </SupportErrandRegistrationLayout>
+);
 
 /**
  * The registration form for the drakes that ask before the errand exists.
@@ -32,7 +60,6 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
   const [loadError, setLoadError] = useState<string>();
   const [reportTypeLabelId, setReportTypeLabelId] = useState('');
   const [locationLabelId, setLocationLabelId] = useState('');
-  const [priority, setPriority] = useState('MEDIUM');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string>();
 
@@ -43,8 +70,6 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
         if (!current) return;
         setOptions(loaded);
         setLocationLabelId(initialRegistrationLocationId(loaded));
-        if (loaded.priorities.includes(priority)) return;
-        setPriority(loaded.priorities[0] ?? '');
       })
       .catch(() => {
         if (current) setLoadError('Registreringsvalen kunde inte hämtas. Ladda om sidan och försök igen.');
@@ -52,13 +77,13 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
     return () => {
       current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   const register = () => {
     setIsRegistering(true);
     setRegisterError(undefined);
-    initiateSupportErrand(municipalityId, { reportTypeLabelId, locationLabelId, priority })
+    // No priority is sent: the handler is not asked for one, and the BFF starts every errand at Medel.
+    initiateSupportErrand(municipalityId, { reportTypeLabelId, locationLabelId })
       .then((errand) => router.push(`/arende/${errand.errandNumber}`))
       .catch(() => {
         setIsRegistering(false);
@@ -66,20 +91,16 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
       });
   };
 
-  if (loadError) {
-    return (
-      <div className="mx-auto w-full max-w-screen-lg p-24 md:p-40" role="alert">
-        <h1 className="text-h2-md mb-16">Registrera ärende</h1>
-        <p className="text-base">{loadError}</p>
-      </div>
-    );
-  }
+  if (loadError) return <RegistrationNotice type="error">{loadError}</RegistrationNotice>;
 
   if (!options) {
     return (
-      <div className="mx-auto w-full max-w-screen-lg p-24 md:p-40" aria-busy="true">
-        <Spinner size={3} /> <span className="ml-8">Hämtar registreringsvalen..</span>
-      </div>
+      <SupportErrandRegistrationLayout actions={<CancelButton />}>
+        <div className="flex items-center gap-8" aria-busy="true">
+          <Spinner size={3} />
+          <span>Hämtar registreringsvalen..</span>
+        </div>
+      </SupportErrandRegistrationLayout>
     );
   }
 
@@ -87,68 +108,54 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
   // than a form whose only mandatory choice is empty.
   if (options.locations.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-screen-lg p-24 md:p-40" role="alert" data-cy="registration-without-location">
-        <h1 className="text-h2-md mb-16">Registrera ärende</h1>
-        <p className="text-base">
-          Du har ingen plats kopplad till ditt konto, och ett ärende måste höra till en plats. Kontakta den som
-          administrerar behörigheterna för {appConfig.applicationName} för att få en plats kopplad.
-        </p>
-      </div>
+      <RegistrationNotice type="warning" data-cy="registration-without-location">
+        Du har ingen plats kopplad till ditt konto, och ett ärende måste höra till en plats. Kontakta den som
+        administrerar behörigheterna för {appConfig.applicationName} för att få en plats kopplad.
+      </RegistrationNotice>
     );
   }
 
   const canRegister = Boolean(reportTypeLabelId) && Boolean(locationLabelId) && !isRegistering;
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg p-24 md:p-40" data-cy="support-registration-form">
-      <h1 className="text-h2-md mb-24">Registrera ärende</h1>
-
-      <FormControl className="mb-24 w-full max-w-[40rem]">
-        <FormLabel htmlFor="registration-report-type">Vad gäller det?</FormLabel>
-        <Select
-          id="registration-report-type"
-          data-cy="registration-report-type"
-          value={reportTypeLabelId}
-          onChange={(event) => setReportTypeLabelId(event.target.value)}
-        >
-          <Select.Option value="">Välj</Select.Option>
-          {options.reportTypes.map((reportType) => (
-            <Select.Option key={reportType.labelId} value={reportType.labelId}>
-              {reportType.displayName}
-            </Select.Option>
-          ))}
-        </Select>
-      </FormControl>
-
-      <RegistrationLocationField options={options} locationLabelId={locationLabelId} onChange={setLocationLabelId} />
-
-      {options.priorities.length > 0 && (
-        <FormControl className="mb-24 w-full max-w-[40rem]">
-          <FormLabel htmlFor="registration-priority">Prioritet</FormLabel>
-          <Select
-            id="registration-priority"
-            data-cy="registration-priority"
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
+    <SupportErrandRegistrationLayout
+      data-cy="support-registration-form"
+      actions={
+        <>
+          <CancelButton />
+          <Button
+            variant="primary"
+            color="vattjom"
+            rightIcon={<ArrowRight size={18} />}
+            disabled={!canRegister}
+            loading={isRegistering}
+            loadingText="Registrerar"
+            onClick={register}
+            data-cy="registration-submit"
           >
-            {options.priorities.map((priorityKey) => (
-              <Select.Option key={priorityKey} value={priorityKey}>
-                {findPriorityLabelForPriorityKey(priorityKey) ?? priorityKey}
-              </Select.Option>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-
+            Registrera
+          </Button>
+        </>
+      }
+    >
       {registerError && (
-        <p className="mb-16 text-error" role="alert">
-          {registerError}
-        </p>
+        <div role="alert" className="mb-16">
+          <Alert type="error">
+            <Alert.Icon />
+            <Alert.Content>
+              <Alert.Content.Description>{registerError}</Alert.Content.Description>
+            </Alert.Content>
+          </Alert>
+        </div>
       )}
-
-      <Button variant="primary" disabled={!canRegister} onClick={register} data-cy="registration-submit">
-        {isRegistering ? 'Registrerar..' : 'Registrera ärende'}
-      </Button>
-    </div>
+      <SupportErrandRegistrationCard>
+        <RegistrationReportTypeField
+          reportTypes={options.reportTypes}
+          reportTypeLabelId={reportTypeLabelId}
+          onChange={setReportTypeLabelId}
+        />
+        <RegistrationLocationField options={options} locationLabelId={locationLabelId} onChange={setLocationLabelId} />
+      </SupportErrandRegistrationCard>
+    </SupportErrandRegistrationLayout>
   );
 };

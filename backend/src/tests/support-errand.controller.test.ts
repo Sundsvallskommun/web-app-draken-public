@@ -1223,7 +1223,7 @@ describe('SupportErrandController', () => {
       await controller.registerSupportErrand(
         mockReq(mockUser()),
         MUNICIPALITY_ID,
-        { reportTypeLabelId: 'abuse', locationLabelId: 'unit', priority: Priority.HIGH },
+        { reportTypeLabelId: 'abuse', locationLabelId: 'unit' },
         mockRes(),
       );
 
@@ -1236,7 +1236,8 @@ describe('SupportErrandController', () => {
         'LOCATION/VOF',
         'LOCATION/VOF/HEMTJANST_NORR',
       ]);
-      expect(body.priority).toBe(Priority.HIGH);
+      // The handler is not asked for a priority; every errand starts at Medel.
+      expect(body.priority).toBe(Priority.MEDIUM);
       // Registered in Draken rather than reported through Katla, which is what opens its report.
       expect(body.channel).toBe('WEB_UI');
     });
@@ -1278,7 +1279,7 @@ describe('SupportErrandController', () => {
 
       expect(options.reportTypes.map(({ resourcePath }) => resourcePath)).toEqual(['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE']);
       expect(options.locations).toEqual([{ labelId: 'unit', displayName: 'Hemtjänst Norr', resourcePath: 'LOCATION/VOF/HEMTJANST_NORR' }]);
-      expect(options.priorities).toEqual(Object.values(Priority));
+      expect(options.priorities).toEqual([]);
       expect(accessMapper.findAccountLabelPatterns).toHaveBeenCalledWith(expect.anything(), MUNICIPALITY_ID, expect.any(String), mockUser().username);
     });
 

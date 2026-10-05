@@ -805,7 +805,7 @@ const getSupportErrandStatusGroupCounts = (
 };
 
 /** One choice the registration form offers, identified the way a label always is: by its id. */
-interface SupportRegistrationOption {
+export interface SupportRegistrationOption {
   labelId: string;
   displayName: string;
   resourcePath: string;

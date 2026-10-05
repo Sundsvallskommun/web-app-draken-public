@@ -228,7 +228,8 @@ export interface NewErrandDefaults {
 const AVVIKELSE_REGISTRATION_FORM: NewErrandRegistrationForm = Object.freeze({
   reportTypes: Object.freeze(['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE']),
   location: true,
-  priority: true,
+  // The handler is asked what and where only; every errand starts at Medel.
+  priority: false,
 });
 
 // Default classification and labels applied to a new empty errand, per application (drake).

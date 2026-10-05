@@ -1,6 +1,6 @@
 'use client';
 
-import { FormControl, FormHelperText, FormLabel, Select } from '@sk-web-gui/react';
+import { FormControl, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import type { SupportRegistrationOptions } from '@supportmanagement/services/support-errand-service';
 import { FC } from 'react';
 
@@ -24,19 +24,24 @@ export const RegistrationLocationField: FC<RegistrationLocationFieldProps> = ({
 }) => {
   if (registrationLocationIsFixed(options)) {
     return (
-      <div className="mb-24 w-full max-w-[40rem]" data-cy="registration-location-fixed">
-        <p className="text-label-medium">Plats</p>
-        <p>{options.locations[0].displayName}</p>
-        <p className="text-small text-dark-secondary">Platsen hämtas från din anställning.</p>
-      </div>
+      <FormControl id="registration-location-fixed" className="w-full">
+        <FormLabel>Plats</FormLabel>
+        <Input
+          className="w-full"
+          data-cy="registration-location-fixed"
+          value={options.locations[0].displayName}
+          readOnly
+        />
+        <FormHelperText>Platsen hämtas från din anställning.</FormHelperText>
+      </FormControl>
     );
   }
 
   return (
-    <FormControl className="mb-24 w-full max-w-[40rem]">
-      <FormLabel htmlFor="registration-location">Vilken plats gäller det?</FormLabel>
+    <FormControl id="registration-location" className="w-full" required>
+      <FormLabel>Vilken plats gäller det?</FormLabel>
       <Select
-        id="registration-location"
+        className="w-full text-dark-primary"
         data-cy="registration-location"
         value={locationLabelId}
         onChange={(event) => onChange(event.target.value)}
