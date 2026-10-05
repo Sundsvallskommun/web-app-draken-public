@@ -457,25 +457,21 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                         loading={handover.handoverLoading}
                         loadingText="Överlämnar ärende"
                         disabled={handover.handoverLoading || !handover.requiredMappingsAnswered}
-                        onClick={() => {
-                          confirm
-                            .showConfirmation(
-                              'Överlämna ärendet',
-                              'Vill du överlämna ärendet?',
-                              'Ja',
-                              'Nej',
-                              'info',
-                              'info'
-                            )
-                            .then((confirmed) => {
-                              if (confirmed && handoverTarget) {
-                                handover.runHandover(handoverTarget, getValues('message')).then((result) => {
-                                  if (result) {
-                                    handleHandoverSuccess();
-                                  }
-                                });
-                              }
-                            });
+                        onClick={async () => {
+                          const confirmed = await confirm.showConfirmation(
+                            'Överlämna ärendet',
+                            'Vill du överlämna ärendet?',
+                            'Ja',
+                            'Nej',
+                            'info',
+                            'info'
+                          );
+                          if (confirmed && handoverTarget) {
+                            const result = await handover.runHandover(handoverTarget, getValues('message'));
+                            if (result) {
+                              handleHandoverSuccess();
+                            }
+                          }
                         }}
                       >
                         Överlämna ärendet
@@ -494,21 +490,18 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                     disabled={isForwardDisabled}
                     loading={isLoading}
                     loadingText="Vidarebefordrar ärende"
-                    onClick={() => {
-                      confirm
-                        .showConfirmation(
-                          'Överlämna ärendet',
-                          'Vill du överlämna ärendet?',
-                          'Ja',
-                          'Nej',
-                          'info',
-                          'info'
-                        )
-                        .then((confirmed) => {
-                          if (confirmed) {
-                            void handleForwardErrand(getValues());
-                          }
-                        });
+                    onClick={async () => {
+                      const confirmed = await confirm.showConfirmation(
+                        'Överlämna ärendet',
+                        'Vill du överlämna ärendet?',
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      );
+                      if (confirmed) {
+                        await handleForwardErrand(getValues());
+                      }
                     }}
                   >
                     Överlämna ärendet
