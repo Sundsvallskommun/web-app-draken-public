@@ -297,5 +297,16 @@
       "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
       "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
     }
+  },
+  "attachments": {
+    "edit": "Ändra",
+    "no_purpose": "Ingen typ vald",
+    "purpose_label": "Typ av bilaga för {{fileName}}",
+    "purpose_placeholder": "Välj typ av bilaga",
+    "change_purpose_title": "Ändra typ av bilaga?",
+    "change_purpose_body": "Vill du ändra typ av bilaga för {{fileName}} till {{purpose}}?",
+    "confirm_yes": "Ja",
+    "confirm_no": "Nej",
+    "change_purpose_error": "Bilagetypen kunde inte sparas"
   }
 }
