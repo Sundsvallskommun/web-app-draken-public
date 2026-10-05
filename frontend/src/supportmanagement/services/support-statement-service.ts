@@ -68,12 +68,18 @@ export const supportStatementAttachmentIds = (statements: Statement[]): Set<stri
       .filter((id): id is string => !!id)
   );
 
-/** A file the referral left behind: the referral was removed, the attachment on the errand was not. */
+/**
+ * A file the referral left behind: the referral was removed, the attachment on the errand was not.
+ * Nothing is left behind until the referrals have been read, so an unknown set flags nothing.
+ */
 export const isStatementAttachmentWithoutItsStatement = (
   attachment: { id?: string; purpose?: { name?: string } },
-  statementAttachmentIds: Set<string>
+  statementAttachmentIds: Set<string> | undefined
 ): boolean =>
-  isStatementPurpose(attachment.purpose?.name) && !!attachment.id && !statementAttachmentIds.has(attachment.id);
+  !!statementAttachmentIds &&
+  isStatementPurpose(attachment.purpose?.name) &&
+  !!attachment.id &&
+  !statementAttachmentIds.has(attachment.id);
 
 export const supportStatementPurposeDisplayName = (
   purposeName: string,

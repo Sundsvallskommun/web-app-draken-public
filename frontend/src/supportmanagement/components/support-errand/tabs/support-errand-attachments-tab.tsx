@@ -67,8 +67,6 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-const EMPTY_STATEMENT_ATTACHMENTS = new Set<string>();
-
 export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
 }> = (props) => {
@@ -98,7 +96,7 @@ export const SupportErrandAttachmentsTab: FC<{
   const [dragDrop, setDragDrop] = useState<boolean>(false);
   const [editingPurposeId, setEditingPurposeId] = useState<string>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
-  const [statementAttachmentIds, setStatementAttachmentIds] = useState<Set<string>>(EMPTY_STATEMENT_ATTACHMENTS);
+  const [statementAttachmentIds, setStatementAttachmentIds] = useState<Set<string>>();
 
   const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {

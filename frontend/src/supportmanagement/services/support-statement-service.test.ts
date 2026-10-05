@@ -201,3 +201,9 @@ test('a file that never belonged to a referral is left alone, whatever it is cal
     false
   );
 });
+
+test('nothing is flagged before the referrals have been read', () => {
+  expect(
+    isStatementAttachmentWithoutItsStatement({ id: 'a9', purpose: { name: 'REFERRAL_POLICE_REQUEST' } }, undefined)
+  ).toBe(false);
+});
