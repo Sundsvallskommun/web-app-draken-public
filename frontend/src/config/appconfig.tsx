@@ -11,6 +11,7 @@ export interface AppConfig {
 interface AppConfigFeatures {
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
+  useLabelsCategorization: boolean;
   useExplanationOfTheCause: boolean;
   useReasonForContact: boolean;
   useBusinessCase: boolean;
@@ -59,6 +60,7 @@ export const appConfig: AppConfig = {
   features: {
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
+    useLabelsCategorization: envBool(process.env.NEXT_PUBLIC_USE_LABELS_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
     useReasonForContact: envBool(process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT),
     useBusinessCase: envBool(process.env.NEXT_PUBLIC_USE_BUSINESS_CASE),

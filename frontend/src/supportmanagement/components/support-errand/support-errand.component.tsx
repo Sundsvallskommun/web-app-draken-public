@@ -1,17 +1,16 @@
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
-  getLabelTypeOrCategory,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
   SupportErrand,
   supportErrandIsEmpty,
+  usesLabelCategorization,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
@@ -169,8 +168,8 @@ export const SupportErrandComponent: FC = () => {
                       {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useThreeLevelCategorization
-                              ? getLabelTypeOrCategory(supportErrand!, supportMetadata)?.displayName ??
+                            {usesLabelCategorization()
+                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
                                 '(Ärendetyp saknas)'
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}

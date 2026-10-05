@@ -12,7 +12,6 @@ import {
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
-  resolveErrandLabelPath,
   sanitizeQuery,
   stripErrandVersions,
   stripParameterVersions,
@@ -256,46 +255,15 @@ describe('support-errand.service', () => {
       expect(resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toEqual([]);
       expect(resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toEqual([]);
     });
-  });
 
-  describe('resolveErrandLabelPath', () => {
-    const silentCall = { ...label('KSK/KONTAKT_SUNDSVALL/SILENT_CALL'), id: 'silent-call' };
-    const kontaktSundsvall = { ...label('KSK/KONTAKT_SUNDSVALL', [silentCall]), id: 'kontakt-sundsvall' };
-    const ksk = { ...label('KSK', [kontaktSundsvall]), id: 'ksk' };
-    const tradeUnion = { ...label('TRADE_UNION'), id: 'trade-union' };
-    const structure = [tradeUnion, ksk];
-    // An errand stores copies of its labels, without the children of the tree.
-    const onErrand = (...labels: Label[]) => labels.map(errandLabel => ({ ...errandLabel, labels: undefined }));
-    const resourcePaths = (labels: Label[]) => labels.map(l => l.resourcePath);
+    it('resolves the KC defaults from the root of its label tree', () => {
+      const kcStructure = [label('CATEGORIZATION_ROOT', [label('CATEGORIZATION_ROOT/KSK', [label('CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED')])])];
 
-    it('returns the branch of the tree the labels sit on, top level first', () => {
-      expect(resourcePaths(resolveErrandLabelPath(onErrand(silentCall, ksk, kontaktSundsvall), structure))).toEqual([
-        'KSK',
-        'KSK/KONTAKT_SUNDSVALL',
-        'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
+      expect(resolveDefaultLabels(kcStructure, NEW_ERRAND_DEFAULTS.KC.labels!).map(l => l.resourcePath)).toEqual([
+        'CATEGORIZATION_ROOT',
+        'CATEGORIZATION_ROOT/KSK',
+        'CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED',
       ]);
-      expect(resourcePaths(resolveErrandLabelPath(onErrand(tradeUnion), structure))).toEqual(['TRADE_UNION']);
-    });
-
-    it('fills in the ancestors when the errand only carries its most specific label', () => {
-      expect(resourcePaths(resolveErrandLabelPath(onErrand(silentCall), structure))).toEqual([
-        'KSK',
-        'KSK/KONTAKT_SUNDSVALL',
-        'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
-      ]);
-    });
-
-    it('matches on resource path when the id is not in the tree', () => {
-      expect(resourcePaths(resolveErrandLabelPath(onErrand({ ...kontaktSundsvall, id: 'an-old-id' }), structure))).toEqual([
-        'KSK',
-        'KSK/KONTAKT_SUNDSVALL',
-      ]);
-    });
-
-    it('returns an empty list when nothing matches or there is nothing to match', () => {
-      expect(resolveErrandLabelPath([{ ...label('UNKNOWN'), id: 'unknown' }], structure)).toEqual([]);
-      expect(resolveErrandLabelPath([], structure)).toEqual([]);
-      expect(resolveErrandLabelPath(onErrand(ksk), undefined)).toEqual([]);
     });
   });
 

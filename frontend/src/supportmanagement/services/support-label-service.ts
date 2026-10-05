@@ -29,41 +29,45 @@ export const getSelectableLabels = (labels: Label[] | undefined, keepIds: (strin
 };
 
 /**
- * Selectable types for a category, with their selectable subtypes inlined.
+ * Selectable labels of one level of the tree, with their selectable children inlined.
  *
- * A type that has subtypes in the metadata but no selectable ones left is dropped: there is no valid
- * leaf to pick, and hiding the branch matches the intent behind deprecating every subtype better
- * than offering the type itself as a leaf would.
+ * A label that has children in the metadata but no selectable ones left is dropped: there is no valid
+ * leaf to pick, and hiding the branch matches the intent behind deprecating every child better than
+ * offering the label itself as a leaf would.
  *
- * When the category or a type is deprecated, only the labels named by `keepIds` are retained below
- * that point. This lets an existing errand display its current classification without exposing new
- * choices below an effectively deprecated parent.
+ * When the parent of the level (`parentDeprecated`) or a label is deprecated, only the labels named by
+ * `keepIds` are retained below that point. This lets an existing errand display its current
+ * classification without exposing new choices below an effectively deprecated parent.
  */
-export const getSelectableTypesForCategory = (
-  category: Label | undefined,
-  keepIds: (string | undefined)[] = []
+export const getSelectableBranches = (
+  labels: Label[] | undefined,
+  keepIds: (string | undefined)[] = [],
+  parentDeprecated = false
 ): Label[] => {
   const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
   const isKept = (label: Label) => !!label.id && idsToKeep.has(label.id);
-  const categoryDeprecated = isLabelDeprecated(category);
-  const selectableTypes = categoryDeprecated
-    ? (category?.labels ?? []).filter(isKept)
-    : getSelectableLabels(category?.labels, keepIds);
+  const selectableLabels = parentDeprecated ? (labels ?? []).filter(isKept) : getSelectableLabels(labels, keepIds);
 
-  return selectableTypes
-    .map((type) => ({
-      type,
-      selectableSubTypes:
-        categoryDeprecated || isLabelDeprecated(type)
-          ? (type.labels ?? []).filter(isKept)
-          : getSelectableLabels(type.labels, keepIds),
+  return selectableLabels
+    .map((label) => ({
+      label,
+      selectableChildren:
+        parentDeprecated || isLabelDeprecated(label)
+          ? (label.labels ?? []).filter(isKept)
+          : getSelectableLabels(label.labels, keepIds),
     }))
     .filter(
-      ({ type, selectableSubTypes }) =>
-        (type.labels?.length ?? 0) === 0 || selectableSubTypes.length > 0 || (!!type.id && idsToKeep.has(type.id))
+      ({ label, selectableChildren }) =>
+        (label.labels?.length ?? 0) === 0 || selectableChildren.length > 0 || isKept(label)
     )
-    .map(({ type, selectableSubTypes }) => ({ ...type, labels: selectableSubTypes }));
+    .map(({ label, selectableChildren }) => ({ ...label, labels: selectableChildren }));
 };
+
+/** Selectable types for a category, with their selectable subtypes inlined (see `getSelectableBranches`). */
+export const getSelectableTypesForCategory = (
+  category: Label | undefined,
+  keepIds: (string | undefined)[] = []
+): Label[] => getSelectableBranches(category?.labels, keepIds, isLabelDeprecated(category));
 
 /** Top level (CATEGORY) labels a user may pick, in metadata order. */
 export const getSelectableCategories = (metadata: SupportMetadata | undefined) =>

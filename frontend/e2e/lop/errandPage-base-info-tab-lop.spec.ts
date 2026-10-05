@@ -28,44 +28,6 @@ import {
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
 
-// A label tree shaped like KC's, whose levels are named DEPARTMENT/CATEGORY/TYPE rather than
-// CATEGORY/TYPE/SUBTYPE, with a department that has nothing below it.
-const silentCall = {
-  id: 'e2e-silent-call',
-  classification: 'TYPE',
-  displayName: 'Tyst samtal',
-  resourceName: 'SILENT_CALL',
-  resourcePath: 'KSK/KONTAKT_SUNDSVALL/SILENT_CALL',
-  labels: [],
-};
-const kontaktSundsvall = {
-  id: 'e2e-kontakt-sundsvall',
-  classification: 'CATEGORY',
-  displayName: 'Kontakt Sundsvall',
-  resourceName: 'KONTAKT_SUNDSVALL',
-  resourcePath: 'KSK/KONTAKT_SUNDSVALL',
-  labels: [silentCall],
-};
-const ksk = {
-  id: 'e2e-ksk',
-  classification: 'DEPARTMENT',
-  displayName: 'KSK',
-  resourceName: 'KSK',
-  resourcePath: 'KSK',
-  labels: [kontaktSundsvall],
-};
-const tradeUnion = {
-  id: 'e2e-trade-union',
-  classification: 'DEPARTMENT',
-  displayName: 'Fackförbund',
-  resourceName: 'TRADE_UNION',
-  resourcePath: 'TRADE_UNION',
-  labels: [],
-};
-const departmentMetadata = { ...mockMetaData, labels: { ...mockMetaData.labels, labelStructure: [ksk, tradeUnion] } };
-// An errand stores copies of its labels, without the children of the tree.
-const storedOnErrand = ({ labels: _children, ...label }: { labels: unknown[] }) => label;
-
 test.describe('Errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
@@ -229,67 +191,6 @@ test.describe('Errand page', () => {
     await expect(page.getByRole('option', { name: emptiedType.displayName, exact: true })).toBeVisible();
     // Its subtypes are all deprecated and stay out of reach.
     await expect(page.getByRole('option', { name: 'Utgangen undertyp', exact: true })).toHaveCount(0);
-  });
-
-  test('reads the levels of a label tree that starts at department', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-  }) => {
-    // The errand's labels are matched against the tree, so the levels follow their position in it.
-    await mockRoute('**/supportmetadata/2281', departmentMetadata, { method: 'GET' });
-    await mockRoute(
-      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
-      { ...mockSupportErrand, labels: [silentCall, kontaktSundsvall, ksk].map(storedOnErrand) },
-      { method: 'GET' }
-    );
-    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'PATCH' });
-
-    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
-    await dismissCookieConsent();
-
-    // Verksamhet is the top level and the type shows the most specific level. Reading the labels does
-    // not count as a change.
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toHaveValue(ksk.id);
-    await expect(page.locator(`[data-cy="labelType-input"][placeholder="${silentCall.displayName}"]`)).toBeVisible();
-    await expect(page.locator('[data-cy="labelType-input"]')).toBeEnabled();
-    await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara ärende' })).toBeDisabled();
-
-    // A department without anything below it is a complete classification on its own, with no type to pick.
-    await page.locator('[data-cy="labelCategory-input"]').selectOption(tradeUnion.displayName);
-    await expect(page.locator('[data-cy="labelType-input"]')).toBeDisabled();
-    await expect(page.locator('[data-cy="labelType-error"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara ärende' })).toBeEnabled();
-
-    const [response] = await Promise.all([
-      page.waitForResponse((resp) => resp.url().includes('supporterrands/2281') && resp.request().method() === 'PATCH'),
-      page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara' }).click(),
-    ]);
-    const requestBody = response.request().postDataJSON();
-
-    expect(requestBody).not.toHaveProperty('classification');
-    expect(requestBody.labels.map((label: { id: string }) => label.id)).toEqual([tradeUnion.id]);
-  });
-
-  test('names the verksamhet in the heading when the errand has no ärendetyp', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-  }) => {
-    await mockRoute('**/supportmetadata/2281', departmentMetadata, { method: 'GET' });
-    await mockRoute(
-      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
-      { ...mockSupportErrand, labels: [storedOnErrand(tradeUnion)] },
-      { method: 'GET' }
-    );
-
-    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
-    await dismissCookieConsent();
-
-    await expect(page.getByRole('heading', { level: 1, name: tradeUnion.displayName })).toBeVisible();
-    await expect(page.getByText('(Ärendetyp saknas)')).toHaveCount(0);
   });
 
   test('allows updating errand information', async ({ page, mockRoute, dismissCookieConsent }) => {

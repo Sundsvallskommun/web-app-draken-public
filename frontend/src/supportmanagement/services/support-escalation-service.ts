@@ -2,25 +2,40 @@ import { TenantKey } from '@common/interfaces/tenant';
 import { isKA } from '@common/services/application-service';
 import { buildEscalationEmailContent } from '@supportmanagement/components/templates/escalation-template';
 
-import { SupportErrand } from './support-errand-service';
-import { resolveErrandLabelPath } from './support-label-service';
+import {
+  getLabelCategory,
+  getLabelCategoryFromName,
+  getLabelSubType,
+  getLabelSubTypeFromName,
+  getLabelType,
+  getLabelTypeFromName,
+  SupportErrand,
+} from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
 
 const ESCALATION_EMAIL_ATTRIBUTE_KEY = 'escalationEmail';
 
 /**
  * Resolves the escalation email carried by the errand's labels, checking the most specific label
- * level first. The errand's stored labels do not carry attributes, so they are resolved back to the
- * metadata label structure to read the escalationEmail attribute. Returns the first non-empty match,
- * or undefined if none is found.
+ * level first: SUBTYPE -> TYPE -> CATEGORY. The errand's stored labels do not carry attributes, so
+ * each label is resolved back to the metadata label structure (via its resourcePath) to read its
+ * escalationEmail attribute. Returns the first non-empty match, or undefined if none is found.
  */
 const getLabelEscalationEmail = (
   e: SupportErrand,
   metadata: SupportMetadata
 ): { label: string; value: string } | undefined => {
-  const mostSpecificLabelFirst = [...resolveErrandLabelPath(e.labels, metadata)].reverse();
+  const subTypeResourcePath = getLabelSubType(e)?.resourcePath;
+  const typeResourcePath = getLabelType(e)?.resourcePath;
+  const categoryResourcePath = getLabelCategory(e, metadata)?.resourcePath;
 
-  for (const label of mostSpecificLabelFirst) {
+  const resolvedLabels = [
+    subTypeResourcePath ? getLabelSubTypeFromName(subTypeResourcePath, metadata) : undefined,
+    typeResourcePath ? getLabelTypeFromName(typeResourcePath, metadata) : undefined,
+    categoryResourcePath ? getLabelCategoryFromName(categoryResourcePath, metadata) : undefined,
+  ];
+
+  for (const label of resolvedLabels) {
     const escalationEmail = label?.attributes?.find(
       (attribute) => attribute.key === ESCALATION_EMAIL_ATTRIBUTE_KEY
     )?.value;

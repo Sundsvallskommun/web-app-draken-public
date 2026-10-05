@@ -6,10 +6,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   getClassificationCategoryDisplayName,
   getClassificationTypeDisplayName,
-  getLabelCategory,
-  getLabelSubType,
-  getLabelType,
-  getLabelTypeOrCategory,
   getSupportErrandById,
   SupportErrand,
   supportErrandIsEmpty,
@@ -40,6 +36,7 @@ const subTypeLabel = {
   resourceName: 'REPORT',
   resourcePath: 'PENSION/STATISTICS/REPORT',
 };
+const legacyClassification = { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' };
 
 const givenErrand = (errand: object) =>
   vi.mocked(apiService.get).mockResolvedValue({ data: { id: 'errand-1', stakeholders: [], ...errand } } as never);
@@ -56,7 +53,12 @@ const saveErrand = () =>
     labels: [categoryLabel, typeLabel] as Label[],
   });
 
-const useThreeLevelCategorization = appConfig.features.useThreeLevelCategorization;
+const useCategorization = ({ threeLevel = false, labels = false }) => {
+  appConfig.features.useThreeLevelCategorization = threeLevel;
+  appConfig.features.useLabelsCategorization = labels;
+};
+
+const { useThreeLevelCategorization, useLabelsCategorization } = appConfig.features;
 
 beforeEach(() => {
   vi.mocked(apiService.get).mockReset();
@@ -66,19 +68,56 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  appConfig.features.useThreeLevelCategorization = useThreeLevelCategorization;
+  useCategorization({ threeLevel: useThreeLevelCategorization, labels: useLabelsCategorization });
 });
 
-describe('label-based applications', () => {
+describe('three-level categorization', () => {
   beforeEach(() => {
-    appConfig.features.useThreeLevelCategorization = true;
+    useCategorization({ threeLevel: true });
   });
 
-  test('leaves category, type and subtype to the categorization instead of reading the classification', async () => {
-    givenErrand({
-      classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
-      labels: [categoryLabel, typeLabel, subTypeLabel],
-    });
+  test('takes category, type and subtype from the labels of an errand without classification', async () => {
+    givenErrand({ classification: { category: null, type: null }, labels: [categoryLabel, typeLabel, subTypeLabel] });
+
+    const errand = await fetchErrand();
+
+    expect(errand.category).toBe('PENSION');
+    expect(errand.type).toBe('PENSION/STATISTICS');
+    expect(errand.subType).toBe('PENSION/STATISTICS/REPORT');
+    expect(supportErrandIsEmpty(errand)).toBe(false);
+  });
+
+  test('falls back to the classification for an errand registered before the switch to labels', async () => {
+    givenErrand({ classification: legacyClassification, labels: [] });
+
+    const errand = await fetchErrand();
+
+    expect(errand.category).toBe('SALARY');
+    expect(errand.type).toBe('SALARY.UNCATEGORIZED');
+    expect(supportErrandIsEmpty(errand)).toBe(false);
+  });
+
+  test('treats an errand without labels or classification as empty', async () => {
+    givenErrand({ classification: { category: null, type: null }, labels: [] });
+
+    expect(supportErrandIsEmpty(await fetchErrand())).toBe(true);
+  });
+
+  test('saves the labels without a classification', async () => {
+    await saveErrand();
+
+    expect(patchedBody()).not.toHaveProperty('classification');
+    expect(patchedBody().labels).toEqual([categoryLabel, typeLabel]);
+  });
+});
+
+describe('labels categorization', () => {
+  beforeEach(() => {
+    useCategorization({ labels: true });
+  });
+
+  test('leaves category, type and subtype to the categorization', async () => {
+    givenErrand({ classification: legacyClassification, labels: [categoryLabel, typeLabel, subTypeLabel] });
 
     const errand = await fetchErrand();
 
@@ -88,14 +127,8 @@ describe('label-based applications', () => {
     expect(supportErrandIsEmpty(errand)).toBe(false);
   });
 
-  test('treats an errand with labels as registered', async () => {
-    givenErrand({ classification: { category: null, type: null }, labels: [categoryLabel, typeLabel] });
-
-    expect(supportErrandIsEmpty(await fetchErrand())).toBe(false);
-  });
-
   test('treats an errand registered before the switch to labels as registered', async () => {
-    givenErrand({ classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' }, labels: [] });
+    givenErrand({ classification: legacyClassification, labels: [] });
 
     expect(supportErrandIsEmpty(await fetchErrand())).toBe(false);
   });
@@ -106,46 +139,10 @@ describe('label-based applications', () => {
     expect(supportErrandIsEmpty(await fetchErrand())).toBe(true);
   });
 
-  test('resolves verksamhet, ärendetyp and undertyp by their level in the label tree', async () => {
-    // KC names its levels DEPARTMENT/CATEGORY/TYPE rather than CATEGORY/TYPE/SUBTYPE.
-    const silentCall = { id: 'silent-call', classification: 'TYPE', resourcePath: 'KSK/KONTAKT_SUNDSVALL/SILENT_CALL' };
-    const kontaktSundsvall = {
-      id: 'kontakt-sundsvall',
-      classification: 'CATEGORY',
-      resourcePath: 'KSK/KONTAKT_SUNDSVALL',
-    };
-    const ksk = { id: 'ksk', classification: 'DEPARTMENT', resourcePath: 'KSK' };
-    const metadata = {
-      labels: { labelStructure: [{ ...ksk, labels: [{ ...kontaktSundsvall, labels: [silentCall] }] }] },
-    } as unknown as SupportMetadata;
-    givenErrand({ labels: [silentCall, kontaktSundsvall, ksk] });
-
-    const errand = await fetchErrand();
-
-    expect(getLabelCategory(errand, metadata)?.id).toBe('ksk');
-    expect(getLabelType(errand, metadata)?.id).toBe('kontakt-sundsvall');
-    expect(getLabelSubType(errand, metadata)?.id).toBe('silent-call');
-  });
-
-  test('names the verksamhet when the errand has no ärendetyp', () => {
-    const tradeUnion = { id: 'trade-union', classification: 'DEPARTMENT', resourcePath: 'TRADE_UNION' };
-    const pensionStatistics = { id: 'statistics', classification: 'TYPE', resourcePath: 'PENSION/STATISTICS' };
-    const pension = { id: 'pension', classification: 'CATEGORY', resourcePath: 'PENSION' };
-    const metadata = {
-      labels: { labelStructure: [tradeUnion, { ...pension, labels: [pensionStatistics] }] },
-    } as unknown as SupportMetadata;
-    const errandWithLabels = (labels: object[]) => ({ labels } as unknown as SupportErrand);
-
-    expect(getLabelTypeOrCategory(errandWithLabels([tradeUnion]), metadata)?.id).toBe('trade-union');
-    expect(getLabelTypeOrCategory(errandWithLabels([pension, pensionStatistics]), metadata)?.id).toBe('statistics');
-    expect(getLabelTypeOrCategory(errandWithLabels([]), metadata)).toBeUndefined();
-  });
-
   test('saves the labels without a classification', async () => {
     await saveErrand();
 
     expect(patchedBody()).not.toHaveProperty('classification');
-    expect(patchedBody().labels).toEqual([categoryLabel, typeLabel]);
   });
 });
 
@@ -158,7 +155,7 @@ describe('classification display names', () => {
   const errandWith = (classification: object) => ({ classification } as unknown as SupportErrand);
 
   test('resolves the category and type against the categories of the namespace', () => {
-    const errand = errandWith({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
+    const errand = errandWith(legacyClassification);
 
     expect(getClassificationCategoryDisplayName(errand, metadata)).toBe('Lön');
     expect(getClassificationTypeDisplayName(errand, metadata)).toBe('Okategoriserat');
@@ -179,14 +176,11 @@ describe('classification display names', () => {
 
 describe('classification-based applications', () => {
   beforeEach(() => {
-    appConfig.features.useThreeLevelCategorization = false;
+    useCategorization({});
   });
 
   test('takes category and type from the classification and ignores labels', async () => {
-    givenErrand({
-      classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
-      labels: [categoryLabel, typeLabel],
-    });
+    givenErrand({ classification: legacyClassification, labels: [categoryLabel, typeLabel] });
 
     const errand = await fetchErrand();
 

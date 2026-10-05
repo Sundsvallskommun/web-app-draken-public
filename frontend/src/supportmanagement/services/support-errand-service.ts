@@ -17,7 +17,6 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
-import { resolveErrandLabelPath } from './support-label-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
@@ -193,21 +192,17 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-// The first, second and third level of the errand's labels in the metadata label tree. The levels are
-// positions (verksamhet, ärendetyp, undertyp), whatever each namespace calls its label classifications.
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata | undefined) =>
-  resolveErrandLabelPath(errand.labels, metadata)[0];
+export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
+  errand.labels?.length !== 0
+    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
+    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
 
-export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata | undefined) =>
-  resolveErrandLabelPath(errand.labels, metadata)[1];
+export const getLabelType = (errand: SupportErrand) => {
+  return errand.labels?.find((label) => label.classification === 'TYPE');
+};
 
-export const getLabelSubType = (errand: SupportErrand, metadata: SupportMetadata | undefined) =>
-  resolveErrandLabelPath(errand.labels, metadata)[2];
-
-// The ärendetyp, or the verksamhet when the errand is classified with a verksamhet only.
-export const getLabelTypeOrCategory = (errand: SupportErrand, metadata: SupportMetadata | undefined) => {
-  const [category, type] = resolveErrandLabelPath(errand.labels, metadata);
-  return type ?? category;
+export const getLabelSubType = (errand: SupportErrand) => {
+  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
 };
 
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
@@ -221,6 +216,10 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
     .filter((l) => l?.labels && l.labels.length > 0)
     .flatMap((l) => l.labels ?? []) as Label[];
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
+};
+
+export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
+  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
 };
 
 export enum Resolution {
@@ -584,6 +583,11 @@ export const getSupportErrandByErrandNumber: (
     );
 };
 
+// Label-based applications classify errands with labels and never send a classification: those with
+// three-level categorization, and those with the labels categorization (a label tree with a root level).
+export const usesLabelCategorization = (): boolean =>
+  appConfig.features.useThreeLevelCategorization || appConfig.features.useLabelsCategorization;
+
 // 'NONE' is a placeholder for an unset classification value.
 const getClassificationValue = (value?: string): string => (value === 'NONE' ? '' : value) || '';
 
@@ -611,16 +615,17 @@ export const getClassificationTypeDisplayName = (
   );
 };
 
-// An errand that has not been classified yet is still being registered. Label-based applications
-// classify errands with labels; errands registered before the switch to labels only have a
-// classification, and still count as registered.
+// An errand that has not been classified yet is still being registered. The labels categorization fills
+// category/type itself, so there an errand counts as classified once it has labels. Errands registered
+// before the switch to labels only have a classification, and still count as registered.
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand?.id) {
     return true;
   }
-  return appConfig.features.useThreeLevelCategorization
-    ? !errand.labels?.length && !hasClassification(errand)
-    : !errand.category || !errand.type;
+  if (appConfig.features.useLabelsCategorization) {
+    return !errand.labels?.length && !hasClassification(errand);
+  }
+  return !errand.category || !errand.type;
 };
 
 // Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
@@ -648,16 +653,34 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
+const findLabelResourcePath = (labels: Label[] | undefined, classification: string): string =>
+  labels?.find((label) => label.classification === classification)?.resourcePath ?? '';
+
+// The form's category/type/subType. Label-based applications classify errands with labels only: with
+// three-level categorization they mirror the CATEGORY/TYPE/SUBTYPE labels, falling back to the
+// classification for errands registered before the switch to labels. The labels categorization fills
+// them itself, since it resolves the labels against the label tree.
+const toCategorizationFields = (e: ApiSupportErrand): Pick<SupportErrand, 'category' | 'type' | 'subType'> => {
+  if (appConfig.features.useLabelsCategorization) {
+    return { category: '', type: '', subType: '' };
+  }
+  const category = getClassificationValue(e.classification?.category);
+  const type = getClassificationValue(e.classification?.type);
+  if (appConfig.features.useThreeLevelCategorization) {
+    return {
+      category: findLabelResourcePath(e.labels, 'CATEGORY') || category,
+      type: findLabelResourcePath(e.labels, 'TYPE') || type,
+      subType: findLabelResourcePath(e.labels, 'SUBTYPE'),
+    };
+  }
+  return { category, type, subType: '' };
+};
+
 const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
-    // Label-based applications classify errands with labels only. Their category/type/subType are
-    // filled by the three-level categorization, which resolves the labels against the label tree.
-    const usesLabels = appConfig.features.useThreeLevelCategorization;
     const ierrand: SupportErrand = {
       ...e,
-      category: usesLabels ? '' : getClassificationValue(e.classification?.category),
-      type: usesLabels ? '' : getClassificationValue(e.classification?.type),
-      subType: '',
+      ...toCategorizationFields(e),
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -848,7 +871,7 @@ export const updateSupportErrand: (
       priority: formdata.priority,
     }),
     // Label-based applications classify errands with labels only and leave the classification untouched.
-    ...(!appConfig.features.useThreeLevelCategorization &&
+    ...(!usesLabelCategorization() &&
       formdata.category &&
       formdata.type && {
         classification: {

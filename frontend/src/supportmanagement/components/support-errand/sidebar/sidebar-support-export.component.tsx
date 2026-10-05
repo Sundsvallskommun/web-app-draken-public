@@ -9,6 +9,7 @@ import {
   getLabelSubType,
   getLabelType,
   Status,
+  usesLabelCategorization,
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -49,9 +50,9 @@ export const SidebarSupportExport: React.FC = () => {
       .filter(Boolean) as string[];
 
     // TODO: Remove the classification-based resolution below once all applications have migrated
-    // to the labels structure. Until then, applications without three-level categorization classify
-    // errands with category/type (resolved from `supportMetadata.categories`).
-    const usesClassification = !appConfig.features.useThreeLevelCategorization;
+    // to the labels structure. Until then, applications that do not classify with labels use
+    // category/type (resolved from `supportMetadata.categories`).
+    const usesClassification = !usesLabelCategorization();
 
     const errandCategory = supportMetadata?.categories?.find(
       (category) => category.name === errand.classification?.category
@@ -64,11 +65,11 @@ export const SidebarSupportExport: React.FC = () => {
         fileName: attachment.fileName,
         mimeType: attachment.mimeType,
       })),
-      caseLabel: usesClassification ? errandType?.displayName : getLabelType(errand, supportMetadata)?.displayName,
+      caseLabel: usesClassification ? errandType?.displayName : getLabelType(errand)?.displayName,
       category: usesClassification
         ? errandCategory?.displayName
-        : getLabelCategory(errand, supportMetadata)?.displayName,
-      subTypeLabel: usesClassification ? undefined : getLabelSubType(errand, supportMetadata)?.displayName,
+        : getLabelCategory(errand, supportMetadata!)?.displayName,
+      subTypeLabel: usesClassification ? undefined : getLabelSubType(errand)?.displayName,
       channelLabel: errand.channel ? Channels[errand.channel as keyof typeof Channels] : undefined,
       statusLabel:
         supportMetadata?.statuses?.find((status) => status.name === errand.status)?.displayName ?? errand.status,

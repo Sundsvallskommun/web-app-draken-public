@@ -1,7 +1,6 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
 import { useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -13,6 +12,7 @@ import {
   getLabelType,
   Status,
   SupportErrand,
+  usesLabelCategorization,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
@@ -23,12 +23,11 @@ import { SupportStatusLabelComponent } from '../ongoing-support-errands/componen
 
 /**
  * Whether the overview shows the errand's classification (category/type) rather than its labels.
- * Two-level applications always classify with category/type. In label-based applications this is for
- * backward compatibility only: errands registered before the switch to labels have a classification
- * but no labels, so their classification is shown instead.
+ * Applications that do not classify with labels always use category/type. In label-based applications
+ * this is for backward compatibility only: errands registered before the switch to labels have a
+ * classification but no labels, so their classification is shown instead.
  */
-const showsClassification = (errand: SupportErrand): boolean =>
-  appConfig.features.useTwoLevelCategorization || !errand.labels?.length;
+const showsClassification = (errand: SupportErrand): boolean => !usesLabelCategorization() || !errand.labels?.length;
 
 export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
@@ -88,7 +87,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
           <div className="font-bold">
             {showsClassification(errand)
               ? getClassificationCategoryDisplayName(errand, supportMetadata)
-              : getLabelDisplayName(getLabelCategory(errand, supportMetadata), supportMetadata)}
+              : getLabelDisplayName(getLabelCategory(errand, supportMetadata!), supportMetadata)}
           </div>
           <div className="font-normal">{errand.errandNumber}</div>
         </div>
@@ -108,8 +107,8 @@ export const useSupportErrandTable = (statuses: Status[]) => {
             <span className="m-0">{getClassificationTypeDisplayName(errand, supportMetadata)}</span>
           ) : (
             <div>
-              <div>{getLabelDisplayName(getLabelType(errand, supportMetadata), supportMetadata)}</div>
-              <div>{getLabelDisplayName(getLabelSubType(errand, supportMetadata), supportMetadata)}</div>
+              <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
+              <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
             </div>
           )}
         </div>
