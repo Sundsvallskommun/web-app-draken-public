@@ -303,8 +303,10 @@ export const SupportProcessStepButton: FC<{
   };
 
   const watchTheProcessUnlessItHasMoved = (stepped: SupportErrand | undefined) => {
-    const hasMovedAlready = !!stepped && supportProcessStepName(getSupportErrandProcess(stepped)) !== step;
-    if (hasMovedAlready) return;
+    const stage = stepped ? getSupportErrandProcess(stepped) : undefined;
+    const hasNowhereLeftToGo = isSupportProcessCompleted(stage);
+    const hasMovedAlready = !!stepped && supportProcessStepName(stage) !== step;
+    if (hasMovedAlready || hasNowhereLeftToGo) return;
 
     setProcessSignal({ errandId: supportErrand.id!, at: Date.now() });
   };
