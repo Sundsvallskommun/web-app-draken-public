@@ -31,6 +31,11 @@ beslutsformulären markerar obligatoriska fält med texten "(Obligatorisk)" i st
 `POST /{municipalityId}/schemas` och motsvarande UI Schema-request som body till
 `PUT /{municipalityId}/schemas/{id}/ui-schema` när versionen är godkänd. Labben publicerar ingenting själv.
 
+## Utredningsmallar
+
+Utredningsmall i enhetschefens utredning fyller i Utredningstext från Templating-API:t. Texterna, identifierarna och
+reglerna för när en text ersätts beskrivs i [templates/README.md](templates/README.md).
+
 ## Lokal schema-labb
 
 "Labben" (`schema-lab/`) är en **utvecklarsandlåda för att förhandsgranska utredningsformulär** — inte en del av

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
+import { CONFIRM_DIALOG } from '../utils/modal';
 import {
   allExistingInvestigationDocuments,
   hslDecisionKey,
@@ -1069,6 +1070,54 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(hsl).not.toBeChecked();
     await expect(hslGroup).toHaveCount(0);
     await expect(typeOption(socialClassificationSelector, legalCertainty)).toHaveCount(1);
+  });
+
+  test('fyller utredningstexten från den valda utredningsmallen och frågar innan egen text ersätts', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: {},
+      investigationTextTemplates: {
+        'avvikelse.investigation.sol-lss': '<h2>Mall SOL/LSS</h2><p>[Vägledning SOL/LSS]</p>',
+        'avvikelse.investigation.sol-lss-hsl': '<h2>Mall SOL/LSS/HSL</h2><p>[Vägledning SOL/LSS/HSL]</p>',
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const legalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
+    const template = managerDocument.locator(`#${managerKey}_investigationTemplate`);
+    const text = managerDocument.getByRole('textbox', { name: 'Utredningstext', exact: true });
+    const confirmDialog = page.locator(CONFIRM_DIALOG);
+
+    // SoL alone allows only the SOL/LSS template, which is chosen and fills the empty text.
+    await legalBases.getByText(/^SoL –/u).click();
+    await expect(text).toContainText('Mall SOL/LSS');
+    await expect(text).toContainText('[Vägledning SOL/LSS]');
+
+    // The text is still the template's own, so another template replaces it without asking.
+    await legalBases.getByText(/^HSL –/u).click();
+    await template.selectOption({ label: 'SOL/LSS/HSL utredning' });
+    await expect(text).toContainText('Mall SOL/LSS/HSL');
+    await expect(confirmDialog).toHaveCount(0);
+
+    // Once the investigator has written in it, the text is only replaced after asking.
+    await text.click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' Egen text');
+    await template.selectOption({ label: 'SOL/LSS utredning' });
+    await expect(confirmDialog).toBeVisible();
+    await confirmDialog.getByRole('button', { name: 'Nej, behåll texten', exact: true }).click();
+    await expect(text).toContainText('Egen text');
+    await expect(text).toContainText('Mall SOL/LSS/HSL');
+
+    await template.selectOption({ label: 'SOL/LSS/HSL utredning' });
+    await confirmDialog.getByRole('button', { name: 'Ja, ersätt', exact: true }).click();
+    await expect(text).not.toContainText('Egen text');
+    await expect(text).toContainText('Mall SOL/LSS/HSL');
   });
 
   test('följer Adminpanels avstängda utredningsflagga deterministiskt', async ({ page, dismissCookieConsent }) => {

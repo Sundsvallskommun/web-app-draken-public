@@ -60,6 +60,12 @@ import {
   investigationSchemaDebugIsVisible,
   InvestigationSchemaDebugPanel,
 } from './investigation-schema-debug-panel.component';
+import {
+  changedInvestigationTemplate,
+  offersInvestigationTextTemplates,
+  readInvestigationTemplate,
+  withInvestigationText,
+} from './investigation-text-template';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
   decisionDocumentWording,
@@ -82,6 +88,7 @@ import {
   saveSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
+import { useInvestigationTextTemplate } from './use-investigation-text-template';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -214,6 +221,22 @@ export function SupportInvestigationDocument({
   const persistedClassification = useMemo(() => getClassificationDraft(supportErrand), [supportErrand]);
 
   const setDocumentDirty = useCallback((nextDirty: boolean) => setIsDirty(nextDirty), []);
+
+  const applyInvestigationTemplateText = useCallback(
+    (template: string, text: string) => {
+      setDocumentState((current) =>
+        current && readInvestigationTemplate(current.formData) === template
+          ? { ...current, formData: withInvestigationText(current.formData, text) }
+          : current
+      );
+      setDocumentDirty(true);
+    },
+    [setDocumentDirty]
+  );
+  const offerInvestigationTemplateText = useInvestigationTextTemplate(
+    documentState?.formData,
+    applyInvestigationTemplateText
+  );
 
   useEffect(() => {
     onDirtyChange(isDirty || classificationDirty);
@@ -941,6 +964,10 @@ export function SupportInvestigationDocument({
           setDocumentDirty(true);
           setValidationErrors([]);
           setNotice(undefined);
+          const chosenTemplate = changedInvestigationTemplate(documentState.formData, normalizedData);
+          if (chosenTemplate && offersInvestigationTextTemplates(documentState.schema)) {
+            void offerInvestigationTemplateText(chosenTemplate);
+          }
         }}
         onSubmit={(formData) => void save(formData)}
         readonly={formReadonly || isSaving}

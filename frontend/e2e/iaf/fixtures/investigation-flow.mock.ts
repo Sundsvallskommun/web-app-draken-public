@@ -280,6 +280,8 @@ export interface IafApiScenario {
   locationManagers?: Record<string, Array<{ adAccount: string; displayName: string; roleKey: string }>>;
   /** What a handover step answers; a conflict is what a stale errand version gets. */
   handoverResult?: 'success' | 'conflict';
+  /** Investigation text templates in the Templating API, by identifier. Left out, there are none. */
+  investigationTextTemplates?: Record<string, string>;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -1538,6 +1540,15 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.includes('/relations/referredfrom/')) {
       await fulfillJson(route, apiResponse([]));
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/templates') && scenario.investigationTextTemplates) {
+      const prefix = new URL(request.url()).searchParams.get('prefix') ?? '';
+      const templates = Object.entries(scenario.investigationTextTemplates)
+        .filter(([identifier]) => identifier.startsWith(prefix))
+        .map(([identifier, text]) => ({ identifier, name: identifier, content: Buffer.from(text).toString('base64') }));
+      await fulfillJson(route, apiResponse(templates));
       return;
     }
 

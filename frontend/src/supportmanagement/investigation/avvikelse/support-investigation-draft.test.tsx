@@ -45,6 +45,8 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => {
     Alert: gui.Alert,
     Spinner: gui.Spinner,
     Label: gui.Label,
+    // No template is chosen here, so nothing ever asks before replacing the investigation text.
+    useConfirm: () => ({ showConfirmation: async () => false }),
   };
 });
 vi.mock('@common/components/json/schema/schema-form.component', () => ({
