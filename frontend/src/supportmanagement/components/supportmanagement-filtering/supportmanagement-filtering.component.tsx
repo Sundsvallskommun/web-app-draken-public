@@ -152,6 +152,21 @@ const SupportManagementFiltering: FC<{
                 </>
               ) : null}
 
+              {/* Positional on the tree (getLabelsAtDepth): department, category, type for KS. */}
+              {appConfig.features.useLabelCategorization ? (
+                <>
+                  <div className="relative max-md:w-full">
+                    <SupportManagementFilterLabelCategory />
+                  </div>
+                  <div className="relative max-md:w-full">
+                    <SupportManagementFilterLabelType />
+                  </div>
+                  <div className="relative max-md:w-full">
+                    <SupportManagementFilterLabelSubType />
+                  </div>
+                </>
+              ) : null}
+
               <div className="relative max-md:w-full">
                 <SupportManagementFilterPriority />
               </div>

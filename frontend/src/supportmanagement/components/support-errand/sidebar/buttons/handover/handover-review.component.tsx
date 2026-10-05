@@ -2,11 +2,11 @@ import TextEditor from '@common/components/dynamic-text-editor';
 import { Warning, WarningType } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Alert, Divider, FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
+import { LabelTreePicker } from '@supportmanagement/components/support-errand-basics-form/LabelTreePicker';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
 import { ForwardErrandSummary } from '../forward-errand-summary.component';
 import { HandoverAutoSuggestIndicator } from './handover-auto-suggest-indicator.component';
-import { HandoverThreeLevelClassification } from './handover-three-level-classification.component';
 import { SupportHandoverState } from './use-support-handover';
 
 const warningText = (warning: Warning): string => {
@@ -75,64 +75,66 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState; supportE
         <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
       </div>
 
-      {/* Namespace-bundna fält som måste mappas (det enda som skiljer mot MEX). Three-level-namespaces
-          klassificeras via label-trädet, two-level via kategori/typ – precis som i registreringsvyn. */}
+      {/* Namespace-bundna fält som måste mappas: label-träd eller kategori/typ beroende på mål. */}
       <div className="flex flex-col gap-16">
-        {handover.targetUsesLabels ? (
-          <HandoverThreeLevelClassification
-            sourceErrand={supportErrand}
-            targetMetadata={handover.targetMetadata}
-            value={handover.threeLevelLabels}
-            onChange={handover.setThreeLevelLabels}
-          />
-        ) : (
-          classificationMapping && (
-            <div className="flex flex-row gap-16 flex-wrap">
-              <FormControl id="handover-category" className="grow">
-                <div className="flex items-center gap-8">
-                  <FormLabel className="font-semibold">Kategori</FormLabel>
-                  {classificationMapping.suggestedCategory &&
-                    handover.mapping.category === classificationMapping.suggestedCategory && (
-                      <HandoverAutoSuggestIndicator />
-                    )}
-                </div>
-                <Select
-                  className="w-full"
-                  data-cy="handover-category-select"
-                  value={handover.mapping.category}
-                  onChange={(event) => {
-                    handover.setMappingCategory(event.target.value);
-                    handover.setMappingType('');
-                  }}
-                >
-                  <Select.Option value="">Välj kategori</Select.Option>
-                  {Object.keys(classificationMapping.candidates || {}).map((category) => (
-                    <Select.Option key={category} value={category}>
-                      {categoryDisplayName(category)}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl id="handover-type" className="grow">
-                <FormLabel className="font-semibold">Typ</FormLabel>
-                <Select
-                  className="w-full"
-                  data-cy="handover-type-select"
-                  disabled={!handover.mapping.category}
-                  value={handover.mapping.type}
-                  onChange={(event) => handover.setMappingType(event.target.value)}
-                >
-                  <Select.Option value="">Välj typ</Select.Option>
-                  {typeCandidates.map((type) => (
-                    <Select.Option key={type} value={type}>
-                      {typeDisplayName(handover.mapping.category, type)}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-          )
-        )}
+        {handover.targetUsesLabels
+          ? handover.targetMetadata && (
+              <div className="w-full flex gap-20" data-cy="handover-labels">
+                <LabelTreePicker
+                  labelStructure={handover.targetMetadata.labels?.labelStructure}
+                  value={handover.targetLabels}
+                  onChange={handover.setTargetLabels}
+                  metadata={handover.targetMetadata}
+                  fallbackLabels={{ first: 'Verksamhet*', second: 'Ärendetyp*' }}
+                />
+              </div>
+            )
+          : classificationMapping && (
+              <div className="flex flex-row gap-16 flex-wrap">
+                <FormControl id="handover-category" className="grow">
+                  <div className="flex items-center gap-8">
+                    <FormLabel className="font-semibold">Kategori</FormLabel>
+                    {classificationMapping.suggestedCategory &&
+                      handover.mapping.category === classificationMapping.suggestedCategory && (
+                        <HandoverAutoSuggestIndicator />
+                      )}
+                  </div>
+                  <Select
+                    className="w-full"
+                    data-cy="handover-category-select"
+                    value={handover.mapping.category}
+                    onChange={(event) => {
+                      handover.setMappingCategory(event.target.value);
+                      handover.setMappingType('');
+                    }}
+                  >
+                    <Select.Option value="">Välj kategori</Select.Option>
+                    {Object.keys(classificationMapping.candidates || {}).map((category) => (
+                      <Select.Option key={category} value={category}>
+                        {categoryDisplayName(category)}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl id="handover-type" className="grow">
+                  <FormLabel className="font-semibold">Typ</FormLabel>
+                  <Select
+                    className="w-full"
+                    data-cy="handover-type-select"
+                    disabled={!handover.mapping.category}
+                    value={handover.mapping.type}
+                    onChange={(event) => handover.setMappingType(event.target.value)}
+                  >
+                    <Select.Option value="">Välj typ</Select.Option>
+                    {typeCandidates.map((type) => (
+                      <Select.Option key={type} value={type}>
+                        {typeDisplayName(handover.mapping.category, type)}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+            )}
 
         {contactReasonMapping && contactReasonMapping.candidates.length > 0 && (
           <FormControl id="handover-contactreason" className="w-full">

@@ -30,21 +30,21 @@ const toHandoverError = (error: unknown): HandoverError => {
   return new HandoverError(message, status);
 };
 
+/** Namespace config plus, for a label-categorization target, the ROOT label holding its tree. */
+export type HandoverTarget = NamespaceConfig & { categorizationRoot?: string };
+
 /**
  * Lists namespace configurations the errand can be handed over to. Filtering by write access is
  * enforced by the execute endpoint (4xx), so all configs are returned here.
  */
-export const getNamespaceConfigs = (municipalityId: string): Promise<NamespaceConfig[]> => {
+export const getNamespaceConfigs = (municipalityId: string): Promise<HandoverTarget[]> => {
   return apiService
-    .get<NamespaceConfig[]>(`supportnamespaceconfigs/${municipalityId}`)
+    .get<HandoverTarget[]>(`supportnamespaceconfigs/${municipalityId}`)
     .then((res) => res.data ?? [])
     .catch(() => []);
 };
 
-/**
- * Fetches the metadata for the target namespace. Used for display names (two-level) and the label
- * tree (three-level classification). Best-effort: returns an empty object on failure.
- */
+/** Metadata of the target namespace (a tree under a ROOT comes back as the levels below it). Best-effort: {} on failure. */
 export const getNamespaceMetadata = (municipalityId: string, namespace: string): Promise<MetadataResponse> => {
   return apiService
     .get<MetadataResponse>(`supportnamespacemetadata/${municipalityId}/${namespace}`)

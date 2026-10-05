@@ -64,6 +64,8 @@ export const mockConversationId = 'conversation-1';
 export const mockDepartment = 'SBK_MEX';
 export const mockParkingPermitDepartment = 'SBK_PARKING_PERMIT';
 export const mockHandoverNamespace = 'LOK';
+export const mockLabelCategorizationNamespace = 'CONTACTSUNDSVALL';
+export const mockCategorizationRoot = 'CATEGORIZATION_ROOT';
 export const mockSecondaryHandoverNamespace = 'ROB';
 // The message id Messaging returns, plus a decision and its attachment (CaseData numbers both)
 export const mockMessageId = 'message-1';

@@ -16,7 +16,13 @@ import { useCallback, useEffect } from 'react';
 import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
+import {
+  getLegacyClassificationHeading,
+  hasClassification,
+  showsLegacyClassification,
+} from './legacy-classification-service';
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { CATEGORIZATION_CLASSIFICATIONS, getLabelDisplayName } from './support-label-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
@@ -199,6 +205,27 @@ export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadat
 
 export const getLabelType = (errand: SupportErrand) => {
   return errand.labels?.find((label) => label.classification === 'TYPE');
+};
+
+export const getLabelDepartment = (errand: SupportErrand) =>
+  errand.labels?.find((label) => label.classification === 'DEPARTMENT');
+
+/** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
+export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
+  CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
+    errand.labels?.find((label) => label.classification === classification)
+  ).filter((label): label is Label => !!label);
+
+const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
+
+/** Heading under label categorization: the deepest label (type, else category, else department). */
+export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
+  // LEGACY_CLASSIFICATION
+  if (showsLegacyClassification(errand)) {
+    return getLegacyClassificationHeading(errand, metadata);
+  }
+  const deepest = getCategorizationLabels(errand).at(-1);
+  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
 };
 
 export const getLabelSubType = (errand: SupportErrand) => {
@@ -586,7 +613,12 @@ export const getSupportErrandByErrandNumber: (
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
     return true;
-  } else if (
+  }
+  if (appConfig.features.useLabelCategorization) {
+    // LEGACY_CLASSIFICATION: a classification alone counts as categorized
+    return !errand.id || (!errand.category && !hasClassification(errand));
+  }
+  if (
     !errand?.id ||
     !errand?.classification ||
     errand?.classification.category === 'NONE' ||
@@ -626,14 +658,19 @@ export const upsertErrandParameter = (
 
 const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
+    const labelPath = (classification: string) =>
+      e.labels?.find((l) => l.classification === classification)?.resourcePath ?? '';
+    const classificationValue = (value?: string) => (value === 'NONE' ? '' : value) || '';
     const ierrand: SupportErrand = {
       ...e,
-      category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
-      type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
+      category: appConfig.features.useLabelCategorization
+        ? labelPath('CATEGORY') || labelPath('DEPARTMENT')
+        : classificationValue(e.classification?.category),
+      type: appConfig.features.useLabelCategorization ? labelPath('TYPE') : classificationValue(e.classification?.type),
       subType:
-        (appConfig.features.useThreeLevelCategorization
-          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
-          : undefined) || '',
+        appConfig.features.useThreeLevelCategorization || appConfig.features.useLabelCategorization
+          ? labelPath('SUBTYPE')
+          : '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -823,8 +860,10 @@ export const updateSupportErrand: (
     ...(formdata.priority && {
       priority: formdata.priority,
     }),
+    // With label categorization the category/type fields hold label paths, not a classification.
     ...(formdata.category &&
-      formdata.type && {
+      formdata.type &&
+      !appConfig.features.useLabelCategorization && {
         classification: {
           category: formdata.category,
           type: formdata.type,

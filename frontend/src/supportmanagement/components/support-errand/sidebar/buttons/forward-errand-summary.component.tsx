@@ -6,12 +6,18 @@ import { sanitized } from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Button } from '@sk-web-gui/react';
 import {
+  getLegacyClassificationSummary,
+  showsLegacyClassification,
+} from '@supportmanagement/services/legacy-classification-service';
+import {
   Channels,
   findPriorityLabelForPriorityKey,
   getLabelCategory,
   getLabelType,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { getCategorizationLabels } from '@supportmanagement/services/support-errand-service';
+import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -44,7 +50,14 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
         <div className="flex flex-col">
           <span className="font-bold text-small">Ärendetyp</span>
           <span className="text-small">
-            {appConfig.features.useThreeLevelCategorization
+            {appConfig.features.useLabelCategorization
+              ? // LEGACY_CLASSIFICATION
+                showsLegacyClassification(errand!)
+                ? getLegacyClassificationSummary(errand!, metadata)
+                : getCategorizationLabels(errand!)
+                    .map((label) => getLabelDisplayName(label, metadata))
+                    .join(' - ')
+              : appConfig.features.useThreeLevelCategorization
               ? `${getLabelCategory(errand!, metadata!)?.displayName || ''}${
                   getLabelType(errand!)?.displayName ? ` - ${getLabelType(errand!)?.displayName}` : ''
                 }`

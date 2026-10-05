@@ -6,6 +6,7 @@ import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThe
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { getLabelCategorizationHeading } from '@supportmanagement/services/support-errand-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -70,7 +71,9 @@ export default function Layout({ title, children }: { title: string; children: R
               actions={supportErrand?.actions ?? []}
             />
             <span className="font-bold ml-8">
-              {appConfig.features.useThreeLevelCategorization
+              {appConfig.features.useLabelCategorization
+                ? supportErrand && getLabelCategorizationHeading(supportErrand, supportMetadata)
+                : appConfig.features.useThreeLevelCategorization
                 ? supportErrand?.labels?.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
                 : supportMetadata?.categories
                     ?.find((t) => t.name === supportErrand?.category)

@@ -537,6 +537,11 @@ export interface Label {
    */
   classification: string;
   /**
+   * Display name for the label classification (the level in the label tree)
+   * @example "Ärendetyp"
+   */
+  classificationDisplayName?: string;
+  /**
    * Display name for the label
    * @example "Nyckelkort"
    */

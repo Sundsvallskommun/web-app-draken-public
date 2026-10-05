@@ -178,7 +178,7 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
   return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
 };
 
-export type LabelSpec = { category: string; type: string; subType?: string };
+export type LabelSpec = { department?: string; category: string; type?: string; subType?: string };
 
 export interface NewErrandDefaults {
   classification: { category: string; type: string };
@@ -188,7 +188,10 @@ export interface NewErrandDefaults {
 // Default classification and labels applied to a new empty errand, per application (drake).
 // Applications without a `labels` entry get no default labels.
 export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
-  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
+  KC: {
+    classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' },
+    labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' },
+  },
   KA: {
     classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
     labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
@@ -219,20 +222,21 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
 
 export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];
 
-/**
- * Walks the metadata label tree by `resourcePath`, returning the longest prefix of
- * [category, type, subType] that could be resolved.
- */
+/** Exact `resourcePath` match, or a match below a ROOT prefix: defaults are written relative to the root. */
+const matchesPath = (label: Label, path: string): boolean => label.resourcePath === path || (label.resourcePath?.endsWith(`/${path}`) ?? false);
+
+/** Walks the tree by `resourcePath`, returning the longest resolvable prefix of [department, category, type, subType]. */
 export const resolveDefaultLabels = (labelStructure: Label[] | undefined, names: LabelSpec): Label[] => {
-  const categoryObject = labelStructure?.find(l => l.resourcePath === names.category);
-  if (!categoryObject) return [];
-  if (!names.type) return [categoryObject];
-  const typeObject = categoryObject.labels?.find(l => l.resourcePath === names.type);
-  if (!typeObject) return [categoryObject];
-  if (!names.subType) return [categoryObject, typeObject];
-  const subTypeObject = typeObject.labels?.find(l => l.resourcePath === names.subType);
-  if (!subTypeObject) return [categoryObject, typeObject];
-  return [categoryObject, typeObject, subTypeObject];
+  const path = [names.department, names.category, names.type, names.subType].filter((name): name is string => !!name);
+  const resolved: Label[] = [];
+  let level = labelStructure;
+  for (const name of path) {
+    const match = level?.find(l => matchesPath(l, name));
+    if (!match) break;
+    resolved.push(match);
+    level = match.labels;
+  }
+  return resolved;
 };
 
 /** Maps SupportManagement contact channels onto CaseData contact information, dropping unknown types. */

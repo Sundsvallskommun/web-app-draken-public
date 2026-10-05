@@ -5,6 +5,11 @@ import { appConfig } from '@config/appconfig';
 import { useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
+  getClassificationCategoryDisplayName,
+  getClassificationTypeDisplayName,
+  showsLegacyClassification,
+} from '@supportmanagement/services/legacy-classification-service';
+import {
   Channels,
   getLabelCategory,
   getLabelSubType,
@@ -12,6 +17,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { getCategorizationLabels, getLabelDepartment } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
@@ -74,6 +80,14 @@ export const useSupportErrandTable = (statuses: Status[]) => {
 
       render: (errand: SupportErrand) => (
         <div>
+          {appConfig.features.useLabelCategorization ? (
+            <div className="font-bold">
+              {/* LEGACY_CLASSIFICATION */}
+              {showsLegacyClassification(errand)
+                ? getClassificationCategoryDisplayName(errand, supportMetadata)
+                : getLabelDisplayName(getLabelDepartment(errand), supportMetadata)}
+            </div>
+          ) : null}
           {appConfig.features.useThreeLevelCategorization ? (
             <div className="font-bold">
               {getLabelDisplayName(getLabelCategory(errand, supportMetadata!), supportMetadata)}
@@ -98,6 +112,20 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
+          {appConfig.features.useLabelCategorization ? (
+            // LEGACY_CLASSIFICATION
+            showsLegacyClassification(errand) ? (
+              <div>{getClassificationTypeDisplayName(errand, supportMetadata)}</div>
+            ) : (
+              <div>
+                {getCategorizationLabels(errand)
+                  .filter((label) => label.classification !== 'DEPARTMENT')
+                  .map((label) => (
+                    <div key={label.id ?? label.resourcePath}>{getLabelDisplayName(label, supportMetadata)}</div>
+                  ))}
+              </div>
+            )
+          ) : null}
           {appConfig.features.useThreeLevelCategorization ? (
             <div>
               <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>

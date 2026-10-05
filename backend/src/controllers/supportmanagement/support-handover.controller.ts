@@ -21,9 +21,12 @@ import ApiService from '@/services/api.service';
 import {
   getAllowedHandoverTargets,
   getCasedataForwardTarget,
+  getLabelCategorizationTarget,
+  HandoverTargetConfig,
   isAllowedHandoverTarget,
   isCasedataForwardTarget,
 } from '@/services/handover-targets.service';
+import { withCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -76,7 +79,7 @@ export class SupportHandoverController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<NamespaceConfig[]> {
+  ): Promise<HandoverTargetConfig[]> {
     const allowedTargets = getAllowedHandoverTargets();
     if (allowedTargets.length === 0) {
       return response.status(200).send([]);
@@ -87,23 +90,25 @@ export class SupportHandoverController {
     const needsNamespaceConfigs = allowedTargets.some(target => !isCasedataForwardTarget(target));
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
     const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
-    const toNamespaceConfig = (target: string): NamespaceConfig | undefined => {
+    const toNamespaceConfig = (target: string): HandoverTargetConfig | undefined => {
       const forwardTarget = getCasedataForwardTarget(target);
       if (forwardTarget) {
         const { namespace, displayName, shortCode } = forwardTarget;
         return { namespace, displayName, shortCode, municipalityId };
       }
-      return configs.find(config => config.namespace === target);
+      const config = configs.find(config => config.namespace === target);
+      const categorizationRoot = getLabelCategorizationTarget(target)?.categorizationRoot;
+      return config && categorizationRoot ? { ...config, categorizationRoot } : config;
     };
     const targets = allowedTargets
       .filter(target => target !== this.namespace)
       .map(toNamespaceConfig)
-      .filter((config): config is NamespaceConfig => config !== undefined);
+      .filter((config): config is HandoverTargetConfig => config !== undefined);
     return response.status(200).send(targets);
   }
 
   @Get('/supportnamespacemetadata/:municipalityId/:namespace')
-  @OpenAPI({ summary: 'Get metadata for a specific namespace (used to resolve handover target display names)' })
+  @OpenAPI({ summary: 'Get metadata for a handover target namespace: display names, and its categorization label tree' })
   @UseBefore(authMiddleware)
   async fetchNamespaceMetadata(
     @Req() req: RequestWithUser,
@@ -113,7 +118,7 @@ export class SupportHandoverController {
   ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${namespace}/metadata`;
     const res = await this.apiService.get<MetadataResponse>({ url }, req.user);
-    return response.status(200).send(res.data);
+    return response.status(200).send(withCategorizationLabels(res.data, getLabelCategorizationTarget(namespace)?.categorizationRoot));
   }
 
   @Post('/supporterrands/:municipalityId/:id/handover/preview')
@@ -151,7 +156,11 @@ export class SupportHandoverController {
       return this.rejectTarget(data.target?.namespace, response);
     }
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
-    const { message, ...handoverRequest } = data;
+    const { message, ...rest } = data;
+    // SupportManagement requires a classification; a label-categorization target gets its new-errand placeholder.
+    const placeholder = getLabelCategorizationTarget(data.target?.namespace)?.classification;
+    const handoverRequest =
+      placeholder && !rest.mapping?.classification ? { ...rest, mapping: { ...rest.mapping, classification: placeholder } } : rest;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;
     const res = await this.apiService.post<HandoverErrand, HandoverErrandRequest>(
       {

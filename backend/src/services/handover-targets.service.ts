@@ -1,4 +1,7 @@
+import { NamespaceConfig } from '@/data-contracts/supportmanagement/data-contracts';
 import { FTCaseType, MEXCaseType } from '@/interfaces/case-type.interface';
+
+import { getNewErrandDefaults } from './support-errand.service';
 
 /** A casedata namespace that support errands are forwarded to (a casedata forward, never a handover). */
 export interface CasedataForwardTarget {
@@ -39,3 +42,24 @@ export const getAllowedHandoverTargets = (): string[] =>
     .filter(Boolean);
 
 export const isAllowedHandoverTarget = (namespace?: string): boolean => !!namespace && getAllowedHandoverTargets().includes(namespace);
+
+/**
+ * Targets whose label tree sits under a ROOT label, and the application whose new-errand classification a
+ * handed-over errand gets (SupportManagement requires one).
+ */
+const LABEL_CATEGORIZATION_TARGETS: Record<string, { categorizationRoot: string; application: string }> = {
+  CONTACTSUNDSVALL: { categorizationRoot: 'CATEGORIZATION_ROOT', application: 'KC' },
+};
+
+export interface LabelCategorizationTarget {
+  categorizationRoot: string;
+  classification?: { category: string; type: string };
+}
+
+export const getLabelCategorizationTarget = (namespace?: string): LabelCategorizationTarget | undefined => {
+  const target = namespace ? LABEL_CATEGORIZATION_TARGETS[namespace] : undefined;
+  return target && { categorizationRoot: target.categorizationRoot, classification: getNewErrandDefaults(target.application)?.classification };
+};
+
+/** Namespace config plus, for a label-categorization target, the ROOT label holding its tree. */
+export type HandoverTargetConfig = NamespaceConfig & { categorizationRoot?: string };
