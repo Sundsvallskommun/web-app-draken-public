@@ -504,3 +504,135 @@ describe('SupportErrandJsonParameterController', () => {
     expect(documentService.readJsonParameter).toHaveBeenCalledWith(expect.objectContaining({ definition: profile.documents[0] }));
   });
 });
+
+describe('SupportErrandJsonParameterController report', () => {
+  const REPORT_KEY = 'avvikelse-plats-handelse';
+  const workflowPhases = [
+    { id: 'phase-received', name: 'ACTUALIZATION', phaseOrder: 0 },
+    { id: 'phase-review', name: 'REVIEW', phaseOrder: 1 },
+    { id: 'phase-investigation', name: 'INVESTIGATION', phaseOrder: 2 },
+  ];
+  const report: UpdateSupportErrandJsonParameterDto = {
+    schemaId: '2281_avvikelse-plats-handelse_1.5',
+    value: { eventDescription: 'Fallolycka i korridoren' },
+  };
+
+  /** An errand as Support Management reads it, in one phase of the avvikelse workflow. */
+  const errandIn = (channel: string, phaseId: string) => ({ id: mockSupportErrandId, channel, phases: [{ phaseId }] });
+
+  const makeReportController = (errand: Record<string, unknown>, state: 'active' | 'inactive' | 'unavailable' = 'active') => {
+    const documentService: DocumentServiceStub = {
+      readJsonParameter: vi.fn(),
+      writeJsonParameter: vi.fn(async () => ({
+        document: { key: REPORT_KEY, ...report, version: 1 },
+        etag: '"1"',
+        status: 201,
+        parentErrandVersion: 5,
+      })),
+      readParentErrandSnapshot: vi.fn(async () => errand),
+    };
+    const accessService = { assertCanReadDocument: vi.fn(), assertCanWriteDocument: vi.fn() };
+    const metadataApi = { get: vi.fn(async () => ({ data: { phases: workflowPhases }, message: 'success' })) };
+    const controller = new SupportErrandJsonParameterController(
+      getSupportInvestigationProfile('IAF'),
+      documentService as unknown as SupportJsonParameterService,
+      { getState: vi.fn(async () => state) } as unknown as SupportInvestigationPolicyService,
+      accessService as unknown as SupportInvestigationAccessService,
+      metadataApi as unknown as ApiService,
+    );
+    return { controller, documentService, accessService };
+  };
+
+  // The report is no investigation document: Support Management alone decides who reads it.
+  it('reads the report without the investigation document grants', async () => {
+    const { controller, documentService, accessService } = makeReportController(errandIn('ESERVICE', 'phase-investigation'));
+    documentService.readJsonParameter.mockResolvedValue({ document: { key: REPORT_KEY, ...report, version: 4 }, etag: '"4"', status: 200 });
+    const res = resDouble();
+
+    await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, REPORT_KEY, res);
+
+    expect(documentService.readJsonParameter).toHaveBeenCalledWith(
+      expect.objectContaining({ definition: expect.objectContaining({ key: REPORT_KEY, schemaName: 'avvikelse-plats-handelse' }) }),
+    );
+    expect(accessService.assertCanReadDocument).not.toHaveBeenCalled();
+    expect(res.headers.ETag).toBe('"4"');
+  });
+
+  it.each(['phase-received', 'phase-review'])('writes the report of an errand registered in Draken in %s', async phaseId => {
+    const { controller, documentService } = makeReportController(errandIn('WEB_UI', phaseId));
+    const req = mockReq();
+    const res = resDouble();
+
+    await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, REPORT_KEY, ABSENT_HEADER, '*', ABSENT_HEADER, report, res);
+
+    expect(documentService.writeJsonParameter).toHaveBeenCalledWith({
+      definition: expect.objectContaining({ key: REPORT_KEY, schemaName: 'avvikelse-plats-handelse' }),
+      municipalityId: mockMunicipalityId,
+      errandId: mockSupportErrandId,
+      user: req.user,
+      data: report,
+      preconditions: { ifMatch: undefined, ifNoneMatch: '*', parentErrandVersion: undefined },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.headers.ETag).toBe('"1"');
+    expect(res.headers['X-Errand-Version']).toBe('5');
+  });
+
+  it('never writes the report Katla brought in', async () => {
+    const { controller, documentService } = makeReportController(errandIn('ESERVICE', 'phase-received'));
+
+    await expect(
+      controller.updateJsonParameter(
+        mockReq(),
+        mockMunicipalityId,
+        mockSupportErrandId,
+        REPORT_KEY,
+        '"1"',
+        ABSENT_HEADER,
+        ABSENT_HEADER,
+        report,
+        resDouble(),
+      ),
+    ).rejects.toMatchObject({ status: 409, message: expect.stringContaining('record of what was reported') });
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it('locks the report once the investigation has started', async () => {
+    const { controller, documentService } = makeReportController(errandIn('WEB_UI', 'phase-investigation'));
+
+    await expect(
+      controller.updateJsonParameter(
+        mockReq(),
+        mockMunicipalityId,
+        mockSupportErrandId,
+        REPORT_KEY,
+        '"1"',
+        ABSENT_HEADER,
+        ABSENT_HEADER,
+        report,
+        resDouble(),
+      ),
+    ).rejects.toMatchObject({ status: 409, message: 'The report can no longer be changed once the investigation has started' });
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing while investigation is not active, before reading the errand', async () => {
+    const { controller, documentService } = makeReportController(errandIn('WEB_UI', 'phase-received'), 'inactive');
+
+    await expect(
+      controller.updateJsonParameter(
+        mockReq(),
+        mockMunicipalityId,
+        mockSupportErrandId,
+        REPORT_KEY,
+        '"1"',
+        ABSENT_HEADER,
+        ABSENT_HEADER,
+        report,
+        resDouble(),
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+  });
+});

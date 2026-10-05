@@ -61,10 +61,12 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { AccessMapperService } from '@/services/access-mapper.service';
 import ApiService from '@/services/api.service';
+import { EmploymentService } from '@/services/employment.service';
 import { resolveInvestigationLocationTarget } from '@/services/investigation-handover-label.service';
 import {
   RegistrationLocation,
   RegistrationReportType,
+  resolveEmploymentLocations,
   resolveRegistrationLabelsByIds,
   resolveRegistrationLocations,
   resolveRegistrationReportTypes,
@@ -513,10 +515,22 @@ class ForwardFormDto {
   messageBodyPlaintext!: string;
 }
 
+/**
+ * Where the places a handler may register for come from: their employment in the organization tree,
+ * or the places AccessMapper configures for their account when no employment is a place there.
+ */
+type RegistrationLocationSource = 'employment' | 'access';
+
+interface HandlerLocations {
+  readonly source: RegistrationLocationSource;
+  readonly locations: readonly RegistrationLocation[];
+}
+
 /** What the registration form offers the signed-in handler. */
 export interface NewErrandOptionsResponse {
   readonly reportTypes: readonly RegistrationReportType[];
   readonly locations: readonly RegistrationLocation[];
+  readonly locationSource?: RegistrationLocationSource;
   readonly priorities: readonly SupportPriority[];
 }
 
@@ -549,6 +563,7 @@ export class SupportErrandController {
   private investigationAccessService = new SupportInvestigationAccessService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private accessMapperService = new AccessMapperService();
+  private employmentService = new EmploymentService();
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
@@ -842,7 +857,7 @@ export class SupportErrandController {
       ...(initialPhase?.id ? { activePhaseId: initialPhase.id } : {}),
       priority: registration?.priority ?? SupportPriority.MEDIUM,
       status: initialStatus,
-      channel: ContactChannelType.PHONE,
+      channel: defaults.channel ?? ContactChannelType.PHONE,
       title: 'Empty errand',
     };
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
@@ -860,7 +875,7 @@ export class SupportErrandController {
 
   /**
    * What the registration form offers the signed-in handler: the report types the application
-   * configures, and the places their own AccessMapper configuration reaches.
+   * configures, and the places their employment - or else their AccessMapper configuration - gives.
    *
    * An application that registers without a form has nothing to answer here, and says so with the
    * same 409 registration itself gives, rather than an empty form the handler could not submit.
@@ -876,9 +891,11 @@ export class SupportErrandController {
     const metadata = await this.readSupportMetadata(req, municipalityId);
     const labelStructure = metadata.data.labels?.labelStructure;
 
+    const handlerLocations = form.location ? await this.resolveHandlerLocations(req, municipalityId, labelStructure) : undefined;
     return {
       reportTypes: resolveRegistrationReportTypes(labelStructure, form.reportTypes),
-      locations: form.location ? await this.resolveHandlerLocations(req, municipalityId, labelStructure) : [],
+      locations: handlerLocations?.locations ?? [],
+      ...(handlerLocations ? { locationSource: handlerLocations.source } : {}),
       priorities: form.priority ? Object.values(SupportPriority) : [],
     };
   }
@@ -900,21 +917,40 @@ export class SupportErrandController {
     return this.apiService.get<SupportMetadata>({ url }, req.user);
   }
 
-  /** The places the signed-in handler is configured for, as the form offers them. */
+  /**
+   * The places the signed-in handler may register an errand for, as the form offers them: the unit
+   * their employment puts them at in the organization tree, main employment first. A handler whose
+   * employment is no place there - or whose employments cannot be read - picks among the places
+   * AccessMapper configures for their account, as registration always offered.
+   */
   private async resolveHandlerLocations(
     req: RequestWithUser,
     municipalityId: string,
     labelStructure: Label[] | undefined,
-  ): Promise<RegistrationLocation[]> {
+  ): Promise<HandlerLocations> {
+    const employmentLocations = resolveEmploymentLocations(labelStructure, await this.readEmploymentOrganizationIds(req));
+    if (employmentLocations.length > 0) return { source: 'employment', locations: employmentLocations };
+
     const patterns = await this.accessMapperService.findAccountLabelPatterns(req.user, municipalityId, this.namespace!, req.user.username);
-    return resolveRegistrationLocations(labelStructure, patterns);
+    return { source: 'access', locations: resolveRegistrationLocations(labelStructure, patterns) };
+  }
+
+  private async readEmploymentOrganizationIds(req: RequestWithUser): Promise<number[]> {
+    try {
+      const employments = await this.employmentService.readEmployments(req.user);
+      return employments.map(employment => employment.orgId).filter((organizationId): organizationId is number => typeof organizationId === 'number');
+    } catch (error) {
+      // The Employee API being unavailable must not stop registration; the configured places still are.
+      logger.warn('Could not read the employments of a registering handler; offering their configured places instead', error);
+      return [];
+    }
   }
 
   /**
    * The labels and priority the handler chose, or nothing at all for an application that registers
    * without a form.
    *
-   * The place is checked against the handler's own configuration rather than taken on the client's
+   * The place is checked against the places the handler is offered rather than taken on the client's
    * word: the form only ever offers their places, so a request naming another one is not a handler
    * who changed their mind. The report type likewise has to be one the application configures - it
    * decides which investigation the errand gets, so it is not a free label.
@@ -943,10 +979,10 @@ export class SupportErrandController {
     const labelIds = [...reportType.chainIds];
 
     if (form.location) {
-      const locations = await this.resolveHandlerLocations(req, municipalityId, labelStructure);
+      const { locations } = await this.resolveHandlerLocations(req, municipalityId, labelStructure);
       const location = locations.find(candidate => candidate.labelId === data.locationLabelId);
       if (!location) {
-        throw new HttpException(400, 'Choose one of the places you are configured for');
+        throw new HttpException(400, 'Choose one of the places offered to you');
       }
       labelIds.push(...resolveInvestigationLocationTarget(labelStructure, location.labelId).chainIds);
     }
@@ -979,6 +1015,17 @@ export class SupportErrandController {
     }
   }
 
+  /**
+   * Where the profile has a report, the channel says whether the errand was registered in Draken and
+   * so whether its report may be filled in. It stays what it was when the errand came in: changing it
+   * would open Katla's report, the record of what was reported, to editing.
+   */
+  private assertChannelUnchanged(currentErrand: SupportErrand, data: Partial<SupportErrandDto>): void {
+    if (!this.investigationPolicyService.profile.reportDocument) return;
+    if (data.channel === undefined || data.channel === currentErrand.channel) return;
+    throw new HttpException(409, 'The channel of this errand decides whether its report may be changed and cannot itself be changed');
+  }
+
   @Patch('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportErrandDto, 'body'))
@@ -1006,6 +1053,7 @@ export class SupportErrandController {
     const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
     assertRequestedErrandVersion(requestedVersion, currentVersion);
     assertSupportErrandWritable(currentErrand.data, 'generic changes');
+    this.assertChannelUnchanged(currentErrand.data, data);
 
     await this.assertGenericClassificationUpdateAllowed(req, currentErrand.data, data);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });

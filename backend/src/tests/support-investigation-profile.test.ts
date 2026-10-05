@@ -41,6 +41,12 @@ describe('support investigation profiles', () => {
       application: 'IAF',
       requiredSupportManagementApiTarget: 'sprint',
       documents: expectedDocuments,
+      reportDocument: {
+        key: 'avvikelse-plats-handelse',
+        schemaName: 'avvikelse-plats-handelse',
+        editableChannel: 'WEB_UI',
+        lockedFromPhase: 'INVESTIGATION',
+      },
       labelFilter: {
         groups: [
           { key: 'provision', rootResourcePath: 'PROVISION' },
@@ -165,6 +171,37 @@ describe('support investigation profiles', () => {
     expect(() =>
       createSupportInvestigationProfile({ application: 'FUTURE', documents: [investigation, { ...decision, prerequisiteDocumentKey: '../x' }] }),
     ).toThrow('documents[1].prerequisiteDocumentKey must be a lowercase kebab-case identifier');
+  });
+
+  it('carries a report only when configured, under a key of its own', () => {
+    const investigation = { key: 'investigation', schemaName: 'investigation', tabLabel: 'Utredning', ownerLabel: 'Owner' };
+    const reportDocument = { key: 'report', schemaName: 'report', editableChannel: 'WEB_UI', lockedFromPhase: 'INVESTIGATION' };
+
+    expect(createSupportInvestigationProfile({ application: 'FUTURE', documents: [investigation] })).not.toHaveProperty('reportDocument');
+    expect(createSupportInvestigationProfile({ application: 'FUTURE', documents: [investigation], reportDocument }).reportDocument).toEqual(
+      reportDocument,
+    );
+    expect(() =>
+      createSupportInvestigationProfile({
+        application: 'FUTURE',
+        documents: [investigation],
+        reportDocument: { ...reportDocument, key: 'investigation' },
+      }),
+    ).toThrow('reportDocument.key investigation is already an investigation document');
+    expect(() =>
+      createSupportInvestigationProfile({
+        application: 'FUTURE',
+        documents: [investigation],
+        reportDocument: { ...reportDocument, schemaName: '../x' },
+      }),
+    ).toThrow('reportDocument.schemaName must be a lowercase kebab-case identifier');
+    expect(() =>
+      createSupportInvestigationProfile({
+        application: 'FUTURE',
+        documents: [investigation],
+        reportDocument: { ...reportDocument, lockedFromPhase: ' ' },
+      }),
+    ).toThrow('reportDocument.lockedFromPhase must not be empty');
   });
 
   it('allows several document keys to reuse the same schema template', () => {

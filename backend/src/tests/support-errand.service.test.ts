@@ -288,6 +288,7 @@ describe('support-errand.service', () => {
 
     it.each(['IAF', 'VOF'])('seeds %s registration with an explicit ordinary-deviation contract', application => {
       expect(getNewErrandDefaults(application)).toEqual({
+        channel: 'WEB_UI',
         labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
         parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
         form: {

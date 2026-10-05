@@ -91,6 +91,33 @@ export class SupportInvestigationErrandAccessDto {
   readonly documents!: readonly SupportInvestigationDocumentGrantDto[];
 }
 
+/**
+ * The report an errand arrives with - what happened, where and when. Katla writes it and it stays the
+ * record of what was reported, so it is read-only, except on an errand registered in Draken: there
+ * the unit manager fills it in, until the investigation starts.
+ */
+export class SupportInvestigationReportDocumentDto {
+  @IsString()
+  @MinLength(1)
+  @Matches(SUPPORT_INVESTIGATION_IDENTIFIER)
+  readonly key!: string;
+
+  @IsString()
+  @MinLength(1)
+  @Matches(SUPPORT_INVESTIGATION_IDENTIFIER)
+  readonly schemaName!: string;
+
+  /** The channel of the errands whose report is filled in in Draken. Every other errand's is read-only. */
+  @IsString()
+  @MinLength(1)
+  readonly editableChannel!: string;
+
+  /** The workflow phase, by its technical name, that locks the report: the investigation starts there. */
+  @IsString()
+  @MinLength(1)
+  readonly lockedFromPhase!: string;
+}
+
 export class SupportInvestigationProfileDto {
   @IsString()
   readonly application!: string;
@@ -99,6 +126,11 @@ export class SupportInvestigationProfileDto {
   @ValidateNested({ each: true })
   @Type(() => SupportInvestigationDocumentProfileDto)
   readonly documents!: readonly SupportInvestigationDocumentProfileDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SupportInvestigationReportDocumentDto)
+  readonly reportDocument?: SupportInvestigationReportDocumentDto;
 }
 
 const SUPPORT_INVESTIGATION_STATES = ['active', 'inactive', 'unavailable'] as const;

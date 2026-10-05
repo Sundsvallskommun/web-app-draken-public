@@ -78,6 +78,7 @@ export class SupportInvestigationPolicyService {
       application: this.configuredProfile.application,
       documents: this.configuredProfile.documents,
       ...(this.configuredProfile.labelFilter ? { labelFilter: this.configuredProfile.labelFilter } : {}),
+      ...(this.configuredProfile.reportDocument ? { reportDocument: this.configuredProfile.reportDocument } : {}),
       state,
       registration: Object.freeze({
         mode: registrationState === 'enabled' ? 'enabled' : 'disabled',

@@ -57,7 +57,10 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   `.../location-managers/{labelId}`), which write the `access/*` labels that move an errand between
   the unit manager and the LEX roles, and the `LOCATION` label chain that moves a wrongly routed
   errand to the unit it concerns. A wrong routing is corrected in the labels only; the incoming
-  JSON parameter stays the record of what was reported.
+  JSON parameter stays the record of what was reported. The one exception is the profile's
+  `reportDocument` (Katla's `avvikelse-plats-handelse`): the `json-parameters` route writes it only
+  on an errand registered in Draken (channel `WEB_UI`) that has not reached Utredning, and the
+  generic errand PATCH refuses a channel change wherever the profile has a report.
 - **Handler roles are data, not a drake.** `HEALTHCAREDEVIATION_HANDLER_ROLES` makes `/users/admins` return a role
   per account, and the shared `Ansvarig` selector groups by those roles. A deployment that configures
   none gets the flat list it always had — that is what lets the grouping live in shared code at all.

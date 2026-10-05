@@ -4,6 +4,7 @@ import FormData from 'form-data';
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import type { IafVofInvestigationClassificationLabelTree } from '@/config/iaf-vof-investigation-classification';
+import { DRAKEN_REGISTRATION_CHANNEL } from '@/config/support-errand-channels';
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import {
   AddressAddressCategoryEnum,
@@ -200,7 +201,11 @@ export type LabelSpec = { category: string; type: string; subType?: string };
 interface NewErrandRegistrationForm {
   /** The report types offered, by label resource path. The chosen one becomes the errand's label. */
   readonly reportTypes: readonly string[];
-  /** Whether the handler picks the place, from the ones AccessMapper configures for their account. */
+  /**
+   * Whether the errand gets a place. It is the unit the handler is employed at in the organization
+   * tree; a handler whose employment is not a place there picks among the places AccessMapper
+   * configures for their account instead.
+   */
   readonly location: boolean;
   /** Whether the handler picks the errand's priority instead of taking the default. */
   readonly priority: boolean;
@@ -208,6 +213,8 @@ interface NewErrandRegistrationForm {
 
 export interface NewErrandDefaults {
   classification?: { category: string; type: string };
+  /** How the errand came in, when it is not the phone call Draken records by default. */
+  channel?: string;
   labels?: LabelSpec;
   parameters?: readonly Pick<Parameter, 'key' | 'displayName' | 'values'>[];
   form?: NewErrandRegistrationForm;
@@ -255,11 +262,13 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
     labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
   },
   IAF: {
+    channel: DRAKEN_REGISTRATION_CHANNEL,
     labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
     form: AVVIKELSE_REGISTRATION_FORM,
   },
   VOF: {
+    channel: DRAKEN_REGISTRATION_CHANNEL,
     labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
     form: AVVIKELSE_REGISTRATION_FORM,

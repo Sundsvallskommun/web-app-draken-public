@@ -29,12 +29,27 @@ export interface InvestigationProfileDocument {
   readonly prerequisiteDocumentKey?: string;
 }
 
+/**
+ * The report an errand arrives with: Katla's record of what happened, where and when. It is read-only,
+ * except on an errand registered in Draken, whose unit manager fills it in until the investigation
+ * starts.
+ */
+export interface InvestigationReportDocument {
+  readonly key: string;
+  readonly schemaName: string;
+  /** The channel of the errands whose report is filled in in Draken. */
+  readonly editableChannel: string;
+  /** The workflow phase, by its technical name, from which the report is locked. */
+  readonly lockedFromPhase: string;
+}
+
 export interface InvestigationProfile {
   readonly application: string;
   readonly state: InvestigationProfileState;
   readonly documents: readonly InvestigationProfileDocument[];
   readonly registration: { readonly mode: 'enabled' | 'disabled'; readonly form: boolean };
   readonly labelFilter?: { readonly groups: readonly LabelFilterGroupDefinition[] };
+  readonly reportDocument?: InvestigationReportDocument;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -174,6 +189,27 @@ function readLabelFilter(value: unknown): InvestigationProfile['labelFilter'] {
   return Object.freeze({ groups: Object.freeze(groups) });
 }
 
+function readReportDocument(
+  value: unknown,
+  documentKeys: ReadonlySet<string>
+): InvestigationReportDocument | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    throw new Error('Utredningsprofilens reportDocument är ogiltigt.');
+  }
+  const key = readProfileIdentifier(value.key, 'reportDocument.key');
+  if (documentKeys.has(key)) {
+    throw new Error('Utredningsprofilens reportDocument.key är redan ett utredningsdokument.');
+  }
+
+  return Object.freeze({
+    key,
+    schemaName: readProfileIdentifier(value.schemaName, 'reportDocument.schemaName'),
+    editableChannel: readRequiredString(value.editableChannel, 'reportDocument.editableChannel'),
+    lockedFromPhase: readRequiredString(value.lockedFromPhase, 'reportDocument.lockedFromPhase'),
+  });
+}
+
 const normalizeApplication = (application: string): string => application.trim().toUpperCase();
 
 /**
@@ -219,12 +255,14 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
       );
     }
   });
+  const reportDocument = readReportDocument(value.reportDocument, documentKeys);
   return Object.freeze({
     application,
     state: state as InvestigationProfileState,
     documents: Object.freeze(documents),
     registration,
     ...(labelFilter ? { labelFilter } : {}),
+    ...(reportDocument ? { reportDocument } : {}),
   });
 }
 

@@ -4,18 +4,26 @@ import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } f
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
-import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
-import { SupportInvestigationDocumentProfileDto, SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
+import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  SupportInvestigationDocumentProfileDto,
+  SupportInvestigationProfileDto,
+  SupportInvestigationReportDocumentDto,
+} from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
+import ApiService from '@/services/api.service';
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { REPORT_DOCUMENT_REFUSALS, resolveReportDocumentEditability } from '@/services/support-report-document.service';
 
 type SupportErrandJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
 
@@ -64,17 +72,20 @@ export class SupportErrandJsonParameterController {
   private readonly documentService: SupportJsonParameterService;
   private readonly policyService: SupportInvestigationPolicyService;
   private readonly accessService: SupportInvestigationAccessService;
+  private readonly apiService: Pick<ApiService, 'get'>;
 
   constructor(
     investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
     documentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
     policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
     accessService = new SupportInvestigationAccessService(),
+    apiService: Pick<ApiService, 'get'> = new ApiService(),
   ) {
     this.investigationProfile = investigationProfile;
     this.documentService = documentService;
     this.policyService = policyService;
     this.accessService = accessService;
+    this.apiService = apiService;
   }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
@@ -87,6 +98,9 @@ export class SupportErrandJsonParameterController {
     @Param('key') key: string,
     @Res() response: Response,
   ): Promise<Response> {
+    const reportDocument = this.reportDocumentFor(key);
+    if (reportDocument) return this.getReportDocument(req, reportDocument, municipalityId, errandId, response);
+
     const definition = requireJsonParameterDefinition(this.investigationProfile, key);
     // Reads stay allowed while investigation is merely inactive, so existing documents remain
     // viewable, but an unresolvable policy fails closed here as it does on every write path.
@@ -115,6 +129,12 @@ export class SupportErrandJsonParameterController {
     @Body() data: UpdateSupportErrandJsonParameterDto,
     @Res() response: Response,
   ): Promise<Response> {
+    const reportDocument = this.reportDocumentFor(key);
+    if (reportDocument) {
+      const preconditions = { ifMatch, ifNoneMatch, parentErrandVersion };
+      return this.updateReportDocument(req, reportDocument, municipalityId, errandId, data, preconditions, response);
+    }
+
     const definition = requireJsonParameterDefinition(this.investigationProfile, key);
     const state = await this.policyService.getState(req.user);
     if (state === 'unavailable') {
@@ -141,6 +161,76 @@ export class SupportErrandJsonParameterController {
     setETagHeader(response, result.etag, result.document.version);
     response.setHeader('X-Errand-Version', String(result.parentErrandVersion));
     return response.status(result.status).send(result.document);
+  }
+
+  private reportDocumentFor(key: string): SupportInvestigationReportDocumentDto | undefined {
+    const reportDocument = this.investigationProfile.reportDocument;
+    return reportDocument?.key === key ? reportDocument : undefined;
+  }
+
+  /**
+   * The report is read like any document. It is no investigation document, so the investigation's
+   * document grants say nothing about it: Support Management decides who may read it, from the
+   * forwarded account.
+   */
+  private async getReportDocument(
+    req: RequestWithUser,
+    reportDocument: SupportInvestigationReportDocumentDto,
+    municipalityId: string,
+    errandId: string,
+    response: Response,
+  ): Promise<Response> {
+    if ((await this.policyService.getState(req.user)) === 'unavailable') {
+      throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
+    }
+    const result = await this.documentService.readJsonParameter({ definition: reportDocument, municipalityId, errandId, user: req.user });
+
+    setETagHeader(response, result.etag, result.document.version);
+    return response.status(result.status).send(result.document);
+  }
+
+  /**
+   * Writes the report of an errand registered in Draken, until its investigation starts. Katla's
+   * report is the record of what was reported and is never written here. The checks read the errand
+   * as it is now; the write itself is conditioned on the report's own ETag, as every document is.
+   */
+  private async updateReportDocument(
+    req: RequestWithUser,
+    reportDocument: SupportInvestigationReportDocumentDto,
+    municipalityId: string,
+    errandId: string,
+    data: UpdateSupportErrandJsonParameterDto,
+    preconditions: { ifMatch: string; ifNoneMatch: string; parentErrandVersion: string },
+    response: Response,
+  ): Promise<Response> {
+    const state = await this.policyService.getState(req.user);
+    if (state === 'unavailable') {
+      throw new HttpException(503, 'Investigation write policy is temporarily unavailable');
+    }
+    if (state !== 'active') {
+      throw new HttpException(409, 'Investigation documents are not active for this application');
+    }
+
+    const request = { definition: reportDocument, municipalityId, errandId, user: req.user };
+    const [errand, phases] = await Promise.all([
+      this.documentService.readParentErrandSnapshot(request),
+      this.readWorkflowPhases(municipalityId, req.user),
+    ]);
+    const editability = resolveReportDocumentEditability(errand, phases, reportDocument);
+    if (editability !== 'editable') {
+      throw new HttpException(409, REPORT_DOCUMENT_REFUSALS[editability]);
+    }
+
+    const result = await this.documentService.writeJsonParameter({ ...request, data, preconditions });
+    setETagHeader(response, result.etag, result.document.version);
+    response.setHeader('X-Errand-Version', String(result.parentErrandVersion));
+    return response.status(result.status).send(result.document);
+  }
+
+  private async readWorkflowPhases(municipalityId: string, user: User): Promise<Phase[] | undefined> {
+    const url = `${apiServiceName('supportmanagement')}/${municipalityId}/${SUPPORTMANAGEMENT_NAMESPACE}/metadata`;
+    const metadata = await this.apiService.get<MetadataResponse>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
+    return metadata.data.phases;
   }
 
   /**

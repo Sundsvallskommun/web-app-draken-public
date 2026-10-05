@@ -819,6 +819,11 @@ interface SupportRegistrationOption {
 export interface SupportRegistrationOptions {
   reportTypes: SupportRegistrationOption[];
   locations: SupportRegistrationOption[];
+  /**
+   * Where the places come from: the unit the handler is employed at, or - when no employment is a place -
+   * the places configured for their account.
+   */
+  locationSource?: 'employment' | 'access';
   /** Priority keys as Support Management spells them, e.g. `HIGH`; `findPriorityLabelForPriorityKey` names them. */
   priorities: string[];
 }

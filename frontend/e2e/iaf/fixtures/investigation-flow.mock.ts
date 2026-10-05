@@ -40,6 +40,7 @@ export interface MockInvestigationProfile {
   application: string;
   state: 'active' | 'inactive' | 'unavailable';
   registration: { mode: 'enabled' | 'disabled' };
+  reportDocument?: { key: string; schemaName: string; editableChannel: string; lockedFromPhase: string };
   documents: Array<{
     key: string;
     schemaName: InvestigationKey;
@@ -233,6 +234,7 @@ const workflowPhases: WorkflowPhase[] = workflowChain.map(
 interface RegistrationOptionsScenario {
   reportTypes: Array<{ labelId: string; displayName: string; resourcePath: string }>;
   locations: Array<{ labelId: string; displayName: string; resourcePath: string }>;
+  locationSource?: 'employment' | 'access';
   priorities: string[];
 }
 
@@ -282,6 +284,8 @@ export interface IafApiScenario {
   handoverResult?: 'success' | 'conflict';
   /** Investigation text templates in the Templating API, by identifier. Left out, there are none. */
   investigationTextTemplates?: Record<string, string>;
+  /** How the errand came in. Left out, it was registered in Draken. */
+  errandChannel?: string;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -712,6 +716,43 @@ const collectLabels = (labels: readonly MockLabel[]) => {
 collectLabels(labelStructure);
 collectLabels([placeRoot, accessRoot]);
 
+/** The avvikelse report as the profile names it: Katla's record, written in Draken on errands registered there. */
+export const reportDocumentProfile = {
+  key: 'avvikelse-plats-handelse',
+  schemaName: 'avvikelse-plats-handelse',
+  editableChannel: 'WEB_UI',
+  lockedFromPhase: 'INVESTIGATION',
+};
+
+const reportSchemaId = '2281_avvikelse-plats-handelse_1.5';
+
+/** A reduced report schema: the place, when it happened and what happened. */
+const reportSchema = {
+  id: reportSchemaId,
+  name: reportDocumentProfile.schemaName,
+  version: '1.5',
+  value: {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    required: ['facilityInfo', 'eventDescription'],
+    properties: {
+      facilityInfo: {
+        type: 'object',
+        title: 'Plats',
+        properties: { orgName: { type: 'string', title: 'Enhet' } },
+      },
+      eventDate: { type: 'string', format: 'date', title: 'Datum för händelsen' },
+      eventDescription: { type: 'string', title: 'Beskriv händelsen' },
+    },
+  },
+};
+
+const reportUiSchema = {
+  facilityInfo: { 'ui:field': 'FacilitySearchWidget' },
+  eventDate: { 'ui:widget': 'date' },
+  eventDescription: { 'ui:widget': 'textarea' },
+};
+
 const katlaParameter = {
   key: `katla-${applicationSlug}-report`,
   schemaId: katlaSchemaId,
@@ -860,6 +901,8 @@ const errandClassificationOf = (selections: readonly ClassificationPatchSelectio
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
   const investigationProfile = scenario.investigationProfile ?? defaultInvestigationProfile();
   const configuredDocumentKeys = new Set(investigationProfile.documents.map(({ key }) => key));
+  // The report is served through the same JSON parameter route as the investigation documents.
+  if (investigationProfile.reportDocument) configuredDocumentKeys.add(investigationProfile.reportDocument.key);
   const documents: Record<string, InvestigationDocument> = structuredClone(
     scenario.documents ?? { 'utredning-enhetschef': existingManagerDocument() }
   );
@@ -935,7 +978,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     priority: 'MEDIUM',
     status: errandStatus,
     resolution: 'NONE',
-    channel: 'WEB_UI',
+    channel: scenario.errandChannel ?? 'WEB_UI',
     ...(errandAssignedUserId ? { assignedUserId: errandAssignedUserId } : {}),
     reporterUserId: `${applicationSlug}.reporter`,
     created: '2026-08-01T10:00:00.000+02:00',
@@ -1399,6 +1442,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     }
 
     const latestSchemaMatch = path.match(new RegExp(`/${municipalityId}/schemas/([^/]+)/latest$`, 'u'));
+    if (method === 'GET' && latestSchemaMatch && decodeURIComponent(latestSchemaMatch[1]) === reportSchema.name) {
+      trace.latestSchemaNames.push(reportSchema.name);
+      await fulfillJson(route, apiResponse(reportSchema));
+      return;
+    }
     if (method === 'GET' && latestSchemaMatch) {
       const name = decodeURIComponent(latestSchemaMatch[1]);
       if (!isInvestigationKey(name)) {
@@ -1435,6 +1483,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       const schemaId = decodeURIComponent(uiSchemaMatch[1]);
       if (schemaId === katlaSchemaId) {
         await fulfillJson(route, apiResponse({ id: schemaId, value: {} }));
+        return;
+      }
+      if (schemaId === reportSchemaId) {
+        await fulfillJson(route, apiResponse({ id: schemaId, value: reportUiSchema }));
         return;
       }
 
@@ -1478,6 +1530,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       trace.exactSchemaIds.push(schemaId);
       if (schemaId === katlaSchemaId) {
         await fulfillJson(route, apiResponse(katlaSchema));
+        return;
+      }
+      if (schemaId === reportSchemaId) {
+        await fulfillJson(route, apiResponse(reportSchema));
         return;
       }
 

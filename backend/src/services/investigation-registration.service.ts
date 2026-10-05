@@ -61,6 +61,55 @@ export const resolveRegistrationLocations = (
   return [...byLabelId.values()].sort((first, second) => first.displayName.localeCompare(second.displayName, 'sv'));
 };
 
+const indexLabelsByResourceName = (labelStructure: readonly Label[] | undefined): Map<string, Label[]> => {
+  const byName = new Map<string, Label[]>();
+  const visit = (nodes: readonly Label[] | undefined): void => {
+    for (const node of nodes ?? []) {
+      const name = node.resourceName?.trim();
+      if (name) byName.set(name, [...(byName.get(name) ?? []), node]);
+      visit(node.labels);
+    }
+  };
+  visit(labelStructure);
+  return byName;
+};
+
+/**
+ * The places an account's employments put it at.
+ *
+ * The location tree mirrors the municipality's organization tree, one label per organization unit,
+ * named by the unit's id. A place is therefore the label whose resource name is an employment's
+ * organization id: the id itself, not a unit name that may be spelled differently or shared. The
+ * label also has to pass `resolveInvestigationLocationTarget`, so an employment at a unit with
+ * sub-units, outside the tree or matching a label that is not a place puts nobody anywhere.
+ * Employments are taken in the order given, so the main employment's place comes first.
+ */
+export const resolveEmploymentLocations = (
+  labelStructure: readonly Label[] | undefined,
+  organizationIds: readonly number[],
+): RegistrationLocation[] => {
+  const labelsByName = indexLabelsByResourceName(labelStructure);
+  const byLabelId = new Map<string, RegistrationLocation>();
+
+  for (const organizationId of organizationIds) {
+    for (const label of labelsByName.get(String(organizationId)) ?? []) {
+      if (!label.id || byLabelId.has(label.id)) continue;
+      try {
+        const target = resolveInvestigationLocationTarget(labelStructure, label.id);
+        byLabelId.set(label.id, {
+          labelId: label.id,
+          displayName: target.displayName,
+          resourcePath: normalizeSupportManagementResourcePath(label.resourcePath),
+        });
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  return [...byLabelId.values()];
+};
+
 /** One report type the registration form offers, and the labels an errand gets when it is chosen. */
 export interface RegistrationReportType {
   readonly labelId: string;

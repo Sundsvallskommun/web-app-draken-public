@@ -11,6 +11,9 @@ import {
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 
+import { initialRegistrationLocationId } from './support-errand-registration-location';
+import { RegistrationLocationField } from './support-errand-registration-location.component';
+
 interface SupportErrandRegistrationFormProps {
   municipalityId: string;
 }
@@ -19,8 +22,9 @@ interface SupportErrandRegistrationFormProps {
  * The registration form for the drakes that ask before the errand exists.
  *
  * Nothing here knows which drake it is running as: the backend answers with the choices this
- * deployment offers and the places this handler is configured for, and the form renders those. A
- * deployment that configures no form never reaches this component at all.
+ * deployment offers and the places this handler may register for - where they are employed, or else
+ * where they are configured - and the form renders those. A deployment that configures no form never
+ * reaches this component at all.
  */
 export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProps> = ({ municipalityId }) => {
   const router = useRouter();
@@ -38,6 +42,7 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
       .then((loaded) => {
         if (!current) return;
         setOptions(loaded);
+        setLocationLabelId(initialRegistrationLocationId(loaded));
         if (loaded.priorities.includes(priority)) return;
         setPriority(loaded.priorities[0] ?? '');
       })
@@ -115,22 +120,7 @@ export const SupportErrandRegistrationForm: FC<SupportErrandRegistrationFormProp
         </Select>
       </FormControl>
 
-      <FormControl className="mb-24 w-full max-w-[40rem]">
-        <FormLabel htmlFor="registration-location">Vilken plats gäller det?</FormLabel>
-        <Select
-          id="registration-location"
-          data-cy="registration-location"
-          value={locationLabelId}
-          onChange={(event) => setLocationLabelId(event.target.value)}
-        >
-          <Select.Option value="">Välj</Select.Option>
-          {options.locations.map((location) => (
-            <Select.Option key={location.labelId} value={location.labelId}>
-              {location.displayName}
-            </Select.Option>
-          ))}
-        </Select>
-      </FormControl>
+      <RegistrationLocationField options={options} locationLabelId={locationLabelId} onChange={setLocationLabelId} />
 
       {options.priorities.length > 0 && (
         <FormControl className="mb-24 w-full max-w-[40rem]">

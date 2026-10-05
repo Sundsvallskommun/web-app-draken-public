@@ -219,6 +219,27 @@ sökningen. Profilens `registration`-capability avgör dessutom om registrerings
 ärende med explicit vanlig avvikelse (`REPORT_TYPE/DEVIATION` och `eventType=AVVIKELSE`), medan lagrumsstyrd
 klassificering fortsatt ägs av utredningen.
 
+### Registrering i Draken: plats och rapport
+
+Platsen för ett ärende som registreras i Draken är enheten där enhetschefen är anställd. Platsträdet speglar
+kommunens organisationsträd, en etikett per enhet med enhetens organisations-id som `resourceName`, så BFF:en
+matchar anställningens `orgId` (Employee API) mot etikettens namn - id mot id, inte enhetsnamn. En enda träff visas
+som fast plats, flera anställningar ger ett val med huvudanställningen förvald. Är ingen anställning en plats,
+eller går anställningarna inte att läsa, erbjuds platserna AccessMapper kopplar till kontot som tidigare. BFF:en
+löser platsen på nytt när ärendet skapas och tar inte klientens val på orden.
+
+Ärendet får kanal `WEB_UI`. Katlas ärenden har `ESERVICE` och sin rapport i JSON-parametern
+`avvikelse-plats-handelse`, som är det som rapporterades och aldrig skrivs i Draken. Ett ärende registrerat i
+Draken saknar rapport, så enhetschefen fyller i den i Ärendeuppgifter, i Katlas eget schema och med platsen
+förifylld och skrivskyddad, tills ärendet når fasen Utredning. Därefter visas den skrivskyddad som andra
+rapporter. Reglerna ligger i profilens `reportDocument` och avgörs lika i frontend och BFF: kanalen måste vara
+`WEB_UI` och ärendets aktiva fas ligga före `INVESTIGATION`; saknas fasflöde, eller står ärendet utanför det, är
+rapporten låst. Kanalen går därför inte att ändra på ett avvikelseärende. Rapportens textfält skrivs med
+`PlainTextareaWidget`, eftersom Drakens `textarea` lagrar HTML och rapporten är vanlig text.
+
+Support Management avgör vem som får skriva rapporten utifrån det vidarebefordrade kontot, så enhetschefens roll
+behöver skrivrätt till nyckeln `avvikelse-plats-handelse` i namespacet.
+
 All data som läses från RJSF eller localStorage normaliseras mot det aktuella schemat före rendering och lagring.
 Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (exempelvis IVO-ärendenummer när IVO är
 `Nej`). Riskvärden beräknas från respektive schemas `x-calculation` och samma produktregel valideras av JSON Schema.

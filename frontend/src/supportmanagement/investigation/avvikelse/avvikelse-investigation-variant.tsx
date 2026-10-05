@@ -49,6 +49,13 @@ const ErrandLocationCard = dynamic(
 );
 
 /** Lazy for the same bundle reason as the categorization control. */
+const AvvikelseReportDocument = dynamic(
+  () =>
+    import('./report-document/avvikelse-report-document.component').then((module) => module.AvvikelseReportDocument),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
 const LexAssignmentRequirement = dynamic(
   () => import('./assignment/lex-assignment-requirement.component').then((module) => module.LexAssignmentRequirement),
   { loading: () => null }
@@ -84,7 +91,13 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     <AvvikelseCategorizationControl disabled={disabled} />
   ),
   // Ärendets plats: a wrongly routed errand is moved from Ärendeuppgifter, not from inside an investigation.
-  renderDetailsHeader: (props: InvestigationDetailsHeaderProps) => <ErrandLocationCard {...props} />,
+  // Beneath it the report of an errand registered in Draken, which its unit manager fills in there.
+  renderDetailsHeader: (props: InvestigationDetailsHeaderProps) => (
+    <>
+      <ErrandLocationCard {...props} />
+      <AvvikelseReportDocument {...props} />
+    </>
+  ),
   /**
    * The decision that closes the investigation: lex Sarah for a reported misconduct, the IVO
    * decision for an HSL deviation. The tab is always offered once the errand is being decided. When

@@ -3,10 +3,12 @@ import {
   SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES,
   SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS,
   SupportInvestigationProfileDto,
+  SupportInvestigationReportDocumentDto,
   SupportManagementLabelFilterProfileDto,
 } from '@/dtos/support-investigation-profile.dto';
 
 import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from './api-config';
+import { DRAKEN_REGISTRATION_CHANNEL } from './support-errand-channels';
 
 export interface SupportInvestigationProfile extends SupportInvestigationProfileDto {
   readonly requiredSupportManagementApiTarget?: SupportManagementApiTarget;
@@ -99,17 +101,44 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
   });
   const frozenDocuments = Object.freeze(documents);
   const labelFilter = profile.labelFilter ? createSupportManagementLabelFilterProfile(profile.labelFilter) : undefined;
+  const reportDocument = profile.reportDocument ? createReportDocument(profile.reportDocument, documentKeys) : undefined;
 
   return Object.freeze({
     application,
     documents: frozenDocuments,
     ...(requiredSupportManagementApiTarget ? { requiredSupportManagementApiTarget } : {}),
     ...(labelFilter ? { labelFilter } : {}),
+    ...(reportDocument ? { reportDocument } : {}),
+  });
+};
+
+/** The report is its own JSON parameter, so it may not share a key with an investigation document. */
+const createReportDocument = (
+  reportDocument: SupportInvestigationReportDocumentDto,
+  documentKeys: ReadonlySet<string>,
+): SupportInvestigationReportDocumentDto => {
+  const key = requireProfileIdentifier(reportDocument.key, 'reportDocument.key');
+  if (documentKeys.has(key)) {
+    throw new Error(`Support investigation profile field reportDocument.key ${key} is already an investigation document`);
+  }
+  return Object.freeze({
+    key,
+    schemaName: requireProfileIdentifier(reportDocument.schemaName, 'reportDocument.schemaName'),
+    editableChannel: requireNonEmptyProfileField(reportDocument.editableChannel, 'reportDocument.editableChannel'),
+    lockedFromPhase: requireNonEmptyProfileField(reportDocument.lockedFromPhase, 'reportDocument.lockedFromPhase'),
   });
 };
 
 const iafVofInvestigationProfileBase = {
   requiredSupportManagementApiTarget: 'sprint',
+  // Katla's report of what happened and where. An errand registered in Draken has none until the unit
+  // manager fills it in, which they may do until the errand reaches Utredning.
+  reportDocument: {
+    key: 'avvikelse-plats-handelse',
+    schemaName: 'avvikelse-plats-handelse',
+    editableChannel: DRAKEN_REGISTRATION_CHANNEL,
+    lockedFromPhase: 'INVESTIGATION',
+  },
   documents: [
     {
       key: 'utredning-enhetschef',

@@ -246,3 +246,34 @@ test('does not carry global profile grants into an errand', () => {
   });
   assert.equal('access' in profile.documents[0], false);
 });
+
+test('reads the report an errand arrives with, and leaves it out when the profile has none', () => {
+  const reportDocument = {
+    key: 'avvikelse-plats-handelse',
+    schemaName: 'avvikelse-plats-handelse',
+    editableChannel: 'WEB_UI',
+    lockedFromPhase: 'INVESTIGATION',
+  };
+
+  assert.deepEqual(
+    parseInvestigationProfile({ ...validProfile(), reportDocument }, 'IAF').reportDocument,
+    reportDocument
+  );
+  assert.equal('reportDocument' in parseInvestigationProfile(validProfile(), 'IAF'), false);
+  assert.throws(
+    () =>
+      parseInvestigationProfile(
+        { ...validProfile(), reportDocument: { ...reportDocument, key: 'manager-document' } },
+        'IAF'
+      ),
+    /reportDocument\.key är redan ett utredningsdokument/u
+  );
+  assert.throws(
+    () =>
+      parseInvestigationProfile(
+        { ...validProfile(), reportDocument: { ...reportDocument, lockedFromPhase: '' } },
+        'IAF'
+      ),
+    /reportDocument\.lockedFromPhase/u
+  );
+});

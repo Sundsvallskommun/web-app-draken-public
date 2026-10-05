@@ -115,14 +115,16 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     })),
   };
   const accessMapper = { findAccountLabelPatterns: vi.fn(async (): Promise<string[]> => []) };
+  const employment = { readEmployments: vi.fn(async (): Promise<Array<{ orgId?: number; isMainEmployment?: boolean }>> => []) };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
+  (controller as unknown as { employmentService: typeof employment }).employmentService = employment;
   (controller as unknown as { accessMapperService: typeof accessMapper }).accessMapperService = accessMapper;
   (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
   (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
     investigationPolicy as unknown as SupportInvestigationPolicyService;
   (controller as unknown as { jsonParameterService: SupportJsonParameterService }).jsonParameterService =
     investigationDocument as unknown as SupportJsonParameterService;
-  return { controller, api, organization, investigationPolicy, investigationDocument, accessMapper };
+  return { controller, api, organization, investigationPolicy, investigationDocument, accessMapper, employment };
 };
 
 /**
@@ -176,6 +178,46 @@ const registrationMetadata = {
 };
 
 const HANDLER_LOCATION_PATTERN = 'LOCATION/VOF/HEMTJANST_NORR/**';
+
+/** An organization unit id, as the location tree names its units. Invented; no real unit has it. */
+const EMPLOYMENT_ORGANIZATION_ID = 900001;
+
+/**
+ * The registration metadata with a second unit named, as the real location tree names its units, by
+ * its organization id - the unit the handler in these tests is employed at.
+ */
+const employmentRegistrationMetadata = {
+  labels: {
+    labelStructure: registrationMetadata.labels.labelStructure.map(root =>
+      root.id !== 'location-root'
+        ? root
+        : {
+            ...root,
+            labels: (root.labels as Label[]).map((department: Label) => ({
+              ...department,
+              labels: [
+                ...(department.labels ?? []),
+                {
+                  id: 'employment-unit',
+                  classification: 'LOCATION',
+                  resourceName: String(EMPLOYMENT_ORGANIZATION_ID),
+                  resourcePath: `LOCATION/VOF/${EMPLOYMENT_ORGANIZATION_ID}`,
+                  displayName: 'Hemtjänst Syd',
+                },
+              ],
+            })),
+          },
+    ),
+  },
+};
+
+/** A registering handler employed at the unit above, which is a place in the location tree. */
+const makeEmployedRegistrationController = () => {
+  const made = makeRegistrationController();
+  made.api.get.mockResolvedValue({ data: employmentRegistrationMetadata, message: 'success' });
+  made.employment.readEmployments.mockResolvedValue([{ orgId: EMPLOYMENT_ORGANIZATION_ID, isMainEmployment: true }]);
+  return made;
+};
 
 /** A controller configured the way IAF and VOF are: registration asks before the errand exists. */
 const makeRegistrationController = () => {
@@ -916,6 +958,45 @@ describe('SupportErrandController', () => {
     });
   });
 
+  describe('updateSupportErrand channel', () => {
+    // The channel decides whether the avvikelse report may be filled in, so it stays as it came in.
+    it('refuses to change the channel where the profile has a report', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: { version: 7, status: 'ONGOING', channel: 'ESERVICE' }, headers: { etag: '"7"' }, message: 'success' });
+
+      await expect(
+        controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, '"7"', { channel: 'WEB_UI' }, mockRes()),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(api.patch).not.toHaveBeenCalled();
+    });
+
+    it('lets the unchanged channel through, as the errand form always sends it', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: { version: 7, status: 'ONGOING', channel: 'ESERVICE' }, headers: { etag: '"7"' }, message: 'success' });
+
+      await controller.updateSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        '"7"',
+        { channel: 'ESERVICE', title: 'Ny rubrik' },
+        mockRes(),
+      );
+
+      expect(api.patch).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the channel editable where the profile has no report', async () => {
+      const { controller, api, investigationPolicy } = makeController();
+      (investigationPolicy as { profile: unknown }).profile = { application: 'KC', documents: [] };
+      api.get.mockResolvedValue({ data: { version: 7, status: 'ONGOING', channel: 'PHONE' }, headers: { etag: '"7"' }, message: 'success' });
+
+      await controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, '"7"', { channel: 'EMAIL' }, mockRes());
+
+      expect(api.patch.mock.calls[0][0].data).toEqual({ channel: 'EMAIL' });
+    });
+  });
+
   describe('updateSupportErrand', () => {
     it('patches the errand with the supplied body and responds 200', async () => {
       const { controller, api } = makeController();
@@ -1156,6 +1237,8 @@ describe('SupportErrandController', () => {
         'LOCATION/VOF/HEMTJANST_NORR',
       ]);
       expect(body.priority).toBe(Priority.HIGH);
+      // Registered in Draken rather than reported through Katla, which is what opens its report.
+      expect(body.channel).toBe('WEB_UI');
     });
 
     it('refuses to create the errand before the handler has said what is being reported', async () => {
@@ -1208,6 +1291,71 @@ describe('SupportErrandController', () => {
       const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
 
       expect(options.locations).toEqual([]);
+    });
+
+    it('offers the place the handler is employed at, and nothing AccessMapper configures besides', async () => {
+      const { controller, accessMapper } = makeEmployedRegistrationController();
+
+      const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
+
+      expect(options.locationSource).toBe('employment');
+      expect(options.locations).toEqual([
+        { labelId: 'employment-unit', displayName: 'Hemtjänst Syd', resourcePath: `LOCATION/VOF/${EMPLOYMENT_ORGANIZATION_ID}` },
+      ]);
+      expect(accessMapper.findAccountLabelPatterns).not.toHaveBeenCalled();
+    });
+
+    it('offers the configured places when no employment is a place in the location tree', async () => {
+      const { controller, employment } = makeEmployedRegistrationController();
+      employment.readEmployments.mockResolvedValue([{ orgId: EMPLOYMENT_ORGANIZATION_ID + 1, isMainEmployment: true }]);
+
+      const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
+
+      expect(options.locationSource).toBe('access');
+      expect(options.locations.map(({ labelId }) => labelId)).toEqual(['unit']);
+    });
+
+    it('still offers the configured places when the employments cannot be read', async () => {
+      const { controller, employment } = makeEmployedRegistrationController();
+      employment.readEmployments.mockRejectedValue(new HttpException(500, 'Internal server error'));
+
+      const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
+
+      expect(options.locationSource).toBe('access');
+      expect(options.locations.map(({ labelId }) => labelId)).toEqual(['unit']);
+    });
+
+    it('registers the errand at the place the handler is employed at', async () => {
+      const { controller, api } = makeEmployedRegistrationController();
+
+      await controller.registerSupportErrand(
+        mockReq(mockUser()),
+        MUNICIPALITY_ID,
+        { reportTypeLabelId: 'deviation', locationLabelId: 'employment-unit' },
+        mockRes(),
+      );
+
+      expect(api.post.mock.calls[0][0].data.labels.map(({ resourcePath }: Label) => resourcePath)).toEqual([
+        'REPORT_TYPE',
+        'REPORT_TYPE/DEVIATION',
+        'LOCATION/VOF',
+        `LOCATION/VOF/${EMPLOYMENT_ORGANIZATION_ID}`,
+      ]);
+    });
+
+    // Once the employment decides the place, a configured place is no longer the handler's to choose.
+    it('refuses a configured place once the employment decides the place', async () => {
+      const { controller, api } = makeEmployedRegistrationController();
+
+      await expect(
+        controller.registerSupportErrand(
+          mockReq(mockUser()),
+          MUNICIPALITY_ID,
+          { reportTypeLabelId: 'deviation', locationLabelId: 'unit' },
+          mockRes(),
+        ),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(api.post).not.toHaveBeenCalled();
     });
 
     it('has no registration options to offer for a drake that registers without a form', async () => {

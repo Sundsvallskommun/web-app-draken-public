@@ -79,4 +79,29 @@ test.describe('Registrering i IAF/VOF', () => {
     await expect(page.locator('[data-cy="support-registration-form"]')).toHaveCount(0);
     expect(trace.registrations).toHaveLength(0);
   });
+
+  // The unit the handler is employed at is the place: shown, not asked for, when it is the only one.
+  test('hämtar platsen från enhetschefens anställning', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, {
+      investigationProfileResponse: registrationProfile(),
+      registrationOptions: {
+        ...registrationOptions,
+        locations: [{ labelId: 'employment-unit', displayName: 'Hemtjänst Syd', resourcePath: 'LOCATION/VOF/900001' }],
+        locationSource: 'employment',
+      },
+    });
+
+    await visitRegistration(page, dismissCookieConsent);
+
+    const form = page.locator('[data-cy="support-registration-form"]');
+    await expect(form.locator('[data-cy="registration-location-fixed"]')).toContainText('Hemtjänst Syd');
+    await expect(form.locator('[data-cy="registration-location"]')).toHaveCount(0);
+
+    await form.locator('[data-cy="registration-report-type"]').selectOption('deviation');
+    await form.locator('[data-cy="registration-submit"]').click();
+
+    await expect
+      .poll(() => trace.registrations)
+      .toEqual([{ reportTypeLabelId: 'deviation', locationLabelId: 'employment-unit', priority: 'MEDIUM' }]);
+  });
 });
