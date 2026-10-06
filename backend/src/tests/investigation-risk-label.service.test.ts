@@ -4,7 +4,15 @@ import { InvestigationRiskLabelService } from '@/services/investigation-risk-lab
 import { mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
-const labelStructure: Label[] = [{ id: 'risk-root', resourcePath: 'RISK', labels: [{ id: 'high-hsl', resourcePath: 'RISK/HIGH_HSL', labels: [] }] }];
+const labelStructure: Label[] = [
+  {
+    id: 'risk-root',
+    classification: 'RISK',
+    resourceName: 'RISK',
+    resourcePath: 'RISK',
+    labels: [{ id: 'high-hsl', classification: 'RISK', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL', labels: [] }],
+  },
+];
 
 const setup = (errandVersion: number, labels: { id: string }[] = []) => {
   const api = {

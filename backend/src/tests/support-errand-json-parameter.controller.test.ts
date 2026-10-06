@@ -671,9 +671,9 @@ describe('the high HSL risk label on a completed unit manager investigation', ()
     controller: SupportErrandJsonParameterController,
     documentService: DocumentServiceStub,
     key: string,
-    value: Record<string, unknown>,
+    value: UpdateSupportErrandJsonParameterDto['value'],
   ) => {
-    const update = { schemaId: completionSchema.id, value };
+    const update: UpdateSupportErrandJsonParameterDto = { schemaId: completionSchema.id, value };
     documentService.writeJsonParameter.mockResolvedValue({
       document: { key, ...update, version: 8 },
       etag: '"8"',

@@ -5,14 +5,16 @@ const labelStructure: Label[] = [
   {
     id: 'risk-root',
     classification: 'risk-root',
+    resourceName: 'RISK',
     resourcePath: 'RISK',
-    labels: [{ id: 'high-hsl', classification: 'risk', resourcePath: 'RISK/HIGH_HSL', labels: [] }],
+    labels: [{ id: 'high-hsl', classification: 'risk', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL', labels: [] }],
   },
   {
     id: 'report-root',
     classification: 'report-type-root',
+    resourceName: 'REPORT_TYPE',
     resourcePath: 'REPORT_TYPE',
-    labels: [{ id: 'deviation', classification: 'report-type', resourcePath: 'REPORT_TYPE/DEVIATION', labels: [] }],
+    labels: [{ id: 'deviation', classification: 'report-type', resourceName: 'DEVIATION', resourcePath: 'REPORT_TYPE/DEVIATION', labels: [] }],
   },
 ];
 
