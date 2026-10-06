@@ -21,7 +21,7 @@ export function AvvikelseMeasureFollowUpDialog({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const id = useId();
-  const heading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLSpanElement>(null);
   const errorSummary = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
   const [saving, setSaving] = useState(false);
@@ -88,8 +88,13 @@ export function AvvikelseMeasureFollowUpDialog({
   return (
     <Modal
       show
-      hideLabel
-      aria-label="Följ upp åtgärd"
+      // The title sits in the modal's own header, and takes the focus when the dialog opens so that it is
+      // read first - rather than the close button, the first control the header holds.
+      label={
+        <span ref={heading} tabIndex={-1} className="focus-visible:outline focus-visible:outline-2">
+          Följ upp åtgärd
+        </span>
+      }
       closeLabel="Stäng"
       closeButtonProps={{ disabled: saving }}
       disableCloseOutside
@@ -99,9 +104,6 @@ export function AvvikelseMeasureFollowUpDialog({
     >
       <Modal.Content>
         <form onSubmit={submit} noValidate aria-busy={saving} className="flex flex-col gap-24">
-          <h3 ref={heading} tabIndex={-1} className="text-h3-sm focus-visible:outline focus-visible:outline-2">
-            Följ upp åtgärd
-          </h3>
           <section aria-label="Åtgärden som följs upp" className="border-1 rounded-12 p-16 flex flex-col gap-8">
             <h4 className="font-bold">{title}</h4>
             <p className="whitespace-pre-wrap break-words">{measure.description}</p>

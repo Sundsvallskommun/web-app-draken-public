@@ -114,6 +114,16 @@ test('follow-up shows only planned approved measures and offers completion inste
   expect(screen.queryByText('Delvis godkänd åtgärd')).toBeNull();
 });
 
+test('the follow-up is titled in the dialog header, and the title is read first', async () => {
+  render(<Harness />);
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Utförd: Utbildning' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Följ upp åtgärd' });
+  const title = within(dialog).getByText('Följ upp åtgärd');
+  expect(title.closest('.sk-modal-dialog-header')).not.toBeNull();
+  expect(within(dialog).getAllByText('Följ upp åtgärd')).toHaveLength(1);
+  await waitFor(() => expect(document.activeElement).toBe(title));
+});
+
 test.each(['Ja', 'Nej'])(
   'completion requires both answers and saves %s without changing the original measure',
   async (answer) => {
