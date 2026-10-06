@@ -32,7 +32,8 @@ const hasChildren = (label: Label | undefined): boolean => (label?.labels?.lengt
 
 const getBoxLabel = (optionLabels: Label[], fallback: string, required: boolean): string => {
   const name = getClassificationDisplayName(optionLabels, '');
-  return name ? `${name}${required ? '*' : ''}` : fallback;
+  const suffix = required ? '*' : '';
+  return name ? `${name}${suffix}` : fallback;
 };
 
 const filterBySearch = (
@@ -161,11 +162,12 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
         .filter(Boolean)
         .join(' - ')
     : 'Välj ärendekategori';
-  const secondPlaceholder = secondSelection
-    ? getLabelDisplayName(secondSelection, metadata)
-    : firstIsLeaf
-    ? 'Ingen ärendetyp'
-    : 'Välj ärendetyp';
+  let secondPlaceholder = 'Välj ärendetyp';
+  if (secondSelection) {
+    secondPlaceholder = getLabelDisplayName(secondSelection, metadata);
+  } else if (firstIsLeaf) {
+    secondPlaceholder = 'Ingen ärendetyp';
+  }
 
   return (
     <>

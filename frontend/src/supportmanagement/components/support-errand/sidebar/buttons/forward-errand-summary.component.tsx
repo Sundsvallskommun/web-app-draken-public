@@ -12,9 +12,9 @@ import {
 import {
   Channels,
   findPriorityLabelForPriorityKey,
+  getCategorizationLabels,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { getCategorizationLabels } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -42,23 +42,27 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
 
   const stakeholders = [...(errand?.customer ?? []), ...(errand?.contacts ?? [])];
 
+  let errandTypeText: string | undefined;
+  if (!appConfig.features.useLabelCategorization) {
+    errandTypeText =
+      metadata?.categories
+        ?.find((category) => category.name === errand?.category)
+        ?.types?.find((type) => type.name === errand?.type)?.displayName || errand?.type;
+  } else if (showsLegacyClassification(errand!)) {
+    // LEGACY_CLASSIFICATION
+    errandTypeText = getLegacyClassificationSummary(errand!, metadata);
+  } else {
+    errandTypeText = getCategorizationLabels(errand!)
+      .map((label) => getLabelDisplayName(label, metadata))
+      .join(' - ');
+  }
+
   return (
     <>
       <div className="flex flex-row flex-wrap gap-x-80 gap-y-16">
         <div className="flex flex-col">
           <span className="font-bold text-small">Ärendetyp</span>
-          <span className="text-small">
-            {appConfig.features.useLabelCategorization
-              ? // LEGACY_CLASSIFICATION
-                showsLegacyClassification(errand!)
-                ? getLegacyClassificationSummary(errand!, metadata)
-                : getCategorizationLabels(errand!)
-                    .map((label) => getLabelDisplayName(label, metadata))
-                    .join(' - ')
-              : metadata?.categories
-                  ?.find((category) => category.name === errand?.category)
-                  ?.types?.find((type) => type.name === errand?.type)?.displayName || errand?.type}
-          </span>
+          <span className="text-small">{errandTypeText}</span>
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-small">Inkom via</span>

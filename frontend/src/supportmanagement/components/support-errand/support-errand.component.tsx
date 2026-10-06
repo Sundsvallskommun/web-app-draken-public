@@ -7,12 +7,12 @@ import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
+  getLabelCategorizationHeading,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { getLabelCategorizationHeading } from '@supportmanagement/services/support-errand-service';
 import { labelCategoryRequiresType } from '@supportmanagement/services/support-label-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';

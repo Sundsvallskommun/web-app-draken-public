@@ -39,7 +39,7 @@ export const isCasedataForwardTarget = (namespace?: string): boolean =>
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
  */
-const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'ROB'];
+const TWO_LEVEL_CATEGORIZATION_NAMESPACES = new Set(['CONTACTCENTER', 'ROB']);
 
 const defaultIncludes = (): HandoverInclude => ({
   stakeholders: true,
@@ -53,7 +53,7 @@ const defaultIncludes = (): HandoverInclude => ({
 });
 
 /** Nothing below the last picked label is left to pick. */
-const isCompletePath = (path: Label[]): boolean => path.length > 0 && (path[path.length - 1].labels?.length ?? 0) === 0;
+const isCompletePath = (path: Label[]): boolean => path.length > 0 && (path.at(-1)?.labels?.length ?? 0) === 0;
 
 interface UseSupportHandoverArgs {
   errandId?: string;
@@ -135,7 +135,7 @@ export const useSupportHandover = ({
   // TEMPORARY: the classification model is decided per target namespace. The namespaces in
   // TWO_LEVEL_CATEGORIZATION_NAMESPACES use category/type; every other namespace uses labels.
   // Remove this branch (always use labels) once the labels migration is complete.
-  const targetUsesLabels = !!selectedNamespace && !TWO_LEVEL_CATEGORIZATION_NAMESPACES.includes(selectedNamespace);
+  const targetUsesLabels = !!selectedNamespace && !TWO_LEVEL_CATEGORIZATION_NAMESPACES.has(selectedNamespace);
 
   const applyPreviewDefaults = useCallback((data: HandoverPreview) => {
     const mappingRequired = data.mappingRequired;

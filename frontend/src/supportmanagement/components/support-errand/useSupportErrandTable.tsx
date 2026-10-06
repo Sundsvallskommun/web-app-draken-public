@@ -9,8 +9,12 @@ import {
   getClassificationTypeDisplayName,
   showsLegacyClassification,
 } from '@supportmanagement/services/legacy-classification-service';
-import { Channels, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { getCategorizationLabels } from '@supportmanagement/services/support-errand-service';
+import {
+  Channels,
+  getCategorizationLabels,
+  Status,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
@@ -100,9 +104,9 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
-          {appConfig.features.useLabelCategorization ? (
+          {appConfig.features.useLabelCategorization &&
             // LEGACY_CLASSIFICATION
-            showsLegacyClassification(errand) ? (
+            (showsLegacyClassification(errand) ? (
               <div>{getClassificationTypeDisplayName(errand, supportMetadata)}</div>
             ) : (
               <div>
@@ -112,8 +116,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
                     <div key={label.id ?? label.resourcePath}>{getLabelDisplayName(label, supportMetadata)}</div>
                   ))}
               </div>
-            )
-          ) : null}
+            ))}
           {appConfig.features.useTwoLevelCategorization ? (
             <>
               <span className="m-0">
