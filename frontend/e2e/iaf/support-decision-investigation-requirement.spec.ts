@@ -83,7 +83,7 @@ test("a completed unit manager's investigation sends the errand to the decision"
   const trace = await installInvestigatedErrand(page, { managerValue: { completed: 'yes' } });
   await visitErrand(page, dismissCookieConsent);
 
-  await expect(nextPhaseButton(page)).toHaveText('Skicka till beslut');
+  await expect(nextPhaseButton(page)).toHaveText('Redo för beslut');
   await nextPhaseButton(page).click();
 
   await expect.poll(() => trace.phasePatches.length).toBe(1);

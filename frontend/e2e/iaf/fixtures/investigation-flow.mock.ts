@@ -194,9 +194,9 @@ export const workflowTransitionId = (target: WorkflowPhaseName) =>
 
 const workflowChain: Array<[WorkflowPhaseName, string, string, string]> = [
   ['ACTUALIZATION', 'Registrerat', 'NEW', 'Skicka till granskning'],
-  ['REVIEW', 'Granskning', 'REVIEW', 'Skicka till utredning'],
-  ['INVESTIGATION', 'Utredning', 'INQUIRY', 'Skicka till beslut'],
-  ['DECISION', 'Beslut', 'DECISION', 'Skicka till uppföljning'],
+  ['REVIEW', 'Granskning', 'REVIEW', 'Inled utredning'],
+  ['INVESTIGATION', 'Utredning', 'INQUIRY', 'Redo för beslut'],
+  ['DECISION', 'Beslut', 'DECISION', 'Inled uppföljning'],
   ['FOLLOW_UP', 'Uppföljning', 'FOLLOW_UP', ''],
 ];
 
