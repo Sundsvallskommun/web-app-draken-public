@@ -222,20 +222,20 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       // Every document tab is mounted, so the assertions are scoped to the one on screen.
       const investigationDocument = page.locator(`[data-cy="investigation-document-${key}"]`);
       const debugPanel = investigationDocument.locator('[data-cy="investigation-schema-debug"]');
+      // Whether the handler may edit the document is about the errand, and shows in every environment.
+      await expect(investigationDocument.getByText(/^(Skrivskyddad|Redigerbar)$/u).first()).toBeVisible();
 
       if (!schemaDebugIsVisible) {
         // Production shows the errand, not the schema behind it.
         await expect(debugPanel).toHaveCount(0);
         await expect(investigationDocument).not.toContainText('Schema:');
         await expect(investigationDocument).not.toContainText('Ansvarig roll');
-        await expect(investigationDocument.getByText(/^(Skrivskyddad|Redigerbar)$/u)).toHaveCount(0);
         continue;
       }
 
       await expect(debugPanel).toBeVisible();
       await expect(investigationDocument).toContainText(`Schema: ${documents[key].schemaId}`);
       await expect(investigationDocument).toContainText('Ansvarig roll');
-      await expect(investigationDocument.getByText(/^(Skrivskyddad|Redigerbar)$/u).first()).toBeVisible();
 
       const disclosureButton = debugPanel.getByRole('button').first();
       await expect(disclosureButton).toHaveAttribute('aria-expanded', 'false');

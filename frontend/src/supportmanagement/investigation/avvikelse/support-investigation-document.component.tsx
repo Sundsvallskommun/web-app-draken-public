@@ -339,9 +339,9 @@ export function SupportInvestigationDocument({
     return () => useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
   }, [definition.key, readable, loadState]);
 
-  // Schema documentation - the read/write state, the schema's own description, its owning role and
-  // its id - is for working on the schemas, not on the errand. Test and development show all of it,
-  // production none of it.
+  // Schema documentation - the schema's own description, its owning role and its id - is for working on
+  // the schemas, not on the errand. Test and development show it, production does not. Whether the
+  // handler may edit the document is about the errand, and is shown everywhere.
   const showSchemaMetadata = investigationSchemaDebugIsVisible();
 
   const renderingSchema = useMemo(() => {
@@ -873,11 +873,9 @@ export function SupportInvestigationDocument({
             <h2 id={`${definition.key}-heading`} className="text-h3-md">
               {definition.tabLabel}
             </h2>
-            {showSchemaMetadata && (
-              <Label rounded inverted color={formReadonly ? 'bjornstigen' : 'gronsta'}>
-                {formReadonly ? 'Skrivskyddad' : 'Redigerbar'}
-              </Label>
-            )}
+            <Label rounded inverted color={formReadonly ? 'bjornstigen' : 'gronsta'}>
+              {formReadonly ? 'Skrivskyddad' : 'Redigerbar'}
+            </Label>
             {(isDirty || classificationDirty) && (
               <Label rounded inverted color="vattjom">
                 Osparade ändringar
