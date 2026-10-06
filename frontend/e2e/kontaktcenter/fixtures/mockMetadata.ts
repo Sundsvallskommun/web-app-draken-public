@@ -1,4 +1,4 @@
-export const mockCategories = [
+const mockCategories = [
   {
     name: 'BOU',
     displayName: 'BoU',
@@ -506,8 +506,65 @@ export const mockCategories = [
   },
 ];
 
+/** A label in the tree the BFF returns for KC: the categorization root is stripped, so DEPARTMENT is the top. */
+type MockLabel = {
+  id: string;
+  classification: string;
+  displayName: string;
+  resourcePath: string;
+  resourceName: string;
+  labels: MockLabel[];
+};
+
+const label = (
+  classification: string,
+  resourcePath: string,
+  displayName: string,
+  labels: MockLabel[] = []
+): MockLabel => ({
+  id: `label-${resourcePath.toLowerCase().replace(/\//g, '-')}`,
+  classification,
+  displayName,
+  resourcePath,
+  resourceName: resourcePath.split('/').pop()!,
+  labels,
+});
+
+// DEPARTMENT > CATEGORY > TYPE. BOU/COMPLAINTS is a leaf category with no types.
+const mockLabelStructure: MockLabel[] = [
+  label('DEPARTMENT', 'BOU', 'BoU', [
+    label('CATEGORY', 'BOU/CHILDCARE', 'Barnomsorg', [
+      label('TYPE', 'BOU/CHILDCARE/INVOICES', 'Fakturor'),
+      label('TYPE', 'BOU/CHILDCARE/OTHER', 'Övrigt'),
+    ]),
+    label('CATEGORY', 'BOU/COMPLAINTS', 'Synpunkter'),
+  ]),
+  label('DEPARTMENT', 'IAF', 'IAF', [
+    label('CATEGORY', 'IAF/ADULT_EDUCATION', 'Vuxenutbildning', [label('TYPE', 'IAF/ADULT_EDUCATION/SFI', 'SFI')]),
+  ]),
+  label('DEPARTMENT', 'KSK', 'KSK', [
+    label('CATEGORY', 'KSK/SERVICE_CENTER_IT', 'Servicecenter IT', [
+      label('TYPE', 'KSK/SERVICE_CENTER_IT/PASSWORD', 'Lösenord'),
+    ]),
+  ]),
+];
+
+/** The labels an errand carries for the path down to `resourcePath`: the tree nodes without their children. */
+export const mockLabelPath = (resourcePath: string): Omit<MockLabel, 'labels'>[] => {
+  const walk = (labels: MockLabel[]): MockLabel[] => {
+    for (const node of labels) {
+      if (node.resourcePath === resourcePath) return [node];
+      const below = walk(node.labels);
+      if (below.length) return [node, ...below];
+    }
+    return [];
+  };
+  return walk(mockLabelStructure).map(({ labels: _children, ...node }) => node);
+};
+
 export const mockMetaData = {
   categories: mockCategories,
+  labels: { labelStructure: mockLabelStructure },
   externalIdTypes: [
     {
       name: 'EMPLOYEE',

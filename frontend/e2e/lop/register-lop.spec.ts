@@ -19,7 +19,8 @@ import {
 test.describe('register page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+      // The proxy redirects protected routes to login without this cookie; it must be set for the host under test.
+      { name: 'connect.sid', value: 'test-session', domain: process.env.DOMAIN_NAME || 'localhost', path: '/' },
     ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -38,12 +39,16 @@ test.describe('register page', () => {
     await mockRoute('**/supporterrands/2281?page=1*', mockSupportErrandsEmpty, { method: 'GET' });
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
-    await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, { method: 'PATCH' });
+    await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, {
+      method: 'PATCH',
+    });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
-    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
+    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
+      method: 'GET',
+    });
     await page.goto('registrera');
     await dismissCookieConsent();
   });
@@ -99,7 +104,8 @@ test.describe('register page', () => {
 
     const [response] = await Promise.all([
       page.waitForResponse(
-        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
+        (resp) =>
+          resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
       ),
       page.locator('[data-cy="save-button"]').click(),
     ]);
@@ -107,8 +113,8 @@ test.describe('register page', () => {
     const request = response.request();
     const requestBody = request.postDataJSON();
 
-    expect(requestBody.classification.category).toBe(labelCat!.resourcePath!);
-    expect(requestBody.classification.type).toBe(labelType!.resourcePath!);
+    // The categorization is the labels alone; no classification is sent.
+    expect(requestBody.classification).toBeUndefined();
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelCat!.resourcePath!);
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelType!.resourcePath!);
     expect(requestBody.channel).toBe('PHONE');
@@ -117,10 +123,6 @@ test.describe('register page', () => {
     expect(requestBody).toEqual({
       assignedUserId: mockEmptySupportErrand.assignedUserId,
       businessRelated: false,
-      classification: {
-        category: labelCat?.resourcePath,
-        type: labelType?.resourcePath,
-      },
       externalTags: mockEmptySupportErrand.externalTags,
       labels: [labelCat, labelType],
       channel: 'PHONE',
