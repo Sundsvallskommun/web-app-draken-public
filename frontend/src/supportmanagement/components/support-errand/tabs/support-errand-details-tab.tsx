@@ -6,13 +6,15 @@ import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { SupportErrandBusinessDescriptionDrawer } from './support-errand-business-description-drawer.component';
 import { SupportErrandCompanyEngagements } from './support-errand-company-engagements.component';
 import { SupportErrandTypeForm } from './support-errand-type-form.component';
 import { useSupportPbi } from './use-support-pbi';
 
-export const SupportErrandDetailsTab: React.FC<{}> = () => {
+export const SupportErrandDetailsTab: React.FC<{ marksPbi: boolean }> = ({ marksPbi }) => {
+  const { t } = useTranslation();
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
@@ -37,6 +39,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const companyInformation = appConfig.features.useCompanyInformation ? organizationPartyId : undefined;
   const pbi = useSupportPbi(!!companyInformation);
   const companyEngagements = pbi.candidates ?? [];
+  const pbiMarking = pbi.marking ? { ...pbi.marking, canEdit: pbi.marking.canEdit && marksPbi } : undefined;
   const showsCompanyEngagements = companyEngagements.length > 0;
   const companyProfile = useCompanyProfile(companyInformation);
   const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
@@ -169,8 +172,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
               initiallyOpen={!showsJsonParameters}
               companyName={companyProfile?.name ?? organizationStakeholder?.organizationName}
               onShowBusinessDescription={companyProfile ? () => setShowsBusinessDescription(true) : undefined}
-              pbiMarking={pbi.marking}
-              pbiNotice={pbi.notice}
+              pbiMarking={pbiMarking}
+              pbiNotice={marksPbi ? pbi.notice : t('common:company.pbi.locked_in_investigation')}
             />
           </div>
         ) : null}

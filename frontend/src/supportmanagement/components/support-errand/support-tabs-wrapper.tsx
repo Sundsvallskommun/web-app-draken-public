@@ -212,7 +212,11 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'details',
         label: 'Ärendeuppgifter',
-        content: supportErrand && <SupportErrandDetailsTab />,
+        content: supportErrand && (
+          <SupportErrandDetailsTab
+            marksPbi={writableInSteps(SupportProcessStep.REGISTRATION, SupportProcessStep.REVIEW)}
+          />
+        ),
         disabled: false,
         visibleFor: appConfig.features.useDetailsTab,
       },
