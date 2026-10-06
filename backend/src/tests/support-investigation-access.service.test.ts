@@ -17,6 +17,19 @@ const setup = (data: unknown = mockErrandAccess()) => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('SupportInvestigationAccessService', () => {
+  it("answers the user's level on the errand itself, LR for an errand they only know of", async () => {
+    const { service, get } = setup({ level: 'LR', fields: [{ field: 'id', level: 'R' }], resources: [] });
+
+    await expect(service.getErrandLevel(mockUser(), '2281', 'errand-1')).resolves.toBe('LR');
+    expect(get).toHaveBeenCalledWith(expect.objectContaining({ url: 'supportmanagement-sprint/16.0/2281/IAF/errands/errand-1/access' }), mockUser());
+  });
+
+  it('fails closed on an errand level it does not know', async () => {
+    const { service } = setup({ level: 'NONE', fields: [], resources: [] });
+
+    await expect(service.getErrandLevel(mockUser(), '2281', 'errand-1')).rejects.toMatchObject({ status: 502 });
+  });
+
   it('uses the current identity and errand and grants creation for allKeys even when documents do not exist', async () => {
     const { read, get } = setup();
     await expect(read()).resolves.toEqual({

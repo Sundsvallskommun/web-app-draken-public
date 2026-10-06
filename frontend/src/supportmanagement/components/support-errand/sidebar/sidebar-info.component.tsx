@@ -93,6 +93,8 @@ export const SidebarInfo: FC<{
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const allowed = useMemo(() => {
+    // A limited read carries almost nothing of the errand, so it would pass for an empty or unassigned one.
+    if (supportErrand?.limitedAccess) return false;
     if (!supportErrandIsEmpty(supportErrand!)) {
       let _a = validateAction(supportErrand!, user);
       if (supportErrand!.assignedUserId?.toLocaleLowerCase() === undefined) {
@@ -469,14 +471,16 @@ export const SidebarInfo: FC<{
 
       <div className="w-full mt-md flex flex-col gap-12">
         <>
-          <FormControl id="administrator" className="w-full">
+          <FormControl id="administrator" className="w-full" disabled={!!supportErrand?.limitedAccess}>
             <FormLabel className="flex justify-between text-small">
               Ansvarig{' '}
               <Button
                 variant="link"
                 className="font-normal"
                 size="sm"
-                disabled={supportErrandIsEmpty(supportErrand!) || !isAdmin() || !canTakeErrand}
+                disabled={
+                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || !canTakeErrand || !!supportErrand?.limitedAccess
+                }
                 onClick={() => {
                   selfAssignSupportErrand();
                 }}
@@ -510,6 +514,7 @@ export const SidebarInfo: FC<{
               {...register('status')}
               value={status}
               disabled={
+                !!supportErrand?.limitedAccess ||
                 supportErrand?.status === Status.SOLVED ||
                 supportErrand?.status === Status.REOPENED ||
                 (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)

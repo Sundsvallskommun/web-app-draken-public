@@ -2,7 +2,11 @@ import { Response } from 'express';
 import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
-import { SupportInvestigationErrandAccessDto, SupportInvestigationRuntimeProfileDto } from '@/dtos/support-investigation-profile.dto';
+import {
+  SupportErrandAccessLevelDto,
+  SupportInvestigationErrandAccessDto,
+  SupportInvestigationRuntimeProfileDto,
+} from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -41,5 +45,23 @@ export class SupportInvestigationProfileController {
     const keys = this.policyService.profile.documents.map(document => document.key);
     if (keys.length === 0) return { municipalityId, errandId, documents: [] };
     return this.accessService.getDocumentAccess(req.user, municipalityId, errandId, keys);
+  }
+
+  /**
+   * The current user's level on the errand itself, so the errand page can tell an errand the user only
+   * knows of (LR) from one they may read, before it renders anything that would ask for more.
+   */
+  @Get('/supporterrands/:municipalityId/:errandId/errand-access')
+  @OpenAPI({ summary: "Get the current user's access level to the errand itself" })
+  @ResponseSchema(SupportErrandAccessLevelDto)
+  @UseBefore(authMiddleware)
+  async getErrandAccess(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Res() response: Response,
+  ): Promise<SupportErrandAccessLevelDto> {
+    response.setHeader('Cache-Control', 'no-store');
+    return { level: await this.accessService.getErrandLevel(req.user, municipalityId, errandId) };
   }
 }

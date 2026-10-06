@@ -11,6 +11,8 @@ import {
   isSupportRegistrationForm,
 } from '@supportmanagement/investigation/investigation-profile';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { getInvestigationLimitedAccessNotice } from '@supportmanagement/investigation/investigation-variant-registry';
+import { markLimitedSupportErrandAccess } from '@supportmanagement/services/support-errand-access-service';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
@@ -28,6 +30,7 @@ import { SupportErrandSummary } from '../support-errand-basics-form/support-erra
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { supportErrandFormSchema } from './support-errand-form-schema';
+import { SupportErrandLimitedAccessAlert } from './support-errand-limited-access-alert.component';
 import { SupportErrandRegistrationForm } from './support-errand-registration-form.component';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { SupportUiPhaseWrapper } from './ui-phase/ui-phase-wrapper';
@@ -51,6 +54,8 @@ export const SupportErrandComponent: FC = () => {
   // A drake that asks before creating the errand renders the form instead of initiating one; every
   // other drake keeps creating the errand the moment this page opens.
   const registrationForm = !errandNumber && isSupportRegistrationForm(supportApplicationProfile);
+  // Only a variant with something to say about an errand the user may merely know of asks for the level.
+  const limitedAccessNotice = getInvestigationLimitedAccessNotice();
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(supportErrandFormSchema) as unknown as Resolver<SupportErrand>,
@@ -82,8 +87,10 @@ export const SupportErrandComponent: FC = () => {
       .catch((e) => {});
     if (errandNumber) {
       setIsLoading(true);
+      // The errand number route reads the municipality on the server; the store may not have it yet.
+      const errandMunicipalityId = municipalityId || process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
       getSupportErrandByErrandNumber(errandNumber)
-        .then((res) => {
+        .then(async (res) => {
           if (res.error) {
             toastMessage({
               position: 'bottom',
@@ -92,8 +99,12 @@ export const SupportErrandComponent: FC = () => {
               status: 'error',
             });
           }
-          setSupportErrand(res.errand);
-          methods.reset(res.errand);
+          const errand =
+            limitedAccessNotice && errandMunicipalityId
+              ? await markLimitedSupportErrandAccess(errandMunicipalityId, res.errand)
+              : res.errand;
+          setSupportErrand(errand);
+          methods.reset(errand);
           setIsLoading(false);
         })
         .catch(() => {
@@ -197,6 +208,9 @@ export const SupportErrandComponent: FC = () => {
                 <section className="bg-transparent pt-24 pb-4">
                   <div className="container m-auto pl-0 pr-24 md:pr-40">
                     <div className="w-full flex flex-wrap flex-col justify-between gap-24">
+                      {supportErrand?.limitedAccess && limitedAccessNotice && (
+                        <SupportErrandLimitedAccessAlert notice={limitedAccessNotice} />
+                      )}
                       {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
@@ -210,7 +224,10 @@ export const SupportErrandComponent: FC = () => {
                       ) : (
                         <div className="flex justify-between items-center pt-8">
                           <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                            Registrera nytt ärende
+                            {/* A limited read carries no classification, so it reads as empty without being new. */}
+                            {supportErrand?.limitedAccess
+                              ? `Ärende ${supportErrand.errandNumber}`
+                              : 'Registrera nytt ärende'}
                           </h1>
                         </div>
                       )}

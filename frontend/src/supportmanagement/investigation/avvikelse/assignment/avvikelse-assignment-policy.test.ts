@@ -5,7 +5,7 @@ import { test } from 'vitest';
 
 import type { InvestigationProfile } from '../../investigation-profile';
 import { ACCESS_LEX_LABEL_PATH } from './avvikelse-access-labels';
-import { requiresLexAssignment } from './avvikelse-assignment-policy';
+import { lexOverviewAssignee, requiresLexAssignment } from './avvikelse-assignment-policy';
 
 const profile = {
   documents: [{ key: 'manager-document', schemaName: 'utredning-enhetschef' }],
@@ -33,4 +33,18 @@ test('nothing is required without a saved assessment of suspected misconduct', (
 test('an errand already handed to LEX requires nothing more', () => {
   const handedOver = errand('yes', [{ resourcePath: ACCESS_LEX_LABEL_PATH }] as SupportErrand['labels']);
   assert.equal(requiresLexAssignment({ errand: handedOver, profile, labelStructure: [] }), false);
+});
+
+test('the overview names LEX as responsible while the errand carries the LEX access label', () => {
+  assert.equal(lexOverviewAssignee([{ resourcePath: ACCESS_LEX_LABEL_PATH }] as SupportErrand['labels'], []), 'LEX');
+  // A label that does not carry its path is found through the label tree.
+  assert.equal(
+    lexOverviewAssignee(
+      [{ id: 'lex' }] as SupportErrand['labels'],
+      [{ id: 'lex', resourcePath: 'ACCESS/LEX' }] as never
+    ),
+    'LEX'
+  );
+  assert.equal(lexOverviewAssignee([{ resourcePath: 'REPORT_TYPE/ABUSE' }] as SupportErrand['labels'], []), undefined);
+  assert.equal(lexOverviewAssignee(undefined, undefined), undefined);
 });

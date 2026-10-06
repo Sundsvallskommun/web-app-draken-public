@@ -12,7 +12,7 @@ import type {
   InvestigationTabProps,
   InvestigationVariantModule,
 } from '../investigation-variant';
-import { requiresLexAssignment } from './assignment/avvikelse-assignment-policy';
+import { lexOverviewAssignee, requiresLexAssignment } from './assignment/avvikelse-assignment-policy';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
@@ -161,4 +161,11 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     label: unitFollowUpMenuLabel,
     render: () => <UnitFollowUp />,
   },
+  /**
+   * `ACCESS/LEX` leaves the unit manager and head of operations with limited read on the errand while LEX
+   * has it: the errand is shown locked, with this alert.
+   */
+  limitedAccessNotice: 'Du har begränsad behörighet till detta ärende.',
+  /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */
+  overviewAssignee: lexOverviewAssignee,
 });

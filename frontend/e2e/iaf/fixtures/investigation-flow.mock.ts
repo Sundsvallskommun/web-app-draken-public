@@ -286,6 +286,8 @@ export interface IafApiScenario {
   investigationTextTemplates?: Record<string, string>;
   /** How the errand came in. Left out, it was registered in Draken. */
   errandChannel?: string;
+  /** The user's level on the errand itself, as Support Management's /access answers it. Left out, RW. */
+  errandAccessLevel?: 'LR' | 'R' | 'RW';
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -1023,6 +1025,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.endsWith('/featureflags')) {
       await fulfillJson(route, scenario.featureFlags ?? []);
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/errand-access')) {
+      await fulfillJson(route, { level: scenario.errandAccessLevel ?? 'RW' });
       return;
     }
 

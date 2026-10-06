@@ -144,6 +144,14 @@ export class SupportInvestigationAccessService {
     };
   }
 
+  /**
+   * What the user may do with the errand itself. LR is knowing of it without reading it: Support Management
+   * then answers with a summary - number, title, status, channel and times - and nothing of its content.
+   */
+  async getErrandLevel(user: User, municipalityId: string, errandId: string): Promise<SupportErrandAccessLevel> {
+    return level(record(await this.readErrandAccess(user, municipalityId, errandId)).level);
+  }
+
   /** The level granted for one errand resource, or undefined when the user is granted nothing on it. */
   async getResourceLevel(user: User, municipalityId: string, errandId: string, resource: string): Promise<SupportErrandAccessLevel | undefined> {
     const response = record(await this.readErrandAccess(user, municipalityId, errandId));

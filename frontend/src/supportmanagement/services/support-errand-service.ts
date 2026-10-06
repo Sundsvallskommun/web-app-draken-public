@@ -108,6 +108,11 @@ export interface SupportErrand extends ApiSupportErrand {
   classificationHasSubTypes?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
+  /**
+   * Support Management grants the user only limited read (LR): they may know of the errand, not work in
+   * it. Set by the client when it asked, never by the API, and it locks the errand.
+   */
+  limitedAccess?: boolean;
 }
 
 interface PagedApiSupportErrands extends ApiPagingData {
@@ -471,6 +476,7 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
+    errand?.limitedAccess === true ||
     errand?.status === Status.SOLVED ||
     errand?.status === Status.SUSPENDED ||
     errand?.status === Status.ASSIGNED ||
@@ -964,6 +970,8 @@ export const updateSupportErrandPhase = (
     });
 
 export const validateAction: (errand: SupportErrand, user: User) => boolean = (errand, user) => {
+  // Someone who may only know of the errand acts on nothing in it, whoever it is assigned to.
+  if (errand?.limitedAccess) return false;
   let allowed = false;
   if (user.username.toLocaleLowerCase() === errand?.assignedUserId?.toLocaleLowerCase()) {
     allowed = true;

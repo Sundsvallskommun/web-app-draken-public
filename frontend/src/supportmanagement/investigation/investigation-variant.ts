@@ -1,3 +1,4 @@
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { AppConfigFeatures } from '@config/appconfig';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
@@ -92,8 +93,8 @@ interface InvestigationDecisionTabSlot {
  * heading, for a variant whose investigations are worth following up across units. A variant without
  * one omits the slot, and the sidebar shows no such section.
  */
-/** Who opens the follow-up: the handler roles they hold, and whether they administer the application. */
-export interface InvestigationFollowUpViewer {
+/** Who is looking: the handler roles they hold, and whether they administer the application. */
+export interface InvestigationViewer {
   readonly roleKeys?: readonly string[];
   readonly superadmin?: boolean;
 }
@@ -102,7 +103,7 @@ interface InvestigationFollowUpSlot {
   /** The sidebar heading the entry sits under. */
   readonly heading: string;
   /** The sidebar entry, named for how much of the organisation the viewer follows up. */
-  readonly label: (viewer: InvestigationFollowUpViewer) => string;
+  readonly label: (viewer: InvestigationViewer) => string;
   readonly render: () => ReactNode;
 }
 
@@ -153,6 +154,17 @@ export interface InvestigationVariantModule {
   readonly phaseEntryRequirements?: readonly InvestigationPhaseEntryRequirement[];
   /** The follow-up across errands, for a variant that offers one. */
   readonly followUp?: InvestigationFollowUpSlot;
+  /**
+   * The alert the errand page shows when Support Management grants the viewer only limited read (LR) on
+   * the errand: they may know it exists, not work in it, so the page also locks every field. A variant
+   * without the slot leaves the page as it is - it asks for no access level at all.
+   */
+  readonly limitedAccessNotice?: string;
+  /**
+   * Who the overview names as responsible when the errand's labels say more than its assigned handler -
+   * a whole role holding it, say. Undefined names the handler, as every other drake does.
+   */
+  readonly overviewAssignee?: (labels: Label[] | undefined, labelStructure: Label[] | undefined) => string | undefined;
 }
 
 /** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */

@@ -25,3 +25,11 @@ export const getInvestigationVariant = (): InvestigationVariantModule | null =>
  */
 export const getInvestigationFollowUp = (): InvestigationVariantModule['followUp'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.followUp : undefined;
+
+/** Who the overview names as responsible for an errand, where the running variant has a say in it. */
+export const getInvestigationOverviewAssignee = (): InvestigationVariantModule['overviewAssignee'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.overviewAssignee : undefined;
+
+/** The alert the running variant shows on an errand the user may only know of, if it asks at all. */
+export const getInvestigationLimitedAccessNotice = (): InvestigationVariantModule['limitedAccessNotice'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.limitedAccessNotice : undefined;

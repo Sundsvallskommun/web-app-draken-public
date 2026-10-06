@@ -74,6 +74,10 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.phaseEntryRequirements, undefined);
   // A variant offering no follow-up across errands adds no section to the overview's sidebar.
   assert.equal(minimalVariant.followUp, undefined);
+  // A variant with nothing to say about an errand the user may only know of leaves the errand page alone.
+  assert.equal(minimalVariant.limitedAccessNotice, undefined);
+  // A variant with no say in who is responsible leaves the overview naming the assigned handler.
+  assert.equal(minimalVariant.overviewAssignee, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
   assert.equal(minimalVariant.requiredPhaseName, undefined);
 });

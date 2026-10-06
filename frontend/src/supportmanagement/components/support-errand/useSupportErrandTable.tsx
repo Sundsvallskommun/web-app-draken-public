@@ -5,6 +5,7 @@ import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { useEmployeeNameStore, useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
+import { getInvestigationOverviewAssignee } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   Channels,
   getLabelCategory,
@@ -65,6 +66,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
   const employeeNames = useEmployeeNameStore((s) => s.names);
+  const investigationAssignee = getInvestigationOverviewAssignee();
 
   const labels = [
     {
@@ -241,7 +243,12 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       sortKey: 'assignedUserId',
       shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
       render: (errand: SupportErrand) => {
-        return <>{getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}</>;
+        return (
+          <>
+            {investigationAssignee?.(errand?.labels, supportMetadata?.labels?.labelStructure) ??
+              getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}
+          </>
+        );
       },
     },
     {

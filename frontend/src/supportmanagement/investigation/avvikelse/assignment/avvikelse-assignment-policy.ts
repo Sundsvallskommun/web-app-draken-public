@@ -59,3 +59,12 @@ export const requiresLexAssignment = ({ errand, profile, labelStructure }: LexAs
  */
 export const isWithLexInvestigation = (labels: Label[] | undefined, labelStructure: Label[] | undefined): boolean =>
   hasErrandLabel(labels, labelStructure, ACCESS_LEX_LABEL_PATH);
+
+/**
+ * The overview names LEX as responsible while the errand is with them: the role holds it, whichever of
+ * LEX it is assigned to, and the unit sees that much even where its read is limited.
+ */
+export const lexOverviewAssignee = (
+  labels: Label[] | undefined,
+  labelStructure: Label[] | undefined
+): string | undefined => (isWithLexInvestigation(labels, labelStructure) ? 'LEX' : undefined);

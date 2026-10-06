@@ -91,6 +91,12 @@ export class SupportInvestigationErrandAccessDto {
   readonly documents!: readonly SupportInvestigationDocumentGrantDto[];
 }
 
+/** What the current user may do with one errand itself, as Support Management's /access answers it. */
+export class SupportErrandAccessLevelDto {
+  @IsIn(['LR', 'R', 'RW'])
+  readonly level!: 'LR' | 'R' | 'RW';
+}
+
 /**
  * The report an errand arrives with - what happened, where and when. Katla writes it and it stays the
  * record of what was reported, so it is read-only, except on an errand registered in Draken: there

@@ -479,6 +479,19 @@ vilket en enhetschef med en enda enhet inte har att välja mellan. Varje valt v�
 filterraden och tas bort med det (`unit-follow-up-active-filters.ts`). Åtgärdernas egna filter ligger kvar på
 Ärenden-fliken men begränsar inget där, så de får chips bara på Åtgärder.
 
+### Begränsad behörighet medan LEX har ärendet
+
+Medan ärendet bär `ACCESS/LEX` ger AccessMapper enhetschefen och verksamhetschefen bara begränsad läsning:
+`/access` svarar `level: "LR"`, och ärendet kommer tillbaka som en sammanfattning med nummer, titel, status,
+kanal och tider. Ärendesidan visar då *Du har begränsad behörighet till detta ärende.* överst och låser alla
+fält och knappar (variantens `limitedAccessNotice`). Fasknappen och Parkera erbjuds inte alls, som för den som
+inte handlägger ärendet. Går nivån inte att läsa visas ärendet som det lästes; Support Management nekar ändå
+det användaren inte får göra.
+
+I översikten står LEX som Ansvarig för varje ärende som bär `ACCESS/LEX` (variantens `overviewAssignee`,
+`lexOverviewAssignee`): rollen har ärendet, vem av LEX det än är tilldelat, och det syns även för den som
+bara får begränsad läsning.
+
 ### Fel plats: flytta ärendet utan att ändra det inrapporterade
 
 Katla skriver platsen två gånger. Rapportörens val ligger i den inkommande JSON-parametern
