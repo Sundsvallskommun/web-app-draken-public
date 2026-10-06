@@ -11,6 +11,7 @@ import {
   getSelectableGroupedLabels,
   getSelectableTypesForCategory,
   labelCategoryRequiresType,
+  replaceCategorizationLabels,
   resolveLabelPath,
   sortLabelsByDisplayName,
 } from './support-label-service';
@@ -28,8 +29,8 @@ const label = (id: string, classification: string, labels: Label[] = [], depreca
 
 const subType = (id: string, deprecated = false) => label(id, 'SUBTYPE', [], deprecated);
 const type = (id: string, children: Label[] = [], deprecated = false) => label(id, 'TYPE', children, deprecated);
-const category = (id: string, types: Label[], deprecated = false) => label(id, 'CATEGORY', types, deprecated);
-const department = (id: string, categories: Label[], deprecated = false) =>
+const category = (id: string, types: Label[] = [], deprecated = false) => label(id, 'CATEGORY', types, deprecated);
+const department = (id: string, categories: Label[] = [], deprecated = false) =>
   label(id, 'DEPARTMENT', categories, deprecated);
 
 const ids = (labels: Label[] | undefined) => (labels ?? []).map((l) => l.id);
@@ -219,5 +220,20 @@ describe('sortLabelsByDisplayName', () => {
     const sorted = sortLabelsByDisplayName(labels);
     expect(sorted.map((l) => l.id)).toEqual(['c', 'a', 'b']);
     expect(labels.map((l) => l.id)).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('replaceCategorizationLabels', () => {
+  test('replaces the categorization of the errand and keeps its other labels', () => {
+    const errandLabels = [label('ROOT', 'ROOT'), department('KSK'), category('SERVICE'), type('S1'), label('X', 'TAG')];
+
+    expect(ids(replaceCategorizationLabels(errandLabels, [department('BOU'), category('SCHOOL'), type('B1')]))).toEqual(
+      ['ROOT', 'X', 'BOU', 'SCHOOL', 'B1']
+    );
+  });
+
+  test('gives just the path for an errand without labels', () => {
+    expect(ids(replaceCategorizationLabels([], [category('SALARY'), type('PAYSLIP')]))).toEqual(['SALARY', 'PAYSLIP']);
+    expect(ids(replaceCategorizationLabels(undefined, [category('SALARY')]))).toEqual(['SALARY']);
   });
 });

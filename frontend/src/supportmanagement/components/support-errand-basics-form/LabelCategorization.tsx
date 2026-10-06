@@ -5,6 +5,7 @@ import {
   showsLegacyClassification,
 } from '@supportmanagement/services/legacy-classification-service';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { replaceCategorizationLabels } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { FC } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -23,7 +24,7 @@ export const LabelCategorization: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata;
 }> = ({ supportErrand, supportMetadata }) => {
-  const { setValue, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
+  const { setValue, getValues, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
   const { errors } = formState;
   const { t } = useTranslation();
 
@@ -34,7 +35,7 @@ export const LabelCategorization: FC<{
     setValue('category', category, { shouldDirty: category !== supportErrand.category });
     setValue('type', type as any, { shouldDirty: type !== supportErrand.type });
     setValue('subType', subType as any, { shouldDirty: subType !== supportErrand.subType });
-    setValue('labels', path);
+    setValue('labels', replaceCategorizationLabels(getValues('labels'), path));
     trigger(['category', 'type', 'subType']);
   };
 

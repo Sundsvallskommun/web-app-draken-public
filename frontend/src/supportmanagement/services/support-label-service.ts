@@ -97,6 +97,12 @@ export const findLabelPath = (labels: Label[] | undefined, id: string | undefine
   return [];
 };
 
+/** The errand's labels with its categorization replaced by `path`; ROOT, TAG and other label sets stay. */
+export const replaceCategorizationLabels = (errandLabels: Label[] | undefined, path: Label[]): Label[] => [
+  ...(errandLabels ?? []).filter((label) => !isCategorizationLabel(label)),
+  ...path,
+];
+
 /** Path to the errand's deepest categorization label, missing ancestors filled in from the structure. */
 export const resolveLabelPath = (labelStructure: Label[] | undefined, errandLabels: Label[] | undefined): Label[] =>
   (errandLabels ?? [])
