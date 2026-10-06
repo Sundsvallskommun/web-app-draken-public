@@ -8,13 +8,15 @@ import {
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
+  Sections,
   startSupportInvestigation,
   SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportPersonalSuitabilitySection } from '../personal-suitability/support-personal-suitability-section.component';
 import { SupportStatementsSection } from '../statements/support-statements-section.component';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
@@ -30,8 +32,6 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-const STATEMENTS_SECTION = 'statements';
-
 const SectionDisclosure: React.FC<{
   section: InvestigationSection;
   writable: boolean;
@@ -40,20 +40,25 @@ const SectionDisclosure: React.FC<{
 }> = ({ section, writable, onStatementsEdited, saveStatements }) => {
   const { t } = useTranslation();
 
+  const sectionContent: Partial<Record<Sections, JSX.Element>> = {
+    statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
+    personal_suitability: <SupportPersonalSuitabilitySection />,
+  };
+
   return (
-    <Disclosure variant="alt" className="w-full" data-cy={`section-${section.sectionKey}`}>
-      <Disclosure.Header>
-        <Disclosure.Title>{section.heading}</Disclosure.Title>
-        <Disclosure.Button />
-      </Disclosure.Header>
-      <Disclosure.Content>
-        {section.sectionKey === STATEMENTS_SECTION ? (
-          <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />
-        ) : (
-          <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
-        )}
-      </Disclosure.Content>
-    </Disclosure>
+    section.sectionKey && (
+      <Disclosure variant="alt" className="w-full" data-cy={`section-${section.sectionKey}`}>
+        <Disclosure.Header>
+          <Disclosure.Title>{section.heading}</Disclosure.Title>
+          <Disclosure.Button />
+        </Disclosure.Header>
+        <Disclosure.Content>
+          {sectionContent[section.sectionKey] ?? (
+            <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
+          )}
+        </Disclosure.Content>
+      </Disclosure>
+    )
   );
 };
 

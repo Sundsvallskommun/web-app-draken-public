@@ -348,5 +348,8 @@
     "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf",
     "locked_to_underlay": "Remissinstans och mall är låsta till det underlag som redan skapats. Behöver du remittera till någon annan, lägg till en ny remiss.",
     "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen."
+  },
+  "personal_suitability": {
+    "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig."
   }
 }
