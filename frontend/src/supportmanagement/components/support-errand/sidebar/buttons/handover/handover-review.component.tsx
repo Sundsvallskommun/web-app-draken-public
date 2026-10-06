@@ -1,11 +1,7 @@
-import TextEditor from '@common/components/dynamic-text-editor';
 import { Warning, WarningType } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Alert, Divider, FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { Alert, FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { LabelTreePicker } from '@supportmanagement/components/support-errand-basics-form/LabelTreePicker';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
-import { ForwardErrandSummary } from '../forward-errand-summary.component';
 import { HandoverAutoSuggestIndicator } from './handover-auto-suggest-indicator.component';
 import { SupportHandoverState } from './use-support-handover';
 
@@ -37,13 +33,36 @@ const WarningBanners: React.FC<{ warnings: Warning[] }> = ({ warnings }) => {
   );
 };
 
-/** Step 2 – renders the handover preview: auto-copied fields, required mappings, fields that can not
- * be copied, what to include and how to handle the source errand. */
-export const HandoverReview: React.FC<{ handover: SupportHandoverState; supportErrand: SupportErrand }> = ({
-  handover,
-  supportErrand,
-}) => {
-  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
+/**
+ * Placeholder shown in the "Så ska ärendet registreras hos mottagaren" section before a receiving
+ * namespace is chosen: the same two selects as the two-level mapping, disabled, so the modal keeps its
+ * layout and the user sees what will be asked once a target is selected.
+ */
+export const HandoverClassificationPlaceholder: React.FC = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-24" data-cy="handover-classification-placeholder">
+    <FormControl id="handover-category-placeholder" className="w-full">
+      <FormLabel className="font-semibold">Kategori</FormLabel>
+      <Select className="w-full" disabled value="" aria-label="Välj kategori">
+        <Select.Option value="">Välj kategori</Select.Option>
+      </Select>
+    </FormControl>
+    <FormControl id="handover-type-placeholder" className="w-full">
+      <FormLabel className="font-semibold">Ärendetyp</FormLabel>
+      <Select className="w-full" disabled value="" aria-label="Välj ärendetyp">
+        <Select.Option value="">Välj ärendetyp</Select.Option>
+      </Select>
+    </FormControl>
+  </div>
+);
+
+/**
+ * Step 2 – the namespace-bound fields that must be mapped for the receiving namespace (the only part of
+ * the handover that differs from the MEX forward): preview warnings, classification and contact reason.
+ * Three-level namespaces classify via the label tree, two-level via category/type – just like the
+ * registration view. The errand summary and the message are rendered by the modal itself, shared with
+ * the MEX forward.
+ */
+export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ handover }) => {
   const { preview } = handover;
   if (!preview) {
     return null;
@@ -65,119 +84,102 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState; supportE
   const contactReasonMapping = mappingRequired?.contactReason;
   const typeCandidates = classificationMapping?.candidates?.[handover.mapping.category] ?? [];
 
+  let classification: React.ReactNode;
+  if (handover.targetUsesLabels) {
+    classification = handover.targetMetadata ? (
+      <div className="w-full flex gap-20" data-cy="handover-labels">
+        <LabelTreePicker
+          labelStructure={handover.targetMetadata.labels?.labelStructure}
+          value={handover.targetLabels}
+          onChange={handover.setTargetLabels}
+          metadata={handover.targetMetadata}
+          fallbackLabels={{ first: 'Kategori*', second: 'Ärendetyp*' }}
+        />
+      </div>
+    ) : (
+      <HandoverClassificationPlaceholder />
+    );
+  } else if (classificationMapping) {
+    classification = (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
+        <FormControl id="handover-category" className="w-full">
+          <div className="flex items-center gap-8">
+            <FormLabel className="font-semibold">Kategori</FormLabel>
+            {classificationMapping.suggestedCategory &&
+              handover.mapping.category === classificationMapping.suggestedCategory && <HandoverAutoSuggestIndicator />}
+          </div>
+          <Select
+            className="w-full"
+            data-cy="handover-category-select"
+            aria-label="Välj kategori"
+            value={handover.mapping.category}
+            onChange={(event) => {
+              handover.setMappingCategory(event.target.value);
+              handover.setMappingType('');
+            }}
+          >
+            <Select.Option value="">Välj kategori</Select.Option>
+            {Object.keys(classificationMapping.candidates || {}).map((category) => (
+              <Select.Option key={category} value={category}>
+                {categoryDisplayName(category)}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl id="handover-type" className="w-full">
+          <FormLabel className="font-semibold">Ärendetyp</FormLabel>
+          <Select
+            className="w-full"
+            data-cy="handover-type-select"
+            aria-label="Välj ärendetyp"
+            disabled={!handover.mapping.category}
+            value={handover.mapping.type}
+            onChange={(event) => handover.setMappingType(event.target.value)}
+          >
+            <Select.Option value="">Välj ärendetyp</Select.Option>
+            {typeCandidates.map((type) => (
+              <Select.Option key={type} value={type}>
+                {typeDisplayName(handover.mapping.category, type)}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+      </div>
+    );
+  } else {
+    classification = <HandoverClassificationPlaceholder />;
+  }
+
   return (
     <div className="flex flex-col gap-16" data-cy="handover-review">
       <WarningBanners warnings={warnings} />
 
-      {/* Samma sektion och komponent som vid MEX-överlämning */}
-      <div className="flex flex-col gap-8" data-cy="handover-autocopy">
-        <h4 className="text-h4-md py-12">Uppgifter från ärendet som överlämnas</h4>
-        <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
-      </div>
+      {classification}
 
-      {/* Namespace-bundna fält som måste mappas: label-träd eller kategori/typ beroende på mål. */}
-      <div className="flex flex-col gap-16">
-        {handover.targetUsesLabels
-          ? handover.targetMetadata && (
-              <div className="w-full flex gap-20" data-cy="handover-labels">
-                <LabelTreePicker
-                  labelStructure={handover.targetMetadata.labels?.labelStructure}
-                  value={handover.targetLabels}
-                  onChange={handover.setTargetLabels}
-                  metadata={handover.targetMetadata}
-                  fallbackLabels={{ first: 'Verksamhet*', second: 'Ärendetyp*' }}
-                />
-              </div>
-            )
-          : classificationMapping && (
-              <div className="flex flex-row gap-16 flex-wrap">
-                <FormControl id="handover-category" className="grow">
-                  <div className="flex items-center gap-8">
-                    <FormLabel className="font-semibold">Kategori</FormLabel>
-                    {classificationMapping.suggestedCategory &&
-                      handover.mapping.category === classificationMapping.suggestedCategory && (
-                        <HandoverAutoSuggestIndicator />
-                      )}
-                  </div>
-                  <Select
-                    className="w-full"
-                    data-cy="handover-category-select"
-                    value={handover.mapping.category}
-                    onChange={(event) => {
-                      handover.setMappingCategory(event.target.value);
-                      handover.setMappingType('');
-                    }}
-                  >
-                    <Select.Option value="">Välj kategori</Select.Option>
-                    {Object.keys(classificationMapping.candidates || {}).map((category) => (
-                      <Select.Option key={category} value={category}>
-                        {categoryDisplayName(category)}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl id="handover-type" className="grow">
-                  <FormLabel className="font-semibold">Typ</FormLabel>
-                  <Select
-                    className="w-full"
-                    data-cy="handover-type-select"
-                    disabled={!handover.mapping.category}
-                    value={handover.mapping.type}
-                    onChange={(event) => handover.setMappingType(event.target.value)}
-                  >
-                    <Select.Option value="">Välj typ</Select.Option>
-                    {typeCandidates.map((type) => (
-                      <Select.Option key={type} value={type}>
-                        {typeDisplayName(handover.mapping.category, type)}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </div>
+      {contactReasonMapping && contactReasonMapping.candidates.length > 0 && (
+        <FormControl id="handover-contactreason" className="w-full md:w-1/2 md:pr-12">
+          <div className="flex items-center gap-8">
+            <FormLabel className="font-semibold">Kontaktorsak</FormLabel>
+            {contactReasonMapping.suggested && handover.mapping.contactReason === contactReasonMapping.suggested && (
+              <HandoverAutoSuggestIndicator />
             )}
-
-        {contactReasonMapping && contactReasonMapping.candidates.length > 0 && (
-          <FormControl id="handover-contactreason" className="w-full">
-            <div className="flex items-center gap-8">
-              <FormLabel className="font-semibold">Kontaktorsak</FormLabel>
-              {contactReasonMapping.suggested && handover.mapping.contactReason === contactReasonMapping.suggested && (
-                <HandoverAutoSuggestIndicator />
-              )}
-            </div>
-            <Select
-              className="w-full"
-              data-cy="handover-contactreason-select"
-              value={handover.mapping.contactReason}
-              onChange={(event) => handover.setMappingContactReason(event.target.value)}
-            >
-              <Select.Option value="">Välj kontaktorsak</Select.Option>
-              {contactReasonMapping.candidates.map((reason) => (
-                <Select.Option key={reason} value={reason}>
-                  {reason}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-      </div>
-
-      <Divider />
-      {/* Meddelande – skickas som intern konversation på det nya ärendet (likt MEX) */}
-      <div className="flex flex-col gap-8">
-        <h4 className="text-h4-md">Meddelande</h4>
-        <span className="text-small">Skriv ett meddelande om du vill skicka med mer information på ärendet.</span>
-        <div data-cy="handover-message-wrapper">
-          <TextEditor
-            readOnly={false}
-            className="mb-50 h-[15rem]"
-            value={{ plainText: handover.messageBodyPlaintext, markup: handover.message }}
-            onChange={(event) => {
-              handover.setMessage(event.target.value.markup ?? '');
-              handover.setMessageBodyPlaintext(event.target.value.plainText ?? '');
-            }}
-          />
-        </div>
-      </div>
+          </div>
+          <Select
+            className="w-full"
+            data-cy="handover-contactreason-select"
+            aria-label="Välj kontaktorsak"
+            value={handover.mapping.contactReason}
+            onChange={(event) => handover.setMappingContactReason(event.target.value)}
+          >
+            <Select.Option value="">Välj kontaktorsak</Select.Option>
+            {contactReasonMapping.candidates.map((reason) => (
+              <Select.Option key={reason} value={reason}>
+                {reason}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
     </div>
   );
 };

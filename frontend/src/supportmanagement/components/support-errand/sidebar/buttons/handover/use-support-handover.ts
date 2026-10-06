@@ -100,10 +100,6 @@ export const useSupportHandover = ({
   // The path picked in the target's label tree, top down.
   const [targetLabels, setTargetLabels] = useState<Label[]>([]);
 
-  // Optional message added as an internal conversation on the new errand (markup + plaintext).
-  const [message, setMessage] = useState<string>('');
-  const [messageBodyPlaintext, setMessageBodyPlaintext] = useState<string>('');
-
   // Idempotency keys per target (`${municipality}:${namespace}`). A stable key is generated the first
   // time a target reaches step 2 and reused for every retry and whenever the user returns to that
   // target, so a retry never creates a duplicate errand – even after switching targets in between.
@@ -162,8 +158,6 @@ export const useSupportHandover = ({
     setHandoverError(undefined);
     setIdempotencyKeys({});
     setPreviewCache({});
-    setMessage('');
-    setMessageBodyPlaintext('');
     setTargetLabels([]);
     setSelectedTarget(undefined);
     selectedNamespaceRef.current = '';
@@ -262,10 +256,11 @@ export const useSupportHandover = ({
     [sourceMunicipalityId, targetUsesLabels, mappingCategory, mappingType, targetLabels, mappingContactReason]
   );
 
-  /** Executes the handover. Returns the result on success (caller closes the modal like the MEX
-   * forward); on 4xx keeps step 2 and exposes the error. */
+  /** Executes the handover. `message` (markup) is added as an internal conversation on the new errand.
+   * Returns the result on success (caller closes the modal like the MEX forward); on 4xx keeps step 2
+   * and exposes the error. */
   const runHandover = useCallback(
-    async (target: NamespaceConfig): Promise<HandoverErrand | undefined> => {
+    async (target: NamespaceConfig, message: string): Promise<HandoverErrand | undefined> => {
       if (!errandId) {
         return undefined;
       }
@@ -282,7 +277,7 @@ export const useSupportHandover = ({
         setHandoverLoading(false);
       }
     },
-    [errandId, sourceMunicipalityId, buildRequest, idempotencyKeys, message]
+    [errandId, sourceMunicipalityId, buildRequest, idempotencyKeys]
   );
 
   /** True when every namespace-bound field that requires a decision has an answer. */
@@ -329,10 +324,6 @@ export const useSupportHandover = ({
     setMappingContactReason,
     targetLabels,
     setTargetLabels,
-    message,
-    messageBodyPlaintext,
-    setMessage,
-    setMessageBodyPlaintext,
     handoverLoading,
     handoverError,
     runPreview,
