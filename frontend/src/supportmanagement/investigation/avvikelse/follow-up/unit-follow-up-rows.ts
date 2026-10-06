@@ -1,7 +1,13 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { normalizeSupportManagementResourcePath } from '@supportmanagement/services/supportmanagement-path';
 import dayjs from 'dayjs';
 
 import { resolveErrandPlace } from '../assignment/errand-location';
+import {
+  type FollowUpKeyFigureContext,
+  type FollowUpKeyFigureKey,
+  followUpKeyFiguresOf,
+} from './unit-follow-up-key-figures';
 import type {
   UnitFollowUpErrand,
   UnitFollowUpLabel,
@@ -27,7 +33,7 @@ const FOLLOW_UP_LABEL_CLASSIFICATIONS = Object.freeze({
 export interface FollowUpErrandRow {
   readonly id: string;
   readonly errandNumber: string;
-  readonly unit: string;
+  readonly unit?: FollowUpOption;
   readonly reportType?: FollowUpOption;
   readonly causeAreas: FollowUpOption[];
   readonly created?: string;
@@ -41,6 +47,9 @@ export interface FollowUpErrandRow {
   readonly categories: FollowUpOption[];
   readonly subcategories: FollowUpOption[];
   readonly measureCount: number;
+  /** Every label the errand carries, by its normalized resource path. */
+  readonly labelPaths: readonly string[];
+  readonly keyFigures: readonly FollowUpKeyFigureKey[];
 }
 
 export type FollowUpMeasureStatus = 'executed' | 'planned' | 'proposed' | 'rejected';
@@ -79,6 +88,7 @@ export interface FollowUpRowContext {
   readonly statusName: (status: string) => string | undefined;
   readonly personName: (adAccount: string) => string | undefined;
   readonly measureTypes: readonly UnitFollowUpMeasureType[];
+  readonly keyFigures: FollowUpKeyFigureContext;
 }
 
 const day = (value: string | undefined): string | undefined => (value ? dayjs(value).format('YYYY-MM-DD') : undefined);
@@ -94,32 +104,48 @@ const labelsOf = (labels: readonly UnitFollowUpLabel[], classification: string):
 const coded = (code: string | undefined, titles: ReadonlyMap<string, string>): FollowUpOption | undefined =>
   code ? { value: code, label: titles.get(code) ?? code } : undefined;
 
-/** The unit an errand belongs to: the deepest place its labels carry, named as the place structure names it. */
-const unitOf = (labels: readonly UnitFollowUpLabel[], labelStructure: readonly Label[] | undefined): string =>
-  resolveErrandPlace(labels as Label[], labelStructure)?.presentation.place ??
-  labels.filter((label) => label.classification?.toUpperCase() === 'LOCATION').at(-1)?.displayName ??
-  '';
+/**
+ * The unit an errand belongs to: the deepest place its labels carry, named as the place structure names it.
+ * Without a structure to resolve it in, the last place label the errand carries stands in.
+ */
+const unitOf = (
+  labels: readonly UnitFollowUpLabel[],
+  labelStructure: readonly Label[] | undefined
+): FollowUpOption | undefined => {
+  const place = resolveErrandPlace(labels as Label[], labelStructure);
+  if (place?.node.label.id) return { value: place.node.label.id, label: place.presentation.place };
+  const location = labels.filter((label) => label.classification?.toUpperCase() === 'LOCATION').at(-1);
+  return location?.id ? { value: location.id, label: location.displayName || location.id } : undefined;
+};
 
-const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowContext): FollowUpErrandRow => ({
-  id: errand.id,
-  errandNumber: errand.errandNumber,
-  unit: unitOf(errand.labels, context.labelStructure),
-  reportType: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.reportType)[0],
-  causeAreas: errand.investigation.causeAreas.map((code) => coded(code, context.vocabulary.causeAreas)!),
-  created: day(errand.created),
-  riskValueHsl: errand.investigation.riskValueHsl,
-  riskValueSolLss: errand.investigation.riskValueSolLss,
-  ivoNotification: yesNo(errand.investigation.ivoNotification),
-  policeReport: yesNo(errand.investigation.policeReport),
-  decidedMisconduct: coded(errand.investigation.decidedMisconductDegree, context.vocabulary.misconductDegrees),
-  status: errand.status
-    ? { value: errand.status, label: context.statusName(errand.status) ?? errand.status }
-    : undefined,
-  legalBases: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.legalBase),
-  categories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.category),
-  subcategories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.subcategory),
-  measureCount: errand.measures.length,
-});
+const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowContext): FollowUpErrandRow => {
+  const labelPaths = errand.labels
+    .map((label) => normalizeSupportManagementResourcePath(label.resourcePath))
+    .filter((path) => path !== '');
+  const created = day(errand.created);
+  return {
+    id: errand.id,
+    errandNumber: errand.errandNumber,
+    unit: unitOf(errand.labels, context.labelStructure),
+    reportType: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.reportType)[0],
+    causeAreas: errand.investigation.causeAreas.map((code) => coded(code, context.vocabulary.causeAreas)!),
+    created,
+    riskValueHsl: errand.investigation.riskValueHsl,
+    riskValueSolLss: errand.investigation.riskValueSolLss,
+    ivoNotification: yesNo(errand.investigation.ivoNotification),
+    policeReport: yesNo(errand.investigation.policeReport),
+    decidedMisconduct: coded(errand.investigation.decidedMisconductDegree, context.vocabulary.misconductDegrees),
+    status: errand.status
+      ? { value: errand.status, label: context.statusName(errand.status) ?? errand.status }
+      : undefined,
+    legalBases: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.legalBase),
+    categories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.category),
+    subcategories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.subcategory),
+    measureCount: errand.measures.length,
+    labelPaths,
+    keyFigures: followUpKeyFiguresOf({ labelPaths, status: errand.status, created }, context.keyFigures),
+  };
+};
 
 /**
  * Where a measure stands: carried out once it has an execution date, otherwise as its decision leaves it -

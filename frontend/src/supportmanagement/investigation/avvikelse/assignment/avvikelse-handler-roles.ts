@@ -6,4 +6,4 @@
  * mismatch shows up as an empty selector rather than as a wrong assignment.
  */
 export const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
-const UNIT_MANAGER_ROLE_KEY = 'enhetschef';
+export const UNIT_MANAGER_ROLE_KEY = 'enhetschef';

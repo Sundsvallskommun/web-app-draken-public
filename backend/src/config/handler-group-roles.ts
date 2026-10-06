@@ -154,6 +154,16 @@ export const findUnauthorizedHandlerRoleGroups = (
 };
 
 /**
+ * The roles a user holds through their own AD groups, by key and in catalogue order. Groups are compared
+ * lowercased, the way the SAML groups are lowercased at login. The superadmin group is not a role here: it
+ * holds every measure registration role, but it is nobody's unit, and callers that care ask for it apart.
+ */
+export const resolveHeldHandlerRoleKeys = (roles: readonly HandlerGroupRole[], userGroups: readonly string[]): string[] => {
+  const groups = new Set(userGroups.map(group => group.trim().toLowerCase()));
+  return roles.filter(role => groups.has(role.group.trim().toLowerCase())).map(role => role.key);
+};
+
+/**
  * Looks up one configured role. Callers requiring a role for a specific assignment step use this so
  * a missing or renamed role fails loudly instead of silently assigning to nobody.
  */

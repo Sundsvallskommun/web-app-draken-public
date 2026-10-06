@@ -16,6 +16,7 @@ import { requiresLexAssignment } from './assignment/avvikelse-assignment-policy'
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
+import { unitFollowUpMenuLabel } from './follow-up/unit-follow-up-scope';
 
 /**
  * Loaded lazily on purpose. A static import would close a module cycle - the registry imports this
@@ -152,11 +153,12 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   ],
   /**
    * Verksamhetsuppföljning: the errands and measures of the units the user reaches, filtered on what the
-   * investigations and decisions say.
+   * investigations and decisions say. The entry is named for the viewer's role: Enhet, Enheter or
+   * Verksamhetsområde.
    */
   followUp: {
     heading: 'Verksamhetsuppföljning',
-    label: 'Enheter',
+    label: unitFollowUpMenuLabel,
     render: () => <UnitFollowUp />,
   },
 });

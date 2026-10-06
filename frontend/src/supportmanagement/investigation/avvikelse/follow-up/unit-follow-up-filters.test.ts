@@ -8,6 +8,7 @@ import {
   hasActiveFollowUpFilters,
   matchesFollowUpErrandFilters,
   matchesFollowUpMeasureFilters,
+  toggleFollowUpKeyFigure,
   type UnitFollowUpFilters,
 } from './unit-follow-up-filters';
 import type { FollowUpErrandRow, FollowUpMeasureRow } from './unit-follow-up-rows';
@@ -15,7 +16,7 @@ import type { FollowUpErrandRow, FollowUpMeasureRow } from './unit-follow-up-row
 const errand: FollowUpErrandRow = {
   id: 'e1',
   errandNumber: 'VOF-2026-0011',
-  unit: 'Granlunda 2',
+  unit: { value: 'granlunda-2', label: 'Granlunda 2' },
   reportType: { value: 'abuse', label: 'Missförhållande' },
   causeAreas: [{ value: 'procedures_routines_guidelines', label: 'Processer' }],
   created: '2026-05-24',
@@ -26,6 +27,8 @@ const errand: FollowUpErrandRow = {
   categories: [],
   subcategories: [],
   measureCount: 1,
+  labelPaths: ['REPORT_TYPE/ABUSE', 'PROVISION/SOL'],
+  keyFigures: ['misconducts', 'legalBaseSolLss'],
 };
 
 const measure: FollowUpMeasureRow = {
@@ -54,9 +57,26 @@ test('keeps an errand that carries any of the chosen values', () => {
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['yes'] })), false);
 });
 
-test('finds the unit by any part of its name, whatever the case', () => {
-  assert.equal(matchesFollowUpErrandFilters(errand, filters({ unitQuery: ' granlunda ' })), true);
-  assert.equal(matchesFollowUpErrandFilters(errand, filters({ unitQuery: 'Nacksta' })), false);
+test('keeps an errand on any of the chosen units', () => {
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ units: ['granlunda-1', 'granlunda-2'] })), true);
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ units: ['nacksta'] })), false);
+});
+
+test('keeps an errand behind the chosen key figure', () => {
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ keyFigure: 'misconducts' })), true);
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ keyFigure: 'notStarted' })), false);
+  assert.equal(matchesFollowUpMeasureFilters(measure, filters({ keyFigure: 'legalBaseHsl' })), false);
+  assert.equal(hasActiveFollowUpFilters(filters({ keyFigure: 'deviations' })), true);
+});
+
+test('a key figure lets go of every filter but the units, and choosing it again lets it go', () => {
+  const chosen = toggleFollowUpKeyFigure(
+    filters({ units: ['granlunda-2'], reportTypes: ['deviation'], riskValueHsl: '6', effects: ['yes'] }),
+    'notStarted'
+  );
+  assert.deepEqual(chosen, filters({ units: ['granlunda-2'], keyFigure: 'notStarted' }));
+  assert.deepEqual(toggleFollowUpKeyFigure(chosen, 'notStarted'), filters({ units: ['granlunda-2'] }));
+  assert.equal(toggleFollowUpKeyFigure(chosen, 'deviations').keyFigure, 'deviations');
 });
 
 test('matches a chosen risk value exactly, and only on the errand that has one', () => {

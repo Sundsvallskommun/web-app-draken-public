@@ -1,12 +1,18 @@
+import type { FollowUpKeyFigureKey } from './unit-follow-up-key-figures';
 import type { FollowUpErrandRow, FollowUpMeasureRow, FollowUpOption, FollowUpRows } from './unit-follow-up-rows';
 
+/** The follow-up's two lists, which share one set of filters. */
+export type UnitFollowUpTab = 'errands' | 'measures';
+
 /**
- * The follow-up's filters. Every list is a set of chosen values, empty meaning "all"; a risk value is one
- * value or empty. The period is not here: it decides what the BFF reads, while these narrow what is shown.
+ * The follow-up's filters. Every list is a set of chosen values, empty meaning "all"; a risk value and a key
+ * figure are one value or empty. The period is not here: it decides what the BFF reads, while these narrow
+ * what is shown.
  */
 export interface UnitFollowUpFilters {
+  readonly keyFigure: FollowUpKeyFigureKey | '';
   readonly reportTypes: readonly string[];
-  readonly unitQuery: string;
+  readonly units: readonly string[];
   readonly categories: readonly string[];
   readonly subcategories: readonly string[];
   readonly causeAreas: readonly string[];
@@ -22,8 +28,9 @@ export interface UnitFollowUpFilters {
 }
 
 export const EMPTY_UNIT_FOLLOW_UP_FILTERS: UnitFollowUpFilters = Object.freeze({
+  keyFigure: '',
   reportTypes: [],
-  unitQuery: '',
+  units: [],
   categories: [],
   subcategories: [],
   causeAreas: [],
@@ -38,6 +45,25 @@ export const EMPTY_UNIT_FOLLOW_UP_FILTERS: UnitFollowUpFilters = Object.freeze({
   effects: [],
 });
 
+/** What each filter is called, in the filter bar and on the chips naming a chosen value. */
+export const FOLLOW_UP_FILTER_LABELS: Readonly<Record<Exclude<keyof UnitFollowUpFilters, 'keyFigure'>, string>> =
+  Object.freeze({
+    reportTypes: 'Rapporttyp',
+    units: 'Enhet',
+    categories: 'Avvikelsetyp',
+    subcategories: 'Underkategori',
+    causeAreas: 'Orsak till avvikelse',
+    legalBases: 'Lagrum',
+    ivoNotification: 'IVO-anmälan',
+    policeReport: 'Polisanmälan',
+    statuses: 'Ärendestatus',
+    riskValueHsl: 'Riskvärde HSL',
+    riskValueSolLss: 'Riskvärde SOL/LSS',
+    measureTypes: 'Åtgärdstyp',
+    measureStatuses: 'Status',
+    effects: 'Effekt',
+  });
+
 export const hasActiveFollowUpFilters = (filters: UnitFollowUpFilters): boolean =>
   Object.values(filters).some((value) => (Array.isArray(value) ? value.length > 0 : value !== ''));
 
@@ -46,10 +72,14 @@ const anyChosen = (chosen: readonly string[], options: readonly (FollowUpOption 
 
 const riskMatches = (chosen: string, value: number | undefined): boolean => chosen === '' || value === Number(chosen);
 
+/** The errands on the chosen units, or on every unit while none is chosen - what the key figures count. */
+export const matchesFollowUpUnits = (row: FollowUpErrandRow, units: readonly string[]): boolean =>
+  anyChosen(units, [row.unit]);
+
 export const matchesFollowUpErrandFilters = (row: FollowUpErrandRow, filters: UnitFollowUpFilters): boolean =>
+  (filters.keyFigure === '' || row.keyFigures.includes(filters.keyFigure)) &&
   anyChosen(filters.reportTypes, [row.reportType]) &&
-  (filters.unitQuery.trim() === '' ||
-    row.unit.toLocaleLowerCase('sv').includes(filters.unitQuery.trim().toLocaleLowerCase('sv'))) &&
+  matchesFollowUpUnits(row, filters.units) &&
   anyChosen(filters.categories, row.categories) &&
   anyChosen(filters.subcategories, row.subcategories) &&
   anyChosen(filters.causeAreas, row.causeAreas) &&
@@ -75,8 +105,22 @@ export const distinctFollowUpOptions = (values: readonly (FollowUpOption | undef
     ).values(),
   ].sort((left, right) => left.label.localeCompare(right.label, 'sv'));
 
+/**
+ * A key figure card shows the errands behind its number: choosing one keeps the chosen units, which the
+ * cards count on, and lets go of every other filter so the list holds exactly what the card counted.
+ * Choosing it again lets it go.
+ */
+export const toggleFollowUpKeyFigure = (
+  filters: UnitFollowUpFilters,
+  keyFigure: FollowUpKeyFigureKey
+): UnitFollowUpFilters =>
+  filters.keyFigure === keyFigure
+    ? { ...filters, keyFigure: '' }
+    : { ...EMPTY_UNIT_FOLLOW_UP_FILTERS, units: filters.units, keyFigure };
+
 export interface FollowUpFilterOptions {
   readonly reportTypes: FollowUpOption[];
+  readonly units: FollowUpOption[];
   readonly categories: FollowUpOption[];
   readonly subcategories: FollowUpOption[];
   readonly causeAreas: FollowUpOption[];
@@ -94,6 +138,7 @@ export const followUpFilterOptions = (
   causeAreaTitles: ReadonlyMap<string, string>
 ): FollowUpFilterOptions => ({
   reportTypes: distinctFollowUpOptions(rows.errands.map((row) => row.reportType)),
+  units: distinctFollowUpOptions(rows.errands.map((row) => row.unit)),
   categories: distinctFollowUpOptions(rows.errands.flatMap((row) => row.categories)),
   subcategories: distinctFollowUpOptions(rows.errands.flatMap((row) => row.subcategories)),
   causeAreas: distinctFollowUpOptions([

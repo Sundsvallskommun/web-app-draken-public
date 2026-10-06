@@ -1,23 +1,24 @@
 'use client';
 
-import { Button, SearchField } from '@sk-web-gui/react';
+import { Button } from '@sk-web-gui/react';
 import { X } from 'lucide-react';
 import { FC } from 'react';
 
 import { FollowUpMultiSelectFilter } from './follow-up-multi-select-filter.component';
 import { FollowUpPeriodFilter } from './follow-up-period-filter.component';
 import { FollowUpRiskFilter } from './follow-up-risk-filter.component';
+import { FollowUpUnitFilter } from './follow-up-unit-filter.component';
 import {
   EMPTY_UNIT_FOLLOW_UP_FILTERS,
+  FOLLOW_UP_FILTER_LABELS,
   type FollowUpFilterOptions,
   hasActiveFollowUpFilters,
   type UnitFollowUpFilters,
+  type UnitFollowUpTab,
 } from './unit-follow-up-filters';
 import { FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_YES_NO } from './unit-follow-up-rows';
 import type { UnitFollowUpPeriod } from './unit-follow-up-service';
 import type { UnitFollowUpVocabulary } from './unit-follow-up-vocabulary';
-
-export type UnitFollowUpTab = 'errands' | 'measures';
 
 interface UnitFollowUpFilterBarProps {
   tab: UnitFollowUpTab;
@@ -52,82 +53,77 @@ export const UnitFollowUpFilterBar: FC<UnitFollowUpFilterBarProps> = ({
   return (
     <div className="flex flex-wrap items-center gap-12" data-cy="follow-up-filters">
       <FollowUpMultiSelectFilter
-        label="Rapporttyp"
+        label={FOLLOW_UP_FILTER_LABELS.reportTypes}
         options={options.reportTypes}
         selected={filters.reportTypes}
         onChange={set('reportTypes')}
         data-cy="follow-up-filter-report-type"
       />
-      <SearchField
-        size="md"
-        value={filters.unitQuery}
-        placeholder="Sök enhet..."
-        aria-label="Sök enhet"
-        showSearchButton={false}
-        onChange={(event) => set('unitQuery')(event.target.value)}
-        onReset={() => set('unitQuery')('')}
-        className="max-w-[24rem]"
-        data-cy="follow-up-filter-unit"
+      <FollowUpUnitFilter
+        label={FOLLOW_UP_FILTER_LABELS.units}
+        options={options.units}
+        selected={filters.units}
+        onChange={set('units')}
       />
       {tab === 'errands' && periodFilter}
       <FollowUpMultiSelectFilter
-        label="Avvikelsetyp"
+        label={FOLLOW_UP_FILTER_LABELS.categories}
         options={options.categories}
         selected={filters.categories}
         onChange={set('categories')}
         data-cy="follow-up-filter-category"
       />
       <FollowUpMultiSelectFilter
-        label="Underkategori"
+        label={FOLLOW_UP_FILTER_LABELS.subcategories}
         options={options.subcategories}
         selected={filters.subcategories}
         onChange={set('subcategories')}
         data-cy="follow-up-filter-subcategory"
       />
       <FollowUpMultiSelectFilter
-        label="Orsak till avvikelse"
+        label={FOLLOW_UP_FILTER_LABELS.causeAreas}
         options={options.causeAreas}
         selected={filters.causeAreas}
         onChange={set('causeAreas')}
         data-cy="follow-up-filter-cause"
       />
       <FollowUpMultiSelectFilter
-        label="Lagrum"
+        label={FOLLOW_UP_FILTER_LABELS.legalBases}
         options={options.legalBases}
         selected={filters.legalBases}
         onChange={set('legalBases')}
         data-cy="follow-up-filter-legal-base"
       />
       <FollowUpMultiSelectFilter
-        label="IVO-anmälan"
+        label={FOLLOW_UP_FILTER_LABELS.ivoNotification}
         options={FOLLOW_UP_YES_NO}
         selected={filters.ivoNotification}
         onChange={set('ivoNotification')}
         data-cy="follow-up-filter-ivo"
       />
       <FollowUpMultiSelectFilter
-        label="Polisanmälan"
+        label={FOLLOW_UP_FILTER_LABELS.policeReport}
         options={FOLLOW_UP_YES_NO}
         selected={filters.policeReport}
         onChange={set('policeReport')}
         data-cy="follow-up-filter-police"
       />
       <FollowUpMultiSelectFilter
-        label="Ärendestatus"
+        label={FOLLOW_UP_FILTER_LABELS.statuses}
         options={options.statuses}
         selected={filters.statuses}
         onChange={set('statuses')}
         data-cy="follow-up-filter-status"
       />
       <FollowUpRiskFilter
-        label="Riskvärde HSL"
+        label={FOLLOW_UP_FILTER_LABELS.riskValueHsl}
         values={vocabulary.riskValuesHsl}
         selected={filters.riskValueHsl}
         onChange={set('riskValueHsl')}
         data-cy="follow-up-filter-risk-hsl"
       />
       <FollowUpRiskFilter
-        label="Riskvärde SOL/LSS"
+        label={FOLLOW_UP_FILTER_LABELS.riskValueSolLss}
         values={vocabulary.riskValuesSolLss}
         selected={filters.riskValueSolLss}
         onChange={set('riskValueSolLss')}
@@ -136,21 +132,21 @@ export const UnitFollowUpFilterBar: FC<UnitFollowUpFilterBarProps> = ({
       {tab === 'measures' && (
         <>
           <FollowUpMultiSelectFilter
-            label="Åtgärdstyp"
+            label={FOLLOW_UP_FILTER_LABELS.measureTypes}
             options={options.measureTypes}
             selected={filters.measureTypes}
             onChange={set('measureTypes')}
             data-cy="follow-up-filter-measure-type"
           />
           <FollowUpMultiSelectFilter
-            label="Status"
+            label={FOLLOW_UP_FILTER_LABELS.measureStatuses}
             options={FOLLOW_UP_MEASURE_STATUSES}
             selected={filters.measureStatuses}
             onChange={set('measureStatuses')}
             data-cy="follow-up-filter-measure-status"
           />
           <FollowUpMultiSelectFilter
-            label="Effekt"
+            label={FOLLOW_UP_FILTER_LABELS.effects}
             options={FOLLOW_UP_YES_NO}
             selected={filters.effects}
             onChange={set('effects')}

@@ -414,8 +414,21 @@ väntas inget in; går utredningens tillstånd inte att avgöra svarar BFF:en 50
 
 ### Verksamhetsuppföljning – Enheter
 
-Sidomenyn i översikten har rubriken Verksamhetsuppföljning med knappen **Enheter** (variantens `followUp`). Den
-byter ut ärendetabellen mot `follow-up/unit-follow-up.component.tsx`, med två flikar:
+Sidomenyn i översikten har rubriken Verksamhetsuppföljning med en knapp (variantens `followUp`) som heter efter
+hur mycket av verksamheten användaren följer upp (`follow-up/unit-follow-up-scope.ts`):
+
+| Etikett | Roll (nyckel i `HEALTHCAREDEVIATION_HANDLER_ROLES`) |
+| --- | --- |
+| Verksamhetsområde | `lex-ansvarig`, `lex-utredare`, `mas-mar`, eller medlem i `SUPERADMIN_GROUP` (administratör) |
+| Enheter | `verksamhetschef`, eller ingen av rollerna |
+| Enhet | `enhetschef` |
+
+Med flera roller gäller den vidaste. Rollerna läses av BFF:en ur användarens AD-grupper och kommer med `/me`
+(`roleKeys`, `superadmin`), så knappen heter rätt innan något är läst. Sidans rubrik följer samma regel, men en
+enhetschef vars ärenden ligger på flera enheter får rubriken Enheter: det är Support Managements
+åtkomstkontroll som avgör vilka enheter hen når. Knappen byter inte namn efter läsningen.
+
+Knappen byter ut ärendetabellen mot `follow-up/unit-follow-up.component.tsx`, med två flikar:
 
 - **Ärenden**: Enhet, Typ, Orsak, Registrerat, Riskvärde HSL och SOL/LSS, IVO-anmälan, Beslutat missförhållande
   och antal åtgärder. Nyaste först; raden och pilen öppnar ärendet i ny flik.
@@ -448,6 +461,23 @@ Riskvärdesfiltren erbjuder de värden utredningens `x-calculation` kan ge: prod
 allvarlighetsgrad (1, 2, 3, 4, 6, 8, 9, 12, 16). Tidsperioden (två datum, de senaste 12 månaderna från start)
 avgör vad BFF:en läser; övriga filter, sorteringen och översättningen görs i klienten (`unit-follow-up-rows.ts`,
 `unit-follow-up-filters.ts`, `unit-follow-up-sort.ts`). Vyn skriver aldrig.
+
+Över flikarna visar fem **lägeskort** periodens ärenden på de valda enheterna, alla enheter när ingen är vald
+(`unit-follow-up-key-figures.ts`). Övriga filter påverkar inte korten.
+
+| Kort | Räknar ärenden som |
+| --- | --- |
+| Rapporterade avvikelser | bär `REPORT_TYPE/DEVIATION` |
+| Rapporterade missförhållanden | bär en av klassificeringspolicyns `reportedMisconductSelector`-paths (`REPORT_TYPE/ABUSE`, `REPORT_TYPE/ADVERSE_INCIDENT`), alltså också ett misstänkt missförhållande LEX tagit över |
+| Ärenden med lagrum HSL / SOL/LSS | bär ett lagrum i policyns klassificeringsgrupp `HSL` respektive `SOL_LSS` |
+| Ej påbörjade ärenden (>30 dagar) | står kvar i `NEW` (`newStatuses`) mer än 30 dagar efter registreringen; kortet är orange så länge det räknar något |
+
+Ett kort är en knapp som visar ärendena bakom talet. Det byter till Ärenden-fliken, behåller valda enheter och
+släpper övriga filter, så att listan innehåller exakt det kortet räknade. Ett nytt klick släpper kortet.
+Enhetsfiltret söker bland enheterna och tar flera; det visas bara när ärendena ligger på mer än en enhet,
+vilket en enhetschef med en enda enhet inte har att välja mellan. Varje valt värde visas som ett chip under
+filterraden och tas bort med det (`unit-follow-up-active-filters.ts`). Åtgärdernas egna filter ligger kvar på
+Ärenden-fliken men begränsar inget där, så de får chips bara på Åtgärder.
 
 ### Fel plats: flytta ärendet utan att ändra det inrapporterade
 

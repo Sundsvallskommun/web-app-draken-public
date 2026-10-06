@@ -22,7 +22,7 @@ const EMPTY = '—';
 const NO_MISCONDUCT = 'no_misconduct';
 
 const sortValue = (row: FollowUpErrandRow, key: ErrandSortKey): string | number | undefined =>
-  key === 'reportType' ? row.reportType?.label : row[key];
+  key === 'reportType' || key === 'unit' ? row[key]?.label : row[key];
 
 const causes = (row: FollowUpErrandRow): ReactNode => {
   if (row.causeAreas.length === 0) return EMPTY;
@@ -35,7 +35,7 @@ const causes = (row: FollowUpErrandRow): ReactNode => {
 };
 
 const columns: readonly ErrandColumn[] = [
-  { label: 'Enhet', sortKey: 'unit', render: (row) => <strong>{row.unit || EMPTY}</strong> },
+  { label: 'Enhet', sortKey: 'unit', render: (row) => <strong>{row.unit?.label ?? EMPTY}</strong> },
   { label: 'Typ', sortKey: 'reportType', render: (row) => row.reportType?.label ?? EMPTY },
   { label: 'Orsak', render: causes },
   { label: 'Registrerat', sortKey: 'created', render: (row) => row.created ?? EMPTY },

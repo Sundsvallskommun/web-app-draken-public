@@ -39,10 +39,20 @@ const unit = (name: string) => [
   { id: 'vof', classification: 'LOCATION', displayName: application },
   { id: name, classification: 'LOCATION', displayName: name },
 ];
-const deviation = { id: 'deviation', classification: 'REPORT_TYPE', displayName: 'Avvikelse' };
-const misconduct = { id: 'abuse', classification: 'REPORT_TYPE', displayName: 'Missförhållande' };
-const hsl = { id: 'hsl', classification: 'PROVISION', displayName: 'HSL' };
-const sol = { id: 'sol', classification: 'PROVISION', displayName: 'SoL' };
+const deviation = {
+  id: 'deviation',
+  classification: 'REPORT_TYPE',
+  displayName: 'Avvikelse',
+  resourcePath: 'REPORT_TYPE/DEVIATION',
+};
+const misconduct = {
+  id: 'abuse',
+  classification: 'REPORT_TYPE',
+  displayName: 'Missförhållande',
+  resourcePath: 'REPORT_TYPE/ABUSE',
+};
+const hsl = { id: 'hsl', classification: 'PROVISION', displayName: 'HSL', resourcePath: 'PROVISION/HSL' };
+const sol = { id: 'sol', classification: 'PROVISION', displayName: 'SoL', resourcePath: 'PROVISION/SOL' };
 
 const snapshot: UnitFollowUpSnapshot = {
   errands: [
@@ -92,6 +102,16 @@ const snapshot: UnitFollowUpSnapshot = {
       investigation: { riskValueHsl: 6, causeAreas: ['procedures_routines_guidelines'], ivoNotification: 'no' },
       measures: [{ id: 'm3', type: 'EDUCATION', accept: 'TRUE', executed: '2026-04-05', result: 'NOT_COMPLETED' }],
     },
+    {
+      // Still new long after it was registered: the card for errands nobody has started on counts it.
+      id: 'e3',
+      errandNumber: `${application}-2026-0003`,
+      status: 'NEW',
+      created: '2026-01-15T08:00:00.000+01:00',
+      labels: [deviation, hsl, ...unit('Granlunda 1')],
+      investigation: { causeAreas: [] },
+      measures: [],
+    },
   ],
   measureTypes: [
     { name: 'EDUCATION', displayName: 'Utbildning' },
@@ -107,15 +127,23 @@ const jsonRoute = (page: Page, pattern: string | RegExp, body: unknown) =>
 
 const latestSchema = (page: Page, request: { name: string; version: string; value: unknown }) =>
   jsonRoute(page, `**/2281/schemas/${request.name}/latest`, {
-    data: { id: `2281_${request.name}_${request.version}`, name: request.name, version: request.version, value: request.value },
+    data: {
+      id: `2281_${request.name}_${request.version}`,
+      name: request.name,
+      version: request.version,
+      value: request.value,
+    },
     message: 'success',
   });
 
-async function installFollowUp(page: Page) {
+/** The signed-in user, with the handler roles `/me` names for them. */
+const meWithRoles = (roleKeys: string[]) => ({ ...mockMe, data: { ...mockMe.data, roleKeys, superadmin: false } });
+
+async function installFollowUp(page: Page, me: unknown = mockMe) {
   const reads: URL[] = [];
   await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
   await jsonRoute(page, '**/administrators', mockAdmins);
-  await jsonRoute(page, '**/me', mockMe);
+  await jsonRoute(page, '**/me', me);
   await jsonRoute(page, '**/featureflags', [
     { name: 'isSupportManagement', enabled: true },
     { name: 'useInvestigation', enabled: true },
@@ -129,6 +157,7 @@ async function installFollowUp(page: Page) {
     categories: [],
     types: [],
     statuses: [
+      { name: 'NEW', displayName: 'Ny' },
       { name: 'INQUIRY', displayName: 'Pågående' },
       { name: 'SOLVED', displayName: 'Avslutat' },
     ],
@@ -137,7 +166,11 @@ async function installFollowUp(page: Page) {
   await jsonRoute(page, /\/supporterrands\/2281\?/, emptyErrandPage);
   await latestSchema(page, { name: managerRequest.name, version: managerRequest.version, value: managerRequest.value });
   await latestSchema(page, { name: lexRequest.name, version: lexRequest.version, value: lexRequest.value });
-  await latestSchema(page, { name: lexDecisionRequest.name, version: lexDecisionRequest.version, value: lexDecisionRequest.value });
+  await latestSchema(page, {
+    name: lexDecisionRequest.name,
+    version: lexDecisionRequest.version,
+    value: lexDecisionRequest.value,
+  });
   await page.route('**/supportfollowup/2281/units?**', async (route) => {
     reads.push(new URL(route.request().url()));
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snapshot) });
@@ -145,15 +178,23 @@ async function installFollowUp(page: Page) {
   return reads;
 }
 
-async function openFollowUp(page: Page, dismissCookieConsent: () => Promise<void>) {
+async function openFollowUp(page: Page, dismissCookieConsent: () => Promise<void>, heading = 'Enheter') {
   await page.goto('oversikt/');
   await dismissCookieConsent();
   await page.locator('[data-cy="follow-up-button"]').click();
-  await expect(page.locator('[data-cy="unit-follow-up"]').getByRole('heading', { level: 1 })).toHaveText('Enheter');
+  await expect(page.locator('[data-cy="unit-follow-up"]').getByRole('heading', { level: 1 })).toHaveText(heading);
 }
 
 const errandRows = (page: Page) => page.locator('[data-cy="follow-up-errands-table"] tbody tr');
 const summary = (page: Page) => page.locator('[data-cy="follow-up-summary"]');
+const keyFigure = (page: Page, key: string) => page.locator(`[data-cy="follow-up-key-figure-${key}"]`);
+const keyFigureCount = (page: Page, key: string) => page.locator(`[data-cy="follow-up-key-figure-${key}-count"]`);
+
+async function chooseUnit(page: Page, name: string) {
+  await page.locator('[data-cy="follow-up-filter-unit-input"]').click();
+  await page.getByRole('option', { name, exact: true }).click();
+  await page.keyboard.press('Escape');
+}
 
 test.describe('Verksamhetsuppföljning - Enheter', () => {
   test.afterEach(async ({ page }) => {
@@ -172,8 +213,8 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     expect(reads[0].searchParams.get('from')).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
     expect(reads[0].searchParams.get('to')).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
 
-    await expect(summary(page)).toHaveText('Visar 3 ärenden');
-    await expect(errandRows(page)).toHaveCount(3);
+    await expect(summary(page)).toHaveText('Visar 4 ärenden');
+    await expect(errandRows(page)).toHaveCount(4);
     const first = errandRows(page).first();
     await expect(first).toContainText('Granlunda 2');
     await expect(first).toContainText('Missförhållande');
@@ -201,7 +242,7 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await expect(errandRows(page)).toHaveCount(1);
 
     await page.locator('[data-cy="follow-up-filter-clear"]').click();
-    await expect(summary(page)).toHaveText('Visar 3 ärenden');
+    await expect(summary(page)).toHaveText('Visar 4 ärenden');
 
     // The risk values offered are the ones probability times severity can give.
     const riskHsl = page.locator('[data-cy="follow-up-filter-risk-hsl"]');
@@ -211,8 +252,73 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await expect(errandRows(page).first()).toContainText('2026-05-17');
     await page.locator('[data-cy="follow-up-filter-clear"]').click();
 
-    await page.getByRole('textbox', { name: 'Sök enhet' }).fill('granlunda 1');
-    await expect(errandRows(page)).toHaveCount(2);
+    await chooseUnit(page, 'Granlunda 1');
+    await expect(errandRows(page)).toHaveCount(3);
+    await expect(page.locator('[data-cy="follow-up-filter-chips"]')).toContainText('Enhet: Granlunda 1');
+  });
+
+  test('visar lägeskort för perioden och de valda enheterna, och ärendena bakom ett kort', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installFollowUp(page);
+    await openFollowUp(page, dismissCookieConsent);
+
+    await expect(keyFigureCount(page, 'deviations')).toHaveText('3');
+    await expect(keyFigureCount(page, 'misconducts')).toHaveText('1');
+    await expect(keyFigureCount(page, 'legalBaseHsl')).toHaveText('3');
+    await expect(keyFigureCount(page, 'legalBaseSolLss')).toHaveText('1');
+    await expect(keyFigureCount(page, 'notStarted')).toHaveText('1');
+    await expect(keyFigure(page, 'notStarted')).toHaveClass(/bg-warning-background-200/u);
+    await expect(keyFigure(page, 'deviations')).not.toHaveClass(/bg-warning/u);
+
+    // A card shows the errands behind its number, and lets go of the filters that would hide some of them.
+    await page.locator('[data-cy="follow-up-filter-report-type"]').click();
+    await page.locator('[data-cy="follow-up-filter-report-type-abuse"]').check({ force: true });
+    await page.keyboard.press('Escape');
+    await keyFigure(page, 'notStarted').click();
+    await expect(keyFigure(page, 'notStarted')).toHaveAttribute('aria-pressed', 'true');
+    await expect(summary(page)).toHaveText('Visar 1 ärende');
+    await expect(errandRows(page).first()).toContainText('2026-01-15');
+    const chips = page.locator('[data-cy="follow-up-filter-chips"]');
+    await expect(chips.getByRole('button')).toHaveCount(1);
+    await expect(chips).toContainText('Ej påbörjade ärenden (>30 dagar)');
+
+    // The chip lets the card go again.
+    await page.locator('[data-cy="follow-up-filter-chip-keyFigure"]').click();
+    await expect(keyFigure(page, 'notStarted')).toHaveAttribute('aria-pressed', 'false');
+    await expect(summary(page)).toHaveText('Visar 4 ärenden');
+    await expect(chips).toHaveCount(0);
+
+    // The cards count the chosen units only.
+    await chooseUnit(page, 'Granlunda 2');
+    await expect(keyFigureCount(page, 'deviations')).toHaveText('0');
+    await expect(keyFigureCount(page, 'misconducts')).toHaveText('1');
+    await expect(keyFigureCount(page, 'legalBaseSolLss')).toHaveText('1');
+    await expect(keyFigureCount(page, 'notStarted')).toHaveText('0');
+    await expect(keyFigure(page, 'notStarted')).not.toHaveClass(/bg-warning/u);
+    await expect(summary(page)).toHaveText('Visar 1 ärende');
+  });
+
+  test('heter Verksamhetsområde för LEX, som följer upp hela verksamhetsområdet', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installFollowUp(page, meWithRoles(['lex-ansvarig']));
+    await openFollowUp(page, dismissCookieConsent, 'Verksamhetsområde');
+
+    await expect(page.locator('[data-cy="follow-up-button"]')).toHaveText('Verksamhetsområde');
+  });
+
+  test('heter Enhet för enhetschefen, och Enheter på sidan när ärendena ligger på flera enheter', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installFollowUp(page, meWithRoles(['enhetschef']));
+    // The errands span Granlunda 1 and 2: Support Management lets this unit manager reach both.
+    await openFollowUp(page, dismissCookieConsent, 'Enheter');
+
+    await expect(page.locator('[data-cy="follow-up-button"]')).toHaveText('Enhet');
   });
 
   test('listar ärendenas åtgärder med status och effekt, och fäller ut en åtgärd', async ({
@@ -242,6 +348,8 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await expect(executed.getByRole('link', { name: `${application}-2026-0011` })).toHaveAttribute('target', '_blank');
 
     await executed.getByRole('button', { name: /Visa åtgärden/u }).click();
-    await expect(page.locator('[data-cy="follow-up-measure-details-e11:m1"]')).toContainText('Utbildningen genomfördes.');
+    await expect(page.locator('[data-cy="follow-up-measure-details-e11:m1"]')).toContainText(
+      'Utbildningen genomfördes.'
+    );
   });
 });

@@ -1,4 +1,9 @@
-import { findHandlerGroupRole, findUnauthorizedHandlerRoleGroups, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
+import {
+  findHandlerGroupRole,
+  findUnauthorizedHandlerRoleGroups,
+  resolveHandlerGroupRoles,
+  resolveHeldHandlerRoleKeys,
+} from '@/config/handler-group-roles';
 
 const configured = JSON.stringify([
   {
@@ -103,5 +108,14 @@ describe('findUnauthorizedHandlerRoleGroups', () => {
         'MOCK_LEX_MANAGERS',
       ),
     ).toEqual([]);
+  });
+});
+
+describe('resolveHeldHandlerRoleKeys', () => {
+  it('names the roles whose groups the user is in, in catalogue order, whatever the case of the groups', () => {
+    const roles = resolveHandlerGroupRoles(configured)!;
+
+    expect(resolveHeldHandlerRoleKeys(roles, ['mock_mas_mar', ' MOCK_UNIT_MANAGERS ', 'mock_others'])).toEqual(['enhetschef', 'mas-mar']);
+    expect(resolveHeldHandlerRoleKeys(roles, [])).toEqual([]);
   });
 });

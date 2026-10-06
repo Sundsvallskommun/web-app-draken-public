@@ -30,6 +30,8 @@ const handleSetUserResponse = (res: ApiResponse<User>): User => ({
     readNotificationsClearedDate: res.data.userSettings.readNotificationsClearedDate,
   },
   permissions: res.data.permissions,
+  roleKeys: res.data.roleKeys,
+  superadmin: res.data.superadmin === true,
 });
 
 export const getMe: () => Promise<User> = () => {

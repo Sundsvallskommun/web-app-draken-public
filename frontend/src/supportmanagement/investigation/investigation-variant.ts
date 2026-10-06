@@ -92,11 +92,17 @@ interface InvestigationDecisionTabSlot {
  * heading, for a variant whose investigations are worth following up across units. A variant without
  * one omits the slot, and the sidebar shows no such section.
  */
+/** Who opens the follow-up: the handler roles they hold, and whether they administer the application. */
+export interface InvestigationFollowUpViewer {
+  readonly roleKeys?: readonly string[];
+  readonly superadmin?: boolean;
+}
+
 interface InvestigationFollowUpSlot {
   /** The sidebar heading the entry sits under. */
   readonly heading: string;
-  /** The sidebar entry, and the view's name. */
-  readonly label: string;
+  /** The sidebar entry, named for how much of the organisation the viewer follows up. */
+  readonly label: (viewer: InvestigationFollowUpViewer) => string;
   readonly render: () => ReactNode;
 }
 

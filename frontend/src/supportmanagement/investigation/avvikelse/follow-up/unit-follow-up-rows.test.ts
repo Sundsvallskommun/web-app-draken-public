@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 
+import dayjs from 'dayjs';
 import { test } from 'vitest';
 
 import { type FollowUpRowContext, measureStatus, toFollowUpRows } from './unit-follow-up-rows';
@@ -16,6 +17,7 @@ const context: FollowUpRowContext = {
   statusName: (status) => ({ INQUIRY: 'Pågående' }[status]),
   personName: (account) => ({ nin01per: 'Nina Persson' }[account]),
   measureTypes: [{ name: 'TRAINING', displayName: 'Utbildning' }],
+  keyFigures: { today: dayjs('2026-07-01'), notStartedStatuses: ['NEW'] },
 };
 
 const errand: UnitFollowUpErrand = {
@@ -24,8 +26,8 @@ const errand: UnitFollowUpErrand = {
   status: 'INQUIRY',
   created: '2026-05-24T10:15:00.000+02:00',
   labels: [
-    { id: 'abuse', classification: 'REPORT_TYPE', displayName: 'Missförhållande' },
-    { id: 'sol', classification: 'PROVISION', displayName: 'SoL' },
+    { id: 'abuse', classification: 'REPORT_TYPE', displayName: 'Missförhållande', resourcePath: 'REPORT_TYPE/ABUSE' },
+    { id: 'sol', classification: 'PROVISION', displayName: 'SoL', resourcePath: '/provision/sol/' },
     { id: 'cat', classification: 'CATEGORY', displayName: 'Brister i rättssäkerhet' },
     { id: 'sub', classification: 'TYPE', displayName: 'Bristande handläggning' },
     { id: 'vof', classification: 'LOCATION', displayName: 'VOF' },
@@ -54,7 +56,7 @@ const errand: UnitFollowUpErrand = {
 test('shows an errand by its unit, report type, causes, risk, decision and measure count', () => {
   const [row] = toFollowUpRows([errand], context).errands;
 
-  assert.equal(row.unit, 'Granlunda 2');
+  assert.deepEqual(row.unit, { value: 'unit', label: 'Granlunda 2' });
   assert.equal(row.reportType?.label, 'Missförhållande');
   assert.deepEqual(
     row.causeAreas.map((option) => option.label),
@@ -70,6 +72,16 @@ test('shows an errand by its unit, report type, causes, risk, decision and measu
   assert.deepEqual(row.categories, [{ value: 'cat', label: 'Brister i rättssäkerhet' }]);
   assert.deepEqual(row.subcategories, [{ value: 'sub', label: 'Bristande handläggning' }]);
   assert.equal(row.measureCount, 2);
+  assert.deepEqual(row.labelPaths, ['REPORT_TYPE/ABUSE', 'PROVISION/SOL']);
+  assert.deepEqual(row.keyFigures, ['misconducts', 'legalBaseSolLss']);
+});
+
+test('counts an errand still new more than thirty days after it was registered as not started', () => {
+  const [waiting] = toFollowUpRows([{ ...errand, status: 'NEW' }], context).errands;
+  assert.equal(waiting.keyFigures.includes('notStarted'), true);
+
+  const [taken] = toFollowUpRows([errand], context).errands;
+  assert.equal(taken.keyFigures.includes('notStarted'), false);
 });
 
 test('lists each measure with its type, author, status, dates and effect', () => {

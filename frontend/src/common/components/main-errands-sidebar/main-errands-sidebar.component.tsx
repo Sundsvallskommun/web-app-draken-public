@@ -53,6 +53,7 @@ export const MainErrandsSidebar: FC<{
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
   const followUp = getInvestigationFollowUp();
+  const followUpLabel = followUp?.label(user);
 
   const MainTitle = (open: boolean) => (
     <NextLink
@@ -210,10 +211,10 @@ export const MainErrandsSidebar: FC<{
                 className={`${open && 'justify-start'} ${!showFollowUp && 'hover:bg-dark-ghost'}`}
                 variant={showFollowUp ? 'primary' : 'ghost'}
                 iconButton={!open}
-                aria-label={open ? undefined : followUp.label}
+                aria-label={open ? undefined : followUpLabel}
                 data-cy="follow-up-button"
               >
-                {open && <span className="w-full flex justify-between">{followUp.label}</span>}
+                {open && <span className="w-full flex justify-between">{followUpLabel}</span>}
               </Button>
             </div>
           </>

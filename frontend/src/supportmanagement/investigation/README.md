@@ -44,9 +44,11 @@ delad kod erbjuder:
   skillnad från Utredningsfliken, som kapabilitetsflaggan ensam tänder, avgör varianten själv per ärende och
   runtimeprofil om fliken finns (`isVisible`). Utan slot, ingen flik — och ingen förändring för andra varianter.
 - `followUp` — valfri uppföljning över ärenden i översiktens sidomeny, under en egen rubrik (`heading`) och med
-  en egen knapp (`label`). Knappen byter ut ärendetabellen mot `render()`, som Planerade åtgärder gör. Registret
-  lämnar ut den via `getInvestigationFollowUp`, och `useInvestigation` släcker den med resten. För avvikelse:
-  Verksamhetsuppföljning – Enheter. Utan slot, ingen sektion i sidomenyn.
+  en egen knapp. Knappens namn (`label`) räknas fram ur den inloggades handläggarroller och administratörsskap
+  (`roleKeys`, `superadmin` från `/me`), inte ur draken. Knappen byter ut ärendetabellen mot `render()`, som
+  Planerade åtgärder gör. Registret lämnar ut den via `getInvestigationFollowUp`, och `useInvestigation` släcker
+  den med resten. För avvikelse: Verksamhetsuppföljning – Enhet, Enheter eller Verksamhetsområde. Utan slot,
+  ingen sektion i sidomenyn.
 
 Två flaggor styr fliken: kapabilitetsflaggan väljer _vilken_ implementation, och `useInvestigation`
 är huvudströmbrytaren som släcker fliken för alla varianter samtidigt. Ovanpå flaggorna ligger fasgrinden

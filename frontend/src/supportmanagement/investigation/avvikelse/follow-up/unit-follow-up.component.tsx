@@ -3,21 +3,31 @@
 import { getNameFromADUsername } from '@common/services/user-service';
 import { Alert, Spinner, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
+import { newStatuses } from '@supportmanagement/services/support-errand-service';
 import { isAxiosError } from 'axios';
+import dayjs from 'dayjs';
 import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 
+import { describeActiveFollowUpFilters } from './unit-follow-up-active-filters';
 import { UnitFollowUpErrandsTable } from './unit-follow-up-errands-table.component';
-import { UnitFollowUpFilterBar, type UnitFollowUpTab } from './unit-follow-up-filter-bar.component';
+import { UnitFollowUpFilterBar } from './unit-follow-up-filter-bar.component';
+import { UnitFollowUpFilterChips } from './unit-follow-up-filter-chips.component';
 import {
   EMPTY_UNIT_FOLLOW_UP_FILTERS,
   followUpFilterOptions,
   matchesFollowUpErrandFilters,
   matchesFollowUpMeasureFilters,
+  matchesFollowUpUnits,
+  toggleFollowUpKeyFigure,
   type UnitFollowUpFilters,
+  type UnitFollowUpTab,
 } from './unit-follow-up-filters';
+import { countFollowUpKeyFigures, type FollowUpKeyFigureKey } from './unit-follow-up-key-figures';
+import { UnitFollowUpKeyFigures } from './unit-follow-up-key-figures.component';
 import { UnitFollowUpMeasuresTable } from './unit-follow-up-measures-table.component';
 import { defaultUnitFollowUpPeriod, describeUnitFollowUpPeriod } from './unit-follow-up-period';
 import { toFollowUpRows } from './unit-follow-up-rows';
+import { unitFollowUpHeading } from './unit-follow-up-scope';
 import { getUnitFollowUp, type UnitFollowUpPeriod, type UnitFollowUpSnapshot } from './unit-follow-up-service';
 import {
   EMPTY_UNIT_FOLLOW_UP_VOCABULARY,
@@ -51,6 +61,7 @@ export const UnitFollowUp: FC = () => {
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const administrators = useUserStore((state) => state.administrators);
+  const user = useUserStore((state) => state.user);
   const [period, setPeriod] = useState<UnitFollowUpPeriod>(() => defaultUnitFollowUpPeriod());
   const [tab, setTab] = useState<UnitFollowUpTab>('errands');
   const [filters, setFilters] = useState<UnitFollowUpFilters>(EMPTY_UNIT_FOLLOW_UP_FILTERS);
@@ -93,6 +104,7 @@ export const UnitFollowUp: FC = () => {
           supportMetadata?.statuses?.find((candidate) => candidate.name === status)?.displayName ?? undefined,
         personName: (account) => getNameFromADUsername(account, administrators),
         measureTypes: state.status === 'ready' ? state.snapshot.measureTypes : [],
+        keyFigures: { today: dayjs(), notStartedStatuses: newStatuses },
       }),
     [state, supportMetadata, vocabulary, administrators]
   );
@@ -105,6 +117,18 @@ export const UnitFollowUp: FC = () => {
     () => rows.measures.filter((row) => matchesFollowUpMeasureFilters(row, filters)),
     [rows, filters]
   );
+  // The cards count the period's errands on the chosen units, whatever else the lists are narrowed by.
+  const keyFigures = useMemo(
+    () => countFollowUpKeyFigures(rows.errands.filter((row) => matchesFollowUpUnits(row, filters.units))),
+    [rows, filters.units]
+  );
+  const activeFilters = useMemo(() => describeActiveFollowUpFilters(filters, options, tab), [filters, options, tab]);
+  const heading = unitFollowUpHeading(user, options.units.length);
+
+  const selectKeyFigure = (key: FollowUpKeyFigureKey) => {
+    setFilters((current) => toggleFollowUpKeyFigure(current, key));
+    setTab('errands');
+  };
 
   let content: ReactNode;
   if (state.status === 'loading') {
@@ -154,13 +178,16 @@ export const UnitFollowUp: FC = () => {
   return (
     <main className="pl-40 pb-40 w-full">
       <div className="container mx-auto p-0 w-full">
-        <div className="mt-32 flex flex-col gap-24" role="region" aria-label="Enheter" data-cy="unit-follow-up">
+        <div className="mt-32 flex flex-col gap-24" role="region" aria-label={heading} data-cy="unit-follow-up">
           <div className="flex flex-col gap-4">
-            <h1 className="p-0 m-0">Enheter</h1>
+            <h1 className="p-0 m-0">{heading}</h1>
             <p className="m-0 text-dark-secondary text-small" data-cy="follow-up-period">
               {describeUnitFollowUpPeriod(period)}
             </p>
           </div>
+          {state.status === 'ready' && (
+            <UnitFollowUpKeyFigures figures={keyFigures} selected={filters.keyFigure} onSelect={selectKeyFigure} />
+          )}
           <Tabs
             current={TABS.findIndex(({ key }) => key === tab)}
             onTabChange={(index: number) => setTab(TABS[index].key)}
@@ -182,6 +209,7 @@ export const UnitFollowUp: FC = () => {
                         period={period}
                         onPeriodChange={changePeriod}
                       />
+                      <UnitFollowUpFilterChips active={activeFilters} onFiltersChange={setFilters} />
                       {content}
                     </div>
                   )}

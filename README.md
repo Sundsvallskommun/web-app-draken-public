@@ -166,7 +166,8 @@ I IAF och VOF anger backendens `HEALTHCAREDEVIATION_HANDLER_ROLES` handläggarro
 med den AD-grupp som har den. Samma lista fyller handläggarlistan, grupperad per roll, styr vilken roll
 överlämningsstegen kräver och avgör vem som registrerar åtgärder. Formatet beskrivs i
 `frontend/src/supportmanagement/measures/README.md`. Medlemmar i `SUPERADMIN_GROUP` har alla
-registreringsroller för åtgärder.
+registreringsroller för åtgärder. `/me` anger vilka roller den inloggade har via sina grupper (`roleKeys`,
+utelämnat när inga roller är konfigurerade) och om hen är med i `SUPERADMIN_GROUP` (`superadmin`).
 
 Övriga drakar anger handläggarlistan med `ASSIGNABLE_HANDLER_GROUPS`, kommaseparerat:
 
