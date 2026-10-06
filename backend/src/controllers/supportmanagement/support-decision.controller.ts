@@ -1,0 +1,316 @@
+import { IsArray, IsBoolean, IsDateString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { Decision, DecisionTerm } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
+import ApiService from '@/services/api.service';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
+
+const MANUAL_METHOD = 'MANUAL';
+const DRAFT_STATUS = 'DRAFT';
+const COMPLETED_STATUS = 'COMPLETED';
+
+class SupportDecisionFieldsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  decidedByRole?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  legalBasis?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  delegationReference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8192)
+  justification?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  appealable?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  validFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  validTo?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  terms?: string[];
+}
+
+export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  outcome!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  type!: string;
+}
+
+export class UpdateSupportDecisionDto extends SupportDecisionFieldsDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  outcome?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  type?: string;
+}
+
+interface DecisionRef {
+  municipalityId: string;
+  errandId: string;
+  decisionId: string;
+}
+
+@Controller()
+export class SupportDecisionController {
+  private readonly apiService = new ApiService();
+  private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private readonly SERVICE = apiServiceName('supportmanagement');
+
+  private readonly decisionsUrl = (municipalityId: string, errandId: string): string =>
+    `${municipalityId}/${this.namespace}/errands/${errandId}/decisions`;
+
+  private readonly decisionUrl = (ref: DecisionRef): string => `${this.decisionsUrl(ref.municipalityId, ref.errandId)}/${ref.decisionId}`;
+
+  private readonly decidedNowBy = (user: RequestWithUser['user']): Partial<Decision> => ({
+    decidedBy: user.username,
+    decidedAt: new Date().toISOString(),
+  });
+
+  private readonly newestDecision = (decisions: Decision[]): Decision | undefined =>
+    [...decisions].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
+
+  private async readDecisions(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<Decision[]> {
+    const res = await this.apiService.get<Decision[]>(
+      { url: this.decisionsUrl(municipalityId, errandId), baseURL: apiURL(this.SERVICE), propagateClientError: true },
+      user,
+    );
+    return res.data ?? [];
+  }
+
+  private async readDecision(ref: DecisionRef, user: RequestWithUser['user']): Promise<Decision> {
+    const res = await this.apiService.get<Decision>({ url: this.decisionUrl(ref), baseURL: apiURL(this.SERVICE), propagateClientError: true }, user);
+    return res.data;
+  }
+
+  private async patchDecision(
+    ref: DecisionRef,
+    version: number | undefined,
+    data: Partial<Decision>,
+    user: RequestWithUser['user'],
+  ): Promise<Decision> {
+    await this.apiService.patch<Decision, Partial<Decision>>(
+      {
+        url: this.decisionUrl(ref),
+        baseURL: apiURL(this.SERVICE),
+        data,
+        headers: { 'If-Match': `"${version}"` },
+        propagateClientError: true,
+      },
+      user,
+    );
+
+    return this.readDecision(ref, user);
+  }
+
+  private async discardDecision(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
+    try {
+      await this.apiService.delete<void>({ url: this.decisionUrl(ref), baseURL: apiURL(this.SERVICE), propagateClientError: true }, user);
+    } catch (error) {
+      logger.error(`Could not remove the draft decision ${ref.decisionId} after a failed write`);
+      logger.error(error);
+    }
+  }
+
+  private async clearTerms(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
+    const decision = await this.readDecision(ref, user);
+
+    await Promise.all(
+      (decision.terms ?? []).map(term =>
+        this.apiService.delete<void>(
+          {
+            url: `${this.decisionUrl(ref)}/terms/${term.id}`,
+            baseURL: apiURL(this.SERVICE),
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
+  }
+
+  private async writeTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
+    await Promise.all(
+      terms.map((text, index) =>
+        this.apiService.post<DecisionTerm, DecisionTerm>(
+          {
+            url: `${this.decisionUrl(ref)}/terms`,
+            baseURL: apiURL(this.SERVICE),
+            data: { sortOrder: index + 1, text },
+            propagateClientError: true,
+          },
+          user,
+        ),
+      ),
+    );
+  }
+
+  private async replaceTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
+    await this.clearTerms(ref, user);
+    await this.writeTerms(ref, terms, user);
+  }
+
+  @Get('/supportdecisions/:municipalityId/:id')
+  @OpenAPI({ summary: 'Get the decisions of a support errand' })
+  @UseBefore(authMiddleware)
+  async fetchDecisions(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+    const decisions = await this.readDecisions(municipalityId, id, req.user);
+    return response.status(200).send(decisions);
+  }
+
+  @Post('/supportdecisions/:municipalityId/:id')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Record a manual decision on a support errand' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(CreateSupportDecisionDto, 'body'))
+  async createDecision(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Body() data: CreateSupportDecisionDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const { terms, ...decision } = data;
+    await this.apiService.post<Decision, Decision>(
+      {
+        url: this.decisionsUrl(municipalityId, id),
+        baseURL: apiURL(this.SERVICE),
+        data: { ...decision, status: DRAFT_STATUS, method: MANUAL_METHOD, ...this.decidedNowBy(req.user) },
+        propagateClientError: true,
+      },
+      req.user,
+    );
+
+    const written = this.newestDecision(await this.readDecisions(municipalityId, id, req.user));
+    if (!written?.id) {
+      throw new HttpException(502, 'Support Management did not return the decision that was written');
+    }
+
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId: written.id };
+
+    try {
+      if (terms?.length) {
+        await this.writeTerms(ref, terms, req.user);
+      }
+    } catch (error) {
+      await this.discardDecision(ref, req.user);
+      throw error;
+    }
+
+    return response.status(201).send(await this.readDecision(ref, req.user));
+  }
+
+  @Patch('/supportdecisions/:municipalityId/:id/:decisionId')
+  @OpenAPI({ summary: 'Update a draft decision on a support errand' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportDecisionDto, 'body'))
+  async updateDecision(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('decisionId') decisionId: string,
+    @Body() data: UpdateSupportDecisionDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
+    const { terms, ...decision } = data;
+    const current = await this.readDecision(ref, req.user);
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be updated');
+    }
+    const written = await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
+
+    if (!terms) {
+      return response.status(200).send(written);
+    }
+
+    await this.replaceTerms(ref, terms, req.user);
+    return response.status(200).send(await this.readDecision(ref, req.user));
+  }
+
+  @Post('/supportdecisions/:municipalityId/:id/:decisionId/complete')
+  @OpenAPI({ summary: 'Conclude a decision, which is what the process waits for' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
+  async completeDecision(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('decisionId') decisionId: string,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
+    const current = await this.readDecision(ref, req.user);
+
+    if (current.status === COMPLETED_STATUS) {
+      return response.status(200).send(current);
+    }
+
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be completed');
+    }
+
+    return response.status(200).send(await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user));
+  }
+}

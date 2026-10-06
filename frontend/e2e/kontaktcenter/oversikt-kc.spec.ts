@@ -20,9 +20,7 @@ import { mockNotifications } from './fixtures/mockSupportNotifications';
 
 test.describe('Overview support errand', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
@@ -252,5 +250,13 @@ test.describe('Overview support errand', () => {
     await page.locator('button').filter({ hasText: 'Sök' }).click();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await expect(page.locator('Caption#errandTableCaption')).toContainText('Det finns inga ärenden');
+  });
+
+  test('does not show the overview notice when the flag is off', async ({ page }) => {
+    await expect(page.locator('[data-cy="overview-notice"]')).toHaveCount(0);
+  });
+
+  test('does not show the customer menu when the flag is off', async ({ page }) => {
+    await expect(page.locator('[data-cy="customer-menu"]')).toHaveCount(0);
   });
 });

@@ -7,6 +7,7 @@ export interface SupportAttachment {
   fileName: string;
   mimeType: string;
   channel?: string;
+  purpose?: { id?: string; name?: string; displayName?: string | null };
 }
 
 export interface SingleSupportAttachment {
@@ -140,10 +141,26 @@ export const deleteSupportAttachment = (errandId: string, municipalityId: string
     });
 };
 
+export const updateSupportAttachmentPurpose = (
+  errandId: string,
+  municipalityId: string,
+  attachmentId: string,
+  purposeId: string
+) =>
+  apiService
+    .patch<unknown, { purposeId: string }>(
+      `supportattachments/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`,
+      { purposeId }
+    )
+    .catch((e) => {
+      console.error('Something went wrong when updating attachment purpose', attachmentId);
+      throw e;
+    });
+
 export const saveSupportAttachments: (
   errandId: string,
   municipalityId: string,
-  attachments: { file: File }[]
+  attachments: { file: File; purposeId?: string }[]
 ) => Promise<({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[]> = (
   errandId,
   municipalityId,
@@ -164,6 +181,7 @@ export const saveSupportAttachments: (
     const formData = new FormData();
     formData.append(`files`, blob, fileItem.name);
     formData.append(`name`, fileItem.name);
+    if (attachment.purposeId) formData.append('purposeId', attachment.purposeId);
     return apiService
       .post<boolean, FormData>(`supportattachments/${municipalityId}/errands/${errandId}/attachments`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

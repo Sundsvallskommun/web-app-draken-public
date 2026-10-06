@@ -3,7 +3,7 @@ import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { mockFinalDecision, mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 const MOCK_PERSON_NUMBER = mockEnv.mockPtPersonNumber;
 

@@ -6,6 +6,10 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandProcess,
+  isSupportProcessCompleted,
+} from '@supportmanagement/services/support-process-service';
 import dayjs from 'dayjs';
 import { Undo2 } from 'lucide-react';
 import { useState } from 'react';
@@ -23,6 +27,11 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
     const lastModified = dayjs(supportErrand?.modified);
     return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
   };
+
+  // A completed process is the end of the errand's process life, and a new one is a new errand.
+  if (appConfig.features.useProcess && isSupportProcessCompleted(getSupportErrandProcess(supportErrand))) {
+    return null;
+  }
 
   const reopenErrand = () => {
     setIsLoading(true);

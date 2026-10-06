@@ -1,6 +1,7 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Admin } from '@common/services/user-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+import { SUPPORT_PBI_PARAMETER } from '@supportmanagement/services/support-pbi-service';
 
 import {
   ContactChannelType,
@@ -109,6 +110,10 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
         displayName: 'Organisationsnummer',
       });
     }
+    // Set by the PBI marking, not by the form - carry it over so saving the errand does not drop it.
+    c.parameters
+      ?.filter((parameter) => parameter.key === SUPPORT_PBI_PARAMETER)
+      .forEach(({ key, values }) => parameters.push({ key, values: values ?? [] }));
     const stakeholder: SupportStakeholder = {
       // externalId is the party UUID. Never fall back to the organization number here — that would
       // store a non-UUID as the partyId. The organization number is persisted as a parameter above.

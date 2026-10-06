@@ -11,6 +11,7 @@ import {
   GuiProvider,
 } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/config-store';
+import { useFeatureFlagStore } from '@stores/feature-flag-store';
 import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useUserStore } from '@stores/user-store';
@@ -66,7 +67,10 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       .then((res) => {
         applyRuntimeFeatureFlags(res.data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        useFeatureFlagStore.getState().setLoaded(true);
+      });
 
     getAdminUsers()
       .then((data) => {

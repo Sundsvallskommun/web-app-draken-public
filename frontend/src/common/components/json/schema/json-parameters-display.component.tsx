@@ -1,5 +1,6 @@
 'use client';
 
+import { SectionOpening } from '@common/components/json/fields/sections-object-field-template.componant';
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { Alert, Spinner } from '@sk-web-gui/react';
@@ -15,9 +16,10 @@ interface DisplayJsonParameter {
 interface JsonParameterItemProps {
   param: DisplayJsonParameter;
   municipalityId: string;
+  sectionOpening: SectionOpening;
 }
 
-const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }) => {
+const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, sectionOpening }) => {
   const { schema, uiSchema, loading, error } = useJsonSchema(municipalityId, param.schemaId);
 
   if (loading) {
@@ -49,6 +51,7 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
         uiSchema={uiSchema ?? undefined}
         formData={param.value}
         idPrefix={param.key.replace(/[^\w-]/g, '_')}
+        sectionOpening={sectionOpening}
         disabled
       />
     </div>
@@ -72,6 +75,7 @@ export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonPara
           key={`${param.key}-${param.schemaId}-${idx}`}
           param={param}
           municipalityId={municipalityId}
+          sectionOpening={idx === 0 ? 'first' : 'none'}
         />
       ))}
     </div>

@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  ErrandProcess,
+  Label,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK, isROB } from '@common/services/application-service';
@@ -13,7 +17,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CJsonParameter, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -59,6 +63,7 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  process?: ErrandProcess;
   created?: string;
   modified?: string;
   touched?: string;
@@ -205,6 +210,8 @@ export const getLabelSubType = (errand: SupportErrand) => {
   return errand.labels?.find((label) => label.classification === 'SUBTYPE');
 };
 
+export const getMostSpecificLabelType = (errand: SupportErrand) => getLabelSubType(errand) ?? getLabelType(errand);
+
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
   return allTypesFlattened.find((t) => t?.resourcePath === name);
@@ -246,6 +253,10 @@ export enum Resolution {
   FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
   FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
   FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
+  GRANTED = 'GRANTED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+  DISMISSED = 'DISMISSED',
 }
 
 export enum ResolutionLabelLOP {
@@ -290,6 +301,14 @@ export enum ResolutionLabelROB {
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelAOT {
+  GRANTED = 'Beviljat',
+  REJECTED = 'Avslag',
+  WITHDRAWN = 'Återkallat av sökanden',
+  DISMISSED = 'Avskrivet',
+  CLOSED = 'Avslutat',
 }
 
 export enum ResolutionLabelLOK {
@@ -373,6 +392,11 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
+
+export const isEserviceErrand: (errand: SupportErrand) => boolean = (errand) =>
+  errand?.channel === ('ESERVICE' satisfies keyof typeof Channels) ||
+  errand?.channel === ('ESERVICE_INTERNAL' satisfies keyof typeof Channels) ||
+  isOpenEErrand(errand);
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
@@ -624,16 +648,28 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
+const classifiedValue = (value: string | undefined): string => (!value || value === 'NONE' ? '' : value);
+
+const categorizationLabelPath = (errand: ApiSupportErrand, classification: string): string =>
+  (appConfig.features.useThreeLevelCategorization
+    ? errand.labels?.find((label) => label.classification === classification)?.resourcePath
+    : undefined) ?? '';
+
+const errandCategory = (errand: ApiSupportErrand): string =>
+  classifiedValue(errand.classification?.category) || categorizationLabelPath(errand, 'CATEGORY');
+
+const errandType = (errand: ApiSupportErrand): string =>
+  classifiedValue(errand.classification?.type) || categorizationLabelPath(errand, 'TYPE');
+
+const errandSubType = (errand: ApiSupportErrand): string => categorizationLabelPath(errand, 'SUBTYPE');
+
 const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
       ...e,
-      category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
-      type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
-      subType:
-        (appConfig.features.useThreeLevelCategorization
-          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
-          : undefined) || '',
+      category: errandCategory(e),
+      type: errandType(e),
+      subType: errandSubType(e),
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -895,6 +931,23 @@ export const setSupportErrandAdmin: (
     })
     .catch((e) => {
       console.error('Something went wrong when patching errand');
+      throw e;
+    });
+};
+
+/** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
+export const saveSupportErrandJsonParameters: (
+  errandId: string,
+  municipalityId: string,
+  jsonParameters: CJsonParameter[]
+) => Promise<boolean> = async (errandId, municipalityId, jsonParameters) => {
+  return apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+      jsonParameters,
+    })
+    .then(() => true)
+    .catch((e) => {
+      console.error('Something went wrong when patching errand json parameters');
       throw e;
     });
 };

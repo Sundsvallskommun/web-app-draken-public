@@ -37,6 +37,8 @@ const FileUpload: FC<{
   allowMultiple?: boolean;
   allowNameChange?: boolean;
   helperText?: string;
+  /** Selectable purposes per file; the select is left out when there are none. */
+  purposes?: { id: string; label: string }[];
 }> = (props) => {
   const {
     dragDrop,
@@ -55,6 +57,7 @@ const FileUpload: FC<{
     allowMultiple,
     allowNameChange = true,
     helperText,
+    purposes = [],
   } = props;
   const [error, setError] = useState<string>();
   const newItem: FileList = watch(`${fieldName}-newItem`);
@@ -351,6 +354,25 @@ const FileUpload: FC<{
                     )}
                   </div>
                   {allowNameChange ? editFields(index) : null}
+                  {purposes.length > 0 && !editing ? (
+                    <FormControl id={`${fieldName}-${index}-purpose`} className="w-full">
+                      <FormLabel>Typ av bilaga</FormLabel>
+                      <Select
+                        data-cy="attachment-purpose"
+                        size="md"
+                        className="w-full"
+                        variant="tertiary"
+                        {...register(`${fieldName}.${index}.purposeId`)}
+                      >
+                        <Select.Option value="">Välj typ av bilaga</Select.Option>
+                        {purposes.map((purpose) => (
+                          <Select.Option key={purpose.id} value={purpose.id}>
+                            {purpose.label}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : null}
                 </li>
               );
             })}
