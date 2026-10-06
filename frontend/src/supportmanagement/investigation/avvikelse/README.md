@@ -323,8 +323,29 @@ Managements AccessMapper matchar användarens konfigurerade labelmönster mot ä
 börjar. Draken implementerar därför ingen egen synlighetsregel; den skriver bara labeln.
 
 `ACCESS`-trädet innehåller i dag exakt den labeln. Det finns ingen motsvarighet för MAS/MAR — de når
-HSL-ärenden på annat sätt — så ett högt HSL-riskvärde har ingen label att skriva och inget
-överlämningssteg. Riskvärdet visas som en varning för enhetschefen och inget mer.
+HSL-ärenden på annat sätt — så ett högt HSL-riskvärde ger inget överlämningssteg. Riskvärdet visas som
+en varning för enhetschefen, och när utredningen sparas som klar märks ärendet med `RISK/HIGH_HSL`
+(se [Hög risk HSL](#hög-risk-hsl-risk_high_hsl)).
+
+### Hög risk HSL (`RISK/HIGH_HSL`)
+
+Ett ärende vars enhetschefsutredning bedömer HSL-riskvärdet till 4 eller högre (samma gräns som
+schemats `analysisThreshold`) märks med labeln `RISK/HIGH_HSL`, Hög risk HSL. Labeln följer bara en **klarmarkerad**
+utredning: så länge utredningen är ett utkast lämnas den orörd, hur högt värdet än är. När utredningen
+sparas som klar sätts labeln vid 4 eller mer och tas bort under 4 eller utan HSL-bedömning, så en
+utredning som låses upp, ändras och klarmarkeras igen får labeln efter den nya bedömningen.
+
+BFF:en sätter den i samma anrop som sparar dokumentet (`PUT .../json-parameters/:key`), efter
+dokumentskrivningen: regeln finns i `config/iaf-vof-high-hsl-risk.ts` och skrivningen i
+`InvestigationRiskLabelService`. Labeln läggs till med sin rot (`RISK`), tas bort ensam och roten följer
+med när inget annat ligger under den. Skrivningen villkoras på exakt den version dokumentskrivningen
+lämnade; har någon annan hunnit skriva däremellan, eller saknar namespacet labeln i sin metadata, görs
+ingenting. Den görs om det går: utredningen är sparad oavsett, och en label som inte kunde skrivas loggas
+i stället för att bli ett misslyckat sparande.
+
+Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Errand-Writes`, 1 eller 2), så att
+klienten kan flytta fram ärendets version förbi båda (`isSoleSupportErrandVersionChange`) i stället för
+att tro att någon annan har skrivit.
 
 Två namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv
 (`backend/src/config/investigation-handover-steps.ts`):

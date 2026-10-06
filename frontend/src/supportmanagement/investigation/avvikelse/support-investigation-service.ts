@@ -4,6 +4,7 @@ import type { AxiosError } from 'axios';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import {
   type LoadedSupportInvestigationDocument,
+  parseOwnErrandWrites,
   parseParentErrandVersion,
   parseSupportInvestigationDocument,
   type SavedSupportInvestigationDocument,
@@ -81,6 +82,7 @@ export async function saveSupportInvestigationDocument(
   return {
     ...parseSupportInvestigationDocument(response.data, key, response.headers.etag),
     parentErrandVersion: parseParentErrandVersion(response.headers['x-errand-version']),
+    ownErrandWrites: parseOwnErrandWrites(response.headers['x-errand-writes']),
   };
 }
 

@@ -636,3 +636,115 @@ describe('SupportErrandJsonParameterController report', () => {
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
   });
 });
+
+describe('the high HSL risk label on a completed unit manager investigation', () => {
+  const completionSchema = { id: '2281_utredning-enhetschef_1.6', value: { 'x-draken-completion': { field: 'completed', reportsField: 'reports' } } };
+
+  const makeRiskController = (applied: number | undefined | Error = 14) => {
+    const made = makeController();
+    const documentService = made.documentService as DocumentServiceStub & { readBoundSchema: ReturnType<typeof vi.fn> };
+    documentService.readBoundSchema = vi.fn(async () => completionSchema);
+    const riskLabelService = {
+      applyHighHslRiskLabel: vi.fn(async () => {
+        if (applied instanceof Error) throw applied;
+        return applied;
+      }),
+    };
+    const accessApi = new ApiService();
+    vi.spyOn(accessApi, 'get').mockResolvedValue({
+      status: 200,
+      message: 'success',
+      data: { ...mockErrandAccess(), resources: [{ resource: 'errand/json-parameter', level: 'RW' }] },
+    });
+    const controller = new SupportErrandJsonParameterController(
+      getSupportInvestigationProfile('IAF'),
+      documentService as unknown as SupportJsonParameterService,
+      made.policyService as unknown as SupportInvestigationPolicyService,
+      new SupportInvestigationAccessService({ apiService: accessApi }),
+      new ApiService(),
+      riskLabelService,
+    );
+    return { controller, documentService, riskLabelService };
+  };
+
+  const save = async (
+    controller: SupportErrandJsonParameterController,
+    documentService: DocumentServiceStub,
+    key: string,
+    value: Record<string, unknown>,
+  ) => {
+    const update = { schemaId: completionSchema.id, value };
+    documentService.writeJsonParameter.mockResolvedValue({
+      document: { key, ...update, version: 8 },
+      etag: '"8"',
+      status: 200,
+      parentErrandVersion: 13,
+    });
+    const req = mockReq();
+    const res = resDouble();
+    await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, key, '"7"', ABSENT_HEADER, '12', update, res);
+    return { req, res };
+  };
+
+  it('sets the label once the investigation is saved as completed with an HSL risk of 4 or more', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController(14);
+
+    const { req, res } = await save(controller, documentService, 'utredning-enhetschef', {
+      completed: 'yes',
+      riskAssessmentHsl: { calculatedRiskValue: 6 },
+    });
+
+    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith({
+      municipalityId: mockMunicipalityId,
+      errandId: mockSupportErrandId,
+      user: req.user,
+      present: true,
+      expectedVersion: 13,
+    });
+    // Two writes of this request's own: the client advances past both.
+    expect(res.headers['X-Errand-Version']).toBe('14');
+    expect(res.headers['X-Errand-Writes']).toBe('2');
+  });
+
+  it('clears the label when the completed investigation assesses a lower HSL risk', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController(14);
+
+    await save(controller, documentService, 'utredning-enhetschef', { completed: 'yes', riskAssessmentHsl: { calculatedRiskValue: 3 } });
+
+    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: false }));
+  });
+
+  it('leaves the label alone while the investigation is not completed', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController();
+
+    const { res } = await save(controller, documentService, 'utredning-enhetschef', {
+      completed: 'no',
+      riskAssessmentHsl: { calculatedRiskValue: 16 },
+    });
+
+    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+    expect(res.headers['X-Errand-Version']).toBe('13');
+    expect(res.headers['X-Errand-Writes']).toBe('1');
+  });
+
+  it('only reads the unit manager investigation for it', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController();
+
+    await save(controller, documentService, 'utredning-hsl', { completed: 'yes' });
+
+    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+  });
+
+  it('still saves the investigation when the label cannot be written', async () => {
+    const { controller, documentService } = makeRiskController(new Error('upstream down'));
+
+    const { res } = await save(controller, documentService, 'utredning-enhetschef', {
+      completed: 'yes',
+      riskAssessmentHsl: { calculatedRiskValue: 9 },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['X-Errand-Version']).toBe('13');
+    expect(res.headers['X-Errand-Writes']).toBe('1');
+  });
+});

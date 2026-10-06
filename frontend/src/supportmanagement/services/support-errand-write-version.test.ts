@@ -111,6 +111,13 @@ test('only a sole child write can advance a partially loaded parent version', ()
   }
 });
 
+// Saving a completed investigation can also set the risk label: two writes, both the caller's own.
+test('a save that made two errand writes advances the parent by exactly two', () => {
+  assert.equal(isSoleSupportErrandVersionChange(3, 5, 2), true);
+  assert.equal(isSoleSupportErrandVersionChange(3, 4, 2), false);
+  assert.equal(isSoleSupportErrandVersionChange(3, 6, 2), false);
+});
+
 // A handover button can be pressed long after the page loaded: the store knows what every load saw, a
 // readback after the document's own writes knows what those left, and the later of the two is current.
 test('takes the later of the store version and the one read after own writes', () => {

@@ -528,7 +528,9 @@ export function SupportInvestigationDocument({
     onSaved(saved.document);
     setDocumentDirty(false);
     // A report retry can perform zero writes or several writes, so its readback proves no parent baseline.
-    return advanceVersion ? advanceParentVersion(knownVersion, saved.parentErrandVersion) : knownVersion;
+    return advanceVersion
+      ? advanceParentVersion(knownVersion, saved.parentErrandVersion, saved.ownErrandWrites)
+      : knownVersion;
   };
 
   const applySavedClassification = (

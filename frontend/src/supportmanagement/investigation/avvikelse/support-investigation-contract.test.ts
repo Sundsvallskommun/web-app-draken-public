@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { parseParentErrandVersion, parseSupportInvestigationDocument } from './support-investigation-contract';
+import {
+  parseOwnErrandWrites,
+  parseParentErrandVersion,
+  parseSupportInvestigationDocument,
+} from './support-investigation-contract';
 
 const document = { key: 'custom-document', schemaId: '2281_shared-schema_1.0', value: { answer: 42 }, version: 3 };
 
@@ -27,6 +31,13 @@ test('rejects non-JSON response values', () => {
     () => parseSupportInvestigationDocument({ ...document, value: { answer: Number.NaN } }, document.key, '"3"'),
     /svar är ogiltigt/u
   );
+});
+
+test('reads how many errand writes the save made, one when the BFF does not say', () => {
+  assert.equal(parseOwnErrandWrites('2'), 2);
+  for (const value of [undefined, '', '0', '-1', '1.5', 'två']) {
+    assert.equal(parseOwnErrandWrites(value), 1);
+  }
 });
 
 test('requires a canonical fresh parent-errand version', () => {

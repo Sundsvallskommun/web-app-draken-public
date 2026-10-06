@@ -82,14 +82,15 @@ export const supportErrandWriteErrorMessage = (error: unknown, fallback: string)
 
 /** A child write may advance a partially loaded parent only when it explains the entire change.
  * A later readback can include someone else's edit; its version must never authorize stale fields.
+ * `ownWrites` is how many errand writes the request itself made - one, unless the BFF says otherwise.
  */
-export const isSoleSupportErrandVersionChange = (expected: unknown, received: unknown): boolean =>
+export const isSoleSupportErrandVersionChange = (expected: unknown, received: unknown, ownWrites = 1): boolean =>
   typeof expected === 'number' &&
   Number.isSafeInteger(expected) &&
   expected >= 0 &&
   typeof received === 'number' &&
   Number.isSafeInteger(received) &&
-  received === expected + 1;
+  received === expected + ownWrites;
 
 /**
  * The latest version this client knows the errand has reached. Versions only grow, so the higher of the

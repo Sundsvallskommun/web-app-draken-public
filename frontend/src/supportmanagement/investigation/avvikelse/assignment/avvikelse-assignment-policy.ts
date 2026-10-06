@@ -27,7 +27,8 @@ export const assessesSuspectedMisconduct = (formData: InvestigationFormData | un
  * must not ask for a new LEX manager.
  *
  * The HSL risk value deliberately triggers nothing here. It is shown as a warning to the unit
- * manager, but there is no access label for MAS/MAR to write.
+ * manager, and a completed investigation marks the errand with the high HSL risk label - which the BFF
+ * sets when the document is saved, not this handover.
  */
 export const shouldPromptLexAssignment = ({ formData, labels, labelStructure }: LexAssignmentInput): boolean =>
   assessesSuspectedMisconduct(formData) && !hasErrandLabel(labels, labelStructure, ACCESS_LEX_LABEL_PATH);

@@ -14,6 +14,11 @@ export interface LoadedSupportInvestigationDocument {
 
 export interface SavedSupportInvestigationDocument extends LoadedSupportInvestigationDocument {
   parentErrandVersion: number;
+  /**
+   * How many of the errand's version steps the save itself took: the document, and the risk label the
+   * BFF sets on a completed investigation. Absent where only the document is written.
+   */
+  ownErrandWrites?: number;
 }
 
 const strongVersionETagPattern = /^"(0|[1-9]\d*)"$/u;
@@ -73,6 +78,12 @@ export function parseSupportInvestigationDocument(
     },
     etag: parsedETag.etag,
   };
+}
+
+/** The BFF's count of its own errand writes in one save; anything else is the one write it always was. */
+export function parseOwnErrandWrites(value: unknown): number {
+  const writes = typeof value === 'string' && /^[1-9]\d*$/u.test(value) ? Number(value) : Number.NaN;
+  return Number.isSafeInteger(writes) ? writes : 1;
 }
 
 export function parseParentErrandVersion(value: unknown): number {

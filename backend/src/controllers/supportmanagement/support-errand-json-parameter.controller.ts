@@ -5,6 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { resolveHighHslRisk } from '@/config/iaf-vof-high-hsl-risk';
 import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
@@ -19,11 +20,13 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { InvestigationRiskLabelService } from '@/services/investigation-risk-label.service';
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
-import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { isDocumentCompleted, SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { REPORT_DOCUMENT_REFUSALS, resolveReportDocumentEditability } from '@/services/support-report-document.service';
+import { logger } from '@/utils/logger';
 
 type SupportErrandJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
 
@@ -73,6 +76,7 @@ export class SupportErrandJsonParameterController {
   private readonly policyService: SupportInvestigationPolicyService;
   private readonly accessService: SupportInvestigationAccessService;
   private readonly apiService: Pick<ApiService, 'get'>;
+  private readonly riskLabelService: Pick<InvestigationRiskLabelService, 'applyHighHslRiskLabel'>;
 
   constructor(
     investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
@@ -80,12 +84,14 @@ export class SupportErrandJsonParameterController {
     policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
     accessService = new SupportInvestigationAccessService(),
     apiService: Pick<ApiService, 'get'> = new ApiService(),
+    riskLabelService: Pick<InvestigationRiskLabelService, 'applyHighHslRiskLabel'> = new InvestigationRiskLabelService(),
   ) {
     this.investigationProfile = investigationProfile;
     this.documentService = documentService;
     this.policyService = policyService;
     this.accessService = accessService;
     this.apiService = apiService;
+    this.riskLabelService = riskLabelService;
   }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
@@ -158,9 +164,46 @@ export class SupportErrandJsonParameterController {
       preconditions: { ifMatch, ifNoneMatch, parentErrandVersion },
     });
 
+    // The risk label is a second write on the errand. The client is told how many of the version steps are
+    // this request's own, so it can tell them from somebody else's.
+    const riskLabelVersion = await this.applyHighHslRiskLabel(req, definition, municipalityId, errandId, result);
     setETagHeader(response, result.etag, result.document.version);
-    response.setHeader('X-Errand-Version', String(result.parentErrandVersion));
+    response.setHeader('X-Errand-Version', String(riskLabelVersion ?? result.parentErrandVersion));
+    response.setHeader('X-Errand-Writes', riskLabelVersion === undefined ? '1' : '2');
     return response.status(result.status).send(result.document);
+  }
+
+  /**
+   * Sets or clears the high HSL risk label once the unit manager's investigation is saved as completed, and
+   * leaves it alone while the investigation is still being worked on. It is done if it can be: the
+   * investigation is saved either way, and a label that could not be written is logged rather than turned
+   * into a failed save. Answers the errand version after the label write, or `undefined` when none was made.
+   */
+  private async applyHighHslRiskLabel(
+    req: RequestWithUser,
+    definition: SupportInvestigationDocumentProfileDto,
+    municipalityId: string,
+    errandId: string,
+    written: { document: { schemaId: string; value: JsonObject }; parentErrandVersion: number },
+  ): Promise<number | undefined> {
+    const policy = this.policyService.iafVofClassificationPolicy;
+    if (!policy || definition.key !== policy.defaultOwnerDocumentKey) return undefined;
+    try {
+      const request = { definition, municipalityId, errandId, user: req.user };
+      const schema = await this.documentService.readBoundSchema(request, written.document.schemaId);
+      const present = resolveHighHslRisk(isDocumentCompleted(schema, written.document.value), written.document.value);
+      if (present === undefined) return undefined;
+      return await this.riskLabelService.applyHighHslRiskLabel({
+        municipalityId,
+        errandId,
+        user: req.user,
+        present,
+        expectedVersion: written.parentErrandVersion,
+      });
+    } catch (error) {
+      logger.warn(`Could not update the high HSL risk label on errand ${errandId}`, error);
+      return undefined;
+    }
   }
 
   private reportDocumentFor(key: string): SupportInvestigationReportDocumentDto | undefined {

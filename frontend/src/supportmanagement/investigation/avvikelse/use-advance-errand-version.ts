@@ -8,22 +8,23 @@ import { useFormContext } from 'react-hook-form';
 
 /**
  * Moves the errand's known version on after one of its documents was written, which moves the
- * errand's version upstream too. Only a move by exactly one is the caller's own write: anything more
- * means somebody else wrote as well, and the errand form has to find that out on its own save.
+ * errand's version upstream too. Only a move by exactly the caller's own writes - one, or two when the
+ * BFF also set the risk label - is the caller's: anything more means somebody else wrote as well, and
+ * the errand form has to find that out on its own save.
  * Answers the version the errand is now known at.
  */
 export function useAdvanceErrandVersion(errandId: string | undefined) {
   const { getValues, resetField } = useFormContext<SupportErrand>();
 
   return useCallback(
-    (expected: number | undefined, received: number): number | undefined => {
+    (expected: number | undefined, received: number, ownWrites = 1): number | undefined => {
       const current = useSupportStore.getState().supportErrand;
       if (
         current &&
         current.id === errandId &&
         current.version === expected &&
         getValues('version') === expected &&
-        isSoleSupportErrandVersionChange(expected, received)
+        isSoleSupportErrandVersionChange(expected, received, ownWrites)
       ) {
         useSupportStore.setState({ supportErrand: { ...current, version: received } });
         resetField('version', { defaultValue: received });
