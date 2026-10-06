@@ -294,7 +294,8 @@ describe('support-errand.service', () => {
         form: {
           reportTypes: ['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE'],
           location: true,
-          priority: true,
+          // The handler is not asked for a priority; every errand starts at Medel.
+          priority: false,
         },
       });
     });
