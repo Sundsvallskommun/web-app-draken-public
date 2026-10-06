@@ -34,6 +34,7 @@ import { SupportErrandJsonParameterController } from './controllers/supportmanag
 import { SupportErrandParameterController } from './controllers/supportmanagement/support-errand-parameter.controller';
 import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
+import { SupportFollowUpController } from './controllers/supportmanagement/support-follow-up.controller';
 import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
 import { SupportInvestigationAssignmentController } from './controllers/supportmanagement/support-investigation-assignment.controller';
@@ -87,6 +88,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportHistoryController,
   SupportInvestigationAssignmentController,
   SupportInvestigationProfileController,
+  SupportFollowUpController,
   SupportInvestigationReportController,
   SupportMeasureActionPlanController,
   SupportMessageController,

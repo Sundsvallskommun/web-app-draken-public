@@ -13,6 +13,8 @@ export default function SidebarLayout({
   setShowContractTable,
   showPlannedMeasures = false,
   setShowPlannedMeasures,
+  showFollowUp = false,
+  setShowFollowUp,
 }: {
   title: string;
   children: ReactNode;
@@ -22,6 +24,8 @@ export default function SidebarLayout({
   setShowContractTable: (show: boolean) => void;
   showPlannedMeasures?: boolean;
   setShowPlannedMeasures?: (show: boolean) => void;
+  showFollowUp?: boolean;
+  setShowFollowUp?: (show: boolean) => void;
 }) {
   const [hostName] = useState(() =>
     typeof globalThis.window === 'undefined' ? '' : globalThis.window.location.hostname
@@ -41,6 +45,8 @@ export default function SidebarLayout({
             setShowContractTable={setShowContractTable}
             showPlannedMeasures={showPlannedMeasures}
             setShowPlannedMeasures={setShowPlannedMeasures}
+            showFollowUp={showFollowUp}
+            setShowFollowUp={setShowFollowUp}
           />{' '}
           <div className={`w-full grow flex ${open ? 'pl-[32rem]' : 'pl-[5.6rem]'} transition-all`}>{children}</div>
         </div>

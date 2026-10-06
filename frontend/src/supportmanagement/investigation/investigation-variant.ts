@@ -88,6 +88,19 @@ interface InvestigationDecisionTabSlot {
 }
 
 /**
+ * A follow-up across errands - Verksamhetsuppföljning - offered in the overview's sidebar under its own
+ * heading, for a variant whose investigations are worth following up across units. A variant without
+ * one omits the slot, and the sidebar shows no such section.
+ */
+interface InvestigationFollowUpSlot {
+  /** The sidebar heading the entry sits under. */
+  readonly heading: string;
+  /** The sidebar entry, and the view's name. */
+  readonly label: string;
+  readonly render: () => ReactNode;
+}
+
+/**
  * One investigation implementation, named for what it does rather than for who uses it.
  *
  * A module declares the capability flag that enables it, so adding a drake that wants existing
@@ -132,6 +145,8 @@ export interface InvestigationVariantModule {
    * one unmet holds the phase change. A variant with none omits this.
    */
   readonly phaseEntryRequirements?: readonly InvestigationPhaseEntryRequirement[];
+  /** The follow-up across errands, for a variant that offers one. */
+  readonly followUp?: InvestigationFollowUpSlot;
 }
 
 /** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */

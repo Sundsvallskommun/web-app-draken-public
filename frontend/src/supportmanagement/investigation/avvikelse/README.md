@@ -391,6 +391,43 @@ namnger utredningen, så regeln gäller även anrop som inte går via knappen. D
 dokumentets bundna schema (`x-draken-completion`), inte ur ett antaget fältnamn. Med utredningen avstängd
 väntas inget in; går utredningens tillstånd inte att avgöra svarar BFF:en 503 i stället för att släppa förbi.
 
+### Verksamhetsuppföljning – Enheter
+
+Sidomenyn i översikten har rubriken Verksamhetsuppföljning med knappen **Enheter** (variantens `followUp`). Den
+byter ut ärendetabellen mot `follow-up/unit-follow-up.component.tsx`, med två flikar:
+
+- **Ärenden**: Enhet, Typ, Orsak, Registrerat, Riskvärde HSL och SOL/LSS, IVO-anmälan, Beslutat missförhållande
+  och antal åtgärder. Nyaste först; raden och pilen öppnar ärendet i ny flik.
+- **Åtgärder**: varje åtgärd på ärendena, med Åtgärdstyp, Rapporttyp, Tillagd av, Status, Påbörjad, Slutförd,
+  Ärende och Effekt. Raden fälls ut till beskrivning, mål och vad som hänt.
+
+BFF:en (`GET /supportfollowup/:municipalityId/units?from&to`, `SupportFollowUpService`) läser Support
+Managements ärendelista för ärenden registrerade i perioden, sidvandrar som Planerade åtgärder och svarar smalt:
+etiketterna, åtgärderna och utredningsvärdena ur dokumenten (`toUnitFollowUpErrand` i
+`config/iaf-vof-follow-up.ts`). Listan bär redan de JSON-parametrar och åtgärder användaren får läsa, så inget
+läses per ärende. Support Managements åtkomstkontroll avgör vilka ärenden som syns: enhetschefen ser sina enheter,
+och ett ärende hos LEX först när det lämnats tillbaka. Når perioden fler än 2 000 ärenden markeras svaret
+`truncated` och vyn säger att listan är ofullständig.
+
+| Kolumn / filter | Källa |
+| --- | --- |
+| Enhet | ärendets djupaste plats-etikett |
+| Typ, Lagrum, Avvikelsetyp, Underkategori | etiketterna `REPORT_TYPE`, `PROVISION`, `CATEGORY`, `TYPE` |
+| Orsak | `causeAreas` i enhetschefens och LEX-utredningen |
+| Riskvärde HSL / SOL/LSS | `calculatedRiskValue` i enhetschefens `riskAssessmentHsl` / `riskAssessmentSolLss` |
+| Polisanmälan | `requiresPoliceReport` i `utredning-sol-lss` |
+| IVO-anmälan | `ivoNotification` i `beslut-sol-lss`, annars `beslut-hsl` |
+| Beslutat missförhållande | `decidedMisconductDegree` i `beslut-sol-lss` |
+| Åtgärdens status | Genomförd med `executed`, annars Planerad (`TRUE`/`REWORK`), Avslagen eller Förslag |
+| Påbörjad / Slutförd / Effekt | `plannedStart` / `executed` / `result` (`COMPLETED` = Ja, `NOT_COMPLETED` = Nej) |
+
+Koderna översätts i klienten med titlarna i de senast publicerade schemana
+(`follow-up/unit-follow-up-vocabulary.ts`), så ett omdöpt orsaksområde heter sitt nya namn på alla ärenden.
+Riskvärdesfiltren erbjuder de värden utredningens `x-calculation` kan ge: produkterna av sannolikhet och
+allvarlighetsgrad (1, 2, 3, 4, 6, 8, 9, 12, 16). Tidsperioden (två datum, de senaste 12 månaderna från start)
+avgör vad BFF:en läser; övriga filter, sorteringen och översättningen görs i klienten (`unit-follow-up-rows.ts`,
+`unit-follow-up-filters.ts`, `unit-follow-up-sort.ts`). Vyn skriver aldrig.
+
 ### Fel plats: flytta ärendet utan att ändra det inrapporterade
 
 Katla skriver platsen två gånger. Rapportörens val ligger i den inkommande JSON-parametern

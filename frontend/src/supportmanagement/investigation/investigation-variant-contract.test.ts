@@ -72,6 +72,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.renderDetailsHeader, undefined);
   // A variant that requires nothing before a phase holds no phase change.
   assert.equal(minimalVariant.phaseEntryRequirements, undefined);
+  // A variant offering no follow-up across errands adds no section to the overview's sidebar.
+  assert.equal(minimalVariant.followUp, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
   assert.equal(minimalVariant.requiredPhaseName, undefined);
 });

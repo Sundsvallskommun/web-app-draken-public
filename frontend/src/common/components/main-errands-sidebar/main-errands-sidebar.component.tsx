@@ -14,7 +14,8 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { CalendarCheck, ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
+import { getInvestigationFollowUp } from '@supportmanagement/investigation/investigation-variant-registry';
+import { CalendarCheck, ChartNoAxesColumn, ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -28,6 +29,8 @@ export const MainErrandsSidebar: FC<{
   setShowContractTable: (show: boolean) => void;
   showPlannedMeasures?: boolean;
   setShowPlannedMeasures?: (show: boolean) => void;
+  showFollowUp?: boolean;
+  setShowFollowUp?: (show: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
 }> = ({
@@ -37,6 +40,8 @@ export const MainErrandsSidebar: FC<{
   setShowContractTable,
   showPlannedMeasures = false,
   setShowPlannedMeasures,
+  showFollowUp = false,
+  setShowFollowUp,
   open,
   setOpen,
 }) => {
@@ -47,6 +52,7 @@ export const MainErrandsSidebar: FC<{
   const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
+  const followUp = getInvestigationFollowUp();
 
   const MainTitle = (open: boolean) => (
     <NextLink
@@ -111,6 +117,8 @@ export const MainErrandsSidebar: FC<{
                 setShowAttestationTable={setShowAttestationTable}
                 showPlannedMeasures={showPlannedMeasures}
                 setShowPlannedMeasures={setShowPlannedMeasures}
+                showFollowUp={showFollowUp}
+                setShowFollowUp={setShowFollowUp}
                 iconButton={!open}
               />
             </FormProvider>
@@ -133,6 +141,7 @@ export const MainErrandsSidebar: FC<{
                 onClick={() => {
                   setShowAttestationTable(true);
                   setShowPlannedMeasures?.(false);
+                  setShowFollowUp?.(false);
                 }}
                 leftIcon={<SquarePen />}
                 className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
@@ -168,6 +177,7 @@ export const MainErrandsSidebar: FC<{
                 onClick={() => {
                   setShowPlannedMeasures(true);
                   setShowAttestationTable(false);
+                  setShowFollowUp?.(false);
                 }}
                 leftIcon={<CalendarCheck />}
                 className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
@@ -177,6 +187,33 @@ export const MainErrandsSidebar: FC<{
                 data-cy="planned-measures-button"
               >
                 {open && <span className="w-full flex justify-between">Planerade åtgärder</span>}
+              </Button>
+            </div>
+          </>
+        )}
+        {appConfig.isSupportManagement && followUp && setShowFollowUp && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              {open && (
+                <span className="text-small font-bold uppercase tracking-wide text-dark-secondary px-8">
+                  {followUp.heading}
+                </span>
+              )}
+              <Button
+                onClick={() => {
+                  setShowFollowUp(true);
+                  setShowAttestationTable(false);
+                  setShowPlannedMeasures?.(false);
+                }}
+                leftIcon={<ChartNoAxesColumn />}
+                className={`${open && 'justify-start'} ${!showFollowUp && 'hover:bg-dark-ghost'}`}
+                variant={showFollowUp ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={open ? undefined : followUp.label}
+                data-cy="follow-up-button"
+              >
+                {open && <span className="w-full flex justify-between">{followUp.label}</span>}
               </Button>
             </div>
           </>

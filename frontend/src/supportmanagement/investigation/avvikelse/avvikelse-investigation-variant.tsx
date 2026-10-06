@@ -66,6 +66,12 @@ const InvestigationCompletionRequirement = dynamic(
 );
 
 /** Lazy for the same bundle reason as the categorization control. */
+const UnitFollowUp = dynamic(
+  () => import('./follow-up/unit-follow-up.component').then((module) => module.UnitFollowUp),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
 const LexAssignmentRequirement = dynamic(
   () => import('./assignment/lex-assignment-requirement.component').then((module) => module.LexAssignmentRequirement),
   { loading: () => null }
@@ -144,4 +150,13 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
       render: (props: InvestigationPhaseEntryRequirementProps) => <InvestigationCompletionRequirement {...props} />,
     },
   ],
+  /**
+   * Verksamhetsuppföljning: the errands and measures of the units the user reaches, filtered on what the
+   * investigations and decisions say.
+   */
+  followUp: {
+    heading: 'Verksamhetsuppföljning',
+    label: 'Enheter',
+    render: () => <UnitFollowUp />,
+  },
 });

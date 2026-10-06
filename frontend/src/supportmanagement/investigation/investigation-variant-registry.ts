@@ -18,3 +18,10 @@ const VARIANTS: readonly InvestigationVariantModule[] = Object.freeze([
 
 export const getInvestigationVariant = (): InvestigationVariantModule | null =>
   resolveInvestigationVariant(appConfig.features, VARIANTS);
+
+/**
+ * The follow-up across errands the running variant offers, if any. The master switch turns it off with
+ * the rest of the investigation, as it does the tabs.
+ */
+export const getInvestigationFollowUp = (): InvestigationVariantModule['followUp'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.followUp : undefined;
