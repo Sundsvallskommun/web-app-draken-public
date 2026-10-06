@@ -58,6 +58,10 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { contactMeansCarriesAttachments } from '@supportmanagement/services/support-message-attachments';
+import {
+  defaultSupportContactMeans,
+  type SupportEserviceContactMeansOffer,
+} from '@supportmanagement/services/support-message-contact-means';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -195,15 +199,19 @@ export const SupportMessageForm: FC<{
     setIsAttachmentModalOpen(false);
   };
 
+  // Which e-service answers the form offers decides both the radio buttons and the one chosen from the start.
+  const channelName = (Channels as Record<string, string>)[supportErrand.channel!];
+  const eserviceOffer: SupportEserviceContactMeansOffer = {
+    internalWebmessage: channelName === Channels.ESERVICE_INTERNAL,
+    externalWebmessage: channelName === Channels.ESERVICE && isLOP(),
+    katla: channelName === Channels.ESERVICE,
+  };
+
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
       id: supportErrand.id,
       messageContact: true,
-      contactMeans:
-        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE ||
-        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL
-          ? 'webmessage'
-          : ('email' as MessageContactMeans),
+      contactMeans: defaultSupportContactMeans(eserviceOffer),
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -505,7 +513,7 @@ export const SupportMessageForm: FC<{
                 SMS
               </RadioButton>
             )}
-            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL ? (
+            {eserviceOffer.internalWebmessage ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
@@ -518,7 +526,7 @@ export const SupportMessageForm: FC<{
               </RadioButton>
             ) : null}
             {/* Only show webmessage option if errand is from e-service and LOP */}
-            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && isLOP() ? (
+            {eserviceOffer.externalWebmessage ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
@@ -544,7 +552,7 @@ export const SupportMessageForm: FC<{
             )}
             {/* Katla answers on the errand's own internal conversation, the one no errand relation
                 points at, so it needs neither a linked errand nor the relations feature. */}
-            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && (
+            {eserviceOffer.katla && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useKatla-radiobutton-true"

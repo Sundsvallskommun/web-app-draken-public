@@ -112,6 +112,8 @@ test.describe('Katla conversation', () => {
     await openNewMessage(page);
 
     await expect(page.locator('[data-cy="useKatla-radiobutton-true"]')).toBeVisible();
+    // An e-service errand is answered through Katla unless the handler picks another way.
+    await expect(page.locator('[data-cy="useKatla-radiobutton-true"]')).toBeChecked();
     await page.locator('[data-cy="useKatla-radiobutton-true"]').check({ force: true });
     // The linked-errand picker belongs to the Draken thread and must not block Katla.
     await expect(page.getByText('Koppla ett ärende för att kunna skicka meddelande')).toBeHidden();
