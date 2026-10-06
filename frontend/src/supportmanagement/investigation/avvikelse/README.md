@@ -420,7 +420,7 @@ byter ut ärendetabellen mot `follow-up/unit-follow-up.component.tsx`, med två 
 - **Ärenden**: Enhet, Typ, Orsak, Registrerat, Riskvärde HSL och SOL/LSS, IVO-anmälan, Beslutat missförhållande
   och antal åtgärder. Nyaste först; raden och pilen öppnar ärendet i ny flik.
 - **Åtgärder**: varje åtgärd på ärendena, med Åtgärdstyp, Rapporttyp, Tillagd av, Status, Påbörjad, Slutförd,
-  Ärende och Effekt. Raden fälls ut till beskrivning, mål och vad som hänt.
+  Ärende och Effekt. Raden fälls ut till beskrivning, mål och åtgärdens effekt.
 
 BFF:en (`GET /supportfollowup/:municipalityId/units?from&to`, `SupportFollowUpService`) läser Support
 Managements ärendelista för ärenden registrerade i perioden, sidvandrar som Planerade åtgärder och svarar smalt:

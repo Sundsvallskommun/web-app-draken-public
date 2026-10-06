@@ -177,10 +177,10 @@ Ingen registrering, redigering eller bedömning erbjuds i denna vy.
 
 Skaparen kan, med vanlig skrivrätt till ett öppet ärende, kryssa i **Utförd**.
 En separat dialog kräver ett aktivt Ja/Nej-val på **Har åtgärd lett till önskad
-effekt?** och text i **Vad har hänt?** (högst 4000 tecken). Avbryt sparar inget.
+effekt?** och text i **Beskriv åtgärdens effekt** (högst 4000 tecken). Avbryt sparar inget.
 Svaren och genomförandet sparas i samma skrivning. Kortet behåller
 åtgärdens original, planering och beslut och visar sedan Utförd, önskad effekt
-och vad som hänt. En sparad uppföljning kan inte ändras i detta flöde. Planerade
+och åtgärdens effekt. En sparad uppföljning kan inte ändras i detta flöde. Planerade
 åtgärder som redan har ett genomförandedatum men saknar svar kan följas upp;
 datumet bevaras.
 

@@ -128,7 +128,7 @@ export function MeasureList({
                     <strong>Önskad effekt uppnådd:</strong> {followUp.desiredEffectAchieved ? 'Ja' : 'Nej'}
                   </p>
                   <p className="whitespace-pre-wrap break-words">
-                    <strong>Vad har hänt:</strong> {followUp.followUpDescription}
+                    <strong>Åtgärdens effekt:</strong> {followUp.followUpDescription}
                   </p>
                 </div>
               )}

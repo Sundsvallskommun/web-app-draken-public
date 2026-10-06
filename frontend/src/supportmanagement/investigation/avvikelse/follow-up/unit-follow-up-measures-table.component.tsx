@@ -77,7 +77,7 @@ const MeasureDetails: FC<{ row: FollowUpMeasureRow }> = ({ row }) => (
       <dd className="m-0 whitespace-pre-line">{row.goal || EMPTY}</dd>
     </div>
     <div>
-      <dt className="font-bold">Vad har hänt?</dt>
+      <dt className="font-bold">Åtgärdens effekt</dt>
       <dd className="m-0 whitespace-pre-line">{row.resultText || EMPTY}</dd>
     </div>
   </dl>

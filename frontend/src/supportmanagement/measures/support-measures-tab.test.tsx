@@ -138,7 +138,7 @@ test.each(['Ja', 'Nej'])(
     fireEvent.click(within(dialog).getByRole('radio', { name: answer }));
     fireEvent.click(save);
     expect(mocks.followUp).not.toHaveBeenCalled();
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Vad har hänt? (Obligatoriskt)' }), {
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Beskriv åtgärdens effekt (Obligatoriskt)' }), {
       target: { value: '  Personalen har fått utbildning.  ' },
     });
     const result = { desiredEffectAchieved: answer === 'Ja', followUpDescription: 'Personalen har fått utbildning.' };
@@ -159,7 +159,7 @@ test.each(['Ja', 'Nej'])(
     expect(mocks.update).not.toHaveBeenCalled();
     expect(mocks.dirty).toHaveBeenLastCalledWith(false);
     expect(await screen.findByText('Utförd')).toBeTruthy();
-    expect(screen.getByText('Vad har hänt:')).toBeTruthy();
+    expect(screen.getByText('Åtgärdens effekt:')).toBeTruthy();
     expect(screen.queryByRole('checkbox')).toBeNull();
   }
 );

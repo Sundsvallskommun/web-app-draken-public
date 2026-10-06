@@ -155,7 +155,7 @@ export function AvvikelseMeasureFollowUpDialog({
               </RadioButton.Group>
             </FormControl>
             <FormControl id={`${id}-description`} className="w-full">
-              <FormLabel>Vad har hänt? (Obligatoriskt)</FormLabel>
+              <FormLabel>Beskriv åtgärdens effekt (Obligatoriskt)</FormLabel>
               <Textarea
                 id={`${id}-description`}
                 value={description}
