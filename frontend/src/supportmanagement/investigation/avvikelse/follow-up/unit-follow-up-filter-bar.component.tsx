@@ -13,7 +13,7 @@ import {
   hasActiveFollowUpFilters,
   type UnitFollowUpFilters,
 } from './unit-follow-up-filters';
-import { FOLLOW_UP_EFFECTS, FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_YES_NO } from './unit-follow-up-rows';
+import { FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_YES_NO } from './unit-follow-up-rows';
 import type { UnitFollowUpPeriod } from './unit-follow-up-service';
 import type { UnitFollowUpVocabulary } from './unit-follow-up-vocabulary';
 
@@ -151,7 +151,7 @@ export const UnitFollowUpFilterBar: FC<UnitFollowUpFilterBarProps> = ({
           />
           <FollowUpMultiSelectFilter
             label="Effekt"
-            options={FOLLOW_UP_EFFECTS}
+            options={FOLLOW_UP_YES_NO}
             selected={filters.effects}
             onChange={set('effects')}
             data-cy="follow-up-filter-effect"

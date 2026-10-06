@@ -17,7 +17,7 @@ export interface FollowUpOption {
 }
 
 /** The label classifications the follow-up filters on, as the avvikelse label tree names them. */
-export const FOLLOW_UP_LABEL_CLASSIFICATIONS = Object.freeze({
+const FOLLOW_UP_LABEL_CLASSIFICATIONS = Object.freeze({
   reportType: 'REPORT_TYPE',
   legalBase: 'PROVISION',
   category: 'CATEGORY',
@@ -52,12 +52,11 @@ export const FOLLOW_UP_MEASURE_STATUSES: readonly FollowUpOption[] = Object.free
   { value: 'rejected', label: 'Avslagen' },
 ]);
 
-export const FOLLOW_UP_EFFECTS: readonly FollowUpOption[] = Object.freeze([
+/** Ja or Nej - for IVO, police report and a measure's effect alike. */
+export const FOLLOW_UP_YES_NO: readonly FollowUpOption[] = Object.freeze([
   { value: 'yes', label: 'Ja' },
   { value: 'no', label: 'Nej' },
 ]);
-
-export const FOLLOW_UP_YES_NO: readonly FollowUpOption[] = FOLLOW_UP_EFFECTS;
 
 export interface FollowUpMeasureRow {
   readonly key: string;
@@ -101,7 +100,7 @@ const unitOf = (labels: readonly UnitFollowUpLabel[], labelStructure: readonly L
   labels.filter((label) => label.classification?.toUpperCase() === 'LOCATION').at(-1)?.displayName ??
   '';
 
-export const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowContext): FollowUpErrandRow => ({
+const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowContext): FollowUpErrandRow => ({
   id: errand.id,
   errandNumber: errand.errandNumber,
   unit: unitOf(errand.labels, context.labelStructure),
@@ -140,7 +139,7 @@ const measureEffect = (result: string | null | undefined): FollowUpOption | unde
   return undefined;
 };
 
-export const toFollowUpMeasureRows = (
+const toFollowUpMeasureRows = (
   errand: UnitFollowUpErrand,
   errandRow: FollowUpErrandRow,
   context: FollowUpRowContext

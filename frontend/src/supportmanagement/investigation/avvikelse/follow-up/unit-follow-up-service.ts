@@ -14,7 +14,7 @@ export interface UnitFollowUpLabel {
 }
 
 /** The investigation and decision facts the BFF read from the documents the user may read. */
-export interface UnitFollowUpInvestigation {
+interface UnitFollowUpInvestigation {
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
   readonly causeAreas: string[];

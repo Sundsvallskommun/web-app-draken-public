@@ -12,7 +12,7 @@ const FOLLOW_UP_SOURCES = Object.freeze({
   lexDecision: 'beslut-sol-lss',
 });
 
-export interface UnitFollowUpInvestigation {
+interface UnitFollowUpInvestigation {
   /** The risk values the unit manager's investigation calculated, per legal base group. */
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
@@ -27,7 +27,7 @@ export interface UnitFollowUpInvestigation {
 }
 
 /** A measure as the follow-up lists it: what was planned, by whom, and whether it had the effect sought. */
-export type UnitFollowUpMeasure = Pick<
+type UnitFollowUpMeasure = Pick<
   Measure,
   'id' | 'type' | 'addedByUser' | 'accept' | 'plannedStart' | 'plannedComplete' | 'executed' | 'result' | 'resultText' | 'description' | 'goal'
 >;
