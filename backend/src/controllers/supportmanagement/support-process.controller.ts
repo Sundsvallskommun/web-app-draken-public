@@ -5,7 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Errand, PageProcessActivity, ProcessSignalRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import { ErrandProcesses, PageProcessActivity, ProcessSignalRequest } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -33,6 +33,27 @@ export class SupportProcessController {
   private readonly apiService = new ApiService();
   private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private readonly SERVICE = apiServiceName('supportmanagement');
+
+  private processesUrl(municipalityId: string, errandId: string): string {
+    return `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/processes`;
+  }
+
+  @Get('/supportprocess/:municipalityId/:id')
+  @OpenAPI({ summary: 'Get the processes of an errand, and whether one may be started' })
+  @UseBefore(authMiddleware)
+  async fetchProcessState(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: Response<ErrandProcesses | string, any>,
+  ): Promise<Response<ErrandProcesses | string, any>> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const res = await this.apiService.get<ErrandProcesses>({ url: this.processesUrl(municipalityId, id), propagateClientError: true }, req.user);
+    return response.status(200).send(res.data ?? {});
+  }
 
   @Get('/supportprocess/:municipalityId/:id/activities')
   @OpenAPI({ summary: 'Get the process activity log for an errand' })
@@ -65,19 +86,16 @@ export class SupportProcessController {
       return response.status(400).send('Invalid municipality id');
     }
 
-    const errandUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
-    const errand = await this.apiService.get<Errand>({ url: errandUrl, propagateClientError: true }, req.user);
-    const process = errand.data?.process;
-    if (!process?.processInstanceId) {
+    const processesUrl = this.processesUrl(municipalityId, id);
+    const processes = await this.apiService.get<ErrandProcesses>({ url: processesUrl, propagateClientError: true }, req.user);
+    const processInstanceId = processes.data?.processes?.[0]?.processInstanceId;
+    if (!processInstanceId) {
       throw new HttpException(404, 'The errand has no process to step');
-    }
-    if (!(process.awaitingSignals ?? []).some(awaited => awaited.name === data.signal)) {
-      throw new HttpException(409, 'The process is not waiting for that signal');
     }
 
     await this.apiService.post<void, ProcessSignalRequest>(
       {
-        url: `${errandUrl}/processes/${process.processInstanceId}/signals`,
+        url: `${processesUrl}/${processInstanceId}/signals`,
         data: { signal: data.signal },
         propagateClientError: true,
       },

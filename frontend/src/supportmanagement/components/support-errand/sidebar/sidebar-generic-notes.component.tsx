@@ -17,9 +17,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useBadgeStore, useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
-import { ExternalIdType, getSupportErrandById } from '@supportmanagement/services/support-errand-service';
+import { ExternalIdType } from '@supportmanagement/services/support-errand-service';
 import {
   deleteSupportNote,
   getSupportNotes,
@@ -47,7 +47,7 @@ export const SidebarGenericNotes: FC<{
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setNotesCount = useBadgeStore((s) => s.setNotesCount);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
@@ -59,6 +59,12 @@ export const SidebarGenericNotes: FC<{
   const toastMessage = useSnackbar();
   const pageSize = 8;
   const [allowed, setAllowed] = useState(false);
+
+  const readNotes = () =>
+    getSupportNotes(supportErrand!.id!, municipalityId).then((res) => {
+      setNotes(res.notes);
+      setNotesCount(res.notes.length);
+    });
   // useEffect(() => {
   //   const _a = validateAction(errand, user);
   //   setAllowed(_a);
@@ -93,7 +99,7 @@ export const SidebarGenericNotes: FC<{
           })
         );
         setIsLoading(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        void readNotes();
         setValue('text', '');
       })
       .catch((e) => {
@@ -114,12 +120,12 @@ export const SidebarGenericNotes: FC<{
   };
 
   useEffect(() => {
-    getSupportNotes(supportErrand!.id!, municipalityId).then((res) => setNotes(res.notes));
+    void readNotes();
     if (selectedNote) {
       setSelectedNote(notes.map(makeGeneric).find((n) => n.id === selectedNote.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand]);
+  }, [supportErrand?.id, municipalityId]);
 
   const text = watch().text;
 
@@ -139,7 +145,7 @@ export const SidebarGenericNotes: FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        void readNotes();
         setValue('text', '');
         setValue('id', '');
         setEditNote(false);
@@ -165,7 +171,7 @@ export const SidebarGenericNotes: FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        void readNotes();
         setValue('text', '');
       })
       .catch((e) => {

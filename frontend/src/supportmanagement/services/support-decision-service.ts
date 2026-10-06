@@ -1,14 +1,52 @@
-import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Decision, DecisionOutcome, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
 export interface SupportDecisionInput {
   outcome: string;
+  type: string;
+  title?: string;
   decidedByRole?: string;
   legalBasis?: string;
   delegationReference?: string;
   justification?: string;
+  validFrom?: string;
+  validTo?: string;
   terms?: string[];
 }
+
+const PERMIT_TYPE_ATTRIBUTE = 'permitType';
+
+const PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT: Record<string, string> = {
+  'alcohol-serving': 'SERVERINGSTILLSTAND',
+  'alcohol-serving-change': 'SERVERINGSTILLSTAND',
+  'alcohol-serving-addition': 'SERVERINGSTILLSTAND',
+  'low-alcohol-beer-serving': 'FOLKOLSANMALAN',
+  'low-alcohol-beer-sales': 'FOLKOLSANMALAN',
+  'low-alcohol-beer-sales-and-serving': 'FOLKOLSANMALAN',
+  'catering-occasion': 'CATERINGTILLFALLE',
+  'tobacco-sales': 'TOBAKSFORSALJNING',
+  'tobacco-sales-change': 'TOBAKSFORSALJNING',
+  'tobacco-sales-closure': 'TOBAKSFORSALJNING',
+  'e-cigarette-sales': 'ECIGARETTFORSALJNING',
+  supervision: 'TILLSYN',
+};
+
+const PERMIT_TYPE_OF_AN_UNKNOWN_PROCESS = 'PERMIT';
+
+export const supportDecisionPermitType = (label: Label | undefined, processKey: string | undefined): string => {
+  const configured = label?.attributes?.find((attribute) => attribute.key === PERMIT_TYPE_ATTRIBUTE)?.value;
+  if (configured) return configured;
+
+  return (
+    (processKey ? PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT[processKey] : undefined) ??
+    PERMIT_TYPE_OF_AN_UNKNOWN_PROCESS
+  );
+};
+
+export const supportDecisionWithoutBlanks = (decision: SupportDecisionInput): SupportDecisionInput =>
+  Object.fromEntries(
+    Object.entries(decision).filter(([, value]) => !(typeof value === 'string' && value.trim() === ''))
+  ) as SupportDecisionInput;
 
 /**
  * The levels of authority the delegation order gives. Support Management keeps `decidedByRole` as
@@ -38,6 +76,10 @@ export const outcomeForTerms = (outcome: string, terms: string[], outcomes: Deci
   const withConditions = `${plain}${WITH_CONDITIONS}`;
   return outcomes.some((candidate) => candidate.name === withConditions) ? withConditions : plain;
 };
+
+/** Support Management answers 409 when a decision may no longer be changed, and locks it itself. */
+export const isSupportDecisionLockedError = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === 409;
 
 export const getSupportDecisions = (errandId: string, municipalityId: string): Promise<Decision[]> =>
   apiService
