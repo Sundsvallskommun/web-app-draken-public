@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
+import { AssessPbiDto, MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
 
 import { mockReq, mockRes } from './helpers/http';
 import {
@@ -252,6 +252,91 @@ describe('unmarkPbi', () => {
     await expect(controller.unmarkPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockCitizenPartyId, mockRes())).rejects.toMatchObject({
       status: 404,
     });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('AssessPbiDto', () => {
+  it('takes one of the three verdicts a handler may set, and a comment is optional', async () => {
+    const approved = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED' }));
+    const commented = await validate(plainToInstance(AssessPbiDto, { assessment: 'DEFICIENCY', comment: 'Skuld.' }));
+
+    expect(approved).toHaveLength(0);
+    expect(commented).toHaveLength(0);
+  });
+
+  it('refuses a comment longer than a parameter value can hold', async () => {
+    const atTheLimit = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED', comment: 'x'.repeat(3000) }));
+    const overIt = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED', comment: 'x'.repeat(3001) }));
+
+    expect(atTheLimit).toHaveLength(0);
+    expect(overIt).toHaveLength(1);
+  });
+
+  it('refuses a verdict the investigation section does not know', async () => {
+    const errors = await validate(plainToInstance(AssessPbiDto, { assessment: 'NOT_APPLICABLE' }));
+
+    expect(errors).toHaveLength(1);
+  });
+});
+
+describe('assessPbi', () => {
+  it('writes the verdict beside the marking, leaving the marking in place', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.assessPbi(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      mockSecondaryCitizenPartyId,
+      { assessment: 'DEFICIENCY', comment: 'Skuld hos Kronofogden.' },
+      mockRes(),
+    );
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.find(
+      (stakeholder: { externalId?: string }) => stakeholder.externalId === mockSecondaryCitizenPartyId,
+    );
+    expect(written.parameters).toEqual([
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_ASSESSMENT', values: ['DEFICIENCY'] },
+      { key: 'PBI_ASSESSMENT_COMMENT', values: ['Skuld hos Kronofogden.'] },
+    ]);
+  });
+
+  it('leaves out an empty comment rather than storing a blank one', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.assessPbi(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      mockSecondaryCitizenPartyId,
+      { assessment: 'APPROVED', comment: '   ' },
+      mockRes(),
+    );
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.find(
+      (stakeholder: { externalId?: string }) => stakeholder.externalId === mockSecondaryCitizenPartyId,
+    );
+    expect(written.parameters.map((parameter: { key: string }) => parameter.key)).toEqual(['PBI', 'PBI_ASSESSMENT']);
+  });
+
+  it('refuses to assess someone who is not marked on the errand', async () => {
+    const { controller, api } = makeController([applicantCompany]);
+
+    await expect(
+      controller.assessPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { assessment: 'APPROVED' }, mockRes()),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a municipality other than its own', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+    const res = mockRes();
+
+    await controller.assessPbi(mockReq(), mockSupportErrandId, '1984', mockSecondaryCitizenPartyId, { assessment: 'APPROVED' }, res);
+
+    expect(res.statusCode).toBe(400);
     expect(api.patch).not.toHaveBeenCalled();
   });
 });

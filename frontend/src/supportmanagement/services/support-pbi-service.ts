@@ -5,6 +5,8 @@ export interface SupportPbiCandidate extends LegalEntityEngagement {
   partyId?: string;
   marked?: boolean;
   unresolved?: boolean;
+  assessment?: string;
+  assessmentComment?: string;
 }
 
 // The marking is a stakeholder parameter, since a stakeholder can only have one role in SupportManagement.

@@ -1,5 +1,5 @@
-import { IsUUID } from 'class-validator';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
@@ -24,15 +24,33 @@ const pbiParameter: Parameter = { key: PBI_PARAMETER, values: ['true'] };
 
 const PERSON_IDENTITY_TYPES = new Set(['PERSONNUMMER', 'SAMORDNINGSNUMMER']);
 
+const PBI_ASSESSMENT_PARAMETER = 'PBI_ASSESSMENT';
+const PBI_ASSESSMENT_COMMENT_PARAMETER = 'PBI_ASSESSMENT_COMMENT';
+const PBI_ASSESSMENTS = ['PENDING', 'APPROVED', 'DEFICIENCY'];
+
+const SUPPORT_PARAMETER_VALUE_MAX_LENGTH = 3000;
+
 export class MarkPbiDto {
   @IsUUID()
   partyId!: string;
+}
+
+export class AssessPbiDto {
+  @IsIn(PBI_ASSESSMENTS)
+  assessment!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(SUPPORT_PARAMETER_VALUE_MAX_LENGTH)
+  comment?: string;
 }
 
 interface PbiCandidate extends OrganizationEngagement {
   partyId?: string;
   marked: boolean;
   unresolved: boolean;
+  assessment?: string;
+  assessmentComment?: string;
 }
 
 const isPersonIdentity = (engagement: OrganizationEngagement): boolean => {
@@ -48,8 +66,26 @@ const hasPbiParameter = (stakeholder: Stakeholder): boolean =>
 
 const isPbi = (partyId: string) => (stakeholder: Stakeholder) => stakeholder.externalId === partyId && hasPbiParameter(stakeholder);
 
+const PBI_PARAMETERS = [PBI_PARAMETER, PBI_ASSESSMENT_PARAMETER, PBI_ASSESSMENT_COMMENT_PARAMETER];
+
 const withoutPbiParameter = (stakeholder: Stakeholder): Parameter[] =>
-  (stakeholder.parameters ?? []).filter(parameter => parameter.key !== PBI_PARAMETER);
+  (stakeholder.parameters ?? []).filter(parameter => !PBI_PARAMETERS.includes(parameter.key ?? ''));
+
+const valueOfParameter = (stakeholder: Stakeholder | undefined, key: string): string | undefined =>
+  stakeholder?.parameters?.find(parameter => parameter.key === key)?.values?.[0] || undefined;
+
+const assessmentsByPartyId = (errand: Errand): Map<string, Pick<PbiCandidate, 'assessment' | 'assessmentComment'>> =>
+  new Map(
+    (errand.stakeholders ?? [])
+      .filter(stakeholder => hasPbiParameter(stakeholder) && stakeholder.externalId)
+      .map(stakeholder => [
+        stakeholder.externalId as string,
+        {
+          assessment: valueOfParameter(stakeholder, PBI_ASSESSMENT_PARAMETER),
+          assessmentComment: valueOfParameter(stakeholder, PBI_ASSESSMENT_COMMENT_PARAMETER),
+        },
+      ]),
+  );
 const markedPartyIds = (errand: Errand): Set<string> =>
   new Set(
     (errand.stakeholders ?? [])
@@ -99,13 +135,21 @@ export class SupportPbiController {
 
     const { engagements } = await this.organizationService.getOrganizationEngagements(municipalityId, company, user);
     const marked = markedPartyIds(errand);
+    const assessments = assessmentsByPartyId(errand);
     const people = (engagements ?? []).filter(isPersonIdentity).map(engagement => engagement.identity!.code!);
     const partyIds = await this.personPartyIds(municipalityId, people, user);
 
     return (engagements ?? []).map(engagement => {
       const person = isPersonIdentity(engagement);
       const partyId = person ? partyIds.get(engagement.identity!.code!) : undefined;
-      return { ...engagement, partyId, marked: !!partyId && marked.has(partyId), unresolved: person && !partyId };
+      const assessed = partyId ? assessments.get(partyId) : undefined;
+      return {
+        ...engagement,
+        partyId,
+        marked: !!partyId && marked.has(partyId),
+        unresolved: person && !partyId,
+        ...assessed,
+      };
     });
   }
 
@@ -216,6 +260,43 @@ export class SupportPbiController {
       municipalityId,
       errand,
       stakeholders.map(stakeholder => (isPbi(partyId)(stakeholder) ? { ...stakeholder, parameters: withoutPbiParameter(stakeholder) } : stakeholder)),
+      req.user,
+    );
+    return response.status(204).send();
+  }
+
+  @Patch('/supportpbi/:municipalityId/:id/:partyId/assessment')
+  @OpenAPI({ summary: 'Set the verdict on a person of significant influence' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(AssessPbiDto, 'body'))
+  async assessPbi(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('partyId') partyId: string,
+    @Body() data: AssessPbiDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+    const errand = await this.readErrand(municipalityId, id, req.user);
+    const stakeholders = errand.stakeholders ?? [];
+    if (!stakeholders.some(isPbi(partyId))) {
+      throw new HttpException(404, 'No person of significant influence with that party id on the errand');
+    }
+
+    const written: Parameter[] = [
+      pbiParameter,
+      { key: PBI_ASSESSMENT_PARAMETER, values: [data.assessment] },
+      ...(data.comment?.trim() ? [{ key: PBI_ASSESSMENT_COMMENT_PARAMETER, values: [data.comment.trim()] }] : []),
+    ];
+
+    await this.writeStakeholders(
+      municipalityId,
+      errand,
+      stakeholders.map(stakeholder =>
+        isPbi(partyId)(stakeholder) ? { ...stakeholder, parameters: [...withoutPbiParameter(stakeholder), ...written] } : stakeholder,
+      ),
       req.user,
     );
     return response.status(204).send();
