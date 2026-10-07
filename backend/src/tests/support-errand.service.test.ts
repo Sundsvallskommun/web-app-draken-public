@@ -213,6 +213,17 @@ describe('support-errand.service', () => {
       expect(buildErrandFilter({ stakeholders: mockAdUsername })).toBe(
         `&filter=(assignedUserId:'${mockAdUsername}' or (assignedUserId is null and reporterUserId:'${mockAdUsername}' ))`,
       );
+      // No handler parameters is no change at all.
+      expect(buildErrandFilter({ stakeholders: mockAdUsername, stakeholderParameterKeys: [] })).toBe(
+        buildErrandFilter({ stakeholders: mockAdUsername }),
+      );
+    });
+
+    it('also matches the errands a handler parameter names the stakeholder on, key and value in one parameter', () => {
+      expect(buildErrandFilter({ stakeholders: mockAdUsername, stakeholderParameterKeys: ['masMarHandler'] })).toBe(
+        `&filter=(assignedUserId:'${mockAdUsername}' or (assignedUserId is null and reporterUserId:'${mockAdUsername}' )` +
+          ` or exists(parameters.key:'masMarHandler' and parameters.values:'${mockAdUsername}'))`,
+      );
     });
 
     it('wraps a single-valued priority/category/type/status in an or group', () => {

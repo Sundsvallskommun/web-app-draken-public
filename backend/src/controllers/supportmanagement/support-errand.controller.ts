@@ -23,6 +23,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName, resolveSupportManagementErrandSearch } from '@/config/api-config';
+import { resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
@@ -73,6 +74,7 @@ import {
 } from '@/services/investigation-registration.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
+import { ownHandlerParameterKeys } from '@/services/own-errands-filter';
 import {
   assertRequestedErrandVersion,
   assertSupportErrandAdminAssignable,
@@ -560,6 +562,7 @@ export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
   private investigationPolicyService = new SupportInvestigationPolicyService();
+  private handlerRoles = resolveHandlerGroupRoles();
   private investigationAccessService = new SupportInvestigationAccessService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private accessMapperService = new AccessMapperService();
@@ -592,9 +595,23 @@ export class SupportErrandController {
     return '';
   }
 
-  /** The overview's criteria, with the party id its query names, if any, resolved. */
-  private async withQueryPartyId(req: RequestWithUser, criteria: ErrandFilterInput): Promise<ErrandFilterInput> {
-    return { ...criteria, partyId: await this.resolveQueryPartyId(req, criteria.query) };
+  /**
+   * The overview's criteria as the listing asks them: the party id its query names, if any, resolved, and Mina
+   * ärenden widened to the handler parameters that name the user - MAS/MAR's own errands. The list and its counts
+   * both come through here, so they always agree.
+   */
+  private async resolveOverviewCriteria(req: RequestWithUser, criteria: ErrandFilterInput): Promise<ErrandFilterInput> {
+    const stakeholderParameterKeys = ownHandlerParameterKeys(
+      criteria.stakeholders,
+      req.user,
+      this.investigationPolicyService.handlerParameters,
+      this.handlerRoles,
+    );
+    return {
+      ...criteria,
+      partyId: await this.resolveQueryPartyId(req, criteria.query),
+      ...(stakeholderParameterKeys ? { stakeholderParameterKeys } : {}),
+    };
   }
 
   /**
@@ -749,7 +766,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const criteria = await this.withQueryPartyId(req, {
+    const criteria = await this.resolveOverviewCriteria(req, {
       query,
       stakeholders,
       priority,
@@ -798,7 +815,7 @@ export class SupportErrandController {
     }
 
     const groups = parseStatusGroups(statusGroups);
-    const criteria = await this.withQueryPartyId(req, {
+    const criteria = await this.resolveOverviewCriteria(req, {
       query,
       stakeholders,
       priority,

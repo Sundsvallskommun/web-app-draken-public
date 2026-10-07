@@ -375,6 +375,14 @@ version, och **inte** i `assignedUserId`: ärendet ligger kvar hos sin handlägg
 svarar för HSL-delen. AccessMapper behöver ge MAS/MAR skrivrätt i ärendet, och har den begränsningar per
 parameternyckel även till `masMarHandler`.
 
+**Mina ärenden** för en MAS/MAR-handläggare visar både ärendena som är tilldelade hen och ärendena där hen står
+som MAS/MAR. Profilen deklarerar parametern och rollen (`handlerParameters: [{ key: 'masMarHandler', roleKey:
+'mas-mar' }]`, bara för IAF/VOF), och BFF:en lägger till villkoret
+`exists(parameters.key:'masMarHandler' and parameters.values:'<konto>')` när kryssrutan avser den inloggade och
+hen har rollen (`ownHandlerParameterKeys`). Listan och räknarna i sidomenyn byggs av samma kriterier. Alla andra,
+och alla drakar utan `handlerParameters`, får exakt samma filter som förut. Fritextsökindexet kan inte matcha en
+parameter, så en sådan fråga ställs till filterendpointen även där indexet är påslaget.
+
 ### Överlämningsstegen
 
 Fyra namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv

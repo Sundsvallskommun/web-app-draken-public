@@ -85,6 +85,11 @@ export interface ErrandFilterInput {
   /** Party id already resolved from the query (org number or personal number), if any. */
   partyId?: string;
   stakeholders?: string;
+  /**
+   * Errand parameters that also make an errand the stakeholder's: it is theirs when one of them holds their
+   * account, as well as when it is assigned to them.
+   */
+  stakeholderParameterKeys?: readonly string[];
   priority?: string;
   category?: string;
   type?: string;
@@ -154,7 +159,11 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
   }
 
   if (stakeholders) {
-    filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
+    // Key and value in one exists(...), so both have to match the same parameter.
+    const parameterClauses = (input.stakeholderParameterKeys ?? [])
+      .map(key => ` or exists(parameters.key:'${key}' and parameters.values:'${stakeholders}')`)
+      .join('');
+    filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' )${parameterClauses})`);
   }
   if (priority) {
     filterList.push(orGroup('priority', priority));

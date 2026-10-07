@@ -122,6 +122,10 @@ export class SupportInvestigationPolicyService {
     return this.configuredProfile.labelFilter;
   }
 
+  get handlerParameters(): SupportInvestigationProfile['handlerParameters'] {
+    return this.configuredProfile.handlerParameters;
+  }
+
   /**
    * Copying investigation JSON parameters is only valid while the application
    * capability is active. Document authorization itself belongs to Support

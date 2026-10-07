@@ -10,15 +10,27 @@ import {
 import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from './api-config';
 import { DRAKEN_REGISTRATION_CHANNEL } from './support-errand-channels';
 
+/**
+ * An errand parameter that names a handler beside the assignee, and the handler role whose holders it names -
+ * MAS/MAR, recorded in `masMarHandler`. Mina ärenden for a holder of the role also lists the errands the
+ * parameter names them on.
+ */
+export interface SupportInvestigationHandlerParameter {
+  readonly key: string;
+  readonly roleKey: string;
+}
+
 export interface SupportInvestigationProfile extends SupportInvestigationProfileDto {
   readonly requiredSupportManagementApiTarget?: SupportManagementApiTarget;
   readonly labelFilter?: SupportManagementLabelFilterProfileDto;
+  readonly handlerParameters?: readonly SupportInvestigationHandlerParameter[];
 }
 
 export type SupportInvestigationProfileInput = SupportInvestigationProfileDto &
   Readonly<{
     requiredSupportManagementApiTarget?: SupportManagementApiTarget;
     labelFilter?: SupportManagementLabelFilterProfileDto;
+    handlerParameters?: readonly SupportInvestigationHandlerParameter[];
   }>;
 
 const requireNonEmptyProfileField = (value: string, field: string): string => {
@@ -102,6 +114,7 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
   const frozenDocuments = Object.freeze(documents);
   const labelFilter = profile.labelFilter ? createSupportManagementLabelFilterProfile(profile.labelFilter) : undefined;
   const reportDocument = profile.reportDocument ? createReportDocument(profile.reportDocument, documentKeys) : undefined;
+  const handlerParameters = profile.handlerParameters?.length ? createHandlerParameters(profile.handlerParameters) : undefined;
 
   return Object.freeze({
     application,
@@ -109,8 +122,25 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
     ...(requiredSupportManagementApiTarget ? { requiredSupportManagementApiTarget } : {}),
     ...(labelFilter ? { labelFilter } : {}),
     ...(reportDocument ? { reportDocument } : {}),
+    ...(handlerParameters ? { handlerParameters } : {}),
   });
 };
+
+// A handler parameter's key is written into Support Management's filter expression, so it is held to a plain
+// identifier rather than escaped there.
+const HANDLER_PARAMETER_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/u;
+
+const createHandlerParameters = (
+  handlerParameters: readonly SupportInvestigationHandlerParameter[],
+): readonly SupportInvestigationHandlerParameter[] =>
+  Object.freeze(
+    handlerParameters.map(({ key, roleKey }, index) => {
+      if (!HANDLER_PARAMETER_KEY_PATTERN.test(key)) {
+        throw new Error(`Support investigation profile field handlerParameters[${index}].key must be a plain identifier`);
+      }
+      return Object.freeze({ key, roleKey: requireProfileIdentifier(roleKey, `handlerParameters[${index}].roleKey`) });
+    }),
+  );
 
 /** The report is its own JSON parameter, so it may not share a key with an investigation document. */
 const createReportDocument = (
@@ -131,6 +161,9 @@ const createReportDocument = (
 
 const iafVofInvestigationProfileBase = {
   requiredSupportManagementApiTarget: 'sprint',
+  // MAS/MAR record themselves on an errand beside its assignee, in the parameter the MAS/MAR select writes, and
+  // find it under Mina ärenden.
+  handlerParameters: [{ key: 'masMarHandler', roleKey: 'mas-mar' }],
   // Katla's report of what happened and where. An errand registered in Draken has none until the unit
   // manager fills it in, which they may do until the errand reaches Utredning.
   reportDocument: {

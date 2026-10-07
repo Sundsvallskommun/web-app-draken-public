@@ -2515,3 +2515,59 @@ describe('updateSupportErrandClassification', () => {
     expect(api.get.mock.calls[2][0].propagateClientError).toBe(true);
   });
 });
+
+describe('Mina ärenden for a MAS/MAR handler', () => {
+  const masMarUser = () => mockUser({ groups: ['MOCK_MAS_MAR'] });
+  const ownClause = `(assignedUserId:'${mockAdUsername}' or (assignedUserId is null and reporterUserId:'${mockAdUsername}' ))`;
+  const masMarClause = `exists(parameters.key:'masMarHandler' and parameters.values:'${mockAdUsername}')`;
+
+  const makeMasMarController = () => {
+    const made = makeController();
+    (made.controller as unknown as { handlerRoles: unknown }).handlerRoles = [{ key: 'mas-mar', label: 'MAS/MAR', group: 'MOCK_MAS_MAR' }];
+    (made.investigationPolicy as Record<string, unknown>).handlerParameters = [{ key: 'masMarHandler', roleKey: 'mas-mar' }];
+    made.api.get.mockResolvedValue({ data: { content: [], count: 0 }, message: 'success' });
+    return made;
+  };
+  const firstUrl = (api: ApiStub): string => (api.get.mock.calls[0] as unknown as [{ url: string }])[0].url;
+
+  it('lists the errands they are recorded on as MAS/MAR beside the ones assigned to them', async () => {
+    const { controller, api } = makeMasMarController();
+
+    await controller.errands(mockReq(masMarUser()), ...errandsArgs({ stakeholders: mockAdUsername }), MUNICIPALITY_ID, mockRes());
+
+    expect(upstreamFilter(firstUrl(api))).toBe(`${ownClause.slice(0, -1)} or ${masMarClause})`);
+  });
+
+  it('counts them the same way', async () => {
+    const { controller, api } = makeMasMarController();
+
+    await controller.countErrandsByStatusGroups(
+      mockReq(masMarUser()),
+      ...statusGroupCountArgs([['NEW']], { stakeholders: mockAdUsername }),
+      MUNICIPALITY_ID,
+      mockRes(),
+    );
+
+    expect(upstreamFilter(firstUrl(api))).toContain(masMarClause);
+  });
+
+  it('asks the filter endpoint, which can match the parameter, where the search index is on', async () => {
+    const { controller, api } = makeMasMarController();
+    enableErrandSearch(controller);
+
+    await controller.errands(mockReq(masMarUser()), ...errandsArgs({ stakeholders: mockAdUsername }), MUNICIPALITY_ID, mockRes());
+
+    expect(firstUrl(api)).not.toContain('/errands/search');
+    expect(upstreamFilter(firstUrl(api))).toContain(masMarClause);
+  });
+
+  it('leaves Mina ärenden as it was for everybody else, and for a MAS/MAR handler picking another handler', async () => {
+    const withoutRole = makeMasMarController();
+    await withoutRole.controller.errands(mockReq(), ...errandsArgs({ stakeholders: mockAdUsername }), MUNICIPALITY_ID, mockRes());
+    expect(upstreamFilter(firstUrl(withoutRole.api))).toBe(ownClause);
+
+    const otherHandler = makeMasMarController();
+    await otherHandler.controller.errands(mockReq(masMarUser()), ...errandsArgs({ stakeholders: 'someone.else' }), MUNICIPALITY_ID, mockRes());
+    expect(upstreamFilter(firstUrl(otherHandler.api))).not.toContain('parameters.key');
+  });
+});

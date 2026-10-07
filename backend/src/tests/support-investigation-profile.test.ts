@@ -54,6 +54,8 @@ describe('support investigation profiles', () => {
         editableChannel: 'WEB_UI',
         lockedFromPhase: 'INVESTIGATION',
       },
+      // MAS/MAR's own errands under Mina ärenden include those they are recorded on.
+      handlerParameters: [{ key: 'masMarHandler', roleKey: 'mas-mar' }],
       labelFilter: {
         groups: [
           { key: 'provision', rootResourcePath: 'PROVISION' },
@@ -69,6 +71,14 @@ describe('support investigation profiles', () => {
     expect(IAF_SUPPORT_INVESTIGATION_PROFILE.labelFilter).not.toBe(VOF_SUPPORT_INVESTIGATION_PROFILE.labelFilter);
     expectDeepFrozen(IAF_SUPPORT_INVESTIGATION_PROFILE);
     expectDeepFrozen(VOF_SUPPORT_INVESTIGATION_PROFILE);
+  });
+
+  it('holds a handler parameter key to a plain identifier, since it is written into the errand filter', () => {
+    const profile = (key: string) => () =>
+      createSupportInvestigationProfile({ application: 'FUTURE', documents: [], handlerParameters: [{ key, roleKey: 'mas-mar' }] });
+    expect(profile('masMarHandler')().handlerParameters).toEqual([{ key: 'masMarHandler', roleKey: 'mas-mar' }]);
+    expect(profile("x' or 1=1")).toThrow(/handlerParameters\[0\]\.key/u);
+    expect(createSupportInvestigationProfile({ application: 'FUTURE', documents: [] })).not.toHaveProperty('handlerParameters');
   });
 
   it('resolves applications case-insensitively and fails closed for unknown applications', () => {

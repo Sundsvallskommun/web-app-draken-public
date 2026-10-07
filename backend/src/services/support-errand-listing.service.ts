@@ -203,6 +203,10 @@ export class SupportErrandListingService {
   /** The query for the index, or undefined when the filter endpoint has to answer instead. */
   private searchQueryFor(criteria: ErrandFilterInput, labels: LabelCriteria): string | undefined {
     if (!this.dependencies.errandSearch) return undefined;
+    if (criteria.stakeholderParameterKeys?.length) {
+      logger.info('Support Management errand search: the index cannot match a handler parameter, asking the filter endpoint');
+      return undefined;
+    }
 
     const idByPath = indexLabelIdsByPath(labels.labelStructure);
     const labelIdGroups = labels.leafPathGroups.map(paths => paths.map(path => idByPath.get(normalizeSupportManagementResourcePath(path))));
