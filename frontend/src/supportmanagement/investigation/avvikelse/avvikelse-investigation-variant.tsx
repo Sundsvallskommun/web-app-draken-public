@@ -22,6 +22,7 @@ import { resolveAvvikelseClassificationPlacement } from './avvikelse-classificat
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 import { unitFollowUpMenuLabel } from './follow-up/unit-follow-up-scope';
+import { concealedAvvikelseDocumentKeys } from './hsl-investigation-visibility';
 
 /**
  * Loaded lazily on purpose. A static import would close a module cycle - the registry imports this
@@ -203,6 +204,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   limitedAccessNotice: 'Du har begränsad behörighet till detta ärende.',
   /** MAS/MAR record who of them answers for the errand, beside the assignee. */
   renderHandlerFields: (props: InvestigationHandlerFieldsProps) => <MasMarHandlerSelect {...props} />,
+  /** MAS/MAR's HSL investigation is kept from the managers until the errand carries a high HSL risk. */
+  concealedDocumentKeys: concealedAvvikelseDocumentKeys,
   /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */
   overviewAssignee: lexOverviewAssignee,
 });

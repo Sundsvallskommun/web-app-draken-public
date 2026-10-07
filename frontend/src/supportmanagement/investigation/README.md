@@ -62,6 +62,11 @@ delad kod erbjuder:
   om användaren är dess handläggare: vem som får fylla i fältet avgör varianten. Fälten sparas med Spara
   ärende genom att registrera sig som deltagare (`useErrandSaveParticipant`). Utan slot ser sidopanelen ut
   som för alla andra drakar.
+- `concealedDocumentKeys` — valfri: de dokument, per nyckel, som sidan håller utom synhåll för användaren på
+  ärendet trots att åtkomsten skulle visa dem. Flikwrappern tillämpar den en gång på åtkomsten
+  (`concealInvestigationDocuments`) innan den delas ut, så Utredning, Beslut och Ärendeuppgifters JSON-vy döljer
+  samma dokument. Den kan bara dölja, aldrig visa mer, och ändrar inget i vad BFF:en tillåter. Utan slot visas
+  allt som åtkomsten visar.
 
 Två flaggor styr fliken: kapabilitetsflaggan väljer _vilken_ implementation, och `useInvestigation`
 är huvudströmbrytaren som släcker fliken för alla varianter samtidigt. Ovanpå flaggorna ligger fasgrinden

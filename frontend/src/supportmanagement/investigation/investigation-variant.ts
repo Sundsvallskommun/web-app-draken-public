@@ -29,14 +29,17 @@ export interface InvestigationCategorizationControlProps {
   readonly disabled: boolean;
 }
 
-/** What a phase entry requirement is judged on: the errand, the runtime profile and the label tree. */
-export interface InvestigationPhaseEntryContext {
+/** The errand as one viewer meets it: the errand, the runtime profile, the label tree and who is looking. */
+export interface InvestigationErrandContext {
   readonly errand: SupportErrand | undefined;
   readonly profile: InvestigationProfile | null | undefined;
   readonly labelStructure: SupportErrand['labels'];
-  /** Who is moving the errand: a requirement may hold one role back where it lets another through. */
+  /** Who is looking: a variant may treat one role differently from another. */
   readonly viewer: InvestigationViewer;
 }
+
+/** What a phase entry requirement is judged on. A requirement may hold one role back where it lets another through. */
+export type InvestigationPhaseEntryContext = InvestigationErrandContext;
 
 export interface InvestigationPhaseEntryRequirementProps {
   /** Abandons the phase change; the requirement is asked for again on the next attempt. */
@@ -185,6 +188,12 @@ export interface InvestigationVariantModule {
    * a whole role holding it, say. Undefined names the handler, as every other drake does.
    */
   readonly overviewAssignee?: (labels: Label[] | undefined, labelStructure: Label[] | undefined) => string | undefined;
+  /**
+   * The documents, by key, the page keeps out of this viewer's sight on this errand though their access would
+   * show them. It only ever conceals, and only what is drawn: what the viewer may read stays Support Management's
+   * to say. A variant without the slot shows every document the access does.
+   */
+  readonly concealedDocumentKeys?: (context: InvestigationErrandContext) => readonly string[];
 }
 
 /** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */

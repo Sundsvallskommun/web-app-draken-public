@@ -10,6 +10,12 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 export const ACCESS_LEX_LABEL_PATH = 'ACCESS/LEX';
 
 /**
+ * The label the BFF marks the errand with once the unit manager's investigation is saved with a high HSL risk.
+ * It is how MAS/MAR reach the errand, and it stays once set.
+ */
+export const HIGH_HSL_RISK_LABEL_PATH = 'RISK/HIGH_HSL';
+
+/**
  * The HSL risk value at which the errand is escalated: the warning shown to the unit manager. The BFF marks the
  * errand `RISK/HIGH_HSL` from the same value whenever the investigation is saved, which is how MAS/MAR reach it.
  */

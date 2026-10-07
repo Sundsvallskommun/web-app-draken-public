@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import {
+  concealInvestigationDocuments,
   investigationDocumentAccess,
   isInvestigationParameterReadable,
   parseInvestigationAccess,
@@ -77,4 +78,24 @@ test('the generic JSON view cannot reveal a hidden investigation document from a
   assert.equal(isInvestigationParameterReadable(profile, { status: 'ready', access }, 'hsl'), false);
   assert.equal(isInvestigationParameterReadable(profile, { status: 'error' }, 'other-system-document'), true);
   assert.equal(isInvestigationParameterReadable(profile, { status: 'disabled' }, 'hsl'), true);
+});
+
+test('conceals documents from what is drawn without widening any grant', () => {
+  const state = { status: 'ready', access: parseInvestigationAccess(response(), '2281', 'one') } as const;
+
+  const concealed = concealInvestigationDocuments(state, ['hsl', 'decision', 'unknown']);
+  assert.equal(investigationDocumentAccess(concealed, 'hsl'), 'hidden');
+  assert.equal(investigationDocumentAccess(concealed, 'sol'), 'read');
+  assert.equal(investigationDocumentAccess(concealed, 'decision'), 'hidden');
+  assert.equal(investigationDocumentAccess(concealed, 'unknown'), 'hidden');
+  // The granted access itself is left as it is.
+  assert.equal(investigationDocumentAccess(state, 'hsl'), 'edit');
+});
+
+test('leaves the access as it is when there is nothing to conceal', () => {
+  const state = { status: 'ready', access: parseInvestigationAccess(response(), '2281', 'one') } as const;
+  assert.equal(concealInvestigationDocuments(state, []), state);
+  assert.equal(concealInvestigationDocuments(state, ['unknown']), state);
+  const loading = { status: 'loading' } as const;
+  assert.equal(concealInvestigationDocuments(loading, ['hsl']), loading);
 });

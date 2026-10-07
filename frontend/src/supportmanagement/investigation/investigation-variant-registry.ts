@@ -30,6 +30,10 @@ export const getInvestigationFollowUp = (): InvestigationVariantModule['followUp
 export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.renderHandlerFields : undefined;
 
+/** The documents the running variant keeps out of the viewer's sight, if it conceals any. */
+export const getInvestigationConcealedDocumentKeys = (): InvestigationVariantModule['concealedDocumentKeys'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.concealedDocumentKeys : undefined;
+
 /** Who the overview names as responsible for an errand, where the running variant has a say in it. */
 export const getInvestigationOverviewAssignee = (): InvestigationVariantModule['overviewAssignee'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.overviewAssignee : undefined;

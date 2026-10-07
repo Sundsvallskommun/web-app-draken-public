@@ -53,6 +53,23 @@ export const investigationDocumentAccess = (
   key: string
 ): InvestigationDocumentAccess => (state.status === 'ready' ? state.access.documents.get(key) ?? 'hidden' : 'hidden');
 
+/**
+ * The access as the page draws it: the given documents hidden, whatever their grant. It only narrows what is
+ * shown - nothing hidden is brought into view, and the BFF still decides every read and write. With nothing
+ * to conceal the state is returned as it is.
+ */
+export const concealInvestigationDocuments = (
+  state: InvestigationAccessState,
+  keys: readonly string[]
+): InvestigationAccessState => {
+  if (state.status !== 'ready' || !keys.some((key) => state.access.documents.has(key))) return state;
+  const documents = new Map(state.access.documents);
+  keys.forEach((key) => {
+    if (documents.has(key)) documents.set(key, 'hidden');
+  });
+  return { status: 'ready', access: { ...state.access, documents } };
+};
+
 /** The generic JSON view must respect the same grants for documents this profile owns. */
 export const isInvestigationParameterReadable = (
   profile: InvestigationProfile | null,

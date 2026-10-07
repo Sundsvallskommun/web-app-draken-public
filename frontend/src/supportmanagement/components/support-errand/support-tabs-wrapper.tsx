@@ -2,15 +2,19 @@ import { hasDirtyFields } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
+import { concealInvestigationDocuments } from '@supportmanagement/investigation/investigation-access';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import {
   isDecisionTabVisible,
   isInvestigationTabVisible,
 } from '@supportmanagement/investigation/investigation-variant';
-import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
+import {
+  getInvestigationConcealedDocumentKeys,
+  getInvestigationVariant,
+} from '@supportmanagement/investigation/investigation-variant-registry';
 import { useInvestigationAccess } from '@supportmanagement/investigation/use-investigation-access';
 import { MEASURE_FOLLOW_UP_PHASE_NAME, MEASURES_PHASE_NAME } from '@supportmanagement/measures/measure-phases';
 import { SupportMeasuresTab } from '@supportmanagement/measures/support-measures-tab';
@@ -66,11 +70,31 @@ export const SupportTabsWrapper: FC<{
     () => ({ metadataPhases: supportMetadata?.phases, errandPhases: supportErrand?.phases }),
     [supportErrand?.phases, supportMetadata?.phases]
   );
-  const { access: investigationAccess, refresh: refreshInvestigationAccess } = useInvestigationAccess(
+  const { access: grantedInvestigationAccess, refresh: refreshInvestigationAccess } = useInvestigationAccess(
     appConfig.features.useInvestigation &&
       investigationVariant !== null &&
       investigationProfile?.state === 'active' &&
       investigationProfile.documents.length > 0
+  );
+  // What the variant keeps out of this viewer's sight is concealed once, here, so every tab drawing the
+  // documents - Utredning, Beslut and Ärendeuppgifter's own JSON view - hides the same ones.
+  const viewer = useUserStore((s) => s.user);
+  // Joined, so the access below is only rebuilt when the keys change: the slot answers a new array each render.
+  const concealedDocumentKeys = (
+    getInvestigationConcealedDocumentKeys()?.({
+      errand: supportErrand,
+      profile: investigationProfile,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+      viewer,
+    }) ?? []
+  ).join('\n');
+  const investigationAccess = useMemo(
+    () =>
+      concealInvestigationDocuments(
+        grantedInvestigationAccess,
+        concealedDocumentKeys ? concealedDocumentKeys.split('\n') : []
+      ),
+    [grantedInvestigationAccess, concealedDocumentKeys]
   );
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);

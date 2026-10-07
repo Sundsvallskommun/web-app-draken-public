@@ -704,6 +704,15 @@ export const withPlaceStructure = ({ withLex = false } = {}): Pick<IafApiScenari
   labels: [...deviationLabelsSource, ...northBlueChain, ...(withLex ? [accessLex] : [])].map(withoutChildren),
 });
 
+const highHslRisk = label('risk-high-hsl-id', 'RISK', 'Hög risk HSL', 'HIGH_HSL', 'RISK/HIGH_HSL');
+const riskRoot = label('risk-root-id', 'RISK_ROOT', 'Risk', 'RISK', 'RISK', [highHslRisk]);
+
+/** An ordinary deviation the BFF has marked with a high HSL risk, the label in the metadata too. */
+export const withHighHslRisk = (): Pick<IafApiScenario, 'labels' | 'labelStructure'> => ({
+  labelStructure: [...labelStructure, riskRoot],
+  labels: [...deviationLabelsSource, highHslRisk].map(withoutChildren),
+});
+
 const withoutResourcePaths = (labels: readonly MockLabel[]): MockLabel[] =>
   labels.map(({ resourcePath: _resourcePath, labels: children, ...currentLabel }) => ({
     ...currentLabel,

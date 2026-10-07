@@ -348,6 +348,15 @@ Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Erran
 klienten kan flytta fram ärendets version förbi båda (`isSoleSupportErrandVersionChange`) i stället för
 att tro att någon annan har skrivit.
 
+### Händelseanalys HSL för chefer
+
+MAS/MAR:s utredning, Händelseanalys HSL (`utredning-hsl`), visas inte för enhetschef och verksamhetschef så
+länge ärendet saknar `RISK/HIGH_HSL`. När ärendet har labeln visas fliken som deras åtkomst säger. MAS/MAR,
+administratörer och övriga roller ser den som vanligt (`concealsHslInvestigation`).
+
+Det är bara visuellt: varianten döljer dokumentet genom kontraktets `concealedDocumentKeys`, och Draken hämtar
+då inte heller dokumentet. Vad cheferna får läsa avgör fortfarande AccessMapper.
+
 ### MAS/MAR vid sidan av Ansvarig
 
 MAS/MAR har en egen väljare under Ansvarig i sidopanelen (`MasMarHandlerSelect`, genom variantens
