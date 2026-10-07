@@ -16,6 +16,7 @@ const PermitKind = {
   SERVING: 'SERVING',
   SUPERVISION: 'SUPERVISION',
   TOBACCO: 'TOBACCO',
+  LOW_ALCOHOL_BEER: 'LOW_ALCOHOL_BEER',
 } as const;
 
 type PermitKindName = (typeof PermitKind)[keyof typeof PermitKind];
@@ -25,6 +26,9 @@ const PERMIT_KIND_OF_PROCESS: Record<string, PermitKindName> = {
   'alcohol-serving-change': PermitKind.SERVING,
   'alcohol-serving-addition': PermitKind.SERVING,
   'catering-occasion': PermitKind.SERVING,
+  'low-alcohol-beer-serving': PermitKind.LOW_ALCOHOL_BEER,
+  'low-alcohol-beer-sales': PermitKind.LOW_ALCOHOL_BEER,
+  'low-alcohol-beer-sales-and-serving': PermitKind.LOW_ALCOHOL_BEER,
   supervision: PermitKind.SUPERVISION,
   'tobacco-sales': PermitKind.TOBACCO,
   'tobacco-sales-change': PermitKind.TOBACCO,

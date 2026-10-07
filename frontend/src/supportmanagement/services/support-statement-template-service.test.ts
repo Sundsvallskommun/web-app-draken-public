@@ -97,6 +97,16 @@ test('the errand decides which of the tax agency forms is on offer', () => {
   ]);
 });
 
+test('a low alcohol beer notification asks the tax agency nothing, since no form is written for it', () => {
+  for (const processKey of ['low-alcohol-beer-serving', 'low-alcohol-beer-sales', 'low-alcohol-beer-sales-and-serving'])
+    expect(
+      supportStatementTemplates('Skatteverket', errandOf({ process: { processKey } })).map(
+        (template) => template.identifier
+      ),
+      processKey
+    ).toEqual(['referral-general']);
+});
+
 test('an errand whose process we do not know is offered every tax agency form', () => {
   expect(
     supportStatementTemplates('Skatteverket', errandOf({ process: { processKey: 'tillsyn-av-nagot' } }))
