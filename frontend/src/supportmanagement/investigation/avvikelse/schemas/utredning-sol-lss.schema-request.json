@@ -1,15 +1,16 @@
 {
   "name": "utredning-sol-lss",
-  "version": "1.4",
+  "version": "2.0",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/1.4",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Utredning SOL/LSS",
-    "description": "SOL/LSS-utredning för IAF- och VOF-ärenden. Åtgärder, handlingsplan och interna arbetsanteckningar lagras inte i detta dokument.",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/2.0",
+    "title": "Utredning Lex Sarah",
     "type": "object",
     "additionalProperties": false,
-    "x-draken-completion": { "field": "completed", "reportsField": "reports" },
-    "required": ["legalBases"],
+    "x-draken-completion": {
+      "field": "completed",
+      "reportsField": "reports"
+    },
     "x-draken-external-fields": {
       "errandClassification": {
         "kind": "supportManagementLabelClassification",
@@ -17,6 +18,22 @@
         "required": true
       }
     },
+    "$defs": {
+      "yesNo": {
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "yes",
+            "title": "Ja"
+          },
+          {
+            "const": "no",
+            "title": "Nej"
+          }
+        ]
+      }
+    },
+    "required": ["legalBases"],
     "properties": {
       "legalBases": {
         "title": "Lagrum",
@@ -30,74 +47,84 @@
           "enum": ["SOL", "LSS"]
         }
       },
-      "occurredDate": {
-        "title": "När inträffade missförhållandet?",
+      "investigator": {
+        "title": "Ansvarig för utredning",
+        "description": "LEX-utredaren som utreder ärendet. Fylls i av Draken.",
         "type": "string",
-        "format": "date"
+        "readOnly": true
+      },
+      "reportedEventDescription": {
+        "title": "Typ av beskrivet missförhållande/risk",
+        "description": "Händelsebeskrivningen i den inrapporterade avvikelsen. Fylls i av Draken.",
+        "type": "string",
+        "contentMediaType": "text/html",
+        "readOnly": true
       },
       "reportReceivedDate": {
-        "title": "När togs rapporten emot?",
+        "title": "När togs den muntliga eller skriftliga rapporten emot?",
+        "description": "Dagen då LEX-utredaren återupptog ärendet efter tilldelningen. Fylls i av Draken.",
         "type": "string",
-        "format": "date"
+        "format": "date",
+        "readOnly": true
       },
-      "eventTypes": {
-        "title": "Typ av händelse",
-        "description": "Välj en eller flera typer.",
-        "type": "array",
-        "uniqueItems": true,
-        "items": {
-          "type": "string",
-          "oneOf": [
-            {
-              "const": "physical_or_psychological_violation",
-              "title": "Fysisk eller psykisk kränkning"
-            },
-            {
-              "const": "care_support_service_deficiency",
-              "title": "Brister i omsorg, stöd eller service"
-            },
-            {
-              "const": "financial_irregularity",
-              "title": "Ekonomiska oegentligheter"
-            },
-            {
-              "const": "treatment_or_integrity_deficiency",
-              "title": "Brister i bemötande eller integritet"
-            },
-            {
-              "const": "legal_certainty_deficiency",
-              "title": "Brister i rättssäkerhet"
-            }
-          ]
-        }
-      },
-      "investigationTemplate": {
-        "title": "Utredningsmall",
-        "description": "Vald mall är presentationsmetadata. Händelsebeskrivningen är den formella uppgiften.",
+      "reportedMisconduct": {
+        "title": "Vad har rapporterats som ett missförhållande?",
         "type": "string",
-        "oneOf": [
-          {
-            "const": "standard_sol_lss",
-            "title": "Standardutredning SoL/LSS"
-          },
-          {
-            "const": "simplified",
-            "title": "Förenklad utredning"
-          },
-          {
-            "const": "lex_sarah",
-            "title": "Lex Sarah-utredning"
-          }
-        ]
+        "contentMediaType": "text/html"
       },
-      "eventDescription": {
-        "title": "Händelsebeskrivning",
-        "description": "Beskriv händelseförlopp, bakgrund, sammanhang, berörda personer och konsekvenser för den enskilde.",
+      "occurrenceTime": {
+        "title": "När inträffade missförhållandet?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "discovery": {
+        "title": "När och hur upptäcktes missförhållandet?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "occurrenceOperation": {
+        "title": "I vilken verksamhet skedde missförhållandet?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "affectedPersons": {
+        "title": "Vem/vilka är berörda av händelsen?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "consequences": {
+        "title": "Vilka konsekvenser har det fått eller kunde ha fått för den enskilde?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "gatheredInformation": {
+        "title": "Inhämtad information",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "courseOfEvents": {
+        "title": "Utredning av händelseförlopp",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "timeline": {
+        "title": "Tidslinje",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "previousOccurrences": {
+        "title": "Har något liknande inträffat i verksamheten tidigare och i så fall hur kommer det sig att det har inträffat igen?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "eventAnalysis": {
+        "title": "Händelseanalys",
+        "description": "Utgör det inträffade ett missförhållande eller påtaglig risk för ett missförhållande?",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "causeAreas": {
-        "title": "Vilka orsaksområden berör avvikelsen?",
+        "title": "Vilka orsaker till missförhållandet har identifierats?",
         "type": "array",
         "uniqueItems": true,
         "items": {
@@ -108,87 +135,96 @@
               "title": "Kommunikation och information"
             },
             {
+              "const": "people_knowledge_competence",
+              "title": "Utbildning och kompetens"
+            },
+            {
+              "const": "procedures_routines_guidelines",
+              "title": "Processer, rutiner och riktlinjer"
+            },
+            {
               "const": "environment_organization",
               "title": "Omgivning och organisation"
             },
             {
-              "const": "procedures_routines_guidelines",
-              "title": "Processer, rutiner, arbetssätt, riktlinjer"
-            },
-            {
               "const": "technology_equipment",
               "title": "Teknik, utrustning och apparatur"
-            },
-            {
-              "const": "people_knowledge_competence",
-              "title": "Människa – kunskap och kompetens"
             }
           ]
         }
       },
-      "primaryUnderlyingCauses": {
-        "title": "Primär bakomliggande orsak",
-        "description": "Flerval enligt utredningsskissen.",
-        "type": "array",
-        "uniqueItems": true,
-        "items": {
-          "type": "string",
-          "oneOf": [
-            {
-              "const": "communication_failure",
-              "title": "Brist i kommunikation"
-            },
-            {
-              "const": "time_pressure_workload",
-              "title": "Tidsbrist / arbetsbelastning"
-            },
-            {
-              "const": "knowledge_gap",
-              "title": "Kunskapsbrist"
-            },
-            {
-              "const": "routine_missing_not_followed",
-              "title": "Rutin saknas eller följs inte"
-            },
-            {
-              "const": "technical_fault",
-              "title": "Tekniskt fel"
-            },
-            {
-              "const": "other",
-              "title": "Övrigt"
-            }
-          ]
-        }
+      "recurrenceRisk": {
+        "title": "Finns det risk för att något liknande kan inträffa igen?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "immediateActions": {
+        "title": "Vilka omedelbara åtgärder har vidtagits för att undanröja/avhjälpa missförhållandet?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "preventiveActions": {
+        "title": "Vad har redan gjorts eller planeras för att förhindra liknande missförhållanden?",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "otherFindings": {
+        "title": "Övrigt som framkommit under utredningen",
+        "type": "string",
+        "contentMediaType": "text/html"
       },
       "individualNotified": {
-        "title": "Är den enskilde underrättad?",
+        "title": "Har den enskilde som berörs underrättats om att ett missförhållande har rapporterats?",
         "$ref": "#/$defs/yesNo"
+      },
+      "individualNotifiedMotivation": {
+        "title": "Motivering",
+        "description": "Motivera varför svaret är Nej.",
+        "type": "string",
+        "contentMediaType": "text/html"
       },
       "representativeNotified": {
-        "title": "Är god man, förvaltare eller anhörig informerad?",
+        "title": "Har god man, förvaltare eller närstående underrättats om att ett missförhållande har rapporterats?",
         "$ref": "#/$defs/yesNo"
       },
-      "conversationDocumentation": {
-        "title": "Dokumentation om samtal med berörda",
+      "representativeNotifiedMotivation": {
+        "title": "Motivering",
+        "description": "Motivera varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "documentedInRecord": {
-        "title": "Är det säkerställt att det inträffade dokumenterats i den enskildes personakt/journal?",
+        "title": "Finns information om att en lex Sarah-rapportering har skett i den enskildes personakt?",
         "$ref": "#/$defs/yesNo"
       },
-      "documentationMotivation": {
+      "documentedInRecordMotivation": {
         "title": "Motivering",
+        "description": "Motivera varför svaret är Nej.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "feedbackGiven": {
+        "title": "Har den enskilde fått återkoppling om de åtgärder som har vidtagits?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "feedbackGivenMotivation": {
+        "title": "Motivering",
+        "description": "Motivera varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "requiresPoliceReport": {
-        "title": "Är missförhållandet av den karaktären att det behöver polisanmälas?",
+        "title": "Ska ärendet polisanmälas?",
         "$ref": "#/$defs/yesNo"
       },
+      "requiresPoliceReportMotivation": {
+        "title": "Motivering",
+        "description": "Motivera varför svaret är Nej.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
       "proposedMisconductDegree": {
-        "title": "Det rapporterade utgjorde",
+        "title": "Utredningen avslutas med följande beslut",
         "description": "Utredarens förslag till beslut om graden av missförhållande.",
         "type": "string",
         "oneOf": [
@@ -214,8 +250,12 @@
           }
         ]
       },
+      "proposedIvoNotification": {
+        "title": "Föreslår utredningen anmälan enligt lex Sarah till IVO?",
+        "$ref": "#/$defs/yesNo"
+      },
       "proposalMotivation": {
-        "title": "Motivering",
+        "title": "Motivering till bedömning",
         "type": "string",
         "contentMediaType": "text/html"
       },
@@ -259,22 +299,107 @@
         }
       }
     },
-    "$defs": {
-      "yesNo": {
-        "type": "string",
-        "oneOf": [
-          {
-            "const": "yes",
-            "title": "Ja"
-          },
-          {
-            "const": "no",
-            "title": "Nej"
-          }
-        ]
-      }
-    },
     "allOf": [
+      {
+        "if": {
+          "properties": {
+            "individualNotified": {
+              "const": "no"
+            }
+          },
+          "required": ["individualNotified"]
+        },
+        "then": {
+          "properties": {
+            "individualNotifiedMotivation": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["individualNotifiedMotivation"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "representativeNotified": {
+              "const": "no"
+            }
+          },
+          "required": ["representativeNotified"]
+        },
+        "then": {
+          "properties": {
+            "representativeNotifiedMotivation": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["representativeNotifiedMotivation"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "documentedInRecord": {
+              "const": "no"
+            }
+          },
+          "required": ["documentedInRecord"]
+        },
+        "then": {
+          "properties": {
+            "documentedInRecordMotivation": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["documentedInRecordMotivation"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "feedbackGiven": {
+              "const": "no"
+            }
+          },
+          "required": ["feedbackGiven"]
+        },
+        "then": {
+          "properties": {
+            "feedbackGivenMotivation": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["feedbackGivenMotivation"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "requiresPoliceReport": {
+              "const": "no"
+            }
+          },
+          "required": ["requiresPoliceReport"]
+        },
+        "then": {
+          "properties": {
+            "requiresPoliceReportMotivation": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["requiresPoliceReportMotivation"]
+          }
+        }
+      },
       {
         "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar.",
         "if": {
@@ -289,10 +414,68 @@
           "$comment": "Kraven ligger under then.allOf: sektionsmallen läser then.properties och then.required i rot-allOf som en synlighetsregel, och ett fält får inte försvinna ur formuläret före klarmarkeringen.",
           "allOf": [
             {
-              "properties": {
-                "eventTypes": {
-                  "minItems": 1
-                }
+              "if": {
+                "properties": {
+                  "individualNotified": {
+                    "const": "no"
+                  }
+                },
+                "required": ["individualNotified"]
+              },
+              "then": {
+                "required": ["individualNotifiedMotivation"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "representativeNotified": {
+                    "const": "no"
+                  }
+                },
+                "required": ["representativeNotified"]
+              },
+              "then": {
+                "required": ["representativeNotifiedMotivation"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "documentedInRecord": {
+                    "const": "no"
+                  }
+                },
+                "required": ["documentedInRecord"]
+              },
+              "then": {
+                "required": ["documentedInRecordMotivation"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "feedbackGiven": {
+                    "const": "no"
+                  }
+                },
+                "required": ["feedbackGiven"]
+              },
+              "then": {
+                "required": ["feedbackGivenMotivation"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "requiresPoliceReport": {
+                    "const": "no"
+                  }
+                },
+                "required": ["requiresPoliceReport"]
+              },
+              "then": {
+                "required": ["requiresPoliceReportMotivation"]
               }
             }
           ]
@@ -300,5 +483,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.4 of the SOL/LSS investigation schema"
+  "description": "WSO2 request body for version 2.0 of the lex Sarah investigation schema"
 }

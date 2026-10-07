@@ -101,3 +101,62 @@ describe('SupportHistoryController investigation document protection', () => {
     ).rejects.toBe(unavailable);
   });
 });
+
+describe('SupportHistoryController assignee resumed', () => {
+  const event = (created: string, previous: string, current: string) => ({
+    subType: 'ERRAND',
+    created,
+    metadata: [
+      { key: 'PreviousVersion', value: previous },
+      { key: 'CurrentVersion', value: current },
+    ],
+  });
+  const differences: Record<string, DifferenceResponse> = {
+    '3-4': { operations: [{ op: 'replace', path: '/status', fromValue: 'ASSIGNED', value: 'INQUIRY' }] },
+    '2-3': { operations: [{ op: 'replace', path: '/assignedUserId', fromValue: 'lex.manager', value: 'lex.investigator' }] },
+    '1-2': { operations: [{ op: 'replace', path: '/status', fromValue: 'NEW', value: 'ONGOING' }] },
+  };
+
+  const makeResumeController = (assignedUserId?: string) => {
+    const { controller } = makeController();
+    const apiService = {
+      get: vi.fn(async ({ url }: { url: string }): Promise<{ data: unknown }> => {
+        if (url.endsWith(`/errands/${mockSupportErrandId}`)) return { data: { id: mockSupportErrandId, assignedUserId } };
+        if (url.includes('/events?')) {
+          return {
+            data: {
+              content: [
+                event('2026-10-08T09:00:00Z', '3', '4'),
+                { subType: 'NOTE', created: '2026-10-07T12:00:00Z', metadata: [] },
+                event('2026-10-07T08:00:00Z', '2', '3'),
+                event('2026-10-01T08:00:00Z', '1', '2'),
+              ],
+            },
+          };
+        }
+        const match = url.match(/source=(\d+)&target=(\d+)/u);
+        return { data: differences[`${match?.[1]}-${match?.[2]}`] ?? { operations: [] } };
+      }),
+    };
+    (controller as unknown as { apiService: unknown }).apiService = apiService;
+    return { controller, apiService };
+  };
+
+  it('answers when the handler took the errand up after it was given to them, reading back no further', async () => {
+    const { controller, apiService } = makeResumeController('lex.investigator');
+
+    await expect(controller.fetchAssigneeResumedAt(mockReq(), mockSupportErrandId, mockMunicipalityId)).resolves.toEqual({
+      resumedAt: '2026-10-08T09:00:00Z',
+    });
+    const urls = apiService.get.mock.calls.map(([config]) => config.url);
+    // The assignment is as far back as it reads: the write before it is never asked for.
+    expect(urls.filter(url => url.includes('/revisions/difference'))).toHaveLength(2);
+    expect(urls.some(url => url.includes('source=1&target=2'))).toBe(false);
+  });
+
+  it('answers nothing for an errand nobody is assigned', async () => {
+    const { controller } = makeResumeController(undefined);
+
+    await expect(controller.fetchAssigneeResumedAt(mockReq(), mockSupportErrandId, mockMunicipalityId)).resolves.toEqual({ resumedAt: null });
+  });
+});

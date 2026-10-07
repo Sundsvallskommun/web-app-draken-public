@@ -1913,9 +1913,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
 
     const solLssDocument = page.locator(`[data-cy="investigation-document-${solLssKey}"]`);
-    const eventTypeCheckbox = solLssDocument.getByRole('checkbox', { name: 'Fysisk eller psykisk kränkning' });
-    await solLssDocument.getByText('Fysisk eller psykisk kränkning', { exact: true }).click();
-    await expect(eventTypeCheckbox).toBeChecked();
+    const feedbackGiven = solLssDocument
+      .locator(`#${solLssKey}_feedbackGiven`)
+      .getByRole('radio', { name: 'Ja', exact: true });
+    await feedbackGiven.check();
+    await expect(feedbackGiven).toBeChecked();
     await solLssDocument
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
@@ -1933,10 +1935,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts[0].key).toBe(solLssKey);
     expect(trace.puts[0].headers['if-match']).toBeUndefined();
     expect(trace.puts[0].body).toEqual({
-      schemaId: expect.stringContaining(`${solLssKey}_1.1`),
+      schemaId: expect.stringContaining(`${solLssKey}_2.0`),
       value: expect.objectContaining({
         legalBases: ['SOL', 'LSS'],
-        eventTypes: ['physical_or_psychological_violation'],
+        feedbackGiven: 'yes',
       }),
     });
   });
@@ -1990,7 +1992,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   }) => {
     const documents = allExistingInvestigationDocuments();
     documents['utredning-enhetschef'].value.investigationText = '<p>SKA BARA VISAS UNDER UTREDNING ENHETSCHEF</p>';
-    documents['utredning-sol-lss'].value.eventDescription = '<p>SKA BARA VISAS UNDER UTREDNING SOL LSS</p>';
+    documents['utredning-sol-lss'].value.reportedMisconduct = '<p>SKA BARA VISAS UNDER UTREDNING SOL LSS</p>';
     documents['utredning-hsl'].value.assignment = '<p>SKA BARA VISAS UNDER UTREDNING HSL</p>';
     const trace = await installIafApiMock(page, { documents });
 

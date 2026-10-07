@@ -5,6 +5,8 @@ import { ariaDescribedByIds, titleId, type WidgetProps } from '@rjsf/utils';
 import { cx } from '@sk-web-gui/react';
 import { useEffect, useRef } from 'react';
 
+import { textEditorSizeClassName } from './text-editor-size';
+
 interface RjsfTextEditorProps extends WidgetProps {
   defaultClassName: string;
   disableToolbar: boolean;
@@ -34,6 +36,8 @@ export function RjsfTextEditor({
   const hostRef = useRef<HTMLDivElement>(null);
   const markupValue = typeof value === 'string' ? value : '';
   const configuredClassName = typeof options.className === 'string' ? options.className : defaultClassName;
+  // A named size says how much text the editor shows before it grows, wherever the schema was written.
+  const sizeClassName = textEditorSizeClassName(options.size);
   const isReadonly = Boolean(disabled || readonly);
   // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
   const labelHidden = Boolean(hideLabel || options.hideLabel);
@@ -81,7 +85,7 @@ export function RjsfTextEditor({
     <div ref={hostRef} className="min-w-0 max-w-full">
       <TextEditor
         name={id}
-        className={cx('schema-text-editor w-full min-w-0 max-w-full', configuredClassName)}
+        className={cx('schema-text-editor w-full min-w-0 max-w-full', configuredClassName, sizeClassName)}
         disableToolbar={disableToolbar}
         readOnly={isReadonly}
         value={{ markup: markupValue }}

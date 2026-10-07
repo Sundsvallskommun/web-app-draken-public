@@ -20,7 +20,7 @@ const artifacts = [
   },
   {
     name: 'utredning-sol-lss',
-    version: '1.4',
+    version: '2.0',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
@@ -254,11 +254,14 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'categorization-and-documentation', title: 'Kategorisering och dokumentation' },
       { id: 'report', title: 'Utredningen klar och rapport' },
     ],
+    // The lex Sarah investigation template, in the order the organisation asked for it.
     'utredning-sol-lss': [
+      { id: 'background', title: 'Bakgrund' },
+      { id: 'what-happened', title: 'Vad har hänt?' },
+      { id: 'why', title: 'Varför har det hänt?' },
+      { id: 'decision-proposal', title: 'Förslag till beslut' },
       { id: 'categorization', title: 'Kategorisering' },
-      { id: 'event-information', title: 'Information om händelsen' },
-      { id: 'assessment-and-decision-proposal', title: 'Bedömning och förslag till beslut' },
-      { id: 'report', title: 'Utredningen klar och rapport' },
+      { id: 'report', title: 'Avsluta utredning och skapa rapport' },
     ],
     'utredning-hsl': [
       { id: 'assignment', title: 'Uppdrag' },
@@ -329,7 +332,8 @@ const incompleteInvestigations: Record<string, Record<string, unknown>> = {
   'utredning-enhetschef': { legalBases: ['HSL'], riskAssessmentHsl: { probability: 2 } },
   // Nothing answered at all: the unit manager has opened the investigation and put it down again.
   'utredning-enhetschef (tomt)': {},
-  'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], eventTypes: [] },
+  // A No not yet motivated: the motivation is asked for when the investigation is completed.
+  'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], individualNotified: 'no' },
   'utredning-hsl': { analysisTeamParticipants: [{ unit: 'Hemtjänst Norr' }] },
 };
 
@@ -591,7 +595,7 @@ test('the HSL decision is the IVO decision alone', () => {
 test('all sketch multiselects are represented as unique arrays', () => {
   const expectedMultiselects: Record<string, string[]> = {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
-    'utredning-sol-lss': ['eventTypes', 'causeAreas', 'primaryUnderlyingCauses'],
+    'utredning-sol-lss': ['causeAreas'],
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
     'beslut-hsl': [],
     'beslut-sol-lss': [],
@@ -611,11 +615,10 @@ test('all sketch multiselects are represented as unique arrays', () => {
 test('short multiselects use checkboxes while longer cause lists remain searchable', () => {
   const expectedCheckboxes: Record<string, string[]> = {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
-    'utredning-sol-lss': ['eventTypes', 'causeAreas'],
+    'utredning-sol-lss': ['causeAreas'],
     'utredning-hsl': ['identifiedCauses'],
   };
   const expectedComboboxes: Partial<Record<string, string[]>> = {
-    'utredning-sol-lss': ['primaryUnderlyingCauses'],
     'utredning-hsl': ['underlyingCauses'],
   };
 
@@ -705,5 +708,55 @@ test('pending and confirmed publications fit every existing report schema withou
       const value = { ...fixtures[artifact.name].valid, [schema['x-draken-completion'].reportsField]: [report] };
       assert.equal(validate(value), true, `${artifact.name}: ${ajv.errorsText(validate.errors)}`);
     }
+  }
+});
+
+// The lex Sarah investigation template: the background is Draken's, every text answer has the size the
+// template gives it, and every No is motivated - shown as soon as it is answered, required once completed.
+test('the lex Sarah investigation follows the investigation template', () => {
+  const schema = readJson('utredning-sol-lss.schema-request.json').value;
+  const uiSchema = readJson('utredning-sol-lss.ui-schema-request.json').value;
+  const { validate } = createValidator(schema);
+
+  for (const field of ['investigator', 'reportedEventDescription', 'reportReceivedDate']) {
+    assert.equal(schema.properties[field].readOnly, true, `${field} is filled in by Draken`);
+    assert.equal(uiSchema[field]['ui:readonly'], true, `${field} is locked in the form`);
+  }
+
+  const sizes = Object.fromEntries(
+    Object.entries(uiSchema)
+      .filter(([, field]: [string, any]) => field?.['ui:options']?.size)
+      .map(([name, field]: [string, any]) => [name, field['ui:options'].size])
+  );
+  const large = Object.keys(sizes).filter((name) => sizes[name] === 'large');
+  assert.deepEqual(large, [
+    'reportedMisconduct',
+    'discovery',
+    'consequences',
+    'gatheredInformation',
+    'courseOfEvents',
+    'timeline',
+    'previousOccurrences',
+    'eventAnalysis',
+  ]);
+  assert.ok(Object.values(sizes).every((size) => size === 'medium' || size === 'large'));
+
+  // Verksamhetsuppföljning's Polisanmälan filter reads the answer under the name it had in 1.x.
+  assert.equal(schema.properties.requiresPoliceReport.title, 'Ska ärendet polisanmälas?');
+
+  const motivated = [
+    'individualNotified',
+    'representativeNotified',
+    'documentedInRecord',
+    'feedbackGiven',
+    'requiresPoliceReport',
+  ];
+  for (const question of motivated) {
+    const motivation = `${question}Motivation`;
+    const answered = { legalBases: ['SOL', 'LSS'], [question]: 'no' };
+    assert.equal(validate(answered), true, `${question}: a draft may leave the motivation for later`);
+    assert.equal(validate({ ...answered, completed: 'yes' }), false, `${question}: a completed No is motivated`);
+    assert.equal(validate({ ...answered, [motivation]: '<p>Därför.</p>', completed: 'yes' }), true);
+    assert.equal(validate({ ...answered, [question]: 'yes', [motivation]: '<p>Därför.</p>' }), false);
   }
 });

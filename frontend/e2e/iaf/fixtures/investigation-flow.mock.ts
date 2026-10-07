@@ -266,6 +266,8 @@ export interface IafApiScenario {
     handlers: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[]; handoverStep?: string }>;
     roles?: Array<{ key: string; label: string }>;
   };
+  /** When the errand's handler took it up after it was given to them, as the history answers it. */
+  assigneeResumedAt?: string;
   /** Errand parameters beside the reported event type, each with its own version. */
   parameters?: Array<{ key: string; displayName?: string; values: string[]; version?: number }>;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
@@ -1266,6 +1268,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         ...apiResponse(scenario.assignableHandlers.handlers),
         ...(scenario.assignableHandlers.roles ? { roles: scenario.assignableHandlers.roles } : {}),
       });
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith(`/supporthistory/${municipalityId}/${errandId}/assignee-resumed`)) {
+      await fulfillJson(route, { resumedAt: scenario.assigneeResumedAt ?? null });
       return;
     }
 

@@ -55,20 +55,34 @@
   "utredning-sol-lss": {
     "valid": {
       "legalBases": ["SOL", "LSS"],
-      "occurredDate": "2026-08-01",
+      "investigator": "Lisa Utredare",
+      "reportedEventDescription": "<p>Den enskilde fick inte sitt stöd vid kvällsbesöket.</p>",
       "reportReceivedDate": "2026-08-02",
-      "eventTypes": ["physical_or_psychological_violation", "treatment_or_integrity_deficiency"],
-      "investigationTemplate": "lex_sarah",
-      "eventDescription": "<p>Händelsen och dess konsekvenser.</p>",
-      "causeAreas": ["communication_information", "people_knowledge_competence"],
-      "primaryUnderlyingCauses": ["communication_failure", "time_pressure_workload"],
+      "reportedMisconduct": "<p>Kvällsbesöket uteblev utan att någon underrättades.</p>",
+      "occurrenceTime": "<p>Den 1 augusti på kvällen.</p>",
+      "discovery": "<p>Upptäcktes av nattpersonalen vid nästa besök.</p>",
+      "occurrenceOperation": "<p>Hemtjänst Norr.</p>",
+      "affectedPersons": "<p>Den enskilde.</p>",
+      "consequences": "<p>Den enskilde blev utan mat och tillsyn under kvällen.</p>",
+      "gatheredInformation": "<p>Samtal med personal och genomgång av planeringen.</p>",
+      "courseOfEvents": "<p>Besöket föll bort vid en omplanering.</p>",
+      "timeline": "<p>17.00 omplanering, 22.00 upptäckt.</p>",
+      "previousOccurrences": "<p>Nej.</p>",
+      "eventAnalysis": "<p>Det inträffade utgör ett missförhållande.</p>",
+      "causeAreas": ["communication_information", "procedures_routines_guidelines"],
+      "recurrenceRisk": "<p>Ja, om planeringen inte ändras.</p>",
+      "immediateActions": "<p>Extra besök samma kväll.</p>",
+      "preventiveActions": "<p>Ny rutin för omplanering.</p>",
+      "otherFindings": "<p>Inget.</p>",
       "individualNotified": "yes",
       "representativeNotified": "no",
-      "conversationDocumentation": "<p>Samtal med den enskilde genomfördes.</p>",
+      "representativeNotifiedMotivation": "<p>Den enskilde ville inte att närstående underrättas.</p>",
       "documentedInRecord": "yes",
-      "documentationMotivation": "<p>Dokumenterat i personakt.</p>",
+      "feedbackGiven": "yes",
       "requiresPoliceReport": "no",
+      "requiresPoliceReportMotivation": "<p>Det inträffade är inte av den karaktären.</p>",
       "proposedMisconductDegree": "misconduct",
+      "proposedIvoNotification": "no",
       "proposalMotivation": "<p>Utredarens samlade motivering.</p>",
       "completed": "no",
       "reports": [
@@ -82,10 +96,10 @@
     },
     "invalid": [
       {
-        "description": "samma flervalsalternativ får inte förekomma två gånger",
+        "description": "samma orsak får inte förekomma två gånger",
         "value": {
           "legalBases": ["SOL", "LSS"],
-          "eventTypes": ["physical_or_psychological_violation", "physical_or_psychological_violation"]
+          "causeAreas": ["communication_information", "communication_information"]
         }
       },
       {
@@ -96,6 +110,22 @@
               "generatedAt": "2026-09-11T12:30:00.000Z"
             }
           ]
+        }
+      },
+      {
+        "description": "en motivering hör bara till ett Nej",
+        "value": {
+          "legalBases": ["SOL", "LSS"],
+          "individualNotified": "yes",
+          "individualNotifiedMotivation": "<p>Behövs inte.</p>"
+        }
+      },
+      {
+        "description": "en klar utredning motiverar varje Nej",
+        "value": {
+          "legalBases": ["SOL", "LSS"],
+          "feedbackGiven": "no",
+          "completed": "yes"
         }
       }
     ]

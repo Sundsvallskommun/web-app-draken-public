@@ -6,7 +6,7 @@ import { getSchemaFormErrors, type SchemaFormError } from '@common/components/js
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
 import { Alert, Button, Label, Spinner } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useErrandSaveParticipant } from '@supportmanagement/components/support-errand/errand-save/use-errand-save-participant';
 import { AvvikelseGroupedLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-grouped-label-categorization.component';
 import {
@@ -68,8 +68,8 @@ import {
   declinesLexInvestigation,
   hasLexDeclinedInvestigation,
   LEX_ASSESSMENT_SCHEMA_NAME,
-  prefillInvestigationDocument,
 } from './lex-initial-assessment';
+import { prefillNewInvestigationDocument } from './new-investigation-document-prefill';
 import { readSavedInvestigationDocument } from './saved-investigation-document';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
@@ -286,18 +286,25 @@ export function SupportInvestigationDocument({
         const uiSchema = await getUiSchemaForSchema(municipalityId, loadedSchema.schemaId);
 
         if (cancelled) return;
+        // A document not yet saved starts where the errand leaves it: the decision from the assessment, the lex
+        // Sarah investigation from the errand's background. Read when the document loads, not as a dependency:
+        // the start is decided once, by what is saved then.
+        const startingData =
+          storedDocument?.document.value ??
+          (await prefillNewInvestigationDocument({
+            municipalityId,
+            schemaName: definition.schemaName,
+            schema: loadedSchema.schema,
+            errand: useSupportStore.getState().supportErrand,
+            profile: useInvestigationProfileStore.getState().profile,
+            administrators: useUserStore.getState().administrators,
+          }));
+        if (cancelled) return;
         const loadedFormData = normalizeContextualInvestigationFormData(
           definition.key,
           definition.schemaName,
           loadedSchema.schema,
-          // A document not yet saved starts where an earlier one left off, as the decision does from the assessment.
-          // Read when the document loads, not as a dependency: the start is decided once, by what is saved then.
-          storedDocument?.document.value ??
-            prefillInvestigationDocument(
-              definition.schemaName,
-              useSupportStore.getState().supportErrand,
-              useInvestigationProfileStore.getState().profile
-            ),
+          startingData,
           reportedMisconduct
         );
         setDocumentState({

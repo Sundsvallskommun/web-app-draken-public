@@ -258,14 +258,15 @@ test('updates risks and label choices when the manager changes legal bases', asy
 test('mock roles make only the owned investigation editable', async ({ page }) => {
   await page.locator('[data-cy="utredning-sol-lss-tab"]').click();
   const activePanel = page.locator('[role="tabpanel"]:visible');
-  await expect(page.locator(`#${solLssIdPrefix}_occurredDate`)).toHaveAttribute('readonly', '');
-  await expect(page.locator(`#${solLssIdPrefix}_occurredDate`)).toBeEnabled();
+  const individualNotified = page
+    .locator(`#${solLssIdPrefix}_individualNotified`)
+    .getByRole('radio', { name: 'Ja', exact: true });
+  await expect(individualNotified).toBeDisabled();
   await expect(page.locator(`#${solLssIdPrefix}_legalBases`)).toHaveValue('SOL, LSS');
   await expect(activePanel.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
 
   await page.locator('[data-cy="investigation-lab-role"]').selectOption('lexInvestigator');
-  await expect(page.locator(`#${solLssIdPrefix}_occurredDate`)).toBeEnabled();
-  await expect(page.locator(`#${solLssIdPrefix}_occurredDate`)).not.toHaveAttribute('readonly', '');
+  await expect(individualNotified).toBeEnabled();
   await expect(activePanel.locator('[data-cy="schema-submit-button"]')).toBeVisible();
 });
 

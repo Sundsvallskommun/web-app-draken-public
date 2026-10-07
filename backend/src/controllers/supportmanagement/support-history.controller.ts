@@ -4,10 +4,11 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagement/data-contracts';
+import { DifferenceResponse, Errand, PageEvent } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { assignsErrandTo, ErrandHistoryEntry, readErrandEventVersions, resolveAssigneeResumedAt } from '@/services/assignee-resume';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
@@ -49,6 +50,40 @@ export class SupportHistoryController {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/events?page=0&size=100&sort=created%2Cdesc`;
     const res = await this.apiService.get<PageEvent>({ url }, req.user);
     return response.status(200).send(res.data);
+  }
+
+  /**
+   * When the errand's current handler took it up after it was given to them, read from the errand's history. The
+   * lex Sarah investigation records it as the day the report reached its investigator.
+   */
+  @Get('/supporthistory/:municipalityId/:id/assignee-resumed')
+  @OpenAPI({ summary: "When the errand's current handler took it up after it was assigned to them" })
+  @UseBefore(authMiddleware)
+  async fetchAssigneeResumedAt(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+  ): Promise<{ resumedAt: string | null }> {
+    const errandUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
+    const errand = await this.apiService.get<Errand>({ url: errandUrl }, req.user);
+    const assignee = errand.data.assignedUserId?.trim();
+    if (!assignee) return { resumedAt: null };
+
+    const events = await this.apiService.get<PageEvent>({ url: `${errandUrl}/events?page=0&size=100&sort=created%2Cdesc` }, req.user);
+    // Newest first, and only as far back as the assignment: what each write changed is a request of its own.
+    const history: ErrandHistoryEntry[] = [];
+    for (const event of events.data.content ?? []) {
+      const versions = readErrandEventVersions(event);
+      if (!versions) continue;
+      const difference = await this.apiService.get<DifferenceResponse>(
+        { url: `${errandUrl}/revisions/difference?source=${versions.previous}&target=${versions.current}` },
+        req.user,
+      );
+      const entry = { at: event.created!, operations: difference.data.operations ?? [] };
+      history.push(entry);
+      if (assignsErrandTo(entry, assignee)) break;
+    }
+    return { resumedAt: resolveAssigneeResumedAt(history, assignee) ?? null };
   }
 
   @Get('/supporthistory/:municipalityId/:id/revisions/difference/')

@@ -41,3 +41,15 @@ export const getSupportErrandEvents: (
       throw e;
     });
 };
+
+/**
+ * When the errand's current handler took it up after it was given to them, as the errand's history tells it.
+ * Undefined when the history names no assignment to them.
+ */
+export const getSupportErrandAssigneeResumedAt = (
+  errandId: string,
+  municipalityId: string
+): Promise<string | undefined> =>
+  apiService
+    .get<{ resumedAt: string | null }>(`supporthistory/${municipalityId}/${errandId}/assignee-resumed`)
+    .then((res) => res.data?.resumedAt ?? undefined);

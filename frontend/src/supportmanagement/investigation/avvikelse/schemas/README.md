@@ -5,7 +5,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
 | `utredning-enhetschef`      | 1.6           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.4           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-sol-lss`         | 2.0           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
@@ -72,6 +72,11 @@ lex-utredas (`lexInvestigationDecision`), med en motivering som krävs när det 
 på samma ID till `PlainTextareaWidget` för motiveringen, som är ren text och inte ska bli HTML; schemat är
 oförändrat och UI-schemat lästes tillbaka identiskt med artefakten.
 
+Den 7 oktober 2026 publicerades `2281_utredning-sol-lss_2.0`, Utredning Lex Sarah enligt verksamhetens
+utredningsmall (se [Utredning Lex Sarah 2.0](#utredning-lex-sarah-20)), i testmiljön. Schema och UI Schema lästes
+tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 2.0. Inget har publicerats i
+produktionsmiljön. Utredningar som redan är sparade är bundna till 1.4.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -124,7 +129,7 @@ Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, va
 | Schema                 | Krav som gäller först vid klarmarkering                                                                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
-| `utredning-sol-lss`    | `eventTypes` måste ha minst ett val om fältet finns                                                                                                                 |
+| `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej i ställningstagandena har sin motivering                                                    |
 | `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`                                                                                                                    |
 
 Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
@@ -147,6 +152,48 @@ egen rubrik (Riskbedömning HSL) får sin markering av RJSF och saknar den i ett
 
 Besluten (`beslut-hsl`, `beslut-sol-lss`) har ingen klarmarkering och är oförändrat strikta: ett beslut fattas eller
 fattas inte.
+
+## Utredning Lex Sarah 2.0
+
+Version 2.0 av `utredning-sol-lss` följer verksamhetens utredningsmall för lex Sarah, i mallens ordning och med
+titeln Utredning Lex Sarah:
+
+| Sektion                            | Innehåll                                                                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Bakgrund                           | `investigator`, `reportedEventDescription`, `reportReceivedDate` - ifyllda av Draken och låsta                                   |
+| Vad har hänt?                      | Elva textsvar, från vad som rapporterats till händelseanalysen                                                                   |
+| Varför har det hänt?               | Orsaker (`causeAreas`), fyra textsvar och fem Ja/Nej-ställningstaganden som motiveras vid Nej                                     |
+| Förslag till beslut                | `proposedMisconductDegree` (samma alternativ som förut), `proposedIvoNotification` och `proposalMotivation`                      |
+| Kategorisering                     | Lagrum och ärendets kategorisering, oförändrade                                                                                  |
+| Avsluta utredning och skapa rapport | Klarmarkering och rapport som i alla utredningar                                                                                |
+
+**Bakgrunden** fylls i när en utredning som inte är sparad öppnas (`prefillNewInvestigationDocument`) och sparas
+med den. Fälten är `readOnly` i schemat och `ui:readonly` i formuläret:
+
+- `investigator` är ärendets handläggare, LEX-utredaren, med namnet ur handläggarkatalogen.
+- `reportedEventDescription` är händelsebeskrivningen i rapportdokumentet profilen pekar ut
+  (`avvikelse-plats-handelse`). Katla skickar ren text, som görs om till stycken innan den visas i
+  textredigeraren, så att formuläret inte blir ändrat bara av att öppnas.
+- `reportReceivedDate` är dagen LEX-utredaren återupptog ärendet efter tilldelningen: den första statusändringen
+  bort från `ASSIGNED` efter den senaste tilldelningen till hen. BFF:en läser den ur ärendets händelselogg och
+  revisionsdiffar (`GET /supporthistory/:m/:id/assignee-resumed`), och bara så långt bakåt som tilldelningen.
+
+Bara fält som schemaversionen deklarerar fylls i, så ett dokument mot en äldre version får dem aldrig.
+
+**Textsvarens storlek** anges som `ui:options.size` på `TexteditorWidget`: `medium` (cirka 1 000 tecken innan
+fältet växer, samma höjd som förut) eller `large` (cirka 3 000 tecken). Klasserna står i
+`common/components/json/widgets/text-editor-size.ts`, så de genereras av Tailwind även när UI-schemat bara finns i
+JSON Schema-API:t. **Sektionernas informationstexter** anges som `description` (överst) och `footnote` (sist) på
+en sektion i `ui:sections`.
+
+**Motiveringen** till ett Nej visas så fort frågan besvaras med Nej och tas bort ur dokumentet när svaret ändras
+till Ja. Den krävs först vid klarmarkering, så ett utkast går att spara.
+
+Fälten Typ av händelse, Utredningsmall, Primär bakomliggande orsak och Dokumentation om samtal finns inte i 2.0.
+Utredningar som redan är sparade är bundna till 1.4 och visar sina fält som förut. Polisanmälan finns kvar som
+det sista ställningstagandet, Ska ärendet polisanmälas?, under samma fältnamn som förut (`requiresPoliceReport`),
+så Verksamhetsuppföljningens filter Polisanmälan fungerar för båda versionerna. Orsakskoderna är också desamma
+som förut.
 
 ## Besluten
 
