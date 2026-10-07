@@ -332,14 +332,14 @@ vid sidan av den tilldelade (se [MAS/MAR](#masmar-vid-sidan-av-ansvarig)).
 
 Ett ärende vars enhetschefsutredning bedömer HSL-riskvärdet till 4 eller högre (samma gräns som
 schemats `analysisThreshold`) märks med labeln `RISK/HIGH_HSL`, Hög risk HSL. Det är labeln som ger MAS/MAR
-åtkomst, och de ska nå ärendet så snart risken är bedömd, så labeln följer **varje** sparning av
-utredningen, klarmarkerad eller inte: den sätts vid 4 eller mer och tas bort under 4 eller utan
-HSL-bedömning. Säger labeln redan det utredningen säger görs ingen skrivning.
+åtkomst, och de ska nå ärendet så snart risken är bedömd, så labeln sätts vid **varje** sparning av
+utredningen som bedömer 4 eller mer, klarmarkerad eller inte. Den **ligger kvar** när den väl är satt: en
+senare sparning med lägre värde, eller utan HSL-bedömning, tar inte bort den, så MAS/MAR tappar inte ett
+ärende de redan har. Bär ärendet redan labeln görs ingen skrivning.
 
 BFF:en sätter den i samma anrop som sparar dokumentet (`PUT .../json-parameters/:key`), efter
 dokumentskrivningen: regeln finns i `config/iaf-vof-high-hsl-risk.ts` och skrivningen i
-`InvestigationRiskLabelService`. Labeln läggs till med sin rot (`RISK`), tas bort ensam och roten följer
-med när inget annat ligger under den. Skrivningen villkoras på exakt den version dokumentskrivningen
+`InvestigationRiskLabelService`. Labeln läggs till med sin rot (`RISK`). Skrivningen villkoras på exakt den version dokumentskrivningen
 lämnade; har någon annan hunnit skriva däremellan, eller saknar namespacet labeln i sin metadata, görs
 ingenting. Den görs om det går: utredningen är sparad oavsett, och en label som inte kunde skrivas loggas
 i stället för att bli ett misslyckat sparande.

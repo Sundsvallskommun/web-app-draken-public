@@ -705,14 +705,6 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
     expect(res.headers['X-Errand-Writes']).toBe('2');
   });
 
-  it('clears the label when the completed investigation assesses a lower HSL risk', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController(14);
-
-    await save(controller, documentService, 'utredning-enhetschef', { completed: 'yes', riskAssessmentHsl: { calculatedRiskValue: 3 } });
-
-    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: false }));
-  });
-
   it('sets the label as soon as a draft assesses an HSL risk of 4 or more, so MAS/MAR reach the errand at once', async () => {
     const { controller, documentService, riskLabelService } = makeRiskController(14);
 
@@ -726,15 +718,20 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
     expect(res.headers['X-Errand-Writes']).toBe('2');
   });
 
-  it('clears the label when a draft lowers the HSL risk below 4', async () => {
+  it.each([
+    ['a lower HSL risk', { completed: 'yes', riskAssessmentHsl: { calculatedRiskValue: 3 } }],
+    ['no HSL assessment', { completed: 'no' }],
+  ])('never clears the label once set: a save assessing %s writes no label', async (_situation, value) => {
     const { controller, documentService, riskLabelService } = makeRiskController(14);
 
-    await save(controller, documentService, 'utredning-enhetschef', { riskAssessmentHsl: { calculatedRiskValue: 2 } });
+    const { res } = await save(controller, documentService, 'utredning-enhetschef', value);
 
-    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: false }));
+    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+    expect(res.headers['X-Errand-Version']).toBe('13');
+    expect(res.headers['X-Errand-Writes']).toBe('1');
   });
 
-  it('counts one write when the label already says what the investigation does', async () => {
+  it('counts one write when the errand already carries the label', async () => {
     const { controller, documentService, riskLabelService } = makeRiskController();
     // No label write was needed.
     riskLabelService.applyHighHslRiskLabel.mockResolvedValue(undefined);

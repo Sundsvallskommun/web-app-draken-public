@@ -5,7 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { resolveHighHslRisk } from '@/config/iaf-vof-high-hsl-risk';
+import { assessesHighHslRisk } from '@/config/iaf-vof-high-hsl-risk';
 import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
@@ -174,10 +174,11 @@ export class SupportErrandJsonParameterController {
   }
 
   /**
-   * Sets or clears the high HSL risk label each time the unit manager's investigation is saved, completed or
-   * not. It is done if it can be: the investigation is saved either way, and a label that could not be written
-   * is logged rather than turned into a failed save. Answers the errand version after the label write, or
-   * `undefined` when none was made - as when the label already says what the investigation does.
+   * Sets the high HSL risk label when the unit manager's investigation is saved assessing a high risk, completed
+   * or not, and never clears it: once MAS/MAR reach the errand they keep it. It is done if it can be: the
+   * investigation is saved either way, and a label that could not be written is logged rather than turned into a
+   * failed save. Answers the errand version after the label write, or `undefined` when none was made - as when
+   * the risk is not high, or the errand already carries the label.
    */
   private async applyHighHslRiskLabel(
     req: RequestWithUser,
@@ -188,12 +189,13 @@ export class SupportErrandJsonParameterController {
   ): Promise<number | undefined> {
     const policy = this.policyService.iafVofClassificationPolicy;
     if (!policy || definition.key !== policy.defaultOwnerDocumentKey) return undefined;
+    if (!assessesHighHslRisk(written.document.value)) return undefined;
     try {
       return await this.riskLabelService.applyHighHslRiskLabel({
         municipalityId,
         errandId,
         user: req.user,
-        present: resolveHighHslRisk(written.document.value),
+        present: true,
         expectedVersion: written.parentErrandVersion,
       });
     } catch (error) {
