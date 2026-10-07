@@ -7,6 +7,7 @@ import { useConfigStore } from '../../../../stores/config-store';
 import { useSupportStore } from '../../../../stores/support-store';
 import { useUserStore } from '../../../../stores/user-store';
 import type { SupportErrand } from '../../../services/support-errand-service';
+import { useErrandSaveParticipantsStore } from '../errand-save/errand-save-participants';
 import { SidebarInfo } from './sidebar-info.component';
 
 const mocks = vi.hoisted(() => ({
@@ -17,6 +18,13 @@ const mocks = vi.hoisted(() => ({
   phase: vi.fn(),
   facility: vi.fn(),
   toast: vi.fn(),
+  handover: vi.fn(),
+  push: vi.fn(),
+  assignable: { administrators: [] as unknown[], roles: [] as unknown[] },
+}));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('@supportmanagement/investigation/avvikelse/assignment/avvikelse-assignment-service', () => ({
+  applyInvestigationHandover: mocks.handover,
 }));
 vi.mock('@stores/index', async () => ({
   ...(await import('../../../../stores/config-store')),
@@ -27,10 +35,17 @@ vi.mock('@stores/index', async () => ({
 }));
 vi.mock('@common/services/user-service', async (original) => ({
   ...(await original<typeof import('@common/services/user-service')>()),
-  getAssignableHandlers: async () => ({ administrators: [], roles: [] }),
+  getAssignableHandlers: async () => mocks.assignable,
 }));
 vi.mock('@common/components/handler-select/handler-select-options.component', () => ({
-  HandlerSelectOptions: () => <option>Välj handläggare</option>,
+  HandlerSelectOptions: ({ administrators }: { administrators: { adAccount: string; displayName: string }[] }) => (
+    <>
+      <option>Välj handläggare</option>
+      {administrators.map((administrator) => (
+        <option key={administrator.adAccount}>{administrator.displayName}</option>
+      ))}
+    </>
+  ),
 }));
 vi.mock('@common/components/lucide-icon-map/lucide-icon-map.component', () => ({ default: {} }));
 vi.mock('@common/services/helper-service', () => ({
@@ -112,6 +127,7 @@ function Harness({ facility = false }: { facility?: boolean }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.assignable = { administrators: [], roles: [] };
   mocks.save.mockReset().mockResolvedValue(undefined);
   mocks.facility.mockReset().mockResolvedValue(undefined);
   mocks.read.mockReset().mockResolvedValue({ errand: { ...loaded, title: 'Someone else changed this', version: 2 } });
@@ -127,6 +143,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  useErrandSaveParticipantsStore.setState({ participants: {}, dirty: {} });
 });
 
 test.each([409, 412])('a save conflict (%s) retains the dirty draft and its original version', async (status) => {
@@ -178,4 +195,78 @@ test('only a fully confirmed save replaces the form baseline', async () => {
   fireEvent.click(save);
   await waitFor(() => expect(screen.getByLabelText('Dirty').textContent).toBe('false'));
   expect(useSupportStore.getState().supportErrand).toMatchObject({ title: 'My saved title', version: 2 });
+});
+
+const lexManager = { displayName: 'Lena LEX', firstName: 'Lena', lastName: 'LEX', adAccount: 'lena.lex', id: 'lena' };
+
+/** Offers LEX-ansvarig as a handover, picks her and presses Spara ärende. */
+const handToLex = async () => {
+  mocks.assignable = { administrators: [{ ...lexManager, handoverStep: 'assign-lex' }], roles: [] };
+  mocks.read.mockResolvedValue({ errand: { ...loaded }, version: 3 });
+  useUserStore.setState({
+    administrators: [
+      { displayName: 'Handläggare', firstName: 'H', lastName: 'L', adAccount: 'handler', id: 'h' },
+      lexManager,
+    ],
+  });
+  render(<Harness />);
+
+  const handlerSelect = await screen.findByLabelText('Tilldela handläggare');
+  await waitFor(() => expect(screen.getByRole('option', { name: 'Lena LEX' })).toBeTruthy());
+  fireEvent.change(handlerSelect, { target: { value: 'Lena LEX' } });
+  const save = screen.getByRole('button', { name: 'Spara ärende' });
+  await waitFor(() => expect(save).toHaveProperty('disabled', false));
+  fireEvent.click(save);
+};
+
+/** A part of the errand holding a draft, as the MAS/MAR select or an investigation document would. */
+const registerDraft = (save: () => Promise<boolean>) => {
+  const { register, setDirty } = useErrandSaveParticipantsStore.getState();
+  register('draft', { label: 'MAS/MAR', save, reveal: () => undefined });
+  setDirty('draft', true);
+};
+
+test('giving the errand to a candidate whose assignment is a handover takes that step and leaves the errand', async () => {
+  await handToLex();
+
+  await waitFor(() => expect(mocks.handover).toHaveBeenCalledWith('2281', 'one', 'assign-lex', 3, 'lena.lex'));
+  expect(mocks.assign).not.toHaveBeenCalled();
+  expect(mocks.push).toHaveBeenCalledWith('/oversikt');
+});
+
+test('a handover is the last write of a save, since the errand is out of reach afterwards', async () => {
+  const order: string[] = [];
+  mocks.save.mockImplementation(async () => {
+    order.push('errand');
+  });
+  registerDraft(async () => {
+    order.push('draft');
+    return true;
+  });
+  mocks.handover.mockImplementation(async () => {
+    order.push('handover');
+  });
+  await handToLex();
+
+  await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/oversikt'));
+  // The errand's own fields first: they are conditioned on the version the form was loaded with,
+  // which the drafts' writes would move on.
+  expect(order).toEqual(['errand', 'draft', 'handover']);
+});
+
+test('a draft that cannot be saved stops the handover', async () => {
+  registerDraft(async () => false);
+  await handToLex();
+
+  await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' })));
+  expect(mocks.handover).not.toHaveBeenCalled();
+  expect(mocks.push).not.toHaveBeenCalled();
+});
+
+test('a failed handover stays on the errand and says so', async () => {
+  mocks.handover.mockRejectedValue({ response: { status: 412 } });
+  await handToLex();
+
+  await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' })));
+  expect(mocks.push).not.toHaveBeenCalled();
 });

@@ -4,7 +4,13 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { getInvestigationHandoverStep, InvestigationHandoverStepDefinition, LEX_HANDLER_ROLE_KEYS } from '@/config/investigation-handover-steps';
+import { awaitsLexHandover } from '@/config/iaf-vof-decision-investigation';
+import {
+  getInvestigationHandoverStep,
+  InvestigationHandoverStepDefinition,
+  LEX_HANDLER_ROLE_KEYS,
+  LEX_MANAGER_ROLE_KEY,
+} from '@/config/investigation-handover-steps';
 import { findInvestigationManagerRole } from '@/config/investigation-manager-roles';
 import { AssignableHandlersResponse } from '@/controllers/active-directory.controller';
 import {
@@ -170,7 +176,9 @@ export class SupportInvestigationAssignmentController {
    * - carrying the LEX access label, it belongs to the LEX roles - they are offered, the managers
    *   are not, because the managers cannot act on it until it is handed back;
    * - otherwise the managers for its place, resolved exactly the way the return handover resolves
-   *   them, so one rule decides who owns a place rather than two that can disagree;
+   *   them, so one rule decides who owns a place rather than two that can disagree - and, once the unit
+   *   manager's investigation is completed with a suspected misconduct, the LEX managers too: giving the
+   *   errand to one of them is the handover to LEX, which the candidate says (`handoverStep`);
    * - and where none of that applies - no location, or a deployment without the avvikelse
    *   capability - the unchanged list, so every other drake keeps the behaviour it has today.
    */
@@ -216,9 +224,19 @@ export class SupportInvestigationAssignmentController {
       throw error;
     }
 
+    const placeManagers = managers.map(manager => ({ displayName: manager.displayName, name: manager.adAccount, roleKeys: [manager.roleKey] }));
+    const managerRoles = managerRoleOptions().map(({ key, label }) => ({ key, label }));
+    if (!awaitsLexHandover(this.investigationPolicyService.iafVofClassificationPolicy, errand)) {
+      return { data: placeManagers, roles: managerRoles, message: 'ok' };
+    }
+
+    const lexManagerRole = (this.handlerDirectory.roles ?? []).find(role => role.key === LEX_MANAGER_ROLE_KEY);
+    const lexManagers = (await this.handlerDirectory.listHandlers(req.user))
+      .filter(handler => handler.roleKeys?.includes(LEX_MANAGER_ROLE_KEY))
+      .map(handler => ({ ...handler, roleKeys: [LEX_MANAGER_ROLE_KEY], handoverStep: 'assign-lex' }));
     return {
-      data: managers.map(manager => ({ displayName: manager.displayName, name: manager.adAccount, roleKeys: [manager.roleKey] })),
-      roles: managerRoleOptions().map(({ key, label }) => ({ key, label })),
+      data: [...placeManagers, ...lexManagers],
+      roles: [...managerRoles, ...(lexManagerRole ? [{ key: lexManagerRole.key, label: lexManagerRole.label }] : [])],
       message: 'ok',
     };
   }

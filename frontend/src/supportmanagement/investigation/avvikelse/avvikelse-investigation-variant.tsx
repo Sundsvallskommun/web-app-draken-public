@@ -7,6 +7,7 @@ import type { InvestigationProfile } from '../investigation-profile';
 import type {
   InvestigationCategorizationControlProps,
   InvestigationDetailsHeaderProps,
+  InvestigationHandlerFieldsProps,
   InvestigationPhaseEntryContext,
   InvestigationPhaseEntryRequirementProps,
   InvestigationTabProps,
@@ -58,6 +59,12 @@ const ErrandLocationCard = dynamic(
 const AvvikelseReportDocument = dynamic(
   () =>
     import('./report-document/avvikelse-report-document.component').then((module) => module.AvvikelseReportDocument),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
+const MasMarHandlerSelect = dynamic(
+  () => import('./assignment/mas-mar-handler-select.component').then((module) => module.MasMarHandlerSelect),
   { loading: () => null }
 );
 
@@ -194,6 +201,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
    * has it: the errand is shown locked, with this alert.
    */
   limitedAccessNotice: 'Du har begränsad behörighet till detta ärende.',
+  /** MAS/MAR record who of them answers for the errand, beside the assignee. */
+  renderHandlerFields: (props: InvestigationHandlerFieldsProps) => <MasMarHandlerSelect {...props} />,
   /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */
   overviewAssignee: lexOverviewAssignee,
 });

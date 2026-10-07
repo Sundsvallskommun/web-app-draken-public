@@ -60,6 +60,14 @@ interface InvestigationPhaseEntryRequirement {
   readonly render: (props: InvestigationPhaseEntryRequirementProps) => ReactNode;
 }
 
+export interface InvestigationHandlerFieldsProps {
+  /**
+   * True when nothing may be written to the errand: it is closed, paused or locked, or the viewer's read is
+   * limited. Not whether the viewer is its handler - who may fill in the field is the variant's to say.
+   */
+  readonly locked: boolean;
+}
+
 export interface InvestigationDetailsHeaderProps {
   readonly access: InvestigationAccessState;
   /** True while the errand page holds unsaved changes, which an errand-moving command would discard. */
@@ -167,6 +175,11 @@ export interface InvestigationVariantModule {
    * without the slot leaves the page as it is - it asks for no access level at all.
    */
   readonly limitedAccessNotice?: string;
+  /**
+   * Fields beside Ansvarig in the sidebar, for handlers the errand records apart from its assignee - MAS/MAR,
+   * say. They save with Spara ärende. A variant without the slot leaves the sidebar as it is.
+   */
+  readonly renderHandlerFields?: (props: InvestigationHandlerFieldsProps) => ReactNode;
   /**
    * Who the overview names as responsible when the errand's labels say more than its assigned handler -
    * a whole role holding it, say. Undefined names the handler, as every other drake does.

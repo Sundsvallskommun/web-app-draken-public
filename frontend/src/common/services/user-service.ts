@@ -55,6 +55,8 @@ interface AdUser {
   schemaClassName: string;
   /** Present only when the deployment configured handler roles. */
   roleKeys?: string[];
+  /** Present when giving this person the errand is a named investigation handover. */
+  handoverStep?: string;
 }
 
 export interface Admin {
@@ -69,6 +71,11 @@ export interface Admin {
    * deployment has roles to group by.
    */
   roleKeys?: string[];
+  /**
+   * The named investigation handover that giving this person the errand is - the handover to LEX, say - rather
+   * than an ordinary change of handler. Only the errand's own handler list sets it.
+   */
+  handoverStep?: string;
 }
 
 /** One handler role. Presentation only - who may be assigned what is decided in the backend. */
@@ -117,6 +124,7 @@ const toHandlerDirectory = (body: HandlerDirectoryResponse): HandlerDirectory =>
     adAccount: u.name,
     id: u.guid,
     ...(u.roleKeys ? { roleKeys: u.roleKeys } : {}),
+    ...(u.handoverStep ? { handoverStep: u.handoverStep } : {}),
   })),
   ...(body.roles ? { roles: body.roles } : {}),
 });

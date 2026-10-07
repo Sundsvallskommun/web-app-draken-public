@@ -637,15 +637,14 @@ describe('SupportErrandJsonParameterController report', () => {
   });
 });
 
-describe('the high HSL risk label on a completed unit manager investigation', () => {
-  const completionSchema = { id: '2281_utredning-enhetschef_1.6', value: { 'x-draken-completion': { field: 'completed', reportsField: 'reports' } } };
+describe('the high HSL risk label on a saved unit manager investigation', () => {
+  const managerSchemaId = '2281_utredning-enhetschef_1.6';
 
   const makeRiskController = (applied: number | undefined | Error = 14) => {
     const made = makeController();
-    const documentService = made.documentService as DocumentServiceStub & { readBoundSchema: ReturnType<typeof vi.fn> };
-    documentService.readBoundSchema = vi.fn(async () => completionSchema);
+    const documentService = made.documentService as DocumentServiceStub;
     const riskLabelService = {
-      applyHighHslRiskLabel: vi.fn(async () => {
+      applyHighHslRiskLabel: vi.fn(async (): Promise<number | undefined> => {
         if (applied instanceof Error) throw applied;
         return applied;
       }),
@@ -673,7 +672,7 @@ describe('the high HSL risk label on a completed unit manager investigation', ()
     key: string,
     value: UpdateSupportErrandJsonParameterDto['value'],
   ) => {
-    const update: UpdateSupportErrandJsonParameterDto = { schemaId: completionSchema.id, value };
+    const update: UpdateSupportErrandJsonParameterDto = { schemaId: managerSchemaId, value };
     documentService.writeJsonParameter.mockResolvedValue({
       document: { key, ...update, version: 8 },
       etag: '"8"',
@@ -686,7 +685,7 @@ describe('the high HSL risk label on a completed unit manager investigation', ()
     return { req, res };
   };
 
-  it('sets the label once the investigation is saved as completed with an HSL risk of 4 or more', async () => {
+  it('sets the label when the investigation is saved as completed with an HSL risk of 4 or more', async () => {
     const { controller, documentService, riskLabelService } = makeRiskController(14);
 
     const { req, res } = await save(controller, documentService, 'utredning-enhetschef', {
@@ -714,15 +713,36 @@ describe('the high HSL risk label on a completed unit manager investigation', ()
     expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: false }));
   });
 
-  it('leaves the label alone while the investigation is not completed', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController();
+  it('sets the label as soon as a draft assesses an HSL risk of 4 or more, so MAS/MAR reach the errand at once', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController(14);
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', {
       completed: 'no',
       riskAssessmentHsl: { calculatedRiskValue: 16 },
     });
 
-    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: true, expectedVersion: 13 }));
+    expect(res.headers['X-Errand-Version']).toBe('14');
+    expect(res.headers['X-Errand-Writes']).toBe('2');
+  });
+
+  it('clears the label when a draft lowers the HSL risk below 4', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController(14);
+
+    await save(controller, documentService, 'utredning-enhetschef', { riskAssessmentHsl: { calculatedRiskValue: 2 } });
+
+    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: false }));
+  });
+
+  it('counts one write when the label already says what the investigation does', async () => {
+    const { controller, documentService, riskLabelService } = makeRiskController();
+    // No label write was needed.
+    riskLabelService.applyHighHslRiskLabel.mockResolvedValue(undefined);
+
+    const { res } = await save(controller, documentService, 'utredning-enhetschef', {
+      riskAssessmentHsl: { calculatedRiskValue: 6 },
+    });
+
     expect(res.headers['X-Errand-Version']).toBe('13');
     expect(res.headers['X-Errand-Writes']).toBe('1');
   });

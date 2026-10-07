@@ -1,13 +1,18 @@
 import { HandlerSelectOptions } from '@common/components/handler-select/handler-select-options.component';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
-import { getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
+import { type Admin, getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
+import {
+  applyInvestigationHandover,
+  type InvestigationHandoverStep,
+} from '@supportmanagement/investigation/avvikelse/assignment/avvikelse-assignment-service';
+import { getInvestigationHandlerFields } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -31,6 +36,7 @@ import {
 } from '@supportmanagement/services/support-phase-service';
 import dayjs from 'dayjs';
 import { CirclePause, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -61,6 +67,8 @@ export const SidebarInfo: FC<{
   const administrators = useUserStore((s) => s.administrators);
   const handlerRoles = useUserStore((s) => s.handlerRoles);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const router = useRouter();
+  const handlerFields = getInvestigationHandlerFields();
   // Who may be given *this* errand, which is not the same question as who is a handler at all.
   // Until it answers - and if it cannot - the full directory stands, so the selector is never empty.
   const [assignable, setAssignable] = useState<HandlerDirectory>();
@@ -161,6 +169,48 @@ export const SidebarInfo: FC<{
     };
   }, [errandId, municipalityId]);
 
+  // Resolved from the list the selector actually offered: a manager reached through AccessMapper
+  // need not be in any configured handler group, so looking only in the full directory would
+  // silently find nobody and skip the assignment.
+  const findChosenAdmin = () =>
+    [...assignableHandlers, ...administrators].find((a) => a.displayName === getValues().admin);
+
+  /** The person the selector gives the errand to, when that is a named handover - to LEX - and not an assignment. */
+  const findChosenHandover = () => {
+    const chosen = findChosenAdmin();
+    return chosen?.handoverStep && supportErrand?.assignedUserId !== chosen.adAccount ? chosen : undefined;
+  };
+
+  /**
+   * Gives the errand away in its named handover, which moves its access with it. That leaves the errand out of
+   * reach, so it is the last write of a save and the page leaves the errand. Answers whether it was handed over.
+   */
+  const handOver = async (recipient: Admin): Promise<boolean> => {
+    try {
+      const current = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
+      if (typeof current.version !== 'number') throw new Error('The support errand version is missing');
+      await applyInvestigationHandover(
+        municipalityId,
+        supportErrand!.id!,
+        recipient.handoverStep as InvestigationHandoverStep,
+        current.version,
+        recipient.adAccount
+      );
+      router.push('/oversikt');
+      return true;
+    } catch (e) {
+      console.error('Error when handing the errand over:', e);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: supportErrandWriteErrorMessage(e, 'Ärendet kunde inte lämnas över. Försök igen.'),
+        status: 'error',
+      });
+      setError(true);
+      return false;
+    }
+  };
+
   /** Writes the errand's own fields; answers whether they were saved. A failure is told in a toast. */
   const saveErrandFields = async (): Promise<boolean> => {
     try {
@@ -168,15 +218,12 @@ export const SidebarInfo: FC<{
 
       // Handle admin change. The update above is ours and moved the version on, so the version
       // the form was loaded with can no longer be used as the precondition here.
-      // Resolved from the list the selector actually offered: a manager reached through AccessMapper
-      // need not be in any configured handler group, so looking only in the full directory would
-      // silently find nobody and skip the assignment.
-      const newAdminAccount = [...assignableHandlers, ...administrators].find(
-        (a) => a.displayName === getValues().admin
-      )?.adAccount;
+      const newAdmin = findChosenAdmin();
+      const newAdminAccount = newAdmin?.adAccount;
       if (supportErrand?.assignedUserId !== newAdminAccount) {
         const assigner = administrators.find((a) => a.adAccount === user.username);
-        if (newAdminAccount && assigner) {
+        // A handover is not an assignment: the caller takes it once everything else is saved (handOver).
+        if (newAdminAccount && assigner && !newAdmin?.handoverStep) {
           const newStatus =
             newAdminAccount === assigner.adAccount
               ? resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases)
@@ -244,7 +291,14 @@ export const SidebarInfo: FC<{
     setError(false);
     setIsLoading(true);
     try {
+      // Read before the save resets the form to the errand as saved.
+      const handover = findChosenHandover();
       const saved = await saveErrandFields();
+      if (saved && handover) {
+        // The errand has left; whatever was to follow the save must not act on it.
+        if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
+        return false;
+      }
       if (saved) toast('success', 'Ärendet uppdaterades');
       return saved;
     } finally {
@@ -258,12 +312,15 @@ export const SidebarInfo: FC<{
   /**
    * Spara ärende saves the errand's own fields, then each part of the errand that holds a draft - the
    * investigation documents - validated and saved on its own. A part that could not be saved is shown,
-   * with why, in its own place.
+   * with why, in its own place. A handover chosen in Ansvarig comes last, since it takes the errand
+   * out of reach: the errand's own fields first, because the drafts' writes move its version on.
    */
   const saveErrand = async () => {
     setError(false);
     setIsLoading(true);
     try {
+      // Read before the save resets the form to the errand as saved.
+      const handover = findChosenHandover();
       if (errandFieldsDirty && !(await saveErrandFields())) return;
 
       const unsaved = await saveParticipantsInTurn(selectDirtyParticipants(useErrandSaveParticipantsStore.getState()));
@@ -271,6 +328,10 @@ export const SidebarInfo: FC<{
         setError(true);
         toast('error', unsavedParticipantsMessage(unsaved));
         unsaved[0].reveal();
+        return;
+      }
+      if (handover) {
+        if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
         return;
       }
       toast('success', 'Ärendet uppdaterades');
@@ -503,6 +564,7 @@ export const SidebarInfo: FC<{
             </Select>
           </FormControl>
 
+          {handlerFields?.({ locked: isSupportErrandLocked(supportErrand!) })}
           <FormControl id="status" className="w-full" disabled={!allowed}>
             <FormLabel className="text-small">Ärendestatus</FormLabel>
             <Select

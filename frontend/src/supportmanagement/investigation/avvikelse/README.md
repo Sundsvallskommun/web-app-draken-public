@@ -323,17 +323,18 @@ Managements AccessMapper matchar användarens konfigurerade labelmönster mot ä
 börjar. Draken implementerar därför ingen egen synlighetsregel; den skriver bara labeln.
 
 `ACCESS`-trädet innehåller i dag exakt den labeln. Det finns ingen motsvarighet för MAS/MAR — de når
-HSL-ärenden på annat sätt — så ett högt HSL-riskvärde ger inget överlämningssteg. Riskvärdet visas som
-en varning för enhetschefen, och när utredningen sparas som klar märks ärendet med `RISK/HIGH_HSL`
-(se [Hög risk HSL](#hög-risk-hsl-risk_high_hsl)).
+HSL-ärenden genom `RISK/HIGH_HSL` — så ett högt HSL-riskvärde ger inget överlämningssteg. Riskvärdet visas som
+en varning för enhetschefen, och så snart utredningen sparas med värdet märks ärendet med `RISK/HIGH_HSL`
+(se [Hög risk HSL](#hög-risk-hsl-risk_high_hsl)). MAS/MAR bokför sedan vem av dem som svarar för ärendet,
+vid sidan av den tilldelade (se [MAS/MAR](#masmar-vid-sidan-av-ansvarig)).
 
 ### Hög risk HSL (`RISK/HIGH_HSL`)
 
 Ett ärende vars enhetschefsutredning bedömer HSL-riskvärdet till 4 eller högre (samma gräns som
-schemats `analysisThreshold`) märks med labeln `RISK/HIGH_HSL`, Hög risk HSL. Labeln följer bara en **klarmarkerad**
-utredning: så länge utredningen är ett utkast lämnas den orörd, hur högt värdet än är. När utredningen
-sparas som klar sätts labeln vid 4 eller mer och tas bort under 4 eller utan HSL-bedömning, så en
-utredning som låses upp, ändras och klarmarkeras igen får labeln efter den nya bedömningen.
+schemats `analysisThreshold`) märks med labeln `RISK/HIGH_HSL`, Hög risk HSL. Det är labeln som ger MAS/MAR
+åtkomst, och de ska nå ärendet så snart risken är bedömd, så labeln följer **varje** sparning av
+utredningen, klarmarkerad eller inte: den sätts vid 4 eller mer och tas bort under 4 eller utan
+HSL-bedömning. Säger labeln redan det utredningen säger görs ingen skrivning.
 
 BFF:en sätter den i samma anrop som sparar dokumentet (`PUT .../json-parameters/:key`), efter
 dokumentskrivningen: regeln finns i `config/iaf-vof-high-hsl-risk.ts` och skrivningen i
@@ -347,12 +348,32 @@ Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Erran
 klienten kan flytta fram ärendets version förbi båda (`isSoleSupportErrandVersionChange`) i stället för
 att tro att någon annan har skrivit.
 
-Två namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv
+### MAS/MAR vid sidan av Ansvarig
+
+MAS/MAR har en egen väljare under Ansvarig i sidopanelen (`MasMarHandlerSelect`, genom variantens
+`renderHandlerFields`). Den visas **bara för MAS/MAR** (rollen `mas-mar` i `/me`) och för administratörer
+(`superadmin`), och då på **alla** ärenden de når, oavsett riskvärde; alla andra ser ingen väljare
+(`choosesMasMarHandler`). Vilka ärenden MAS/MAR når avgör AccessMapper, bland annat genom `RISK/HIGH_HSL`.
+Väljaren erbjuder de konton i handläggarkatalogen (`GET /users/admins`) som har rollen `mas-mar`, och en
+bokförd handläggare som inte längre har rollen visas ändå i stället för att försvinna tyst.
+
+MAS/MAR är normalt inte tilldelad ärendet, så väljaren kräver inte att användaren är dess handläggare, bara
+att ärendet inte är låst och att användaren har `canEditSupportManagement`. Om MAS/MAR får skriva i ärendet
+avgör AccessMapper.
+
+Valet sparas med Spara ärende i errand-parametern `masMarHandler` (AD-kontot), skrivet på parameterns egen
+version, och **inte** i `assignedUserId`: ärendet ligger kvar hos sin handläggare, och MAS/MAR är den som
+svarar för HSL-delen. AccessMapper behöver ge MAS/MAR skrivrätt i ärendet, och har den begränsningar per
+parameternyckel även till `masMarHandler`.
+
+### Överlämningsstegen
+
+Fyra namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv
 (`backend/src/config/investigation-handover-steps.ts`):
 
 | Steg | Utlöses av | Skriver |
 | --- | --- | --- |
-| `assign-lex` | `suspectedMisconduct === 'yes'` i den sparade enhetschefsutredningen. Dialogen efter sparningen kan stängas. Så länge ärendet inte är tilldelat heter fasknappen Tilldela LEX-ansvarig i stället för övergångens namn (Redo för beslut) och öppnar samma dialog; fasen byts inte, utan LEX-ansvarig skickar ärendet till beslut | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
+| `assign-lex` | `suspectedMisconduct === 'yes'` i den sparade enhetschefsutredningen. Dialogen efter sparningen kan stängas. Är utredningen klarmarkerad kan enhetschefen också välja LEX-ansvarig under Ansvarig och spara (se [Ansvarig-listan](#ansvarig-listan-är-ärendespecifik)). Så länge ärendet inte är tilldelat heter fasknappen Tilldela LEX-ansvarig i stället för övergångens namn (Redo för beslut) och öppnar samma dialog; fasen byts inte, utan LEX-ansvarig skickar ärendet till beslut | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
 | `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
 | `decline-lex` | LEX-ansvarigs initiala bedömning (`bedomning-sol-lss`) är sparad med Inte ska lex utredas; knappen sitter längst ned i bedömningen, vars skrivrätt auktoriserar steget | först motiveringen som tjänsteanteckning, sedan `assignedUserId` (chef för platsen), `REPORT_TYPE/DEVIATION` i stället för `REPORT_TYPE/ABUSE`, tar bort `ACCESS/LEX`, status `ASSIGNED` - motsatsen till `assign-lex` |
 | `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) i kortet Ärendets plats överst i Ärendeuppgifter | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
@@ -582,10 +603,19 @@ Sidopanelen frågar därför per ärende i stället, via
 | --- | --- |
 | Bär `ACCESS/LEX` | LEX-ansvarig och LEX-utredare. **Inte** enhetschefer eller verksamhetschefer — de kan ändå inte agera förrän ärendet lämnats tillbaka |
 | Annars, med plats | Platsens chefer, upplösta med **exakt samma** regel som återlämningen använder |
+| Med plats, och enhetschefens utredning är klarmarkerad med ett misstänkt missförhållande som LEX-ansvarig inte har avböjt (`awaitsLexHandover`) | Platsens chefer och dessutom LEX-ansvariga, var och en med `handoverStep: 'assign-lex'` |
 | Ingen plats, eller ingen avvikelse-capability | Oförändrad lista |
 
 Att båda vägarna delar `resolveManagersForErrand` är avsiktligt: en regel avgör vem som äger en
 plats, inte två som kan säga olika.
+
+`handoverStep` säger att det inte är en tilldelning att ge ärendet till den personen utan ett namngivet
+överlämningssteg. Sidopanelen tar då steget (`POST .../investigation-handover/assign-lex` med personen som
+`assignedUserId`) i stället för att tilldela, och lämnar ärendet för översikten. Eftersom steget tar ärendet
+ur enhetschefens räckhåll kommer det **sist** i Spara ärende: först ärendets egna fält (villkorade på den
+version formuläret laddades med), sedan delarnas utkast som MAS/MAR och utredningsdokumenten, och kan något
+av dem inte sparas lämnas ärendet inte över. Vilken drake det är avgör ingenting - det är data i svaret,
+så sidopanelen kan vara delad kod.
 
 Filtreringen styrs av capabilityn, aldrig av appnamn. En deployment utan AccessMapper-konfiguration
 har ingenting att filtrera mot, och en tom Ansvarig-lista skulle göra den oförmögen att tilldela

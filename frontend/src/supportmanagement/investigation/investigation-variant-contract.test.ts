@@ -78,6 +78,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.limitedAccessNotice, undefined);
   // A variant with no say in who is responsible leaves the overview naming the assigned handler.
   assert.equal(minimalVariant.overviewAssignee, undefined);
+  // Nor does one with no handlers to record beside the assignee change the sidebar.
+  assert.equal(minimalVariant.renderHandlerFields, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
   assert.equal(minimalVariant.requiredPhaseName, undefined);
 });

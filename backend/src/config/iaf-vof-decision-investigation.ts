@@ -7,6 +7,8 @@ export const IAF_VOF_DECISION_PHASE_NAME = 'DECISION';
 
 /** The unit manager's assessment that the deviation may be a misconduct, which hands it to LEX. */
 const SUSPECTED_MISCONDUCT_FIELD = 'suspectedMisconduct';
+/** The field every investigation schema declares in `x-draken-completion`; the schema contract tests hold it. */
+const COMPLETION_FIELD = 'completed';
 /** LEX-ansvarig's answer in the initial assessment on whether the errand is lex-investigated at all. */
 const LEX_INVESTIGATION_DECISION_FIELD = 'lexInvestigationDecision';
 const LEX_DECLINED = 'not_investigate';
@@ -25,6 +27,16 @@ const isSuspectedMisconduct = (policy: IafVofInvestigationClassificationPolicy, 
 /** Whether LEX-ansvarig's saved initial assessment declines to lex-investigate the errand. */
 const hasLexDeclinedInvestigation = (policy: IafVofInvestigationClassificationPolicy, errand: DecisionInvestigationErrand): boolean =>
   readSavedAnswer(errand, policy.lexAssessmentDocumentKey, LEX_INVESTIGATION_DECISION_FIELD) === LEX_DECLINED;
+
+/**
+ * Whether the errand waits to be handed to LEX: the unit manager's investigation is saved as completed and
+ * assesses a suspected misconduct LEX-ansvarig has not declined. Whether it has already been handed over is the
+ * caller's to tell from the errand's access label.
+ */
+export const awaitsLexHandover = (policy: IafVofInvestigationClassificationPolicy, errand: DecisionInvestigationErrand): boolean =>
+  isSuspectedMisconduct(policy, errand) &&
+  readSavedAnswer(errand, policy.defaultOwnerDocumentKey, COMPLETION_FIELD) === 'yes' &&
+  !hasLexDeclinedInvestigation(policy, errand);
 
 /**
  * The investigation that has to be saved as completed before an IAF/VOF errand may be decided.

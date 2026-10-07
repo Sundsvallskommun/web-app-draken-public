@@ -57,6 +57,11 @@ delad kod erbjuder:
   `isSupportErrandLocked` och `validateAction`) och visar texten som en varning. Utan slot frågar sidan ingenting.
 - `overviewAssignee` — valfri: vem översikten anger som Ansvarig när ärendets labels säger mer än den
   tilldelade handläggaren. Utan slot, eller när den svarar `undefined`, visas handläggaren som i dag.
+- `renderHandlerFields` — valfria fält under Ansvarig i sidopanelen, för handläggare som ärendet bokför vid
+  sidan av den tilldelade (för avvikelse: MAS/MAR). Sloten får bara veta om ärendet är låst (`locked`), inte
+  om användaren är dess handläggare: vem som får fylla i fältet avgör varianten. Fälten sparas med Spara
+  ärende genom att registrera sig som deltagare (`useErrandSaveParticipant`). Utan slot ser sidopanelen ut
+  som för alla andra drakar.
 
 Två flaggor styr fliken: kapabilitetsflaggan väljer _vilken_ implementation, och `useInvestigation`
 är huvudströmbrytaren som släcker fliken för alla varianter samtidigt. Ovanpå flaggorna ligger fasgrinden

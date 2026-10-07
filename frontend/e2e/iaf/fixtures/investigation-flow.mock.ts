@@ -151,6 +151,8 @@ export interface IafApiTrace {
   handovers: Array<{ step: string; expectedVersion?: number; assignedUserId?: string; locationLabelId?: string }>;
   /** Places whose managers were previewed, by label id. */
   locationManagerGets: string[];
+  /** Errand parameters written one by one, in order, with the precondition each was sent on. */
+  parameterPuts: Array<{ key: string; values?: string[]; ifMatch?: string; ifNoneMatch?: string }>;
   /** Registration requests, in order, exactly as the form sent them. */
   registrations: Array<{ reportTypeLabelId?: string; locationLabelId?: string; priority?: string }>;
 }
@@ -255,7 +257,17 @@ export interface IafApiScenario {
   assignedUserId?: string | null;
   /** Taking an errand assigns it and then moves it to Pågående; the two can fail separately. */
   statusTransitionResult?: 'success' | 'bad-request';
-  administrators?: Array<{ name: string; displayName: string; guid: string }>;
+  administrators?: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[] }>;
+  /**
+   * Who `assignable-handlers` offers for this errand, as the BFF answers it. Left out, the route is not
+   * served and the sidebar keeps the full directory, as it does when the route fails.
+   */
+  assignableHandlers?: {
+    handlers: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[]; handoverStep?: string }>;
+    roles?: Array<{ key: string; label: string }>;
+  };
+  /** Errand parameters beside the reported event type, each with its own version. */
+  parameters?: Array<{ key: string; displayName?: string; values: string[]; version?: number }>;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
   documents?: Record<string, InvestigationDocument>;
   documentReadAccessDeniedFor?: string;
@@ -946,6 +958,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         : deviationLabels)
   );
   let classificationPatchAttempts = 0;
+  let errandParameters: Array<{ key: string; displayName?: string; values?: string[]; version?: number }> = [
+    { key: 'eventType', displayName: 'Rapporttyp', values: [eventType] },
+    ...structuredClone(scenario.parameters ?? []),
+  ];
   let errandVersion = 7;
   let errandStatus = scenario.errandStatus ?? 'ONGOING';
   let errandAssignedUserId =
@@ -965,6 +981,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     phasePatches: [],
     handovers: [],
     locationManagerGets: [],
+    parameterPuts: [],
     registrations: [],
   };
 
@@ -1009,7 +1026,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     labels: structuredClone(errandLabels),
     ...phaseHistory(),
     actions: [],
-    parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: [eventType] }],
+    parameters: structuredClone(errandParameters),
     stakeholders: [
       {
         externalId: 'reporter-id',
@@ -1228,6 +1245,48 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       if (body?.status) errandStatus = body.status;
       errandVersion += 1;
       await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    if (
+      method === 'GET' &&
+      scenario.assignableHandlers &&
+      path.endsWith(`/supporterrands/${municipalityId}/${errandId}/assignable-handlers`)
+    ) {
+      await fulfillJson(route, {
+        ...apiResponse(scenario.assignableHandlers.handlers),
+        ...(scenario.assignableHandlers.roles ? { roles: scenario.assignableHandlers.roles } : {}),
+      });
+      return;
+    }
+
+    const parameterMatch = path.match(
+      new RegExp(`/supporterrands/${municipalityId}/${errandId}/parameters/([^/]+)$`, 'u')
+    );
+    if (method === 'PUT' && parameterMatch) {
+      // One parameter, conditioned on its own version - or, when new, on there being none.
+      const key = decodeURIComponent(parameterMatch[1]);
+      const body = (requestBody(request) ?? {}) as { values?: string[]; displayName?: string };
+      const headers = request.headers();
+      trace.parameterPuts.push({
+        key,
+        values: body.values,
+        ...(headers['if-match'] ? { ifMatch: headers['if-match'] } : {}),
+        ...(headers['if-none-match'] ? { ifNoneMatch: headers['if-none-match'] } : {}),
+      });
+      const existing = errandParameters.find((parameter) => parameter.key === key);
+      const saved = {
+        key,
+        displayName: body.displayName ?? existing?.displayName,
+        values: body.values ?? [],
+        version: (existing?.version ?? 0) + 1,
+      };
+      errandParameters = existing
+        ? errandParameters.map((parameter) => (parameter.key === key ? saved : parameter))
+        : [...errandParameters, saved];
+      // Versions roll up: a parameter written moves the errand's version too.
+      errandVersion += 1;
+      await fulfillJson(route, saved);
       return;
     }
 

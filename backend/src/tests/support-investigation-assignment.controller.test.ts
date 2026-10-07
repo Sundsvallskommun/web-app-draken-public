@@ -1,6 +1,8 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
+import { resolveIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
+import { VOF_SUPPORT_INVESTIGATION_PROFILE } from '@/config/support-investigation-profile';
 import {
   InvestigationHandoverDto,
   SupportInvestigationAssignmentController,
@@ -322,5 +324,52 @@ describe('decline-lex', () => {
 
     await expect(decline()).rejects.toMatchObject({ status: 409 });
     expect(stubs.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('assignable handlers', () => {
+  const policy = resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE)!;
+  const lexManager = { displayName: 'Lena LEX', name: 'lena.lex', guid: 'lena-guid', roleKeys: ['lex-ansvarig'] };
+
+  const listFor = async (managerInvestigation: Record<string, unknown>) => {
+    const { controller, stubs } = makeController();
+    const internals = controller as unknown as Record<string, unknown>;
+    const errandGet = stubs.get as (request: { url?: string }) => Promise<{ data: Record<string, unknown> }>;
+    internals.apiService = {
+      get: vi.fn(async (config: { url?: string }) => {
+        const response = await errandGet(config);
+        if (config.url !== errandUrl) return response;
+        return {
+          ...response,
+          data: { ...response.data, jsonParameters: [{ key: policy.defaultOwnerDocumentKey, value: managerInvestigation }] },
+        };
+      }),
+      patch: stubs.patch,
+    };
+    internals.investigationPolicyService = {
+      iafVofClassificationPolicy: policy,
+      profile: VOF_SUPPORT_INVESTIGATION_PROFILE,
+      getClassificationOwner: vi.fn(async () => 'investigation'),
+    };
+    internals.handlerDirectory = {
+      ...(internals.handlerDirectory as Record<string, unknown>),
+      roles: [{ key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'MOCK_LEX_MANAGERS' }],
+      listHandlers: vi.fn(async () => [lexManager]),
+    };
+    return controller.getAssignableHandlers(mockReq(), MUNICIPALITY_ID, mockSupportErrandId);
+  };
+
+  it("offers the LEX managers, as the handover to LEX, once the unit manager's completed investigation suspects a misconduct", async () => {
+    const result = await listFor({ suspectedMisconduct: 'yes', completed: 'yes' });
+
+    expect(result.data).toContainEqual(expect.objectContaining({ name: 'south.manager' }));
+    expect(result.data).toContainEqual({ ...lexManager, handoverStep: 'assign-lex' });
+    expect(result.roles).toContainEqual({ key: 'lex-ansvarig', label: 'LEX-ansvarig' });
+  });
+
+  it('offers only the managers of the place until the investigation is completed', async () => {
+    const result = await listFor({ suspectedMisconduct: 'yes', completed: 'no' });
+
+    expect(result.data.map(({ name }) => name)).toEqual(['south.manager']);
   });
 });

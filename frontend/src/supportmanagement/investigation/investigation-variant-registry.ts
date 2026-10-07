@@ -26,6 +26,10 @@ export const getInvestigationVariant = (): InvestigationVariantModule | null =>
 export const getInvestigationFollowUp = (): InvestigationVariantModule['followUp'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.followUp : undefined;
 
+/** The fields the running variant adds beside Ansvarig in the sidebar, if any. */
+export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.renderHandlerFields : undefined;
+
 /** Who the overview names as responsible for an errand, where the running variant has a say in it. */
 export const getInvestigationOverviewAssignee = (): InvestigationVariantModule['overviewAssignee'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.overviewAssignee : undefined;

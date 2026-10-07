@@ -22,6 +22,11 @@ export interface AdUser {
 export interface AssignableHandler extends Pick<AdUser, 'displayName' | 'name' | 'guid'> {
   /** Present only when the deployment configured roles. An empty array would claim "holds no role". */
   roleKeys?: string[];
+  /**
+   * The named investigation handover that giving this person the errand is - the handover to LEX, say - rather
+   * than an ordinary change of handler. Absent for an ordinary assignee.
+   */
+  handoverStep?: string;
 }
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour

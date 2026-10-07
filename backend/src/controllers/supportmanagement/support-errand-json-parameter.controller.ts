@@ -24,7 +24,7 @@ import { InvestigationRiskLabelService } from '@/services/investigation-risk-lab
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
-import { isDocumentCompleted, SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { REPORT_DOCUMENT_REFUSALS, resolveReportDocumentEditability } from '@/services/support-report-document.service';
 import { logger } from '@/utils/logger';
 
@@ -174,10 +174,10 @@ export class SupportErrandJsonParameterController {
   }
 
   /**
-   * Sets or clears the high HSL risk label once the unit manager's investigation is saved as completed, and
-   * leaves it alone while the investigation is still being worked on. It is done if it can be: the
-   * investigation is saved either way, and a label that could not be written is logged rather than turned
-   * into a failed save. Answers the errand version after the label write, or `undefined` when none was made.
+   * Sets or clears the high HSL risk label each time the unit manager's investigation is saved, completed or
+   * not. It is done if it can be: the investigation is saved either way, and a label that could not be written
+   * is logged rather than turned into a failed save. Answers the errand version after the label write, or
+   * `undefined` when none was made - as when the label already says what the investigation does.
    */
   private async applyHighHslRiskLabel(
     req: RequestWithUser,
@@ -189,15 +189,11 @@ export class SupportErrandJsonParameterController {
     const policy = this.policyService.iafVofClassificationPolicy;
     if (!policy || definition.key !== policy.defaultOwnerDocumentKey) return undefined;
     try {
-      const request = { definition, municipalityId, errandId, user: req.user };
-      const schema = await this.documentService.readBoundSchema(request, written.document.schemaId);
-      const present = resolveHighHslRisk(isDocumentCompleted(schema, written.document.value), written.document.value);
-      if (present === undefined) return undefined;
       return await this.riskLabelService.applyHighHslRiskLabel({
         municipalityId,
         errandId,
         user: req.user,
-        present,
+        present: resolveHighHslRisk(written.document.value),
         expectedVersion: written.parentErrandVersion,
       });
     } catch (error) {
