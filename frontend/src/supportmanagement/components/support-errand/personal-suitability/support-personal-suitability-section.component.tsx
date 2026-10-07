@@ -160,7 +160,7 @@ export const SupportPersonalSuitabilitySection: FC<{
     setBusy(true);
     try {
       for (const person of changed) {
-        await assessSupportSuitability(errandId, municipalityId, person.partyId, {
+        assessSupportSuitability(errandId, municipalityId, person.partyId, {
           assessment: person.assessment as SupportSuitabilityAssessmentName,
           comment: person.comment,
         });

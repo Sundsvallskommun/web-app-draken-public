@@ -189,8 +189,8 @@ export const SupportErrandInvestigationTab: React.FC<{
         status: 'success',
       });
       return true;
-    } catch (failure) {
-      reportFailure(failure);
+    } catch (error) {
+      reportFailure(error);
       reload();
       return false;
     } finally {

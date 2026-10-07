@@ -91,7 +91,7 @@ const hasPbiParameter = (stakeholder: Stakeholder): boolean =>
 
 const isPbi = (partyId: string) => (stakeholder: Stakeholder) => stakeholder.externalId === partyId && hasPbiParameter(stakeholder);
 
-const PBI_PARAMETERS = [PBI_PARAMETER, PBI_SOURCE_PARAMETER, PBI_ROLE_PARAMETER, PBI_ASSESSMENT_PARAMETER, PBI_ASSESSMENT_COMMENT_PARAMETER];
+const PBI_PARAMETERS = new Set([PBI_PARAMETER, PBI_SOURCE_PARAMETER, PBI_ROLE_PARAMETER, PBI_ASSESSMENT_PARAMETER, PBI_ASSESSMENT_COMMENT_PARAMETER]);
 
 const engagementRoles = (engagement: OrganizationEngagement | undefined): string =>
   (engagement?.relations ?? [])
@@ -100,7 +100,7 @@ const engagementRoles = (engagement: OrganizationEngagement | undefined): string
     .join(', ');
 
 const withoutPbiParameters = (stakeholder: Stakeholder): Parameter[] =>
-  (stakeholder.parameters ?? []).filter(parameter => !PBI_PARAMETERS.includes(parameter.key ?? ''));
+  (stakeholder.parameters ?? []).filter(parameter => !PBI_PARAMETERS.has(parameter.key ?? ''));
 
 const valueOfParameter = (stakeholder: Stakeholder | undefined, key: string): string | undefined =>
   stakeholder?.parameters?.find(parameter => parameter.key === key)?.values?.[0] || undefined;
