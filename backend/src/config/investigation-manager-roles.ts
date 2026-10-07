@@ -17,7 +17,7 @@ export interface InvestigationManagerRole {
 
 export const INVESTIGATION_MANAGER_ROLES: readonly InvestigationManagerRole[] = Object.freeze([
   Object.freeze({ key: 'UNIT_MANAGER', label: 'Enhetschef' }),
-  Object.freeze({ key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' }),
+  Object.freeze({ key: 'HEAD_OF_OPERATIONS', label: 'Verksamhetschef' }),
 ]);
 
 /** AccessMapper's own filter value for reading a user's roles rather than their other access. */

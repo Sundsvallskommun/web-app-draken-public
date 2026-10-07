@@ -200,7 +200,7 @@ describe('move-location', () => {
       candidates: [{ adAccount: 'south.manager', displayName: 'Sonja Söder', roleKey: 'UNIT_MANAGER' }],
       roles: [
         { key: 'UNIT_MANAGER', label: 'Enhetschef' },
-        { key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' },
+        { key: 'HEAD_OF_OPERATIONS', label: 'Verksamhetschef' },
       ],
       locationResourcePath: 'LOCATION/SOUTH/SOUTH_UNIT',
       locationDisplayName: 'Södra enheten',

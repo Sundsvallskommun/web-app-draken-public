@@ -22,7 +22,7 @@ test.skip(
 
 const southManagers = [
   { adAccount: 'south.manager', displayName: 'Sonja Söder', roleKey: 'UNIT_MANAGER' },
-  { adAccount: 'south.head', displayName: 'Hans Huvud', roleKey: 'HEAD_OF_OPERATION' },
+  { adAccount: 'south.head', displayName: 'Hans Huvud', roleKey: 'HEAD_OF_OPERATIONS' },
 ];
 
 async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {

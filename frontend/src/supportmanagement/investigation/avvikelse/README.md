@@ -672,7 +672,7 @@ nivån ovanför. En chef som bara är upplagd högre upp i trädet listas allts�
 för Ansvarig, återlämningen och flytt av plats.
 
 **Vem är chef.** `GET access/ad/{adId}?type=role` ger personens roller. `UNIT_MANAGER` och
-`HEAD_OF_OPERATION` är de som räknas (`investigation-manager-roles.ts`); en roll som inte står där
+`HEAD_OF_OPERATIONS` är de som räknas (`investigation-manager-roles.ts`); en roll som inte står där
 är ingen chef i det här sammanhanget och kan alltså aldrig ta emot ett ärende. En person som når
 platsen men saknar rollen listas inte, hur många enheter hen än når: syns inte verksamhetschefen är
 det rollen i AccessMapper som saknas. Rollen kommer från AccessMapper och inte från en AD-grupp,

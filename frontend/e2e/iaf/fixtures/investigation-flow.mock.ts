@@ -1306,7 +1306,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         candidates: (place && scenario.locationManagers?.[place.id]) ?? [],
         roles: [
           { key: 'UNIT_MANAGER', label: 'Enhetschef' },
-          { key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' },
+          { key: 'HEAD_OF_OPERATIONS', label: 'Verksamhetschef' },
         ],
         locationResourcePath: place?.resourcePath ?? '',
         locationDisplayName: place?.displayName ?? '',
@@ -1329,7 +1329,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         candidates: scenario.locationManagers?.[labelId] ?? [],
         roles: [
           { key: 'UNIT_MANAGER', label: 'Enhetschef' },
-          { key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' },
+          { key: 'HEAD_OF_OPERATIONS', label: 'Verksamhetschef' },
         ],
         locationResourcePath: place.resourcePath,
         locationDisplayName: place.displayName,
