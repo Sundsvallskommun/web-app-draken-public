@@ -1,4 +1,3 @@
-import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
@@ -47,6 +46,9 @@ export const SupportErrandInvestigationTab: React.FC<{
   const [investigation, setInvestigation] = useState<Investigation>();
   const [statementsEdited, setStatementsEdited] = useState(false);
   const saveStatements = useRef<() => Promise<boolean>>(undefined);
+  const [suitabilityEdited, setSuitabilityEdited] = useState(false);
+  const saveSuitability = useRef<() => Promise<boolean>>(undefined);
+  const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -58,6 +60,13 @@ export const SupportErrandInvestigationTab: React.FC<{
   });
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const setTabSaver = useSupportStore((s) => s.setTabSaver);
+  const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
+
+  useEffect(() => {
+    setTabSaver('investigation', saver);
+    return () => setTabSaver('investigation', undefined);
+  }, [saver, setTabSaver]);
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
@@ -96,8 +105,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited);
-  }, [edited, statementsEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || suitabilityEdited);
+  }, [edited, statementsEdited, suitabilityEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -155,35 +164,42 @@ export const SupportErrandInvestigationTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 
-  const save = async () => {
-    if (!errandId || !investigation?.id) return;
+  const save = async (): Promise<boolean> => {
+    if (!errandId || !investigation?.id) return true;
 
     const statementsSaved = (await saveStatements.current?.()) ?? true;
-    if (!statementsSaved) return;
+    const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
+    if (!statementsSaved || !suitabilitySaved) return false;
 
     setIsSaving(true);
-    saveSupportInvestigation(errandId, municipalityId, investigation.id, {
-      version: investigation.version ?? 0,
-      summary: values.summary,
-      conclusion: values.conclusion,
-      recommendation: values.recommendation || undefined,
-      recommendationMotivation: values.recommendationMotivation,
-    })
-      .then((result) => {
-        receive(result);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: t('common:investigation.saved'),
-          status: 'success',
-        });
-      })
-      .catch((failure) => {
-        reportFailure(failure);
-        reload();
-      })
-      .finally(() => setIsSaving(false));
+    try {
+      receive(
+        await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
+          version: investigation.version ?? 0,
+          summary: values.summary,
+          conclusion: values.conclusion,
+          recommendation: values.recommendation || undefined,
+          recommendationMotivation: values.recommendationMotivation,
+        })
+      );
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:investigation.saved'),
+        status: 'success',
+      });
+      return true;
+    } catch (failure) {
+      reportFailure(failure);
+      reload();
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // The saver is registered once; the ref keeps it pointing at the current fields.
+  saveLatest.current = save;
 
   const sections = useMemo(() => sectionsInOrder(investigation), [investigation]);
 
@@ -241,23 +257,12 @@ export const SupportErrandInvestigationTab: React.FC<{
                 writable={!readOnly}
                 onStatementsEdited={setStatementsEdited}
                 saveStatements={saveStatements}
+                onSuitabilityEdited={setSuitabilityEdited}
+                saveSuitability={saveSuitability}
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
           </div>
-          {readOnly ? null : (
-            <SaveRow
-              label={t('common:investigation.save')}
-              loadingText={t('common:investigation.saving')}
-              saving={isSaving}
-              disabled={isSaving}
-              onSave={() => void save()}
-              unsaved={edited || statementsEdited}
-              unsavedTitle={t('common:investigation.unsaved')}
-              unsavedText={t('common:tabs.unsaved_investigation')}
-              dataCy="save-investigation"
-            />
-          )}
         </div>
       ) : null}
     </div>

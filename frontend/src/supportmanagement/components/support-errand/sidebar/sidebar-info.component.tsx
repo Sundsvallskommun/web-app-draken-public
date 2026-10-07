@@ -38,6 +38,8 @@ export const SidebarInfo: FC<{
 }> = (props) => {
   const user = useUserStore((s) => s.user);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const tabSavers = useSupportStore((s) => s.tabSavers);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -99,6 +101,14 @@ export const SidebarInfo: FC<{
   const formIsNotValid = useMemo(() => !formState.isValid, [formState.isValid]);
 
   const { admin, status, priority } = watch();
+
+  const aTabIsUnsaved = Object.values(unsavedTabs).some(Boolean);
+
+  const saveTheTabs = async (): Promise<void> => {
+    for (const saveTab of Object.values(tabSavers)) {
+      await saveTab();
+    }
+  };
 
   const onSubmit = async () => {
     setError(false);
@@ -436,11 +446,12 @@ export const SidebarInfo: FC<{
             type="button"
             disabled={
               isSupportErrandLocked(supportErrand!) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+              (!Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) && !aTabIsUnsaved) ||
               formIsNotValid
             }
-            onClick={handleSubmit(() => {
-              return onSubmit();
+            onClick={handleSubmit(async () => {
+              await onSubmit();
+              await saveTheTabs();
             }, onError)}
             variant="primary"
             color="primary"

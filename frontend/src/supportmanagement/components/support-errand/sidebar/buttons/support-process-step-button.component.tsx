@@ -47,8 +47,6 @@ interface ProcessAction {
   confirms?: boolean;
   /** Takes the errand and sets it ongoing before the signal, the way the handling has always started. */
   takesErrand?: boolean;
-  /** The tab whose unsaved work the step leaves behind, if it has one. */
-  unsavedTabKey?: string;
   requiresDecisionOutcome?: boolean;
   requiresAnsweredStatements?: boolean;
   completesDecision?: boolean;
@@ -118,7 +116,6 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     variant: 'primary',
     needsSignal: true,
     tabKey: 'decision',
-    unsavedTabKey: 'investigation',
     requiresAnsweredStatements: true,
   },
   [SupportProcessStep.DECISION]: {
@@ -126,7 +123,6 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     variant: 'primary',
     needsSignal: true,
     tabKey: 'followup',
-    unsavedTabKey: 'decision',
     requiresDecisionOutcome: true,
     completesDecision: true,
   },
@@ -361,21 +357,13 @@ export const SupportProcessStepButton: FC<{
     }
   };
 
-  const unsavedBehind = (action: ProcessAction): boolean =>
-    !!action.unsavedTabKey && !!unsavedTabs[action.unsavedTabKey];
+  const somethingIsUnsaved = Object.values(unsavedTabs).some(Boolean);
 
   const ask = (action: ProcessAction, decisionsInHand = decisions) =>
     confirm
       .showConfirmation(
         t(`common:process.actions.${action.key}.confirm_title`),
-        <div className="flex flex-col gap-8">
-          <span>{t(`common:process.actions.${action.key}.confirm_text`)}</span>
-          {unsavedBehind(action) ? (
-            <span className="font-bold" data-cy="process-action-unsaved">
-              {t(`common:tabs.unsaved_${action.unsavedTabKey}`)}
-            </span>
-          ) : null}
-        </div>,
+        <span>{t(`common:process.actions.${action.key}.confirm_text`)}</span>,
         t(`common:process.actions.${action.key}.confirm_yes`),
         t('common:process.actions.confirm_no'),
         'primary'
@@ -478,7 +466,12 @@ export const SupportProcessStepButton: FC<{
       rightIcon={action.icon}
       loading={running === action.key || signalIsOutstanding}
       disabled={
-        disabled || !canEdit || !!running || signalIsOutstanding || (signalIsRequired(action) && !awaitingSignal?.name)
+        disabled ||
+        !canEdit ||
+        !!running ||
+        signalIsOutstanding ||
+        somethingIsUnsaved ||
+        (signalIsRequired(action) && !awaitingSignal?.name)
       }
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
@@ -496,5 +489,14 @@ export const SupportProcessStepButton: FC<{
     return null;
   }
 
-  return actionButton(stepAction);
+  return (
+    <>
+      {actionButton(stepAction)}
+      {somethingIsUnsaved ? (
+        <p className="text-small text-dark-secondary mb-12" data-cy="process-action-unsaved">
+          {t('common:process.actions.unsaved')}
+        </p>
+      ) : null}
+    </>
+  );
 };
