@@ -59,8 +59,12 @@ describe('CreateSupportDecisionDto', () => {
   it('requires an outcome and accepts the fields the decision carries', async () => {
     const valid = plainToInstance(CreateSupportDecisionDto, {
       outcome: 'APPROVAL',
+      type: 'SERVERINGSTILLSTAND',
+      title: 'Beslut om serveringstillstånd',
       decidedByRole: 'Handläggare',
       justification: 'Motivering',
+      validFrom: '2026-10-02',
+      validTo: '2027-10-01',
       terms: ['Villkor'],
     });
     const invalid = plainToInstance(CreateSupportDecisionDto, { outcome: '', status: 'COMPLETED', decidedBy: 'someone' });
@@ -85,6 +89,24 @@ describe('CreateSupportDecisionDto', () => {
     expect(await errorsOf([{ key: 'street', values: mockStreet }])).toMatch(/values/);
     expect(await errorsOf([{ key: 'street', values: [mockStreet], version: 1 }])).toMatch(/version/);
   });
+
+  it('refuses a decision without the kind of permit it issues, which PartyAssets needs', async () => {
+    const withoutType = plainToInstance(CreateSupportDecisionDto, { outcome: 'APPROVAL' });
+
+    const serializedErrors = JSON.stringify(await validate(withoutType, { whitelist: true, forbidNonWhitelisted: true }));
+    expect(serializedErrors).toMatch(/type/);
+  });
+
+  it('refuses a validity date that is not a date', async () => {
+    const withABadDate = plainToInstance(CreateSupportDecisionDto, {
+      outcome: 'APPROVAL',
+      type: 'SERVERINGSTILLSTAND',
+      validFrom: 'den andra oktober',
+    });
+
+    const serializedErrors = JSON.stringify(await validate(withABadDate, { whitelist: true, forbidNonWhitelisted: true }));
+    expect(serializedErrors).toMatch(/validFrom/);
+  });
 });
 
 describe('createDecision', () => {
@@ -92,7 +114,7 @@ describe('createDecision', () => {
     const { controller, api } = makeController();
     const res = mockRes();
 
-    await controller.createDecision(mockReq(), mockSupportErrandId, '9999', { outcome: 'APPROVAL' }, res);
+    await controller.createDecision(mockReq(), mockSupportErrandId, '9999', { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND' }, res);
 
     expect(res.statusCode).toBe(400);
     expect(api.post).not.toHaveBeenCalled();
@@ -106,7 +128,7 @@ describe('createDecision', () => {
       req,
       mockSupportErrandId,
       MUNICIPALITY_ID,
-      { outcome: 'APPROVAL', terms: ['Första villkoret', 'Andra villkoret'] },
+      { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', terms: ['Första villkoret', 'Andra villkoret'] },
       mockRes(),
     );
 
@@ -149,7 +171,13 @@ describe('createDecision', () => {
     });
 
     await expect(
-      controller.createDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { outcome: 'APPROVAL', terms: ['Villkor'] }, mockRes()),
+      controller.createDecision(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', terms: ['Villkor'] },
+        mockRes(),
+      ),
     ).rejects.toThrow('term rejected');
 
     expect(api.delete).toHaveBeenCalledWith(expect.objectContaining({ url: `${decisionsUrl}/${DECISION_ID}` }), expect.anything());
@@ -165,14 +193,26 @@ describe('createDecision', () => {
     api.delete.mockRejectedValue(new Error('delete failed'));
 
     await expect(
-      controller.createDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { outcome: 'APPROVAL', terms: ['Villkor'] }, mockRes()),
+      controller.createDecision(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', terms: ['Villkor'] },
+        mockRes(),
+      ),
     ).rejects.toThrow('term rejected');
   });
 });
 
 describe('UpdateSupportDecisionDto', () => {
   it('takes the fields of a draft, all of them optional', async () => {
-    const valid = plainToInstance(UpdateSupportDecisionDto, { outcome: 'REJECTION', terms: ['Villkor'] });
+    const valid = plainToInstance(UpdateSupportDecisionDto, {
+      outcome: 'REJECTION',
+      type: 'SERVERINGSTILLSTAND',
+      title: 'Beslut om serveringstillstånd',
+      validFrom: '2026-10-02',
+      terms: ['Villkor'],
+    });
     const empty = plainToInstance(UpdateSupportDecisionDto, {});
     const invalid = plainToInstance(UpdateSupportDecisionDto, { outcome: '', status: 'COMPLETED' });
 
@@ -189,7 +229,7 @@ describe('updateDecision', () => {
     const { controller, api } = makeController();
     const res = mockRes();
 
-    await controller.updateDecision(mockReq(), mockSupportErrandId, '9999', DECISION_ID, { outcome: 'APPROVAL' }, res);
+    await controller.updateDecision(mockReq(), mockSupportErrandId, '9999', DECISION_ID, { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND' }, res);
 
     expect(res.statusCode).toBe(400);
     expect(api.patch).not.toHaveBeenCalled();

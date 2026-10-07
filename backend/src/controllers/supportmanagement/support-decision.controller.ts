@@ -1,5 +1,5 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -35,6 +35,11 @@ class SupportDecisionParameterDto {
 class SupportDecisionFieldsDto {
   @IsOptional()
   @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(128)
   decidedByRole?: string;
 
@@ -58,6 +63,14 @@ class SupportDecisionFieldsDto {
   appealable?: boolean;
 
   @IsOptional()
+  @IsDateString()
+  validFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  validTo?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   terms?: string[];
@@ -74,6 +87,11 @@ export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {
   @MinLength(1)
   @MaxLength(128)
   outcome!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  type!: string;
 }
 
 export class UpdateSupportDecisionDto extends SupportDecisionFieldsDto {
@@ -82,6 +100,12 @@ export class UpdateSupportDecisionDto extends SupportDecisionFieldsDto {
   @MinLength(1)
   @MaxLength(128)
   outcome?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  type?: string;
 }
 
 interface DecisionRef {
