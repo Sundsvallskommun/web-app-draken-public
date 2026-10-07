@@ -665,25 +665,18 @@ av samma — och rapporteras i stället för att gissas.
 
 Båda halvorna kommer ur AccessMapper, och ingen räcker ensam:
 
-**Vem når platsen.** `GET access-config/user?pattern=…` filtrerar på **exakt** lagrat mönster, så
-platsens eget mönster och varje förfaders frågas efter vid namn:
-
-```
-LOCATION/33/34/500020/10920/**   ← specificitet 5
-LOCATION/33/34/500020/**         ← 4
-…
-LOCATION/**                      ← 1
-```
-
-Att bara fråga efter det djupaste mönstret vore fel: en chef upplagd högre upp täcker platsen men
-skulle aldrig dyka upp, och felet ser ut som "ingen chef är konfigurerad". En person som finns på
-flera nivåer behåller sin mest specifika träff, och listan sorteras med den först.
+**Vem når platsen.** `GET access-config/user?pattern=…` filtrerar på **exakt** lagrat mönster, och
+BFF:en frågar efter platsens eget mönster, till exempel `LOCATION/33/34/500020/10920/**`. En chef är
+upplagd på de platser hen ansvarar för: en verksamhetschef har ett mönster per enhet, inte ett på
+nivån ovanför. En chef som bara är upplagd högre upp i trädet listas alltså inte. Samma lista används
+för Ansvarig, återlämningen och flytt av plats.
 
 **Vem är chef.** `GET access/ad/{adId}?type=role` ger personens roller. `UNIT_MANAGER` och
 `HEAD_OF_OPERATION` är de som räknas (`investigation-manager-roles.ts`); en roll som inte står där
-är ingen chef i det här sammanhanget och kan alltså aldrig ta emot ett ärende. Rollen kommer från
-AccessMapper och inte från en AD-grupp, eftersom det är där personens åtkomst till platsen ändå
-konfigureras — två system skulle glida isär.
+är ingen chef i det här sammanhanget och kan alltså aldrig ta emot ett ärende. En person som når
+platsen men saknar rollen listas inte, hur många enheter hen än når: syns inte verksamhetschefen är
+det rollen i AccessMapper som saknas. Rollen kommer från AccessMapper och inte från en AD-grupp,
+eftersom det är där personens åtkomst till platsen ändå konfigureras — två system skulle glida isär.
 
 **Namnet** finns inte i AccessMapper. Det hämtas ur Active Directory efteråt, och bara för de konton
 som blev kvar: handläggarcachen svarar gratis där den kan, övriga slås upp med `search/{domain}`.
