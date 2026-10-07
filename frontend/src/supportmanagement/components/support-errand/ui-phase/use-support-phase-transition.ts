@@ -1,3 +1,5 @@
+import { closeErrandTabSoon } from '@common/utils/close-errand-tab';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
@@ -145,7 +147,8 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
 
   /**
    * Closes the errand from the last phase with the status alone - this workflow records no resolution.
-   * The status is conditioned on the errand as the page shows it, and the closed errand is read back.
+   * The status is conditioned on the errand as the page shows it, the closed errand is read back, and then
+   * the tab closes, as it does wherever an errand is closed.
    */
   const closeErrand = async () => {
     if (!municipalityId || !supportErrand?.id || typeof supportErrand.version !== 'number') return;
@@ -159,6 +162,8 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
       if (closed.error) throw new Error('Could not read back the closed support errand');
       setSupportErrand(closed.errand);
       form.reset(closed.errand);
+      toastMessage(getToastOptions({ message: 'Ärendet avslutades', status: 'success' }));
+      closeErrandTabSoon();
     } catch (error) {
       toastMessage({
         position: 'bottom',

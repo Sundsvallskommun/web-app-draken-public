@@ -4,6 +4,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { sanitized } from '@common/services/sanitizer-service';
+import { closeErrandTabSoon } from '@common/utils/close-errand-tab';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -169,9 +170,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
             status: 'success',
           })
         );
-        setTimeout(() => {
-          window.close();
-        }, 2000);
+        closeErrandTabSoon();
         setIsLoading(false);
         setShowModal(false);
         getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
@@ -207,9 +206,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
     getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-    setTimeout(() => {
-      window.close();
-    }, 2000);
+    closeErrandTabSoon();
   };
 
   useEffect(() => {

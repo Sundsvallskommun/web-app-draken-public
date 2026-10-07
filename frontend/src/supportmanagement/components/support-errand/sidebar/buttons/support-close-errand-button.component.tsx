@@ -1,5 +1,6 @@
 import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { closeErrandTabSoon } from '@common/utils/close-errand-tab';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, Divider, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
@@ -146,14 +147,15 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
         status: 'success',
       })
     );
-    setTimeout(() => {
-      window.close();
-    }, 2000);
+    closeErrandTabSoon();
     setIsLoading(false);
     getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
   };
 
-  /** Closes a workflow errand with the status alone, and reads the closed errand back into the page. */
+  /**
+   * Closes a workflow errand with the status alone, reads the closed errand back into the page and then closes
+   * the tab, as closing with a resolution does.
+   */
   const closeWithoutResolution = async () => {
     if (!supportErrand?.id) return;
     const errandId = supportErrand.id;
@@ -166,6 +168,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       setSupportErrand(closed.errand);
       formControls.reset(closed.errand);
       toastMessage(getToastOptions({ message: 'Ärendet avslutades', status: 'success' }));
+      closeErrandTabSoon();
     } catch (e) {
       console.error('Failed to close support errand', e);
       showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
