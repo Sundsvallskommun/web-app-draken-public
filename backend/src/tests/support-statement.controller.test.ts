@@ -56,6 +56,13 @@ describe('uploading an attachment to a statement', () => {
     expect(api.patch).not.toHaveBeenCalled();
   });
 
+  it('refuses a purpose the namespace does not know, so no file is left behind', async () => {
+    const { controller, api } = makeController();
+
+    await expect(upload(controller, 'REFERRAL_RESCUE_SERVICE_RESPONSE')).rejects.toMatchObject({ status: 502 });
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
   it('refuses a purpose that is not a referral purpose, so no file is sent', async () => {
     const { controller, api } = makeController();
 
