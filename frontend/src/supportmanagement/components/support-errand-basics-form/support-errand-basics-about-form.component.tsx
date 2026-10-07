@@ -17,7 +17,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { LabelCategorization } from './LabelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
 export const SupportErrandBasicsAboutForm: FC<{
@@ -67,9 +67,9 @@ export const SupportErrandBasicsAboutForm: FC<{
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization ? (
+      {appConfig.features.useLabelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          <LabelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
         </div>
       ) : null}
 

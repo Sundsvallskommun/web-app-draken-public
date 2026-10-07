@@ -3,76 +3,29 @@ import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportMetadata } from './support-metadata-service';
 
 /**
- * Helpers for the `deprecated` flag on supportmanagement metadata labels.
- *
- * A deprecated label must stay in the metadata structure so that errands already classified with it
- * keep resolving their display name, escalation email and other attributes. The flag only governs
- * what a user is allowed to *pick*, so filtering is always done at render time on the option lists,
- * never on the metadata itself.
- *
- * Deprecation is inherited: a deprecated CATEGORY makes its TYPEs and SUBTYPEs unselectable too,
- * since they can only be reached through their parent.
+ * Deprecated labels stay in the metadata so existing errands keep resolving them; the flag only governs
+ * what can be picked, so option lists are filtered at render time. Deprecation is inherited by children.
  */
 
-const isLabelDeprecated = (label?: Label): boolean => label?.deprecated === true;
+export const isLabelDeprecated = (label?: Label): boolean => label?.deprecated === true;
 
-/**
- * Filters a list of labels down to the ones a user may pick.
- *
- * `keepIds` holds the ids of labels that are already set on the errand being edited. Those are kept
- * even when deprecated, so an existing errand keeps showing its own classification instead of
- * rendering an empty select. They can be deselected but not chosen again.
- */
+/** Labels a user may pick. `keepIds` (the errand's own labels) are kept even when deprecated. */
 export const getSelectableLabels = (labels: Label[] | undefined, keepIds: (string | undefined)[] = []): Label[] => {
   const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
   return (labels ?? []).filter((label) => !isLabelDeprecated(label) || (!!label.id && idsToKeep.has(label.id)));
 };
 
-/**
- * Selectable types for a category, with their selectable subtypes inlined.
- *
- * A type that has subtypes in the metadata but no selectable ones left is dropped: there is no valid
- * leaf to pick, and hiding the branch matches the intent behind deprecating every subtype better
- * than offering the type itself as a leaf would.
- *
- * When the category or a type is deprecated, only the labels named by `keepIds` are retained below
- * that point. This lets an existing errand display its current classification without exposing new
- * choices below an effectively deprecated parent.
- */
+/** Selectable types of a category with their selectable subtypes inlined (see getSelectableGroupedLabels). */
 export const getSelectableTypesForCategory = (
   category: Label | undefined,
   keepIds: (string | undefined)[] = []
-): Label[] => {
-  const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
-  const isKept = (label: Label) => !!label.id && idsToKeep.has(label.id);
-  const categoryDeprecated = isLabelDeprecated(category);
-  const selectableTypes = categoryDeprecated
-    ? (category?.labels ?? []).filter(isKept)
-    : getSelectableLabels(category?.labels, keepIds);
-
-  return selectableTypes
-    .map((type) => ({
-      type,
-      selectableSubTypes:
-        categoryDeprecated || isLabelDeprecated(type)
-          ? (type.labels ?? []).filter(isKept)
-          : getSelectableLabels(type.labels, keepIds),
-    }))
-    .filter(
-      ({ type, selectableSubTypes }) =>
-        (type.labels?.length ?? 0) === 0 || selectableSubTypes.length > 0 || (!!type.id && idsToKeep.has(type.id))
-    )
-    .map(({ type, selectableSubTypes }) => ({ ...type, labels: selectableSubTypes }));
-};
+): Label[] => getSelectableGroupedLabels(category?.labels, keepIds, isLabelDeprecated(category));
 
 /** Top level (CATEGORY) labels a user may pick, in metadata order. */
 export const getSelectableCategories = (metadata: SupportMetadata | undefined) =>
   getSelectableLabels(metadata?.labels?.labelStructure);
 
-/**
- * Every selectable TYPE across the whole structure, or only within the given categories when
- * `categoryResourcePaths` is non-empty. Types under a deprecated category are excluded.
- */
+/** Selectable types across the structure, or within the given categories. */
 export const getSelectableTypes = (
   metadata: SupportMetadata | undefined,
   categoryResourcePaths: string[] = []
@@ -85,10 +38,7 @@ export const getSelectableTypes = (
   return categories.flatMap((category) => getSelectableTypesForCategory(category));
 };
 
-/**
- * Every selectable SUBTYPE across the whole structure, narrowed by category and/or by type display
- * name when those filters are set. Subtypes under a deprecated category or type are excluded.
- */
+/** Selectable subtypes across the structure, narrowed by category and/or type display name. */
 export const getSelectableSubTypes = (
   metadata: SupportMetadata | undefined,
   categoryResourcePaths: string[] = [],
@@ -100,6 +50,136 @@ export const getSelectableSubTypes = (
   return types.flatMap((type) => getSelectableLabels(type.labels));
 };
 
+export const sortLabelsByDisplayName = (labels: Label[] | undefined): Label[] =>
+  [...(labels ?? [])].sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''));
+
+/** Levels of the categorization tree, top down. */
+export const CATEGORIZATION_CLASSIFICATIONS = ['DEPARTMENT', 'CATEGORY', 'TYPE', 'SUBTYPE'];
+
+const isCategorizationLabel = (label: Label): boolean => CATEGORIZATION_CLASSIFICATIONS.includes(label.classification);
+
+/** Top-level labels that start a categorization branch. */
+export const getCategorizationStructure = (labelStructure: Label[] | undefined): Label[] =>
+  (labelStructure ?? []).filter(isCategorizationLabel);
+
+/** Depth (0 = top) of the first label with the classification, depth first; undefined when absent. */
+export const getClassificationDepth = (
+  labels: Label[] | undefined,
+  classification: string,
+  depth = 0
+): number | undefined => {
+  for (const label of labels ?? []) {
+    if (label.classification === classification) {
+      return depth;
+    }
+    const below = getClassificationDepth(label.labels, classification, depth + 1);
+    if (below !== undefined) {
+      return below;
+    }
+  }
+  return undefined;
+};
+
+/** Path from the top down to the label with the id; empty when absent. */
+export const findLabelPath = (labels: Label[] | undefined, id: string | undefined): Label[] => {
+  if (!id) {
+    return [];
+  }
+  for (const label of labels ?? []) {
+    if (label.id === id) {
+      return [label];
+    }
+    const below = findLabelPath(label.labels, id);
+    if (below.length > 0) {
+      return [label, ...below];
+    }
+  }
+  return [];
+};
+
+/** The errand's labels with its categorization replaced by `path`; ROOT, TAG and other label sets stay. */
+export const replaceCategorizationLabels = (errandLabels: Label[] | undefined, path: Label[]): Label[] => [
+  ...(errandLabels ?? []).filter((label) => !isCategorizationLabel(label)),
+  ...path,
+];
+
+/** Path to the errand's deepest categorization label, missing ancestors filled in from the structure. */
+export const resolveLabelPath = (labelStructure: Label[] | undefined, errandLabels: Label[] | undefined): Label[] =>
+  (errandLabels ?? [])
+    .filter(isCategorizationLabel)
+    .map((label) => findLabelPath(labelStructure, label.id))
+    .reduce((longest, path) => (path.length > longest.length ? path : longest), []);
+
+/**
+ * `parents` with their selectable children inlined: childless parents are leaves, parents with no
+ * selectable children are dropped, below a deprecated parent (or `parentsDeprecated`) only `keepIds` remain.
+ */
+export const getSelectableGroupedLabels = (
+  parents: Label[] | undefined,
+  keepIds: (string | undefined)[] = [],
+  parentsDeprecated = false
+): Label[] => {
+  const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
+  const isKept = (label: Label) => !!label.id && idsToKeep.has(label.id);
+  const selectableParents = parentsDeprecated ? (parents ?? []).filter(isKept) : getSelectableLabels(parents, keepIds);
+
+  return selectableParents
+    .map((parent) => ({
+      parent,
+      selectableChildren:
+        parentsDeprecated || isLabelDeprecated(parent)
+          ? (parent.labels ?? []).filter(isKept)
+          : getSelectableLabels(parent.labels, keepIds),
+    }))
+    .filter(
+      ({ parent, selectableChildren }) =>
+        (parent.labels?.length ?? 0) === 0 || selectableChildren.length > 0 || isKept(parent)
+    )
+    .map(({ parent, selectableChildren }) => ({ ...parent, labels: selectableChildren }));
+};
+
+/** The label with the given resource path, searched through the whole structure. */
+export const findLabelByResourcePath = (
+  labels: Label[] | undefined,
+  resourcePath: string | undefined
+): Label | undefined => {
+  if (!resourcePath) {
+    return undefined;
+  }
+  for (const label of labels ?? []) {
+    if (label.resourcePath === resourcePath) {
+      return label;
+    }
+    const match = findLabelByResourcePath(label.labels, resourcePath);
+    if (match) {
+      return match;
+    }
+  }
+  return undefined;
+};
+
+/** A type is required unless the category is a leaf; an unknown category requires one. */
+export const labelCategoryRequiresType = (
+  metadata: SupportMetadata | undefined,
+  categoryResourcePath: string | undefined
+): boolean => {
+  const category = findLabelByResourcePath(metadata?.labels?.labelStructure, categoryResourcePath);
+  return !category || (category.labels?.length ?? 0) > 0;
+};
+
+/** Labels at a depth (1 = top level) across the whole structure. */
+export const getLabelsAtDepth = (labelStructure: Label[] | undefined, depth: number): Label[] => {
+  let level = labelStructure ?? [];
+  for (let i = 1; i < depth; i++) {
+    level = level.flatMap((label) => label.labels ?? []);
+  }
+  return level;
+};
+
+/** The `classificationDisplayName` the labels share, else the fallback. */
+export const getClassificationDisplayName = (labels: Label[], fallback: string): string =>
+  labels.find((label) => label.classificationDisplayName)?.classificationDisplayName || fallback;
+
 /** Display names of the given labels, de-duplicated and with missing names dropped. */
 export const getUniqueLabelDisplayNames = (labels: Label[]): string[] =>
   Array.from(new Set(labels.map((label) => label.displayName).filter((name): name is string => !!name)));
@@ -108,31 +188,20 @@ export const getUniqueLabelDisplayNames = (labels: Label[]): string[] =>
 const DEPRECATED_LABEL_SUFFIX = '(Utgått)';
 
 /**
- * Effective deprecation for every label in a metadata structure, looked up by id and by resource
- * path. Both keys are needed: the copies stored on an errand carry an id and a resource path but no
- * flags, so they have to be resolved back to the structure. They are kept in separate maps so an id
- * can never collide with a path.
- *
- * The structure is indexed rather than searched per label. `resourcePath` is not reliably a chain of
- * the `resourceName` values above it, so it cannot be used to descend level by level, and searching
- * the tree for every rendered label is quadratic in the size of the structure.
+ * Effective (inherited) deprecation of every label, by id and by resource path: an errand's label copies
+ * carry no flags and must be resolved back to the structure. Indexed once per structure.
  */
 interface DeprecationIndex {
   byId: Map<string, boolean>;
   byResourcePath: Map<string, boolean>;
 }
 
-/**
- * One index per metadata object. A refetch replaces the whole object, so it gets a fresh index and
- * the previous one is collected along with the metadata it described.
- */
+/** One index per metadata object; a refetch gets a fresh one. */
 const deprecationIndexes = new WeakMap<SupportMetadata, DeprecationIndex>();
 
 const buildDeprecationIndex = (labelStructure: Label[]): DeprecationIndex => {
   const index: DeprecationIndex = { byId: new Map(), byResourcePath: new Map() };
 
-  // A branch is only reachable through its parent, so a deprecated ancestor makes everything below
-  // it deprecated as well.
   const indexLevel = (labels: Label[], hasDeprecatedAncestor: boolean) => {
     for (const label of labels) {
       const deprecated = hasDeprecatedAncestor || isLabelDeprecated(label);
@@ -166,13 +235,7 @@ const getDeprecationIndex = (metadata: SupportMetadata | undefined): Deprecation
   return index;
 };
 
-/**
- * Whether a label, or any label above it, is deprecated. Matches on id first and falls back to
- * resource path, so a label that was renamed still resolves.
- *
- * Returns false when there is nothing to resolve against (metadata not loaded yet) or when the label
- * is not in the structure: an unknown label is left unmarked rather than guessed at.
- */
+/** Whether the label or an ancestor is deprecated; false when the label or the metadata is unknown. */
 const isLabelPathDeprecated = (label: Label | undefined, metadata: SupportMetadata | undefined): boolean => {
   const index = getDeprecationIndex(metadata);
   if (!index || !label) {
@@ -187,11 +250,7 @@ const isLabelPathDeprecated = (label: Label | undefined, metadata: SupportMetada
   return (label.resourcePath ? index.byResourcePath.get(label.resourcePath) : undefined) ?? false;
 };
 
-/**
- * Display name for a label, marked with '(Utgått)' when it can no longer be chosen. Used where a
- * deprecated label is still shown — the categorization selects on an existing errand, and the errand
- * list — so it is visible that the classification is a leftover rather than a current option.
- */
+/** Display name, suffixed with '(Utgått)' when the label can no longer be chosen. */
 export const getLabelDisplayName = (label: Label | undefined, metadata: SupportMetadata | undefined): string => {
   const displayName = label?.displayName || label?.resourcePath || '';
   if (!displayName) {

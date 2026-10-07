@@ -1,9 +1,8 @@
 import { Warning, WarningType } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Alert, FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { LabelTreePicker } from '@supportmanagement/components/support-errand-basics-form/LabelTreePicker';
 
 import { HandoverAutoSuggestIndicator } from './handover-auto-suggest-indicator.component';
-import { HandoverThreeLevelClassification } from './handover-three-level-classification.component';
 import { SupportHandoverState } from './use-support-handover';
 
 const warningText = (warning: Warning): string => {
@@ -63,10 +62,7 @@ export const HandoverClassificationPlaceholder: React.FC = () => (
  * registration view. The errand summary and the message are rendered by the modal itself, shared with
  * the MEX forward.
  */
-export const HandoverReview: React.FC<{ handover: SupportHandoverState; supportErrand: SupportErrand }> = ({
-  handover,
-  supportErrand,
-}) => {
+export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ handover }) => {
   const { preview } = handover;
   if (!preview) {
     return null;
@@ -90,13 +86,18 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState; supportE
 
   let classification: React.ReactNode;
   if (handover.targetUsesLabels) {
-    classification = (
-      <HandoverThreeLevelClassification
-        sourceErrand={supportErrand}
-        targetMetadata={handover.targetMetadata}
-        value={handover.threeLevelLabels}
-        onChange={handover.setThreeLevelLabels}
-      />
+    classification = handover.targetMetadata ? (
+      <div className="w-full flex gap-20" data-cy="handover-labels">
+        <LabelTreePicker
+          labelStructure={handover.targetMetadata.labels?.labelStructure}
+          value={handover.targetLabels}
+          onChange={handover.setTargetLabels}
+          metadata={handover.targetMetadata}
+          fallbackLabels={{ first: 'Kategori*', second: 'Ärendetyp*' }}
+        />
+      </div>
+    ) : (
+      <HandoverClassificationPlaceholder />
     );
   } else if (classificationMapping) {
     classification = (

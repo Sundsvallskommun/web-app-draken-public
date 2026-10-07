@@ -253,10 +253,8 @@ test.describe('Errand page', () => {
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
-    await expect(page.locator('[data-cy="category-input"]').locator('..').filter({ hasText: 'IAF' })).toBeVisible();
-    await expect(
-      page.locator('[data-cy="type-input"]').locator('..').filter({ hasText: 'Vuxenutbildning' })
-    ).toBeVisible();
+    await expect(page.locator('[data-cy="labelCategory-input"][placeholder="IAF - Vuxenutbildning"]')).toBeVisible();
+    await expect(page.locator('[data-cy="labelType-input"][placeholder="SFI"]')).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toContainText('En ärendebeskrivning');
 
     await expect(page.locator('[data-cy="channel-input"]')).toContainText('Fysiskt möte');
@@ -272,7 +270,8 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
 
     // Change changeable values
-    await page.locator('[data-cy="category-input"]').selectOption('BoU');
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: 'Barnomsorg', exact: true }).click();
     await page.locator('[data-cy="errand-description-richtext-wrapper"] .ql-editor').click();
     await page.keyboard.press('ControlOrMeta+A');
     await page.keyboard.press('Backspace');
@@ -284,9 +283,9 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contactReasonDescription-input"]').fill('En ändrad orsaksbeskrivning');
 
     // Check changed values
-    await expect(page.locator('[data-cy="category-input"]').locator('..').filter({ hasText: 'BoU' })).toBeVisible();
+    await expect(page.locator('[data-cy="labelCategory-input"][placeholder="BoU - Barnomsorg"]')).toBeVisible();
     await expect(
-      page.locator('[data-cy="type-input"]').locator('..').filter({ hasText: 'Välj ärendetyp' })
+      page.locator('[data-cy="labelType-error"]').locator('*').filter({ hasText: 'Välj ärendetyp' })
     ).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toContainText(
       'En ändrad beskrivning'
@@ -299,7 +298,8 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara' })).toBeDisabled();
 
     // Select missing value
-    await page.locator('[data-cy="type-input"]').selectOption('Övrigt');
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await page.getByRole('option', { name: 'Fakturor', exact: true }).click();
     await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara' })).toBeEnabled();
 
     // Post form
@@ -325,8 +325,14 @@ test.describe('Errand page', () => {
 
     const body = request.postDataJSON();
     expect(body.channel).toBe('CHAT');
-    expect(body.classification.category).toBe('BOU');
-    expect(body.classification.type).toBe('OTHER');
+    // The categorization is the labels alone; the ROOT label outside the tree survives the change.
+    expect(body.classification).toBeUndefined();
+    expect(body.labels.map((l: { resourcePath: string }) => l.resourcePath)).toEqual([
+      'CATEGORIZATION_ROOT',
+      'BOU',
+      'BOU/CHILDCARE',
+      'BOU/CHILDCARE/INVOICES',
+    ]);
     expect(body.description).toBe('<p>En ändrad beskrivning</p>');
     expect(body.contactReason).toBe('Klagomål');
     expect(body.contactReasonDescription).toBe('En ändrad orsaksbeskrivning');

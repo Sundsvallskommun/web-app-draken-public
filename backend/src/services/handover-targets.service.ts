@@ -1,5 +1,7 @@
 import { FTCaseType, MEXCaseType } from '@/interfaces/case-type.interface';
 
+import { getNewErrandDefaults } from './support-errand.service';
+
 /** A casedata namespace that support errands are forwarded to (a casedata forward, never a handover). */
 export interface CasedataForwardTarget {
   namespace: string;
@@ -39,3 +41,26 @@ export const getAllowedHandoverTargets = (): string[] =>
     .filter(Boolean);
 
 export const isAllowedHandoverTarget = (namespace?: string): boolean => !!namespace && getAllowedHandoverTargets().includes(namespace);
+
+/**
+ * Targets categorized in their label tree: the application whose new-errand classification a handed-over
+ * errand gets (SupportManagement requires one), and the ROOT label the tree sits under, when it does.
+ */
+const LABEL_TARGETS: Record<string, { application: string; categorizationRoot?: string }> = {
+  CONTACTSUNDSVALL: { application: 'KC', categorizationRoot: 'CATEGORIZATION_ROOT' },
+  SALARYANDPENSION: { application: 'LOP' },
+  CONTACTANGE: { application: 'KA' },
+  INTERNALSERVICE: { application: 'IK' },
+  LOK: { application: 'LOK' },
+  BOU: { application: 'BOU' },
+};
+
+export interface LabelTarget {
+  categorizationRoot?: string;
+  classification?: { category: string; type: string };
+}
+
+export const getLabelTarget = (namespace?: string): LabelTarget | undefined => {
+  const target = namespace ? LABEL_TARGETS[namespace] : undefined;
+  return target && { categorizationRoot: target.categorizationRoot, classification: getNewErrandDefaults(target.application)?.classification };
+};

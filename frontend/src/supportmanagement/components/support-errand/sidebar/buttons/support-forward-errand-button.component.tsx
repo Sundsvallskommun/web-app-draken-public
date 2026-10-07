@@ -382,9 +382,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                                 </Alert.Content>
                               </Alert>
                             )}
-                            {handover.step === 2 && (
-                              <HandoverReview handover={handover} supportErrand={supportErrand!} />
-                            )}
+                            {handover.step === 2 && <HandoverReview handover={handover} />}
                           </>
                         ) : (
                           <HandoverClassificationPlaceholder />
