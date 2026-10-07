@@ -92,7 +92,7 @@ export interface ThrowableProblem {
   detail?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: any;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface Violation {
@@ -247,6 +247,8 @@ export interface Label {
    * @minLength 1
    */
   classification: string;
+  /** Display name for the label classification, as registered for the namespace */
+  classificationDisplayName?: string;
   /** Display name for the label */
   displayName?: string;
   /** Resource path */
@@ -307,9 +309,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
@@ -324,8 +326,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1022,6 +1024,34 @@ export interface LabelMoveRequest {
   dryRun: boolean;
 }
 
+/** Label classification model */
+export interface LabelClassification {
+  /** Label classification ID */
+  id?: string;
+  /**
+   * Label classification. Used as key and matched against the classification of the labels. Ignored on update
+   * @minLength 0
+   * @maxLength 255
+   * @pattern (?!\.{1,2}$)[^/\\;%]+
+   */
+  classification: string;
+  /**
+   * Display name for the label classification
+   * @maxLength 255
+   */
+  displayName?: string | null;
+  /**
+   * Timestamp when the label classification was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the label classification was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
 /** ExternalIdType model */
 export interface ExternalIdType {
   /** ExternalIdType ID */
@@ -1402,6 +1432,8 @@ export interface ErrandLabel {
   version?: number;
   /** Label classification */
   classification?: string;
+  /** Display name for the label classification, as registered for the namespace */
+  classificationDisplayName?: string;
   /** Display name for the label */
   displayName?: string;
   /** Resource path */
@@ -1578,13 +1610,20 @@ export interface Parameter {
   /**
    * Parameter key
    * @minLength 1
+   * @maxLength 255
    */
   key: string;
-  /** Parameter display name */
+  /**
+   * Parameter display name
+   * @maxLength 255
+   */
   displayName?: string;
-  /** Parameter group name */
+  /**
+   * Parameter group name
+   * @maxLength 255
+   */
   group?: string;
-  /** Parameter values. Each value can have a maximum length of 3000 characters */
+  /** Parameter values. Each value must not be blank, and can have a maximum length of 3000 characters */
   values?: string[];
   /**
    * Optimistic locking version of the parameter
@@ -1837,6 +1876,8 @@ export interface Investigation {
   sections?: InvestigationSection[];
   /** Attachments of the errand linked to this investigation */
   attachments?: ErrandAttachment[];
+  /** Parameters of the investigation, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the investigation */
   createdBy?: string;
   /** User who last modified the investigation */
@@ -2294,6 +2335,8 @@ export interface Decision {
   terms?: DecisionTerm[];
   /** Attachments of the errand linked to this decision */
   attachments?: ErrandAttachment[];
+  /** Parameters of the decision, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the decision */
   createdBy?: string;
   /** User who last modified the decision */
@@ -2663,8 +2706,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export interface SubscriberNotification {

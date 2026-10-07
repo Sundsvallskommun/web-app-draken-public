@@ -52,7 +52,7 @@ test('displays the saved data read-only when the optional UI schema is unavailab
   const schema: RJSFSchema = { type: 'object', properties: { answer: { type: 'string', title: 'Svar' } } };
   // The shared display must still accept the existing Support Management API contract.
   const jsonParameters: JsonParameter[] = [
-    { key: 'Document', schemaId: 'schema-id', value: { answer: 'Sparat svar' } },
+    { key: 'Document', schemaId: 'schema-id', value: { answer: 'Sparat svar' } as never },
   ];
   vi.mocked(getRjsfSchema).mockResolvedValue(schema);
   vi.mocked(getUiSchemaForSchema).mockRejectedValue(new Error('No UI schema'));

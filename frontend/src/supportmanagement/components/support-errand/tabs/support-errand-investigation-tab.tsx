@@ -15,6 +15,8 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportStatementsSection } from '../statements/support-statements-section.component';
+
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
   [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
@@ -28,7 +30,14 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ section }) => {
+const STATEMENTS_SECTION = 'statements';
+
+const SectionDisclosure: React.FC<{
+  section: InvestigationSection;
+  writable: boolean;
+  onStatementsEdited: (edited: boolean) => void;
+  saveStatements: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
+}> = ({ section, writable, onStatementsEdited, saveStatements }) => {
   const { t } = useTranslation();
 
   return (
@@ -38,7 +47,11 @@ const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ sectio
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
+        {section.sectionKey === STATEMENTS_SECTION ? (
+          <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />
+        ) : (
+          <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
+        )}
       </Disclosure.Content>
     </Disclosure>
   );
@@ -58,6 +71,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   const toastMessage = useSnackbar();
 
   const [investigation, setInvestigation] = useState<Investigation>();
+  const [statementsEdited, setStatementsEdited] = useState(false);
+  const saveStatements = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -107,8 +122,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited);
-  }, [edited, setUnsaved]);
+    setUnsaved(edited || statementsEdited);
+  }, [edited, statementsEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -166,8 +181,12 @@ export const SupportErrandInvestigationTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 
-  const save = () => {
+  const save = async () => {
     if (!errandId || !investigation?.id) return;
+
+    const statementsSaved = (await saveStatements.current?.()) ?? true;
+    if (!statementsSaved) return;
+
     setIsSaving(true);
     saveSupportInvestigation(errandId, municipalityId, investigation.id, {
       version: investigation.version ?? 0,
@@ -243,7 +262,13 @@ export const SupportErrandInvestigationTab: React.FC<{
 
           <div className="flex flex-col gap-8">
             {sections.map((section) => (
-              <SectionDisclosure key={section.id ?? section.sectionKey} section={section} />
+              <SectionDisclosure
+                key={section.id ?? section.sectionKey}
+                section={section}
+                writable={!readOnly}
+                onStatementsEdited={setStatementsEdited}
+                saveStatements={saveStatements}
+              />
             ))}
 
             <Disclosure variant="alt" className="w-full" data-cy="investigation-conclusion-section">
@@ -317,8 +342,8 @@ export const SupportErrandInvestigationTab: React.FC<{
               loadingText={t('common:investigation.saving')}
               saving={isSaving}
               disabled={isSaving}
-              onSave={save}
-              unsaved={edited}
+              onSave={() => void save()}
+              unsaved={edited || statementsEdited}
               unsavedTitle={t('common:investigation.unsaved')}
               unsavedText={t('common:tabs.unsaved_investigation')}
               dataCy="save-investigation"

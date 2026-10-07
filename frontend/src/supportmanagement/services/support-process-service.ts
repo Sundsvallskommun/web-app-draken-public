@@ -1,6 +1,6 @@
 import type {
   ErrandProcess,
-  ErrandProcesses,
+  ErrandProcessOverview,
   Label,
   PageProcessActivity,
   ProcessActivity,
@@ -186,7 +186,7 @@ export interface SupportProcessState {
 
 export const getSupportErrandProcessState = (errandId: string, municipalityId: string): Promise<SupportProcessState> =>
   apiService
-    .get<ErrandProcesses>(`supportprocess/${municipalityId}/${errandId}`)
+    .get<ErrandProcessOverview>(`supportprocess/${municipalityId}/${errandId}`)
     .then((res) => ({
       process: res.data?.processes?.find((candidate) => candidate.processStatus),
       startability: res.data?.startable?.status,
