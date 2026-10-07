@@ -272,6 +272,8 @@ export class SupportStatementController {
       throw new HttpException(400, 'A known attachment purpose is required');
     }
 
+    const namespacePurposeId = await this.purposeId(municipalityId, data.purpose, req.user);
+
     const baseURL = apiURL(this.SERVICE);
     const form = new FormData();
     form.append('attachment', file.buffer, { filename: file.originalname });
@@ -297,7 +299,7 @@ export class SupportStatementController {
       {
         url: `${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`,
         baseURL,
-        data: { purpose: { id: await this.purposeId(municipalityId, data.purpose, req.user) } },
+        data: { purpose: { id: namespacePurposeId } },
         propagateClientError: true,
       },
       req.user,
