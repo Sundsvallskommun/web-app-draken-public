@@ -175,7 +175,10 @@ Uppföljning visar bara åtgärder med planerat start- eller slutdatum och beslu
 `TRUE` eller `REWORK`. `measure-follow-up.ts` äger detta urval i frontend.
 Ingen registrering, redigering eller bedömning erbjuds i denna vy.
 
-Skaparen kan, med vanlig skrivrätt till ett öppet ärende, kryssa i **Utförd**.
+Den som följer upp kan, med vanlig skrivrätt till ett öppet ärende, kryssa i **Utförd**. Där
+`HEALTHCAREDEVIATION_HANDLER_ROLES` är konfigurerad är det enhetschefen och verksamhetschefen, vem som än
+föreslog åtgärden (`backend/src/config/measure-follow-up-roles.ts`); BFF:en svarar `mayFollowUp` i
+åtgärdslistan. Utan konfigurerade roller följer skaparen upp sin egen åtgärd, som tidigare.
 En separat dialog kräver ett aktivt Ja/Nej-val på **Har åtgärd lett till önskad
 effekt?** och text i **Beskriv åtgärdens effekt** (högst 4000 tecken). Avbryt sparar inget.
 Svaren och genomförandet sparas i samma skrivning. Kortet behåller
@@ -186,7 +189,7 @@ datumet bevaras.
 
 Drakens `PATCH .../measures/:measureId/follow-up` tar endast
 `desiredEffectAchieved: boolean` och `followUpDescription: string`.
-`SupportMeasureService` kontrollerar skapare, ärendestatus, planering, beslut
+`SupportMeasureService` kontrollerar rollen (eller skaparen, utan roller), ärendestatus, planering, beslut
 och åtgärdens `If-Match`. Uppföljningen sparas på åtgärden själv i SM 16.0,
 med en enda `PATCH .../measures/:measureId` villkorad på åtgärdens version:
 

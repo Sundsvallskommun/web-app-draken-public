@@ -7,7 +7,7 @@ import { ClipboardCheck, FileText, Pencil } from 'lucide-react';
 
 import { measureCanBeDecided, measureDecisionPresentation } from './measure-decision';
 import { measureCanBeFollowedUp, measureFollowUp, measureHasFollowUp } from './measure-follow-up';
-import { isOwnMeasure } from './measure-ownership';
+import { isOwnMeasure, mayFollowUpMeasure } from './measure-ownership';
 import { measureTypeLabel } from './measure-types';
 
 const date = (value?: string) => (value ? dayjs(value).format('YYYY-MM-DD') : undefined);
@@ -33,6 +33,7 @@ export function MeasureList({
   types,
   roles,
   currentUser,
+  mayFollowUp,
   onEdit,
   onDecide,
   onFollowUp,
@@ -43,6 +44,8 @@ export function MeasureList({
   roles: readonly Role[];
   /** Session username; only the person who registered a measure may edit it. */
   currentUser?: string;
+  /** The BFF's answer on whether the user's role follows up measures; absent, the registrar does. */
+  mayFollowUp?: boolean;
   onEdit?: (measure: Measure) => void;
   onDecide?: (measure: Measure) => void;
   onFollowUp?: (measure: Measure) => void;
@@ -67,7 +70,7 @@ export function MeasureList({
         const created = measure.created ? dayjs(measure.created).format('YYYY-MM-DD HH:mm:ss') : undefined;
         const editable = Boolean(onEdit && measure.id && isOwnMeasure(measure, currentUser));
         const canFollowUp = Boolean(
-          onFollowUp && measureCanBeFollowedUp(measure) && isOwnMeasure(measure, currentUser)
+          onFollowUp && measureCanBeFollowedUp(measure) && mayFollowUpMeasure(measure, currentUser, mayFollowUp)
         );
         const responsible = userLabel(measure.responsibleUser);
         const followUp = measureFollowUp(measure);

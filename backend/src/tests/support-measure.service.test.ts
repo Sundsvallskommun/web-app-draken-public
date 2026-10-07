@@ -125,6 +125,8 @@ test('reads protected measures with their own versions and keeps parent synchron
       ],
     },
     canWrite: true,
+    // The catalogue names roles, and this user holds neither of the unit's managers' roles.
+    mayFollowUp: false,
   });
   // The errand, its measures and the metadata: a follow-up is part of the measure, not a document of its own.
   expect(get).toHaveBeenCalledTimes(3);

@@ -17,6 +17,8 @@ export interface MeasuresSnapshot {
   };
   /** Whether Support Management lets the user write the errand's measures. The list stays readable without it. */
   canWrite: boolean;
+  /** Whether the user's role follows up approved measures; absent where the deployment names no roles. */
+  mayFollowUp?: boolean;
 }
 
 export interface PlannedMeasuresSnapshot {

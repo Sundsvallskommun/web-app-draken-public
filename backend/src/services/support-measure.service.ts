@@ -1,6 +1,7 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
+import { mayFollowUpMeasuresByRole } from '@/config/measure-follow-up-roles';
 import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
@@ -27,6 +28,11 @@ export interface SupportMeasuresSnapshot {
   registration: MeasureRegistrationPolicy;
   /** Whether Support Management lets the user write the errand's measures. The list stays readable without it. */
   canWrite: boolean;
+  /**
+   * Whether the user's role follows up approved measures. Absent where the deployment configured no handler
+   * roles: a measure is then followed up by whoever registered it.
+   */
+  mayFollowUp?: boolean;
 }
 
 export interface PlannedSupportMeasuresSnapshot {
@@ -93,6 +99,13 @@ export class SupportMeasureService {
     return existing;
   }
 
+  /** The unit's managers follow up a measure where the deployment names roles; elsewhere its registrar does. */
+  private assertMayFollowUp(existing: Pick<Measure, 'addedByUser'>, user: User): void {
+    const byRole = mayFollowUpMeasuresByRole(this.handlerRoles, user.groups ?? []);
+    if (byRole === undefined) return assertOwnMeasure(existing, user);
+    if (!byRole) throw new HttpException(403, 'Det är enhetschefen eller verksamhetschefen som följer upp åtgärder.');
+  }
+
   async read(municipalityId: string, errandId: string, user: User): Promise<SupportMeasuresSnapshot> {
     const url = this.errandUrl(municipalityId, errandId);
     // Parent version is only used to synchronize the surrounding errand form after our own edit.
@@ -112,6 +125,7 @@ export class SupportMeasureService {
       )
     ).data;
     const registration = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.handlerRoles, this.superadminGroup);
+    const mayFollowUp = mayFollowUpMeasuresByRole(this.handlerRoles, user.groups ?? []);
     // Whether measures can be added, edited and followed up is Support Management's call; the role catalogue only
     // says which role and types a writer registers with. A failed lookup offers no writes but keeps the list readable.
     const canWrite = await this.errandAccess()
@@ -126,6 +140,7 @@ export class SupportMeasureService {
       metadata: { measureTypes: metadata.measureTypes ?? [], roles: metadata.roles ?? [] },
       ...registration,
       canWrite,
+      ...(mayFollowUp === undefined ? {} : { mayFollowUp }),
     };
   }
 
@@ -317,7 +332,7 @@ export class SupportMeasureService {
     const expectedVersion = requireMeasureVersion(ifMatch);
     const url = this.errandUrl(municipalityId, errandId);
     const existing = await this.readCurrentWritableMeasure(url, measureId, user);
-    assertOwnMeasure(existing, user);
+    this.assertMayFollowUp(existing, user);
     if (!isPlannedApprovedMeasure(existing)) throw new HttpException(409, 'Endast planerade och godkända åtgärder kan följas upp.');
     const description = data.followUpDescription?.trim();
     if (typeof data.desiredEffectAchieved !== 'boolean' || !description || description.length > 4000) {

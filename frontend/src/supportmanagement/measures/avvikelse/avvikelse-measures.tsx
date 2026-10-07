@@ -285,6 +285,7 @@ export function AvvikelseMeasures({
           types={metadata.measureTypes ?? []}
           roles={metadata.roles ?? []}
           currentUser={user.username}
+          mayFollowUp={snapshot.mayFollowUp}
           onEdit={canEdit && !dirty && !dialog ? (measure) => setDialog({ kind: 'edit', measure }) : undefined}
           onDecide={canDecide && !dirty && !dialog ? (measure) => setDialog({ kind: 'decide', measure }) : undefined}
           onFollowUp={

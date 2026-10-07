@@ -186,3 +186,32 @@ test('ordinary editing cannot change the execution belonging to a saved follow-u
   });
   expect(api.patches).toHaveLength(1);
 });
+
+describe('who follows up a measure where the deployment names handler roles', () => {
+  const unitManagers = 'MOCK_UNIT_MANAGERS';
+  const roles = [
+    { key: 'enhetschef', label: 'Enhetschef', group: unitManagers },
+    { key: 'lex-utredare', label: 'LEX-utredare', group: 'MOCK_LEX_INVESTIGATORS' },
+  ];
+  const followUpAs = (groups: string[]) => {
+    const api = new MeasureApi();
+    // Proposed by a LEX investigator, approved since: the unit's manager is the one to follow it up.
+    api.measure.addedByUser = 'lex-investigator';
+    const service = new SupportMeasureService(api, roles);
+    return { api, save: () => service.followUp('2281', 'errand-1', 'measure-1', '"3"', answers, mockUser({ groups })) };
+  };
+
+  it("lets the unit's manager follow up a measure somebody else proposed", async () => {
+    const { api, save } = followUpAs([unitManagers]);
+
+    await expect(save()).resolves.toBeUndefined();
+    expect(api.patches).toHaveLength(1);
+  });
+
+  it('refuses everybody else, the one who proposed it included, without writing', async () => {
+    const { api, save } = followUpAs(['mock_lex_investigators']);
+
+    await expect(save()).rejects.toMatchObject({ status: 403 });
+    expect(api.patches).toHaveLength(0);
+  });
+});
