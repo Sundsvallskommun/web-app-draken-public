@@ -3,11 +3,11 @@ import { IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MinLength, Val
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
-export const SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+export const SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision', 'details'] as const;
 
 /**
- * Which errand tab renders the document: the investigation tab (the default) or the decision tab.
- * The tabs share the document machinery; this only says where the document is offered.
+ * Where the errand page renders the document: the investigation tab (the default), the decision tab, or
+ * Ärendeuppgifter. They share the document machinery; this only says where the document is offered.
  */
 export type SupportInvestigationDocumentPlacement = (typeof SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 

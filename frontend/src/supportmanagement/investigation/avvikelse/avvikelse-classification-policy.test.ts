@@ -152,3 +152,23 @@ test('recognises the HSL legal base by path, and by name only for a pathless leg
     assert.equal(resolveAvvikelseDocumentApplicability(errand), undefined);
   }
 });
+
+test('lets the report type label decide, and the reported event type only stand in for an errand without one', () => {
+  const reportedAsMisconduct = [{ key: 'eventType', values: ['MISSFORHALLANDE'] }];
+  // LEX declined the misconduct and it went back as a deviation: the label moved, the report never does.
+  assert.equal(
+    isAvvikelseReportedMisconductErrand({
+      parameters: reportedAsMisconduct,
+      labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }],
+    }),
+    false
+  );
+  assert.equal(
+    isAvvikelseReportedMisconductErrand({
+      parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }],
+      labels: [{ resourcePath: 'REPORT_TYPE/ABUSE' }],
+    }),
+    true
+  );
+  assert.equal(isAvvikelseReportedMisconductErrand({ parameters: reportedAsMisconduct, labels: [] }), true);
+});

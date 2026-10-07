@@ -9,6 +9,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
+| `bedomning-sol-lss`         | 1.0           | `bedomning-sol-lss.schema-request.json`    | `bedomning-sol-lss.ui-schema-request.json`    |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
 
@@ -62,6 +63,14 @@ riktlinjer". Värdet är detsamma, så sparade dokument behöver ingen migrering
 de är bundna till. Den 5 oktober 2026 publicerades `2281_utredning-enhetschef_1.6` och `2281_utredning-sol-lss_1.4`
 i testmiljön, med oförändrade UI-scheman lagda på de nya ID:na. Schema och UI Schema lästes tillbaka och var
 identiska med artefakterna, och `versions/latest` pekar på dem. Inget har publicerats i produktionsmiljön.
+
+Den 6 oktober 2026 publicerades `2281_bedomning-sol-lss_1.0`, Lex Sarah-ansvarigs initiala bedömning, i testmiljön.
+Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 1.0. Inget
+har publicerats i produktionsmiljön. Bedömningen frågar om IVO-anmälan med samma fält som `beslut-sol-lss`
+(`ivoNotification`, `ivoCaseNumber`, `public360CaseNumber`), så svaret kan förifylla beslutet, och om ärendet ska
+lex-utredas (`lexInvestigationDecision`), med en motivering som krävs när det inte ska det. Samma dag byttes UI-schemat
+på samma ID till `PlainTextareaWidget` för motiveringen, som är ren text och inte ska bli HTML; schemat är
+oförändrat och UI-schemat lästes tillbaka identiskt med artefakten.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 

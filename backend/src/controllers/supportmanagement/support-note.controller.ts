@@ -14,6 +14,7 @@ import ApiService from '@/services/api.service';
 import {
   assertCanWriteSupportServiceNote,
   assertSupportNoteIsChangeable,
+  buildSupportServiceNote,
   SUPPORT_COMMENT,
   SUPPORT_SERVICE_NOTE,
 } from '@/services/support-note.service';
@@ -176,14 +177,7 @@ export class SupportNoteController {
     const errandUrl = this.errandUrl(municipalityId, id);
     const errand = await this.apiService.get<Errand>({ url: errandUrl, propagateClientError: true, mapUnauthorizedToForbidden: true }, req.user);
     assertCanWriteSupportServiceNote(errand.data, req.user);
-    const data: SupportNote = {
-      context: SUPPORT_SERVICE_NOTE.context,
-      role: SUPPORT_SERVICE_NOTE.role,
-      ...(noteDto.partyId && { partyId: noteDto.partyId }),
-      subject: SUPPORT_SERVICE_NOTE.subject,
-      body: noteDto.body.trim(),
-      createdBy: req.user.name,
-    };
+    const data: SupportNote = buildSupportServiceNote(noteDto.body, req.user, noteDto.partyId);
     const res = await this.apiService
       .post<any, SupportNote>({ url: `${errandUrl}/notes`, data, propagateClientError: true, mapUnauthorizedToForbidden: true }, req.user)
       .catch(e => {

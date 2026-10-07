@@ -354,6 +354,7 @@ Två namngivna steg finns, och klienten namnger steget i stället för att kompo
 | --- | --- | --- |
 | `assign-lex` | `suspectedMisconduct === 'yes'` i den sparade enhetschefsutredningen. Dialogen efter sparningen kan stängas. Så länge ärendet inte är tilldelat heter fasknappen Tilldela LEX-ansvarig i stället för övergångens namn (Redo för beslut) och öppnar samma dialog; fasen byts inte, utan LEX-ansvarig skickar ärendet till beslut | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
 | `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
+| `decline-lex` | LEX-ansvarigs initiala bedömning (`bedomning-sol-lss`) är sparad med Inte ska lex utredas; knappen sitter längst ned i bedömningen, vars skrivrätt auktoriserar steget | först motiveringen som tjänsteanteckning, sedan `assignedUserId` (chef för platsen), `REPORT_TYPE/DEVIATION` i stället för `REPORT_TYPE/ABUSE`, tar bort `ACCESS/LEX`, status `ASSIGNED` - motsatsen till `assign-lex` |
 | `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) i kortet Ärendets plats överst i Ärendeuppgifter | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
 
 `assign-lex` och `return-to-manager` sätter **status** `ASSIGNED`: ärendet når LEX-ansvarig respektive
@@ -387,6 +388,45 @@ vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skriv
 enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
 att känna till innan åtkomsten konfigureras om.
 
+### LEX-ansvarigs initiala bedömning
+
+När LEX-ansvarig har fått ärendet och återupptagit det gör hen en första bedömning, `bedomning-sol-lss`
+(schemat i `schemas/`). Den ligger i profilen med `placement: 'details'` och visas därför inte som flik utan som
+ett eget hopfällbart avsnitt i Ärendeuppgifter (`LexInitialAssessment`), med samma dokumentmaskineri som
+utredningsflikarna: AccessMapper avgör läs- och skrivrätt och ett låst ärende är skrivskyddat. Avsnittet visas
+medan ärendet bär `ACCESS/LEX`, och efteråt så länge bedömningen är sparad.
+
+- **IVO.** Svaret och de två ärendenumren heter samma sak som i lex Sarah-beslutet, och förifyller beslutet så
+  länge det inte är sparat (`prefillInvestigationDocument`). Numren visas och tillåts bara vid Ja.
+- **Ska utredas.** Ingenting flyttas; LEX-ansvarig tilldelar en utredare som vanligt.
+- **Inte ska lex utredas.** Kräver en motivering. Är bedömningen sparad så visas Lämna tillbaka till enhetschef
+  längst ned, som väljer en chef för platsen och tar steget `decline-lex`. BFF:en vägrar steget (422) om den
+  sparade bedömningen inte säger Inte ska lex utredas, skriver motiveringen som tjänsteanteckning (en gång -
+  finns anteckningen redan skrivs den inte igen) medan LEX fortfarande kan skriva i ärendet, och lämnar sedan
+  tillbaka det som en avvikelse villkorat på versionen efter anteckningen. Har någon annan hunnit ändra ärendet
+  under tiden svarar steget 409.
+
+Ärendet hanteras därefter som en vanlig avvikelse, och två regler gör att det går:
+
+- **Rapporttypen avgör.** Ett ärende är ett rapporterat missförhållande om dess `REPORT_TYPE`-etikett säger det;
+  `eventType` är vad som rapporterades och flyttas aldrig, så den gäller bara ett ärende utan rapporttyp
+  (`isReportedMisconduct` i BFF:en, `isAvvikelseReportedMisconductErrand` i klienten).
+- **En avböjd misstanke räknas inte.** Enhetschefens `suspectedMisconduct = yes` gör inte längre ärendet till en
+  lex Sarah-sak när den sparade bedömningen säger Inte ska lex utredas: beslutet fattas på enhetschefens utredning
+  och enhetschefen ombeds inte tilldela LEX igen (`hasLexDeclinedInvestigation`).
+
+AccessMapper behöver nyckeln `bedomning-sol-lss`: skrivrätt för LEX-ansvarig, och läsrätt för enhetschef och
+verksamhetschef. Utan läsrätten ser chefen inte avböjandet efter återlämningen, och beslutsgrinden väntar då
+fortfarande på LEX-utredningen.
+
+### LEX-utredaren skickar inte ärendet till beslut
+
+En LEX-utredare utreder; det är LEX-ansvarig som skickar ärendet till beslut. Försöker en LEX-utredare som inte
+också är LEX-ansvarig byta till Beslut heter fasknappen Tilldela LEX-ansvarig och öppnar en dialog där ärendet
+tilldelas en LEX-ansvarig och markeras Tilldelat (`LexManagerHandoverRequirement`, `handsErrandToLexManager`).
+Ärendet stannar hos LEX. BFF:en håller samma regel i fasbytet (`assertMaySendToDecision`) och svarar 422; en
+administratör hålls inte tillbaka, och utan konfigurerade handläggarroller finns ingen utredare att hålla tillbaka.
+
 ### Till beslut först när utredningen är klar
 
 Ärendet får inte gå från Utredning till Beslut förrän den utredning det beslutas på är **sparad som klar**
@@ -394,8 +434,8 @@ att känna till innan åtkomsten konfigureras om.
 
 | Ärendet | Utredningen som ska vara klar |
 | --- | --- |
-| Rapporterat missförhållande (`eventType = MISSFORHALLANDE` eller `REPORT_TYPE/ABUSE`) | `utredning-sol-lss` (LEX) |
-| Misstänkt missförhållande (`suspectedMisconduct = yes` i enhetschefens **sparade** utredning) | `utredning-sol-lss` (LEX) |
+| Rapporterat missförhållande (`REPORT_TYPE/ABUSE`; `eventType = MISSFORHALLANDE` bara när ärendet saknar rapporttyp) | `utredning-sol-lss` (LEX) |
+| Misstänkt missförhållande (`suspectedMisconduct = yes` i enhetschefens **sparade** utredning), som LEX-ansvarig inte har avböjt | `utredning-sol-lss` (LEX) |
 | Övriga | `utredning-enhetschef` |
 
 MAS/MAR:s `utredning-hsl` håller aldrig tillbaka beslutet, hur långt den än har kommit. Regeln finns i

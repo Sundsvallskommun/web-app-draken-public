@@ -120,7 +120,7 @@ test('the first unmet requirement for the target phase holds the move, in the or
     isMet: () => met,
     render: () => null,
   });
-  const context = { errand: undefined, profile: undefined, labelStructure: [] };
+  const context = { errand: undefined, profile: undefined, labelStructure: [], viewer: {} };
   const toDecision = (phaseName: string) => phaseName === 'DECISION';
   const handover = requirement('Tilldela LEX-ansvarig', 'DECISION', false);
   const completion = requirement('Utredningen är inte klar', 'DECISION', false);

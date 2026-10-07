@@ -3,9 +3,12 @@ import type { LabelFilterGroupDefinition } from '../filters/label-filter-project
 const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
 type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
 
-const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision', 'details'] as const;
 
-/** Which errand tab offers the document. The BFF omits the field for the ordinary investigation tab. */
+/**
+ * Where the errand page offers the document: the investigation tab, the decision tab or Ärendeuppgifter. The BFF
+ * omits the field for the ordinary investigation tab.
+ */
 export type InvestigationDocumentPlacement = (typeof INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 
 const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;

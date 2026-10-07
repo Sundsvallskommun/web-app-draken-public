@@ -11,6 +11,13 @@ const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] =
   { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning Lex Sarah', ownerLabel: 'Lex Sarah' },
   { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR' },
   {
+    key: 'bedomning-sol-lss',
+    schemaName: 'bedomning-sol-lss',
+    tabLabel: 'Lex Sarah-ansvarigs initiala bedömning',
+    ownerLabel: 'LEX-ansvarig',
+    placement: 'details',
+  },
+  {
     key: 'beslut-hsl',
     schemaName: 'beslut-hsl',
     tabLabel: 'Beslut HSL',

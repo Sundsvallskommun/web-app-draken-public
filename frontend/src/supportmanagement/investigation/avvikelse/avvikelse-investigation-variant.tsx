@@ -12,7 +12,11 @@ import type {
   InvestigationTabProps,
   InvestigationVariantModule,
 } from '../investigation-variant';
-import { lexOverviewAssignee, requiresLexAssignment } from './assignment/avvikelse-assignment-policy';
+import {
+  handsErrandToLexManager,
+  lexOverviewAssignee,
+  requiresLexAssignment,
+} from './assignment/avvikelse-assignment-policy';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
@@ -58,6 +62,12 @@ const AvvikelseReportDocument = dynamic(
 );
 
 /** Lazy for the same bundle reason as the categorization control. */
+const LexInitialAssessment = dynamic(
+  () => import('./lex-initial-assessment.component').then((module) => module.LexInitialAssessment),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
 const InvestigationCompletionRequirement = dynamic(
   () =>
     import('./investigation-completion-requirement.component').then(
@@ -75,6 +85,13 @@ const UnitFollowUp = dynamic(
 /** Lazy for the same bundle reason as the categorization control. */
 const LexAssignmentRequirement = dynamic(
   () => import('./assignment/lex-assignment-requirement.component').then((module) => module.LexAssignmentRequirement),
+  { loading: () => null }
+);
+const LexManagerHandoverRequirement = dynamic(
+  () =>
+    import('./assignment/lex-manager-handover-requirement.component').then(
+      (module) => module.LexManagerHandoverRequirement
+    ),
   { loading: () => null }
 );
 
@@ -113,6 +130,7 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     <>
       <ErrandLocationCard {...props} />
       <AvvikelseReportDocument {...props} />
+      <LexInitialAssessment {...props} />
     </>
   ),
   /**
@@ -138,6 +156,16 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
       actionLabel: 'Tilldela LEX-ansvarig',
       isMet: (context: InvestigationPhaseEntryContext) => !requiresLexAssignment(context),
       render: (props: InvestigationPhaseEntryRequirementProps) => <LexAssignmentRequirement {...props} />,
+    },
+    /**
+     * A LEX investigator does not send the errand to the decision: they hand it to a LEX manager, who does.
+     * Before the investigation's own requirement, since finishing it would not let the investigator through.
+     */
+    {
+      phaseName: DECISION_PHASE_NAME,
+      actionLabel: 'Tilldela LEX-ansvarig',
+      isMet: (context: InvestigationPhaseEntryContext) => !handsErrandToLexManager(context.viewer),
+      render: (props: InvestigationPhaseEntryRequirementProps) => <LexManagerHandoverRequirement {...props} />,
     },
     /**
      * The errand is decided on a finished investigation: LEX's for a lex Sarah matter, the unit

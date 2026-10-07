@@ -182,7 +182,13 @@ export const SupportTabsWrapper: FC<{
             access={investigationAccess}
             header={
               appConfig.features.useInvestigation &&
-              investigationVariant?.renderDetailsHeader?.({ access: investigationAccess, disabled: unsavedChanges })
+              investigationVariant?.renderDetailsHeader?.({
+                access: investigationAccess,
+                disabled: unsavedChanges,
+                onDirtyChange: setInvestigationDocumentDirty,
+                refreshAccess: refreshInvestigationAccess,
+                revealTab: () => setActiveTabKey('details'),
+              })
             }
           />
         ),

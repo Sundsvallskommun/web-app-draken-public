@@ -5,7 +5,7 @@ import { test } from 'vitest';
 
 import type { InvestigationProfile } from '../../investigation-profile';
 import { ACCESS_LEX_LABEL_PATH } from './avvikelse-access-labels';
-import { lexOverviewAssignee, requiresLexAssignment } from './avvikelse-assignment-policy';
+import { handsErrandToLexManager, lexOverviewAssignee, requiresLexAssignment } from './avvikelse-assignment-policy';
 
 const profile = {
   documents: [{ key: 'manager-document', schemaName: 'utredning-enhetschef' }],
@@ -47,4 +47,31 @@ test('the overview names LEX as responsible while the errand carries the LEX acc
   );
   assert.equal(lexOverviewAssignee([{ resourcePath: 'REPORT_TYPE/ABUSE' }] as SupportErrand['labels'], []), undefined);
   assert.equal(lexOverviewAssignee(undefined, undefined), undefined);
+});
+
+test('a LEX investigator hands the errand to a LEX manager rather than sending it to the decision', () => {
+  assert.equal(handsErrandToLexManager({ roleKeys: ['lex-utredare'] }), true);
+  // A manager as well is a manager, an administrator is held back by no role, and other roles are not concerned.
+  assert.equal(handsErrandToLexManager({ roleKeys: ['lex-utredare', 'lex-ansvarig'] }), false);
+  assert.equal(handsErrandToLexManager({ roleKeys: ['lex-utredare'], superadmin: true }), false);
+  assert.equal(handsErrandToLexManager({ roleKeys: ['enhetschef'] }), false);
+  assert.equal(handsErrandToLexManager({}), false);
+});
+
+test('a suspicion LEX-ansvarig declined in the initial assessment asks for no new handover', () => {
+  const withAssessment = {
+    documents: [
+      ...(profile as unknown as { documents: unknown[] }).documents,
+      { key: 'assessment', schemaName: 'bedomning-sol-lss' },
+    ],
+  } as unknown as InvestigationProfile;
+  const declined = {
+    labels: [],
+    jsonParameters: [
+      { key: 'manager-document', value: { suspectedMisconduct: 'yes' } },
+      { key: 'assessment', value: { lexInvestigationDecision: 'not_investigate' } },
+    ],
+  } as unknown as SupportErrand;
+
+  assert.equal(requiresLexAssignment({ errand: declined, profile: withAssessment, labelStructure: [] }), false);
 });

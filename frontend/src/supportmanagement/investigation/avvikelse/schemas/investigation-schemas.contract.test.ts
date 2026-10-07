@@ -50,6 +50,14 @@ const artifacts = [
     schemaFile: 'beslut-sol-lss.schema-request.json',
     uiSchemaFile: 'beslut-sol-lss.ui-schema-request.json',
   },
+  {
+    name: 'bedomning-sol-lss',
+    version: '1.0',
+    hasErrandClassification: false,
+    hasReport: false,
+    schemaFile: 'bedomning-sol-lss.schema-request.json',
+    uiSchemaFile: 'bedomning-sol-lss.ui-schema-request.json',
+  },
 ];
 
 const decisionArtifacts = artifacts.filter(({ name }) => name.startsWith('beslut-'));
@@ -265,6 +273,10 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'decision', title: 'Beslut om missförhållande' },
       { id: 'ivo-report', title: 'Anmälan till IVO' },
     ],
+    'bedomning-sol-lss': [
+      { id: 'ivo-report', title: 'Anmälan till IVO' },
+      { id: 'lex-investigation', title: 'Lex-utredning' },
+    ],
   };
 
   for (const artifact of artifacts) {
@@ -275,8 +287,9 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
     );
   }
 
-  // The IVO question comes first; its case number and the Public 360 number follow it.
-  for (const artifact of decisionArtifacts) {
+  // The IVO question comes first; its case number and the Public 360 number follow it. The initial assessment
+  // asks the same question the lex Sarah decision does, and prefills it.
+  for (const artifact of [...decisionArtifacts, ...artifacts.filter(({ name }) => name === 'bedomning-sol-lss')]) {
     const order: string[] = readJson(artifact.uiSchemaFile).value['ui:order'];
     assert.ok(order.indexOf('ivoNotification') < order.indexOf('ivoCaseNumber'), artifact.name);
     assert.ok(order.indexOf('ivoCaseNumber') < order.indexOf('public360CaseNumber'), artifact.name);
@@ -582,6 +595,7 @@ test('all sketch multiselects are represented as unique arrays', () => {
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
     'beslut-hsl': [],
     'beslut-sol-lss': [],
+    'bedomning-sol-lss': [],
   };
 
   for (const artifact of artifacts) {

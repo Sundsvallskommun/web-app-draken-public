@@ -17,10 +17,14 @@ import {
   resolveInvestigationTabState,
   visibleInvestigationDocuments,
 } from './investigation-tab-state';
+import { recordSavedInvestigationDocument } from './record-saved-investigation-document';
 import { SupportInvestigationDocument } from './support-investigation-document.component';
 import type { SupportInvestigationDocument as SavedInvestigationDocument } from './support-investigation-service';
 
 type InvestigationTabNotice = Exclude<InvestigationTabState, 'loading' | 'ready'>;
+
+/** The tabs this component draws. A document placed in Ärendeuppgifter is drawn there, not as a tab. */
+type InvestigationTabPlacement = Exclude<InvestigationDocumentPlacement, 'details'>;
 
 interface TabCopy {
   readonly heading: string;
@@ -41,7 +45,7 @@ interface TabCopy {
  * The same document machinery serves both tabs; only what the handler is told differs. The
  * investigation copy is unchanged from before the decision tab existed.
  */
-const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
+const tabCopy: Readonly<Record<InvestigationTabPlacement, TabCopy>> = {
   investigation: {
     heading: 'Utredning',
     description:
@@ -80,7 +84,7 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
 
 interface SupportErrandInvestigationTabProps extends InvestigationTabProps {
   /** Which tab this is; the investigation tab unless the variant says otherwise. */
-  readonly placement?: InvestigationDocumentPlacement;
+  readonly placement?: InvestigationTabPlacement;
 }
 
 export function SupportErrandInvestigationTab(props: Readonly<SupportErrandInvestigationTabProps>) {
@@ -147,21 +151,7 @@ function InvestigationDocuments({
   );
 
   const recordSavedDocument = useCallback(
-    (document: SavedInvestigationDocument) => {
-      useSupportStore.setState((state) => {
-        if (!state.supportErrand || state.supportErrand.id !== supportErrand?.id) return state;
-
-        return {
-          supportErrand: {
-            ...state.supportErrand,
-            jsonParameters: [
-              ...(state.supportErrand.jsonParameters ?? []).filter((parameter) => parameter.key !== document.key),
-              document,
-            ],
-          },
-        };
-      });
-    },
+    (document: SavedInvestigationDocument) => recordSavedInvestigationDocument(supportErrand?.id, document),
     [supportErrand?.id]
   );
 

@@ -1,5 +1,7 @@
 import type { Page, Request, Route } from '@playwright/test';
 
+import lexAssessmentSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/bedomning-sol-lss.schema-request.json';
+import lexAssessmentUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/bedomning-sol-lss.ui-schema-request.json';
 import hslDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.schema-request.json';
 import hslDecisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.ui-schema-request.json';
 import solLssDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.schema-request.json';
@@ -26,15 +28,20 @@ export const investigationKeys = [
   'utredning-hsl',
   'beslut-hsl',
   'beslut-sol-lss',
+  'bedomning-sol-lss',
 ] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
+/** LEX-ansvarig's initial assessment, in Ärendeuppgifter. Only a scenario that configures it has it. */
+export const lexAssessmentKey = 'bedomning-sol-lss' satisfies InvestigationKey;
 /** The IVO decision on an ordinary deviation under HSL. */
 export const hslDecisionKey = 'beslut-hsl' satisfies InvestigationKey;
 /** The lex Sarah decision on a reported misconduct. */
 export const misconductDecisionKey = 'beslut-sol-lss' satisfies InvestigationKey;
 const decisionKeys: readonly InvestigationKey[] = [hslDecisionKey, misconductDecisionKey];
-/** The documents the Utredning tab offers; the decisions live on their own tab. */
-export const investigationTabKeys = investigationKeys.filter((key) => !decisionKeys.includes(key));
+/** The documents the Utredning tab offers; the decisions live on their own tab, the assessment in Ärendeuppgifter. */
+export const investigationTabKeys = investigationKeys.filter(
+  (key) => !decisionKeys.includes(key) && key !== lexAssessmentKey
+);
 
 export interface MockInvestigationProfile {
   application: string;
@@ -46,7 +53,7 @@ export interface MockInvestigationProfile {
     schemaName: InvestigationKey;
     tabLabel: string;
     ownerLabel: string;
-    placement?: 'investigation' | 'decision';
+    placement?: 'investigation' | 'decision' | 'details';
     appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation';
   }>;
 }
@@ -288,6 +295,8 @@ export interface IafApiScenario {
   errandChannel?: string;
   /** The user's level on the errand itself, as Support Management's /access answers it. Left out, RW. */
   errandAccessLevel?: 'LR' | 'R' | 'RW';
+  /** The handler roles `/me` names for the signed-in user. Left out, the deployment names none. */
+  roleKeys?: string[];
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -296,6 +305,7 @@ const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
   'utredning-hsl': hslSchemaRequest,
   'beslut-hsl': hslDecisionSchemaRequest,
   'beslut-sol-lss': solLssDecisionSchemaRequest,
+  'bedomning-sol-lss': lexAssessmentSchemaRequest,
 };
 
 const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
@@ -304,6 +314,7 @@ const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
   'utredning-hsl': hslUiSchemaRequest,
   'beslut-hsl': hslDecisionUiSchemaRequest,
   'beslut-sol-lss': solLssDecisionUiSchemaRequest,
+  'bedomning-sol-lss': lexAssessmentUiSchemaRequest,
 };
 
 const validValues: Record<InvestigationKey, JsonObject> = {
@@ -312,6 +323,7 @@ const validValues: Record<InvestigationKey, JsonObject> = {
   'utredning-hsl': investigationCases['utredning-hsl'].valid,
   'beslut-hsl': investigationCases['beslut-hsl'].valid,
   'beslut-sol-lss': investigationCases['beslut-sol-lss'].valid,
+  'bedomning-sol-lss': investigationCases['bedomning-sol-lss'].valid,
 };
 
 /** Derived from the artifacts the mock serves, so a published version never drifts from its id. */
@@ -1102,6 +1114,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
             canViewAttestations: false,
             canEditAttestations: false,
           },
+          ...(scenario.roleKeys ? { roleKeys: scenario.roleKeys, superadmin: false } : {}),
         })
       );
       return;
@@ -1215,6 +1228,21 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       if (body?.status) errandStatus = body.status;
       errandVersion += 1;
       await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/unit-manager`)) {
+      // The deepest place the errand carries, as the BFF resolves it for the return to a manager.
+      const place = [...errandLabels].reverse().find((candidate) => candidate.classification === 'LOCATION');
+      await fulfillJson(route, {
+        candidates: (place && scenario.locationManagers?.[place.id]) ?? [],
+        roles: [
+          { key: 'UNIT_MANAGER', label: 'Enhetschef' },
+          { key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' },
+        ],
+        locationResourcePath: place?.resourcePath ?? '',
+        locationDisplayName: place?.displayName ?? '',
+      });
       return;
     }
 

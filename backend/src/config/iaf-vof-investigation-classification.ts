@@ -31,6 +31,8 @@ export interface IafVofInvestigationClassificationLabelTree {
 export interface IafVofInvestigationClassificationPolicy {
   readonly defaultOwnerDocumentKey: string;
   readonly reportedMisconductOwnerDocumentKey: string;
+  /** LEX-ansvarig's initial assessment, where the profile has one: it can decline a suspected lex Sarah matter. */
+  readonly lexAssessmentDocumentKey?: string;
   readonly labelTree: IafVofInvestigationClassificationLabelTree;
   readonly forcedLegalBases: readonly string[];
   readonly legalBasesPointer: string;
@@ -57,6 +59,9 @@ export type IafVofInvestigationDocumentApplicability = 'reported-misconduct' | '
 const IAF_VOF_APPLICATIONS = new Set(['IAF', 'VOF']);
 const DEFAULT_OWNER_SCHEMA_NAME = 'utredning-enhetschef';
 const REPORTED_MISCONDUCT_OWNER_SCHEMA_NAME = 'utredning-sol-lss';
+const LEX_ASSESSMENT_SCHEMA_NAME = 'bedomning-sol-lss';
+const REPORT_TYPE_PATH_PREFIX = 'REPORT_TYPE/';
+const REPORT_TYPE_NAMES: readonly string[] = Object.freeze(['DEVIATION', 'ABUSE', 'ADVERSE_INCIDENT']);
 const REPORTED_MISCONDUCT_PARAMETER = Object.freeze({ key: 'eventType', values: Object.freeze(['MISSFORHALLANDE']) });
 const REPORTED_MISCONDUCT_LABELS = Object.freeze({
   resourcePaths: Object.freeze(['REPORT_TYPE/ABUSE', 'REPORT_TYPE/ADVERSE_INCIDENT']),
@@ -109,10 +114,12 @@ export const resolveIafVofInvestigationClassificationPolicy = (
   const defaultOwnerDocumentKey = resolveUniqueDocumentKey(profile, DEFAULT_OWNER_SCHEMA_NAME);
   const reportedMisconductOwnerDocumentKey = resolveUniqueDocumentKey(profile, REPORTED_MISCONDUCT_OWNER_SCHEMA_NAME);
   if (!defaultOwnerDocumentKey || !reportedMisconductOwnerDocumentKey) return undefined;
+  const lexAssessmentDocumentKey = resolveUniqueDocumentKey(profile, LEX_ASSESSMENT_SCHEMA_NAME);
 
   return Object.freeze({
     defaultOwnerDocumentKey,
     reportedMisconductOwnerDocumentKey,
+    ...(lexAssessmentDocumentKey ? { lexAssessmentDocumentKey } : {}),
     labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
     forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
     legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
@@ -126,22 +133,37 @@ const normalizeCode = (value: string): string => value.trim().toUpperCase();
 const normalizeResourcePath = (value: string): string => normalizeSupportManagementResourcePath(value);
 const matchesSelectorParameterKey = (parameterKey: string): boolean => parameterKey.trim() === REPORTED_MISCONDUCT_PARAMETER.key;
 
-const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {
-  const selectedValues = new Set(REPORTED_MISCONDUCT_PARAMETER.values.map(normalizeCode));
-  const matchesParameter =
-    errand.parameters?.some(
-      parameter => matchesSelectorParameterKey(parameter.key) && parameter.values?.some(value => selectedValues.has(normalizeCode(value))),
-    ) ?? false;
-  if (matchesParameter) return true;
+type ClassificationOwnerLabel = NonNullable<ClassificationOwnerErrand['labels']>[number];
 
+const isReportTypeLabel = (label: ClassificationOwnerLabel): boolean => {
+  const resourcePath = label.resourcePath?.trim();
+  if (resourcePath) return normalizeResourcePath(resourcePath).startsWith(REPORT_TYPE_PATH_PREFIX);
+  return typeof label.resourceName === 'string' && REPORT_TYPE_NAMES.includes(normalizeCode(label.resourceName));
+};
+
+const isMisconductReportLabel = (label: ClassificationOwnerLabel): boolean => {
   const selectedPaths = new Set(REPORTED_MISCONDUCT_LABELS.resourcePaths.map(normalizeResourcePath));
   const selectedNames = new Set(REPORTED_MISCONDUCT_LABELS.resourceNames.map(normalizeCode));
+  const resourcePath = label.resourcePath?.trim();
+  if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
+  return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
+};
+
+/**
+ * Whether the errand is a reported misconduct. Its report type label decides: the label is the errand's own and a
+ * handover moves it - to a misconduct when the unit manager suspects one, back to a deviation when LEX declines
+ * it. The reported event type is the record of what was reported and never moves, so it only stands in for an
+ * errand that carries no report type at all.
+ */
+const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {
+  const reportTypes = errand.labels?.filter(isReportTypeLabel) ?? [];
+  if (reportTypes.length > 0) return reportTypes.some(isMisconductReportLabel);
+
+  const selectedValues = new Set(REPORTED_MISCONDUCT_PARAMETER.values.map(normalizeCode));
   return (
-    errand.labels?.some(label => {
-      const resourcePath = label.resourcePath?.trim();
-      if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
-      return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
-    }) ?? false
+    errand.parameters?.some(
+      parameter => matchesSelectorParameterKey(parameter.key) && parameter.values?.some(value => selectedValues.has(normalizeCode(value))),
+    ) ?? false
   );
 };
 

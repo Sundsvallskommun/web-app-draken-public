@@ -158,6 +158,15 @@ const iafVofInvestigationProfileBase = {
       tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
     },
+    // LEX-ansvarig's first assessment once the errand has been handed to LEX: whether it is reported to
+    // IVO, and whether it is lex-investigated at all. In Ärendeuppgifter, ahead of any investigation.
+    {
+      key: 'bedomning-sol-lss',
+      schemaName: 'bedomning-sol-lss',
+      tabLabel: 'Lex Sarah-ansvarigs initiala bedömning',
+      ownerLabel: 'LEX-ansvarig',
+      placement: 'details',
+    },
     // The decisions. Rendered on the Beslut tab rather than under Utredning, and each offered only
     // on the errands the IAF/VOF classification policy resolves for it: the IVO decision on an
     // ordinary deviation under HSL, the lex Sarah decision on a reported misconduct. The policy

@@ -215,3 +215,112 @@ describe('move-location', () => {
     });
   });
 });
+
+describe('decline-lex', () => {
+  const assessmentKey = 'bedomning-sol-lss';
+  const motivation = 'Händelsen gäller inte omsorgen om den enskilde.';
+  const noteBody = `Ärendet ska inte lex-utredas. Motivering: ${motivation}`;
+  const reportTypeStructure = label('report-root', 'REPORT_TYPE_ROOT', 'REPORT_TYPE', 'Rapporttyp', [
+    label('deviation', 'REPORT_TYPE', 'REPORT_TYPE/DEVIATION', 'Avvikelse'),
+    label('abuse', 'REPORT_TYPE', 'REPORT_TYPE/ABUSE', 'Missförhållande'),
+  ]);
+
+  const setup = ({
+    decision = 'not_investigate',
+    existingNotes = [] as { context: string; body: string }[],
+    versionAfterNote = 8,
+  }: { decision?: string; existingNotes?: { context: string; body: string }[]; versionAfterNote?: number } = {}) => {
+    const { controller, stubs } = makeController();
+    let version = 7;
+    const errandRead = () => ({
+      data: {
+        id: mockSupportErrandId,
+        status: 'INQUIRY',
+        assignedUserId: mockReq().user.username,
+        version,
+        labels: [{ id: 'report-root' }, { id: 'abuse' }, { id: 'access-root' }, { id: 'access-lex' }, { id: 'north' }, { id: 'north-unit' }],
+        jsonParameters: [{ key: assessmentKey, value: { lexInvestigationDecision: decision, notInvestigatedMotivation: motivation } }],
+      },
+      headers: { etag: `"${version}"` },
+      message: 'success',
+    });
+    const get = vi.fn(async (config: { url?: string }) => {
+      if (config.url === errandUrl) return errandRead();
+      if (config.url === metadataUrl) {
+        return {
+          data: { labels: { labelStructure: [...labelStructure, reportTypeStructure] }, statuses: [{ name: 'ASSIGNED' }] },
+          message: 'success',
+        };
+      }
+      if (config.url?.startsWith(`${errandUrl}/notes?`)) return { data: { notes: existingNotes }, message: 'success' };
+      return (stubs.get as (request: { url?: string }) => Promise<unknown>)(config);
+    });
+    const post = vi.fn(async () => {
+      version = versionAfterNote;
+      return { data: {}, message: 'success' };
+    });
+    const internals = controller as unknown as Record<string, unknown>;
+    internals.apiService = { get, post, patch: stubs.patch };
+    internals.investigationPolicyService = {
+      iafVofClassificationPolicy: {},
+      profile: { documents: [{ key: assessmentKey, schemaName: 'bedomning-sol-lss' }] },
+      getClassificationOwner: vi.fn(async () => 'investigation'),
+    };
+    const decline = () =>
+      controller.applyHandover(
+        mockReq(),
+        MUNICIPALITY_ID,
+        mockSupportErrandId,
+        'decline-lex',
+        { expectedVersion: 7, assignedUserId: 'south.manager' },
+        mockRes(),
+      );
+    return { decline, post, stubs };
+  };
+
+  it('leaves the reason as a service note, then hands the errand back to its unit as a deviation', async () => {
+    const { decline, post, stubs } = setup();
+
+    await decline();
+
+    expect(stubs.assertCanWriteDocument).toHaveBeenCalledWith(expect.anything(), MUNICIPALITY_ID, mockSupportErrandId, assessmentKey);
+    expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({ url: `${errandUrl}/notes`, data: expect.objectContaining({ context: 'SERVICE_NOTE', body: noteBody }) }),
+      expect.anything(),
+    );
+    expect(stubs.patch).toHaveBeenCalledTimes(1);
+    const [config] = stubs.patch.mock.calls[0] as [{ data: { labels: { id: string }[] }; headers: Record<string, string> }];
+    // Conditioned on the errand as the note left it, the note being this step's own write.
+    expect(config.headers).toEqual({ 'If-Match': '"8"' });
+    expect(config.data).toMatchObject({ assignedUserId: 'south.manager', status: 'ASSIGNED' });
+    const labelIds = config.data.labels.map(({ id }) => id);
+    expect(labelIds).toContain('deviation');
+    expect(labelIds).not.toContain('abuse');
+    expect(labelIds).not.toContain('access-lex');
+  });
+
+  it('refuses until the saved assessment declines the lex investigation, and writes nothing', async () => {
+    const { decline, post, stubs } = setup({ decision: 'investigate' });
+
+    await expect(decline()).rejects.toMatchObject({ status: 422 });
+    expect(post).not.toHaveBeenCalled();
+    expect(stubs.patch).not.toHaveBeenCalled();
+  });
+
+  it('writes the note once, so a retried handover does not repeat it', async () => {
+    const { decline, post, stubs } = setup({ existingNotes: [{ context: 'SERVICE_NOTE', body: noteBody }] });
+
+    await decline();
+
+    expect(post).not.toHaveBeenCalled();
+    const [config] = stubs.patch.mock.calls[0] as [{ headers: Record<string, string> }];
+    expect(config.headers).toEqual({ 'If-Match': '"7"' });
+  });
+
+  it("refuses to hand over an errand somebody else changed beside the note's own write", async () => {
+    const { decline, stubs } = setup({ versionAfterNote: 9 });
+
+    await expect(decline()).rejects.toMatchObject({ status: 409 });
+    expect(stubs.patch).not.toHaveBeenCalled();
+  });
+});

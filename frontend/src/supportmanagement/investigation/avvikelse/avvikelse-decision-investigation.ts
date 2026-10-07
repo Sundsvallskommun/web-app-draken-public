@@ -5,6 +5,7 @@ import {
   AVVIKELSE_CLASSIFICATION_POLICY,
   isAvvikelseReportedMisconductErrand,
 } from './avvikelse-classification-policy';
+import { hasLexDeclinedInvestigation } from './lex-initial-assessment';
 import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from './saved-investigation-document';
 
 /**
@@ -26,8 +27,8 @@ export interface DecisionInvestigation {
  * Which investigation an avvikelse errand is decided on, and whether it is done.
  *
  * A lex Sarah matter - a reported misconduct, or a deviation the unit manager's saved investigation
- * assesses as a suspected one - is decided on the SoL/LSS investigation. Every other errand is decided
- * on the unit manager's. MAS/MAR's HSL investigation never holds the decision back. The BFF applies
+ * assesses as a suspected one - is decided on the SoL/LSS investigation. A suspicion LEX-ansvarig declined in the
+ * initial assessment is no longer one. Every other errand is decided on the unit manager's. MAS/MAR's HSL investigation never holds the decision back. The BFF applies
  * the same rule (`resolveIafVofDecisionInvestigationDocumentKey`).
  */
 export const resolveDecisionInvestigation = ({
@@ -46,7 +47,8 @@ export const resolveDecisionInvestigation = ({
 
   const lexMatter =
     isAvvikelseReportedMisconductErrand(errand) ||
-    assessesSuspectedMisconduct(readSavedInvestigationDocument(errand, managerDocument.key));
+    (assessesSuspectedMisconduct(readSavedInvestigationDocument(errand, managerDocument.key)) &&
+      !hasLexDeclinedInvestigation(errand, profile));
   const document = lexMatter ? lexDocument : managerDocument;
   const saved = readSavedInvestigationDocument(errand, document.key);
   return { document, lexMatter, completed: saved?.[INVESTIGATION_COMPLETION_FIELD] === 'yes' };

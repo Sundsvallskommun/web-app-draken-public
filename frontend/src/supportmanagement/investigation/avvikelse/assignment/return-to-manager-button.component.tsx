@@ -11,12 +11,50 @@ import {
 } from './avvikelse-assignment-service';
 import { HandlerAssignmentModal } from './handler-assignment-modal.component';
 
+type ReturnStep = 'return-to-manager' | 'decline-lex';
+
 interface ReturnToManagerButtonProps {
+  /** After the lex Sarah decision, or when LEX-ansvarig's initial assessment declines to lex-investigate. */
+  step?: ReturnStep;
   municipalityId: string;
   errandId: string;
   expectedVersion: number | undefined;
   disabled: boolean;
 }
+
+interface ReturnCopy {
+  readonly button: string;
+  readonly heading: string;
+  readonly description: (locationName: string) => string;
+  readonly confirm: string;
+  readonly confirming: string;
+  readonly failure: string;
+}
+
+const returnCopy: Readonly<Record<ReturnStep, ReturnCopy>> = {
+  'return-to-manager': {
+    button: 'Återlämna till chef',
+    heading: 'Återlämna ärendet till chef',
+    description: (locationName) =>
+      locationName
+        ? `Ärendet återlämnas till en chef för ${locationName}.`
+        : 'Ärendet återlämnas till en chef för platsen det gäller.',
+    confirm: 'Återlämna ärendet',
+    confirming: 'Återlämnar ärendet',
+    failure: 'Ärendet kunde inte återlämnas. Försök igen.',
+  },
+  'decline-lex': {
+    button: 'Lämna tillbaka till enhetschef',
+    heading: 'Lämna tillbaka ärendet till enhetschef',
+    description: (locationName) =>
+      `Ärendet ska inte lex-utredas och lämnas tillbaka ${
+        locationName ? `till en chef för ${locationName}` : 'till en chef för platsen det gäller'
+      } som en avvikelse. Motiveringen sparas som en tjänsteanteckning på ärendet.`,
+    confirm: 'Lämna tillbaka ärendet',
+    confirming: 'Lämnar tillbaka ärendet',
+    failure: 'Ärendet kunde inte lämnas tillbaka. Försök igen.',
+  },
+};
 
 /**
  * Hands a finished LEX investigation back to a manager for the place it concerns.
@@ -31,6 +69,7 @@ interface ReturnToManagerButtonProps {
  * other pattern - so nothing here claims the errand disappears from their list.
  */
 export const ReturnToManagerButton: FC<ReturnToManagerButtonProps> = ({
+  step = 'return-to-manager',
   municipalityId,
   errandId,
   expectedVersion,
@@ -45,6 +84,7 @@ export const ReturnToManagerButton: FC<ReturnToManagerButtonProps> = ({
   const [error, setError] = useState<string | undefined>();
   const [isResolving, setIsResolving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const copy = returnCopy[step];
 
   const openModal = async () => {
     setShowModal(true);
@@ -73,10 +113,10 @@ export const ReturnToManagerButton: FC<ReturnToManagerButtonProps> = ({
     setIsSaving(true);
     setError(undefined);
     try {
-      await applyInvestigationHandover(municipalityId, errandId, 'return-to-manager', expectedVersion, adAccount);
+      await applyInvestigationHandover(municipalityId, errandId, step, expectedVersion, adAccount);
       router.push('/oversikt');
     } catch (e) {
-      setError(investigationHandoverErrorMessage(e, 'Ärendet kunde inte återlämnas. Försök igen.'));
+      setError(investigationHandoverErrorMessage(e, copy.failure));
     } finally {
       setIsSaving(false);
     }
@@ -89,24 +129,20 @@ export const ReturnToManagerButton: FC<ReturnToManagerButtonProps> = ({
         disabled={disabled || isResolving}
         loading={isResolving}
         loadingText="Hämtar chefer"
-        data-cy="return-to-manager-button"
+        data-cy={step === 'decline-lex' ? 'decline-lex-button' : 'return-to-manager-button'}
         onClick={() => void openModal()}
       >
-        Återlämna till chef
+        {copy.button}
       </Button>
 
       {showModal && (
         <HandlerAssignmentModal
           show={showModal}
-          label="Återlämna ärendet till chef"
-          description={
-            locationName
-              ? `Ärendet återlämnas till en chef för ${locationName}.`
-              : 'Ärendet återlämnas till en chef för platsen det gäller.'
-          }
+          label={copy.heading}
+          description={copy.description(locationName)}
           selectLabel="Chef"
-          confirmLabel="Återlämna ärendet"
-          confirmLoadingLabel="Återlämnar ärendet"
+          confirmLabel={copy.confirm}
+          confirmLoadingLabel={copy.confirming}
           candidates={candidates}
           roles={roles}
           loadError={loadError}

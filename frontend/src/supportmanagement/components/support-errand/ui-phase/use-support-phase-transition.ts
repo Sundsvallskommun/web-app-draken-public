@@ -38,6 +38,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const canEditSupportManagement = useUserStore((s) => s.user.permissions.canEditSupportManagement);
+  const user = useUserStore((s) => s.user);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const investigationProfile = useInvestigationProfileStore((s) => s.profile);
   const form = useFormContext<SupportErrand>();
@@ -71,6 +72,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
       errand: supportErrand,
       profile: investigationProfile,
       labelStructure: supportMetadata?.labels?.labelStructure,
+      viewer: user,
     }
   );
 

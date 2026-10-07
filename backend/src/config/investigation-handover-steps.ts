@@ -12,11 +12,11 @@ import {
  * combination the business process does not have - such as taking the LEX label off without giving
  * the errand back to somebody who can still see it.
  */
-export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'move-location';
+export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'decline-lex' | 'move-location';
 
 /** The handler role a caller-picked assignee must hold, from HEALTHCAREDEVIATION_HANDLER_ROLES. */
-const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
-const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
+export const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
+export const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
 
 /**
  * While an errand carries the LEX access label it belongs to the LEX roles, and the Ansvarig list
@@ -42,6 +42,16 @@ export interface InvestigationHandoverStepDefinition {
   readonly assigneeSource: 'request' | 'location' | 'target-location';
   readonly addLabelResourcePaths: readonly string[];
   readonly removeLabelResourcePaths: readonly string[];
+  /**
+   * The answer the authorizing document must hold, saved, for the step to apply. The step carries out what the
+   * document decided, so it is refused until that decision is on record: an answer still in a form is not one.
+   */
+  readonly requiredSavedAnswer?: Readonly<{ field: string; value: string; refusal: string }>;
+  /**
+   * A field of the saved authorizing document left on the errand as a service note before the handover, while
+   * the one handing over can still write to it. The heading says what the note is about.
+   */
+  readonly serviceNote?: Readonly<{ field: string; heading: string }>;
   /**
    * Target status, applied in the same write as the assignment and validated against namespace
    * metadata.
@@ -87,6 +97,23 @@ const definitions: Readonly<Record<InvestigationHandoverStep, InvestigationHando
     status: 'ASSIGNED',
     addLabelResourcePaths: Object.freeze([]),
     removeLabelResourcePaths: Object.freeze([INVESTIGATION_ACCESS_LEX_LABEL]),
+  }),
+  // LEX-ansvarig's initial assessment found the errand is not a lex Sarah matter. It goes back to its unit as
+  // the deviation it was before assign-lex made it a misconduct - the inverse of that step - with the manager
+  // resolved from its location, and the reason is left on it as a service note. The assessment authorizes it.
+  'decline-lex': Object.freeze({
+    step: 'decline-lex',
+    authorizingSchemaName: 'bedomning-sol-lss',
+    assigneeSource: 'location',
+    status: 'ASSIGNED',
+    requiredSavedAnswer: Object.freeze({
+      field: 'lexInvestigationDecision',
+      value: 'not_investigate',
+      refusal: 'Spara bedömningen med Inte ska lex utredas innan ärendet lämnas tillbaka till enhetschefen.',
+    }),
+    serviceNote: Object.freeze({ field: 'notInvestigatedMotivation', heading: 'Ärendet ska inte lex-utredas. Motivering:' }),
+    addLabelResourcePaths: Object.freeze([INVESTIGATION_DEVIATION_REPORT_LABEL]),
+    removeLabelResourcePaths: Object.freeze([INVESTIGATION_MISCONDUCT_REPORT_LABEL, INVESTIGATION_ACCESS_LEX_LABEL]),
   }),
   // The errand reached the wrong unit. Katla records the place twice - as the reporter's own words
   // in the incoming JSON parameter, and as the LOCATION label chain AccessMapper matches on - and

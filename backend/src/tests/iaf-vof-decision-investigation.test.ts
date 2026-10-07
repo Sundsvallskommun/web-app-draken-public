@@ -27,6 +27,18 @@ describe('the investigation an IAF/VOF errand is decided on', () => {
     expect(decide({ jsonParameters: [managerInvestigation({ suspectedMisconduct: 'yes' })] })).toBe('utredning-sol-lss');
   });
 
+  it("goes back to the unit manager's once LEX-ansvarig's initial assessment declines the suspected misconduct", () => {
+    const assessment = (lexInvestigationDecision: string) => ({
+      key: 'bedomning-sol-lss',
+      schemaId: '2281_bedomning-sol-lss_1.0',
+      value: { lexInvestigationDecision } as Record<string, unknown>,
+    });
+    const suspected = managerInvestigation({ suspectedMisconduct: 'yes' });
+
+    expect(decide({ jsonParameters: [suspected, assessment('not_investigate')] })).toBe('utredning-enhetschef');
+    expect(decide({ jsonParameters: [suspected, assessment('investigate')] })).toBe('utredning-sol-lss');
+  });
+
   it("stays the unit manager's when the saved investigation does not suspect a misconduct", () => {
     expect(decide({ jsonParameters: [managerInvestigation({ suspectedMisconduct: 'no' })] })).toBe('utredning-enhetschef');
     expect(decide({ jsonParameters: [managerInvestigation({})] })).toBe('utredning-enhetschef');

@@ -30,7 +30,9 @@ delad kod erbjuder:
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
 - `renderDetailsHeader` — valfritt innehåll överst i Ärendeuppgifter, för kontroller som gäller hela ärendet (för
-  avvikelse: kortet Ärendets plats). Utan slot ser Ärendeuppgifter ut som för alla andra drakar.
+  avvikelse: kortet Ärendets plats, rapporten och LEX-ansvarigs initiala bedömning). Den får åtkomsten och, för
+  ett utredningsdokument som profilen placerar där (`placement: 'details'`), `onDirtyChange`, `refreshAccess`
+  och `revealTab`. Utan slot ser Ärendeuppgifter ut som för alla andra drakar.
 - `phaseEntryRequirements` — valfria krav innan ärendet får gå in i en fas, i den ordning de ska uppfyllas. Det
   första ouppfyllda kravet håller fasbytet: fasknappen byter namn till kravets `actionLabel` och gör det i stället
   för fasbytet. För avvikelse: först Tilldela LEX-ansvarig vid misstänkt missförhållande, sedan att utredningen

@@ -16,10 +16,12 @@ async function installInvestigatedErrand(
     eventType = 'AVVIKELSE',
     managerValue = {},
     lexValue,
+    roleKeys,
   }: {
     eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
     managerValue?: Record<string, unknown>;
     lexValue?: Record<string, unknown>;
+    roleKeys?: string[];
   }
 ) {
   const manager = existingManagerDocument();
@@ -28,6 +30,7 @@ async function installInvestigatedErrand(
     activePhaseName: 'INVESTIGATION',
     assignedUserId: 'iaf.test',
     eventType,
+    roleKeys,
     featureFlags: [
       { name: 'isSupportManagement', enabled: true },
       { name: 'useUiPhases', enabled: true },
@@ -39,7 +42,14 @@ async function installInvestigatedErrand(
     documents: {
       'utredning-enhetschef': manager,
       ...(lexValue
-        ? { 'utredning-sol-lss': { ...manager, key: 'utredning-sol-lss', schemaId: '2281_utredning-sol-lss_1.4', value: lexValue } }
+        ? {
+            'utredning-sol-lss': {
+              ...manager,
+              key: 'utredning-sol-lss',
+              schemaId: '2281_utredning-sol-lss_1.4',
+              value: lexValue,
+            },
+          }
         : {}),
     },
   });
@@ -105,4 +115,41 @@ test("a reported misconduct waits for the lex Sarah investigation, not the unit 
   await nextPhaseButton(page).click();
   await expect(requirementDialog(page)).toContainText('beslutas på Utredning Lex Sarah');
   expect(trace.phasePatches).toEqual([]);
+});
+
+test('a LEX investigator hands the errand to a LEX manager rather than sending it to the decision', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installInvestigatedErrand(page, {
+    eventType: 'MISSFORHALLANDE',
+    managerValue: { completed: 'yes' },
+    // A finished investigation does not let the investigator through either.
+    lexValue: { completed: 'yes' },
+    roleKeys: ['lex-utredare'],
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await expect(nextPhaseButton(page)).toHaveText('Tilldela LEX-ansvarig');
+  await nextPhaseButton(page).click();
+  const dialog = page.locator('[data-cy="handler-assignment-modal"]');
+  await expect(dialog).toContainText('Som LEX-utredare skickar du inte ärendet till beslut.');
+  expect(trace.phasePatches).toEqual([]);
+});
+
+test('a LEX manager sends the finished lex Sarah investigation to the decision', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installInvestigatedErrand(page, {
+    eventType: 'MISSFORHALLANDE',
+    managerValue: { completed: 'yes' },
+    lexValue: { completed: 'yes' },
+    roleKeys: ['lex-ansvarig'],
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await expect(nextPhaseButton(page)).toHaveText('Redo för beslut');
+  await nextPhaseButton(page).click();
+  await expect.poll(() => trace.phasePatches.length).toBe(1);
 });

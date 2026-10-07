@@ -2,17 +2,19 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
 import { Body, Controller, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, SUPERADMIN_GROUP, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { type HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { Errand as SupportErrand, MetadataResponse as SupportMetadata } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
 import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
-import { assertInvestigationCompletedBeforeDecision } from '@/services/support-investigation-decision-readiness';
+import { assertInvestigationCompletedBeforeDecision, assertMaySendToDecision } from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
@@ -66,6 +68,8 @@ export class SupportPhaseController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
+  private handlerRoles: readonly HandlerGroupRole[] | undefined = resolveHandlerGroupRoles();
+  private superadminGroups = readRoleGroups(SUPERADMIN_GROUP);
   private readonly investigationPolicyService: SupportInvestigationPolicyService;
   private readonly jsonParameterService: SupportJsonParameterService;
   SERVICE = apiServiceName('supportmanagement');
@@ -109,6 +113,15 @@ export class SupportPhaseController {
     }
 
     const transition = resolveSupportErrandPhaseTransition(currentErrand.data, metadata.data.phases, data.transitionId);
+    const targetPhaseName = metadata.data.phases?.find(phase => phase.id === transition.targetPhaseId)?.name;
+    // Who may send the errand to the decision is asked before whether it is ready to be decided.
+    assertMaySendToDecision({
+      policyService: this.investigationPolicyService,
+      handlerRoles: this.handlerRoles,
+      superadminGroups: this.superadminGroups,
+      user: req.user,
+      targetPhaseName,
+    });
     await assertInvestigationCompletedBeforeDecision({
       policyService: this.investigationPolicyService,
       documentService: this.jsonParameterService,
@@ -116,7 +129,7 @@ export class SupportPhaseController {
       municipalityId,
       errandId: id,
       errand: currentErrand.data,
-      targetPhaseName: metadata.data.phases?.find(phase => phase.id === transition.targetPhaseId)?.name,
+      targetPhaseName,
     });
     // A phase carries its status with it, so a move into a phase that closes the errand is a close
     // and answers to the same rule as the close button.

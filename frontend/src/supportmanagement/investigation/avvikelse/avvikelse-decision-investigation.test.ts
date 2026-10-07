@@ -17,6 +17,7 @@ const profile = (state: InvestigationProfile['state'] = 'active') =>
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef' },
       { key: 'lex-document', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning Lex Sarah' },
       { key: 'hsl-document', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL' },
+      { key: 'assessment-document', schemaName: 'bedomning-sol-lss', tabLabel: 'Initial bedömning' },
     ],
   } as unknown as InvestigationProfile);
 
@@ -34,7 +35,7 @@ const errand = ({
   } as unknown as SupportErrand);
 
 const completed = (context: { errand: SupportErrand; profile?: InvestigationProfile }) =>
-  isDecisionInvestigationCompleted({ profile: profile(), labelStructure: [], ...context });
+  isDecisionInvestigationCompleted({ profile: profile(), labelStructure: [], viewer: {}, ...context });
 
 test("an ordinary deviation is decided once the unit manager's investigation is saved as completed", () => {
   assert.equal(completed({ errand: errand({ documents: { 'manager-document': { completed: 'yes' } } }) }), true);
@@ -73,7 +74,10 @@ test("a suspected misconduct in the unit manager's saved investigation is decide
 test('nothing is waited for unless the investigation is active', () => {
   assert.equal(completed({ errand: errand({}), profile: profile('inactive') }), true);
   assert.equal(completed({ errand: errand({}), profile: profile('unavailable') }), true);
-  assert.equal(isDecisionInvestigationCompleted({ errand: errand({}), profile: null, labelStructure: [] }), true);
+  assert.equal(
+    isDecisionInvestigationCompleted({ errand: errand({}), profile: null, labelStructure: [], viewer: {} }),
+    true
+  );
 });
 
 test('the handler is told which investigation to finish, and why a lex Sarah matter waits for LEX', () => {
@@ -84,4 +88,20 @@ test('the handler is told which investigation to finish, and why a lex Sarah mat
   );
   const lex = resolveDecisionInvestigation({ errand: errand({ eventType: 'MISSFORHALLANDE' }), profile: profile() })!;
   assert.match(describeIncompleteDecisionInvestigation(lex), /missförhållande .* beslutas på Utredning Lex Sarah\./);
+});
+
+test("a suspicion LEX-ansvarig declined goes back to being decided on the unit manager's investigation", () => {
+  const suspected = { 'manager-document': { suspectedMisconduct: 'yes', completed: 'yes' } };
+  const declined = errand({
+    documents: { ...suspected, 'assessment-document': { lexInvestigationDecision: 'not_investigate' } },
+  });
+  const accepted = errand({
+    documents: { ...suspected, 'assessment-document': { lexInvestigationDecision: 'investigate' } },
+  });
+
+  assert.equal(
+    resolveDecisionInvestigation({ errand: declined, profile: profile() })?.document.key,
+    'manager-document'
+  );
+  assert.equal(resolveDecisionInvestigation({ errand: accepted, profile: profile() })?.document.key, 'lex-document');
 });

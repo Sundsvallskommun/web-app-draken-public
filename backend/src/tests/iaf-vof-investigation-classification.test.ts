@@ -74,6 +74,26 @@ describe('fixed IAF/VOF investigation classification policy', () => {
     expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourceName: 'ABUSE' }] }).mode).toBe('reported-misconduct');
   });
 
+  it('lets the report type label decide, and the reported event type only stand in for an errand without one', () => {
+    const policy = resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('VOF'))!;
+    const reportedAsMisconduct = [{ key: 'eventType', values: ['MISSFORHALLANDE'] }];
+    // LEX declined the misconduct, and it went back as a deviation: the label moved, the report never does.
+    expect(
+      resolveIafVofInvestigationClassificationOwner(policy, {
+        parameters: reportedAsMisconduct,
+        labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }],
+      }).mode,
+    ).toBe('default');
+    // The unit manager suspected a misconduct in a deviation, and assign-lex made it one.
+    expect(
+      resolveIafVofInvestigationClassificationOwner(policy, {
+        parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }],
+        labels: [{ resourcePath: 'REPORT_TYPE/ABUSE' }],
+      }).mode,
+    ).toBe('reported-misconduct');
+    expect(resolveIafVofInvestigationClassificationOwner(policy, { parameters: reportedAsMisconduct, labels: [] }).mode).toBe('reported-misconduct');
+  });
+
   it('resolves at most one decision applicability per errand, reported misconduct first', () => {
     const hslLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/HSL', resourceName: 'HSL' };
     const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };

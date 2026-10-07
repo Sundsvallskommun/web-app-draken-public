@@ -7,7 +7,11 @@ import { apiServiceName } from '@/config/api-config';
 import { getInvestigationHandoverStep, InvestigationHandoverStepDefinition, LEX_HANDLER_ROLE_KEYS } from '@/config/investigation-handover-steps';
 import { findInvestigationManagerRole } from '@/config/investigation-manager-roles';
 import { AssignableHandlersResponse } from '@/controllers/active-directory.controller';
-import { Errand as SupportErrand, MetadataResponse as SupportMetadata } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  Errand as SupportErrand,
+  FindErrandNotesResponse,
+  MetadataResponse as SupportMetadata,
+} from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -28,6 +32,12 @@ import {
 import { assertRequestedErrandVersion, assertSupportErrandAdminAssignable, getErrandVersion } from '@/services/support-errand.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import {
+  assertCanWriteSupportServiceNote,
+  buildSupportServiceNote,
+  isSupportServiceNote,
+  SUPPORT_SERVICE_NOTE,
+} from '@/services/support-note.service';
 import { ManagerCandidate, ManagerRoleOption, managerRoleOptions, resolveLocationManagers } from '@/services/unit-manager-resolution';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -226,11 +236,15 @@ export class SupportInvestigationAssignmentController {
     @Res() response: any,
   ): Promise<any> {
     const step = this.requireStep(stepName);
-    await this.assertStepAllowed(req, municipalityId, id, step);
+    const authorizingDocumentKey = await this.assertStepAllowed(req, municipalityId, id, step);
 
-    const { errand, metadata, currentVersion } = await this.readErrandAndMetadata(req, municipalityId, id);
+    let { errand, metadata, currentVersion } = await this.readErrandAndMetadata(req, municipalityId, id);
     assertRequestedErrandVersion(data.expectedVersion, currentVersion);
     assertSupportErrandAdminAssignable(errand, `the ${step.step} handover`);
+    if (await this.carryOutSavedDecision(req, municipalityId, id, step, authorizingDocumentKey, errand)) {
+      // The service note was this step's own write, so the handover applies to the errand as it now stands.
+      ({ errand, metadata, currentVersion } = await this.readErrandAfterOwnWrite(req, municipalityId, id, currentVersion));
+    }
 
     let assignedUserId: string;
     let labels: { id: string }[] | undefined;
@@ -296,7 +310,7 @@ export class SupportInvestigationAssignmentController {
     municipalityId: string,
     errandId: string,
     step: InvestigationHandoverStepDefinition,
-  ): Promise<void> {
+  ): Promise<string> {
     if (!this.namespace?.trim()) throw new HttpException(409, 'Support Management namespace is not configured');
 
     const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
@@ -312,6 +326,71 @@ export class SupportInvestigationAssignmentController {
       throw new HttpException(409, `This application has no ${step.authorizingSchemaName} investigation document`);
     }
     await this.investigationAccessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
+    return definition.key;
+  }
+
+  /**
+   * Holds a step to the decision its authorizing document records, and leaves the reason on the errand as a
+   * service note where the step asks for one - written once, so a retried handover does not repeat it. Answers
+   * whether a note was written, which may have moved the errand on.
+   */
+  private async carryOutSavedDecision(
+    req: RequestWithUser,
+    municipalityId: string,
+    errandId: string,
+    step: InvestigationHandoverStepDefinition,
+    documentKey: string,
+    errand: SupportErrand,
+  ): Promise<boolean> {
+    if (!step.requiredSavedAnswer && !step.serviceNote) return false;
+    const saved: unknown = errand.jsonParameters?.find(parameter => parameter.key === documentKey)?.value;
+    const document = typeof saved === 'object' && saved !== null && !Array.isArray(saved) ? (saved as Record<string, unknown>) : {};
+    if (step.requiredSavedAnswer && document[step.requiredSavedAnswer.field] !== step.requiredSavedAnswer.value) {
+      throw new HttpException(422, step.requiredSavedAnswer.refusal);
+    }
+    if (!step.serviceNote) return false;
+
+    const reason = document[step.serviceNote.field];
+    if (typeof reason !== 'string' || !reason.trim()) {
+      throw new HttpException(422, 'Den sparade bedömningen saknar motivering.');
+    }
+    const body = `${step.serviceNote.heading} ${reason.trim()}`;
+    const notesUrl = `${municipalityId}/${this.namespace}/errands/${errandId}/notes`;
+    const baseURL = apiURL(this.SERVICE);
+    const existing = await this.apiService.get<FindErrandNotesResponse>(
+      {
+        url: `${notesUrl}?${new URLSearchParams({ context: SUPPORT_SERVICE_NOTE.context, page: '1', limit: '100' }).toString()}`,
+        baseURL,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
+      req.user,
+    );
+    if (existing.data.notes?.some(note => isSupportServiceNote(note) && note.body?.trim() === body)) return false;
+
+    assertCanWriteSupportServiceNote(errand, req.user);
+    await this.apiService.post(
+      { url: notesUrl, baseURL, data: buildSupportServiceNote(body, req.user), propagateClientError: true, mapUnauthorizedToForbidden: true },
+      req.user,
+    );
+    return true;
+  }
+
+  /**
+   * The errand after a write of this step's own. One version step is the step's own write; any more is somebody
+   * else's, and the handover is refused rather than applied over a change the handler has not seen.
+   */
+  private async readErrandAfterOwnWrite(
+    req: RequestWithUser,
+    municipalityId: string,
+    errandId: string,
+    versionBefore: number,
+  ): Promise<{ errand: SupportErrand; metadata: SupportMetadata; currentVersion: number }> {
+    const fresh = await this.readErrandAndMetadata(req, municipalityId, errandId);
+    if (fresh.currentVersion > versionBefore + 1) {
+      throw new HttpException(409, 'Ärendet har ändrats av någon annan. Ladda om ärendet och försök igen.');
+    }
+    return fresh;
   }
 
   private async readErrandAndMetadata(

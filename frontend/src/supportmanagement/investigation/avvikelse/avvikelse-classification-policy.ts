@@ -174,26 +174,45 @@ export function resolveSupportErrandClassificationPlacement({
 const normalizeCode = (value: string): string => value.trim().toUpperCase();
 const normalizeResourcePath = (value: string): string => normalizeSupportManagementResourcePath(value);
 
+type ClassificationOwnerLabel = NonNullable<ClassificationOwnerErrand['labels']>[number];
+
+const REPORT_TYPE_PATH_PREFIX = 'REPORT_TYPE/';
+const REPORT_TYPE_NAMES: readonly string[] = ['DEVIATION', 'ABUSE', 'ADVERSE_INCIDENT'];
+
+const isReportTypeLabel = (label: ClassificationOwnerLabel): boolean => {
+  const resourcePath = label.resourcePath?.trim();
+  if (resourcePath) return normalizeResourcePath(resourcePath).startsWith(REPORT_TYPE_PATH_PREFIX);
+  return typeof label.resourceName === 'string' && REPORT_TYPE_NAMES.includes(normalizeCode(label.resourceName));
+};
+
+const isMisconductReportLabel = (label: ClassificationOwnerLabel): boolean => {
+  const selector = AVVIKELSE_CLASSIFICATION_POLICY.reportedMisconductSelector.labels;
+  const selectedPaths = new Set<string>(selector.resourcePaths);
+  const selectedNames = new Set<string>(selector.resourceNames);
+  const resourcePath = label.resourcePath?.trim();
+  if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
+  return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
+};
+
+/**
+ * Whether the errand is a reported misconduct. Its report type label decides: the label is the errand's own and
+ * a handover moves it - to a misconduct when the unit manager suspects one, back to a deviation when LEX declines
+ * it. The reported event type is the record of what was reported and never moves, so it only stands in for an
+ * errand that carries no report type at all. The BFF applies the same rule.
+ */
 export const isAvvikelseReportedMisconductErrand = (errand: ClassificationOwnerErrand | undefined): boolean => {
   if (!errand) return false;
+  const reportTypes = errand.labels?.filter(isReportTypeLabel) ?? [];
+  if (reportTypes.length > 0) return reportTypes.some(isMisconductReportLabel);
+
   const selector = AVVIKELSE_CLASSIFICATION_POLICY.reportedMisconductSelector;
   const selectedValues = new Set<string>(selector.parameter.values);
-  const matchesParameter =
+  return (
     errand.parameters?.some(
       (parameter) =>
         parameter.key.trim() === selector.parameter.key &&
         parameter.values?.some((candidate) => selectedValues.has(normalizeCode(candidate)))
-    ) ?? false;
-  if (matchesParameter) return true;
-
-  const selectedPaths = new Set<string>(selector.labels.resourcePaths);
-  const selectedNames = new Set<string>(selector.labels.resourceNames);
-  return (
-    errand.labels?.some((label) => {
-      const resourcePath = label.resourcePath?.trim();
-      if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
-      return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
-    }) ?? false
+    ) ?? false
   );
 };
 

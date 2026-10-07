@@ -34,6 +34,8 @@ export interface InvestigationPhaseEntryContext {
   readonly errand: SupportErrand | undefined;
   readonly profile: InvestigationProfile | null | undefined;
   readonly labelStructure: SupportErrand['labels'];
+  /** Who is moving the errand: a requirement may hold one role back where it lets another through. */
+  readonly viewer: InvestigationViewer;
 }
 
 export interface InvestigationPhaseEntryRequirementProps {
@@ -62,6 +64,11 @@ export interface InvestigationDetailsHeaderProps {
   readonly access: InvestigationAccessState;
   /** True while the errand page holds unsaved changes, which an errand-moving command would discard. */
   readonly disabled: boolean;
+  /** Reports a draft of an investigation document drawn in Ärendeuppgifter, so the page warns before losing it. */
+  readonly onDirtyChange: (key: string, isDirty: boolean) => void;
+  readonly refreshAccess: () => void;
+  /** Brings Ärendeuppgifter forward, for a save that has something to show there. */
+  readonly revealTab: () => void;
 }
 
 /**

@@ -64,6 +64,13 @@ import {
   readInvestigationTemplate,
   withInvestigationText,
 } from './investigation-text-template';
+import {
+  declinesLexInvestigation,
+  hasLexDeclinedInvestigation,
+  LEX_ASSESSMENT_SCHEMA_NAME,
+  prefillInvestigationDocument,
+} from './lex-initial-assessment';
+import { readSavedInvestigationDocument } from './saved-investigation-document';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
   decisionDocumentWording,
@@ -283,7 +290,14 @@ export function SupportInvestigationDocument({
           definition.key,
           definition.schemaName,
           loadedSchema.schema,
-          storedDocument?.document.value ?? {},
+          // A document not yet saved starts where an earlier one left off, as the decision does from the assessment.
+          // Read when the document loads, not as a dependency: the start is decided once, by what is saved then.
+          storedDocument?.document.value ??
+            prefillInvestigationDocument(
+              definition.schemaName,
+              useSupportStore.getState().supportErrand,
+              useInvestigationProfileStore.getState().profile
+            ),
           reportedMisconduct
         );
         setDocumentState({
@@ -360,13 +374,21 @@ export function SupportInvestigationDocument({
       ? getHslRiskValue(documentState.formData)
       : undefined;
   // The errand goes back to the manager once LEX has decided on it, so the handover sits at the foot of
-  // the lex Sarah decision - and only while the errand is actually with LEX, which the access label
-  // says. The backend authorizes the step on write access to this same document.
-  const canReturnToManager =
-    definition.schemaName === 'beslut-sol-lss' &&
+  // the lex Sarah decision - and at the foot of LEX-ansvarig's initial assessment, once a saved assessment
+  // declines to lex-investigate it. Only while the errand is actually with LEX, which the access label says.
+  // The backend authorizes each step on write access to the same document.
+  const handsBackToManager =
+    (definition.schemaName === 'beslut-sol-lss' || definition.schemaName === LEX_ASSESSMENT_SCHEMA_NAME) &&
     !readonly &&
     Boolean(errandId) &&
     isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
+  const returnStep =
+    definition.schemaName === LEX_ASSESSMENT_SCHEMA_NAME
+      ? declinesLexInvestigation(readSavedInvestigationDocument(supportErrand, definition.key))
+        ? ('decline-lex' as const)
+        : undefined
+      : ('return-to-manager' as const);
+  const canReturnToManager = handsBackToManager && returnStep !== undefined;
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
   const classificationLabelTree = classificationOwner ? AVVIKELSE_CLASSIFICATION_POLICY.labelTree : undefined;
   const classificationSchemaContract = documentState
@@ -592,6 +614,7 @@ export function SupportInvestigationDocument({
       formData: savedFormData,
       labels: useSupportStore.getState().supportErrand?.labels,
       labelStructure: supportMetadata?.labels?.labelStructure,
+      lexDeclined: hasLexDeclinedInvestigation(useSupportStore.getState().supportErrand, profile),
     });
     if (!needsLexAssignment) return;
 
@@ -618,7 +641,8 @@ export function SupportInvestigationDocument({
    * A failed read leaves the store's version standing; a stale one is refused with a conflict, never applied.
    */
   const rememberOwnWriteVersion = async () => {
-    if (!canReturnToManager || !municipalityId || !errandId) return;
+    // Asked of the document rather than of the saved answer, which this very save may just have given it.
+    if (!handsBackToManager || !municipalityId || !errandId) return;
     try {
       setOwnWriteVersion((await readSupportErrandWriteSnapshot(errandId, municipalityId)).version);
     } catch {
@@ -1068,6 +1092,7 @@ export function SupportInvestigationDocument({
         submitButtonActions={
           canReturnToManager ? (
             <ReturnToManagerButton
+              step={returnStep}
               municipalityId={municipalityId}
               errandId={errandId!}
               expectedVersion={latestKnownSupportErrandVersion(supportErrand?.version, ownWriteVersion)}

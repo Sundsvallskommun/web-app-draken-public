@@ -3,7 +3,12 @@ import { VOF_SUPPORT_INVESTIGATION_PROFILE } from '@/config/support-investigatio
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationState } from '@/dtos/support-investigation-profile.dto';
-import { assertInvestigationCompletedBeforeDecision, investigationNotCompletedMessage } from '@/services/support-investigation-decision-readiness';
+import {
+  assertInvestigationCompletedBeforeDecision,
+  assertMaySendToDecision,
+  investigationNotCompletedMessage,
+  LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION,
+} from '@/services/support-investigation-decision-readiness';
 
 import { mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
@@ -106,5 +111,38 @@ describe('assertInvestigationCompletedBeforeDecision', () => {
 
   it('refuses rather than waves through when the investigation state cannot be read', async () => {
     await expect(setup({ state: 'unavailable' }).assertFor(ordinaryDeviation([]))).rejects.toMatchObject({ status: 503 });
+  });
+});
+
+describe('who may send the errand to the decision', () => {
+  const handlerRoles = [
+    { key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'MOCK_LEX_MANAGERS' },
+    { key: 'lex-utredare', label: 'LEX-utredare', group: 'MOCK_LEX_INVESTIGATORS' },
+  ];
+  const policyService = { iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE) };
+  const send =
+    (groups: string[], targetPhaseName = 'DECISION', { rolesConfigured = true } = {}) =>
+    () =>
+      assertMaySendToDecision({
+        policyService,
+        handlerRoles: rolesConfigured ? handlerRoles : undefined,
+        superadminGroups: ['mock_admins'],
+        user: mockUser({ groups }),
+        targetPhaseName,
+      });
+
+  it('refuses a LEX investigator, and says to hand the errand to a LEX manager', () => {
+    expect(send(['MOCK_LEX_INVESTIGATORS'])).toThrow(LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION);
+  });
+
+  it('lets a LEX manager through, an investigator who is manager as well, and an administrator', () => {
+    expect(send(['MOCK_LEX_MANAGERS'])).not.toThrow();
+    expect(send(['MOCK_LEX_INVESTIGATORS', 'MOCK_LEX_MANAGERS'])).not.toThrow();
+    expect(send(['MOCK_LEX_INVESTIGATORS', 'MOCK_ADMINS'])).not.toThrow();
+  });
+
+  it('holds nobody back on another phase, or where the deployment names no roles', () => {
+    expect(send(['MOCK_LEX_INVESTIGATORS'], 'FOLLOW_UP')).not.toThrow();
+    expect(send(['MOCK_LEX_INVESTIGATORS'], 'DECISION', { rolesConfigured: false })).not.toThrow();
   });
 });

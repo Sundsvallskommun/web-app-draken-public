@@ -12,7 +12,17 @@ import { assertSupportErrandWritable } from './support-errand.service';
 export const SUPPORT_COMMENT = Object.freeze({ context: 'SUPPORT', role: 'FIRST_LINE_SUPPORT', subject: 'Notering' });
 export const SUPPORT_SERVICE_NOTE = Object.freeze({ context: 'SERVICE_NOTE', role: 'ERRAND_HANDLER', subject: 'Tjänsteanteckning' });
 
-const isSupportServiceNote = (note: Pick<ErrandNote, 'context'>): boolean => note.context === SUPPORT_SERVICE_NOTE.context;
+export const isSupportServiceNote = (note: Pick<ErrandNote, 'context'>): boolean => note.context === SUPPORT_SERVICE_NOTE.context;
+
+/** A service note as Support Management stores it: the handler's record, signed with the handler's name. */
+export const buildSupportServiceNote = (body: string, user: Pick<User, 'name'>, partyId?: string) => ({
+  context: SUPPORT_SERVICE_NOTE.context,
+  role: SUPPORT_SERVICE_NOTE.role,
+  ...(partyId ? { partyId } : {}),
+  subject: SUPPORT_SERVICE_NOTE.subject,
+  body: body.trim(),
+  createdBy: user.name,
+});
 
 /**
  * A service note is the handler's record of the errand: only the handler the errand is assigned to writes one,

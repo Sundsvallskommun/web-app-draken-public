@@ -273,5 +273,66 @@
         }
       }
     ]
+  },
+  "bedomning-sol-lss": {
+    "valid": {
+      "assessedAt": "2026-10-06T09:00:00.000Z",
+      "updatedAt": "2026-10-06T09:00:00.000Z",
+      "revisions": [
+        {
+          "savedAt": "2026-10-06T09:00:00.000Z",
+          "savedBy": "iaf.test"
+        }
+      ],
+      "ivoNotification": "yes",
+      "ivoCaseNumber": "IVO 3.5.1-12345/2026",
+      "public360CaseNumber": "2026-1234",
+      "lexInvestigationDecision": "not_investigate",
+      "notInvestigatedMotivation": "Händelsen gäller inte omsorgen om den enskilde och ska hanteras som en avvikelse."
+    },
+    "invalid": [
+      {
+        "description": "IVO-frågan och beslutet krävs",
+        "value": {}
+      },
+      {
+        "description": "Motivering krävs när ärendet inte ska lex-utredas",
+        "value": {
+          "ivoNotification": "no",
+          "lexInvestigationDecision": "not_investigate"
+        }
+      },
+      {
+        "description": "Motiveringen får inte vara tom",
+        "value": {
+          "ivoNotification": "no",
+          "lexInvestigationDecision": "not_investigate",
+          "notInvestigatedMotivation": ""
+        }
+      },
+      {
+        "description": "Motivering hör inte till ett ärende som ska utredas",
+        "value": {
+          "ivoNotification": "no",
+          "lexInvestigationDecision": "investigate",
+          "notInvestigatedMotivation": "Text"
+        }
+      },
+      {
+        "description": "IVO-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "no",
+          "ivoCaseNumber": "IVO 1",
+          "lexInvestigationDecision": "investigate"
+        }
+      },
+      {
+        "description": "Okänt beslut avvisas",
+        "value": {
+          "ivoNotification": "no",
+          "lexInvestigationDecision": "later"
+        }
+      }
+    ]
   }
 }
