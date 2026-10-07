@@ -1,7 +1,7 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
 import { sanitizedInline } from '@common/services/sanitizer-service';
-import { getInitialsFromADUsername } from '@common/services/user-service';
+import { getInitialsFromADUsername, getNameFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -234,7 +234,7 @@ export const SidebarGenericNotes: FC<{
                           rounded
                           color="juniskar"
                           size={'sm'}
-                          title={note.createdBy}
+                          title={getNameFromADUsername(note.createdBy, administrators) ?? note.createdBy}
                           initials={getInitialsFromADUsername(note.createdBy, administrators) || note.createdBy[0]}
                         />
                       </div>
@@ -250,7 +250,11 @@ export const SidebarGenericNotes: FC<{
                         </p>
 
                         <p className="my-0 flex justify-between">
-                          <span className="text-xs">{dayjs(note.date).format('D MMM, HH:mm')}</span>
+                          {/* Who wrote it, named as the handler list names them, else by their account. */}
+                          <span className="text-xs" data-cy="note-author-and-date">
+                            {getNameFromADUsername(note.createdBy, administrators) ?? note.createdBy} ·{' '}
+                            {dayjs(note.date).format('D MMM, HH:mm')}
+                          </span>
                         </p>
                       </div>
                     </div>
