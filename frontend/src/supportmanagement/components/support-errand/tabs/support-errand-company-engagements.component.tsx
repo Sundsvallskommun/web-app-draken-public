@@ -8,16 +8,15 @@ import { PbiMarking, SupportErrandPbiCell } from './support-errand-pbi-cell.comp
 
 export const SupportErrandCompanyEngagements: React.FC<{
   engagements: SupportPbiCandidate[];
-  initiallyOpen: boolean;
   companyName?: string | null;
   onShowBusinessDescription?: () => void;
   pbiMarking?: PbiMarking;
   pbiNotice?: string;
-}> = ({ engagements, initiallyOpen, companyName, onShowBusinessDescription, pbiMarking, pbiNotice }) => {
+}> = ({ engagements, companyName, onShowBusinessDescription, pbiMarking, pbiNotice }) => {
   const { t } = useTranslation();
 
   return (
-    <Disclosure variant="alt" className="w-full" initalOpen={initiallyOpen}>
+    <Disclosure variant="alt" className="w-full">
       <Disclosure.Header>
         <Disclosure.Icon icon={<Info />} />
         <Disclosure.Title>{t('common:company.engagements_heading')}</Disclosure.Title>

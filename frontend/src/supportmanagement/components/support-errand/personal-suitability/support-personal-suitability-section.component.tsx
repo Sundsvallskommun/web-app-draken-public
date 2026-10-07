@@ -1,7 +1,7 @@
 'use client';
 
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Alert, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Alert, Button, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   assessSupportSuitability,
@@ -11,8 +11,12 @@ import {
   type SupportSuitabilityAssessmentName,
   type SupportSuitabilityPerson,
 } from '@supportmanagement/services/support-personal-suitability-service';
+import { UserPlus } from 'lucide-react';
 import { FC, MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
+import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
 
 const PersonCard: FC<{
   person: SupportSuitabilityPerson;
@@ -84,29 +88,37 @@ export const SupportPersonalSuitabilitySection: FC<{
   const [loaded, setLoaded] = useState<SupportSuitabilityPerson[]>([]);
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const errandId = supportErrand?.id;
+  const pbiSignal = useSupportStore((s) => s.pbiSignal);
+  const pbiSignalAt = pbiSignal?.errandId === errandId ? pbiSignal?.at : undefined;
 
+  /** A person who was already on the card keeps whatever the handler has typed but not yet saved. */
+  const absorb = useCallback((read: SupportSuitabilityPerson[]) => {
+    setLoaded(read);
+    setPeople((current) => read.map((person) => current?.find((held) => held.partyId === person.partyId) ?? person));
+  }, []);
+
+  /** The marking is changed in Grundinformation as well, so the card follows every write wherever it was made. */
   useEffect(() => {
     if (!errandId) return;
 
     let abandoned = false;
     getSupportSuitabilityPeople(errandId, municipalityId)
       .then((read) => {
-        if (abandoned) return;
-        setPeople(read);
-        setLoaded(read);
+        if (!abandoned) absorb(read);
       })
       .catch(() => {
-        if (abandoned) return;
-        setPeople([]);
-        setLoaded([]);
+        if (!abandoned) absorb([]);
       });
 
     return () => {
       abandoned = true;
     };
-  }, [errandId, municipalityId]);
+  }, [errandId, municipalityId, absorb, pbiSignalAt]);
+
+  const addByHand = useAddSupportPbiByHand();
 
   const change = (partyId: string, changes: Partial<SupportSuitabilityPerson>) =>
     setPeople((current) =>
@@ -199,6 +211,23 @@ export const SupportPersonalSuitabilitySection: FC<{
           onComment={(comment) => change(person.partyId, { comment })}
         />
       ))}
+
+      {writable ? (
+        <div>
+          <Button
+            variant="secondary"
+            size="sm"
+            rightIcon={<UserPlus size={18} />}
+            disabled={busy}
+            data-cy="suitability-pbi-add-open"
+            onClick={() => setAdding(true)}
+          >
+            {t('common:company.pbi.add.open')}
+          </Button>
+        </div>
+      ) : null}
+
+      <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={addByHand} />
     </div>
   );
 };

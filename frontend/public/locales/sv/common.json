@@ -84,7 +84,32 @@
       "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade. Försök igen.",
       "error": "PBI-markeringen kunde inte sparas.",
       "unresolved": "Kan inte slås upp i folkbokföringen",
-      "locked_in_investigation": "PBI-markeringen är låst sedan ärendet gick vidare till utredning."
+      "list": {
+        "heading": "Personer med betydande inflytande",
+        "description": "Personerna nedan är markerade som PBI på ärendet. De kommer från bolagsdatan eller har lagts till för hand.",
+        "empty": "Inga personer är markerade som PBI på ärendet ännu."
+      },
+      "add": {
+        "open": "Lägg till PBI",
+        "title": "Lägg till person med betydande inflytande",
+        "description": "Sök personen i folkbokföringen med personnummer. Personnummer sparas aldrig på ärendet.",
+        "identity": "Personnummer",
+        "identity_placeholder": "ååååmmddxxxx",
+        "search": "Sök",
+        "confirm": "Lägg till",
+        "cancel": "Avbryt",
+        "not_found": "Personen kunde inte hittas i folkbokföringen.",
+        "role": "Roll (frivillig)",
+        "role_placeholder": "Till exempel Finansiär eller Delägare"
+      },
+      "remove": {
+        "title": "Ta bort PBI",
+        "text_from_company": "Personen avmarkeras som PBI men står kvar i bolagsdatan.",
+        "text_by_hand": "Personen togs in för hand och tas bort från ärendet helt.",
+        "confirm_yes": "Ta bort",
+        "cancel": "Avbryt",
+        "aria": "Ta bort {{name}} som PBI"
+      }
     }
   },
   "investigation": {
@@ -354,7 +379,7 @@
   "personal_suitability": {
     "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig.",
     "loading": "Hämtar personer med betydande inflytande",
-    "empty": "Inga personer är markerade som PBI. Markera dem under Granskning, Förenklad bolagsdata.",
+    "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
     "comment": "Kommentar",
     "comment_placeholder": "Kommentar om {{person}}s personliga lämplighet…",
     "assessment_placeholder": "Välj bedömning…",

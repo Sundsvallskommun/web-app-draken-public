@@ -9,8 +9,21 @@ export interface SupportPbiCandidate extends LegalEntityEngagement {
   assessmentComment?: string;
 }
 
+export interface SupportPbiPerson {
+  partyId: string;
+  name: string;
+  identityCode: string;
+  roles: string;
+  addedByHand: boolean;
+  assessment?: string;
+  assessmentComment?: string;
+}
+
 // The marking is a stakeholder parameter, since a stakeholder can only have one role in SupportManagement.
 export const SUPPORT_PBI_PARAMETER = 'PBI';
+
+export const supportPbiIdentityCode = (identityCode: string): string =>
+  /^\d{12}$/.test(identityCode) ? `${identityCode.slice(0, 8)}-${identityCode.slice(8)}` : identityCode;
 
 export const getSupportPbiCandidates = (errandId: string, municipalityId: string): Promise<SupportPbiCandidate[]> =>
   apiService
@@ -18,6 +31,20 @@ export const getSupportPbiCandidates = (errandId: string, municipalityId: string
     .then((res) => res.data ?? [])
     .catch((e) => {
       console.error('Something went wrong when fetching the people engaged in the company');
+      throw e;
+    });
+
+export interface SupportPbi {
+  candidates: SupportPbiCandidate[];
+  people: SupportPbiPerson[];
+}
+
+export const getSupportPbi = (errandId: string, municipalityId: string): Promise<SupportPbi> =>
+  apiService
+    .get<SupportPbi>(`supportpbi/${municipalityId}/${errandId}`)
+    .then((res) => ({ candidates: res.data?.candidates ?? [], people: res.data?.people ?? [] }))
+    .catch((e) => {
+      console.error('Something went wrong when fetching the people of significant influence');
       throw e;
     });
 
@@ -30,12 +57,30 @@ export const markSupportPbi = (errandId: string, municipalityId: string, partyId
       throw e;
     });
 
-export const unmarkSupportPbi = (errandId: string, municipalityId: string, partyId: string): Promise<void> =>
+export interface SupportPbiByHand {
+  partyId: string;
+  role?: string;
+}
+
+export const addSupportPbiByHand = (
+  errandId: string,
+  municipalityId: string,
+  person: SupportPbiByHand
+): Promise<void> =>
+  apiService
+    .post<void, SupportPbiByHand>(`supportpbi/${municipalityId}/${errandId}/person`, person)
+    .then(() => undefined)
+    .catch((e) => {
+      console.error('Something went wrong when adding a person of significant influence');
+      throw e;
+    });
+
+export const removeSupportPbi = (errandId: string, municipalityId: string, partyId: string): Promise<void> =>
   apiService
     .deleteRequest<void>(`supportpbi/${municipalityId}/${errandId}/${partyId}`)
     .then(() => undefined)
     .catch((e) => {
-      console.error('Something went wrong when removing the marking of a person of significant influence');
+      console.error('Something went wrong when removing a person of significant influence');
       throw e;
     });
 

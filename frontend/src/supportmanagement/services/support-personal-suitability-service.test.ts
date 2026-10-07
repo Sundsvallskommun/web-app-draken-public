@@ -2,16 +2,16 @@ import { expect, test } from 'vitest';
 
 import { supportSuitabilityPeople, supportSuitabilityProblem } from './support-personal-suitability-service';
 
-const marked = {
+const fromCompanyData = {
   partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
   name: 'Edwin Molina',
-  identity: { code: '198501120234' },
-  relations: [{ description: 'Verkställande direktör' }],
-  marked: true,
+  identityCode: '198501120234',
+  roles: 'Verkställande direktör',
+  addedByHand: false,
 };
 
-test('only a marked person is assessed, and the identity is written the way a form is read', () => {
-  expect(supportSuitabilityPeople([marked, { ...marked, partyId: 'p2', name: 'Omarkerad', marked: false }])).toEqual([
+test('a person taken from the company data carries their role, and the identity is written the way a form is read', () => {
+  expect(supportSuitabilityPeople([fromCompanyData])).toEqual([
     {
       partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
       name: 'Edwin Molina',
@@ -23,18 +23,39 @@ test('only a marked person is assessed, and the identity is written the way a fo
   ]);
 });
 
-test('a person without a party id cannot be assessed, since there is nothing to write the verdict on', () => {
-  expect(supportSuitabilityPeople([{ ...marked, partyId: undefined }])).toEqual([]);
+test('a person a handler entered by hand is assessed like any other, with nothing the company data would have given', () => {
+  expect(
+    supportSuitabilityPeople([
+      {
+        partyId: 'f4c7a1e2-5b38-4a90-8c2d-1e9f3b7a6c50',
+        name: 'Sara Lind',
+        identityCode: '',
+        roles: '',
+        addedByHand: true,
+      },
+    ])
+  ).toEqual([
+    {
+      partyId: 'f4c7a1e2-5b38-4a90-8c2d-1e9f3b7a6c50',
+      name: 'Sara Lind',
+      identityCode: '',
+      roles: '',
+      assessment: '',
+      comment: '',
+    },
+  ]);
 });
 
 test('a verdict already written is read back onto the person', () => {
   expect(
-    supportSuitabilityPeople([{ ...marked, assessment: 'DEFICIENCY', assessmentComment: 'Skuld hos Kronofogden.' }])[0]
+    supportSuitabilityPeople([
+      { ...fromCompanyData, assessment: 'DEFICIENCY', assessmentComment: 'Skuld hos Kronofogden.' },
+    ])[0]
   ).toMatchObject({ assessment: 'DEFICIENCY', comment: 'Skuld hos Kronofogden.' });
 });
 
 test('every person needs a verdict before the section is done, the comment is optional', () => {
-  const people = supportSuitabilityPeople([marked]);
+  const people = supportSuitabilityPeople([fromCompanyData]);
 
   expect(supportSuitabilityProblem([])).toBe('common:personal_suitability.validation.no_people');
   expect(supportSuitabilityProblem(people)).toBe('common:personal_suitability.validation.assessment_required');

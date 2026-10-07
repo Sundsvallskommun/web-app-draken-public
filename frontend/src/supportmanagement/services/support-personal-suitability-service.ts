@@ -1,7 +1,6 @@
 import { apiService } from '@common/services/api-service';
-import { engagementRoles } from '@common/services/legal-entity-service';
 
-import { getSupportPbiCandidates, type SupportPbiCandidate } from './support-pbi-service';
+import { getSupportPbi, supportPbiIdentityCode, type SupportPbiPerson } from './support-pbi-service';
 
 const SupportSuitabilityAssessment = {
   PENDING: 'PENDING',
@@ -41,26 +40,21 @@ export interface SupportSuitabilityPerson {
   comment: string;
 }
 
-const hyphenated = (identityCode: string): string =>
-  /^\d{12}$/.test(identityCode) ? `${identityCode.slice(0, 8)}-${identityCode.slice(8)}` : identityCode;
-
-export const supportSuitabilityPeople = (candidates: SupportPbiCandidate[]): SupportSuitabilityPerson[] =>
-  candidates
-    .filter((candidate) => candidate.marked && candidate.partyId && candidate.name)
-    .map((candidate) => ({
-      partyId: candidate.partyId as string,
-      name: candidate.name as string,
-      identityCode: hyphenated(candidate.identity?.code ?? ''),
-      roles: engagementRoles(candidate),
-      assessment: (candidate.assessment as SupportSuitabilityAssessmentName) ?? '',
-      comment: candidate.assessmentComment ?? '',
-    }));
+export const supportSuitabilityPeople = (people: SupportPbiPerson[]): SupportSuitabilityPerson[] =>
+  people.map((person) => ({
+    partyId: person.partyId,
+    name: person.name,
+    identityCode: supportPbiIdentityCode(person.identityCode),
+    roles: person.roles,
+    assessment: (person.assessment as SupportSuitabilityAssessmentName) ?? '',
+    comment: person.assessmentComment ?? '',
+  }));
 
 export const getSupportSuitabilityPeople = (
   errandId: string,
   municipalityId: string
 ): Promise<SupportSuitabilityPerson[]> =>
-  getSupportPbiCandidates(errandId, municipalityId).then(supportSuitabilityPeople);
+  getSupportPbi(errandId, municipalityId).then((read) => supportSuitabilityPeople(read.people));
 
 export interface SupportSuitabilityVerdict {
   assessment: SupportSuitabilityAssessmentName;
