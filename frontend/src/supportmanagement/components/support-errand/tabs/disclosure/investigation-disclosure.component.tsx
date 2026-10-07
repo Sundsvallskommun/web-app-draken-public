@@ -12,12 +12,16 @@ export const SectionDisclosure: React.FC<{
   writable: boolean;
   onStatementsEdited: (edited: boolean) => void;
   saveStatements: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ section, writable, onStatementsEdited, saveStatements }) => {
+  onSuitabilityEdited: (edited: boolean) => void;
+  saveSuitability: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
+}> = ({ section, writable, onStatementsEdited, saveStatements, onSuitabilityEdited, saveSuitability }) => {
   const { t } = useTranslation();
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
-    personal_suitability: <SupportPersonalSuitabilitySection writable={writable} />,
+    personal_suitability: (
+      <SupportPersonalSuitabilitySection writable={writable} onEdited={onSuitabilityEdited} saveRef={saveSuitability} />
+    ),
   };
 
   return (

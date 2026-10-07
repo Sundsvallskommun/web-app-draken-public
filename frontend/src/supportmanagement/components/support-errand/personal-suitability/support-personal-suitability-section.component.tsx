@@ -11,16 +11,16 @@ import {
   type SupportSuitabilityAssessmentName,
   type SupportSuitabilityPerson,
 } from '@supportmanagement/services/support-personal-suitability-service';
-import { FC, useEffect, useState } from 'react';
+import { FC, MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const PersonCard: FC<{
   person: SupportSuitabilityPerson;
   writable: boolean;
+  problem: string | undefined;
   onAssessment: (assessment: SupportSuitabilityAssessmentName) => void;
   onComment: (comment: string) => void;
-  onCommentWritten: () => void;
-}> = ({ person, writable, onAssessment, onComment, onCommentWritten }) => {
+}> = ({ person, writable, problem, onAssessment, onComment }) => {
   const { t } = useTranslation();
 
   return (
@@ -60,19 +60,29 @@ const PersonCard: FC<{
           data-cy={`suitability-comment-${person.partyId}`}
           placeholder={t('common:personal_suitability.comment_placeholder', { person: person.name })}
           onChange={(e) => onComment(e.currentTarget.value)}
-          onBlur={onCommentWritten}
         />
       </FormControl>
+      {problem ? (
+        <p className="text-small text-error-text-primary m-0" data-cy={`suitability-problem-${person.partyId}`}>
+          {t(problem)}
+        </p>
+      ) : null}
     </div>
   );
 };
 
-export const SupportPersonalSuitabilitySection: FC<{ writable: boolean }> = ({ writable }) => {
+export const SupportPersonalSuitabilitySection: FC<{
+  writable: boolean;
+  onEdited: (edited: boolean) => void;
+  saveRef: MutableRefObject<(() => Promise<boolean>) | undefined>;
+}> = ({ writable, onEdited, saveRef }) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [people, setPeople] = useState<SupportSuitabilityPerson[]>();
+  const [loaded, setLoaded] = useState<SupportSuitabilityPerson[]>([]);
+  const [problems, setProblems] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const errandId = supportErrand?.id;
@@ -83,10 +93,14 @@ export const SupportPersonalSuitabilitySection: FC<{ writable: boolean }> = ({ w
     let abandoned = false;
     getSupportSuitabilityPeople(errandId, municipalityId)
       .then((read) => {
-        if (!abandoned) setPeople(read);
+        if (abandoned) return;
+        setPeople(read);
+        setLoaded(read);
       })
       .catch(() => {
-        if (!abandoned) setPeople([]);
+        if (abandoned) return;
+        setPeople([]);
+        setLoaded([]);
       });
 
     return () => {
@@ -99,22 +113,60 @@ export const SupportPersonalSuitabilitySection: FC<{ writable: boolean }> = ({ w
       (current ?? []).map((person) => (person.partyId === partyId ? { ...person, ...changes } : person))
     );
 
-  const save = async (person: SupportSuitabilityPerson, changes: Partial<SupportSuitabilityPerson>) => {
-    const written = { ...person, ...changes };
-    if (!errandId || !written.assessment) return;
+  const asLoaded = (partyId: string) => loaded.find((person) => person.partyId === partyId);
+
+  const isEdited = (person: SupportSuitabilityPerson): boolean => {
+    const before = asLoaded(person.partyId);
+    return !before || before.assessment !== person.assessment || before.comment !== person.comment;
+  };
+
+  const edited = (people ?? []).some(isEdited);
+
+  useEffect(() => {
+    onEdited(edited);
+  }, [edited, onEdited]);
+
+  /**
+   * A comment cannot be written without a verdict, since the verdict is what the service stores it
+   * beside. Saving the rest would leave the card edited for good, so the whole section waits.
+   */
+  const saveAll = useCallback(async (): Promise<boolean> => {
+    const changed = (people ?? []).filter(isEdited);
+    if (!errandId || changed.length === 0) return true;
+
+    const found = Object.fromEntries(
+      changed
+        .filter((person) => !person.assessment)
+        .map((person) => [person.partyId, 'common:personal_suitability.validation.assessment_required'])
+    );
+    setProblems(found);
+    if (Object.keys(found).length > 0) {
+      toastMessage(getToastOptions({ message: t('common:personal_suitability.toast.incomplete'), status: 'error' }));
+      return false;
+    }
 
     setBusy(true);
     try {
-      await assessSupportSuitability(errandId, municipalityId, person.partyId, {
-        assessment: written.assessment,
-        comment: written.comment,
-      });
+      for (const person of changed) {
+        await assessSupportSuitability(errandId, municipalityId, person.partyId, {
+          assessment: person.assessment as SupportSuitabilityAssessmentName,
+          comment: person.comment,
+        });
+      }
+      setLoaded(people ?? []);
+      return true;
     } catch {
       toastMessage(getToastOptions({ message: t('common:personal_suitability.toast.save_failed'), status: 'error' }));
+      return false;
     } finally {
       setBusy(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [people, loaded, errandId, municipalityId, t, toastMessage]);
+
+  useEffect(() => {
+    saveRef.current = saveAll;
+  }, [saveAll, saveRef]);
 
   if (!people) {
     return (
@@ -142,12 +194,9 @@ export const SupportPersonalSuitabilitySection: FC<{ writable: boolean }> = ({ w
           key={person.partyId}
           person={person}
           writable={writable && !busy}
-          onAssessment={(assessment) => {
-            change(person.partyId, { assessment });
-            void save(person, { assessment });
-          }}
+          problem={problems[person.partyId]}
+          onAssessment={(assessment) => change(person.partyId, { assessment })}
           onComment={(comment) => change(person.partyId, { comment })}
-          onCommentWritten={() => void save(person, {})}
         />
       ))}
     </div>
