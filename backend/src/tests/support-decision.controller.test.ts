@@ -79,8 +79,8 @@ describe('CreateSupportDecisionDto', () => {
 
   it('accepts parameters as keys with lists of values, and nothing else in them', async () => {
     const options = { whitelist: true, forbidNonWhitelisted: true };
-    const withParameters = (parameters: unknown) => plainToInstance(CreateSupportDecisionDto, { outcome: 'APPROVAL', parameters });
-
+    const withParameters = (parameters: unknown) =>
+      plainToInstance(CreateSupportDecisionDto, { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters });
     await expect(validate(withParameters(PREMISES_PARAMETERS), options)).resolves.toEqual([]);
     await expect(validate(withParameters([]), options)).resolves.toEqual([]);
 
@@ -155,7 +155,7 @@ describe('createDecision', () => {
       mockReq(),
       mockSupportErrandId,
       MUNICIPALITY_ID,
-      { outcome: 'APPROVAL', parameters: PREMISES_PARAMETERS },
+      { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters: PREMISES_PARAMETERS },
       mockRes(),
     );
 
