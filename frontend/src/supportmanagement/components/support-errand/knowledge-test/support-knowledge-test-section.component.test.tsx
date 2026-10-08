@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportKnowledgeTestPeople,
   saveSupportKnowledgeTest,
@@ -21,6 +22,9 @@ vi.mock('@supportmanagement/services/support-knowledge-test-service', async (imp
   getSupportKnowledgeTestPeople: vi.fn(),
   saveSupportKnowledgeTest: vi.fn(),
 }));
+const reset = vi.fn();
+vi.mock('react-hook-form', () => ({ useFormContext: () => ({ formState: { dirtyFields: {} }, reset }) }));
+vi.mock('@supportmanagement/services/support-errand-service', () => ({ getSupportErrandById: vi.fn() }));
 vi.mock('../pbi/use-add-support-pbi-by-hand', () => ({ useAddSupportPbiByHand: () => vi.fn() }));
 vi.mock('../pbi/use-remove-support-pbi', () => ({ useRemoveSupportPbi: () => vi.fn() }));
 
@@ -38,6 +42,21 @@ const person = (partyId: string, name: string): SupportKnowledgeTestPerson => ({
   testedAt: '',
   comment: '',
 });
+
+/** The errand as it stands once the knowledge test has been written to the stakeholder. */
+const errandWithTest = {
+  id: ERRAND_ID,
+  stakeholders: [
+    {
+      externalId: EDWIN,
+      parameters: [
+        { key: 'PBI', values: ['true'] },
+        { key: 'PBI_KNOWLEDGE_TEST', values: ['APPROVED'] },
+        { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-10-02'] },
+      ],
+    },
+  ],
+};
 
 const saveRef = createRef<(() => Promise<boolean>) | undefined>() as {
   current: (() => Promise<boolean>) | undefined;
@@ -58,6 +77,7 @@ beforeEach(() => {
     person(MARIA, 'Maria Molina'),
   ]);
   vi.mocked(saveSupportKnowledgeTest).mockResolvedValue(undefined);
+  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: errandWithTest } as never);
 });
 
 afterEach(cleanup);
@@ -114,4 +134,26 @@ test('a failure to write leaves the section edited rather than claiming it was s
   fireEvent.change(cardOf(MARIA, 'status'), { target: { value: 'RETAKE' } });
 
   await expect(saveRef.current?.()).resolves.toBe(false);
+});
+
+test('the errand is read back after a test, so saving Grundinformation cannot write it away again', async () => {
+  mountSection();
+  await waitFor(() => expect(cardOf(EDWIN, 'status')).toBeTruthy());
+  fireEvent.change(cardOf(EDWIN, 'status'), { target: { value: 'APPROVED' } });
+
+  await expect(saveRef.current?.()).resolves.toBe(true);
+
+  expect(getSupportErrandById).toHaveBeenCalledWith(ERRAND_ID, '2281');
+  expect(useSupportStore.getState().supportErrand).toEqual(errandWithTest);
+  expect(reset).toHaveBeenCalledWith(errandWithTest, { keepDirtyValues: true });
+  expect(useSupportStore.getState().pbiSignal?.errandId).toBe(ERRAND_ID);
+});
+
+test('nothing is read back when no card was touched', async () => {
+  mountSection();
+  await waitFor(() => expect(cardOf(EDWIN, 'status')).toBeTruthy());
+
+  await expect(saveRef.current?.()).resolves.toBe(true);
+
+  expect(getSupportErrandById).not.toHaveBeenCalled();
 });

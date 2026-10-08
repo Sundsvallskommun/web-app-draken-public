@@ -19,6 +19,7 @@ import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { SupportPbiRemoveButton } from '../pbi/support-pbi-remove-button.component';
 import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
+import { useAnnounceSupportPbiWrite } from '../pbi/use-announce-support-pbi-write';
 import { useRemoveSupportPbi } from '../pbi/use-remove-support-pbi';
 
 const PersonCard: FC<{
@@ -134,6 +135,7 @@ export const SupportKnowledgeTestSection: FC<{
   }, [errandId, municipalityId, absorb, pbiSignalAt]);
 
   const addByHand = useAddSupportPbiByHand();
+  const announce = useAnnounceSupportPbiWrite();
   const remove = useRemoveSupportPbi();
 
   const change = (partyId: string, changes: Partial<SupportKnowledgeTestPerson>) =>
@@ -166,6 +168,7 @@ export const SupportKnowledgeTestSection: FC<{
       for (const person of changed) {
         await saveSupportKnowledgeTest(errandId, municipalityId, person.partyId, supportKnowledgeTestRecord(person));
       }
+      await announce();
       setLoaded(people ?? []);
       return true;
     } catch {
@@ -175,7 +178,7 @@ export const SupportKnowledgeTestSection: FC<{
       setBusy(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, loaded, errandId, municipalityId, t, toastMessage]);
+  }, [announce, people, loaded, errandId, municipalityId, t, toastMessage]);
 
   useEffect(() => {
     saveRef.current = saveAll;
