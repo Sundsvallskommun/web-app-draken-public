@@ -145,8 +145,6 @@ test('giving the errand to LEX-ansvarig is the handover to LEX', async ({ page, 
     offersLex: true,
     managerValue: { completed: 'yes', suspectedMisconduct: 'yes' },
   });
-  // The overview is a protected route; without a session the proxy sends the browser to the login page.
-  await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
   await visitErrand(page, dismissCookieConsent);
 
   await expect(handlerSelect(page).locator('optgroup[label="LEX-ansvarig"] option')).toHaveText(['Lena LEX']);

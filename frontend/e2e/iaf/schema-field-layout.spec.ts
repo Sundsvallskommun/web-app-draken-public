@@ -2,7 +2,13 @@ import type { Locator, Page } from '@playwright/test';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 import { expect, test } from '../fixtures/base.fixture';
-import { errandNumber, installIafApiMock, katlaSchemaId, latestSchemaIds } from './fixtures/investigation-flow.mock';
+import {
+  errandNumber,
+  installIafApiMock,
+  katlaParameterKey,
+  katlaSchemaId,
+  latestSchemaIds,
+} from './fixtures/investigation-flow.mock';
 
 test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), 'Kräver IAF/VOF-profilen.');
 
@@ -68,10 +74,10 @@ test('schemafält linjerar med olika hjälptexter och radbrutna rubriker samt st
   await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
   await waitForFonts();
 
-  const date = page.locator('#root_eventDate');
-  const time = page.locator('#root_eventTime');
-  const reference = page.locator('#root_reference');
-  const explanation = page.locator('#root_explanation');
+  const date = page.locator(`#${katlaParameterKey}_eventDate`);
+  const time = page.locator(`#${katlaParameterKey}_eventTime`);
+  const reference = page.locator(`#${katlaParameterKey}_reference`);
+  const explanation = page.locator(`#${katlaParameterKey}_explanation`);
   const form = page.locator('.rjsf').filter({ has: date });
   await expect(date).toBeDisabled();
   await expectAligned(date, time);
@@ -84,7 +90,7 @@ test('schemafält linjerar med olika hjälptexter och radbrutna rubriker samt st
 
   await page.setViewportSize({ width: 390, height: 1000 });
   const dateBox = await date.boundingBox();
-  const timeLabelBox = await page.locator('label[for="root_eventTime"]').boundingBox();
+  const timeLabelBox = await page.locator(`label[for="${katlaParameterKey}_eventTime"]`).boundingBox();
   expect(timeLabelBox!.y).toBeGreaterThan(dateBox!.y + dateBox!.height);
   await expect
     .poll(() =>

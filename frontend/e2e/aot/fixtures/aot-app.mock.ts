@@ -282,6 +282,12 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
       return;
     }
 
+    // The read counts answer a plain list; the conversations route below would answer them with an object.
+    if (method === 'GET' && path.includes('/communication/conversations/count-read-by')) {
+      await fulfillJson(route, []);
+      return;
+    }
+
     if (method === 'GET' && path.includes('/communication/conversations')) {
       // The BFF conversation endpoint wraps its payload twice; the frontend service returns the
       // inner ApiResponse to its consumers.

@@ -336,8 +336,8 @@ test('keeps the draft and reports a version conflict', async ({ page, dismissCoo
   await dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Mitt osparade mål');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   const alert = dialog.getByRole('alert');
-  await expect(alert).toContainText('Åtgärden kunde inte sparas');
-  await expect(alert).toContainText('uppdaterats av någon annan');
+  // A rejected edit is rebased on the measure as it now stands, so it is reported as the other writer's change.
+  await expect(alert).toContainText('Åtgärden har ändrats av någon annan');
   await expect(alert).toBeFocused();
   await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
     'Mitt osparade mål'
@@ -353,6 +353,7 @@ test('does not claim a rebase when a new measure conflicts with a moved errand',
   await installMeasures(page, { singleCreationRole: true, failWrite: true });
   await openMeasures(page, dismissCookieConsent);
   await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
+  await page.getByLabel('Planerade åtgärder', { exact: true }).check();
   await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Ny åtgärd');
@@ -369,7 +370,7 @@ test('rebases the open edit on the current measure so a retry succeeds', async (
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
   const dialog = editDialog(page);
-  await dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
+  await dialog.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
 
   const alert = dialog.getByRole('alert');
@@ -378,7 +379,7 @@ test('rebases the open edit on the current measure so a retry succeeds', async (
   await expect(alert).toBeFocused();
   // The typed field is kept, and the goal nobody here touched follows the competing writer instead of being
   // silently restored to this user's stale copy on the retry.
-  await expect(dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true })).toHaveValue(
     'Min ändrade beskrivning'
   );
   await expect(dialog.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
@@ -418,14 +419,15 @@ test('explains that a decision locked the content instead of inviting a retry', 
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
   const dialog = editDialog(page);
-  await dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
+  await dialog.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
 
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Åtgärden har ändrats av någon annan');
   await expect(alert).toContainText('typ, beskrivning och mål är nu låsta');
-  await expect(dialog.getByRole('heading', { name: 'Motivering till avslag', exact: true })).toBeVisible();
-  await expect(dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true })).toBeDisabled();
+  await expect(dialog.getByText('Motivering till avslag', { exact: true })).toBeVisible();
+  // Locked content stays readable: read-only, not disabled.
+  await expect(dialog.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true })).not.toBeEditable();
 });
 
 test('stops offering a decision that someone else already made', async ({ page, dismissCookieConsent }) => {
@@ -440,7 +442,8 @@ test('stops offering a decision that someone else already made', async ({ page, 
   await expect(dialog.getByText('Förslaget är redan avgjort')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Spara beslut', exact: true })).toBeHidden();
   await expect(dialog.getByLabel('Beslutskommentar (Obligatoriskt)', { exact: true })).toHaveValue('Min motivering');
-  await dialog.getByRole('button', { name: 'Stäng', exact: true }).click();
+  // The settled dialog's own button, not the modal's close icon that shares its name.
+  await dialog.getByRole('button', { name: 'Stäng', exact: true }).filter({ hasText: 'Stäng' }).click();
   await expect(decisionDialog(page)).toBeHidden();
 });
 
@@ -508,7 +511,8 @@ test('skips the role step and registers for the only granted role', async ({ pag
   // The reload is still pending here (delayed read): the tab marks itself busy but keeps its content on screen.
   const busy = page.locator('[data-cy="support-measures-tab"] [aria-busy="true"]');
   await expect(busy).toBeVisible();
-  expect(await page.getByLabel('Åtgärder laddas').count()).toBe(0);
+  // Uppföljning is a measures tab too; its hidden panel keeps a spinner of its own until it is opened.
+  expect(await page.locator('[data-cy="support-measures-tab"]').getByLabel('Åtgärder laddas').count()).toBe(0);
   await expect(busy.getByRole('form', { name: 'Lägg till åtgärder' })).toBeVisible();
   await expect(busy).toHaveCount(0);
   await expect(page.getByText('Tydligare rutiner', { exact: true })).toBeVisible();

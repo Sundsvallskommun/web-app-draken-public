@@ -19,8 +19,12 @@ const municipalityId = '2281';
 const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
 const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
 const applicationSlug = application.toLowerCase();
+/** The handler `/me` signs in as, in every application this mock serves. */
+const signedInUsername = 'iaf.test';
 export const errandNumber = `${application}-2026-0001`;
-export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
+/** The JSON parameter Katla's report arrives in; Ärendeuppgifter prefixes the report's field ids with it. */
+export const katlaParameterKey = `katla-${applicationSlug}-report`;
+export const katlaSchemaId = `2281_${katlaParameterKey}_1.0`;
 
 export const investigationKeys = [
   'utredning-enhetschef',
@@ -55,6 +59,7 @@ export interface MockInvestigationProfile {
     ownerLabel: string;
     placement?: 'investigation' | 'decision' | 'details';
     appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation';
+    prerequisiteDocumentKey?: InvestigationKey;
   }>;
 }
 
@@ -96,6 +101,8 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       ownerLabel: 'LEX-ansvarig',
       placement: 'decision',
       appliesTo: 'reported-misconduct',
+      // As the BFF's profile: the lex Sarah decision answers the SoL/LSS investigation, which is saved first.
+      prerequisiteDocumentKey: 'utredning-sol-lss',
     },
   ],
 });
@@ -791,14 +798,14 @@ const reportUiSchema = {
 };
 
 const katlaParameter = {
-  key: `katla-${applicationSlug}-report`,
+  key: katlaParameterKey,
   schemaId: katlaSchemaId,
   value: { reportedEvent: 'Katla från web-app-katla-sm' },
 };
 
 const katlaSchema = {
   id: katlaSchemaId,
-  name: `katla-${applicationSlug}-report`,
+  name: katlaParameterKey,
   version: '1.0',
   value: {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -976,7 +983,8 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   let errandVersion = 7;
   let errandStatus = scenario.errandStatus ?? 'ONGOING';
   let errandAssignedUserId =
-    scenario.assignedUserId === null ? undefined : scenario.assignedUserId ?? `${applicationSlug}.test`;
+    // An errand is the signed-in handler's unless the scenario says otherwise, the same under IAF and VOF.
+    scenario.assignedUserId === null ? undefined : scenario.assignedUserId ?? signedInUsername;
   let activePhaseName = scenario.activePhaseName;
   const scenarioPhases = scenario.metadataPhases ?? (activePhaseName ? workflowPhases : undefined);
   const trace: IafApiTrace = {
@@ -1058,6 +1066,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     ],
   });
 
+  // The handler `/me` answers for is signed in, so the protected pages (Översikt, Registrera) open without a login.
+  await page
+    .context()
+    .addCookies([{ name: 'connect.sid', value: 'test-session', domain: new URL(backendOrigin).hostname, path: '/' }]);
+
   await page.route(`${backendOrigin}/**`, async (route) => {
     const request = route.request();
     const method = request.method();
@@ -1133,8 +1146,8 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           name: 'Iaf Testare',
           firstName: 'Iaf',
           lastName: 'Testare',
-          email: 'iaf.test@example.test',
-          username: 'iaf.test',
+          email: `${signedInUsername}@example.test`,
+          username: signedInUsername,
           userSettings: { readNotificationsClearedDate: '' },
           permissions: {
             canEditCasedata: false,
@@ -1303,6 +1316,19 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       // Versions roll up: a parameter written moves the errand's version too.
       errandVersion += 1;
       await fulfillJson(route, saved);
+      return;
+    }
+
+    // An errand with no measures, as the BFF answers it. A spec about measures routes its own in front of this.
+    if (method === 'GET' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/measures`)) {
+      await fulfillJson(route, {
+        measures: [],
+        errandVersion,
+        metadata: { measureTypes: [], roles: [] },
+        creationRoles: [],
+        registration: { status: 'unconfigured', roleTypes: [] },
+        canWrite: true,
+      });
       return;
     }
 

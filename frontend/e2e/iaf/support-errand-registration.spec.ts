@@ -21,8 +21,6 @@ const visitRegistration = async (
   page: Parameters<typeof installIafApiMock>[0],
   dismissCookieConsent: () => Promise<void>
 ) => {
-  // /registrera is a protected route: the proxy redirects to the login page without a session.
-  await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
   await page.goto('registrera');
   await dismissCookieConsent();
 };
@@ -60,9 +58,7 @@ test.describe('Registrering i IAF/VOF', () => {
 
     await submit.click();
 
-    await expect
-      .poll(() => trace.registrations)
-      .toEqual([{ reportTypeLabelId: 'abuse', locationLabelId: 'unit' }]);
+    await expect.poll(() => trace.registrations).toEqual([{ reportTypeLabelId: 'abuse', locationLabelId: 'unit' }]);
     await expect(page).toHaveURL(new RegExp(`/arende/${errandNumber}$`, 'u'));
   });
 

@@ -87,9 +87,14 @@ const conflictMessages: Record<string, string> = {
   403: 'Du saknar behörighet att utföra det här steget.',
 };
 
+/** A stale errand version, which the backend reports as the HTTP precondition it is and not as anything to act on. */
+const VERSION_CONFLICT_STATUS = 412;
+
 /** Turns a failed handover into something a handler can act on, keeping the backend's own reason when it has one. */
 export const investigationHandoverErrorMessage = (error: unknown, fallback: string): string => {
   const response = (error as AxiosError<{ message?: string }>)?.response;
+  if (response?.status === VERSION_CONFLICT_STATUS) return conflictMessages[VERSION_CONFLICT_STATUS];
+
   const apiMessage = response?.data?.message;
   if (apiMessage) return apiMessage;
 

@@ -26,7 +26,10 @@ import {
   updateSupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
-import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import {
+  SupportErrandStatusAfterAssignmentError,
+  supportErrandWriteErrorMessage,
+} from '@supportmanagement/services/support-errand-write-version';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import {
   closesFromActivePhase,
@@ -365,20 +368,30 @@ export const SidebarInfo: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
 
+  /** Reads the errand back and shows it as it now stands. */
+  const showUpdatedErrand = async () => {
+    const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
+    if (res.error) throw new Error('Could not confirm the updated support errand');
+    setSupportErrand(res.errand);
+    reset(res.errand);
+  };
+
   const handleAction = (action: () => Promise<boolean>, success: () => void, fail: (error: unknown) => void) => {
     return action()
       .then(async () => {
-        const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
-        if (res.error) throw new Error('Could not confirm the updated support errand');
+        await showUpdatedErrand();
         success();
         setIsLoading(false);
-        setSupportErrand(res.errand);
-        reset(res.errand);
       })
-      .catch((e) => {
+      .catch(async (e) => {
         fail(e);
         setError(true);
         setIsLoading(false);
+        // The assignment landed although the status change after it did not: the errand on screen is
+        // stale, so show whose it is now and the version the next save has to be conditioned on.
+        if (e instanceof SupportErrandStatusAfterAssignmentError) {
+          await showUpdatedErrand().catch((error) => console.error(error));
+        }
         return false;
       });
   };

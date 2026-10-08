@@ -132,7 +132,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const documents = allExistingInvestigationDocuments();
     documents[managerKey].value.suspectedMisconduct = 'no';
     documents[solLssKey].value.individualNotified = 'no';
-    documents['utredning-hsl'].value.ivoNotification = 'no';
+    // Händelseanalys HSL has one choice of its own since the IVO notification moved to the HSL decision.
+    documents['utredning-hsl'].value.completed = 'no';
     const trace = await installIafApiMock(page, { documents });
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
@@ -140,7 +141,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     for (const [key, tabName, field] of [
       [managerKey, 'Utredning enhetschef', 'suspectedMisconduct'],
       [solLssKey, 'Utredning Lex Sarah', 'individualNotified'],
-      ['utredning-hsl', 'Händelseanalys HSL', 'ivoNotification'],
+      ['utredning-hsl', 'Händelseanalys HSL', 'completed'],
     ]) {
       await page.getByRole('tab', { name: tabName, exact: true }).click();
       const group = page.locator(`#${key}_${field}`);
@@ -608,10 +609,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
     await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toBeVisible();
 
-    await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(investigationTabKeys);
+    // Without a phase model the Beslut tab is offered as well, and it reads the decision on this HSL deviation.
+    await expect
+      .poll(() => [...new Set(trace.documentGets)].sort())
+      .toEqual([...investigationTabKeys, hslDecisionKey].sort());
     await expect
       .poll(() => [...new Set(trace.latestSchemaNames)].sort())
-      .toEqual(['utredning-hsl', 'utredning-sol-lss'].sort());
+      .toEqual(['utredning-hsl', 'utredning-sol-lss', hslDecisionKey].sort());
     expect(trace.latestSchemaNames).not.toContain(managerKey);
     expect(trace.exactSchemaIds).toContain(existing.schemaId);
   });
@@ -763,9 +767,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const trace = await installIafApiMock(page, {
       documents: { 'utredning-sol-lss': investigations['utredning-sol-lss'] },
       eventType: 'MISSFORHALLANDE',
+      // A served flag list switches off every flag it leaves out, so the investigation's own flags are listed too.
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
         { name: 'useMeasures', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -1242,6 +1249,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .locator('[data-cy="label-classification-subtype"]');
     const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     const summary = document.locator('[data-cy="schema-form-error-summary"]');
+    // A collapsed section keeps its fields in the DOM at zero height, so whether it is open is read from its content.
+    const assessedWithSectionContent = document
+      .locator('.schema-boundary-disclosure')
+      .filter({ has: page.locator(`#${managerKey}_riskAssessmentHsl_assessedWith`) })
+      .locator(':scope > .sk-disclosure-body');
     // What the investigation must contain is asserted when it is marked finished; an unfinished
     // draft may have empty fields. The scenario therefore finishes it, then empties a field in it.
     await document.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
@@ -1252,7 +1264,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     for (let remaining = await openSections.count(); remaining > 0; remaining--) {
       await openSections.first().click();
     }
-    await expect(assessedWith).not.toBeVisible();
+    await expect(assessedWithSectionContent).toHaveAttribute('aria-hidden', 'true');
     await saveButton.click();
     await expect(summary).toBeFocused();
     await expect(summary.getByRole('link')).toHaveCount(2);
@@ -1263,7 +1275,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const fieldLink = summary.getByRole('link', { name: /Legitimerad personal/u });
     await fieldLink.click();
-    await expect(assessedWith).toBeVisible();
+    await expect(assessedWithSectionContent).toHaveAttribute('aria-hidden', 'false');
     await expect(assessedWith).toBeFocused();
     await document
       .locator('.schema-boundary-disclosure')
@@ -1271,7 +1283,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .locator('.sk-disclosure-header-button')
       .first()
       .click();
+    await expect(assessedWithSectionContent).toHaveAttribute('aria-hidden', 'true');
     await fieldLink.click();
+    await expect(assessedWithSectionContent).toHaveAttribute('aria-hidden', 'false');
     await expect(assessedWith).toBeFocused();
     await assessedWith.fill('Anna Andersson');
     await saveButton.click();

@@ -26,6 +26,12 @@ import createJsonErrorTransformer, { type SchemaFormError } from '../utils/schem
 import { type SchemaErrorNavigation, SchemaFormErrorSummary } from './schema-form-error-summary.component';
 import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
 
+/**
+ * RJSF re-renders only when its props change deeply, so following the same error twice would be swallowed and a
+ * section collapsed in between would stay shut. Numbering each request makes every navigation a change.
+ */
+type NumberedErrorNavigation = SchemaErrorNavigation & { readonly request: number };
+
 // Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
 const validator = customizeValidator({ AjvClass: Ajv2020 });
 
@@ -85,7 +91,10 @@ export default function SchemaForm({
   requiredIndicator,
 }: SchemaFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [errorNavigation, setErrorNavigation] = useState<SchemaErrorNavigation>();
+  const [errorNavigation, setErrorNavigation] = useState<NumberedErrorNavigation>();
+  const navigateToError = useCallback((target: SchemaErrorNavigation) => {
+    setErrorNavigation((previous) => ({ ...target, request: (previous?.request ?? 0) + 1 }));
+  }, []);
 
   useEffect(() => {
     if (!errorNavigation) return;
@@ -188,7 +197,7 @@ export default function SchemaForm({
   const formWithoutSubmit = disabled || readonly || withoutSubmitButton;
   return (
     <div ref={containerRef} className="w-full min-w-0 max-w-full">
-      {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
+      {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={navigateToError} />}
       <Form
         {...formProps}
         templates={

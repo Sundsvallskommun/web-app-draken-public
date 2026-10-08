@@ -13,10 +13,15 @@ const decisionTab = (page: Page) => page.getByRole('tab', { name: 'Beslut', exac
 const measuresTab = (page: Page) => page.getByRole('tab', { name: 'Åtgärder', exact: true });
 const followUpTab = (page: Page) => page.getByRole('tab', { name: 'Uppföljning', exact: true });
 
-/** Åtgärder and Uppföljning are behind their own flag, which the phase gate sits on top of. */
+/**
+ * Åtgärder and Uppföljning are behind their own flag, which the phase gate sits on top of. A served flag list
+ * switches off every flag it leaves out, so the investigation and its capability are named too.
+ */
 const measuresEnabled = [
   { name: 'isSupportManagement', enabled: true },
   { name: 'useMeasures', enabled: true },
+  { name: 'useInvestigation', enabled: true },
+  { name: 'useAvvikelseInvestigation', enabled: true },
 ];
 
 async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {

@@ -98,7 +98,8 @@ const errandPage = (statuses: string[]) => ({
 });
 
 const newErrands = errandPage(['NEW', 'NEW', 'NEW', 'NEW']);
-const ongoingErrands = errandPage(['ONGOING', 'ONGOING']);
+// In IAF/VOF an open errand is in one of its phases' statuses, Utredning's INQUIRY among them.
+const ongoingErrands = errandPage(['INQUIRY', 'INQUIRY']);
 
 const jsonRoute = (page: Page, pattern: string, body: unknown) =>
   page.route(pattern, (route: Route) =>
@@ -119,7 +120,7 @@ test.describe('Avvikelsens översikt, långsamma svar', () => {
       types: [],
       statuses: [
         { name: 'NEW', displayName: 'Ny' },
-        { name: 'ONGOING', displayName: 'Pågående' },
+        { name: 'INQUIRY', displayName: 'Utredning' },
       ],
       labels: { labelStructure },
     });
@@ -154,7 +155,7 @@ test.describe('Avvikelsens översikt, långsamma svar', () => {
     const slowAnswer = page.waitForResponse(
       (response) => LIST_URL.test(response.url()) && statusOf(response.url()) === 'NEW'
     );
-    await page.locator('[aria-label="status-button-ONGOING"]').click();
+    await page.locator('[aria-label="status-button-INQUIRY"]').click();
     await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(ongoingErrands.content.length);
 
     await slowAnswer;

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
 import {
@@ -40,6 +40,16 @@ async function openErrandDetails(page: Page) {
   await expect(page.getByRole('heading', { name: 'Ärendeuppgifter', exact: true })).toBeVisible();
 }
 
+/**
+ * Searches the places the way a handler does. The combobox renders its options as inputs too, so its own is
+ * found by its label; it opens the list on focus, and filters on keystrokes, which a fill does not send.
+ */
+async function searchPlace(modal: Locator, text: string) {
+  const search = modal.getByRole('textbox', { name: 'Ny plats', exact: true });
+  await search.click();
+  await search.pressSequentially(text);
+}
+
 test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', () => {
   test('visar platsen enligt labels och flyttar ärendet med plats och chef i ett handover-steg', async ({
     page,
@@ -65,8 +75,7 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
     await expect(modal.locator('[data-cy="move-location-confirm"]')).toBeDisabled();
 
     // Only the units at the bottom are on offer, searched across every level like Katla's picker.
-    const search = modal.locator('[data-cy="move-location-search"] input');
-    await search.fill('södra');
+    await searchPlace(modal, 'södra');
     const option = modal.getByRole('option', { name: 'Södra hemmet — Avdelning: Blå' });
     await expect(option).toBeVisible();
     await expect(modal.getByRole('option', { name: 'Norra hemmet — Avdelning: Blå' })).toHaveCount(0);
@@ -115,7 +124,7 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
 
     await page.locator('[data-cy="move-location-button"]').click();
     const modal = page.locator('[data-cy="move-location-modal"]');
-    await modal.locator('[data-cy="move-location-search"] input').fill('blå');
+    await searchPlace(modal, 'blå');
     await modal.getByRole('option', { name: 'Södra hemmet — Avdelning: Blå' }).click();
     await expect(modal.locator('[data-cy="move-location-manager"]')).toBeVisible();
     await modal.locator('[data-cy="move-location-confirm"]').click();
@@ -132,7 +141,7 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
 
     await page.locator('[data-cy="move-location-button"]').click();
     const modal = page.locator('[data-cy="move-location-modal"]');
-    await modal.locator('[data-cy="move-location-search"] input').fill('södra');
+    await searchPlace(modal, 'södra');
     await modal.getByRole('option', { name: 'Södra hemmet — Avdelning: Blå' }).click();
 
     await expect(modal.locator('[data-cy="move-location-no-managers"]')).toContainText(
