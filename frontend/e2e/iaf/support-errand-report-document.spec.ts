@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { toast } from '../utils/toast';
 
 import { expect, test } from '../fixtures/base.fixture';
 import {
@@ -49,7 +50,8 @@ test.describe('Rapporten för ett ärende registrerat i Draken', () => {
     await report.getByRole('textbox', { name: /Beskriv händelsen/u }).fill('Brukaren föll i korridoren.');
     await report.getByRole('button', { name: 'Spara rapport', exact: true }).click();
 
-    await expect(report.locator('[data-cy="avvikelse-report-notice"]')).toContainText('Rapporten har sparats.');
+    await expect(toast(page, 'Rapporten har sparats.')).toBeVisible();
+    await expect(report.locator('[data-cy="avvikelse-report-notice"]')).toHaveCount(0);
     const put = trace.puts.find(({ key }) => key === reportDocumentProfile.key);
     expect(put?.headers['if-none-match']).toBe('*');
     expect(put?.body).toMatchObject({

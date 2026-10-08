@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
 import { CONFIRM_DIALOG } from '../utils/modal';
+import { toast } from '../utils/toast';
 import {
   allExistingInvestigationDocuments,
   hslDecisionKey,
@@ -756,7 +757,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       },
     });
     expect(trace.classificationPatches).toHaveLength(0);
-    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText('Beslutet har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
   });
 
   test('sparar lex Sarah-beslutet om ett missförhållande med utredarens förslag intill', async ({
@@ -840,7 +841,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       },
     });
     expect(trace.classificationPatches).toHaveLength(0);
-    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText('Beslutet har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
   });
 
   test('spärrar lex Sarah-beslutet tills utredningen SoL/LSS har sparats i ärendet', async ({
@@ -909,9 +910,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     ).toBeDisabled();
     await expect.poll(() => trace.reports.length).toBe(1);
     expect(trace.reports[0]).toEqual({ key: 'utredning-hsl', preview: false });
-    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Rapporten Rapport_1.pdf har skapats'
-    );
+    await expect(toast(page, 'Rapporten Rapport_1.pdf har skapats')).toBeVisible();
     await expect(controls.locator('[data-cy="investigation-report-list"]')).toContainText('Rapport_1.pdf');
 
     // A second report gets the next number; the document stays locked in between.
@@ -926,6 +925,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts[1].body).toEqual(
       expect.objectContaining({ value: expect.objectContaining({ completed: 'no' }) })
     );
+    await expect(toast(page, 'Utredningen är upplåst och kan ändras igen.')).toBeVisible();
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
     await expect(
       document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true })
@@ -1348,7 +1348,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
     await expect(saveButton).toBeEnabled();
     await saveButton.click();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
+    // The toast is the confirmation: no alert is put at the top of the form to jump to.
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
 
     await expect.poll(() => trace.puts.length).toBe(1);
     const put = trace.puts[0];
@@ -1402,7 +1404,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.classificationPatches).toHaveLength(0);
   });
@@ -1460,7 +1462,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.classificationPatches).toHaveLength(0);
   });
@@ -1505,7 +1507,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toHaveCount(0);
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -1628,12 +1630,45 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .filter({ hasText: 'Spara ärende' })
       .click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Utredningen och ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     // Version 7 as loaded, 8 once taken up, 9 once the investigation was saved.
     expect(trace.classificationPatches).toHaveLength(1);
     expect(trace.classificationPatches[0].body).toMatchObject({ expectedVersion: 9 });
+  });
+
+  /**
+   * An investigation can be long, and the handler saves from wherever they are in it. The save's own writes move
+   * the errand's version and the document access is checked again, but the form stays where it is: no alert is put
+   * at its top and the documents are not emptied out while the check runs, so the page does not jump to the top.
+   */
+  test('stannar där handläggaren är i utredningen när den sparas', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, { documents: { [managerKey]: existingManagerDocument() } });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const probability = page.locator(managerProbabilityGroup);
+    await probability.getByLabel(/^1 –/u).check();
+    const before = await probability.boundingBox();
+    // Whether the documents were ever hidden during the save: that is what drops the page to its top.
+    await page.evaluate(() => {
+      const record = window as unknown as { documentsEmptied: boolean };
+      record.documentsEmptied = false;
+      new MutationObserver(() => {
+        const documents = document.querySelector<HTMLElement>('[data-cy="support-investigation-tab"] .sk-tabs');
+        if (!documents || documents.hidden) record.documentsEmptied = true;
+      }).observe(document.body, { subtree: true, childList: true, attributes: true });
+    });
+    // Dispatched rather than clicked, so Playwright does not scroll the page to reach the button first.
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').dispatchEvent('click');
+
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { documentsEmptied: boolean }).documentsEmptied)).toBe(
+      false
+    );
+    const after = await probability.boundingBox();
+    expect(before).not.toBeNull();
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(2);
   });
 
   test('sparar dokumentdata och labelägd klassificering genom separata smala kontrakt', async ({
@@ -1666,9 +1701,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
 
     await sidebarSaveButton.click();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Utredningen och ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
 
     await expect.poll(() => trace.puts.length).toBe(1);
     await expect.poll(() => trace.classificationPatches.length).toBe(1);
@@ -1723,9 +1756,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await typeSelect.selectOption(iafLabelFixture.classification.rehab.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.missedAssessment.resourcePath);
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     await expect.poll(() => trace.classificationPatches.length).toBe(2);
     expect(trace.puts).toHaveLength(1);
     expect(trace.classificationPatches[1].body).toEqual(
@@ -1765,9 +1796,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.id);
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     expect(trace.classificationPatches).toHaveLength(1);
     expect(trace.classificationPatches[0].body).toEqual({
       expectedVersion: 7,
@@ -1823,9 +1852,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(1);
 
     await saveButton.click();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     expect(trace.puts).toHaveLength(1);
     expect(trace.classificationPatches).toHaveLength(2);
     expect(trace.writes).toEqual(['document', 'classification', 'classification']);
@@ -1934,9 +1961,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await typeSelect.selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      /ärendets klassificering har sparats\./iu
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
 
     await expect.poll(() => trace.classificationPatches.length).toBe(1);
     expect(trace.classificationPatches[0].body).toEqual({
@@ -1986,9 +2011,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
-      'Utredningen och ärendets klassificering har sparats.'
-    );
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
     await expect.poll(() => trace.classificationPatches.length).toBe(1);
     expect(trace.writes).toEqual(['document', 'classification']);
     expect(trace.puts).toHaveLength(1);

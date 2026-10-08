@@ -2,8 +2,9 @@
 
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { Alert, Spinner } from '@sk-web-gui/react';
+import { Alert, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
@@ -79,7 +80,8 @@ export const AvvikelseReportDocument: FC<InvestigationDetailsHeaderProps> = () =
   const [report, setReport] = useState<LoadedReport>();
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string }>();
+  const [saveError, setSaveError] = useState<string>();
+  const toastMessage = useSnackbar();
 
   const errandId = supportErrand?.id;
   const editableKey =
@@ -132,7 +134,7 @@ export const AvvikelseReportDocument: FC<InvestigationDetailsHeaderProps> = () =
   const save = async (formData: InvestigationFormData) => {
     if (!report) return;
     setSaving(true);
-    setNotice(undefined);
+    setSaveError(undefined);
     try {
       const expectedVersion = supportErrand?.version;
       const saved = await saveSupportInvestigationDocument(
@@ -146,12 +148,9 @@ export const AvvikelseReportDocument: FC<InvestigationDetailsHeaderProps> = () =
       setReport({ ...report, formData: saved.document.value, etag: saved.etag });
       recordSavedReport(saved.document);
       advanceErrandVersion(expectedVersion, saved.parentErrandVersion);
-      setNotice({ type: 'success', message: 'Rapporten har sparats.' });
+      toastMessage(getToastOptions({ message: 'Rapporten har sparats.', status: 'success' }));
     } catch (error) {
-      setNotice({
-        type: 'error',
-        message: reportSaveErrorMessage(isAxiosError(error) ? error.response?.status : undefined),
-      });
+      setSaveError(reportSaveErrorMessage(isAxiosError(error) ? error.response?.status : undefined));
     } finally {
       setSaving(false);
     }
@@ -172,11 +171,11 @@ export const AvvikelseReportDocument: FC<InvestigationDetailsHeaderProps> = () =
           vidare till utredning.
         </p>
       </div>
-      {notice && (
-        <Alert type={notice.type} data-cy="avvikelse-report-notice">
+      {saveError && (
+        <Alert type="error" data-cy="avvikelse-report-notice">
           <Alert.Icon />
           <Alert.Content>
-            <Alert.Content.Description>{notice.message}</Alert.Content.Description>
+            <Alert.Content.Description>{saveError}</Alert.Content.Description>
           </Alert.Content>
         </Alert>
       )}

@@ -200,7 +200,8 @@ anslutningen återkommer och efter nekade dokumentanrop. Backend kontrollerar p�
 dokumentläsning och skrivning. Felaktiga eller otillgängliga svar ger ingen åtkomst.
 
 Dokumentutkast behålls i komponenternas minne när access kontrolleras eller nekas. Innehållet
-döljs tills en aktuell läsrätt har verifierats; omkontroll kan göras utan omladdning. Varningen
+döljs tills en läsrätt har verifierats för ärendet och användaren. Vid en omkontroll av samma ärende visas det
+föregående svaret tills det nya kommit, så att en sparning inte tömmer sidan. Omkontroll kan göras utan omladdning. Varningen
 för osparade ändringar gäller även dolda utkast. Utkast sparas inte över omladdning och följer
 inte med till en annan användare eller ett annat ärende.
 

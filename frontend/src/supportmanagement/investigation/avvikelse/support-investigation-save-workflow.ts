@@ -270,16 +270,6 @@ export const decisionDocumentWording: InvestigationDocumentWording = Object.free
   kind: 'beslutsdokumentet',
 });
 
-export function investigationSaveSuccessMessage(
-  documentSaved: boolean,
-  classificationSaved: boolean,
-  wording: InvestigationDocumentWording = investigationDocumentWording
-): string {
-  if (documentSaved && classificationSaved) return `${wording.noun} och ärendets klassificering har sparats.`;
-  if (classificationSaved) return 'Ärendets klassificering har sparats.';
-  return `${wording.noun} har sparats.`;
-}
-
 interface SaveErrorMessageInput {
   readonly error: unknown;
   readonly documentSavedForClassification: boolean;

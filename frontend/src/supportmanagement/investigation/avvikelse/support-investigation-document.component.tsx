@@ -4,8 +4,9 @@ import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-o
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
-import { Alert, Button, Label, Spinner } from '@sk-web-gui/react';
+import { Alert, Button, Label, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useErrandSaveParticipant } from '@supportmanagement/components/support-errand/errand-save/use-errand-save-participant';
 import { AvvikelseGroupedLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-grouped-label-categorization.component';
@@ -80,7 +81,6 @@ import {
   investigationClassificationWriteBlock,
   investigationDocumentWording,
   investigationSaveErrorMessage,
-  investigationSaveSuccessMessage,
   type PreparedInvestigationClassification,
   prepareInvestigationClassification,
   saveInvestigationClassificationStep,
@@ -138,11 +138,15 @@ interface SupportInvestigationDocumentProps {
   onReveal: () => void;
 }
 
+/**
+ * What stands in the way of the document, at its top: an error, which is brought into view, or a warning. That
+ * something was saved is not told here - Spara ärende says so in its toast - so the form never jumps on a save.
+ */
 function InvestigationAlert({
   type,
   message,
   dataCy = 'investigation-document-notice',
-}: Readonly<{ type: 'error' | 'warning' | 'success'; message: string; dataCy?: string }>) {
+}: Readonly<{ type: 'error' | 'warning'; message: string; dataCy?: string }>) {
   const noticeRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (type !== 'error') return;
@@ -199,7 +203,9 @@ export function SupportInvestigationDocument({
   const wording = isDecision ? decisionDocumentWording : investigationDocumentWording;
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [documentState, setDocumentState] = useState<InvestigationDocumentState>();
-  const [notice, setNotice] = useState<{ type: 'error' | 'warning' | 'success'; message: string }>();
+  const [notice, setNotice] = useState<{ type: 'error' | 'warning'; message: string }>();
+  const toastMessage = useSnackbar();
+  const toastSuccess = (message: string) => toastMessage(getToastOptions({ message, status: 'success' }));
   const [isSaving, setIsSaving] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   // Skapa rapport on an unsaved form submits the form first; the report follows the save.
@@ -692,7 +698,7 @@ export function SupportInvestigationDocument({
         documentState.etag
       );
       applySavedDocument(saved);
-      setNotice({ type: 'success', message: `${wording.noun} är upplåst och kan ändras igen.` });
+      toastSuccess(`${wording.noun} är upplåst och kan ändras igen.`);
       await rememberOwnWriteVersion();
     } catch (error) {
       reportFailureNotice(error, `${wording.noun} kunde inte låsas upp. Försök igen.`);
@@ -714,10 +720,7 @@ export function SupportInvestigationDocument({
       sessionStorage.removeItem(publicationKey);
       applySavedDocument(created, false);
       await rememberOwnWriteVersion();
-      setNotice({
-        type: 'success',
-        message: `Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`,
-      });
+      toastSuccess(`Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`);
       try {
         const attachments = await getSupportAttachments(errandId, municipalityId);
         useSupportStore.getState().setSupportAttachments(attachments);
@@ -856,10 +859,6 @@ export function SupportInvestigationDocument({
       setDocumentSavedPendingClassification(false);
       setClassificationDirty(false);
       setDocumentDirty(false);
-      setNotice({
-        type: 'success',
-        message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification), wording),
-      });
 
       if (reportRequested) await generateReportNow();
       await promptLexAssignmentIfNeeded(normalizedData);

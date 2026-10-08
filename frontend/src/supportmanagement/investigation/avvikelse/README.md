@@ -195,8 +195,10 @@ den nyss läste.
 Utrednings- och beslutsdokumenten har ingen egen sparaknapp. De sparas med Spara ärende i sidomenyn, som först sparar
 ärendets egna fält och sedan varje dokument med osparade ändringar, ett i taget. Varje dokument skickas genom sitt
 formulär och valideras alltså som förut. Ett dokument som inte kan sparas visar orsaken där den alltid har visats,
-och sidomenyn tar handläggaren dit. Sparningen samordnar utredningsdokumentet med en smal PATCH av ärendets
-klassificeringslabels.
+och sidomenyn tar handläggaren dit. Att något sparades säger sidomenyns vanliga toast, Ärendet uppdaterades. Dokumentet
+lägger ingen egen notis överst, så ett långt formulär stannar där handläggaren är. Bara det som står i vägen visas
+där, ett fel eller en varning. Upplåsningen och en skapad rapport, som inte går genom Spara ärende, bekräftas också med
+en toast. Sparningen samordnar utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
 Dokumentet sparas först och label-PATCH:en skickar endast `classifications`, en post med klassificering och
 labelreferenser per lagrumsgrupp, samt ägande `documentKey`, dokumentets ETag och förväntad ärendeversion. Backend
 verifierar därmed rätt IAF/VOF-ägardokument, att varje klassificering tillåts av dokumentets lagrum, att varje grupp
@@ -309,8 +311,10 @@ UI:t delar en accesshämtning mellan Utredning och Beslut och visar aldrig rätt
 annat ärende eller en annan användare. Ändrad ärendeversion, etiketter, fokus, återanslutning och
 nekade dokumentanrop utlöser omkontroll; varje GET/PUT kontrolleras även i backend.
 Nekad åtkomst blir 403, utan att skicka användaren till inloggningen.
-Dokumentkomponenterna behåller sina utkast medan innehållet döljs vid omkontroll eller nekad
-läsrätt. Även dolda utkast räknas som osparade ändringar och omfattas av omladdningsvarningen.
+Vid en omkontroll av samma ärende, till exempel när en sparning har flyttat ärendets version eller fönstret får
+fokus igen, visas det föregående svaret tills det nya kommer. Annars skulle dokumenten tömmas under handläggaren och
+sidan hoppa till toppen. Ett annat ärende eller en annan användare visar ingenting förrän deras eget svar kommit.
+Dokumentkomponenterna behåller sina utkast medan innehållet döljs vid nekad läsrätt. Även dolda utkast räknas som osparade ändringar och omfattas av omladdningsvarningen.
 De sparas endast i minnet för aktuell användare och aktuellt ärende. En beslutsflik med ett
 osparat utkast behålls för att kunna förklara spärren och erbjuda omkontroll.
 Vanliga ärendefält, inklusive kategorisering, använder fortsatt sina befintliga regler.

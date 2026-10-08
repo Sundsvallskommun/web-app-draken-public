@@ -42,18 +42,25 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-test('invalidates grants immediately when the errand version or labels change', async () => {
+// A save moves the errand's version and the grants are checked again; emptying the page meanwhile would drop the
+// handler to its top. The new grants replace the old ones as soon as they arrive.
+test('keeps the grants on screen while the same errand is checked again after its version or labels change', async () => {
   const { result } = renderHook(() => useInvestigationAccess(true));
   await waitFor(() => expect(result.current.access.status).toBe('ready'));
   const next = deferred();
   get.mockReturnValueOnce(next.promise);
   act(() => selectErrand('one', 2));
-  expect(result.current.access.status).toBe('loading');
+  expect(result.current.access).toMatchObject({
+    status: 'ready',
+    access: { documents: new Map([['document', 'edit']]) },
+  });
   await act(async () => next.resolve(response('one', 'read')));
   expect(result.current.access).toMatchObject({
     status: 'ready',
     access: { documents: new Map([['document', 'read']]) },
   });
+  const afterLabels = deferred();
+  get.mockReturnValueOnce(afterLabels.promise);
   act(() =>
     useSupportStore.setState((state) => ({
       supportErrand: {
@@ -62,8 +69,15 @@ test('invalidates grants immediately when the errand version or labels change', 
       },
     }))
   );
-  expect(result.current.access.status).toBe('loading');
-  await waitFor(() => expect(result.current.access.status).toBe('ready'));
+  expect(result.current.access).toMatchObject({
+    status: 'ready',
+    access: { documents: new Map([['document', 'read']]) },
+  });
+  await act(async () => afterLabels.resolve(response('one', 'hidden')));
+  expect(result.current.access).toMatchObject({
+    status: 'ready',
+    access: { documents: new Map([['document', 'hidden']]) },
+  });
 });
 
 test('ignores late answers during A to B to A navigation', async () => {

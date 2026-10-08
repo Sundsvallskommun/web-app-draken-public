@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
   revealTab: vi.fn(),
   router: { push: vi.fn(), replace: vi.fn() },
+  snackbar: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router }));
 vi.mock('@common/services/api-service', () => ({ apiService: { get: vi.fn(), put: vi.fn(), patch: vi.fn() } }));
@@ -53,6 +54,7 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => {
     Label: gui.Label,
     // No template is chosen here, so nothing ever asks before replacing the investigation text.
     useConfirm: () => ({ showConfirmation: async () => false }),
+    useSnackbar: () => mocks.snackbar,
   };
 });
 vi.mock('@common/components/json/schema/schema-form.component', () => ({
@@ -172,6 +174,7 @@ beforeEach(() => {
   mocks.completion.mockReset();
   mocks.preview.mockReset();
   mocks.generate.mockReset();
+  mocks.snackbar.mockReset();
   mocks.attachments.mockReset().mockResolvedValue([]);
   mocks.save.mockReset();
   sessionStorage.clear();
@@ -293,7 +296,12 @@ test.each([2, 3])('a report readback at version %s does not authorize stale pare
   });
   render(createElement(Harness, { access: grants('edit', 'hidden') }));
   fireEvent.click(await screen.findByRole('button', { name: 'Skapa rapport' }));
-  await screen.findByText(/Rapporten report.pdf har skapats/);
+  // The report is confirmed in a toast, not in an alert at the top of the document.
+  await waitFor(() =>
+    expect(mocks.snackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringMatching(/Rapporten report.pdf har skapats/), status: 'success' })
+    )
+  );
   expect(useSupportStore.getState().supportErrand).toMatchObject({ title: 'Old title', version: 1 });
 });
 
