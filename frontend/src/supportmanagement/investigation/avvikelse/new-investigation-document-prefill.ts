@@ -4,9 +4,10 @@ import type { SupportErrand } from '@supportmanagement/services/support-errand-s
 import { getSupportErrandAssigneeResumedAt } from '@supportmanagement/services/support-history-service';
 
 import type { InvestigationProfile } from '../investigation-profile';
+import { LEX_INVESTIGATION_SCHEMA_NAME } from './avvikelse-schema-names';
 import type { InvestigationFormData } from './investigation-document';
 import { prefillInvestigationDocument } from './lex-initial-assessment';
-import { LEX_INVESTIGATION_SCHEMA_NAME, lexInvestigationBackground } from './lex-investigation-background';
+import { lexInvestigationBackground } from './lex-investigation-background';
 
 interface NewInvestigationDocumentSource {
   readonly municipalityId: string;

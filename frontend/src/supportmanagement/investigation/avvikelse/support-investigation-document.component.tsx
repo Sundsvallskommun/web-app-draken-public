@@ -28,6 +28,11 @@ import { LexAssignmentPrompt } from './assignment/lex-assignment-prompt.componen
 import { ReturnToManagerButton } from './assignment/return-to-manager-button.component';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
+  LEX_ASSESSMENT_SCHEMA_NAME,
+  LEX_DECISION_SCHEMA_NAME,
+  UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
+} from './avvikelse-schema-names';
+import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
   getInvestigationLegalBaseRules,
@@ -64,11 +69,7 @@ import {
   readInvestigationTemplate,
   withInvestigationText,
 } from './investigation-text-template';
-import {
-  declinesLexInvestigation,
-  hasLexDeclinedInvestigation,
-  LEX_ASSESSMENT_SCHEMA_NAME,
-} from './lex-initial-assessment';
+import { declinesLexInvestigation, hasLexDeclinedInvestigation } from './lex-initial-assessment';
 import { prefillNewInvestigationDocument } from './new-investigation-document-prefill';
 import { readSavedInvestigationDocument } from './saved-investigation-document';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
@@ -377,7 +378,7 @@ export function SupportInvestigationDocument({
     return schemaWithoutRootDescription;
   }, [definition.schemaName, documentState, showSchemaMetadata]);
   const hslRiskValue =
-    definition.schemaName === 'utredning-enhetschef' && documentState
+    definition.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME && documentState
       ? getHslRiskValue(documentState.formData)
       : undefined;
   // The errand goes back to the manager once LEX has decided on it, so the handover sits at the foot of
@@ -385,7 +386,7 @@ export function SupportInvestigationDocument({
   // declines to lex-investigate it. Only while the errand is actually with LEX, which the access label says.
   // The backend authorizes each step on write access to the same document.
   const handsBackToManager =
-    (definition.schemaName === 'beslut-sol-lss' || definition.schemaName === LEX_ASSESSMENT_SCHEMA_NAME) &&
+    (definition.schemaName === LEX_DECISION_SCHEMA_NAME || definition.schemaName === LEX_ASSESSMENT_SCHEMA_NAME) &&
     !readonly &&
     Boolean(errandId) &&
     isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
@@ -615,7 +616,7 @@ export function SupportInvestigationDocument({
    * investigation is already stored, and the handover is a separate write against its new version.
    */
   const promptLexAssignmentIfNeeded = async (savedFormData: InvestigationFormData) => {
-    if (definition.schemaName !== 'utredning-enhetschef') return;
+    if (definition.schemaName !== UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) return;
 
     const needsLexAssignment = shouldPromptLexAssignment({
       formData: savedFormData,

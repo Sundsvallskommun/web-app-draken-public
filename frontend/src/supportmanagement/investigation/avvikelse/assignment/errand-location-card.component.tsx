@@ -4,12 +4,10 @@ import { FC } from 'react';
 
 import { useInvestigationProfileStore } from '../../investigation-profile-store';
 import type { InvestigationDetailsHeaderProps } from '../../investigation-variant';
+import { UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME } from '../avvikelse-schema-names';
 import { isInvestigationDocumentEditable } from '../investigation-tab-state';
 import { isWithLexInvestigation } from './avvikelse-assignment-policy';
 import { MoveLocationButton } from './move-location-button.component';
-
-/** The document whose write grant authorizes the move, as the backend's move-location step does. */
-const MOVE_LOCATION_SCHEMA_NAME = 'utredning-enhetschef';
 
 /**
  * Ärendets plats, at the top of Ärendeuppgifter.
@@ -24,7 +22,9 @@ export const ErrandLocationCard: FC<InvestigationDetailsHeaderProps> = ({ access
   const labelStructure = useMetadataStore((s) => s.supportMetadata?.labels?.labelStructure);
   const profile = useInvestigationProfileStore((state) => state.profile);
 
-  const managerDocument = profile?.documents.find((document) => document.schemaName === MOVE_LOCATION_SCHEMA_NAME);
+  const managerDocument = profile?.documents.find(
+    (document) => document.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME
+  );
   const canMoveLocation =
     Boolean(supportErrand?.id) &&
     managerDocument !== undefined &&

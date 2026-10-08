@@ -3,6 +3,7 @@ import type { SupportErrand } from '@supportmanagement/services/support-errand-s
 
 import type { InvestigationProfile } from '../../investigation-profile';
 import type { InvestigationViewer } from '../../investigation-variant';
+import { UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME } from '../avvikelse-schema-names';
 import type { InvestigationFormData } from '../investigation-document';
 import { hasLexDeclinedInvestigation } from '../lex-initial-assessment';
 import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from '../saved-investigation-document';
@@ -18,7 +19,6 @@ interface LexAssignmentInput {
 }
 
 /** The document whose assessment of suspected misconduct decides the handover to LEX. */
-const UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME = 'utredning-enhetschef';
 
 /** Whether a unit manager investigation assesses the deviation as a suspected misconduct. */
 export const assessesSuspectedMisconduct = (formData: InvestigationFormData | undefined): boolean =>

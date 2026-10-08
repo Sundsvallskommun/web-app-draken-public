@@ -6,9 +6,6 @@ import dayjs from 'dayjs';
 import type { InvestigationProfile } from '../investigation-profile';
 import type { InvestigationFormData } from './investigation-document';
 
-/** The lex Sarah investigation, whose background Draken fills in from the errand. */
-export const LEX_INVESTIGATION_SCHEMA_NAME = 'utredning-sol-lss';
-
 /** What the reported deviation says happened, in the report document the profile names. */
 const REPORTED_EVENT_DESCRIPTION_FIELD = 'eventDescription';
 

@@ -11,6 +11,11 @@ import {
 import type { LabelFilterSelection } from '@supportmanagement/filters/label-filter-projector';
 import { projectLabelFilterGroups } from '@supportmanagement/filters/label-filter-projector';
 import { normalizeLabelFilterSelections } from '@supportmanagement/filters/label-filter-selection';
+import {
+  LEGACY_LABEL_SUBTYPE_DEPTH,
+  LEGACY_LABEL_TYPE_DEPTH,
+  legacyLabelFilterResourcePaths,
+} from '@supportmanagement/filters/legacy-label-filter';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
@@ -344,23 +349,18 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
         fObj['type'] = typeFilter.join(',');
       }
       if (labelFilterState.status === 'legacy' && labelTypeFilter && labelTypeFilter.length > 0) {
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
-        const matchedTypes = allTypesFlattened.filter((l) => l && labelTypeFilter.includes(l.displayName!));
-        const matchedTypeNames = matchedTypes.map((t) => t!.resourcePath);
-        fObj['labelType'] = matchedTypeNames.join(',');
+        fObj['labelType'] = legacyLabelFilterResourcePaths(
+          supportMetadata?.labels?.labelStructure,
+          labelTypeFilter,
+          LEGACY_LABEL_TYPE_DEPTH
+        ).join(',');
       }
       if (labelFilterState.status === 'legacy' && labelSubTypeFilter && labelSubTypeFilter.length > 0) {
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
-        const allSubTypesFlattened =
-          allTypesFlattened
-            .filter((l) => l && (l.labels?.length ?? 0) > 0)
-            .map((l) => l!.labels)
-            .flat() ?? [];
-        const matchedSubTypes = (allSubTypesFlattened ?? []).filter(
-          (l) => l && labelSubTypeFilter.includes(l.displayName!)
-        );
-        const matchedSubTypeNames = matchedSubTypes.map((t) => t!.resourcePath);
-        fObj['labelSubType'] = matchedSubTypeNames.join(',');
+        fObj['labelSubType'] = legacyLabelFilterResourcePaths(
+          supportMetadata?.labels?.labelStructure,
+          labelSubTypeFilter,
+          LEGACY_LABEL_SUBTYPE_DEPTH
+        ).join(',');
       }
       if (channelFilter && channelFilter.length > 0) {
         fObj['channel'] = channelFilter.join(',');

@@ -1,12 +1,9 @@
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
 import type { InvestigationProfile } from '../investigation-profile';
+import { LEX_ASSESSMENT_SCHEMA_NAME, LEX_DECISION_SCHEMA_NAME } from './avvikelse-schema-names';
 import type { InvestigationFormData } from './investigation-document';
 import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from './saved-investigation-document';
-
-/** LEX-ansvarig's initial assessment of an errand handed over to LEX. */
-export const LEX_ASSESSMENT_SCHEMA_NAME = 'bedomning-sol-lss';
-const LEX_DECISION_SCHEMA_NAME = 'beslut-sol-lss';
 
 const LEX_INVESTIGATION_DECISION_FIELD = 'lexInvestigationDecision';
 const LEX_DECLINED = 'not_investigate';

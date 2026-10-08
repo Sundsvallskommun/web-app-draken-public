@@ -1,6 +1,7 @@
 import type { SupportLabelTreeProfile } from '../../services/support-label-classification-projector';
 import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path';
 import type { SupportErrandClassificationPlacement } from '../classification-placement';
+import { LEX_INVESTIGATION_SCHEMA_NAME, UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME } from './avvikelse-schema-names';
 import type { AvvikelseClassificationGroup } from './label-classification/avvikelse-supportmanagement-label-classification';
 
 export interface AvvikelseClassificationLegalBaseRule {
@@ -17,8 +18,8 @@ export interface AvvikelseClassificationLabelTree extends SupportLabelTreeProfil
 }
 
 export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
-  defaultOwnerSchemaName: 'utredning-enhetschef',
-  reportedMisconductOwnerSchemaName: 'utredning-sol-lss',
+  defaultOwnerSchemaName: UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
+  reportedMisconductOwnerSchemaName: LEX_INVESTIGATION_SCHEMA_NAME,
   reportedMisconductSelector: Object.freeze({
     parameter: Object.freeze({ key: 'eventType', values: Object.freeze(['MISSFORHALLANDE']) }),
     labels: Object.freeze({

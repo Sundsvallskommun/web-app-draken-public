@@ -5,10 +5,8 @@ import {
   MAS_MAR_ROLE_KEY,
   UNIT_MANAGER_ROLE_KEY,
 } from './assignment/avvikelse-handler-roles';
+import { HSL_INVESTIGATION_SCHEMA_NAME } from './avvikelse-schema-names';
 import { findInvestigationDocumentBySchemaName } from './saved-investigation-document';
-
-/** MAS/MAR's HSL investigation, Händelseanalys HSL. */
-const HSL_INVESTIGATION_SCHEMA_NAME = 'utredning-hsl';
 
 const MANAGER_ROLE_KEYS: readonly string[] = [UNIT_MANAGER_ROLE_KEY, HEAD_OF_OPERATIONS_ROLE_KEY];
 

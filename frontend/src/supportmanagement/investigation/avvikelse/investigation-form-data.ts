@@ -1,5 +1,11 @@
 import type { Experimental_DefaultFormStateBehavior, RJSFSchema } from '@rjsf/utils';
 
+import {
+  HSL_DECISION_SCHEMA_NAME,
+  HSL_INVESTIGATION_SCHEMA_NAME,
+  LEX_DECISION_SCHEMA_NAME,
+  UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
+} from './avvikelse-schema-names';
 import type { InvestigationFormData } from './investigation-document';
 
 // A choice's first option is not an answer, and an untouched list is not an empty list. Keep
@@ -135,10 +141,10 @@ function normalizeManagerConditions(formData: InvestigationFormData): Investigat
  * this decision up to schema 1.0, so documents still bound to that version keep the rule; from 1.1
  * it lives in the decision documents, where the Public 360 number follows the same answer.
  */
-const IVO_INVESTIGATION_SCHEMA_NAMES: readonly string[] = ['utredning-hsl'];
+const IVO_INVESTIGATION_SCHEMA_NAMES: readonly string[] = [HSL_INVESTIGATION_SCHEMA_NAME];
 
 /** The decision documents: IVO and Public 360 case numbers exist only for a report to IVO. */
-const DECISION_SCHEMA_NAMES: readonly string[] = ['beslut-hsl', 'beslut-sol-lss'];
+const DECISION_SCHEMA_NAMES: readonly string[] = [HSL_DECISION_SCHEMA_NAME, LEX_DECISION_SCHEMA_NAME];
 
 const isReportedToIvo = (formData: InvestigationFormData): boolean => formData.ivoNotification === 'yes';
 
@@ -286,7 +292,9 @@ export function normalizeInvestigationFormData(
     dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {})
   );
   let conditionallyNormalizedData = schemaOwnedData;
-  if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
+  if (schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) {
+    conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
+  }
   if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {
     conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber']);
   }
@@ -308,7 +316,7 @@ export function getInvestigationRenderingSchema(
   formData: InvestigationFormData
 ): RJSFSchema {
   if (DECISION_SCHEMA_NAMES.includes(schemaName)) return getDecisionRenderingSchema(schema, formData);
-  if (schemaName !== 'utredning-enhetschef') return schema;
+  if (schemaName !== UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) return schema;
 
   const properties = { ...schema.properties };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);

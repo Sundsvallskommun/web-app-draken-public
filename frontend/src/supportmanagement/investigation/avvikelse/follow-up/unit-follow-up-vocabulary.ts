@@ -1,11 +1,17 @@
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import type { RJSFSchema } from '@rjsf/utils';
 
+import {
+  LEX_DECISION_SCHEMA_NAME,
+  LEX_INVESTIGATION_SCHEMA_NAME,
+  UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
+} from '../avvikelse-schema-names';
+
 /** The schemas the follow-up reads its vocabulary from, by their fixed avvikelse schema roles. */
 const VOCABULARY_SCHEMAS = Object.freeze({
-  managerInvestigation: 'utredning-enhetschef',
-  lexInvestigation: 'utredning-sol-lss',
-  lexDecision: 'beslut-sol-lss',
+  managerInvestigation: UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
+  lexInvestigation: LEX_INVESTIGATION_SCHEMA_NAME,
+  lexDecision: LEX_DECISION_SCHEMA_NAME,
 });
 
 /**
