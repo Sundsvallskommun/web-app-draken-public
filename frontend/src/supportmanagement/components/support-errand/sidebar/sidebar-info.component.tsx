@@ -106,7 +106,7 @@ export const SidebarInfo: FC<{
 
   const saveTheTabs = async (): Promise<void> => {
     for (const saveTab of Object.values(tabSavers)) {
-      saveTab();
+      await saveTab();
     }
   };
 

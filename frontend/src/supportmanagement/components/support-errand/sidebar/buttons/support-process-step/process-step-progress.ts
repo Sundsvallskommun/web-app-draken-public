@@ -33,7 +33,7 @@ export const errandOnNextStep = async (
       return (await getSupportErrandById(errandId, municipalityId).catch(() => ({ errand: undefined }))).errand;
     }
 
-    waitFor(delay);
+    await waitFor(delay);
     delay = Math.min(delay * REPORT_BACKOFF, LONGEST_REPORT_DELAY);
   }
   return undefined;
