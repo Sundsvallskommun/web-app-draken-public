@@ -19,9 +19,6 @@ export interface SupportPbiPerson {
   assessmentComment?: string;
 }
 
-// The marking is a stakeholder parameter, since a stakeholder can only have one role in SupportManagement.
-export const SUPPORT_PBI_PARAMETER = 'PBI';
-
 export const supportPbiIdentityCode = (identityCode: string): string =>
   /^\d{12}$/.test(identityCode) ? `${identityCode.slice(0, 8)}-${identityCode.slice(8)}` : identityCode;
 
