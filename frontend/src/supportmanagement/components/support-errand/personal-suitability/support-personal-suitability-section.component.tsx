@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
+import { useAnnounceSupportPbiWrite } from '../pbi/use-announce-support-pbi-write';
 
 const PersonCard: FC<{
   person: SupportSuitabilityPerson;
@@ -119,6 +120,7 @@ export const SupportPersonalSuitabilitySection: FC<{
   }, [errandId, municipalityId, absorb, pbiSignalAt]);
 
   const addByHand = useAddSupportPbiByHand();
+  const announce = useAnnounceSupportPbiWrite();
 
   const change = (partyId: string, changes: Partial<SupportSuitabilityPerson>) =>
     setPeople((current) =>
@@ -165,6 +167,7 @@ export const SupportPersonalSuitabilitySection: FC<{
           comment: person.comment,
         });
       }
+      await announce();
       setLoaded(people ?? []);
       return true;
     } catch {
@@ -174,7 +177,7 @@ export const SupportPersonalSuitabilitySection: FC<{
       setBusy(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, loaded, errandId, municipalityId, t, toastMessage]);
+  }, [announce, people, loaded, errandId, municipalityId, t, toastMessage]);
 
   useEffect(() => {
     saveRef.current = saveAll;

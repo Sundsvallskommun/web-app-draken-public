@@ -22,9 +22,6 @@ export interface SupportPbiPerson {
   knowledgeTestComment?: string;
 }
 
-// The marking is a stakeholder parameter, since a stakeholder can only have one role in SupportManagement.
-export const SUPPORT_PBI_PARAMETER = 'PBI';
-
 export const SUPPORT_PARAMETER_VALUE_MAX_LENGTH = 3000;
 
 export const supportPbiIdentityCode = (identityCode: string): string =>
