@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { mayFollowUpMeasuresByRole } from '@/config/measure-follow-up-roles';
@@ -10,6 +10,7 @@ import { User } from '@/interfaces/users.interface';
 import ApiService from './api.service';
 import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
 import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from './support-investigation-access.service';
+import { closeRequiresHandledMeasures, unhandledMeasuresMessage } from './support-measure-closing';
 import { isPlannedApprovedMeasure, measureFollowUpAnswers, measureHoldsFollowUp } from './support-measure-follow-up';
 import {
   assertMeasureRegistration,
@@ -33,6 +34,11 @@ export interface SupportMeasuresSnapshot {
    * roles: a measure is then followed up by whoever registered it.
    */
   mayFollowUp?: boolean;
+  /**
+   * Why the errand may not be closed yet, in the words the close refusal itself uses. Absent once every measure
+   * is handled, and in an application that closes errands whatever their measures.
+   */
+  closeRefusal?: string;
 }
 
 export interface PlannedSupportMeasuresSnapshot {
@@ -63,6 +69,7 @@ export class SupportMeasureService {
     // Members of the superadmin group hold every measure registration role.
     private readonly superadminGroup: string | undefined = process.env.SUPERADMIN_GROUP,
     private access?: SupportInvestigationAccessService,
+    private readonly closeRequiresHandled = closeRequiresHandledMeasures(APPLICATION),
   ) {}
 
   private errandAccess(): SupportInvestigationAccessService {
@@ -134,6 +141,8 @@ export class SupportMeasureService {
         level => level === 'RW',
         () => false,
       );
+    // The same rule the close itself is refused by, so the client offers no close the BFF would turn down.
+    const closeRefusal = this.closeRequiresHandled ? unhandledMeasuresMessage(result.data ?? []) : undefined;
     return {
       measures: result.data,
       errandVersion: getErrandVersion(errand.data, errand.headers?.etag),
@@ -141,6 +150,7 @@ export class SupportMeasureService {
       ...registration,
       canWrite,
       ...(mayFollowUp === undefined ? {} : { mayFollowUp }),
+      ...(closeRefusal ? { closeRefusal } : {}),
     };
   }
 

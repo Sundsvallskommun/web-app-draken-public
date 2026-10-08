@@ -6,7 +6,9 @@ import type { SupportInvestigationState } from '@/dtos/support-investigation-pro
 import {
   assertInvestigationCompletedBeforeDecision,
   assertMaySendToDecision,
+  assertMayStartFollowUp,
   investigationNotCompletedMessage,
+  LEX_HANDLER_CANNOT_START_FOLLOW_UP,
   LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION,
 } from '@/services/support-investigation-decision-readiness';
 
@@ -144,5 +146,44 @@ describe('who may send the errand to the decision', () => {
   it('holds nobody back on another phase, or where the deployment names no roles', () => {
     expect(send(['MOCK_LEX_INVESTIGATORS'], 'FOLLOW_UP')).not.toThrow();
     expect(send(['MOCK_LEX_INVESTIGATORS'], 'DECISION', { rolesConfigured: false })).not.toThrow();
+  });
+});
+
+describe('who may start the follow-up', () => {
+  const handlerRoles = [
+    { key: 'enhetschef', label: 'Enhetschef', group: 'MOCK_UNIT_MANAGERS' },
+    { key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'MOCK_LEX_MANAGERS' },
+    { key: 'lex-utredare', label: 'LEX-utredare', group: 'MOCK_LEX_INVESTIGATORS' },
+  ];
+  const startFollowUp =
+    (groups: string[], targetPhaseName = 'FOLLOW_UP', { rolesConfigured = true, withPolicy = true } = {}) =>
+    () =>
+      assertMayStartFollowUp({
+        policyService: {
+          iafVofClassificationPolicy: withPolicy ? resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE) : undefined,
+        },
+        handlerRoles: rolesConfigured ? handlerRoles : undefined,
+        superadminGroups: ['mock_admins'],
+        user: mockUser({ groups }),
+        targetPhaseName,
+      });
+
+  it('refuses a LEX manager and a LEX investigator, and says the unit manager takes it on', () => {
+    expect(startFollowUp(['MOCK_LEX_MANAGERS'])).toThrow(LEX_HANDLER_CANNOT_START_FOLLOW_UP);
+    expect(startFollowUp(['MOCK_LEX_INVESTIGATORS'])).toThrow(LEX_HANDLER_CANNOT_START_FOLLOW_UP);
+    expect(startFollowUp(['MOCK_LEX_MANAGERS', 'MOCK_LEX_INVESTIGATORS'])).toThrow(LEX_HANDLER_CANNOT_START_FOLLOW_UP);
+  });
+
+  it('lets the unit manager through, a LEX handler who is unit manager as well, and an administrator', () => {
+    expect(startFollowUp(['MOCK_UNIT_MANAGERS'])).not.toThrow();
+    expect(startFollowUp(['MOCK_LEX_MANAGERS', 'MOCK_UNIT_MANAGERS'])).not.toThrow();
+    expect(startFollowUp(['MOCK_LEX_MANAGERS', 'MOCK_ADMINS'])).not.toThrow();
+  });
+
+  it('holds nobody back without a handler role, on another phase, or outside IAF/VOF', () => {
+    expect(startFollowUp([])).not.toThrow();
+    expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'DECISION')).not.toThrow();
+    expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'FOLLOW_UP', { rolesConfigured: false })).not.toThrow();
+    expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'FOLLOW_UP', { withPolicy: false })).not.toThrow();
   });
 });

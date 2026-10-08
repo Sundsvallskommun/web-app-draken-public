@@ -18,6 +18,8 @@ interface HandlerAssignmentModalProps {
   confirmLoadingLabel: string;
   /** Undefined while the candidates are still being loaded. */
   candidates: AssignableCandidate[] | undefined;
+  /** The candidate offered first when they are among the candidates, such as the one the errand came from. */
+  preferredAdAccount?: string;
   /** Group headings for the selector, like the handler list in the sidebar. */
   roles?: AssignableRole[];
   /** Set when the candidates could not be loaded at all. */
@@ -33,11 +35,16 @@ interface HandlerAssignmentModalProps {
  * Picks the person an errand is handed to.
  *
  * One candidate is preselected, because a list of one is an answer rather than a question - but it
- * is still shown and still confirmed, so the handler sees who is about to receive the errand.
+ * is still shown and still confirmed, so the handler sees who is about to receive the errand. That is the
+ * preferred candidate when there is one, and the first otherwise.
  *
  * `onClose` is omitted for a handover that has to happen: the investigation has already been saved
  * with an answer that moves the errand, and closing the dialog would leave it saved but stranded.
  */
+/** Account names are compared the way the BFF compares an assignee: without regard to case or surrounding space. */
+const isSameAccount = (account: string, other: string | undefined): boolean =>
+  other !== undefined && account.trim().toLowerCase() === other.trim().toLowerCase();
+
 export const HandlerAssignmentModal: FC<HandlerAssignmentModalProps> = ({
   show,
   label,
@@ -46,6 +53,7 @@ export const HandlerAssignmentModal: FC<HandlerAssignmentModalProps> = ({
   confirmLabel,
   confirmLoadingLabel,
   candidates,
+  preferredAdAccount,
   roles,
   loadError,
   emptyMessage,
@@ -59,10 +67,11 @@ export const HandlerAssignmentModal: FC<HandlerAssignmentModalProps> = ({
   // selection until somebody picks another. Deriving it means no effect has to keep a piece of
   // state in step with a list that arrives later.
   const [chosen, setChosen] = useState<string>();
+  const preferred = sortedCandidates.find((candidate) => isSameAccount(candidate.adAccount, preferredAdAccount));
   const selected =
     chosen && sortedCandidates.some((candidate) => candidate.adAccount === chosen)
       ? chosen
-      : sortedCandidates[0]?.adAccount ?? '';
+      : (preferred ?? sortedCandidates[0])?.adAccount ?? '';
 
   const isLoading = candidates === undefined && !loadError;
 

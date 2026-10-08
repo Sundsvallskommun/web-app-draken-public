@@ -465,6 +465,31 @@ tilldelas en LEX-ansvarig och markeras Tilldelat (`LexManagerHandoverRequirement
 Ärendet stannar hos LEX. BFF:en håller samma regel i fasbytet (`assertMaySendToDecision`) och svarar 422; en
 administratör hålls inte tillbaka, och utan konfigurerade handläggarroller finns ingen utredare att hålla tillbaka.
 
+Ärendet går tillbaka till den LEX-ansvarige som gav utredaren det, så dialogen förväljer den. Vem det var läser
+BFF:en ur ärendets historik (`GET supporthistory/:m/:id/assigned-by`): kontot i `ExecutedBy` på den senaste
+skrivningen som gav ärendet till den nuvarande handläggaren, jämfört utan hänsyn till skiftläge. Listan väntar på
+svaret; saknas historiken, eller är kontot ingen LEX-ansvarig, står den första i listan kvar som förut.
+
+### LEX tar inte ärendet till uppföljning
+
+Uppföljningen av åtgärderna görs av enheten. En handläggare som bara har LEX-roller (LEX-ansvarig och/eller
+LEX-utredare) och försöker byta till Uppföljning får fasknappen Uppföljningen görs av enheten, och en dialog som
+säger åt hen att återlämna ärendet med Återlämna till chef i beslutet (`LexFollowUpRequirement`,
+`leavesFollowUpToTheUnit`). Den som har en roll till utöver LEX hålls inte tillbaka, eftersom hen kan agera i den.
+BFF:en håller samma regel (`assertMayStartFollowUp`), både i fasbytet och när ett ärende avslutas från en tidigare
+fas, eftersom avslutet då går genom Uppföljning. Där svarar den 422.
+
+### Avsluta först när åtgärderna är hanterade
+
+Ett IAF/VOF-ärende avslutas inte så länge en åtgärd väntar på något (`support-measure-closing.ts`). Det gäller ett
+förslag som inte är beslutat, och en godkänd planerad åtgärd som inte är uppföljd, alltså saknar svaren från
+uppföljningen (`result`). En planerad åtgärd som rapporterats som genomförd i redigeringen (bara `executed`) väntar
+alltså fortfarande på sin uppföljning. BFF:en vägrar avslutet med 422 i statusbytet och i fasbytet. Åtgärdsbilden
+(`GET supporterrands/:m/:id/measures`) bär samma besked i `closeRefusal`. Med det är fasknappen Avsluta ärendet i
+uppföljningsfasen avstängd, och beskedet visas under knappen (`useMeasuresCloseRefusal`). Avsluta ärendet i en
+tidigare fas stängs inte av i klienten, så att varje sidladdning slipper läsa åtgärderna. Där svarar BFF:en med
+samma besked.
+
 ### Till beslut först när utredningen är klar
 
 Ärendet får inte gå från Utredning till Beslut förrän den utredning det beslutas på är **sparad som klar**

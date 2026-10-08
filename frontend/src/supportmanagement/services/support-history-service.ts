@@ -53,3 +53,12 @@ export const getSupportErrandAssigneeResumedAt = (
   apiService
     .get<{ resumedAt: string | null }>(`supporthistory/${municipalityId}/${errandId}/assignee-resumed`)
     .then((res) => res.data?.resumedAt ?? undefined);
+
+/**
+ * Who gave the errand to its current handler, as the errand's history tells it. Undefined when the history names
+ * no assignment to them, or not who made it.
+ */
+export const getSupportErrandAssignedBy = (errandId: string, municipalityId: string): Promise<string | undefined> =>
+  apiService
+    .get<{ assignedBy: string | null }>(`supporthistory/${municipalityId}/${errandId}/assigned-by`)
+    .then((res) => res.data?.assignedBy ?? undefined);

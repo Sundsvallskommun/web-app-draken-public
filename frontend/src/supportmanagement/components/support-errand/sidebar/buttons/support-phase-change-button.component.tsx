@@ -1,5 +1,6 @@
 import { Button, FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { useSupportPhaseTransition } from '@supportmanagement/components/support-errand/ui-phase/use-support-phase-transition';
+import { MeasuresCloseRefusal } from '@supportmanagement/measures/measures-close-refusal.component';
 import { ArrowRight } from 'lucide-react';
 import { FC } from 'react';
 
@@ -22,6 +23,7 @@ export const SupportPhaseChangeButtonComponent: FC<{
     isSaving,
     controlsDisabled,
     canAdvance,
+    closeRefusal,
     advancePhase,
     closesErrand,
     closeErrand,
@@ -74,6 +76,7 @@ export const SupportPhaseChangeButtonComponent: FC<{
       >
         {label}
       </Button>
+      {closesErrand && <MeasuresCloseRefusal refusal={closeRefusal} />}
       {phaseEntryRequirementDialog}
     </div>
   );

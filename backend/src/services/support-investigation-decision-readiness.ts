@@ -1,6 +1,10 @@
 import { type HandlerGroupRole, resolveHeldHandlerRoleKeys } from '@/config/handler-group-roles';
-import { IAF_VOF_DECISION_PHASE_NAME, resolveIafVofDecisionInvestigationDocumentKey } from '@/config/iaf-vof-decision-investigation';
-import { LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from '@/config/investigation-handover-steps';
+import {
+  IAF_VOF_DECISION_PHASE_NAME,
+  IAF_VOF_FOLLOW_UP_PHASE_NAME,
+  resolveIafVofDecisionInvestigationDocumentKey,
+} from '@/config/iaf-vof-decision-investigation';
+import { LEX_HANDLER_ROLE_KEYS, LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from '@/config/investigation-handover-steps';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
@@ -16,7 +20,10 @@ export const investigationNotCompletedMessage = (tabLabel: string): string =>
 export const LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION =
   'Som LEX-utredare skickar du inte ärendet till beslut. Tilldela det till en LEX-ansvarig, som tar det vidare.';
 
-interface AssertMaySendToDecisionRequest {
+export const LEX_HANDLER_CANNOT_START_FOLLOW_UP =
+  'Uppföljningen görs av enheten. Återlämna ärendet till chefen, som tar det vidare till uppföljning.';
+
+interface AssertMayEnterPhaseRequest {
   readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy'>;
   readonly handlerRoles: readonly HandlerGroupRole[] | undefined;
   /** The superadmin groups, lowercased: an administrator is not held back by a role they also happen to hold. */
@@ -27,23 +34,45 @@ interface AssertMaySendToDecisionRequest {
 }
 
 /**
- * Refuses a LEX investigator who would move an IAF/VOF errand into the decision phase. The investigator
- * investigates; a LEX manager sends the errand on to the decision, so the investigator hands it to one. Somebody
- * who is LEX manager as well is a manager. A deployment that names no handler roles has no investigator to hold back.
+ * The handler roles a user holds where an IAF/VOF role rule applies to them. Undefined for an application
+ * without the IAF/VOF policy, a deployment that names no handler roles, and an administrator: none of them
+ * has a role to be held back by.
  */
-export const assertMaySendToDecision = ({
+const heldIafVofHandlerRoleKeys = ({
   policyService,
   handlerRoles,
   superadminGroups,
   user,
-  targetPhaseName,
-}: AssertMaySendToDecisionRequest): void => {
-  if (targetPhaseName !== IAF_VOF_DECISION_PHASE_NAME || !policyService.iafVofClassificationPolicy || !handlerRoles?.length) return;
+}: Omit<AssertMayEnterPhaseRequest, 'targetPhaseName'>): string[] | undefined => {
+  if (!policyService.iafVofClassificationPolicy || !handlerRoles?.length) return undefined;
   const groups = user.groups ?? [];
-  if (groups.some(group => superadminGroups.includes(group.trim().toLowerCase()))) return;
-  const held = resolveHeldHandlerRoleKeys(handlerRoles, groups);
-  if (held.includes(LEX_INVESTIGATOR_ROLE_KEY) && !held.includes(LEX_MANAGER_ROLE_KEY)) {
+  if (groups.some(group => superadminGroups.includes(group.trim().toLowerCase()))) return undefined;
+  return resolveHeldHandlerRoleKeys(handlerRoles, groups);
+};
+
+/**
+ * Refuses a LEX investigator who would move an IAF/VOF errand into the decision phase. The investigator
+ * investigates; a LEX manager sends the errand on to the decision, so the investigator hands it to one. Somebody
+ * who is LEX manager as well is a manager. A deployment that names no handler roles has no investigator to hold back.
+ */
+export const assertMaySendToDecision = ({ targetPhaseName, ...request }: AssertMayEnterPhaseRequest): void => {
+  if (targetPhaseName !== IAF_VOF_DECISION_PHASE_NAME) return;
+  const held = heldIafVofHandlerRoleKeys(request);
+  if (held?.includes(LEX_INVESTIGATOR_ROLE_KEY) && !held.includes(LEX_MANAGER_ROLE_KEY)) {
     throw new HttpException(422, LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION);
+  }
+};
+
+/**
+ * Refuses a LEX handler who would move an IAF/VOF errand into the follow-up phase. Following up the measures is
+ * the unit's work: LEX hands the decided errand back to the unit manager, who starts it. Somebody who holds a
+ * role besides the LEX ones may be acting in that one, so only a handler who is LEX and nothing else is held back.
+ */
+export const assertMayStartFollowUp = ({ targetPhaseName, ...request }: AssertMayEnterPhaseRequest): void => {
+  if (targetPhaseName !== IAF_VOF_FOLLOW_UP_PHASE_NAME) return;
+  const held = heldIafVofHandlerRoleKeys(request);
+  if (held?.length && held.every(roleKey => LEX_HANDLER_ROLE_KEYS.includes(roleKey))) {
+    throw new HttpException(422, LEX_HANDLER_CANNOT_START_FOLLOW_UP);
   }
 };
 

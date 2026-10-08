@@ -4,6 +4,8 @@ import { IafVofInvestigationClassificationPolicy, resolveIafVofInvestigationClas
 
 /** The workflow phase an IAF/VOF errand is decided in. Entering it is what leaves the investigation behind. */
 export const IAF_VOF_DECISION_PHASE_NAME = 'DECISION';
+/** The workflow phase in which the unit follows up the measures of a decided IAF/VOF errand. */
+export const IAF_VOF_FOLLOW_UP_PHASE_NAME = 'FOLLOW_UP';
 
 /** The unit manager's assessment that the deviation may be a misconduct, which hands it to LEX. */
 const SUSPECTED_MISCONDUCT_FIELD = 'suspectedMisconduct';

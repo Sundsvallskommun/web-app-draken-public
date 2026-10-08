@@ -21,7 +21,7 @@ import FormData from 'form-data';
 import { Body, Controller, Get, HeaderParam, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, MUNICIPALITY_ID, SUPERADMIN_GROUP, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName, resolveSupportManagementErrandSearch } from '@/config/api-config';
 import { resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import {
@@ -61,6 +61,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { AccessMapperService } from '@/services/access-mapper.service';
+import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
 import { EmploymentService } from '@/services/employment.service';
 import { resolveInvestigationLocationTarget } from '@/services/investigation-handover-label.service';
@@ -103,6 +104,7 @@ import {
   assertSupportInvestigationClassificationContext,
   selectErrandClassificationIndex,
 } from '@/services/support-investigation-classification-context.service';
+import { assertMayStartFollowUp } from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
@@ -563,6 +565,7 @@ export class SupportErrandController {
   private organizationService = new OrganizationService();
   private investigationPolicyService = new SupportInvestigationPolicyService();
   private handlerRoles = resolveHandlerGroupRoles();
+  private superadminGroups = readRoleGroups(SUPERADMIN_GROUP);
   private investigationAccessService = new SupportInvestigationAccessService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private accessMapperService = new AccessMapperService();
@@ -1131,6 +1134,17 @@ export class SupportErrandController {
     });
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
+    // Closing from an earlier phase enters each phase on the way and the one it closes in, and every one of
+    // them answers to the same rule as the phase button that would have entered it.
+    for (const enteredPhaseId of [...phaseSteps.map(step => step.activePhaseId), body.activePhaseId]) {
+      assertMayStartFollowUp({
+        policyService: this.investigationPolicyService,
+        handlerRoles: this.handlerRoles,
+        superadminGroups: this.superadminGroups,
+        user: req.user,
+        targetPhaseName: metadata.data.phases?.find(phase => phase.id === enteredPhaseId)?.name,
+      });
+    }
     // Closing from an earlier phase steps along the workflow first: Support Management refuses a jump
     // between phases. Each step is conditioned on the version the one before it left.
     let version = currentVersion;

@@ -2,8 +2,9 @@
 
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { setSupportErrandAdmin, Status } from '@supportmanagement/services/support-errand-service';
+import { getSupportErrandAssignedBy } from '@supportmanagement/services/support-history-service';
 import { useRouter } from 'next/navigation';
-import { FC, useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 
 import type { InvestigationPhaseEntryRequirementProps } from '../../investigation-variant';
 import { investigationHandoverErrorMessage } from './avvikelse-assignment-service';
@@ -14,6 +15,9 @@ import { HandlerAssignmentModal } from './handler-assignment-modal.component';
  * Asked of a LEX investigator about to send the errand to the decision: they hand it to a LEX manager
  * instead, who sends it on. The errand stays with LEX, so this is an ordinary change of handler, marked
  * Tilldelat for the manager to take up as every handover is.
+ *
+ * It goes back to the LEX manager who gave it to the investigator, so that one is offered first. The list
+ * waits for the errand's history to say who that was; without the history the first manager stands, as before.
  */
 export const LexManagerHandoverRequirement: FC<InvestigationPhaseEntryRequirementProps> = ({ onClose }) => {
   const municipalityId = useConfigStore((state) => state.municipalityId);
@@ -24,6 +28,24 @@ export const LexManagerHandoverRequirement: FC<InvestigationPhaseEntryRequiremen
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [assignedBy, setAssignedBy] = useState<{ readFor: string; account?: string }>();
+
+  useEffect(() => {
+    if (!errandId) return;
+    let cancelled = false;
+    getSupportErrandAssignedBy(errandId, municipalityId).then(
+      (account) => {
+        if (!cancelled) setAssignedBy({ readFor: errandId, account });
+      },
+      () => {
+        if (!cancelled) setAssignedBy({ readFor: errandId });
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [errandId, municipalityId]);
+  const assignedByRead = assignedBy !== undefined && assignedBy.readFor === errandId;
 
   const candidates = useMemo(
     () =>
@@ -32,8 +54,9 @@ export const LexManagerHandoverRequirement: FC<InvestigationPhaseEntryRequiremen
         .map((administrator) => ({ adAccount: administrator.adAccount, displayName: administrator.displayName })),
     [administrators]
   );
-  // An empty list only means "nobody holds this role" once the directory has actually been read.
-  const loadedCandidates = handlerDirectoryState === 'ready' ? candidates : undefined;
+  // An empty list only means "nobody holds this role" once the directory has actually been read. The list also
+  // waits for the history, so the manager the errand came from is already chosen when it can be confirmed.
+  const loadedCandidates = handlerDirectoryState === 'ready' && assignedByRead ? candidates : undefined;
   const loadError =
     handlerDirectoryState === 'error'
       ? 'Listan över behöriga handläggare kunde inte hämtas. Ladda om sidan och försök igen.'
@@ -64,6 +87,7 @@ export const LexManagerHandoverRequirement: FC<InvestigationPhaseEntryRequiremen
       confirmLabel="Tilldela LEX-ansvarig"
       confirmLoadingLabel="Tilldelar LEX-ansvarig"
       candidates={loadedCandidates}
+      preferredAdAccount={assignedBy?.account}
       loadError={loadError}
       emptyMessage="Ingen LEX-ansvarig är konfigurerad för den här verksamheten. Kontakta support innan du går vidare."
       isSaving={isSaving}

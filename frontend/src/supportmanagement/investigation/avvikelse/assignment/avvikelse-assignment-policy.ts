@@ -8,7 +8,7 @@ import type { InvestigationFormData } from '../investigation-document';
 import { hasLexDeclinedInvestigation } from '../lex-initial-assessment';
 import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from '../saved-investigation-document';
 import { ACCESS_LEX_LABEL_PATH, hasErrandLabel } from './avvikelse-access-labels';
-import { LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from './avvikelse-handler-roles';
+import { LEX_HANDLER_ROLE_KEYS, LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from './avvikelse-handler-roles';
 
 interface LexAssignmentInput {
   readonly formData: InvestigationFormData;
@@ -84,6 +84,14 @@ export const isWithLexInvestigation = (labels: Label[] | undefined, labelStructu
  */
 export const handsErrandToLexManager = ({ roleKeys = [], superadmin }: InvestigationViewer): boolean =>
   !superadmin && roleKeys.includes(LEX_INVESTIGATOR_ROLE_KEY) && !roleKeys.includes(LEX_MANAGER_ROLE_KEY);
+
+/**
+ * Whether the user leaves the follow-up to the unit. Following up the measures is the unit's work, so a LEX handler
+ * hands the decided errand back to its manager rather than starting it. Somebody who holds another role as well may
+ * be acting in that one, and an administrator is held back by no role. The BFF holds the same rule.
+ */
+export const leavesFollowUpToTheUnit = ({ roleKeys = [], superadmin }: InvestigationViewer): boolean =>
+  !superadmin && roleKeys.length > 0 && roleKeys.every((roleKey) => LEX_HANDLER_ROLE_KEYS.includes(roleKey));
 
 /**
  * The overview names LEX as responsible while the errand is with them: the role holds it, whichever of

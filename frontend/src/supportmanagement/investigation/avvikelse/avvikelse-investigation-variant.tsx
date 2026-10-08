@@ -1,6 +1,7 @@
 'use client';
 
 import { Spinner } from '@sk-web-gui/react';
+import { MEASURE_FOLLOW_UP_PHASE_NAME } from '@supportmanagement/measures/measure-phases';
 import dynamic from 'next/dynamic';
 
 import type { InvestigationProfile } from '../investigation-profile';
@@ -15,6 +16,7 @@ import type {
 } from '../investigation-variant';
 import {
   handsErrandToLexManager,
+  leavesFollowUpToTheUnit,
   lexOverviewAssignee,
   requiresLexAssignment,
 } from './assignment/avvikelse-assignment-policy';
@@ -102,6 +104,10 @@ const LexManagerHandoverRequirement = dynamic(
     ),
   { loading: () => null }
 );
+const LexFollowUpRequirement = dynamic(
+  () => import('./assignment/lex-follow-up-requirement.component').then((module) => module.LexFollowUpRequirement),
+  { loading: () => null }
+);
 
 /**
  * The phases the avvikelse process runs through, named as the namespace's phase metadata names them.
@@ -185,6 +191,16 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
       actionLabel: 'Utredningen är inte klar',
       isMet: isDecisionInvestigationCompleted,
       render: (props: InvestigationPhaseEntryRequirementProps) => <InvestigationCompletionRequirement {...props} />,
+    },
+    /**
+     * The unit follows up the measures, not LEX: a LEX handler hands the decided errand back to its manager, who
+     * starts the follow-up. The BFF holds the same rule, for the close that passes through the follow-up too.
+     */
+    {
+      phaseName: MEASURE_FOLLOW_UP_PHASE_NAME,
+      actionLabel: 'Uppföljningen görs av enheten',
+      isMet: (context: InvestigationPhaseEntryContext) => !leavesFollowUpToTheUnit(context.viewer),
+      render: (props: InvestigationPhaseEntryRequirementProps) => <LexFollowUpRequirement {...props} />,
     },
   ],
   /**

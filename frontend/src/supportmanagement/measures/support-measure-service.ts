@@ -19,6 +19,8 @@ export interface MeasuresSnapshot {
   canWrite: boolean;
   /** Whether the user's role follows up approved measures; absent where the deployment names no roles. */
   mayFollowUp?: boolean;
+  /** Why the errand may not be closed yet, as the close would be refused; absent once nothing stands in the way. */
+  closeRefusal?: string;
 }
 
 export interface PlannedMeasuresSnapshot {

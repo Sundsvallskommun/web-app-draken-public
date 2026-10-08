@@ -95,14 +95,20 @@ test.each([false, true])('follow-up accepts the explicit boolean answer %s', asy
 
 afterEach(() => vi.restoreAllMocks());
 
-function setup(roles: readonly HandlerGroupRole[] = handlerRoles) {
+function setup(roles: readonly HandlerGroupRole[] = handlerRoles, { closeRequiresHandled = false } = {}) {
   const api = new ApiService();
   const get = vi.spyOn(api, 'get').mockImplementation(async config => response(config.url?.endsWith('/metadata') ? metadata : current));
   const patch = vi.spyOn(api, 'patch').mockResolvedValue(response(undefined));
   const post = vi.spyOn(api, 'post').mockResolvedValue(response(undefined));
   // Support Management's answer on the measures resource, which alone decides whether they are writable.
   const access = { getResourceLevel: vi.fn<SupportInvestigationAccessService['getResourceLevel']>(async () => 'RW') };
-  const service = new SupportMeasureService(api, roles, 'ad-superadmins', access as unknown as SupportInvestigationAccessService);
+  const service = new SupportMeasureService(
+    api,
+    roles,
+    'ad-superadmins',
+    access as unknown as SupportInvestigationAccessService,
+    closeRequiresHandled,
+  );
   return { service, get, patch, post, access };
 }
 
@@ -164,6 +170,37 @@ test('keeps the measures readable but offers no writes when the access lookup fa
   const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
   expect(snapshot.measures).toEqual([measure]);
   expect(snapshot.canWrite).toBe(false);
+});
+
+// The client disables closing on the very refusal the close would get, so the two cannot disagree.
+test('says why the errand cannot be closed while a measure is unhandled, where closing requires it', async () => {
+  const proposal: Measure = { ...measure, id: 'proposal', accept: undefined };
+  const { service, get } = setup(handlerRoles, { closeRequiresHandled: true });
+  get
+    .mockResolvedValueOnce(response(current))
+    .mockResolvedValueOnce(response([proposal]))
+    .mockResolvedValueOnce(response(metadata));
+
+  const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
+
+  expect(snapshot.closeRefusal).toBe('Ärendet kan inte avslutas förrän alla åtgärder är hanterade: 1 åtgärd väntar på beslut.');
+});
+
+test('names no close refusal once every measure is handled, or where closing does not require it', async () => {
+  const rejected: Measure = { ...measure, accept: 'FALSE' };
+  const required = setup(handlerRoles, { closeRequiresHandled: true });
+  required.get
+    .mockResolvedValueOnce(response(current))
+    .mockResolvedValueOnce(response([rejected]))
+    .mockResolvedValueOnce(response(metadata));
+  expect(await required.service.read(mockMunicipalityId, mockSupportErrandId, user)).not.toHaveProperty('closeRefusal');
+
+  const notRequired = setup();
+  notRequired.get
+    .mockResolvedValueOnce(response(current))
+    .mockResolvedValueOnce(response([{ ...measure, accept: undefined }]))
+    .mockResolvedValueOnce(response(metadata));
+  expect(await notRequired.service.read(mockMunicipalityId, mockSupportErrandId, user)).not.toHaveProperty('closeRefusal');
 });
 
 test('propagates denied access instead of showing a falsely empty list', async () => {

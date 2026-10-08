@@ -156,6 +156,8 @@ export interface IafApiTrace {
   phasePatches: Array<{ transitionId?: string; expectedActivePhaseId?: string | null }>;
   /** Handover steps, in order, exactly as the client named them. */
   handovers: Array<{ step: string; expectedVersion?: number; assignedUserId?: string; locationLabelId?: string }>;
+  /** Assignee changes through the admin route, in order: who the errand was given to. */
+  adminPatches: Array<string | undefined>;
   /** Places whose managers were previewed, by label id. */
   locationManagerGets: string[];
   /** Errand parameters written one by one, in order, with the precondition each was sent on. */
@@ -275,6 +277,10 @@ export interface IafApiScenario {
   };
   /** When the errand's handler took it up after it was given to them, as the history answers it. */
   assigneeResumedAt?: string;
+  /** Who gave the errand to its handler, as the history answers it. Left out, the history names nobody. */
+  assignedBy?: string;
+  /** Why the errand may not be closed yet, as the measures snapshot says it. Left out, nothing stands in the way. */
+  measuresCloseRefusal?: string;
   /** Errand parameters beside the reported event type, each with its own version. */
   parameters?: Array<{ key: string; displayName?: string; values: string[]; version?: number }>;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
@@ -998,6 +1004,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     writes: [],
     reports: [],
     phasePatches: [],
+    adminPatches: [],
     handovers: [],
     locationManagerGets: [],
     parameterPuts: [],
@@ -1255,6 +1262,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/admin`)) {
       const body = requestBody(request) as { assignedUserId?: string } | undefined;
       errandAssignedUserId = body?.assignedUserId;
+      trace.adminPatches.push(body?.assignedUserId);
       errandVersion += 1;
       await fulfillJson(route, buildErrand());
       return;
@@ -1286,6 +1294,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.endsWith(`/supporthistory/${municipalityId}/${errandId}/assignee-resumed`)) {
       await fulfillJson(route, { resumedAt: scenario.assigneeResumedAt ?? null });
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith(`/supporthistory/${municipalityId}/${errandId}/assigned-by`)) {
+      await fulfillJson(route, { assignedBy: scenario.assignedBy ?? null });
       return;
     }
 
@@ -1328,6 +1341,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         creationRoles: [],
         registration: { status: 'unconfigured', roleTypes: [] },
         canWrite: true,
+        ...(scenario.measuresCloseRefusal ? { closeRefusal: scenario.measuresCloseRefusal } : {}),
       });
       return;
     }

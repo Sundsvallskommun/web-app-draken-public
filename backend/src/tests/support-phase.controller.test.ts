@@ -7,7 +7,7 @@ import { SupportPhaseController, UpdateSupportErrandPhaseDto } from '@/controlle
 import type { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import type { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-import { mockReq, mockRes } from './helpers/http';
+import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 const MUNICIPALITY_ID = mockMunicipalityId;
@@ -155,6 +155,45 @@ describe('updateSupportErrandPhase', () => {
         mockRes(),
       ),
     ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('Utredning enhetschef') });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  // Following up the measures is the unit's work: a LEX handler hands the decided errand back instead.
+  it('refuses a LEX handler who would move an IAF/VOF errand into the follow-up, before writing', async () => {
+    const policyService = {
+      iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE),
+      profile: VOF_SUPPORT_INVESTIGATION_PROFILE,
+      getState: vi.fn(async () => 'active'),
+    };
+    const controller = new SupportPhaseController(
+      policyService as unknown as SupportInvestigationPolicyService,
+      { readBoundSchema: vi.fn() } as unknown as SupportJsonParameterService,
+    );
+    const { api } = makeController();
+    (controller as unknown as { apiService: ApiStub }).apiService = api;
+    (controller as unknown as { handlerRoles: unknown }).handlerRoles = [{ key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'MOCK_LEX_MANAGERS' }];
+    const followUpPhases = [
+      { id: 'decision', name: 'DECISION', transitions: [{ id: 'to-follow-up', targetPhaseId: 'follow-up' }] },
+      { id: 'follow-up', name: 'FOLLOW_UP' },
+    ];
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { phases: followUpPhases }, message: 'success' };
+      return {
+        data: { id: mockSupportErrandId, phases: [{ phaseId: 'decision' }], status: 'DECISION', version: 7, jsonParameters: [] },
+        message: 'success',
+        headers: { etag: '"7"' },
+      };
+    });
+
+    await expect(
+      controller.updateSupportErrandPhase(
+        mockReq(mockUser({ groups: ['MOCK_LEX_MANAGERS'] })),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedActivePhaseId: 'decision', transitionId: 'to-follow-up' },
+        mockRes(),
+      ),
+    ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('Uppföljningen görs av enheten') });
     expect(api.patch).not.toHaveBeenCalled();
   });
 

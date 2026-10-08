@@ -8,7 +8,14 @@ import { DifferenceResponse, Errand, PageEvent } from '@/data-contracts/supportm
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { assignsErrandTo, ErrandHistoryEntry, readErrandEventVersions, resolveAssigneeResumedAt } from '@/services/assignee-resume';
+import {
+  assignsErrandTo,
+  ErrandHistoryEntry,
+  readErrandEventExecutor,
+  readErrandEventVersions,
+  resolveAssignedBy,
+  resolveAssigneeResumedAt,
+} from '@/services/assignee-resume';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
@@ -53,6 +60,37 @@ export class SupportHistoryController {
   }
 
   /**
+   * The errand's current handler and its history, newest first and only as far back as their latest assignment:
+   * what each write changed is a request of its own. An errand without a handler has no such history.
+   */
+  private async readHistoryBackToAssignment(
+    req: RequestWithUser,
+    municipalityId: string,
+    id: string,
+  ): Promise<{ assignee: string; history: ErrandHistoryEntry[] } | undefined> {
+    const errandUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
+    const errand = await this.apiService.get<Errand>({ url: errandUrl }, req.user);
+    const assignee = errand.data.assignedUserId?.trim();
+    if (!assignee) return undefined;
+
+    const events = await this.apiService.get<PageEvent>({ url: `${errandUrl}/events?page=0&size=100&sort=created%2Cdesc` }, req.user);
+    const history: ErrandHistoryEntry[] = [];
+    for (const event of events.data.content ?? []) {
+      const versions = readErrandEventVersions(event);
+      if (!versions) continue;
+      const difference = await this.apiService.get<DifferenceResponse>(
+        { url: `${errandUrl}/revisions/difference?source=${versions.previous}&target=${versions.current}` },
+        req.user,
+      );
+      const by = readErrandEventExecutor(event);
+      const entry = { at: event.created!, operations: difference.data.operations ?? [], ...(by ? { by } : {}) };
+      history.push(entry);
+      if (assignsErrandTo(entry, assignee)) break;
+    }
+    return { assignee, history };
+  }
+
+  /**
    * When the errand's current handler took it up after it was given to them, read from the errand's history. The
    * lex Sarah investigation records it as the day the report reached its investigator.
    */
@@ -64,26 +102,26 @@ export class SupportHistoryController {
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
   ): Promise<{ resumedAt: string | null }> {
-    const errandUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
-    const errand = await this.apiService.get<Errand>({ url: errandUrl }, req.user);
-    const assignee = errand.data.assignedUserId?.trim();
-    if (!assignee) return { resumedAt: null };
+    const assignment = await this.readHistoryBackToAssignment(req, municipalityId, id);
+    if (!assignment) return { resumedAt: null };
+    return { resumedAt: resolveAssigneeResumedAt(assignment.history, assignment.assignee) ?? null };
+  }
 
-    const events = await this.apiService.get<PageEvent>({ url: `${errandUrl}/events?page=0&size=100&sort=created%2Cdesc` }, req.user);
-    // Newest first, and only as far back as the assignment: what each write changed is a request of its own.
-    const history: ErrandHistoryEntry[] = [];
-    for (const event of events.data.content ?? []) {
-      const versions = readErrandEventVersions(event);
-      if (!versions) continue;
-      const difference = await this.apiService.get<DifferenceResponse>(
-        { url: `${errandUrl}/revisions/difference?source=${versions.previous}&target=${versions.current}` },
-        req.user,
-      );
-      const entry = { at: event.created!, operations: difference.data.operations ?? [] };
-      history.push(entry);
-      if (assignsErrandTo(entry, assignee)) break;
-    }
-    return { resumedAt: resolveAssigneeResumedAt(history, assignee) ?? null };
+  /**
+   * Who gave the errand to its current handler, read from the errand's history. A LEX investigator hands the
+   * errand back to the LEX manager who gave it to them, so that is the one their handover offers first.
+   */
+  @Get('/supporthistory/:municipalityId/:id/assigned-by')
+  @OpenAPI({ summary: 'Who assigned the errand to its current handler' })
+  @UseBefore(authMiddleware)
+  async fetchAssignedBy(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+  ): Promise<{ assignedBy: string | null }> {
+    const assignment = await this.readHistoryBackToAssignment(req, municipalityId, id);
+    if (!assignment) return { assignedBy: null };
+    return { assignedBy: resolveAssignedBy(assignment.history, assignment.assignee) ?? null };
   }
 
   @Get('/supporthistory/:municipalityId/:id/revisions/difference/')

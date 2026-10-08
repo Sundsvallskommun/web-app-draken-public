@@ -5,7 +5,12 @@ import { test } from 'vitest';
 
 import type { InvestigationProfile } from '../../investigation-profile';
 import { ACCESS_LEX_LABEL_PATH } from './avvikelse-access-labels';
-import { handsErrandToLexManager, lexOverviewAssignee, requiresLexAssignment } from './avvikelse-assignment-policy';
+import {
+  handsErrandToLexManager,
+  leavesFollowUpToTheUnit,
+  lexOverviewAssignee,
+  requiresLexAssignment,
+} from './avvikelse-assignment-policy';
 
 const profile = {
   documents: [{ key: 'manager-document', schemaName: 'utredning-enhetschef' }],
@@ -56,6 +61,18 @@ test('a LEX investigator hands the errand to a LEX manager rather than sending i
   assert.equal(handsErrandToLexManager({ roleKeys: ['lex-utredare'], superadmin: true }), false);
   assert.equal(handsErrandToLexManager({ roleKeys: ['enhetschef'] }), false);
   assert.equal(handsErrandToLexManager({}), false);
+});
+
+test('a LEX handler leaves the follow-up to the unit rather than starting it', () => {
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['lex-ansvarig'] }), true);
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['lex-utredare'] }), true);
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['lex-ansvarig', 'lex-utredare'] }), true);
+  // Another role besides LEX may be the one acting, an administrator is held back by no role, and without a
+  // handler role there is no LEX to hold back.
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['lex-ansvarig', 'enhetschef'] }), false);
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['lex-ansvarig'], superadmin: true }), false);
+  assert.equal(leavesFollowUpToTheUnit({ roleKeys: ['enhetschef'] }), false);
+  assert.equal(leavesFollowUpToTheUnit({}), false);
 });
 
 test('a suspicion LEX-ansvarig declined in the initial assessment asks for no new handover', () => {

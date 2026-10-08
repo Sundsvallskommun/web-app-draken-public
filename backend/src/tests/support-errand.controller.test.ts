@@ -2063,6 +2063,35 @@ describe('updateSupportErrandStatus', () => {
     ]);
   });
 
+  // Closing from the decision steps into the follow-up, which is the unit's to start, not LEX's.
+  it('refuses a LEX handler closing through the follow-up phase before anything is written', async () => {
+    const { controller, api } = makeController();
+    (controller as unknown as { handlerRoles: unknown }).handlerRoles = [{ key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'MOCK_LEX_MANAGERS' }];
+    const phases = [
+      { id: 'decision', name: 'DECISION', allowedStatuses: ['DECISION'], transitions: [{ id: 't3', targetPhaseId: 'follow-up' }] },
+      { id: 'follow-up', name: 'FOLLOW_UP', allowedStatuses: ['FOLLOW_UP', 'SOLVED'] },
+    ];
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { statuses: [{ name: 'DECISION' }, { name: 'SOLVED' }], phases }, message: 'success' };
+      return {
+        data: { id: mockSupportErrandId, status: 'DECISION', phases: [{ phaseId: 'decision' }], version: 7 },
+        message: 'success',
+        headers: { etag: '"7"' },
+      };
+    });
+
+    await expect(
+      controller.updateSupportErrandStatus(
+        mockReq(mockUser({ groups: ['MOCK_LEX_MANAGERS'] })),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedVersion: 7, expectedStatus: 'DECISION', status: 'SOLVED' },
+        mockRes(),
+      ),
+    ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('Uppföljningen görs av enheten') });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       name: 'stale version',

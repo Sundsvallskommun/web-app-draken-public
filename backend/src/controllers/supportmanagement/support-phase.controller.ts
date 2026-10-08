@@ -14,7 +14,11 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
 import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
-import { assertInvestigationCompletedBeforeDecision, assertMaySendToDecision } from '@/services/support-investigation-decision-readiness';
+import {
+  assertInvestigationCompletedBeforeDecision,
+  assertMaySendToDecision,
+  assertMayStartFollowUp,
+} from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
@@ -114,14 +118,16 @@ export class SupportPhaseController {
 
     const transition = resolveSupportErrandPhaseTransition(currentErrand.data, metadata.data.phases, data.transitionId);
     const targetPhaseName = metadata.data.phases?.find(phase => phase.id === transition.targetPhaseId)?.name;
-    // Who may send the errand to the decision is asked before whether it is ready to be decided.
-    assertMaySendToDecision({
+    // Who may move the errand into the phase is asked before whether it is ready to be decided.
+    const phaseEntry = {
       policyService: this.investigationPolicyService,
       handlerRoles: this.handlerRoles,
       superadminGroups: this.superadminGroups,
       user: req.user,
       targetPhaseName,
-    });
+    };
+    assertMaySendToDecision(phaseEntry);
+    assertMayStartFollowUp(phaseEntry);
     await assertInvestigationCompletedBeforeDecision({
       policyService: this.investigationPolicyService,
       documentService: this.jsonParameterService,

@@ -7,6 +7,7 @@ import { useInvestigationProfileStore } from '@supportmanagement/investigation/i
 import { findHeldPhaseEntryRequirement } from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
+import { useMeasuresCloseRefusal } from '@supportmanagement/measures/use-measures-close-refusal';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -176,6 +177,9 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
     }
   };
 
+  // A close that the measures still stand in the way of is not offered: the handler reports them first.
+  const closeRefusal = useMeasuresCloseRefusal(closesErrand);
+
   // The controls are unusable while anything would be lost or overwritten by the move; advancing
   // additionally needs a transition to apply, unless the errand is only entering the workflow or closing.
   const controlsDisabled = !canEditSupportManagement || locked || hasUnsavedChanges || isSaving;
@@ -183,7 +187,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
     !controlsDisabled &&
     Boolean(supportErrand?.id) &&
     typeof supportErrand?.version === 'number' &&
-    (entersWorkflow || closesErrand || Boolean(selectedTransition));
+    (entersWorkflow || (closesErrand && !closeRefusal) || Boolean(selectedTransition));
 
   /** The requirement that holds the move, shown while the handler deals with it. */
   const phaseEntryRequirementDialog: ReactNode =
@@ -197,6 +201,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
     isSaving,
     controlsDisabled,
     canAdvance,
+    closeRefusal,
     advancePhase,
     /** Set in the last phase when it allows closing: the button closes the errand instead of moving it. */
     closesErrand,

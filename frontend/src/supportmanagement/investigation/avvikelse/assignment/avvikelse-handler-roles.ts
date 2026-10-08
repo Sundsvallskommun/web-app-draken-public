@@ -10,3 +10,9 @@ export const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
 export const MAS_MAR_ROLE_KEY = 'mas-mar';
 export const HEAD_OF_OPERATIONS_ROLE_KEY = 'verksamhetschef';
 export const UNIT_MANAGER_ROLE_KEY = 'enhetschef';
+
+/** The roles that handle an errand while it is with LEX. */
+export const LEX_HANDLER_ROLE_KEYS: readonly string[] = Object.freeze([
+  LEX_MANAGER_ROLE_KEY,
+  LEX_INVESTIGATOR_ROLE_KEY,
+]);

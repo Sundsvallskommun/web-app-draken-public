@@ -31,10 +31,13 @@ describe('support-measure-closing', () => {
       expect(isUnhandledMeasure(approvedPlanned)).toBe(true);
     });
 
-    // The follow-up writes its answers and the execution date together, so an executed measure has
-    // been answered for.
     it('leaves a followed-up measure alone', () => {
       expect(isUnhandledMeasure(followedUp)).toBe(false);
+    });
+
+    // Carrying a planned measure out is not following it up: the follow-up tab still asks for its answers.
+    it('counts a planned measure reported as carried out but not followed up', () => {
+      expect(isUnhandledMeasure({ ...approvedPlanned, executed: '2026-09-29T00:00:00Z' })).toBe(true);
     });
 
     // Neither asks anything more of anybody: one was turned down, the other was already carried out.

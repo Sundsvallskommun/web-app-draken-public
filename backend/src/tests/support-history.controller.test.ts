@@ -103,12 +103,13 @@ describe('SupportHistoryController investigation document protection', () => {
 });
 
 describe('SupportHistoryController assignee resumed', () => {
-  const event = (created: string, previous: string, current: string) => ({
+  const event = (created: string, previous: string, current: string, executedBy?: string) => ({
     subType: 'ERRAND',
     created,
     metadata: [
       { key: 'PreviousVersion', value: previous },
       { key: 'CurrentVersion', value: current },
+      ...(executedBy ? [{ key: 'ExecutedBy', value: executedBy }] : []),
     ],
   });
   const differences: Record<string, DifferenceResponse> = {
@@ -126,10 +127,10 @@ describe('SupportHistoryController assignee resumed', () => {
           return {
             data: {
               content: [
-                event('2026-10-08T09:00:00Z', '3', '4'),
+                event('2026-10-08T09:00:00Z', '3', '4', 'lex.investigator'),
                 { subType: 'NOTE', created: '2026-10-07T12:00:00Z', metadata: [] },
-                event('2026-10-07T08:00:00Z', '2', '3'),
-                event('2026-10-01T08:00:00Z', '1', '2'),
+                event('2026-10-07T08:00:00Z', '2', '3', 'Lex.Manager'),
+                event('2026-10-01T08:00:00Z', '1', '2', 'unit.manager'),
               ],
             },
           };
@@ -158,5 +159,22 @@ describe('SupportHistoryController assignee resumed', () => {
     const { controller } = makeResumeController(undefined);
 
     await expect(controller.fetchAssigneeResumedAt(mockReq(), mockSupportErrandId, mockMunicipalityId)).resolves.toEqual({ resumedAt: null });
+  });
+
+  // A LEX investigator hands the errand back to the LEX manager who gave it to them.
+  it('answers who gave the errand to its handler, reading back no further than that assignment', async () => {
+    const { controller, apiService } = makeResumeController('lex.investigator');
+
+    await expect(controller.fetchAssignedBy(mockReq(), mockSupportErrandId, mockMunicipalityId)).resolves.toEqual({
+      assignedBy: 'Lex.Manager',
+    });
+    const urls = apiService.get.mock.calls.map(([config]) => config.url);
+    expect(urls.some(url => url.includes('source=1&target=2'))).toBe(false);
+  });
+
+  it('answers nobody for an errand nobody is assigned', async () => {
+    const { controller } = makeResumeController(undefined);
+
+    await expect(controller.fetchAssignedBy(mockReq(), mockSupportErrandId, mockMunicipalityId)).resolves.toEqual({ assignedBy: null });
   });
 });

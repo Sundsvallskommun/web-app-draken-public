@@ -22,11 +22,11 @@ export const closeRequiresHandledMeasures = (application?: string): boolean =>
 const isUndecidedMeasure = (measure: Measure): boolean => !measure.accept;
 
 /**
- * An approved, planned measure that has not been followed up. The follow-up writes `executed`
- * together with its answers, so an unexecuted one is exactly one still waiting - the same rule the
- * planned-measures overview lists an errand by.
+ * An approved, planned measure that has not been followed up: the follow-up tab still asks for its
+ * answers. The follow-up saves them in `result`, so a planned measure reported as carried out through
+ * an edit, which sets only `executed`, is still waiting for its follow-up.
  */
-const isUnfollowedMeasure = (measure: Measure): boolean => isPlannedApprovedMeasure(measure) && !measure.executed;
+const isUnfollowedMeasure = (measure: Measure): boolean => isPlannedApprovedMeasure(measure) && !measure.result;
 
 /**
  * Whether a measure still asks something of somebody. A rejected measure and one registered as
