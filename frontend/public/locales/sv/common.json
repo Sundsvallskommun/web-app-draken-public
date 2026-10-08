@@ -398,5 +398,15 @@
       "incomplete": "Varje person som ändrats behöver en bedömning innan utredningen kan sparas."
     },
     "comment_too_long": "Kommentaren får vara högst 3000 tecken."
+  },
+  "financial_suitability": {
+    "financing": "Finansiering",
+    "financing_none": "Ansökan anger ingen finansiering.",
+    "financing_notes": "Övriga upplysningar om finansieringen",
+    "assessment": "Bedömning av ekonomisk lämplighet",
+    "toast": {
+      "save_failed": "Bedömningen kunde inte sparas"
+    },
+    "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
   }
 }

@@ -69,6 +69,26 @@ export const startSupportInvestigation = (
       throw e;
     });
 
+export const saveSupportInvestigationSection = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  sectionId: string,
+  section: { text?: string; assessment?: string }
+): Promise<Investigation> =>
+  apiService
+    .patch<Investigation, { text?: string; assessment?: string }>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections/${sectionId}`,
+      section
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when saving an examination of the investigation');
+      throw e;
+    });
+
+export const SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH = 8192;
+
 export const saveSupportInvestigation = (
   errandId: string,
   municipalityId: string,

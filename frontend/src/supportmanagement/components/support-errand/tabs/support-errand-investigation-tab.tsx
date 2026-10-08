@@ -48,6 +48,9 @@ export const SupportErrandInvestigationTab: React.FC<{
   const saveStatements = useRef<() => Promise<boolean>>(undefined);
   const [suitabilityEdited, setSuitabilityEdited] = useState(false);
   const saveSuitability = useRef<() => Promise<boolean>>(undefined);
+  const [financialEdited, setFinancialEdited] = useState(false);
+  const saveFinancial = useRef<() => Promise<boolean>>(undefined);
+  const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -85,6 +88,14 @@ export const SupportErrandInvestigationTab: React.FC<{
     [merge]
   );
 
+  const receiveFromSection = useCallback(
+    (result: Investigation) => {
+      savedInvestigation.current = result;
+      receiveKeepingUnsavedEdits(result);
+    },
+    [receiveKeepingUnsavedEdits]
+  );
+
   useEffect(() => {
     if (!errandId) return undefined;
     let current = true;
@@ -105,8 +116,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || suitabilityEdited);
-  }, [edited, statementsEdited, suitabilityEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited);
+  }, [edited, statementsEdited, suitabilityEdited, financialEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -164,30 +175,41 @@ export const SupportErrandInvestigationTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 
+  const reportSaved = () =>
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: t('common:investigation.saved'),
+      status: 'success',
+    });
+
   const save = async (): Promise<boolean> => {
     if (!errandId || !investigation?.id) return true;
 
+    savedInvestigation.current = investigation;
     const statementsSaved = (await saveStatements.current?.()) ?? true;
     const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
-    if (!statementsSaved || !suitabilitySaved) return false;
+    const financialSaved = (await saveFinancial.current?.()) ?? true;
+    if (!statementsSaved || !suitabilitySaved || !financialSaved) return false;
+
+    const latest = savedInvestigation.current;
+    if (!edited) {
+      reportSaved();
+      return true;
+    }
 
     setIsSaving(true);
     try {
       receive(
         await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
-          version: investigation.version ?? 0,
+          version: latest?.version ?? 0,
           summary: values.summary,
           conclusion: values.conclusion,
           recommendation: values.recommendation || undefined,
           recommendationMotivation: values.recommendationMotivation,
         })
       );
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: t('common:investigation.saved'),
-        status: 'success',
-      });
+      reportSaved();
       return true;
     } catch (error) {
       reportFailure(error);
@@ -259,6 +281,10 @@ export const SupportErrandInvestigationTab: React.FC<{
                 saveStatements={saveStatements}
                 onSuitabilityEdited={setSuitabilityEdited}
                 saveSuitability={saveSuitability}
+                onFinancialEdited={setFinancialEdited}
+                onFinancialSaved={receiveFromSection}
+                saveFinancial={saveFinancial}
+                investigationId={investigation.id}
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
