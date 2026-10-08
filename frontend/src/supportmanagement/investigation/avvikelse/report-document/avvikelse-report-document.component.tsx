@@ -6,6 +6,7 @@ import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Alert, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
 import { isAxiosError } from 'axios';
 import { FC, useEffect, useState } from 'react';
 
@@ -18,7 +19,6 @@ import {
   saveSupportInvestigationDocument,
   type SupportInvestigationDocument,
 } from '../support-investigation-service';
-import { useAdvanceErrandVersion } from '../use-advance-errand-version';
 import {
   findReportPlaceProperty,
   registeredPlaceName,

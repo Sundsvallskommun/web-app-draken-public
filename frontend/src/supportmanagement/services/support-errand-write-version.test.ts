@@ -6,6 +6,7 @@ import {
   isSoleSupportErrandVersionChange,
   isSupportErrandWriteConflict,
   latestKnownSupportErrandVersion,
+  resolveOwnErrandWriteAdvance,
   SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE,
   SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE,
   SupportErrandStatusAfterAssignmentError,
@@ -127,4 +128,34 @@ test('takes the later of the store version and the one read after own writes', (
   assert.equal(latestKnownSupportErrandVersion(undefined, 9), 9);
   assert.equal(latestKnownSupportErrandVersion(undefined, undefined), undefined);
   assert.equal(latestKnownSupportErrandVersion(-1, '8'), undefined);
+});
+
+// Resuming an errand, or adding an attachment, shows the errand's new version without resetting the form. The next
+// document save must still move the errand on, or the classification after it is refused as somebody else's change.
+test('an own write moves the errand on even when the form was left behind by an earlier refresh', () => {
+  assert.deepEqual(resolveOwnErrandWriteAdvance({ errandVersion: 13, formVersion: 11 }, 13, 14), {
+    errandVersion: 14,
+    advancesErrand: true,
+    advancesForm: false,
+  });
+});
+
+test('an own write moves the form with the errand when the form was showing the same version', () => {
+  assert.deepEqual(resolveOwnErrandWriteAdvance({ errandVersion: 13, formVersion: 13 }, 13, 15, 2), {
+    errandVersion: 15,
+    advancesErrand: true,
+    advancesForm: true,
+  });
+});
+
+test('a move beyond the own writes, or from another version than the errand is known at, moves nothing', () => {
+  const unmoved = { errandVersion: 13, advancesErrand: false, advancesForm: false };
+  assert.deepEqual(resolveOwnErrandWriteAdvance({ errandVersion: 13, formVersion: 13 }, 13, 15), unmoved);
+  // The errand is already known further on than the write started from; it is never moved back.
+  assert.deepEqual(resolveOwnErrandWriteAdvance({ errandVersion: 14, formVersion: 13 }, 13, 14), unmoved);
+  assert.deepEqual(resolveOwnErrandWriteAdvance({ errandVersion: undefined, formVersion: undefined }, undefined, 1), {
+    errandVersion: undefined,
+    advancesErrand: false,
+    advancesForm: false,
+  });
 });

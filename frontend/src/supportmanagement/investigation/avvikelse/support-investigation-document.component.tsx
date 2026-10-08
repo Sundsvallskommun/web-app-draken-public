@@ -16,6 +16,7 @@ import {
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { latestKnownSupportErrandVersion } from '@supportmanagement/services/support-errand-write-version';
+import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
 import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -94,7 +95,6 @@ import {
   saveSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
-import { useAdvanceErrandVersion } from './use-advance-errand-version';
 import { useInvestigationTextTemplate } from './use-investigation-text-template';
 
 type LoadState = 'loading' | 'ready' | 'error';

@@ -1590,6 +1590,52 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(0);
   });
 
+  /**
+   * Taking up an assigned errand moves its version without resetting the errand form. The investigation saved
+   * after it moves the version once more, and the classification that follows must be sent on that version - not
+   * refused as somebody else's change, which is what a handler taking up a LEX investigation used to be told.
+   */
+  test('sparar klassificeringen efter att ett tilldelat ärende återupptagits utan att kalla det någon annans ändring', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      errandStatus: 'ASSIGNED',
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.locator('[data-cy="resume-button"]').click();
+    // Answered once the dialog has finished opening: closing it mid-transition leaves its overlay over the page.
+    await expect(page.locator(CONFIRM_DIALOG)).toHaveCSS('opacity', '1');
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja', exact: true }).click();
+    await expect(page.locator('[data-cy="resume-button"]')).toHaveCount(0);
+    await expect(page.locator(CONFIRM_DIALOG)).toHaveCount(0);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    await managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-type"]')
+      .selectOption(iafLabelFixture.classification.medication.resourcePath);
+    await managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]')
+      .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+    await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
+
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
+      'Utredningen och ärendets klassificering har sparats.'
+    );
+    // Version 7 as loaded, 8 once taken up, 9 once the investigation was saved.
+    expect(trace.classificationPatches).toHaveLength(1);
+    expect(trace.classificationPatches[0].body).toMatchObject({ expectedVersion: 9 });
+  });
+
   test('sparar dokumentdata och labelägd klassificering genom separata smala kontrakt', async ({
     page,
     dismissCookieConsent,

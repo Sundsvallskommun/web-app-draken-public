@@ -92,6 +92,35 @@ export const isSoleSupportErrandVersionChange = (expected: unknown, received: un
   Number.isSafeInteger(received) &&
   received === expected + ownWrites;
 
+/** Where the errand's known versions stand after the caller's own child write. */
+export interface OwnErrandWriteAdvance {
+  /** The version the next errand-level write is conditioned on. */
+  readonly errandVersion: number | undefined;
+  /** Whether the errand's known version moves to it. */
+  readonly advancesErrand: boolean;
+  /** Whether the errand form's own version moves with it. */
+  readonly advancesForm: boolean;
+}
+
+/**
+ * Moves the errand's known version on after the caller's own child write - a document, a measure - which moves the
+ * errand's version upstream too. Only a move by exactly the caller's own writes is the caller's: anything more means
+ * somebody else wrote as well, and the errand has to find that out on its own next write.
+ *
+ * The errand's version moves whenever the write started from it, or every later write - the classification that
+ * follows a document, the next save - would be refused as somebody else's change. The form's version only moves
+ * when the form was showing that version too: a form left behind by a refresh it never took in keeps the older one.
+ */
+export const resolveOwnErrandWriteAdvance = (
+  known: { readonly errandVersion: number | undefined; readonly formVersion: unknown },
+  expected: number | undefined,
+  received: number,
+  ownWrites = 1
+): OwnErrandWriteAdvance =>
+  known.errandVersion === expected && isSoleSupportErrandVersionChange(expected, received, ownWrites)
+    ? { errandVersion: received, advancesErrand: true, advancesForm: known.formVersion === expected }
+    : { errandVersion: expected, advancesErrand: false, advancesForm: false };
+
 /**
  * The latest version this client knows the errand has reached. Versions only grow, so the higher of the
  * store's - refreshed by every load - and one read right after the caller's own writes is the current one

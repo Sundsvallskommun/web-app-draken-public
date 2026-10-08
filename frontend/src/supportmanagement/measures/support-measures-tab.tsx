@@ -1,7 +1,6 @@
 import { Button, Spinner } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/support-store';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { isSoleSupportErrandVersionChange } from '@supportmanagement/services/support-errand-write-version';
+import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
 import { isAxiosError } from 'axios';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -38,7 +37,8 @@ export function SupportMeasuresTab({
   followUp?: boolean;
 }) {
   const [state, setState] = useState<MeasuresState>({ status: 'loading' });
-  const { register, resetField, getValues } = useFormContext<SupportErrand>();
+  const { register } = useFormContext<SupportErrand>();
+  const advanceErrandVersion = useAdvanceErrandVersion(errand.id);
   const generation = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -56,20 +56,8 @@ export function SupportMeasuresTab({
         if (!errand.id) throw new Error('Missing errand ID');
         const snapshot = await getSupportMeasures(municipalityId, errand.id);
         if (request !== generation.current) return undefined;
-        if (expectedErrandVersion !== undefined) {
-          // Advance the surrounding form only when our write was the sole version change.
-          // Otherwise keep its older version so stale errand fields cannot overwrite someone else's edit.
-          const current = useSupportStore.getState().supportErrand;
-          if (
-            current?.id === errand.id &&
-            current.version === expectedErrandVersion &&
-            getValues('version') === expectedErrandVersion &&
-            isSoleSupportErrandVersionChange(expectedErrandVersion, snapshot.errandVersion)
-          ) {
-            useSupportStore.setState({ supportErrand: { ...current, version: snapshot.errandVersion } });
-            resetField('version', { defaultValue: snapshot.errandVersion });
-          }
-        }
+        // Our own write moved the errand's version too; anything more is somebody else's to find out about.
+        if (expectedErrandVersion !== undefined) advanceErrandVersion(expectedErrandVersion, snapshot.errandVersion);
         setState({ status: 'ready', snapshot, refreshing: false });
         return snapshot;
       } catch (cause) {
@@ -83,7 +71,7 @@ export function SupportMeasuresTab({
         return undefined;
       }
     },
-    [errand.id, municipalityId, resetField, getValues]
+    [errand.id, municipalityId, advanceErrandVersion]
   );
 
   const cancelLoad = useCallback(() => {
