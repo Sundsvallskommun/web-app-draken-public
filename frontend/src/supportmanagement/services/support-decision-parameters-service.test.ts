@@ -3,12 +3,14 @@ import { describe, expect, test } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
 import {
+  certificateTemplate,
   type DecisionParameterInput,
   PLACEHOLDER,
   premisesFromDecisionParameters,
   servingPermitParameters,
   splitPostalAddress,
   tobaccoPermitParameters,
+  toCertificateParameters,
   toDecisionParameters,
 } from './support-decision-parameters-service';
 import type { SupportErrand } from './support-errand-service';
@@ -211,6 +213,29 @@ describe('a tobacco permit', () => {
 });
 
 describe('every permit', () => {
+  test('the certificate carries the decision too, blank where nothing is known', () => {
+    const decision = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
+    const serving = toCertificateParameters('SERVERINGSTILLSTAND', input(), decision);
+    expect(serving).toMatchObject({
+      decisionText: 'Bifall',
+      decisionMaker: 'Nämnd',
+      decisionDate: TODAY,
+      validFrom: '2026-11-01',
+      conditions: 'A\nB',
+      executionDate: '',
+      replacesDecision: '',
+      servingHours: '',
+    });
+    expect(Object.values(serving)).not.toContain(PLACEHOLDER);
+    expect(
+      toCertificateParameters('SERVERINGSTILLSTAND', input({ premises: { ...PREMISES, choice: NEW } }), decision)
+        .premisesRestaurantNumber
+    ).toBe('');
+    expect(toCertificateParameters('TOBAKSFORSALJNING', input(), decision).information).toBe('A\nB');
+    expect(certificateTemplate('SERVERINGSTILLSTAND')).toBe('serving-permit-certificate');
+    expect(certificateTemplate('FOLKOLSANMALAN')).toBeUndefined();
+  });
+
   test('a permit without a record of its own still carries the premises', () => {
     expect(Object.keys(asObject(toDecisionParameters('FOLKOLSANMALAN', input())))).toEqual([
       'premisesName',

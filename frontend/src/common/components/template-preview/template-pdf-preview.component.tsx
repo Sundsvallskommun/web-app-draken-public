@@ -9,9 +9,15 @@ interface TemplatePdfPreviewProps {
   identifier: string | undefined;
   parameters: { [key: string]: string | Object };
   debounceMs?: number;
+  draft?: boolean;
 }
 
-export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifier, parameters, debounceMs = 800 }) => {
+export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({
+  identifier,
+  parameters,
+  debounceMs = 800,
+  draft = false,
+}) => {
   const [pdfBase64, setPdfBase64] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -36,7 +42,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
     debounceTimerRef.current = setTimeout(async () => {
       const requestId = ++requestIdRef.current;
       try {
-        const result = await renderTemplatePdf(identifier, parameters);
+        const result = await renderTemplatePdf(identifier, parameters, draft);
         if (requestIdRef.current !== requestId) return;
         setPdfBase64(result);
       } catch {
@@ -56,7 +62,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identifier, JSON.stringify(parameters), debounceMs]);
+  }, [identifier, JSON.stringify(parameters), debounceMs, draft]);
 
   if (!identifier || (!pdfBase64 && !isLoading && !error)) {
     return null;
@@ -66,7 +72,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
     <Disclosure variant="alt" initalOpen data-cy="decision-template-preview" className="mb-24">
       <Disclosure.Header>
         <Disclosure.Icon icon={<FileText size={18} />} />
-        <Disclosure.Title>Mallförhandsgranskning</Disclosure.Title>
+        <Disclosure.Title>Förhandsgranskning</Disclosure.Title>
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
@@ -80,7 +86,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
           <iframe
             src={`data:application/pdf;base64,${pdfBase64}#pagemode=none`}
             className="w-full h-[80rem] border-0"
-            title="Mallförhandsgranskning"
+            title="Förhandsgranskning"
             data-cy="decision-template-preview-content"
           />
         )}

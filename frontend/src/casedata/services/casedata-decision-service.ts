@@ -101,11 +101,12 @@ export const fetchDecisionTemplates: (prefix: string, decision?: string) => Prom
 
 export const renderTemplatePdf: (
   identifier: string,
-  parameters: { [key: string]: string | Object }
-) => Promise<string> = (identifier, parameters) => {
+  parameters: { [key: string]: string | Object },
+  draft?: boolean
+) => Promise<string> = (identifier, parameters, draft = false) => {
   const body: TemplateSelector = { identifier, parameters };
   return apiService
-    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', body)
+    .post<ApiResponse<Render>, TemplateSelector>(draft ? 'render/pdf/preview' : 'render/pdf', body)
     .then((res) => res.data.data.output)
     .catch(() => {
       throw new Error('Något gick fel när förhandsgranskningen skulle skapas');

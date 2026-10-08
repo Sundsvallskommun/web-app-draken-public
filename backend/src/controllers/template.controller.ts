@@ -119,6 +119,18 @@ export class TemplateController {
     return { data: response.data, message: `Decision PDF rendered` };
   }
 
+  @Post('/render/pdf/preview')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Render draft-marked pdf preview of decision from stored template' })
+  @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
+  async decisionDraftPdf(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/pdf/preview`;
+    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
+      throw e;
+    });
+    return { data: response.data, message: `Decision draft PDF rendered` };
+  }
+
   @Post('/render/direct/pdf')
   @HttpCode(201)
   @OpenAPI({ summary: 'Render pdf preview of decision from passed in template string' })

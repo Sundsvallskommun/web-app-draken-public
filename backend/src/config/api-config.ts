@@ -22,7 +22,7 @@ export const APIS = [
   },
   {
     name: 'templating',
-    version: '2.1',
+    version: '2.2',
   },
   {
     name: 'messaging',
