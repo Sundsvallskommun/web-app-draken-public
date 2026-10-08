@@ -50,6 +50,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   const saveSuitability = useRef<() => Promise<boolean>>(undefined);
   const [financialEdited, setFinancialEdited] = useState(false);
   const saveFinancial = useRef<() => Promise<boolean>>(undefined);
+  const [knowledgeTestEdited, setKnowledgeTestEdited] = useState(false);
+  const saveKnowledgeTest = useRef<() => Promise<boolean>>(undefined);
   const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,8 +118,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited);
-  }, [edited, statementsEdited, suitabilityEdited, financialEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited || knowledgeTestEdited);
+  }, [edited, statementsEdited, suitabilityEdited, financialEdited, knowledgeTestEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -190,7 +192,8 @@ export const SupportErrandInvestigationTab: React.FC<{
     const statementsSaved = (await saveStatements.current?.()) ?? true;
     const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
     const financialSaved = (await saveFinancial.current?.()) ?? true;
-    if (!statementsSaved || !suitabilitySaved || !financialSaved) return false;
+    const knowledgeTestSaved = (await saveKnowledgeTest.current?.()) ?? true;
+    if (!statementsSaved || !suitabilitySaved || !financialSaved || !knowledgeTestSaved) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -284,6 +287,8 @@ export const SupportErrandInvestigationTab: React.FC<{
                 onFinancialEdited={setFinancialEdited}
                 onFinancialSaved={receiveFromSection}
                 saveFinancial={saveFinancial}
+                onKnowledgeTestEdited={setKnowledgeTestEdited}
+                saveKnowledgeTest={saveKnowledgeTest}
                 investigationId={investigation.id}
               />
             ))}

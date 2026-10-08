@@ -408,5 +408,26 @@
       "save_failed": "Bedömningen kunde inte sparas"
     },
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
+  },
+  "knowledge_test": {
+    "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Sätt status, provdatum och kommentar per person.",
+    "loading": "Hämtar personer med betydande inflytande",
+    "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
+    "comment": "Kommentar",
+    "comment_placeholder": "Kommentar om {{person}}s kunskapsprov…",
+    "comment_too_long": "Kommentaren får vara högst 3000 tecken.",
+    "status_placeholder": "Välj status…",
+    "status_for": "Status för {{person}}s kunskapsprov",
+    "tested_at_for": "Provdatum för {{person}}",
+    "status": {
+      "approved": "Godkänt",
+      "failed": "Underkänt",
+      "booked": "Bokat",
+      "retake": "Omprov",
+      "not_applicable": "Ej aktuellt"
+    },
+    "toast": {
+      "save_failed": "Kunskapsprovet kunde inte sparas"
+    }
   }
 }

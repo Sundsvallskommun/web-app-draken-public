@@ -29,8 +29,6 @@ export const SUPPORT_SUITABILITY_ASSESSMENTS: {
   },
 ];
 
-export const SUPPORT_PARAMETER_VALUE_MAX_LENGTH = 3000;
-
 export interface SupportSuitabilityPerson {
   partyId: string;
   name: string;

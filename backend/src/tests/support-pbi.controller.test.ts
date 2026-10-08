@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { AssessPbiDto, MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
+import { AssessPbiDto, KnowledgeTestPbiDto, MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
 
 import { mockReq, mockRes } from './helpers/http';
 import {
@@ -522,5 +522,161 @@ describe('assessPbi', () => {
 
     expect(res.statusCode).toBe(400);
     expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('KnowledgeTestPbiDto', () => {
+  it('takes a status, a date and a comment, and every one of them is optional', async () => {
+    const whole = await validate(plainToInstance(KnowledgeTestPbiDto, { status: 'APPROVED', testedAt: '2026-10-02', comment: 'Tog provet.' }));
+    const cleared = await validate(plainToInstance(KnowledgeTestPbiDto, {}));
+
+    expect(whole).toHaveLength(0);
+    expect(cleared).toHaveLength(0);
+  });
+
+  it('refuses a status the section does not offer', async () => {
+    const errors = await validate(plainToInstance(KnowledgeTestPbiDto, { status: 'PENDING' }));
+
+    expect(errors).toHaveLength(1);
+  });
+
+  it('takes a date without a time of day, since that is what the handler sets', async () => {
+    const date = await validate(plainToInstance(KnowledgeTestPbiDto, { testedAt: '2026-10-02' }));
+    const timestamp = await validate(plainToInstance(KnowledgeTestPbiDto, { testedAt: '2026-10-02T08:00:00Z' }));
+
+    expect(date).toHaveLength(0);
+    expect(timestamp).toHaveLength(1);
+  });
+
+  it('refuses a comment longer than a parameter value can hold', async () => {
+    const atTheLimit = await validate(plainToInstance(KnowledgeTestPbiDto, { comment: 'x'.repeat(3000) }));
+    const overIt = await validate(plainToInstance(KnowledgeTestPbiDto, { comment: 'x'.repeat(3001) }));
+
+    expect(atTheLimit).toHaveLength(0);
+    expect(overIt).toHaveLength(1);
+  });
+});
+
+describe('setKnowledgeTest', () => {
+  const writtenFor = (api: ApiStub, partyId: string) =>
+    api.patch.mock.calls[0][0].data.stakeholders.find((stakeholder: { externalId?: string }) => stakeholder.externalId === partyId);
+
+  it('writes the status, the date and the comment beside the marking', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.setKnowledgeTest(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      mockSecondaryCitizenPartyId,
+      { status: 'APPROVED', testedAt: '2026-10-02', comment: 'Provet togs i Sundsvall.' },
+      mockRes(),
+    );
+
+    expect(writtenFor(api, mockSecondaryCitizenPartyId).parameters).toEqual([
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_KNOWLEDGE_TEST', values: ['APPROVED'] },
+      { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-10-02'] },
+      { key: 'PBI_KNOWLEDGE_TEST_COMMENT', values: ['Provet togs i Sundsvall.'] },
+    ]);
+  });
+
+  it('lets a handler clear what was set, rather than storing a blank', async () => {
+    const tested = {
+      ...markedPbi,
+      parameters: [
+        { key: 'PBI', values: ['true'] },
+        { key: 'PBI_KNOWLEDGE_TEST', values: ['BOOKED'] },
+        { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-10-02'] },
+      ],
+    };
+    const { controller, api } = makeController([applicantCompany, tested]);
+
+    await controller.setKnowledgeTest(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { comment: '   ' }, mockRes());
+
+    expect(writtenFor(api, mockSecondaryCitizenPartyId).parameters).toEqual([{ key: 'PBI', values: ['true'] }]);
+  });
+
+  it('refuses to write the knowledge test of someone who is not marked on the errand', async () => {
+    const { controller, api } = makeController([applicantCompany]);
+
+    await expect(
+      controller.setKnowledgeTest(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { status: 'APPROVED' }, mockRes()),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a municipality other than its own', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+    const res = mockRes();
+
+    await controller.setKnowledgeTest(mockReq(), mockSupportErrandId, '1984', mockSecondaryCitizenPartyId, { status: 'APPROVED' }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('reads the knowledge test back onto the person', async () => {
+    const tested = {
+      ...markedPbi,
+      externalId: mockCitizenPartyId,
+      parameters: [
+        { key: 'PBI', values: ['true'] },
+        { key: 'PBI_KNOWLEDGE_TEST', values: ['RETAKE'] },
+        { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-10-10'] },
+        { key: 'PBI_KNOWLEDGE_TEST_COMMENT', values: ['Omprov bokat.'] },
+      ],
+    };
+    const { controller } = makeController([applicantCompany, tested]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as { people: object[] }).people[0]).toMatchObject({
+      knowledgeTest: 'RETAKE',
+      knowledgeTestDate: '2026-10-10',
+      knowledgeTestComment: 'Omprov bokat.',
+    });
+  });
+});
+
+describe('the examinations standing beside each other', () => {
+  const assessed = {
+    ...markedPbi,
+    parameters: [
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_ASSESSMENT', values: ['APPROVED'] },
+      { key: 'PBI_ASSESSMENT_COMMENT', values: ['Inget att anmärka.'] },
+    ],
+  };
+
+  const tested = {
+    ...markedPbi,
+    parameters: [
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_KNOWLEDGE_TEST', values: ['APPROVED'] },
+      { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-10-02'] },
+    ],
+  };
+
+  const keysWritten = (api: ApiStub) =>
+    api.patch.mock.calls[0][0].data.stakeholders
+      .find((stakeholder: { externalId?: string }) => stakeholder.externalId === mockSecondaryCitizenPartyId)
+      .parameters.map((parameter: { key: string }) => parameter.key);
+
+  it('leaves the verdict on the person standing when the knowledge test is written', async () => {
+    const { controller, api } = makeController([applicantCompany, assessed]);
+
+    await controller.setKnowledgeTest(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { status: 'FAILED' }, mockRes());
+
+    expect(keysWritten(api)).toEqual(['PBI', 'PBI_ASSESSMENT', 'PBI_ASSESSMENT_COMMENT', 'PBI_KNOWLEDGE_TEST']);
+  });
+
+  it('leaves the knowledge test standing when the verdict on the person is written', async () => {
+    const { controller, api } = makeController([applicantCompany, tested]);
+
+    await controller.assessPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { assessment: 'DEFICIENCY' }, mockRes());
+
+    expect(keysWritten(api)).toEqual(['PBI', 'PBI_KNOWLEDGE_TEST', 'PBI_KNOWLEDGE_TEST_DATE', 'PBI_ASSESSMENT']);
   });
 });

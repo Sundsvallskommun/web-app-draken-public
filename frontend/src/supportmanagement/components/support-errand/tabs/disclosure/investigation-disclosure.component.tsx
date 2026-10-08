@@ -8,6 +8,7 @@ import type {
 } from '../../../../../common/data-contracts/supportmanagement/data-contracts';
 import type { Sections } from '../../../../../supportmanagement/services/support-investigation-service';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
+import { SupportKnowledgeTestSection } from '../../knowledge-test/support-knowledge-test-section.component';
 import { SupportPersonalSuitabilitySection } from '../../personal-suitability/support-personal-suitability-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
 
@@ -22,6 +23,8 @@ export const SectionDisclosure: React.FC<{
   onFinancialEdited: (edited: boolean) => void;
   onFinancialSaved: (investigation: Investigation) => void;
   saveFinancial: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
+  onKnowledgeTestEdited: (edited: boolean) => void;
+  saveKnowledgeTest: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 }> = ({
   section,
   investigationId,
@@ -33,6 +36,8 @@ export const SectionDisclosure: React.FC<{
   onFinancialEdited,
   onFinancialSaved,
   saveFinancial,
+  onKnowledgeTestEdited,
+  saveKnowledgeTest,
 }) => {
   const { t } = useTranslation();
 
@@ -50,6 +55,9 @@ export const SectionDisclosure: React.FC<{
         onSaved={onFinancialSaved}
         saveRef={saveFinancial}
       />
+    ),
+    knowledge_test: (
+      <SupportKnowledgeTestSection writable={writable} onEdited={onKnowledgeTestEdited} saveRef={saveKnowledgeTest} />
     ),
   };
 
