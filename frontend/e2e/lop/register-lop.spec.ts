@@ -121,13 +121,13 @@ test.describe('register page', () => {
     expect(requestBody.priority).toBe('MEDIUM');
     expect(requestBody.description).toBe('<p>Mock description</p>');
     // Handler, status, resolution and suspension are no longer part of the errand PATCH; they are
-    // written by the dedicated admin and status commands instead.
+    // written by the dedicated admin and status commands instead. Parameters are not either: each
+    // is written on its own, and only when it changed.
     expect(requestBody).toEqual({
       businessRelated: false,
       externalTags: mockEmptySupportErrand.externalTags,
       labels: [labelCat, labelType],
       channel: 'PHONE',
-      parameters: [],
       priority: 'MEDIUM',
       stakeholders: [],
       description: '<p>Mock description</p>',

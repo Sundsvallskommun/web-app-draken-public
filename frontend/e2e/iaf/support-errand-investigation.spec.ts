@@ -2214,7 +2214,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       await expect(saveButton).toBeDisabled();
 
       await page.locator('[data-cy="self-assign-errand-button"]').click();
-      await expect(page.getByText('Handläggare tilldelades')).toBeVisible();
+      await expect(toast(page, 'Handläggare tilldelades')).toBeVisible();
 
       const priority = page.locator('[data-cy="priority-input"]');
       await expect(priority).toBeEnabled();

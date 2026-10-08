@@ -93,13 +93,13 @@ test.describe('register page', () => {
     ]);
     const body = request.postDataJSON();
     // Handler, status, resolution and suspension are no longer part of the errand PATCH; they are
-    // written by the dedicated admin and status commands instead.
+    // written by the dedicated admin and status commands instead. Parameters are not either: each
+    // is written on its own, and only when it changed.
     expect(body).toEqual({
       businessRelated: false,
       description: '<p>Mock description</p>',
       externalTags: mockEmptySupportErrand.externalTags,
       labels: mockLabelPath('BOU/CHILDCARE/INVOICES'),
-      parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
       stakeholders: [],
@@ -136,7 +136,6 @@ test.describe('register page', () => {
       contactReason: 'E-tjänst saknas',
       contactReasonDescription: 'Mock contact reason description',
       labels: mockLabelPath('IAF/ADULT_EDUCATION/SFI'),
-      parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
       stakeholders: [],

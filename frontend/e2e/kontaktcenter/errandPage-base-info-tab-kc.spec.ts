@@ -1016,17 +1016,6 @@ test.describe('Errand page', () => {
   });
 
   test('shows the correct estate information', async ({ page, mockRoute, dismissCookieConsent }) => {
-    const patchFacility = {
-      id: 123,
-      version: 1,
-      created: '2024-01-01',
-      updated: '2024-06-30',
-      description: 'beskrivning',
-      address: 'Adress1',
-      facilityCollectionName: 'name',
-      mainFacility: true,
-      facilityType: 'BOSTAD',
-    };
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'GET',
     });
@@ -1042,9 +1031,8 @@ test.describe('Errand page', () => {
       },
       { method: 'GET' }
     );
-    await mockRoute('**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', patchFacility, {
-      method: 'PATCH',
-    });
+    // The facility list is stored as three parameters, each written on its own route and only when it changed.
+    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/parameters/*', {}, { method: 'PUT' });
     await mockRoute('**/estateByPropertyDesignation/Balder%201', mockFacilitiesData, { method: 'GET' });
     await dismissCookieConsent();
 
@@ -1067,13 +1055,16 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testgatan 1');
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testdistrikt 1');
 
-    // Save — set the response waiter up before the click (waitForResponse only
-    // catches responses that arrive after it starts listening; the mocked
-    // saveFacilities response can land before a post-click await registers).
-    await Promise.all([
-      page.waitForResponse((resp) => resp.url().includes('saveFacilities') && resp.status() === 200),
+    // Save — set the request waiter up before the click: the mocked parameter writes can land before a
+    // post-click await registers. The street is the last of the three to be written.
+    const facilityParameterWrite = (key: string) => (request: { method(): string; url(): string }) =>
+      request.method() === 'PUT' && request.url().endsWith(`/parameters/${key}`);
+    const [propertyDesignationWrite] = await Promise.all([
+      page.waitForRequest(facilityParameterWrite('propertyDesignation')),
+      page.waitForRequest(facilityParameterWrite('street')),
       page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click(),
     ]);
+    expect(propertyDesignationWrite.postDataJSON().values).toHaveLength(1);
     await page.waitForResponse(
       (resp) => resp.url().includes('supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490') && resp.status() === 200
     );
