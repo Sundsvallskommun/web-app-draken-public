@@ -17,34 +17,25 @@ const variantPlacement = (owner: 'basics' | 'unavailable' | 'investigation'): Su
 
 test('resolves the categorization mode from the deployment flags', () => {
   assert.equal(
-    resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: false }),
+    resolveCategorizationMode({ useTwoLevelCategorization: true, useLabelCategorization: false }),
     'two-level'
   );
-  assert.equal(
-    resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: true }),
-    'three-level'
-  );
-  assert.equal(
-    resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: false }),
-    'none'
-  );
+  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: false, useLabelCategorization: true }), 'label');
+  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: false, useLabelCategorization: false }), 'none');
 });
 
 test('prefers the label-backed mode when a deployment sets both flags', () => {
   // The flags encode one choice, so both-true is a misconfiguration. Picking the
   // label-backed mode keeps a single control rather than rendering two.
-  assert.equal(
-    resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: true }),
-    'three-level'
-  );
+  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: true, useLabelCategorization: true }), 'label');
 });
 
 test('renders the two-level control for a two-level deployment', () => {
   assert.deepEqual(resolveCategorizationControl('two-level', defaultBasics), { kind: 'two-level' });
 });
 
-test('renders the three-level control for a three-level deployment', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', defaultBasics), { kind: 'three-level' });
+test('renders the label tree control for a label-categorized deployment', () => {
+  assert.deepEqual(resolveCategorizationControl('label', defaultBasics), { kind: 'label' });
 });
 
 test('renders nothing when no categorization is configured', () => {
@@ -52,7 +43,7 @@ test('renders nothing when no categorization is configured', () => {
 });
 
 test('defers to the variant while Grundinformation owns classification', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('basics')), {
+  assert.deepEqual(resolveCategorizationControl('label', variantPlacement('basics')), {
     kind: 'variant',
     disabled: false,
   });
@@ -61,14 +52,14 @@ test('defers to the variant while Grundinformation owns classification', () => {
 test('defers to the variant read-only when the capability is unavailable', () => {
   // Showing it disabled keeps a required field visible; hiding it would read as
   // "not required" while the errand still cannot be classified anywhere else.
-  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('unavailable')), {
+  assert.deepEqual(resolveCategorizationControl('label', variantPlacement('unavailable')), {
     kind: 'variant',
     disabled: true,
   });
 });
 
 test('renders nothing when the investigation document owns classification', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('investigation')), { kind: 'none' });
+  assert.deepEqual(resolveCategorizationControl('label', variantPlacement('investigation')), { kind: 'none' });
 });
 
 test('never renders a default-vocabulary control for a placement with its own label tree', () => {
@@ -81,5 +72,5 @@ test('never renders a default-vocabulary control for a placement with its own la
 test('renders nothing when a default placement is not owned by Grundinformation', () => {
   // Unreachable today: an application with no investigation variant resolves to owner "basics".
   // The guard keeps a future placement change from double-rendering the control.
-  assert.deepEqual(resolveCategorizationControl('three-level', { owner: 'investigation' }), { kind: 'none' });
+  assert.deepEqual(resolveCategorizationControl('label', { owner: 'investigation' }), { kind: 'none' });
 });

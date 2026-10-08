@@ -7,7 +7,6 @@ import {
   projectErrandTypeLabel,
   projectLabelCategory,
   projectMappedLabelSubType,
-  shouldProjectMappedLabelSubType,
 } from './support-label-classification-projector';
 
 const futureLabelTree = {
@@ -60,7 +59,6 @@ test('projects an explicit label-tree vocabulary independently of application se
   assert.equal(projectLabelCategory(errand, metadata, futureLabelTree)?.id, 'future-category');
   assert.equal(projectErrandTypeLabel(errand, metadata, futureLabelTree)?.id, 'future-category');
   assert.equal(projectMappedLabelSubType(errand, futureLabelTree)?.id, 'future-type');
-  assert.equal(shouldProjectMappedLabelSubType(false, futureLabelTree), true);
 });
 
 test('preserves legacy TYPE/SUBTYPE projection when no classification capability exists', () => {
@@ -78,8 +76,6 @@ test('preserves legacy TYPE/SUBTYPE projection when no classification capability
 
   assert.equal(projectErrandTypeLabel(errand, undefined, undefined)?.id, 'legacy-type');
   assert.equal(projectMappedLabelSubType(errand, undefined)?.id, 'legacy-subtype');
-  assert.equal(shouldProjectMappedLabelSubType(false, undefined), false);
-  assert.equal(shouldProjectMappedLabelSubType(true, undefined), true);
 });
 
 // SupportManagement returns label classifications lowercase-hyphenated ('report-type'), while the

@@ -1,4 +1,7 @@
+import { appConfig } from '@config/appconfig';
+import { useMetadataStore } from '@stores/index';
 import { basicsAcceptsClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { labelCategoryRequiresType } from '@supportmanagement/services/support-label-service';
 import * as yup from 'yup';
 
 /**
@@ -11,11 +14,20 @@ import * as yup from 'yup';
 const requiredWhenClassifiable = (message: string) =>
   yup.string().test('required-when-classifiable', message, (value) => !basicsAcceptsClassification() || !!value);
 
+/** In a label tree a category without types is a complete answer, so no type is asked of it. */
+const typeIsOptional = (category: string | undefined): boolean =>
+  appConfig.features.useLabelCategorization &&
+  !labelCategoryRequiresType(useMetadataStore.getState().supportMetadata, category);
+
 export const supportErrandFormSchema = yup
   .object({
     id: yup.string(),
     category: requiredWhenClassifiable('Välj ärendekategori'),
-    type: requiredWhenClassifiable('Välj ärendetyp'),
+    type: yup
+      .string()
+      .when('category', ([category], schema) =>
+        typeIsOptional(category) ? schema : requiredWhenClassifiable('Välj ärendetyp')
+      ),
     subType: yup.string().when('classificationHasSubTypes', {
       is: true,
       then: (schema) =>

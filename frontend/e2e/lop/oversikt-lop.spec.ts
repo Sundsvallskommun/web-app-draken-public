@@ -22,7 +22,8 @@ import { mockStatusGroupCounts } from '../utils/status-group-counts';
 test.describe('Overview errands lop', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+      // The proxy redirects protected routes to login without this cookie; it must be set for the host under test.
+      { name: 'connect.sid', value: 'test-session', domain: process.env.DOMAIN_NAME || 'localhost', path: '/' },
     ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -128,7 +129,9 @@ test.describe('Overview errands lop', () => {
     await mockRoute(/\/supporterrands\/2281\?page=0.*labelCategory.*/, mockFilteredCategoryErrands, { method: 'GET' });
     await page.locator('[data-cy="Verksamhet-filter"]').click();
     await page.locator('[data-cy^="Verksamhet-filter-"]').first().click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/2281?page=0') && resp.url().includes('labelCategory'));
+    await page.waitForResponse(
+      (resp) => resp.url().includes('supporterrands/2281?page=0') && resp.url().includes('labelCategory')
+    );
     await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
       mockFilteredCategoryErrands.content.length
     );
@@ -145,7 +148,9 @@ test.describe('Overview errands lop', () => {
     await mockRoute(/\/supporterrands\/2281\?page=0.*labelType.*/, mockFilteredCategoryErrands, { method: 'GET' });
     await page.locator('[data-cy="Ärendekategori-filter"]').click();
     await page.locator(`[data-cy="Ärendekategori-filter-${mockCategories[0].types[0].displayName}"]`).click();
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/2281?page=0') && resp.url().includes('labelType'));
+    await page.waitForResponse(
+      (resp) => resp.url().includes('supporterrands/2281?page=0') && resp.url().includes('labelType')
+    );
     await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(
       mockFilteredCategoryErrands.content.length
     );
@@ -287,7 +292,9 @@ test.describe('Overview errands lop', () => {
     await mockRoute('**/supporterrands/2281?page=0*', mockFilterAdminErrands, { method: 'GET' });
     await page.locator('[data-cy="query-filter"]').press('Enter');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/2281?page=0'));
-    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr').filter({ hasText: 'kctest2' }).first()).toBeVisible();
+    await expect(
+      page.locator('[data-cy="main-table"] .sk-table-tbody-tr').filter({ hasText: 'kctest2' }).first()
+    ).toBeVisible();
 
     await page.locator('[data-cy="query-filter"]').clear();
     await page.locator('[data-cy="query-filter"]').fill('search text');

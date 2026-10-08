@@ -9,8 +9,9 @@ export interface AppConfig {
 }
 
 export interface AppConfigFeatures {
-  useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
+  /** Categorization in the label tree (KS: DEPARTMENT > CATEGORY > TYPE, LOP: CATEGORY > TYPE > SUBTYPE). */
+  useLabelCategorization: boolean;
   useExplanationOfTheCause: boolean;
   useReasonForContact: boolean;
   useBusinessCase: boolean;
@@ -70,8 +71,11 @@ export const appConfig: AppConfig = {
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
-    useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
+    // NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION is the former name; drop it once every deployment uses the new one.
+    useLabelCategorization:
+      envBool(process.env.NEXT_PUBLIC_USE_LABEL_CATEGORIZATION) ||
+      envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
     useReasonForContact: envBool(process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT),
     useBusinessCase: envBool(process.env.NEXT_PUBLIC_USE_BUSINESS_CASE),
@@ -119,6 +123,12 @@ function resetAllFlagsToFalse() {
   });
 }
 
+/** Flags Adminpanelen may still serve under a former name, by the name they have now. */
+const RENAMED_FEATURE_FLAGS: Readonly<Record<string, keyof AppConfigFeatures>> = {
+  // The label tree replaced the three-level categorization; the environment variable keeps the same alias.
+  useThreeLevelCategorization: 'useLabelCategorization',
+};
+
 export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
   if (!flags || flags.length === 0) {
     return;
@@ -126,7 +136,9 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
 
   resetAllFlagsToFalse();
 
-  flags.forEach((flag) => {
+  flags.forEach((servedFlag) => {
+    const renamedTo = RENAMED_FEATURE_FLAGS[servedFlag.name];
+    const flag = renamedTo ? { ...servedFlag, name: renamedTo } : servedFlag;
     if (
       !(flag.name in appConfig.features) &&
       flag.name !== 'isCaseData' &&

@@ -129,8 +129,8 @@ export const getAllRelatedErrands = async (
 
   const seen = new Set<string>();
   const deduplicated = [...fromSource, ...fromTarget].filter((entry) => {
-    if (seen.has(entry.relation.id!)) return false;
-    seen.add(entry.relation.id!);
+    if (seen.has(entry.otherResourceId)) return false;
+    seen.add(entry.otherResourceId);
     return true;
   });
 
@@ -160,6 +160,8 @@ export interface ReferredFromErrandResponse {
   classificationCategoryDisplayName: string;
   classificationType: string;
   classificationTypeDisplayName: string;
+  classificationSubType: string;
+  classificationSubTypeDisplayName: string;
   priority: string;
   channel: string;
   created: string;

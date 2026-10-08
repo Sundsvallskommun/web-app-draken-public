@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/base.fixture';
 import { application, installAotApiMock } from './fixtures/aot-app.mock';
 
 /**
- * AOT är den minsta SupportManagement-draken: trenivåkategorisering, ärendeuppgifter och en
+ * AOT är den minsta SupportManagement-draken: etikettkategorisering, ärendeuppgifter och en
  * utredningsflik som ännu bara är en platshållare. Sviten finns för att avvikelsearbetet i IAF/VOF
  * ska märka direkt om det slår sönder en drake som inte är avvikelse.
  */

@@ -61,9 +61,9 @@ test.describe('Errand page', () => {
     const errandCategory = mockSupportErrand.labels.find((l) => l.classification === 'CATEGORY');
     const errandType = mockSupportErrand.labels.find((l) => l.classification === 'TYPE');
     const errandSubtype = mockSupportErrand.labels.find((l) => l.classification === 'SUBTYPE');
-    // labelCategory-input is a <select>; its options are hidden until opened, so
-    // assert the selected text via toContainText rather than option visibility.
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toContainText(errandCategory.displayName);
+    await expect(
+      page.locator(`[data-cy="labelCategory-input"][placeholder="${errandCategory.displayName}"]`)
+    ).toBeVisible();
     if (errandSubtype) {
       await expect(page.locator(`[data-cy="labelType-input"][placeholder="${errandSubtype.displayName}"]`)).toBeVisible();
     } else {
@@ -95,9 +95,12 @@ test.describe('Errand page', () => {
 
     // The errand keeps showing its own classification even though the label is deprecated, marked so
     // it reads as a leftover rather than a current option.
-    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
-    await expect(categorySelect).toHaveValue(deprecatedCategory.id);
-    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet (Utgått)' })).toHaveCount(1);
+    await expect(
+      page.locator('[data-cy="labelCategory-input"][placeholder="Utgangen verksamhet (Utgått)"]')
+    ).toBeVisible();
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Utgangen verksamhet (Utgått)', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
     // The type is not flagged itself; it counts as deprecated because its category is.
     await expect(
       page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedCategoryType.displayName} (Utgått)"]`)
@@ -113,8 +116,11 @@ test.describe('Errand page', () => {
     await page.keyboard.press('Escape');
 
     // Once another category is picked the deprecated one is gone for good.
-    await categorySelect.selectOption('Utgangstest');
-    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: 'Utgangstest', exact: true }).click();
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Utgangen verksamhet (Utgått)', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
   });
 
   test('marks a deprecated type under a category that is still active', async ({
@@ -142,9 +148,10 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
 
     // Only the deprecated level is marked — the category above it is still selectable.
-    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
-    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
-    await expect(categorySelect.locator('option', { hasText: 'Utgangstest (Utgått)' })).toHaveCount(0);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Utgangstest', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Utgangstest (Utgått)', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
     await expect(
       page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedType.displayName} (Utgått)"]`)
     ).toBeVisible();
@@ -199,7 +206,8 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
 
     // Change changeable values
-    await page.locator('[data-cy="labelCategory-input"]').selectOption('Elnät/Servanet');
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: 'Elnät/Servanet', exact: true }).click();
     // Wait for the editor to be populated with the original text before clearing,
     // otherwise the select-all/delete can race the async content load.
     const richtext = page.locator('[data-cy="errand-description-richtext-wrapper"]');
@@ -212,7 +220,7 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="channel-input"]').selectOption('Chatt');
 
     // Check changed values
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toContainText('Elnät/Servanet');
+    await expect(page.locator('[data-cy="labelCategory-input"][placeholder="Elnät/Servanet"]')).toBeVisible();
     await expect(page.locator('[data-cy="labelType-error"]').locator('*').filter({ hasText: 'Välj ärendetyp' })).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toContainText('En ändrad beskrivning');
     await expect(page.locator('[data-cy="channel-input"]')).toContainText('Chatt');
@@ -244,8 +252,8 @@ test.describe('Errand page', () => {
     const requestBody = request.postDataJSON();
 
     expect(requestBody.channel).toBe('CHAT');
-    expect(requestBody.classification.category).toBe('ELECTRICITY_SERVANET');
-    expect(requestBody.classification.type).toBe('ELECTRICITY_SERVANET/EMPLOYMENT');
+    // The categorization is the labels alone; the classification is left untouched.
+    expect(requestBody.classification).toBeUndefined();
 
     // Check label objects
     const postedCategory = requestBody.labels.find((l: any) => l.classification === 'CATEGORY');

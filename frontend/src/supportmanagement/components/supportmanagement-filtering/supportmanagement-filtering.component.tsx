@@ -132,7 +132,8 @@ const CategorizationFilters = ({ labelFilterState, selections, onChange }: Categ
       </Alert>
     );
   }
-  if (!appConfig.features.useThreeLevelCategorization) return null;
+  // Positional on the tree (getLabelsAtDepth): the three top levels.
+  if (!appConfig.features.useLabelCategorization) return null;
 
   return (
     <>

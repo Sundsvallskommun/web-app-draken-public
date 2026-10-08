@@ -8,10 +8,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { getInvestigationOverviewAssignee } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   Channels,
-  getLabelCategory,
   getLabelReportType,
-  getLabelSubType,
-  getLabelType,
   getMappedLabelSubType,
   Status,
   SupportErrand,
@@ -26,6 +23,7 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
+import { ErrandLabelCategoryCell, ErrandLabelTypeCell } from './support-errand-label-categorization-cells.component';
 
 /**
  * What the "Registrerad av" cell shows, in falling order of precision: the registrar's name from
@@ -121,9 +119,9 @@ export const useSupportErrandTable = (statuses: Status[]) => {
 
       render: (errand: SupportErrand) => (
         <div>
-          {appConfig.features.useThreeLevelCategorization ? (
+          {appConfig.features.useLabelCategorization ? (
             <div className="font-bold">
-              {getLabelDisplayName(getLabelCategory(errand, supportMetadata!), supportMetadata)}
+              <ErrandLabelCategoryCell errand={errand} metadata={supportMetadata} />
             </div>
           ) : null}
           {appConfig.features.useTwoLevelCategorization ? (
@@ -149,20 +147,17 @@ export const useSupportErrandTable = (statuses: Status[]) => {
           {/*
             An errand carrying a REPORT_TYPE label comes from the avvikelse tree, where the type is
             Avvikelse/Missforhallande and the level below it is the subcategory. That tree has no
-            SUBTYPE at all, so rendering CATEGORY/TYPE/SUBTYPE here left the errand type unshown and
-            the second line permanently empty. Keyed off the label the errand actually carries, so
-            every other deployment falls through to the three-level rendering unchanged.
+            SUBTYPE at all, so the label tree's own levels would leave the errand type unshown. Keyed
+            off the label the errand actually carries, so every other deployment falls through to the
+            label categorization rendering unchanged.
           */}
           {getLabelReportType(errand) ? (
             <div>
               <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
               <div>{getLabelDisplayName(getMappedLabelSubType(errand), supportMetadata)}</div>
             </div>
-          ) : appConfig.features.useThreeLevelCategorization ? (
-            <div>
-              <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
-              <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
-            </div>
+          ) : appConfig.features.useLabelCategorization ? (
+            <ErrandLabelTypeCell errand={errand} metadata={supportMetadata} />
           ) : null}
           {appConfig.features.useTwoLevelCategorization ? (
             <>

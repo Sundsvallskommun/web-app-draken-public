@@ -26,7 +26,7 @@ delad kod erbjuder:
   variant som låter sidomenyns Spara ärende spara sina dokument (`useErrandSaveParticipant`) ska kunna visa ett
   dokument som inte gick att spara, oavsett vilken flik handläggaren står på.
 - `renderNotice` — valfri notis ovanför flikraden, så ett trasigt tillstånd syns från vilken flik som helst.
-- `renderCategorizationControl` — valfri kategoriseringskontroll som ersätter de vanliga två-/trenivåkontrollerna.
+- `renderCategorizationControl` — valfri kategoriseringskontroll som ersätter den vanliga tvånivå- eller etikettkontrollen.
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
 - `renderDetailsHeader` — valfritt innehåll överst i Ärendeuppgifter, för kontroller som gäller hela ärendet (för

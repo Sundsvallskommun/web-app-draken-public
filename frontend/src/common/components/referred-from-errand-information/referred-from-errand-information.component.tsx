@@ -45,6 +45,13 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
     return null;
   }
 
+  const categorization = [
+    referredFromErrands[0]?.classificationCategoryDisplayName,
+    referredFromErrands[0]?.classificationTypeDisplayName,
+  ]
+    .filter(Boolean)
+    .join(' - ');
+
   return (
     <div className="py-16 px-24 flex bg-background-color-mixin-1 border rounded-button">
       <div className="flex flex-col gap-24">
@@ -52,7 +59,7 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
         <div className="flex flex-row gap-80">
           <div className="flex flex-col">
             <span className="font-bold text-small">Ärendetyp</span>
-            <span className="text-small">{referredFromErrands[0]?.classificationTypeDisplayName}</span>
+            <span className="text-small">{categorization}</span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-small">Ärendenummer</span>

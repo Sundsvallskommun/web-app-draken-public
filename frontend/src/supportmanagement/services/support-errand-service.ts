@@ -7,20 +7,24 @@ import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import { sanitized } from '@common/services/sanitizer-service';
-import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
-import { basicsAcceptsClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
+import {
+  basicsAcceptsClassification,
+  getSupportErrandClassificationPlacement,
+} from '@supportmanagement/investigation/investigation-classification-ownership';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { CErrandPhase, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
+import { categorizesByLabelPaths } from './label-path-categorization';
+import { getLegacyClassificationHeading, showsLegacyClassification } from './legacy-classification-service';
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { isSupportErrandEmpty } from './support-errand-emptiness';
 import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
@@ -36,8 +40,10 @@ import {
 } from './support-errand-status-transition';
 import { buildSupportErrandUpdateData } from './support-errand-update-data';
 import { SupportErrandStatusAfterAssignmentError, toStrongSupportErrandETag } from './support-errand-write-version';
-import { getMappedLabelSubType, shouldMapLabelSubType } from './support-label-classification-service';
+import { getMappedLabelSubType } from './support-label-classification-service';
+import { CATEGORIZATION_CLASSIFICATIONS, getLabelDisplayName } from './support-label-service';
 import { MessageRequest, sendMessage } from './support-message-service';
+import type { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { saveChangedErrandParameters } from './support-parameter-service';
 import { getActiveSupportPhaseId, getPhaseMainStatus, getSupportPhases } from './support-phase-service';
@@ -319,6 +325,24 @@ export {
   getLabelTypeFromName,
   getMappedLabelSubType,
 } from './support-label-classification-service';
+
+/** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
+export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
+  CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
+    errand.labels?.find((label) => label.classification === classification)
+  ).filter((label): label is Label => !!label);
+
+export const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
+
+/** Heading under label categorization: the deepest label (type, else category, else department). */
+export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
+  // LEGACY_CLASSIFICATION
+  if (showsLegacyClassification(errand)) {
+    return getLegacyClassificationHeading(errand, metadata);
+  }
+  const deepest = getCategorizationLabels(errand).at(-1);
+  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
+};
 
 export enum Resolution {
   SOLVED = 'SOLVED',
@@ -653,7 +677,7 @@ export const getSupportErrandByErrandNumber: (
 };
 
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) =>
-  isSupportErrandEmpty(errand, basicsAcceptsClassification());
+  isSupportErrandEmpty(errand, basicsAcceptsClassification(), categorizesByLabelPaths());
 
 // Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
 // and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
@@ -680,19 +704,27 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
-const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
+export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
+    const labelPath = (classification: string) =>
+      e.labels?.find((l) => l.classification === classification)?.resourcePath ?? '';
+    const classificationValue = (value?: string) => (value === 'NONE' ? '' : value) || '';
+    const placement = getSupportErrandClassificationPlacement();
+    const labelPathsCategorize = categorizesByLabelPaths(placement);
     const ierrand: SupportErrand = {
       ...e,
-      category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
-      type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
-      subType:
-        (shouldMapLabelSubType(appConfig.features.useThreeLevelCategorization)
-          ? (() => {
-              const subTypeLabel = getMappedLabelSubType(e);
-              return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
-            })()
-          : undefined) || '',
+      category: labelPathsCategorize
+        ? labelPath('CATEGORY') || labelPath('DEPARTMENT')
+        : classificationValue(e.classification?.category),
+      type: labelPathsCategorize ? labelPath('TYPE') : classificationValue(e.classification?.type),
+      subType: labelPathsCategorize
+        ? labelPath('SUBTYPE')
+        : (placement.labelTree
+            ? (() => {
+                const subTypeLabel = getMappedLabelSubType(e);
+                return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
+              })()
+            : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -1123,8 +1155,9 @@ export const forwardSupportErrand: (
   if (!data.recipient) {
     throw 'No recipient found. Cannot forward errand without recipient.';
   }
-  if (!data.message) {
-    throw 'No message found. Cannot forward errand without message.';
+  // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
+  if (data.recipient === 'EMAIL' && !data.message) {
+    throw 'No message found. Cannot forward errand by email without message.';
   }
 
   // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly

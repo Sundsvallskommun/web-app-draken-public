@@ -22,22 +22,24 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type HandoverStep = 1 | 2;
 
-/** Special value used in the target dropdown for the existing casedata (MEX) forward flow. */
-export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
+/** Target namespaces of the casedata forward flow (MEX and PT). Every other namespace uses the handover. */
+const CASEDATA_FORWARD_NAMESPACES = new Set(['SBK_MEX', 'SBK_PARKING_PERMIT']);
+
+export const isCasedataForwardTarget = (namespace?: string): boolean =>
+  !!namespace && CASEDATA_FORWARD_NAMESPACES.has(namespace);
 
 /**
  * TEMPORARY – per-namespace categorization model during the migration to labels.
  *
  * These namespaces still use TWO-level categorization (category/type) in the handover modal:
  *   - CONTACTCENTER     (Kontaktcenter)
- *   - CONTACTSUNDSVALL  (Kontakt Sundsvall)
  *   - ROB
- * Every other target namespace uses THREE-level categorization (labels).
+ * Every other target is categorized in its label tree; the BFF gives those errands their classification.
  *
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
  */
-const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
+const TWO_LEVEL_CATEGORIZATION_NAMESPACES = new Set(['CONTACTCENTER', 'ROB']);
 
 const defaultIncludes = (): HandoverInclude => ({
   stakeholders: true,
@@ -49,6 +51,9 @@ const defaultIncludes = (): HandoverInclude => ({
   escalationEmail: true,
   contactReasonDescription: true,
 });
+
+/** Nothing below the last picked label is left to pick. */
+const isCompletePath = (path: Label[]): boolean => path.length > 0 && (path.at(-1)?.labels?.length ?? 0) === 0;
 
 interface UseSupportHandoverArgs {
   errandId?: string;
@@ -71,6 +76,7 @@ export const useSupportHandover = ({
   active,
 }: UseSupportHandoverArgs) => {
   const [namespaceConfigs, setNamespaceConfigs] = useState<NamespaceConfig[]>([]);
+  const [targetsLoaded, setTargetsLoaded] = useState(false);
   const [step, setStep] = useState<HandoverStep>(1);
 
   const [previewCache, setPreviewCache] = useState<Record<string, HandoverPreview>>({});
@@ -78,12 +84,12 @@ export const useSupportHandover = ({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | undefined>(undefined);
 
-  // Target namespace metadata (categories + label tree), used for display names and three-level
-  // classification (cached per namespace).
+  // Target namespace metadata, cached per namespace.
   const [targetMetadata, setTargetMetadata] = useState<SupportMetadata | undefined>(undefined);
   const [metadataCache, setMetadataCache] = useState<Record<string, SupportMetadata>>({});
-  // The namespace currently being previewed – drives the categorization model (see below).
-  const [selectedNamespace, setSelectedNamespace] = useState<string>('');
+  // The target currently being previewed – drives the categorization model (see below).
+  const [selectedTarget, setSelectedTarget] = useState<NamespaceConfig | undefined>(undefined);
+  const selectedNamespace = selectedTarget?.namespace ?? '';
   // Mirror of the selected namespace for async guards (the state value is stale inside promise callbacks).
   const selectedNamespaceRef = useRef<string>('');
 
@@ -91,12 +97,8 @@ export const useSupportHandover = ({
   const [mappingCategory, setMappingCategory] = useState<string>('');
   const [mappingType, setMappingType] = useState<string>('');
   const [mappingContactReason, setMappingContactReason] = useState<string>('');
-  // Three-level classification: the labels chosen from the target namespace label tree.
-  const [threeLevelLabels, setThreeLevelLabels] = useState<Label[]>([]);
-
-  // Optional message added as an internal conversation on the new errand (markup + plaintext).
-  const [message, setMessage] = useState<string>('');
-  const [messageBodyPlaintext, setMessageBodyPlaintext] = useState<string>('');
+  // The path picked in the target's label tree, top down.
+  const [targetLabels, setTargetLabels] = useState<Label[]>([]);
 
   // Idempotency keys per target (`${municipality}:${namespace}`). A stable key is generated the first
   // time a target reaches step 2 and reused for every retry and whenever the user returns to that
@@ -107,21 +109,33 @@ export const useSupportHandover = ({
   const [handoverError, setHandoverError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (active && appConfig.features.useHandover && sourceMunicipalityId) {
-      getNamespaceConfigs(sourceMunicipalityId).then(setNamespaceConfigs);
+    // The casedata namespaces (MEX, PT) are targets too, so the list is needed even without useHandover.
+    const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
+    if (shouldLoadTargets) {
+      void getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
+        setNamespaceConfigs(configs);
+        setTargetsLoaded(true);
+      });
     }
   }, [active, sourceMunicipalityId]);
 
-  /** Target namespaces the errand can be handed over to (excluding the source namespace). */
+  /** Targets the errand can be handed over to, excluding the source namespace. Without useHandover
+   * only the casedata forward (MEX, PT) is available. */
   const handoverTargets = useMemo(
-    () => namespaceConfigs.filter((config) => config.namespace && config.namespace !== sourceNamespace),
+    () =>
+      namespaceConfigs.filter(
+        (config) =>
+          config.namespace &&
+          config.namespace !== sourceNamespace &&
+          (appConfig.features.useHandover || isCasedataForwardTarget(config.namespace))
+      ),
     [namespaceConfigs, sourceNamespace]
   );
 
   // TEMPORARY: the classification model is decided per target namespace. The namespaces in
   // TWO_LEVEL_CATEGORIZATION_NAMESPACES use category/type; every other namespace uses labels.
   // Remove this branch (always use labels) once the labels migration is complete.
-  const targetUsesLabels = !!selectedNamespace && !TWO_LEVEL_CATEGORIZATION_NAMESPACES.includes(selectedNamespace);
+  const targetUsesLabels = !!selectedNamespace && !TWO_LEVEL_CATEGORIZATION_NAMESPACES.has(selectedNamespace);
 
   const applyPreviewDefaults = useCallback((data: HandoverPreview) => {
     const mappingRequired = data.mappingRequired;
@@ -144,10 +158,8 @@ export const useSupportHandover = ({
     setHandoverError(undefined);
     setIdempotencyKeys({});
     setPreviewCache({});
-    setMessage('');
-    setMessageBodyPlaintext('');
-    setThreeLevelLabels([]);
-    setSelectedNamespace('');
+    setTargetLabels([]);
+    setSelectedTarget(undefined);
     selectedNamespaceRef.current = '';
   }, []);
 
@@ -158,17 +170,20 @@ export const useSupportHandover = ({
         return;
       }
       const namespace = target.namespace;
-      setSelectedNamespace(namespace);
+      if (namespace !== selectedNamespaceRef.current) {
+        setTargetLabels([]);
+      }
+      setSelectedTarget(target);
       selectedNamespaceRef.current = namespace;
       setPreviewError(undefined);
 
       // Load the target namespace metadata (cached) – used for display names (two-level) and the
-      // label tree (three-level classification). Fetched in parallel with the preview (not awaited).
+      // label tree (label categorization). Fetched in parallel with the preview (not awaited).
       const cachedMetadata = metadataCache[namespace];
       if (cachedMetadata) {
         setTargetMetadata(cachedMetadata);
       } else {
-        getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
+        void getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
           setMetadataCache((prev) => ({ ...prev, [namespace]: metadata }));
           // Ignore a result that resolved after the user switched to another target.
           if (selectedNamespaceRef.current === namespace) {
@@ -209,21 +224,12 @@ export const useSupportHandover = ({
 
   const buildRequest = useCallback(
     (target: NamespaceConfig): HandoverErrandRequest => {
-      // Three-level targets classify via the label tree. Mirror how a three-level errand is saved:
-      // classification holds the category/type *resourcePaths*, and labels holds the label UUIDs
-      // (category + type + optional subtype). Both are required by the backend.
-      const categoryLabel = threeLevelLabels.find((label) => label.classification === 'CATEGORY');
-      const typeLabel = threeLevelLabels.find((label) => label.classification === 'TYPE');
-      const classification = targetUsesLabels
-        ? categoryLabel && typeLabel
-          ? { category: categoryLabel.resourcePath, type: typeLabel.resourcePath }
-          : undefined
-        : mappingCategory || mappingType
-        ? { category: mappingCategory || undefined, type: mappingType || undefined }
-        : undefined;
-      const labels = targetUsesLabels
-        ? threeLevelLabels.map((label) => label.id).filter((id): id is string => !!id)
-        : [];
+      // Label targets get their classification from the BFF (the placeholder their new errands start with).
+      const classification =
+        !targetUsesLabels && (mappingCategory || mappingType)
+          ? { category: mappingCategory || undefined, type: mappingType || undefined }
+          : undefined;
+      const labels = targetUsesLabels ? targetLabels.map((label) => label.id).filter((id): id is string => !!id) : [];
 
       return {
         target: { namespace: target.namespace as string, municipalityId: sourceMunicipalityId },
@@ -247,13 +253,14 @@ export const useSupportHandover = ({
         },
       };
     },
-    [sourceMunicipalityId, targetUsesLabels, mappingCategory, mappingType, threeLevelLabels, mappingContactReason]
+    [sourceMunicipalityId, targetUsesLabels, mappingCategory, mappingType, targetLabels, mappingContactReason]
   );
 
-  /** Executes the handover. Returns the result on success (caller closes the modal like the MEX
-   * forward); on 4xx keeps step 2 and exposes the error. */
+  /** Executes the handover. `message` (markup) is added as an internal conversation on the new errand.
+   * Returns the result on success (caller closes the modal like the MEX forward); on 4xx keeps step 2
+   * and exposes the error. */
   const runHandover = useCallback(
-    async (target: NamespaceConfig): Promise<HandoverErrand | undefined> => {
+    async (target: NamespaceConfig, message: string): Promise<HandoverErrand | undefined> => {
       if (!errandId) {
         return undefined;
       }
@@ -270,15 +277,14 @@ export const useSupportHandover = ({
         setHandoverLoading(false);
       }
     },
-    [errandId, sourceMunicipalityId, buildRequest, idempotencyKeys, message]
+    [errandId, sourceMunicipalityId, buildRequest, idempotencyKeys]
   );
 
   /** True when every namespace-bound field that requires a decision has an answer. */
   const requiredMappingsAnswered = useMemo(() => {
     const mappingRequired = preview?.mappingRequired;
     if (targetUsesLabels) {
-      // Three-level requires at least category + type (the label tree sets them together).
-      if (threeLevelLabels.length < 2) {
+      if (!isCompletePath(targetLabels)) {
         return false;
       }
     } else {
@@ -295,11 +301,12 @@ export const useSupportHandover = ({
       return false;
     }
     return true;
-  }, [preview, targetUsesLabels, mappingCategory, mappingType, mappingContactReason, threeLevelLabels]);
+  }, [preview, targetUsesLabels, mappingCategory, mappingType, mappingContactReason, targetLabels]);
 
   return {
     namespaceConfigs,
     handoverTargets,
+    targetsLoaded,
     step,
     setStep,
     preview,
@@ -315,12 +322,8 @@ export const useSupportHandover = ({
     setMappingCategory,
     setMappingType,
     setMappingContactReason,
-    threeLevelLabels,
-    setThreeLevelLabels,
-    message,
-    messageBodyPlaintext,
-    setMessage,
-    setMessageBodyPlaintext,
+    targetLabels,
+    setTargetLabels,
     handoverLoading,
     handoverError,
     runPreview,

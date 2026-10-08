@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockCategories, mockMetaData } from './fixtures/mockMetadata';
+import { mockLabelPath, mockMetaData } from './fixtures/mockMetadata';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockEmptySupportErrand,
@@ -54,8 +54,8 @@ test.describe('register page', () => {
   });
 
   test('displays the support errand part of the register form', async ({ page }) => {
-    await expect(page.locator('[data-cy="category-input"]')).toBeVisible();
-    await expect(page.locator('[data-cy="type-input"]')).toBeVisible();
+    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
+    await expect(page.locator('[data-cy="labelType-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="contactReason-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="channel-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toBeVisible();
@@ -78,10 +78,10 @@ test.describe('register page', () => {
     await mockRoute('**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', patchFacility, {
       method: 'PATCH',
     });
-    const cat = mockCategories[0];
-    const typ = cat.types[0];
-    await page.locator('[data-cy="category-input"]').selectOption(cat.displayName);
-    await page.locator('[data-cy="type-input"]').selectOption(typ.displayName);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: 'Barnomsorg', exact: true }).click();
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await page.getByRole('option', { name: 'Fakturor', exact: true }).click();
     await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
     await page.keyboard.type('Mock description');
 
@@ -96,13 +96,9 @@ test.describe('register page', () => {
     // written by the dedicated admin and status commands instead.
     expect(body).toEqual({
       businessRelated: false,
-      classification: {
-        category: cat.name,
-        type: typ.name,
-      },
       description: '<p>Mock description</p>',
       externalTags: mockEmptySupportErrand.externalTags,
-      labels: [],
+      labels: mockLabelPath('BOU/CHILDCARE/INVOICES'),
       parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
@@ -117,10 +113,10 @@ test.describe('register page', () => {
     await mockRoute('**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', patchFacility, {
       method: 'PATCH',
     });
-    const cat = mockCategories[2];
-    const typ = cat.types[2];
-    await page.locator('[data-cy="category-input"]').selectOption(cat.displayName);
-    await page.locator('[data-cy="type-input"]').selectOption(typ.displayName);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: 'Vuxenutbildning', exact: true }).click();
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await page.getByRole('option', { name: 'SFI', exact: true }).click();
     await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
     await page.keyboard.type('Mock description');
     await page.locator('[data-cy="contactReason-input"]').selectOption('E-tjänst saknas');
@@ -136,14 +132,10 @@ test.describe('register page', () => {
     const body = request.postDataJSON();
     expect(body).toEqual({
       businessRelated: false,
-      classification: {
-        category: cat.name,
-        type: typ.name,
-      },
       externalTags: mockEmptySupportErrand.externalTags,
       contactReason: 'E-tjänst saknas',
       contactReasonDescription: 'Mock contact reason description',
-      labels: [],
+      labels: mockLabelPath('IAF/ADULT_EDUCATION/SFI'),
       parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',

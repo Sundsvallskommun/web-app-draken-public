@@ -4,6 +4,8 @@ import type { RegisterSupportErrandFormModel } from '@supportmanagement/interfac
 import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
 import type { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
+import { categorizesByLabelPaths } from './label-path-categorization';
+
 export const buildSupportErrandUpdateData = (
   formdata: Partial<RegisterSupportErrandFormModel>,
   stakeholders: SupportStakeholder[]
@@ -11,14 +13,16 @@ export const buildSupportErrandUpdateData = (
   // A deployment that hides "Om ärendet" has taken the categorization control off the page, so
   // Grundinformation neither shows a classification nor writes one back - otherwise "Spara ärende"
   // would keep resending values the user has no way of seeing or changing.
-  const basicsOwnsClassification =
-    !appConfig.features.hideAboutErrandSection && getSupportErrandClassificationPlacement().owner === 'basics';
+  const placement = getSupportErrandClassificationPlacement();
+  const basicsOwnsClassification = !appConfig.features.hideAboutErrandSection && placement.owner === 'basics';
   const data: Partial<SupportErrandDto> = {
     ...(formdata.title && { title: formdata.title }),
     ...(formdata.priority && {
       priority: formdata.priority,
     }),
+    // With label categorization the category/type fields hold label paths, not a classification.
     ...(basicsOwnsClassification &&
+      !categorizesByLabelPaths(placement) &&
       formdata.category &&
       formdata.type && {
         classification: {

@@ -11,7 +11,7 @@ import { AotInvestigationTab } from './aot-investigation-tab.component';
  * The AOT utredning: a tab, and nothing else yet.
  *
  * It supplies only the required slots. No `renderNotice`, no `renderCategorizationControl`, and a
- * placement with no `labelTree` - so Grundinformation keeps the ordinary two-/three-level
+ * placement with no `labelTree` - so Grundinformation keeps the ordinary two-level or label
  * categorization control that every drake outside IAF/VOF uses, and no classification policy is
  * consulted at all.
  *

@@ -322,7 +322,6 @@ describe('support-errand.service', () => {
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
       expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
     });
@@ -350,26 +349,41 @@ describe('support-errand.service', () => {
       expect(result.map(l => l.resourcePath)).toEqual(['SALARY', 'SALARY/UNCATEGORIZED']);
     });
 
-    it('fails closed instead of persisting a partial or ambiguous label path', () => {
-      expect(() =>
-        resolveDefaultLabels(structure, {
-          category: 'SALARY',
-          type: 'SALARY/UNCATEGORIZED',
-          subType: 'SALARY/UNCATEGORIZED/MISSING',
-        }),
-      ).toThrow('Registration label path SALARY/UNCATEGORIZED/MISSING resolved 0 times');
-      expect(() => resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/MISSING' })).toThrow(
-        'Registration label path SALARY/MISSING resolved 0 times',
-      );
-      expect(() => resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toThrow(
-        'Registration label path MISSING resolved 0 times',
-      );
-      expect(() => resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toThrow(
-        'Registration label path SALARY resolved 0 times',
-      );
-      expect(() => resolveDefaultLabels([...structure, ...structure], { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toThrow(
-        'Registration label path SALARY resolved 2 times',
-      );
+    it('falls back to the longest prefix that could be resolved', () => {
+      expect(
+        resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/MISSING' }).map(
+          l => l.resourcePath,
+        ),
+      ).toEqual(['SALARY', 'SALARY/UNCATEGORIZED']);
+      expect(resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/MISSING' }).map(l => l.resourcePath)).toEqual(['SALARY']);
+    });
+
+    it('returns an empty list when the category is missing or the structure is absent', () => {
+      expect(resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toEqual([]);
+      expect(resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toEqual([]);
+    });
+
+    it('starts at the department in trees that have one, matching paths relative to the root', () => {
+      const rooted = [
+        label('CATEGORIZATION_ROOT/KSK', [
+          label('CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED', [label('CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED/X')]),
+        ]),
+      ];
+
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' }).map(l => l.resourcePath)).toEqual([
+        'CATEGORIZATION_ROOT/KSK',
+        'CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED',
+      ]);
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/MISSING' }).map(l => l.resourcePath)).toEqual([
+        'CATEGORIZATION_ROOT/KSK',
+      ]);
+      expect(resolveDefaultLabels(rooted, { department: 'MISSING', category: 'KSK/NO_CASE_SPECIFIED' })).toEqual([]);
+    });
+
+    it('does not let a relative path match the middle of a segment', () => {
+      const rooted = [label('ROOT/NOTKSK', [label('ROOT/NOTKSK/A')])];
+
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/A' })).toEqual([]);
     });
   });
 

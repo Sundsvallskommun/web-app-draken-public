@@ -13,6 +13,7 @@ import {
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getInvestigationLimitedAccessNotice } from '@supportmanagement/investigation/investigation-variant-registry';
 import { markLimitedSupportErrandAccess } from '@supportmanagement/services/support-errand-access-service';
+import { getLabelCategorizedErrandHeading } from '@supportmanagement/services/support-errand-heading';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
@@ -20,7 +21,6 @@ import {
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
 import { getSupportNotesCount, getSupportServiceNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
@@ -62,6 +62,7 @@ export const SupportErrandComponent: FC = () => {
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
+  const initiatingErrand = useRef(false);
 
   const initialFocus = useRef<HTMLButtonElement>(null);
   const setInitialFocus = () => {
@@ -116,7 +117,8 @@ export const SupportErrandComponent: FC = () => {
           });
         });
     } else if (!registrationBlocked && !registrationForm) {
-      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
+      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !initiatingErrand.current) {
+        initiatingErrand.current = true;
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
@@ -127,6 +129,7 @@ export const SupportErrandComponent: FC = () => {
           )
           .catch((e) => {
             console.error('Error when initiating errand:', e);
+            initiatingErrand.current = false;
             setIsLoading(false);
             toastMessage({
               position: 'bottom',
@@ -214,8 +217,8 @@ export const SupportErrandComponent: FC = () => {
                       {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useThreeLevelCategorization
-                              ? getErrandTypeLabel(supportErrand, supportMetadata)?.displayName ?? '(Ärendetyp saknas)'
+                            {appConfig.features.useLabelCategorization
+                              ? getLabelCategorizedErrandHeading(supportErrand!, supportMetadata)
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>

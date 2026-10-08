@@ -8,7 +8,7 @@ import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
-import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
+import { getLabelCategorizedErrandHeading } from '@supportmanagement/services/support-errand-heading';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -75,8 +75,8 @@ export default function Layout({ title, children }: { title: string; children: R
               actions={supportErrand?.actions ?? []}
             />
             <span className="font-bold ml-8">
-              {appConfig.features.useThreeLevelCategorization
-                ? getErrandTypeLabel(supportErrand, supportMetadata)?.displayName ?? '(Ärendetyp saknas)'
+              {appConfig.features.useLabelCategorization
+                ? supportErrand && getLabelCategorizedErrandHeading(supportErrand, supportMetadata)
                 : supportMetadata?.categories
                     ?.find((t) => t.name === supportErrand?.category)
                     ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||

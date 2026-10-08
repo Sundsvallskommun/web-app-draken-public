@@ -20,15 +20,16 @@ async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>
 }
 
 test.describe('AOT:s ärendesida', () => {
-  test('kategoriserar i Grundinformation med den vanliga trenivåkontrollen', async ({ page, dismissCookieConsent }) => {
+  test('kategoriserar i Grundinformation med den vanliga etikettkontrollen', async ({ page, dismissCookieConsent }) => {
     await installAotApiMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
     const basics = page.locator('[role="tabpanel"]:visible');
 
-    await expect(basics.locator('[data-cy="labelCategory-input"]')).toBeVisible();
-    await expect(basics.locator('[data-cy="labelCategory-input"]')).toContainText(aotLabelFixture.category.displayName);
+    await expect(
+      basics.locator(`[data-cy="labelCategory-input"][placeholder="${aotLabelFixture.category.displayName}"]`)
+    ).toBeVisible();
     // Combobox-platshållaren visar den djupaste valda nivån, så subtypen här bevisar att hela
     // trenivåkedjan lästes ur ärendets etiketter.
     await expect(

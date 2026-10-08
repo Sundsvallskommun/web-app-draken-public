@@ -171,7 +171,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'isSupportManagement', enabled: true },
         { name: 'useDetailsTab', enabled: true },
         { name: 'useTwoLevelCategorization', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
         { name: 'useAvvikelseInvestigation', enabled: true },
         { name: 'hideAboutErrandSection', enabled: true },
@@ -1139,7 +1139,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
         { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: false },
         { name: 'useAvvikelseInvestigation', enabled: true },
       ],
@@ -1177,7 +1177,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
   // The complement of the test above, and the case a new drake hits: the master switch is on, but
   // no capability claims the investigation. The tab must disappear *and* Grundinformation must fall
-  // back to the ordinary three-level control - not to the avvikelse one, and not to nothing.
+  // back to the ordinary label categorization - not to the avvikelse one, and not to nothing.
   test('lämnar kategoriseringen orörd när ingen utredningskapabilitet är påslagen', async ({
     page,
     dismissCookieConsent,
@@ -1187,7 +1187,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
         { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
         { name: 'useAvvikelseInvestigation', enabled: false },
       ],
@@ -1212,7 +1212,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
         { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
         { name: 'useAvvikelseInvestigation', enabled: false },
         { name: 'useAotInvestigation', enabled: true },

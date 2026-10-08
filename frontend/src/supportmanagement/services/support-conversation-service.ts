@@ -222,12 +222,18 @@ export const getOrCreateSupportConversationId = async (
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' || contactMeans === 'katla' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
+  // Only Draken answers on an errand relation. Katla is answered without one even when the errand happens to have
+  // one: a linked errand is picked for Draken and that choice is kept in the form, so reading it for any other contact
+  // means would quietly tie that thread to whatever errand was linked last.
+  const selectedEntry =
+    contactMeans === 'draken'
+      ? relationErrands.find((entry) => entry.otherResourceId === selectedRelationId)
+      : undefined;
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
+    (conv: any) => conv.type === 'INTERNAL' && conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
   );
   // Katla's thread is the internal conversation that is tied to no errand relation at all, which
   // is why it cannot be found by relation id like the others. Finding it is what keeps one thread
@@ -255,10 +261,7 @@ export const getOrCreateSupportConversationId = async (
   }
 
   if (!conversationId) {
-    // Katla is answered without a relation even when the errand happens to have one: a linked
-    // errand is picked for Draken and that choice is kept in the form, so reading it here would
-    // quietly tie Katla's thread to whatever errand was linked last.
-    const relation = contactMeans === 'draken' ? selectedEntry : undefined;
+    const relation = selectedEntry;
     let topic;
     if (conversationType === 'EXTERNAL') {
       topic = `Mina sidor`;

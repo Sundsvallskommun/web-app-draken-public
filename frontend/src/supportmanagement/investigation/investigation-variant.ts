@@ -152,7 +152,7 @@ export interface InvestigationVariantModule {
    */
   renderNotice?: () => ReactNode;
   /**
-   * The categorization control Grundinformation renders in place of the default two-/three-level
+   * The categorization control Grundinformation renders in place of the default two-level or label
    * ones. Required exactly when \`resolveClassificationPlacement\` returns a placement carrying a
    * \`labelTree\`: a variant bringing its own vocabulary must also bring the control that edits it.
    * A variant categorizing from the default tree omits this and gets the ordinary controls.
@@ -208,7 +208,7 @@ export const findHeldPhaseEntryRequirement = (
  * Implementations are mutually exclusive, but two flags being on is representable and is a
  * configuration error. First-wins keeps that error deterministic instead of dependent on
  * registration order luck - the same normalisation `resolveCategorizationMode` applies to the
- * two-/three-level pair.
+ * two-level and label pair.
  *
  * The concrete list lives in `investigation-variant-registry.ts`; keeping it out of this module is
  * what lets the selection rules be unit-tested without pulling in every variant's React tree.

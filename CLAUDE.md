@@ -37,8 +37,8 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   not spread into investigation logic. `isIAFOrVOF()` survives in `support-errand.component.tsx`
   for the summary panel; do not extend it.
 - **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
-  `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
-  level categorization exactly as every other drake sees it, and one without `renderDetailsHeader`
+  `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-level or
+  label categorization exactly as every other drake sees it, and one without `renderDetailsHeader`
   leaves Ärendeuppgifter untouched. AOT is precisely that case. The same
   holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, always offered once the errand
   is in the decision phase. It shows the decision document that applies to the errand (the lex Sarah

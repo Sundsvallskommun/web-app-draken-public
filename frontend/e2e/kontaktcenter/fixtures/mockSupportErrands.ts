@@ -1,4 +1,5 @@
 import { mockEnv } from '../../fixtures/mock-env';
+import { mockLabelPath } from './mockMetadata';
 
 export const mockEmptySupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
@@ -79,6 +80,17 @@ export const mockSupportErrand = {
     category: 'IAF',
     type: 'ADULT_EDUCATION',
   },
+  // The BFF passes the errand's labels through untouched, so the ROOT label the tree omits is still here.
+  labels: [
+    {
+      id: 'label-root',
+      classification: 'ROOT',
+      displayName: 'Kategorisering',
+      resourcePath: 'CATEGORIZATION_ROOT',
+      resourceName: 'CATEGORIZATION_ROOT',
+    },
+    ...mockLabelPath('IAF/ADULT_EDUCATION/SFI'),
+  ],
   status: 'ONGOING',
   reporterUserId: 'kctest',
   assignedUserId: 'kctest',

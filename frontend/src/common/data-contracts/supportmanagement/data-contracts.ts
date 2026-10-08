@@ -243,6 +243,8 @@ export interface Label {
    * @minLength 1
    */
   classification: string;
+  /** Display name for the label classification (the level in the label tree) */
+  classificationDisplayName?: string;
   /** Display name for the label */
   displayName?: string;
   /** Resource path */

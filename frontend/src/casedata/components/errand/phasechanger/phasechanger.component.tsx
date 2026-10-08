@@ -1,5 +1,6 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -21,7 +22,7 @@ import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
@@ -44,6 +45,8 @@ export const PhaseChanger = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<{ admin: string }, any, undefined> = useForm();
+  const { watch: watchErrandForm } = useFormContext<IErrand>();
+  const formStakeholders = watchErrandForm('stakeholders');
 
   const [phaseChangeText, setPhaseChangeText] = useState<{
     icon: IconName;
@@ -161,9 +164,9 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
+        void getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        triggerErrandPhaseChange(municipalityId, errand!);
+        void triggerErrandPhaseChange(municipalityId, errand!);
         pollDisplayPhase();
       })
       .catch(() => {
@@ -206,6 +209,11 @@ export const PhaseChanger = () => {
 
   if (!errand) return null;
 
+  // The PT process only leaves Registrerad once the errand has an ärendeägare; without one it silently
+  // keeps waiting. Stakeholders added in the form count, since the errand is saved before the phase change.
+  const activeStakeholders = (formStakeholders ?? errand.stakeholders).filter((stakeholder) => !stakeholder.removed);
+  const ownerMissingForStart = !validateStakeholdersForDecision({ ...errand, stakeholders: activeStakeholders }).valid;
+
   return phaseChangeInProgress(errand) ? (
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>
       Fasbyte pågår
@@ -215,6 +223,15 @@ export const PhaseChanger = () => {
       variant="primary"
       color="vattjom"
       onClick={async () => {
+        if (ownerMissingForStart) {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Ärendet saknar ärendeägare. Lägg till en ärendeägare innan du startar handläggningen.',
+            status: 'error',
+          });
+          return;
+        }
         setValue('admin', user.username);
         await errandSave();
         handleSubmit(onSave, onError)();

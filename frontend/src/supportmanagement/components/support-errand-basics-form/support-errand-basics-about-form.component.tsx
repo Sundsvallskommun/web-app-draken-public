@@ -20,7 +20,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
-import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { LabelCategorization } from './LabelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
 export const SupportErrandBasicsAboutForm: FC<{
@@ -74,9 +74,9 @@ export const SupportErrandBasicsAboutForm: FC<{
         </div>
       ) : null}
 
-      {categorizationControl.kind === 'three-level' ? (
+      {categorizationControl.kind === 'label' ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          <LabelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
         </div>
       ) : null}
 

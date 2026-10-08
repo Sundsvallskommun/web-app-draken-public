@@ -3,7 +3,7 @@ import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, ValidateNested } fr
 import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { SUPPORTMANAGEMENT_CATEGORIZATION_ROOT, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Category as ICategory,
@@ -23,6 +23,7 @@ import {
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { withCategorizationLabels } from '@/utils/categorization-labels';
 
 class Type implements IType {
   @IsString()
@@ -352,7 +353,7 @@ export class SupportMetadataController {
   ): Promise<IMetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<IMetadataResponse>({ url }, req.user);
-    return response.status(200).send(res.data);
+    return response.status(200).send(withCategorizationLabels(res.data, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT));
   }
 
   @Get('/supportmetadata/:municipalityId/roles')

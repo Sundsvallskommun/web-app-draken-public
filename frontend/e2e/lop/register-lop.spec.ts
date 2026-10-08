@@ -19,7 +19,8 @@ import {
 test.describe('register page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+      // The proxy redirects protected routes to login without this cookie; it must be set for the host under test.
+      { name: 'connect.sid', value: 'test-session', domain: process.env.DOMAIN_NAME || 'localhost', path: '/' },
     ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -38,12 +39,16 @@ test.describe('register page', () => {
     await mockRoute('**/supporterrands/2281?page=1*', mockSupportErrandsEmpty, { method: 'GET' });
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
-    await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, { method: 'PATCH' });
+    await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, {
+      method: 'PATCH',
+    });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
-    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
+    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
+      method: 'GET',
+    });
     await page.goto('registrera');
     await dismissCookieConsent();
   });
@@ -57,14 +62,12 @@ test.describe('register page', () => {
   });
 
   test('does not offer deprecated labels when registering a new errand', async ({ page }) => {
-    // labelCategory-input is a <select> whose options stay hidden until opened, so count the option
-    // elements instead of asserting on their visibility.
-    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
     // The category itself is deprecated, so neither it nor anything below it may be picked.
-    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
-    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Utgangen verksamhet', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('option', { name: 'Utgangstest', exact: true })).toBeVisible();
 
-    await categorySelect.selectOption('Utgangstest');
+    await page.getByRole('option', { name: 'Utgangstest', exact: true }).click();
     await page.locator('[data-cy="labelType-wrapper"]').click();
     await expect(page.getByRole('option', { name: 'Aktiv typ', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Utgangen typ', exact: true })).toHaveCount(0);
@@ -92,7 +95,8 @@ test.describe('register page', () => {
     expect(labelType).toBeDefined();
     expect(labelType?.displayName).toBeDefined();
 
-    await page.locator('[data-cy="labelCategory-input"]').selectOption(labelCat!.displayName!);
+    await page.locator('[data-cy="labelCategory-wrapper"]').click();
+    await page.getByRole('option', { name: labelCat!.displayName!, exact: true }).click();
     await page.locator('[data-cy="labelType-wrapper"]').click();
     await page.getByRole('option', { name: labelType!.displayName!, exact: true }).click();
     await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
@@ -100,7 +104,8 @@ test.describe('register page', () => {
 
     const [response] = await Promise.all([
       page.waitForResponse(
-        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
+        (resp) =>
+          resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
       ),
       page.locator('[data-cy="save-button"]').click(),
     ]);
@@ -108,8 +113,8 @@ test.describe('register page', () => {
     const request = response.request();
     const requestBody = request.postDataJSON();
 
-    expect(requestBody.classification.category).toBe(labelCat!.resourcePath!);
-    expect(requestBody.classification.type).toBe(labelType!.resourcePath!);
+    // The categorization is the labels alone; no classification is sent.
+    expect(requestBody.classification).toBeUndefined();
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelCat!.resourcePath!);
     expect(requestBody.labels.map((label: any) => label.resourcePath)).toContain(labelType!.resourcePath!);
     expect(requestBody.channel).toBe('PHONE');
@@ -119,10 +124,6 @@ test.describe('register page', () => {
     // written by the dedicated admin and status commands instead.
     expect(requestBody).toEqual({
       businessRelated: false,
-      classification: {
-        category: labelCat?.resourcePath,
-        type: labelType?.resourcePath,
-      },
       externalTags: mockEmptySupportErrand.externalTags,
       labels: [labelCat, labelType],
       channel: 'PHONE',

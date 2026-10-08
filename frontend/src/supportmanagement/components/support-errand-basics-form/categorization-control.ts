@@ -1,16 +1,16 @@
 import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/classification-placement';
 
-export type CategorizationMode = 'two-level' | 'three-level' | 'none';
+export type CategorizationMode = 'two-level' | 'label' | 'none';
 
 export interface CategorizationFeatureFlags {
   readonly useTwoLevelCategorization: boolean;
-  readonly useThreeLevelCategorization: boolean;
+  readonly useLabelCategorization: boolean;
 }
 
 export type CategorizationControl =
   | { readonly kind: 'none' }
   | { readonly kind: 'two-level' }
-  | { readonly kind: 'three-level' }
+  | { readonly kind: 'label' }
   | { readonly kind: 'variant'; readonly disabled: boolean };
 
 /**
@@ -20,9 +20,9 @@ export type CategorizationControl =
  */
 export const resolveCategorizationMode = ({
   useTwoLevelCategorization,
-  useThreeLevelCategorization,
+  useLabelCategorization,
 }: CategorizationFeatureFlags): CategorizationMode => {
-  if (useThreeLevelCategorization) return 'three-level';
+  if (useLabelCategorization) return 'label';
   if (useTwoLevelCategorization) return 'two-level';
   return 'none';
 };
@@ -44,7 +44,7 @@ export const resolveCategorizationControl = (
     // The investigation document owns the control when it is active. While the
     // capability is unavailable the control stays visible but read-only, so a
     // required field is never silently absent.
-    if (mode !== 'three-level' || placement.owner === 'investigation') return { kind: 'none' };
+    if (mode !== 'label' || placement.owner === 'investigation') return { kind: 'none' };
     return { kind: 'variant', disabled: placement.owner === 'unavailable' };
   }
 

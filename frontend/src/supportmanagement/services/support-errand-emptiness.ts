@@ -1,3 +1,6 @@
+/** Whether a classification category is set; `NONE` is how an errand without one is registered. */
+export const hasClassificationCategory = (category: string | undefined): boolean => !!category && category !== 'NONE';
+
 /** The parts of an errand that decide whether it is still an unfinished registration. */
 export interface SupportErrandEmptinessInput {
   readonly id?: string;
@@ -19,10 +22,14 @@ export interface SupportErrandEmptinessInput {
  */
 export const isSupportErrandEmpty = (
   errand: SupportErrandEmptinessInput | undefined | null,
-  basicsAcceptsClassification: boolean
+  basicsAcceptsClassification: boolean,
+  categorizesByLabelPaths = false
 ): boolean => {
   if (!errand?.id) return true;
   if (!basicsAcceptsClassification) return false;
+  // In a label tree the category field holds the label path. An errand from before the tree, which carries only a
+  // classification, still counts as categorized (LEGACY_CLASSIFICATION).
+  if (categorizesByLabelPaths) return !errand.category && !hasClassificationCategory(errand.classification?.category);
 
   return (
     !errand.classification ||

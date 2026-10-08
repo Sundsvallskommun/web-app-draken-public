@@ -105,21 +105,21 @@ test('the master switch gates a non-avvikelse variant the same way', () => {
 
 /**
  * The load-bearing one. A variant that does not bring its own label tree must leave Grundinformation
- * exactly as it is for every other drake - the ordinary two-/three-level control, chosen by the
+ * exactly as it is for every other drake - the ordinary two-level or label control, chosen by the
  * deployment flags alone. If avvikelse's vocabulary had leaked into the seam, this would come back
  * as 'variant' or 'none'.
  */
 test('a variant without its own label tree leaves the ordinary categorization control in place', () => {
   const placement = minimalVariant.resolveClassificationPlacement(null);
 
-  assert.deepEqual(resolveCategorizationControl('three-level', placement), { kind: 'three-level' });
+  assert.deepEqual(resolveCategorizationControl('label', placement), { kind: 'label' });
   assert.deepEqual(resolveCategorizationControl('two-level', placement), { kind: 'two-level' });
 });
 
 test('a variant with its own label tree takes over the categorization control', () => {
   const placement = ownVocabularyVariant.resolveClassificationPlacement(null);
 
-  assert.deepEqual(resolveCategorizationControl('three-level', placement), { kind: 'variant', disabled: false });
+  assert.deepEqual(resolveCategorizationControl('label', placement), { kind: 'variant', disabled: false });
 });
 
 /**
@@ -134,10 +134,7 @@ test('a variant decides where classification is persisted', () => {
 
   assert.equal(minimalVariant.resolveClassificationPlacement(null).owner, 'basics');
   assert.equal(investigationOwned.resolveClassificationPlacement(null).owner, 'investigation');
-  assert.deepEqual(
-    resolveCategorizationControl('three-level', investigationOwned.resolveClassificationPlacement(null)),
-    {
-      kind: 'none',
-    }
-  );
+  assert.deepEqual(resolveCategorizationControl('label', investigationOwned.resolveClassificationPlacement(null)), {
+    kind: 'none',
+  });
 });

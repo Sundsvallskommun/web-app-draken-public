@@ -43,6 +43,7 @@ import {
   mockOrganizationNumber,
   mockOrganizationNumberDigits,
   mockOrganizationPartyId,
+  mockParkingPermitDepartment,
   mockPersonNumber,
   mockRelationId,
   mockSecondaryCitizenPartyId,
@@ -1568,6 +1569,14 @@ describe('SupportErrandController', () => {
   describe('forwardSupportErrand', () => {
     const forwardBody = { department: mockDepartment, message: 'Vidarebefordras', messageBodyPlaintext: '' };
 
+    beforeEach(() => {
+      process.env.HANDOVER_TARGETS = mockDepartment;
+    });
+
+    afterEach(() => {
+      delete process.env.HANDOVER_TARGETS;
+    });
+
     const supportErrand = (overrides: Partial<SupportErrand> = {}): SupportErrand =>
       ({
         id: mockSupportErrandId,
@@ -1597,6 +1606,35 @@ describe('SupportErrandController', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body).toBe('Errand id missing');
+      expect(api.get).not.toHaveBeenCalled();
+    });
+
+    it('rejects the forward with 403 when MEX is not in HANDOVER_TARGETS', async () => {
+      process.env.HANDOVER_TARGETS = mockSupportNamespace;
+      const { controller, api } = makeController();
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
+
+      expect(res.statusCode).toBe(403);
+      expect(api.get).not.toHaveBeenCalled();
+      expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('rejects a department that is not a casedata namespace with 403 even when it is allow-listed', async () => {
+      process.env.HANDOVER_TARGETS = `${mockDepartment},${mockSupportNamespace}`;
+      const { controller, api } = makeController();
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { ...forwardBody, department: mockSupportNamespace },
+        res,
+      );
+
+      expect(res.statusCode).toBe(403);
       expect(api.get).not.toHaveBeenCalled();
     });
 
@@ -1631,6 +1669,40 @@ describe('SupportErrandController', () => {
       expect(config.data.stakeholders).toEqual([expect.objectContaining({ type: 'PERSON', firstName: mockFirstName, lastName: mockLastName })]);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({ id: mockCasedataErrandId, errandNumber: mockCasedataErrandNumber });
+    });
+
+    it.each([
+      ['MEX', mockDepartment, 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL'],
+      ['PT', mockParkingPermitDepartment, 'PARATRANSIT_FROM_KS'],
+    ])('creates the %s errand in its namespace with its forwarded-from-KS case type', async (_, department, caseType) => {
+      process.env.HANDOVER_TARGETS = department;
+      const { controller, api } = makeController();
+      routeGets(api, supportErrand());
+      api.post.mockResolvedValue({ data: { id: mockCasedataErrandId, errandNumber: mockCasedataErrandNumber }, message: 'success' });
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { ...forwardBody, department }, res);
+
+      const [config] = api.post.mock.calls[0];
+      expect(config.url).toBe(`${MUNICIPALITY_ID}/${department}/errands`);
+      expect(config.data.caseType).toBe(caseType);
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('rejects PT with 403 when only MEX is in HANDOVER_TARGETS', async () => {
+      const { controller, api } = makeController();
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { ...forwardBody, department: mockParkingPermitDepartment },
+        res,
+      );
+
+      expect(res.statusCode).toBe(403);
+      expect(api.get).not.toHaveBeenCalled();
     });
 
     it('prefers the organizationNumber parameter over a Legal Entity lookup', async () => {

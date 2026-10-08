@@ -10,7 +10,6 @@ import {
   projectErrandTypeLabel,
   projectLabelCategory,
   projectMappedLabelSubType,
-  shouldProjectMappedLabelSubType,
   type SupportErrandLabelSource,
 } from './support-label-classification-projector';
 import type { SupportMetadata } from './support-metadata-service';
@@ -50,11 +49,6 @@ export const getMappedLabelSubType = (
   errand: SupportErrandLabelSource | undefined,
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
 ): Label | undefined => projectMappedLabelSubType(errand, placement.labelTree);
-
-export const shouldMapLabelSubType = (
-  legacyThreeLevelCategorization: boolean,
-  placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
-): boolean => shouldProjectMappedLabelSubType(legacyThreeLevelCategorization, placement.labelTree);
 
 const findLabelByClassificationAndResource = (
   metadata: SupportMetadata,

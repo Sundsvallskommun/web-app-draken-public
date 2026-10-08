@@ -34,11 +34,11 @@ export const APIS = [
   },
   {
     name: 'case-data',
-    version: '13.0',
+    version: '14.0',
   },
   {
     name: 'supportmanagement',
-    version: '15.1',
+    version: '15.2',
     // Runtime transport target only. The Support Management contract is generated
     // from the sprint API below, which phases, measures and errand access are built
     // against; the sprint API extends this one.

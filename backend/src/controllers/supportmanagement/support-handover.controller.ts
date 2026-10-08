@@ -21,9 +21,17 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import {
+  getAllowedHandoverTargets,
+  getCasedataForwardTarget,
+  getLabelTarget,
+  isAllowedHandoverTarget,
+  isCasedataForwardTarget,
+} from '@/services/handover-targets.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { withCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -140,17 +148,33 @@ export class SupportHandoverController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<NamespaceConfig[]> {
+    const allowedTargets = getAllowedHandoverTargets();
+    if (allowedTargets.length === 0) {
+      return response.status(200).send([]);
+    }
     // SupportManagement NamespaceConfigResource lists configs at the service root with municipalityId
     // as a query parameter: GET /namespace-configs?municipalityId={id} (not a path segment).
+    // Casedata forward targets (MEX, PT) have no supportmanagement namespace config, so theirs is built here.
+    const needsNamespaceConfigs = allowedTargets.some(target => !isCasedataForwardTarget(target));
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
-    const res = await this.apiService.get<NamespaceConfig[]>({ url }, req.user);
-    // Exclude the source namespace – an errand can not be handed over to the namespace it is in.
-    const targets = (res.data ?? []).filter(config => config.namespace !== this.namespace);
+    const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
+    const toNamespaceConfig = (target: string): NamespaceConfig | undefined => {
+      const forwardTarget = getCasedataForwardTarget(target);
+      if (forwardTarget) {
+        const { namespace, displayName, shortCode } = forwardTarget;
+        return { namespace, displayName, shortCode, municipalityId };
+      }
+      return configs.find(config => config.namespace === target);
+    };
+    const targets = allowedTargets
+      .filter(target => target !== this.namespace)
+      .map(toNamespaceConfig)
+      .filter((config): config is NamespaceConfig => config !== undefined);
     return response.status(200).send(targets);
   }
 
   @Get('/supportnamespacemetadata/:municipalityId/:namespace')
-  @OpenAPI({ summary: 'Get metadata for a specific namespace (used to resolve handover target display names)' })
+  @OpenAPI({ summary: 'Get metadata for a handover target namespace: display names, and its categorization label tree' })
   @UseBefore(authMiddleware)
   async fetchNamespaceMetadata(
     @Req() req: RequestWithUser,
@@ -160,7 +184,7 @@ export class SupportHandoverController {
   ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${namespace}/metadata`;
     const res = await this.apiService.get<MetadataResponse>({ url }, req.user);
-    return response.status(200).send(res.data);
+    return response.status(200).send(withCategorizationLabels(res.data, getLabelTarget(namespace)?.categorizationRoot));
   }
 
   @Post('/supporterrands/:municipalityId/:id/handover/preview')
@@ -174,6 +198,9 @@ export class SupportHandoverController {
     @Body() data: HandoverPreviewRequest,
     @Res() response: any,
   ): Promise<HandoverPreview> {
+    if (!this.isSupportHandoverTarget(data.targetNamespace)) {
+      return this.rejectTarget(data.targetNamespace, response);
+    }
     await this.assertCanTransferProtectedJsonParameters(req, municipalityId, id, {
       municipalityId: data.targetMunicipalityId,
       namespace: data.targetNamespace,
@@ -198,13 +225,20 @@ export class SupportHandoverController {
     @Body() data: HandoverErrandRequest & { message?: string },
     @Res() response: any,
   ): Promise<HandoverErrand> {
+    if (!this.isSupportHandoverTarget(data.target?.namespace)) {
+      return this.rejectTarget(data.target?.namespace, response);
+    }
     const canonicalIdempotencyKey = requireIdempotencyKey(idempotencyKey);
     if (data.include?.jsonParameters) {
       await this.assertCanTransferProtectedJsonParameters(req, municipalityId, id, data.target);
     }
 
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
-    const { message, ...handoverRequest } = data;
+    const { message, ...rest } = data;
+    // SupportManagement requires a classification; a label target gets its new-errand placeholder.
+    const placeholder = getLabelTarget(data.target?.namespace)?.classification;
+    const handoverRequest =
+      placeholder && !rest.mapping?.classification ? { ...rest, mapping: { ...rest.mapping, classification: placeholder } } : rest;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;
     const res = await this.apiService.post<HandoverErrand, HandoverErrandRequest>(
       {
@@ -258,6 +292,16 @@ export class SupportHandoverController {
       target,
       documents.map(document => document.key),
     );
+  }
+
+  /** Casedata namespaces (MEX, PT) are allow-listed like the rest but are a casedata forward, never a handover. */
+  private isSupportHandoverTarget(namespace?: string): boolean {
+    return !isCasedataForwardTarget(namespace) && isAllowedHandoverTarget(namespace);
+  }
+
+  private rejectTarget(namespace: string | undefined, response: any) {
+    logger.error(`Handover target ${namespace} is not in HANDOVER_TARGETS`);
+    return response.status(403).send('Handover target not allowed');
   }
 
   /** Creates an internal "Överlämning" conversation on the handed-over errand and posts the message,

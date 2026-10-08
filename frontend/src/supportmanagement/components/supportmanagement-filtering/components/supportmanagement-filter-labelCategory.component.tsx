@@ -1,7 +1,12 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { getSelectableCategories } from '@supportmanagement/services/support-label-service';
+import {
+  getClassificationDisplayName,
+  getLabelsAtDepth,
+  getSelectableCategories,
+  sortLabelsByDisplayName,
+} from '@supportmanagement/services/support-label-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -21,7 +26,11 @@ export const SupportManagementFilterLabelCategory: FC = () => {
   const [query, setQuery] = useState<string>('');
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  const allLabelCategories = getSelectableCategories(supportMetadata);
+  const allLabelCategories = sortLabelsByDisplayName(getSelectableCategories(supportMetadata));
+  const title = getClassificationDisplayName(
+    getLabelsAtDepth(supportMetadata?.labels?.labelStructure, 1),
+    'Verksamhet'
+  );
 
   return (
     <PopupMenu>
@@ -33,7 +42,7 @@ export const SupportManagementFilterLabelCategory: FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Verksamhet
+        {title}
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] overflow-y-auto">
         <SearchField

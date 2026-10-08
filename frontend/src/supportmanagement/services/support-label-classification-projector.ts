@@ -76,8 +76,3 @@ export const projectMappedLabelSubType = (
   errand: SupportErrandLabelSource | undefined,
   labelTree: SupportLabelTreeProfile | undefined
 ): Label | undefined => findLabelByClassification(errand?.labels, labelTree?.typeClassification ?? 'SUBTYPE');
-
-export const shouldProjectMappedLabelSubType = (
-  legacyThreeLevelCategorization: boolean,
-  labelTree: SupportLabelTreeProfile | undefined
-): boolean => Boolean(labelTree) || legacyThreeLevelCategorization;

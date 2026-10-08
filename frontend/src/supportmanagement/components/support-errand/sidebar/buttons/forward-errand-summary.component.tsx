@@ -6,12 +6,16 @@ import { sanitized } from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Button } from '@sk-web-gui/react';
 import {
+  getLegacyClassificationSummary,
+  showsLegacyClassification,
+} from '@supportmanagement/services/legacy-classification-service';
+import {
   Channels,
   findPriorityLabelForPriorityKey,
-  getLabelCategory,
-  getLabelType,
+  getCategorizationLabels,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -38,20 +42,35 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
 
   const stakeholders = [...(errand?.customer ?? []), ...(errand?.contacts ?? [])];
 
+  let errandTypeText: string | undefined;
+  if (!appConfig.features.useLabelCategorization) {
+    errandTypeText =
+      metadata?.categories
+        ?.find((category) => category.name === errand?.category)
+        ?.types?.find((type) => type.name === errand?.type)?.displayName || errand?.type;
+  } else if (showsLegacyClassification(errand!)) {
+    // LEGACY_CLASSIFICATION
+    errandTypeText = getLegacyClassificationSummary(errand!, metadata);
+  } else {
+    errandTypeText = getCategorizationLabels(errand!)
+      .map((label) => getLabelDisplayName(label, metadata))
+      .join(' - ');
+  }
+
   return (
     <>
-      <div className="flex flex-row gap-80">
+      <div className="flex flex-row flex-wrap gap-x-80 gap-y-16">
         <div className="flex flex-col">
           <span className="font-bold text-small">Ärendetyp</span>
-          <span className="text-small">
-            {appConfig.features.useThreeLevelCategorization
-              ? `${getLabelCategory(errand!, metadata!)?.displayName || ''}${
-                  getLabelType(errand!)?.displayName ? ` - ${getLabelType(errand!)?.displayName}` : ''
-                }`
-              : metadata?.categories
-                  ?.find((category) => category.name === errand?.category)
-                  ?.types?.find((type) => type.name === errand?.type)?.displayName || errand?.type}
-          </span>
+          <span className="text-small">{errandTypeText}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-small">Inkom via</span>
+          <span className="text-small">{Channels[errand?.channel as keyof typeof Channels]}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-small">Registrerades</span>
+          <span className="text-small">{prettyTime(errand?.created || '')}</span>
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-small">Ärendenummer</span>
@@ -62,14 +81,6 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
           <div className="flex text-small items-center gap-4">
             <PriorityComponent priority={findPriorityLabelForPriorityKey(errand?.priority || '')} />
           </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-small">Inkom via</span>
-          <span className="text-small">{Channels[errand?.channel as keyof typeof Channels]}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-small">Registrerat</span>
-          <span className="text-small">{prettyTime(errand?.created || '')}</span>
         </div>
       </div>
       <div className="flex flex-col">
