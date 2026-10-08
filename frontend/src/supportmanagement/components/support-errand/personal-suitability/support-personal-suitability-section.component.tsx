@@ -1,7 +1,7 @@
 'use client';
 
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Alert, Button, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Alert, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   assessSupportSuitability,
@@ -11,10 +11,10 @@ import {
   type SupportSuitabilityAssessmentName,
   type SupportSuitabilityPerson,
 } from '@supportmanagement/services/support-personal-suitability-service';
-import { UserPlus } from 'lucide-react';
 import { FC, MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
 
@@ -213,18 +213,7 @@ export const SupportPersonalSuitabilitySection: FC<{
       ))}
 
       {writable ? (
-        <div>
-          <Button
-            variant="secondary"
-            size="sm"
-            rightIcon={<UserPlus size={18} />}
-            disabled={busy}
-            data-cy="suitability-pbi-add-open"
-            onClick={() => setAdding(true)}
-          >
-            {t('common:company.pbi.add.open')}
-          </Button>
-        </div>
+        <AddPbiButton disabled={busy} onClick={() => setAdding(true)} label={t('common:company.pbi.add.open')} />
       ) : null}
 
       <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={addByHand} />

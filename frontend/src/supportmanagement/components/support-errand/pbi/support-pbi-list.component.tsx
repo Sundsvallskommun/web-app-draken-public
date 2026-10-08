@@ -6,10 +6,11 @@ import {
   supportPbiIdentityCode,
   SupportPbiPerson,
 } from '@supportmanagement/services/support-pbi-service';
-import { Trash2, UserPlus } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AddPbiButton } from './support-add-pbi-button.component';
 import { SupportPbiAddDialog } from './support-pbi-add-dialog.component';
 
 const describe = (person: SupportPbiPerson): string =>
@@ -56,8 +57,13 @@ export const SupportPbiList: FC<{
         </p>
       ) : (
         <List listStyle="stroke" data-cy="pbi-list">
-          {people.map((person) => (
-            <List.Item key={person.partyId} className="flex items-center justify-between gap-16">
+          {people.map((person, i) => (
+            <List.Item
+              key={person.partyId}
+              className={`flex items-center justify-between gap-16 ${
+                i !== people.length - 1 ? 'border-b-1 border-divider pb-20' : ''
+              }`}
+            >
               <div className="flex flex-col min-w-0">
                 <List.Header className="m-0">{person.name}</List.Header>
                 {describe(person) ? (
@@ -80,18 +86,11 @@ export const SupportPbiList: FC<{
         </List>
       )}
 
-      <div>
-        <Button
-          variant="secondary"
-          size="sm"
-          rightIcon={<UserPlus size={18} />}
-          disabled={!canEdit || !!busyPartyId}
-          data-cy="pbi-add-open"
-          onClick={() => setAdding(true)}
-        >
-          {t('common:company.pbi.add.open')}
-        </Button>
-      </div>
+      <AddPbiButton
+        disabled={!canEdit || !!busyPartyId}
+        onClick={() => setAdding(true)}
+        label={t('common:company.pbi.add.open')}
+      />
 
       <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={onAdd} />
     </div>
