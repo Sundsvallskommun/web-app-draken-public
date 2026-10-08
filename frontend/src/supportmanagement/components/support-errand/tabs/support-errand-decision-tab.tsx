@@ -17,10 +17,13 @@ import {
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
+import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
-  type DecisionPremises as DecisionPremisesValue,
-  fromDecisionParameters,
-} from '@supportmanagement/services/support-decision-premises-service';
+  decisionParameterValue,
+  premisesFromDecisionParameters,
+  toDecisionParameters,
+} from '@supportmanagement/services/support-decision-parameters-service';
+import type { DecisionPremises as DecisionPremisesValue } from '@supportmanagement/services/support-decision-premises-service';
 import {
   createSupportDecision,
   getSupportDecisions,
@@ -65,8 +68,8 @@ const usePremisesText = () => {
   return (premises: DecisionPremisesValue): string =>
     [
       formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city }),
-      premises.restaurantNumber
-        ? t('common:decision.premises.number', { number: premises.restaurantNumber })
+      premises.choice.kind === 'EXISTING'
+        ? t('common:decision.premises.number', { number: premises.choice.restaurantNumber })
         : t('common:decision.premises.new_number'),
     ].join(' · ');
 };
@@ -75,7 +78,7 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
   const { t } = useTranslation();
   const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
-  const premises = fromDecisionParameters(decision.parameters);
+  const premises = premisesFromDecisionParameters(decision.parameters);
 
   return (
     <div className="flex flex-col gap-16" data-cy="decision-summary">
@@ -134,8 +137,10 @@ export const SupportErrandDecisionTab: FC<{
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const canEdit = useUserStore((s) => s.user.permissions.canEditSupportManagement);
+  const user = useUserStore((s) => s.user);
+  const canEdit = user.permissions.canEditSupportManagement;
   const toastMessage = useSnackbar();
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -150,8 +155,13 @@ export const SupportErrandDecisionTab: FC<{
   const [validFrom, setValidFrom] = useState('');
   const [validTo, setValidTo] = useState('');
   const [terms, setTerms] = useState<string[]>([]);
+  const [servingArea, setServingArea] = useState('');
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const servingPermit =
+    !!supportErrand &&
+    supportDecisionPermitType(getMostSpecificLabelType(supportErrand), supportErrand.process?.processKey) ===
+      'SERVERINGSTILLSTAND';
 
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
   const [opened, setOpened] = useState(isActive);
@@ -161,14 +171,14 @@ export const SupportErrandDecisionTab: FC<{
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
     [supportErrand, supportMetadata?.namespace]
   );
-  const savedPremises = useMemo(() => fromDecisionParameters(decisions[0]?.parameters), [decisions]);
+  const savedPremises = useMemo(() => premisesFromDecisionParameters(decisions[0]?.parameters), [decisions]);
   const decisionPremises = useDecisionPremises(
     handlesPremises && opened ? municipalityId : undefined,
     premises,
     savedPremises
   );
   const premisesText = usePremisesText();
-  const premisesToSend = fromDecisionParameters(decisionPremises.parameters) ?? savedPremises;
+  const premisesToSend = decisionPremises.decided ?? savedPremises;
 
   useEffect(() => {
     if (!supportErrand?.id) return;
@@ -202,6 +212,7 @@ export const SupportErrandDecisionTab: FC<{
     setValidTo(draft.validTo ?? '');
     setJustification(draft.justification ?? '');
     setTerms(termTexts(draft));
+    setServingArea(decisionParameterValue(draft.parameters, 'servingAreaDescription') ?? '');
   };
 
   useEffect(() => {
@@ -217,6 +228,7 @@ export const SupportErrandDecisionTab: FC<{
     justification,
     terms: terms.filter(Boolean),
     premises: premisesToSend ?? null,
+    servingArea,
   });
 
   const formAsSaved = () => ({
@@ -227,6 +239,7 @@ export const SupportErrandDecisionTab: FC<{
     justification: decision?.justification ?? '',
     terms: termTexts(decision),
     premises: savedPremises ?? null,
+    servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
   });
 
   const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
@@ -262,7 +275,16 @@ export const SupportErrandDecisionTab: FC<{
       validFrom,
       validTo,
       terms: writtenTerms,
-      parameters: decisionPremises.parameters,
+      parameters: toDecisionParameters(permitType, {
+        errand: supportErrand,
+        errandType: typeLabel?.resourceName,
+        form: getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
+        premises: premisesToSend,
+        servingArea,
+        attachments: supportAttachments,
+        user,
+        today: dayjs().format('YYYY-MM-DD'),
+      }),
     });
 
     try {
@@ -305,6 +327,21 @@ export const SupportErrandDecisionTab: FC<{
             premisesHandling={
               handlesPremises ? (
                 <DecisionPremises state={decisionPremises} readOnly={!canEdit || isLoading || error || !editable} />
+              ) : undefined
+            }
+            servingPremisesHandling={
+              servingPermit ? (
+                <FormControl id="decision-serving-area" className="w-full pt-12">
+                  <FormLabel>{t('common:decision.basis.serving_premises.description')}</FormLabel>
+                  <Textarea
+                    className="w-full"
+                    rows={3}
+                    value={servingArea}
+                    onChange={(event) => setServingArea(event.target.value)}
+                    disabled={!canEdit || isLoading || error || !editable}
+                    data-cy="decision-serving-area"
+                  />
+                </FormControl>
               ) : undefined
             }
           />

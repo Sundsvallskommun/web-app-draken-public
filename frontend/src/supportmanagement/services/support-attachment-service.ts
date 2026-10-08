@@ -1,4 +1,4 @@
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { imageMimeTypes } from '@common/components/file-upload/mime-types';
 import { apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 

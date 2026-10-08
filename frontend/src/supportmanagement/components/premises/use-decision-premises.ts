@@ -1,6 +1,5 @@
 'use client';
 
-import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import {
   type DecisionPremises,
   type DecisionPremisesAddress,
@@ -8,7 +7,7 @@ import {
   type PremisesChoice,
   type PremisesChoiceEffect,
   premisesChoiceEffect,
-  toDecisionPremisesParameters,
+  toDecisionPremises,
 } from '@supportmanagement/services/support-decision-premises-service';
 import type { PremisesAddress } from '@supportmanagement/services/support-premises-address-service';
 import { useCallback, useMemo, useState } from 'react';
@@ -25,16 +24,12 @@ export interface DecisionPremisesState {
   choose: (choice: PremisesChoice) => void;
   /** Undefined until a choice is made. */
   effect?: PremisesChoiceEffect;
-  /** Undefined until a choice is made. */
-  parameters?: Parameter[];
+  /** The premises the decision concerns; undefined until a choice is made. */
+  decided?: DecisionPremises;
 }
 
 const keyOf = (address: DecisionPremisesAddress | undefined): string =>
   address ? [address.street, address.postalCode, address.city].join('|') : '';
-
-/** A saved decision's premises as a choice. */
-const choiceOf = (saved: DecisionPremises): PremisesChoice =>
-  saved.restaurantNumber ? { kind: 'EXISTING', restaurantNumber: saved.restaurantNumber } : { kind: 'NEW' };
 
 /**
  * Restaurant numbers at the premises address plus the choice among them or a new one. A saved draft
@@ -45,7 +40,9 @@ export const useDecisionPremises = (
   premises: PremisesAddress | undefined,
   saved?: DecisionPremises
 ): DecisionPremisesState => {
-  const savedKey = saved ? `${keyOf(saved)}|${saved.restaurantNumber ?? ''}` : '';
+  const savedKey = saved
+    ? `${keyOf(saved)}|${saved.choice.kind}|${saved.choice.kind === 'EXISTING' ? saved.choice.restaurantNumber : ''}`
+    : '';
   const startsFrom = useMemo(
     (): PremisesAddress | undefined =>
       saved
@@ -65,7 +62,7 @@ export const useDecisionPremises = (
   const [restoredKey, setRestoredKey] = useState('');
   if (savedKey !== restoredKey) {
     setRestoredKey(savedKey);
-    setChosen(saved ? { addressKey: keyOf(saved), choice: choiceOf(saved) } : undefined);
+    setChosen(saved ? { addressKey: keyOf(saved), choice: saved.choice } : undefined);
   }
 
   const madeHere = !!addressKey && chosen?.addressKey === addressKey ? chosen.choice : undefined;
@@ -77,8 +74,8 @@ export const useDecisionPremises = (
 
   const choose = useCallback((next: PremisesChoice) => setChosen({ addressKey, choice: next }), [addressKey]);
 
-  const parameters = useMemo(
-    () => (address && choice ? toDecisionPremisesParameters(address, choice) : undefined),
+  const decided = useMemo(
+    () => (address && choice ? toDecisionPremises(address, choice) : undefined),
     [address, choice]
   );
 
@@ -89,6 +86,6 @@ export const useDecisionPremises = (
     choice,
     choose,
     effect: choice ? premisesChoiceEffect(choice, lookup.restaurantNumbers) : undefined,
-    parameters,
+    decided,
   };
 };

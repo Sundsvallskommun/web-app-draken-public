@@ -287,19 +287,101 @@
       },
       "premises": {
         "heading": "Serveringsställe",
+        "name": "Namn",
         "address": "Besöksadress",
         "address_from": {
           "FORM": "Besöksadress (ansökan)",
           "OWNER": "Besöksadress (ärendeägare)"
         },
-        "rest": "Namn, kontaktuppgifter, antal platser och serveringsansvariga hämtas från ärendeuppgifterna och visas här när det är beslutat hur formulärets nycklar ska hanteras."
+        "contact": "Kontakt",
+        "responsible": "Serveringsansvariga",
+        "right_of_disposal": "Förfoganderätt till lokalen",
+        "cooperation_agreement": "Samarbetsavtal",
+        "visitor_arrangement": "Besöksarrangemang",
+        "sales_site": "Försäljningsplats"
       },
-      "operation": "Verksamheten",
-      "serving_hours": "Begärda serveringstider",
-      "serving": "Servering",
-      "financing": "Finansiering",
+      "operation": {
+        "heading": "Verksamheten",
+        "focus": "Inriktning",
+        "hotel_service": "Hotellservice",
+        "description": "Beskrivning",
+        "focus_description": "Beskrivning av inriktning",
+        "serving_to": "Servering avser",
+        "fair": "Mässa",
+        "order": "Ordning och nykterhet",
+        "food_sales": "Stadigvarande livsmedelsförsäljning",
+        "brews_on_site": "Tillverkar folköl på stället",
+        "food_registered": "Livsmedelsregistrerad",
+        "self_monitoring": "Egenkontrollprogram",
+        "distance_sales": "Distansförsäljning",
+        "supplier_agreement": "Avtal med tillverkare eller partihandlare",
+        "hazardous_products": "Särskilt farliga produkter"
+      },
+      "serving_hours": {
+        "heading": "Begärda serveringstider",
+        "period": "Period",
+        "period_public": "Period (allmänheten)",
+        "period_private": "Period (slutet sällskap)",
+        "indoor": "Serveringstid inne",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor": "Serveringstid ute",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "time": "Serveringstid",
+        "sales_time": "Försäljningstid",
+        "dates_note": "Övrigt om datum"
+      },
+      "serving_premises": {
+        "heading": "Serveringslokaler",
+        "drawing": "Planritning",
+        "kitchen_drawing": "Planritning kök",
+        "seats": "Sittplatser",
+        "outdoor_seats": "Sittplatser uteservering",
+        "max_persons": "Max antal personer",
+        "description": "Lokaler inom vilka servering får ske"
+      },
+      "serving": {
+        "heading": "Servering",
+        "drinks": "Alkoholdrycker",
+        "food": "Serverar mat",
+        "menu": "Meny",
+        "drinks_menu": "Dryckesmeny"
+      },
+      "production": {
+        "heading": "Produktionen",
+        "beer": "Starköl (liter)",
+        "wine": "Vin (liter)",
+        "spirits": "Spritdrycker (liter)",
+        "cider": "Cider eller andra jästa drycker (liter)",
+        "started": "Produktionen startade",
+        "dependency": "Beroende till annan tillverkare",
+        "dependency_description": "Beskrivning av beroendet",
+        "description": "Produktionsbeskrivning"
+      },
+      "event": {
+        "heading": "Tillställningen",
+        "type": "Typ av tillställning",
+        "guests": "Beräknat antal gäster",
+        "guest_kind": "Gäster",
+        "invitation": "Hur gästerna bjudits in",
+        "police_permit": "Tillstånd från Polismyndigheten"
+      },
+      "financing": {
+        "heading": "Finansiering",
+        "sources": "Finansieringskällor",
+        "own_funds": "Egna medel",
+        "bank_loan": "Banklån",
+        "private_loan": "Privatlån",
+        "other": "Annan finansiering",
+        "notes": "Övrigt om finansiering"
+      },
       "referrals": "Remissvar",
-      "from_form": "Uppgifterna hämtas från ärendeuppgifterna och visas här när det är beslutat hur formulärets nycklar ska hanteras.",
+      "no_form": "Ärendet har inga ärendeuppgifter från ansökan att visa.",
+      "loading": "Hämtar ärendeuppgifterna …",
+      "attachment": "Bifogad som bilaga: {{fileName}} (se Bilagor)",
+      "attachment_pending": "Bifogad som bilaga (se Bilagor)",
+      "attachment_missing": "Bilaga saknas",
       "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
       "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
     }

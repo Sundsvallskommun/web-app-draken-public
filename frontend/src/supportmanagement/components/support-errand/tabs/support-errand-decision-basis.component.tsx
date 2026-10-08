@@ -1,3 +1,13 @@
+import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
+import { sanitized } from '@common/services/sanitizer-service';
+import { Spinner, Table } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
+import {
+  type BasisCell,
+  type BasisRow,
+  buildDecisionBasisSections,
+  getDecisionBasisForm,
+} from '@supportmanagement/services/support-decision-basis-service';
 import { getMostSpecificLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -10,7 +20,7 @@ import {
 import { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface BasisRow {
+interface DisplayRow {
   key: string;
   label: string;
   value: ReactNode;
@@ -23,7 +33,7 @@ const BasisSection: FC<{ id: string; heading: string; children: ReactNode }> = (
   </section>
 );
 
-const BasisRows: FC<{ section: string; rows: BasisRow[] }> = ({ section, rows }) => {
+const BasisRows: FC<{ section: string; rows: DisplayRow[] }> = ({ section, rows }) => {
   const { t } = useTranslation();
 
   return (
@@ -44,30 +54,91 @@ const BasisNote: FC<{ children: ReactNode }> = ({ children }) => (
   <p className="text-small text-dark-secondary italic m-0 pt-6">{children}</p>
 );
 
-// Filled in on the form, so they wait for the decision on how the app reads the form's keys.
-const FORM_SECTIONS = ['operation', 'serving_hours', 'serving', 'financing'];
-// Only a serving permit has serving hours and a serving; so does its serveringsställe section.
-const SERVING_SECTIONS = ['serving_hours', 'serving'];
+/** The citizen uploaded; the attachments with that purpose are on the Bilagor tab. */
+const AttachmentReference: FC<{ purpose: string }> = ({ purpose }) => {
+  const { t } = useTranslation();
+  const attachments = useSupportStore((s) => s.supportAttachments);
+  const fileNames = attachments?.filter((candidate) => candidate.purpose?.name === purpose).map((a) => a.fileName);
+
+  if (fileNames?.length) return <>{t('common:decision.basis.attachment', { fileName: fileNames.join(', ') })}</>;
+  // Before the attachments have been fetched there is nothing to say against the upload.
+  if (!attachments) return <>{t('common:decision.basis.attachment_pending')}</>;
+  return <span className="text-error">{t('common:decision.basis.attachment_missing')}</span>;
+};
+
+const BasisTable: FC<{ cell: Extract<BasisCell, { kind: 'table' }> }> = ({ cell }) => (
+  <Table dense>
+    <Table.Header>
+      {cell.columns.map((column) => (
+        <Table.HeaderColumn key={column}>{column}</Table.HeaderColumn>
+      ))}
+    </Table.Header>
+    <Table.Body>
+      {cell.rows.map((row, index) => (
+        <Table.Row key={index}>
+          {row.map((value, column) => (
+            <Table.Column key={column}>{value || '-'}</Table.Column>
+          ))}
+        </Table.Row>
+      ))}
+    </Table.Body>
+  </Table>
+);
+
+const cellContent = (cell: BasisCell | undefined): ReactNode => {
+  switch (cell?.kind) {
+    case 'text':
+      return cell.text;
+    case 'html':
+      return <div className="[&>p]:m-0" dangerouslySetInnerHTML={{ __html: sanitized(cell.html) }} />;
+    case 'table':
+      return <BasisTable cell={cell} />;
+    case 'attachment':
+      return <AttachmentReference purpose={cell.purpose} />;
+    default:
+      return null;
+  }
+};
 
 /**
  * What the decision is based on, gathered from the errand so it can be read where the decision is
- * made. Only what the errand itself holds is shown; the sections taken from the form are placeholders.
- * The sections about serving are left out of errands that are not about a serving permit.
+ * made: the errand itself, its owner, and the answers filed on the form (see
+ * support-decision-basis-service). A section the errand type has no questions for is left out.
  */
 export const SupportErrandDecisionBasis: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata | undefined;
   /** Rendered in the premises section. */
   premisesHandling?: ReactNode;
-}> = ({ supportErrand, supportMetadata, premisesHandling }) => {
+  /** Rendered in the serving premises section, when the form has one. */
+  servingPremisesHandling?: ReactNode;
+}> = ({ supportErrand, supportMetadata, premisesHandling, servingPremisesHandling }) => {
   const { t } = useTranslation();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const owner = supportErrand.customer?.[0];
   const serving = hasServingPremises(supportErrand);
   const premises = getPremisesAddress(supportErrand, supportMetadata?.namespace);
-  const formSections = serving ? FORM_SECTIONS : FORM_SECTIONS.filter((section) => !SERVING_SECTIONS.includes(section));
+  const form = getDecisionBasisForm(supportErrand, supportMetadata?.namespace);
+  // The version the answers were filed against, so option texts and table headers match what was asked.
+  const { schema, loading } = useJsonSchema(municipalityId, form?.schemaId ?? '');
 
-  const errandRows: BasisRow[] = [
+  const toDisplayRow = (row: BasisRow): DisplayRow => ({
+    key: row.key,
+    label: row.labelKey ? t(row.labelKey) : row.labelText ?? row.key,
+    value: cellContent(row.cell),
+  });
+
+  const attachments = useSupportStore((s) => s.supportAttachments);
+  const uploadedPurposes = (attachments ?? [])
+    .map((attachment) => attachment.purpose?.name)
+    .filter((name): name is string => !!name);
+
+  const sections = form && !loading ? buildDecisionBasisSections(form.value, schema, uploadedPurposes) : [];
+  const formSections = sections.filter((section) => section.id !== 'premises' && section.rows.length > 0);
+  const premisesFormRows = sections.find((section) => section.id === 'premises')?.rows.map(toDisplayRow) ?? [];
+
+  const errandRows: DisplayRow[] = [
     {
       key: 'type',
       label: t('common:decision.basis.errand.type'),
@@ -76,7 +147,7 @@ export const SupportErrandDecisionBasis: FC<{
     { key: 'number', label: t('common:decision.basis.errand.number'), value: supportErrand.errandNumber },
   ];
 
-  const holderRows: BasisRow[] = owner
+  const holderRows: DisplayRow[] = owner
     ? [
         ...(owner.stakeholderType === 'ORGANIZATION'
           ? [
@@ -116,14 +187,18 @@ export const SupportErrandDecisionBasis: FC<{
       ]
     : [];
 
-  const premisesRows: BasisRow[] = [
-    {
-      key: 'address',
-      label: premises
-        ? t(`common:decision.basis.premises.address_from.${premises.source}`)
-        : t('common:decision.basis.premises.address'),
-      value: premises ? formatPremisesAddress(premises) : null,
-    },
+  const addressRow: DisplayRow = {
+    key: 'address',
+    label: premises
+      ? t(`common:decision.basis.premises.address_from.${premises.source}`)
+      : t('common:decision.basis.premises.address'),
+    value: premises ? formatPremisesAddress(premises) : null,
+  };
+  // The address follows the name, the rest of the premises rows come after.
+  const premisesRows = [
+    ...premisesFormRows.filter((row) => row.key === 'name'),
+    addressRow,
+    ...premisesFormRows.filter((row) => row.key !== 'name'),
   ];
 
   return (
@@ -145,9 +220,19 @@ export const SupportErrandDecisionBasis: FC<{
         )}
       </BasisSection>
 
+      {!form ? <BasisNote>{t('common:decision.basis.no_form')}</BasisNote> : null}
+
+      {form && loading ? (
+        <div className="flex items-center gap-8 text-small text-dark-secondary" data-cy="decision-basis-loading">
+          <Spinner size={2} aria-hidden />
+          {t('common:decision.basis.loading')}
+        </div>
+      ) : null}
+
       {formSections.map((section) => (
-        <BasisSection key={section} id={section} heading={t(`common:decision.basis.${section}`)}>
-          <BasisNote>{t('common:decision.basis.from_form')}</BasisNote>
+        <BasisSection key={section.id} id={section.id} heading={t(`common:decision.basis.${section.id}.heading`)}>
+          <BasisRows section={section.id} rows={section.rows.map(toDisplayRow)} />
+          {section.id === 'serving_premises' ? servingPremisesHandling : null}
         </BasisSection>
       ))}
 
@@ -155,7 +240,6 @@ export const SupportErrandDecisionBasis: FC<{
         <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
           <BasisRows section="premises" rows={premisesRows} />
           {premisesHandling}
-          <BasisNote>{t('common:decision.basis.premises.rest')}</BasisNote>
         </BasisSection>
       ) : null}
 

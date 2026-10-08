@@ -3,12 +3,7 @@ import { describe, expect, test } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
 import type { PremisesAddressMatch, RestaurantNumberWithAssignment } from './licensed-business-service';
-import {
-  decisionPremisesAddress,
-  fromDecisionParameters,
-  premisesChoiceEffect,
-  toDecisionPremisesParameters,
-} from './support-decision-premises-service';
+import { decisionPremisesAddress, premisesChoiceEffect, toDecisionPremises } from './support-decision-premises-service';
 import type { PremisesAddress } from './support-premises-address-service';
 
 const REGISTERED = mockEnv.mockCompanyAddress;
@@ -68,45 +63,14 @@ describe('decisionPremisesAddress', () => {
   });
 });
 
-describe('decision parameters', () => {
+describe('toDecisionPremises', () => {
   const address = { street: ERRAND.street, postalCode: ERRAND.postalCode, city: ERRAND.city };
 
-  test('an existing restaurant number is sent with the address', () => {
-    expect(
-      toDecisionPremisesParameters(address, { kind: 'EXISTING', restaurantNumber: mockEnv.mockRestaurantNumber })
-    ).toEqual([
-      { key: 'restaurantNumber', values: [mockEnv.mockRestaurantNumber] },
-      { key: 'street', values: [ERRAND.street] },
-      { key: 'postalCode', values: [ERRAND.postalCode] },
-      { key: 'city', values: [ERRAND.city] },
-    ]);
-  });
+  test('the choice is decided with the address', () => {
+    const existing = { kind: 'EXISTING', restaurantNumber: mockEnv.mockRestaurantNumber } as const;
 
-  test('a new restaurant number is asked for by sending the address alone', () => {
-    expect(toDecisionPremisesParameters(address, { kind: 'NEW' }).map((parameter) => parameter.key)).toEqual([
-      'street',
-      'postalCode',
-      'city',
-    ]);
-  });
-
-  test('the premises are read back from the parameters of a decision', () => {
-    const existing = toDecisionPremisesParameters(address, {
-      kind: 'EXISTING',
-      restaurantNumber: mockEnv.mockRestaurantNumber,
-    });
-
-    expect(fromDecisionParameters(existing)).toEqual({ ...address, restaurantNumber: mockEnv.mockRestaurantNumber });
-    expect(fromDecisionParameters(toDecisionPremisesParameters(address, { kind: 'NEW' }))).toEqual({
-      ...address,
-      restaurantNumber: undefined,
-    });
-  });
-
-  test('a decision without the address carries no premises', () => {
-    expect(fromDecisionParameters(undefined)).toBeUndefined();
-    expect(fromDecisionParameters([])).toBeUndefined();
-    expect(fromDecisionParameters([{ key: 'street', values: [ERRAND.street] }])).toBeUndefined();
+    expect(toDecisionPremises(address, existing)).toEqual({ ...address, choice: existing });
+    expect(toDecisionPremises(address, { kind: 'NEW' })).toEqual({ ...address, choice: { kind: 'NEW' } });
   });
 });
 
