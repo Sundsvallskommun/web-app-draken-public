@@ -171,7 +171,8 @@ const table =
     const items = propertySchema(schema, field)?.items;
     const properties = isRecord(items) && isRecord(items.properties) ? items.properties : undefined;
     // Without the schema the first row decides the columns, so the table still shows what was filed.
-    const columns = properties ? Object.keys(properties) : isRecord(rows[0]) ? Object.keys(rows[0]) : [];
+    const columnSource = properties ?? (isRecord(rows[0]) ? rows[0] : {});
+    const columns = Object.keys(columnSource);
     if (columns.length === 0) return undefined;
     return {
       kind: 'table',

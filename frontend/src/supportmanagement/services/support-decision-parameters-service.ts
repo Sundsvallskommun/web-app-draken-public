@@ -56,7 +56,7 @@ const postalAddress = (postalCode: string | undefined, city: string | undefined)
 export const splitPostalAddress = (
   postalAddress: string | undefined
 ): { postalCode: string; city: string } | undefined => {
-  const match = postalAddress?.trim().match(/^(\d{3} ?\d{2})\s+(.+)$/);
+  const match = postalAddress?.trim().match(/^(\d{3} ?\d{2})\s+(\S.*)$/);
   return match ? { postalCode: match[1], city: match[2] } : undefined;
 };
 
@@ -201,17 +201,21 @@ export const decisionParameterValue = (parameters: Parameter[] | undefined, key:
   return sent && sent !== PLACEHOLDER ? sent : undefined;
 };
 
+/** The choice a saved decision carries: an existing number, or that a new one was asked for. */
+const savedChoice = (
+  restaurantNumber: string | undefined,
+  newRestaurantNumber: string | undefined
+): DecisionPremises['choice'] | undefined => {
+  if (restaurantNumber) return { kind: 'EXISTING', restaurantNumber };
+  return newRestaurantNumber === 'true' ? { kind: 'NEW' } : undefined;
+};
+
 /** The premises a saved decision concerns; undefined without a complete address and a choice. */
 export const premisesFromDecisionParameters = (parameters: Parameter[] | undefined): DecisionPremises | undefined => {
   const value = (key: string) => decisionParameterValue(parameters, key);
   const street = value('premisesStreet');
   const postal = splitPostalAddress(value('premisesPostalAddress'));
-  const restaurantNumber = value('premisesRestaurantNumber');
-  const choice: DecisionPremises['choice'] | undefined = restaurantNumber
-    ? { kind: 'EXISTING', restaurantNumber }
-    : value('newRestaurantNumber') === 'true'
-    ? { kind: 'NEW' }
-    : undefined;
+  const choice = savedChoice(value('premisesRestaurantNumber'), value('newRestaurantNumber'));
   if (!street || !postal || !choice) return undefined;
 
   return { street, ...postal, choice };

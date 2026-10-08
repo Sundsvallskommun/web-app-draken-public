@@ -31,6 +31,9 @@ export interface DecisionPremisesState {
 const keyOf = (address: DecisionPremisesAddress | undefined): string =>
   address ? [address.street, address.postalCode, address.city].join('|') : '';
 
+const choiceKey = (choice: PremisesChoice): string =>
+  choice.kind === 'EXISTING' ? `EXISTING|${choice.restaurantNumber}` : 'NEW';
+
 /**
  * Restaurant numbers at the premises address plus the choice among them or a new one. A saved draft
  * restores its address and choice. No lookup without a municipality id.
@@ -40,9 +43,7 @@ export const useDecisionPremises = (
   premises: PremisesAddress | undefined,
   saved?: DecisionPremises
 ): DecisionPremisesState => {
-  const savedKey = saved
-    ? `${keyOf(saved)}|${saved.choice.kind}|${saved.choice.kind === 'EXISTING' ? saved.choice.restaurantNumber : ''}`
-    : '';
+  const savedKey = saved ? `${keyOf(saved)}|${choiceKey(saved.choice)}` : '';
   const startsFrom = useMemo(
     (): PremisesAddress | undefined =>
       saved

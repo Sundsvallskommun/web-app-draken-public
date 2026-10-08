@@ -75,9 +75,10 @@ const BasisTable: FC<{ cell: Extract<BasisCell, { kind: 'table' }> }> = ({ cell 
     </Table.Header>
     <Table.Body>
       {cell.rows.map((row, index) => (
-        <Table.Row key={index}>
-          {row.map((value, column) => (
-            <Table.Column key={column}>{value || '-'}</Table.Column>
+        // Filed rows have no identity of their own and may repeat; the table is never reordered.
+        <Table.Row key={index /* NOSONAR */}>
+          {cell.columns.map((column, position) => (
+            <Table.Column key={column}>{row[position] || '-'}</Table.Column>
           ))}
         </Table.Row>
       ))}
