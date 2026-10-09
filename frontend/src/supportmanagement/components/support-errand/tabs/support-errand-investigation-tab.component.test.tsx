@@ -20,7 +20,23 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   saveSupportInvestigation: vi.fn(),
   startSupportInvestigation: vi.fn(),
 }));
-vi.mock('./disclosure/investigation-disclosure.component', () => ({ SectionDisclosure: () => null }));
+const sectionStub = vi.hoisted(() => ({ handsBack: null as object | null }));
+
+vi.mock('./disclosure/investigation-disclosure.component', () => ({
+  SectionDisclosure: ({
+    onFinancialSaved,
+    saveFinancial,
+  }: {
+    onFinancialSaved: (investigation: object) => void;
+    saveFinancial: { current?: () => Promise<boolean> };
+  }) => {
+    saveFinancial.current = async () => {
+      if (sectionStub.handsBack) onFinancialSaved(sectionStub.handsBack);
+      return true;
+    };
+    return null;
+  },
+}));
 vi.mock('./disclosure/investigation-conclusion-disclosure.component', () => ({
   InvestigationConclusionDisclosure: ({
     values,
@@ -43,7 +59,7 @@ const investigation = {
   conclusion: '',
   recommendation: '',
   recommendationMotivation: '',
-  sections: [],
+  sections: [{ id: 'section-1', sectionKey: 'financial_suitability', heading: 'Ekonomisk lämplighet', sortOrder: 3 }],
 };
 
 const mountTab = () =>
@@ -55,6 +71,7 @@ beforeEach(() => {
   useConfigStore.setState({ municipalityId: '2281' } as never);
   useMetadataStore.setState({ supportMetadata: { decisionOutcomes: [] } } as never);
   useUserStore.setState({ user: { permissions: { canEditSupportManagement: true } } } as never);
+  sectionStub.handsBack = null;
   vi.mocked(getSupportInvestigation).mockResolvedValue(investigation as never);
   vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...investigation, version: 4 } as never);
 });
@@ -97,4 +114,27 @@ test('the save that was handed over writes what the field holds now, not what it
     summary: 'det handlaggaren skrev sist',
     version: 3,
   });
+});
+
+test('a section saved first raises the version this save must write with', async () => {
+  sectionStub.handsBack = { ...investigation, version: 9 };
+  mountTab();
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  const field = await screen.findByTestId('summary');
+  fireEvent.change(field, { target: { value: 'nagot nytt' } });
+
+  await useSupportStore.getState().tabSavers.investigation();
+
+  expect(vi.mocked(saveSupportInvestigation).mock.calls[0][3]).toMatchObject({ version: 9 });
+});
+
+test('the investigation is left alone when only one of its sections was written', async () => {
+  sectionStub.handsBack = { ...investigation, version: 9 };
+  mountTab();
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  await expect(useSupportStore.getState().tabSavers.investigation()).resolves.toBe(true);
+
+  expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
