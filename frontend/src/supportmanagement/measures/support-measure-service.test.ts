@@ -2,6 +2,7 @@ import { apiService } from '@common/services/api-service';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import {
+  changeSupportMeasurePlannedComplete,
   createSupportMeasure,
   decideSupportMeasure,
   followUpSupportMeasure,
@@ -21,6 +22,15 @@ test('sends only follow-up answers to the dedicated route with the measure versi
     {
       headers: { 'If-Match': '"0"' },
     }
+  );
+});
+
+test('moves only the end date, through its own route and with the measure version', async () => {
+  await changeSupportMeasurePlannedComplete('2281', 'errand/id', 'measure/id', 4, '2026-10-15T00:00:00+02:00');
+  expect(apiService.patch).toHaveBeenCalledWith(
+    'supporterrands/2281/errand%2Fid/measures/measure%2Fid/planned-complete',
+    { plannedComplete: '2026-10-15T00:00:00+02:00' },
+    { headers: { 'If-Match': '"4"' } }
   );
 });
 
@@ -73,7 +83,12 @@ test.each([undefined, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])(
 );
 
 test('sends only the decision to the dedicated route using the measure version', async () => {
-  const decision = { accept: 'REWORK' as const, acceptMotivation: 'Genomför del A, del B utgår därför att…' };
+  const decision = {
+    accept: 'REWORK' as const,
+    acceptMotivation: 'Genomför del A, del B utgår därför att…',
+    plannedStart: '2026-10-12T00:00:00+02:00',
+    plannedComplete: '2026-11-30T00:00:00+01:00',
+  };
   await decideSupportMeasure('2281', 'errand/id', 'measure/id', 0, decision);
   expect(apiService.patch).toHaveBeenCalledWith(
     'supporterrands/2281/errand%2Fid/measures/measure%2Fid/decision',
@@ -87,7 +102,12 @@ test('sends only the decision to the dedicated route using the measure version',
 test.each([undefined, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])(
   'does not decide without a valid measure version: %s',
   async (version) => {
-    await expect(decideSupportMeasure('2281', 'errand-id', 'measure-id', version, { accept: 'TRUE' })).rejects.toThrow(
+    const approval = {
+      accept: 'TRUE' as const,
+      plannedStart: '2026-10-12T00:00:00+02:00',
+      plannedComplete: '2026-11-30T00:00:00+01:00',
+    };
+    await expect(decideSupportMeasure('2281', 'errand-id', 'measure-id', version, approval)).rejects.toThrow(
       'measure version'
     );
     expect(apiService.patch).not.toHaveBeenCalled();

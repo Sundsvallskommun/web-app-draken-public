@@ -138,6 +138,36 @@ describe('measure write handlers (over HTTP)', () => {
     },
   );
 
+  it('moves the end date through its own endpoint and forwards nothing else', async () => {
+    const approved = { ...measure, accept: 'TRUE', plannedStart: '2026-09-08T00:00:00Z', plannedComplete: '2026-09-30T00:00:00Z' };
+    apiGet.mockImplementation(async (config: { url?: string }) => ({
+      data: config.url?.endsWith('/measures/measure-1') ? approved : errand,
+      status: 200,
+    }));
+    const response = await request(server)
+      .patch(`${measuresUrl}/measure-1/planned-complete`)
+      .set('If-Match', '"3"')
+      .send({ plannedComplete: '2026-10-15T00:00:00Z' });
+    expect(response.status).toBe(204);
+    expect(apiPatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        url: expect.stringMatching(/\/measures\/measure-1$/),
+        data: { plannedComplete: '2026-10-15T00:00:00Z' },
+        headers: { 'If-Match': '"3"' },
+      }),
+      expect.anything(),
+    );
+  });
+
+  it.each([{}, { plannedComplete: 'snart' }, { plannedComplete: '2026-10-15T00:00:00Z', plannedStart: '2026-10-01T00:00:00Z' }])(
+    'rejects a missing end date or one sent with other fields: %j',
+    async body => {
+      const response = await request(server).patch(`${measuresUrl}/measure-1/planned-complete`).set('If-Match', '"3"').send(body);
+      expect(response.status).toBe(400);
+      expect(apiPatch).not.toHaveBeenCalled();
+    },
+  );
+
   it('still reports a stale version as 412 with its message', async () => {
     const response = await request(server).patch(`${measuresUrl}/measure-1`).set('If-Match', '"2"').send({ goal: 'x' });
     expect(response.status).toBe(412);
@@ -145,16 +175,19 @@ describe('measure write handlers (over HTTP)', () => {
     expect(apiPatch).not.toHaveBeenCalled();
   });
 
+  // An approval, whole or in part, says when the measure runs; the proposal left that open.
+  const approvalDates = { plannedStart: '2026-10-12T00:00:00+02:00', plannedComplete: '2026-11-30T00:00:00+01:00' };
+
   it('answers 204 after a decision and forwards only the decision fields', async () => {
     const response = await request(server)
       .patch(`${measuresUrl}/measure-1/decision`)
       .set('If-Match', '"3"')
-      .send({ accept: 'REWORK', acceptMotivation: '  Genomför endast utbildningen.  ' });
+      .send({ accept: 'REWORK', acceptMotivation: '  Genomför endast utbildningen.  ', ...approvalDates });
     expect(response.status).toBe(204);
     expect(response.text).toBe('');
     expect(apiPatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
-        data: { accept: 'REWORK', acceptMotivation: 'Genomför endast utbildningen.' },
+        data: { accept: 'REWORK', acceptMotivation: 'Genomför endast utbildningen.', ...approvalDates },
         headers: { 'If-Match': '"3"' },
       }),
       expect.objectContaining({ username: 'testuser' }),
@@ -163,6 +196,8 @@ describe('measure write handlers (over HTTP)', () => {
 
   it.each([
     { accept: 'REWORK' },
+    { accept: 'TRUE' },
+    { accept: 'REWORK', acceptMotivation: 'Genomför endast utbildningen.' },
     { accept: 'FALSE', acceptMotivation: '  ' },
     { accept: 'TRUE', addedByUser: 'forged' },
     { accept: 'TRUE', goal: 'Changed proposal' },
@@ -175,7 +210,9 @@ describe('measure write handlers (over HTTP)', () => {
   });
 
   it('requires the measure ETag for a decision', async () => {
-    const response = await request(server).patch(`${measuresUrl}/measure-1/decision`).send({ accept: 'TRUE' });
+    const response = await request(server)
+      .patch(`${measuresUrl}/measure-1/decision`)
+      .send({ accept: 'TRUE', ...approvalDates });
     expect(response.status).toBe(428);
     expect(apiPatch).not.toHaveBeenCalled();
   });

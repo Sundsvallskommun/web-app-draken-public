@@ -3,7 +3,7 @@ import { getNameFromADUsername } from '@common/services/user-service';
 import { Button, Checkbox, Icon, Label } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
-import { ClipboardCheck, FileText, Pencil } from 'lucide-react';
+import { CalendarClock, ClipboardCheck, FileText, Pencil } from 'lucide-react';
 
 import { measureCanBeDecided, measureDecisionPresentation } from './measure-decision';
 import { measureCanBeFollowedUp, measureFollowUp, measureHasFollowUp } from './measure-follow-up';
@@ -37,6 +37,7 @@ export function MeasureList({
   onEdit,
   onDecide,
   onFollowUp,
+  onChangeEndDate,
   emptyMessage = 'Det finns inga åtgärder registrerade.',
 }: {
   measures: readonly Measure[];
@@ -49,6 +50,8 @@ export function MeasureList({
   onEdit?: (measure: Measure) => void;
   onDecide?: (measure: Measure) => void;
   onFollowUp?: (measure: Measure) => void;
+  /** Moves the end date of a measure being followed up, offered to whoever follows it up. */
+  onChangeEndDate?: (measure: Measure) => void;
   emptyMessage?: string;
 }) {
   const administrators = useUserStore((state) => state.administrators);
@@ -69,9 +72,9 @@ export function MeasureList({
         const role = roleLabel(measure.addedByRole);
         const created = measure.created ? dayjs(measure.created).format('YYYY-MM-DD HH:mm:ss') : undefined;
         const editable = Boolean(onEdit && measure.id && isOwnMeasure(measure, currentUser));
-        const canFollowUp = Boolean(
-          onFollowUp && measureCanBeFollowedUp(measure) && mayFollowUpMeasure(measure, currentUser, mayFollowUp)
-        );
+        const followsUp = measureCanBeFollowedUp(measure) && mayFollowUpMeasure(measure, currentUser, mayFollowUp);
+        const canFollowUp = Boolean(onFollowUp && followsUp);
+        const canChangeEndDate = Boolean(onChangeEndDate && followsUp);
         const responsible = userLabel(measure.responsibleUser);
         const followUp = measureFollowUp(measure);
         return (
@@ -141,12 +144,24 @@ export function MeasureList({
                 {created ? ` • ${created}` : ''}
               </p>
             </div>
-            {(editable || decidable || canFollowUp) && (
+            {(editable || decidable || canFollowUp || canChangeEndDate) && (
               <div className="col-start-2 sm:col-start-3 flex flex-wrap sm:flex-col items-start gap-8">
                 {canFollowUp && (
                   <Checkbox checked={false} aria-label={`Utförd: ${title}`} onChange={() => onFollowUp?.(measure)}>
                     Utförd
                   </Checkbox>
+                )}
+                {canChangeEndDate && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    leftIcon={<CalendarClock />}
+                    aria-label={`Ändra slutdatum ${title}`}
+                    onClick={() => onChangeEndDate?.(measure)}
+                  >
+                    Ändra slutdatum
+                  </Button>
                 )}
                 {decidable && (
                   <Button

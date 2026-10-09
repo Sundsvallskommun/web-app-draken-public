@@ -99,6 +99,21 @@ export async function followUpSupportMeasure(
   );
 }
 
+/** Moves an approved measure's end date from the follow-up; the BFF keeps its start as decided. */
+export async function changeSupportMeasurePlannedComplete(
+  municipalityId: string,
+  errandId: string,
+  measureId: string,
+  version: Measure['version'],
+  plannedComplete: string
+): Promise<void> {
+  await apiService.patch<void, Pick<Measure, 'plannedComplete'>>(
+    `${measuresUrl(municipalityId, errandId)}/${encodeURIComponent(measureId)}/planned-complete`,
+    { plannedComplete },
+    { headers: { 'If-Match': measureETag(version) } }
+  );
+}
+
 function measureETag(version: Measure['version']): string {
   if (version === undefined || !Number.isSafeInteger(version) || version < 0) {
     throw new Error('A valid measure version is required before writing');

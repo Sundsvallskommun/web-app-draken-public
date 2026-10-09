@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   read: vi.fn<() => Promise<MeasuresSnapshot>>(),
   update: vi.fn<(...args: unknown[]) => Promise<void>>(),
   followUp: vi.fn<(...args: unknown[]) => Promise<void>>(),
+  changeEnd: vi.fn<(...args: unknown[]) => Promise<void>>(),
   dirty: vi.fn(),
   locked: false,
 }));
@@ -26,6 +27,7 @@ vi.mock('./support-measure-service', () => ({
   getSupportMeasures: mocks.read,
   updateSupportMeasure: mocks.update,
   followUpSupportMeasure: mocks.followUp,
+  changeSupportMeasurePlannedComplete: mocks.changeEnd,
   createSupportMeasure: vi.fn(),
   decideSupportMeasure: vi.fn(),
 }));
@@ -80,6 +82,7 @@ beforeEach(() => {
   mocks.read.mockResolvedValue(snapshot);
   mocks.update.mockResolvedValue(undefined);
   mocks.followUp.mockResolvedValue(undefined);
+  mocks.changeEnd.mockResolvedValue(undefined);
   useUserStore.setState({
     user: {
       ...emptyUser,
@@ -254,6 +257,52 @@ test.each(['other-owner', 'read-only', 'locked'])('follow-up respects %s editing
   await screen.findByText('Utbilda personalen');
   expect(screen.queryByRole('button', { name: /Redigera åtgärd/ })).toBeNull();
   expect(screen.queryByRole('checkbox')).toBeNull();
+  expect(screen.queryByRole('button', { name: /Ändra slutdatum/ })).toBeNull();
+});
+
+// The start is part of the decision; only the end may slip, and whoever follows the measure up moves it.
+test('the follow-up moves the end date and shows the decided start without offering it', async () => {
+  render(<Harness />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Ändra slutdatum Utbildning' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText('2026-09-10')).toBeTruthy();
+  expect(within(dialog).queryByDisplayValue('2026-09-10')).toBeNull();
+  const end = within(dialog).getByLabelText('När ska åtgärden vara klar? (Obligatoriskt)');
+  expect((end as HTMLInputElement).value).toBe('2026-09-30');
+
+  fireEvent.change(end, { target: { value: '2026-09-01' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Spara slutdatum' }));
+  expect(await within(dialog).findByText('Slutdatum får inte vara före startdatum.')).toBeTruthy();
+  expect(mocks.changeEnd).not.toHaveBeenCalled();
+
+  mocks.read.mockResolvedValue({
+    ...snapshot,
+    measures: [{ ...measure, version: 4, plannedComplete: '2026-10-15T00:00:00+02:00' }],
+  });
+  fireEvent.change(end, { target: { value: '2026-10-15' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Spara slutdatum' }));
+  await waitFor(() =>
+    expect(mocks.changeEnd).toHaveBeenCalledWith(
+      '2281',
+      'errand-one',
+      'measure-one',
+      3,
+      expect.stringMatching(/^2026-10-15T00:00:00[+-]\d{2}:\d{2}$/)
+    )
+  );
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(await screen.findByText('Planerat datum: 2026-09-10 – 2026-10-15')).toBeTruthy();
+});
+
+test('editing an approved measure leaves both dates alone, and the measures view offers moving the end', async () => {
+  render(<Harness followUp={false} />);
+  expect(await screen.findByRole('button', { name: 'Ändra slutdatum Utbildning' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Redigera åtgärd Utbildning' }));
+  const start = await screen.findByLabelText(/När ska åtgärden påbörjas\?/);
+  expect((start as HTMLInputElement).readOnly).toBe(true);
+  expect(screen.getByText('Startdatumet kan inte ändras.')).toBeTruthy();
+  expect((screen.getByLabelText(/När ska åtgärden vara klar\?/) as HTMLInputElement).readOnly).toBe(true);
+  expect(screen.getByText('Slutdatumet ändras med Ändra slutdatum, av den som följer upp åtgärden.')).toBeTruthy();
 });
 
 test('returning to a tab reloads measures changed in the other view', async () => {

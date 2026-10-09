@@ -63,6 +63,20 @@ endpoint. Roller utan `decides` kan bara registrera planerade åtgärder: formul
 ett förslag som ännu inte är godkänt. Ett godkänt eller delvis godkänt förslag får markeras som
 genomfört.
 
+Ett förslag har inga datum. När verksamheten ska påbörja en åtgärd är inte den som föreslår den att
+bestämma, så formuläret visar varken valet planerad/genomförd eller datumfälten för en roll utan
+`decides` (`measureIsUndatedProposal`). Datumen anges i stället när förslaget bedöms: Godkänn och
+Godkänn delvis kräver start- och slutdatum, i dialogen och i backendens beslutsendpoint, medan Avslå
+inte frågar efter några. Har ett äldre förslag datum är de ifyllda i dialogen och går att ändra. På
+så vis når varje godkänd åtgärd uppföljningen, som bara visar åtgärder med datum.
+
+Startdatumet ändras aldrig när det väl är satt: redigeringen visar det låst (`measurePlannedDateIsLocked`) och
+backendens redigering avvisar ett nytt startdatum med 409. En beslutande roll som registrerar en egen åtgärd
+godkänner den direkt, så den åtgärdens startdatum låses när den sparas. Slutdatumet kan flyttas, eftersom en
+åtgärd kan ta längre tid än planerat, men på en godkänd åtgärd bara av den som följer upp den, med **Ändra
+slutdatum** (se Uppföljning). Redigeringen visar det låst och backenden avvisar det där. Samma dag skriven på
+ett annat sätt räknas inte som en ändring.
+
 Flera roller får registrera som samma `roleName` - LEX-ansvarig registrerar exakt som
 LEX-utredare - om de har samma `measureGroup` och `decides`; rollen visas då en gång och innehas via
 någon av gruppernas medlemskap. Okända fält, dubbla nycklar, två roller som registrerar samma
@@ -186,6 +200,14 @@ Svaren och genomförandet sparas i samma skrivning. Kortet behåller
 och åtgärdens effekt. En sparad uppföljning kan inte ändras i detta flöde. Planerade
 åtgärder som redan har ett genomförandedatum men saknar svar kan följas upp;
 datumet bevaras.
+
+Den som följer upp en åtgärd kan också flytta dess slutdatum med **Ändra slutdatum**, så länge
+åtgärden inte är uppföljd. Knappen finns både här och under Åtgärder, och det är det enda sättet att flytta
+slutdatumet på en godkänd åtgärd. Dialogen visar startdatumet men erbjuder det inte, och slutdatumet får
+inte ligga före startdatumet. Skrivningen går genom `PATCH .../measures/:measureId/planned-complete`,
+som bara tar `plannedComplete`. Den gäller samma regler som uppföljningen: samma roll (eller skaparen,
+utan roller), en planerad och godkänd åtgärd och åtgärdens `If-Match`. Därför kan enhetschefen flytta
+slutdatumet på ett förslag från LEX som enhetschefen själv har godkänt.
 
 Drakens `PATCH .../measures/:measureId/follow-up` tar endast
 `desiredEffectAchieved: boolean` och `followUpDescription: string`.

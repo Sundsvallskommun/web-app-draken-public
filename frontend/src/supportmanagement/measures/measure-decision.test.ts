@@ -4,6 +4,7 @@ import {
   measureCanBeDecided,
   measureContentIsLocked,
   measureDecisionPresentation,
+  measureDecisionSetsDates,
   measureIsApproved,
 } from './measure-decision';
 
@@ -33,4 +34,11 @@ test('unknown persisted decisions remain visible and never become writable propo
   expect(measureContentIsLocked(measure)).toBe(true);
   expect(measureIsApproved(measure)).toBe(false);
   expect(measureCanBeDecided(measure)).toBe(false);
+});
+
+test('an approval, whole or in part, decides when the measure runs; a rejection does not', () => {
+  expect(measureDecisionSetsDates('TRUE')).toBe(true);
+  expect(measureDecisionSetsDates('REWORK')).toBe(true);
+  expect(measureDecisionSetsDates('FALSE')).toBe(false);
+  expect(measureDecisionSetsDates('')).toBe(false);
 });

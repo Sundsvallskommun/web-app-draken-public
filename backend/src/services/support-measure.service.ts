@@ -3,7 +3,13 @@ import { apiServiceName } from '@/config/api-config';
 import { HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { mayFollowUpMeasuresByRole } from '@/config/measure-follow-up-roles';
 import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Role } from '@/data-contracts/supportmanagement/data-contracts';
-import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
+import {
+  CreateSupportMeasureDto,
+  DecideSupportMeasureDto,
+  FollowUpSupportMeasureDto,
+  PlannedCompleteSupportMeasureDto,
+  UpdateSupportMeasureDto,
+} from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
 
@@ -11,7 +17,14 @@ import ApiService from './api.service';
 import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
 import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from './support-investigation-access.service';
 import { closeRequiresHandledMeasures, unhandledMeasuresMessage } from './support-measure-closing';
-import { isPlannedApprovedMeasure, measureFollowUpAnswers, measureHoldsFollowUp } from './support-measure-follow-up';
+import {
+  changesApprovedEndDate,
+  changesStartDate,
+  isApprovedMeasure,
+  isPlannedApprovedMeasure,
+  measureFollowUpAnswers,
+  measureHoldsFollowUp,
+} from './support-measure-follow-up';
 import {
   assertMeasureRegistration,
   assertMeasureTypeForRole,
@@ -248,6 +261,12 @@ export class SupportMeasureService {
     if (existing.accept && (['type', 'description', 'goal'] as const).some(key => data[key] !== undefined && data[key] !== existing[key])) {
       throw new HttpException(409, 'Typ, beskrivning och mål är låsta efter beslut. Skapa ett nytt förslag om innehållet behöver ändras.');
     }
+    if (changesStartDate(existing, data.plannedStart)) {
+      throw new HttpException(409, 'Startdatumet kan inte ändras.');
+    }
+    if (changesApprovedEndDate(existing, data.plannedComplete)) {
+      throw new HttpException(409, 'Slutdatumet på en godkänd åtgärd ändras med Ändra slutdatum, av den som följer upp åtgärden.');
+    }
 
     const changesType = data.type !== undefined && data.type !== existing.type;
     const reportsExecuted = data.executed !== undefined && !existing.executed;
@@ -262,7 +281,7 @@ export class SupportMeasureService {
       const { registration } = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.handlerRoles, this.superadminGroup);
       assertMeasureTypeForRole(registration, existing.addedByRole, data.type);
     }
-    if (reportsExecuted && existing.accept !== 'TRUE' && existing.accept !== 'REWORK') {
+    if (reportsExecuted && !isApprovedMeasure(existing)) {
       throw new HttpException(400, 'Ett förslag kan inte markeras som genomfört förrän det har godkänts helt eller delvis.');
     }
     if (existing.result && data.executed !== undefined && Date.parse(data.executed) !== Date.parse(existing.executed ?? '')) {
@@ -316,12 +335,56 @@ export class SupportMeasureService {
 
     const latest = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(latest.data, 'measure decisions');
-    // Only decision fields: the proposal and its creator/role are never replaced by the decision maker.
-    // This is independent of the deciding role's own selectable measure types.
+    // A proposal leaves its dates open, so the one who approves it decides when it starts and ends. Without them an
+    // approved measure would never come up for follow-up.
+    const approves = data.accept !== 'FALSE';
+    if (approves && (!data.plannedStart || !data.plannedComplete)) {
+      throw new HttpException(400, 'Ange start- och slutdatum för en godkänd åtgärd.');
+    }
+    if (approves) assertMeasureDates({ plannedStart: data.plannedStart, plannedComplete: data.plannedComplete });
+    // The decision and the dates it sets: the proposal's own content and its creator/role are never replaced by the
+    // decision maker. This is independent of the deciding role's own selectable measure types.
     await this.apiService.patch<Measure, DecideSupportMeasureDto>(
       {
         url: `${url}/measures/${encodeURIComponent(measureId)}`,
-        data: { accept: data.accept, acceptMotivation: motivation ?? '' },
+        data: {
+          accept: data.accept,
+          acceptMotivation: motivation ?? '',
+          ...(approves ? { plannedStart: data.plannedStart, plannedComplete: data.plannedComplete } : {}),
+        },
+        headers: { 'If-Match': ifMatch },
+        followLocation: false,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
+      user,
+    );
+  }
+
+  /**
+   * Moves an approved measure's end date. The start never changes, but the end may slip, and only the one who follows
+   * the measure up moves it - not whoever registered it. A measure already followed up is done, and keeps the end it
+   * had.
+   */
+  async changePlannedComplete(
+    municipalityId: string,
+    errandId: string,
+    measureId: string,
+    ifMatch: string | undefined,
+    data: PlannedCompleteSupportMeasureDto,
+    user: User,
+  ): Promise<void> {
+    const url = this.errandUrl(municipalityId, errandId);
+    const existing = await this.readWritableMeasure(url, measureId, ifMatch, user);
+    this.assertMayFollowUp(existing, user);
+    if (!isPlannedApprovedMeasure(existing) || existing.result) {
+      throw new HttpException(409, 'Slutdatumet kan bara ändras på en planerad och godkänd åtgärd som inte är uppföljd.');
+    }
+    assertMeasureDates({ plannedComplete: data.plannedComplete }, existing);
+    await this.apiService.patch<Measure, Pick<Measure, 'plannedComplete'>>(
+      {
+        url: `${url}/measures/${encodeURIComponent(measureId)}`,
+        data: { plannedComplete: data.plannedComplete },
         headers: { 'If-Match': ifMatch },
         followLocation: false,
         propagateClientError: true,

@@ -24,25 +24,23 @@ import { measureContentIsLocked, measureDecisionPresentation } from '../measure-
 import { selectableMeasureTypes } from '../measure-types';
 import type { MeasuresSnapshot } from '../support-measure-service';
 import {
+  lockedMeasureDateHelp,
   measureCanExecute,
-  type MeasureDateField,
   measureDateFields,
+  measureDateLabels,
   type MeasureForm,
   type MeasureFormErrors,
   measureFormErrors,
   measureFormRebase,
   measureFormValues,
+  measureIsUndatedProposal,
+  measurePlannedDateIsLocked,
+  plannedDateField,
   todayIsoDate,
 } from './measure-form';
 
 /** Spelled out instead of an asterisk so the label itself says what is required. */
 const Required = () => <span className="font-normal"> (Obligatoriskt)</span>;
-
-const dateLabels: Record<MeasureDateField, string> = {
-  plannedStart: 'När ska åtgärden påbörjas?',
-  plannedComplete: 'När ska åtgärden vara klar?',
-  executed: 'När genomfördes åtgärden?',
-};
 
 export function AvvikelseMeasureForm({
   measure,
@@ -64,9 +62,6 @@ export function AvvikelseMeasureForm({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const defaults = measureFormValues(measure, creationRoles);
-  const decidesFor = (role: string) => Boolean(registration.roleTypes.find((rule) => rule.roleName === role)?.decides);
-  // A proposal has exactly one timing, so a preselected proposing role starts on it instead of an empty choice.
-  if (!measure && defaults.addedByRole && !decidesFor(defaults.addedByRole)) defaults.timing = 'planned';
 
   const {
     register,
@@ -88,6 +83,9 @@ export function AvvikelseMeasureForm({
   const proposes = !measure && Boolean(roleName) && !roleRule?.decides;
   // Before a role is chosen the details are disabled anyway; show the full choice until the policy is known.
   const canExecute = !measure && !roleName ? true : measureCanExecute(measure, Boolean(roleRule?.decides));
+  // A proposal is planned without dates: the one who approves it says when it runs.
+  const undatedProposal =
+    (Boolean(measure) || Boolean(roleName)) && measureIsUndatedProposal(measure, Boolean(roleRule?.decides));
   const types = selectableMeasureTypes(measureTypes, availableTypes, measure?.type);
   const [saving, setSaving] = useState(false);
   const confirm = useConfirm();
@@ -157,14 +155,15 @@ export function AvvikelseMeasureForm({
 
   const submit = handleSubmit(async (values) => {
     if (saving) return;
-    const nextErrors = measureFormErrors(values, measure, { canExecute });
+    const nextErrors = measureFormErrors(values, measure, { canExecute, undatedProposal });
     setErrors(nextErrors);
     setSaveError(undefined);
     setConflict(undefined);
     if (Object.keys(nextErrors).length > 0) return;
     setSaving(true);
     try {
-      await onSave(values);
+      // A proposal sends no timing, so no dates either - whatever an earlier role choice left in the form.
+      await onSave(undatedProposal ? { ...values, timing: '' } : values);
     } catch (cause) {
       // Only an existing measure can be rebased. A create that conflicts means the errand itself moved on
       // (status guard, 409), and there is nothing merged to report - say that instead.
@@ -293,7 +292,6 @@ export function AvvikelseMeasureForm({
               {...register('addedByRole', {
                 onChange: (event: { target: { value: string } }) => {
                   setValue('type', '', { shouldDirty: true });
-                  if (!decidesFor(event.target.value)) setValue('timing', 'planned', { shouldDirty: true });
                   setErrors((current) => {
                     const next = { ...current };
                     delete next.addedByRole;
@@ -356,59 +354,73 @@ export function AvvikelseMeasureForm({
           )}
           {errorText('type')}
         </FormControl>
-        <FormControl fieldset id={fieldId('timing')} invalid={Boolean(errors.timing)} className="w-full">
-          <FormLabel>
-            {/* legend.sk-form-label is display: contents, so keep the text and marker in one box. */}
-            <span>
-              Är åtgärden genomförd eller planerad?
-              <Required />
-            </span>
-          </FormLabel>
-          {/* Remount when the option set changes so react-hook-form re-applies the current value to the inputs. */}
-          <RadioButton.Group key={canExecute ? 'timing-all' : 'timing-planned'}>
-            <RadioButton
-              id={fieldId('timing')}
-              {...register('timing')}
-              value="planned"
-              aria-required
-              disabled={Boolean(measure?.executed)}
-            >
-              Planerade åtgärder
-            </RadioButton>
-            {canExecute && (
-              <RadioButton {...register('timing')} value="executed" aria-required>
-                Genomförda åtgärder
-              </RadioButton>
-            )}
-          </RadioButton.Group>
-          {measure?.executed && <FormHelperText>Åtgärden är registrerad som genomförd.</FormHelperText>}
-          {!canExecute && (
-            <FormHelperText data-cy="measure-planned-only">
-              Åtgärden måste vara godkänd helt eller delvis innan den kan markeras som genomförd.
-            </FormHelperText>
-          )}
-          {errorText('timing')}
-        </FormControl>
-        {measureDateFields(timing).length > 0 && (
-          <div className="grid gap-24 sm:grid-cols-2">
-            {measureDateFields(timing).map((key) => (
-              <FormControl key={key} id={fieldId(key)} invalid={Boolean(errors[key])} className="w-full">
-                <FormLabel>
-                  {dateLabels[key]}
+        {undatedProposal ? (
+          <p data-cy="measure-undated-proposal">
+            Ett förslag har inga datum. Start- och slutdatum anges av den som godkänner förslaget.
+          </p>
+        ) : (
+          <>
+            <FormControl fieldset id={fieldId('timing')} invalid={Boolean(errors.timing)} className="w-full">
+              <FormLabel>
+                {/* legend.sk-form-label is display: contents, so keep the text and marker in one box. */}
+                <span>
+                  Är åtgärden genomförd eller planerad?
                   <Required />
-                </FormLabel>
-                <Input
-                  id={fieldId(key)}
-                  type="date"
-                  {...register(key)}
+                </span>
+              </FormLabel>
+              {/* Remount when the option set changes so react-hook-form re-applies the current value to the inputs. */}
+              <RadioButton.Group key={canExecute ? 'timing-all' : 'timing-planned'}>
+                <RadioButton
+                  id={fieldId('timing')}
+                  {...register('timing')}
+                  value="planned"
                   aria-required
-                  max={key === 'executed' ? todayIsoDate() : undefined}
-                  className="w-full"
-                />
-                {errorText(key)}
-              </FormControl>
-            ))}
-          </div>
+                  disabled={Boolean(measure?.executed)}
+                >
+                  Planerade åtgärder
+                </RadioButton>
+                {canExecute && (
+                  <RadioButton {...register('timing')} value="executed" aria-required>
+                    Genomförda åtgärder
+                  </RadioButton>
+                )}
+              </RadioButton.Group>
+              {measure?.executed && <FormHelperText>Åtgärden är registrerad som genomförd.</FormHelperText>}
+              {!canExecute && (
+                <FormHelperText data-cy="measure-planned-only">
+                  Åtgärden måste vara godkänd helt eller delvis innan den kan markeras som genomförd.
+                </FormHelperText>
+              )}
+              {errorText('timing')}
+            </FormControl>
+            {measureDateFields(timing).length > 0 && (
+              <div className="grid gap-24 sm:grid-cols-2">
+                {measureDateFields(timing).map((key) => {
+                  const plannedKey = plannedDateField(key);
+                  const locked = plannedKey !== undefined && measurePlannedDateIsLocked(measure, plannedKey);
+                  return (
+                    <FormControl key={key} id={fieldId(key)} invalid={Boolean(errors[key])} className="w-full">
+                      <FormLabel>
+                        {measureDateLabels[key]}
+                        <Required />
+                      </FormLabel>
+                      <Input
+                        id={fieldId(key)}
+                        type="date"
+                        {...register(key)}
+                        aria-required
+                        max={key === 'executed' ? todayIsoDate() : undefined}
+                        readOnly={locked}
+                        className="w-full"
+                      />
+                      {locked && plannedKey && <FormHelperText>{lockedMeasureDateHelp[plannedKey]}</FormHelperText>}
+                      {errorText(key)}
+                    </FormControl>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
         <FormControl id={fieldId('responsibleUser')} className="w-full">
           <FormLabel>Ansvarig för åtgärden</FormLabel>

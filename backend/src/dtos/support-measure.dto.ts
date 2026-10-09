@@ -55,6 +55,24 @@ export class DecideSupportMeasureDto {
   @IsString()
   @Matches(/\S/, { message: 'En kommentar krävs vid avslag eller delvis godkännande.' })
   acceptMotivation?: string;
+
+  /**
+   * When an approved measure is to start and be finished. A proposal leaves its dates to the one who decides, so an
+   * approval - whole or partial - has to set them; a rejection has nothing to plan.
+   */
+  @ValidateIf((decision: DecideSupportMeasureDto) => decision.accept !== 'FALSE')
+  @IsISO8601({ strict: true }, { message: 'Ange när åtgärden ska påbörjas.' })
+  plannedStart?: string;
+
+  @ValidateIf((decision: DecideSupportMeasureDto) => decision.accept !== 'FALSE')
+  @IsISO8601({ strict: true }, { message: 'Ange när åtgärden ska vara klar.' })
+  plannedComplete?: string;
+}
+
+/** Moves an approved measure's end date from the follow-up; its start is part of the decision and stays. */
+export class PlannedCompleteSupportMeasureDto {
+  @IsISO8601({ strict: true }, { message: 'Ange när åtgärden ska vara klar.' })
+  plannedComplete!: string;
 }
 
 /** One follow-up command; measure details cannot be supplied. */

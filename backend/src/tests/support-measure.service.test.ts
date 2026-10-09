@@ -599,6 +599,9 @@ test('lets only the user who registered a measure edit it, regardless of case', 
   });
 });
 
+/** When an approved proposal is to run: its proposer left the dates open, so the decision sets them. */
+const approvalDates = { plannedStart: '2026-10-12T00:00:00+02:00', plannedComplete: '2026-11-30T00:00:00+01:00' };
+
 test.each(['TRUE', 'FALSE', 'REWORK'] as const)('a deciding user can assess another role’s proposal with decision %s', async accept => {
   const { service, get, patch } = setup();
   // Deliberately outside the manager's own selectable types. The decision must not rewrite the proposal.
@@ -612,13 +615,19 @@ test.each(['TRUE', 'FALSE', 'REWORK'] as const)('a deciding user can assess anot
     {
       accept,
       acceptMotivation: '  Endast dokumentationsdelen ska genomföras.  ',
+      ...(accept === 'FALSE' ? {} : approvalDates),
     },
     user,
   );
   expect(patch.mock.calls[0]).toEqual([
     {
       url: expect.stringContaining('/measures/measure-1'),
-      data: { accept, acceptMotivation: 'Endast dokumentationsdelen ska genomföras.' },
+      data: {
+        accept,
+        acceptMotivation: 'Endast dokumentationsdelen ska genomföras.',
+        // A rejection plans nothing; an approval, whole or partial, says when the measure runs.
+        ...(accept === 'FALSE' ? {} : approvalDates),
+      },
       headers: { 'If-Match': '"3"' },
       followLocation: false,
       propagateClientError: true,
@@ -632,8 +641,31 @@ test.each(['TRUE', 'FALSE', 'REWORK'] as const)('a deciding user can assess anot
 test('full acceptance permits an omitted comment', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
-  await service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE' }, user);
-  expect(patch.mock.calls[0][0].data).toEqual({ accept: 'TRUE', acceptMotivation: '' });
+  await service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE', ...approvalDates }, user);
+  expect(patch.mock.calls[0][0].data).toEqual({ accept: 'TRUE', acceptMotivation: '', ...approvalDates });
+});
+
+test.each([
+  ['TRUE', {}],
+  ['REWORK', { acceptMotivation: 'Endast del A.' }],
+] as const)('refuses to approve a proposal without saying when it runs: %s', async (accept, motivation) => {
+  const { service, get, patch } = setup();
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
+  await expect(service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept, ...motivation }, user)).rejects.toMatchObject({
+    status: 400,
+    message: 'Ange start- och slutdatum för en godkänd åtgärd.',
+  });
+  expect(patch).not.toHaveBeenCalled();
+});
+
+test('refuses an approval that ends before it starts', async () => {
+  const { service, get, patch } = setup();
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
+  const reversed = { plannedStart: approvalDates.plannedComplete, plannedComplete: approvalDates.plannedStart };
+  await expect(
+    service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE', ...reversed }, user),
+  ).rejects.toMatchObject({ status: 400 });
+  expect(patch).not.toHaveBeenCalled();
 });
 
 test.each([{ groups: ['ad-nurse'] }, { groups: ['MANAGER'] }, { groups: [] }])(
@@ -704,7 +736,9 @@ test('propagates a decision conflict without retrying the write', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
   patch.mockRejectedValueOnce(new HttpException(412, 'Measure changed'));
-  await expect(service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE' }, user)).rejects.toMatchObject({
+  await expect(
+    service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE', ...approvalDates }, user),
+  ).rejects.toMatchObject({
     status: 412,
   });
   expect(patch).toHaveBeenCalledTimes(1);
@@ -719,6 +753,32 @@ test.each(['TRUE', 'FALSE', 'REWORK'])('protects the original content after deci
   expect(patch).not.toHaveBeenCalled();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response({ ...measure, accept }));
   const changes = { responsibleUser: 'Anna', plannedStart: '2026-09-10T00:00:00Z' };
+  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', changes, user);
+  expect(patch.mock.calls[0][0].data).toEqual(changes);
+});
+
+test.each([undefined, 'TRUE', 'REWORK'])('never lets editing change a start date once set (decision %s)', async accept => {
+  const { service, get, patch } = setup();
+  const planned = { ...measure, accept, plannedStart: '2026-09-08T00:00:00Z', plannedComplete: '2026-09-30T00:00:00Z' };
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(planned));
+  await expect(
+    service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { plannedStart: '2026-09-15T00:00:00Z' }, user),
+  ).rejects.toMatchObject({ status: 409, message: 'Startdatumet kan inte ändras.' });
+  expect(patch).not.toHaveBeenCalled();
+});
+
+test.each(['TRUE', 'REWORK'])('leaves the end date of a measure approved by %s to the follow-up', async accept => {
+  const { service, get, patch } = setup();
+  const approved = { ...measure, accept, plannedStart: '2026-09-08T00:00:00Z', plannedComplete: '2026-09-30T00:00:00Z' };
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(approved));
+  await expect(
+    service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { plannedComplete: '2026-10-15T00:00:00Z' }, user),
+  ).rejects.toMatchObject({ status: 409, message: expect.stringContaining('Ändra slutdatum') });
+  expect(patch).not.toHaveBeenCalled();
+
+  // The same days written another way are no change, and the rest of the measure is still the registrar's.
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(approved));
+  const changes = { plannedStart: '2026-09-08T02:00:00+02:00', plannedComplete: '2026-09-30T02:00:00+02:00', responsibleUser: 'Anna' };
   await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', changes, user);
   expect(patch.mock.calls[0][0].data).toEqual(changes);
 });
@@ -740,9 +800,9 @@ test.each([undefined, 'FALSE', 'UNKNOWN'])('even a deciding role cannot execute 
 });
 
 test.each([
-  { accept: 'TRUE' },
+  { accept: 'TRUE', ...approvalDates },
   { accept: 'FALSE', acceptMotivation: 'Avslås därför att…' },
-  { accept: 'REWORK', acceptMotivation: 'Genomför endast del A eftersom…' },
+  { accept: 'REWORK', acceptMotivation: 'Genomför endast del A eftersom…', ...approvalDates },
 ])('accepts the narrow decision contract: %j', async body => {
   expect(await validate(plainToInstance(DecideSupportMeasureDto, body), { whitelist: true, forbidNonWhitelisted: true })).toEqual([]);
 });
@@ -751,6 +811,9 @@ test.each([
   { accept: null },
   { accept: 'UNKNOWN' },
   { accept: undefined },
+  { accept: 'TRUE' },
+  { accept: 'REWORK', acceptMotivation: 'Genomför endast del A eftersom…' },
+  { accept: 'TRUE', plannedStart: 'i morgon', plannedComplete: approvalDates.plannedComplete },
   { accept: 'FALSE' },
   { accept: 'REWORK', acceptMotivation: '  ' },
   { accept: 'FALSE', acceptMotivation: null },

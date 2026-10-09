@@ -31,6 +31,7 @@ async function installMeasures(
     registrationStatus = 'ready',
     reloadDelayMs = 0,
     foreignMeasure = false,
+    undatedProposal = false,
     existingDecision,
   }: {
     enabled?: boolean;
@@ -48,6 +49,8 @@ async function installMeasures(
     reloadDelayMs?: number;
     /** The existing measure was registered by another user. */
     foreignMeasure?: boolean;
+    /** The existing measure is a proposal without dates, which is how a proposing role registers one. */
+    undatedProposal?: boolean;
     existingDecision?: Measure['accept'];
   } = {}
 ) {
@@ -70,9 +73,8 @@ async function installMeasures(
       version: 3,
       goal: 'Befintligt mål',
       description: 'Befintlig beskrivning',
-      plannedStart: '2026-09-08T00:00:00Z',
-      plannedComplete: '2026-09-10T00:00:00Z',
-      addedByRole: 'MANAGER',
+      ...(undatedProposal ? {} : { plannedStart: '2026-09-08T00:00:00Z', plannedComplete: '2026-09-10T00:00:00Z' }),
+      addedByRole: undatedProposal ? 'NURSE' : 'MANAGER',
       addedByUser: foreignMeasure ? 'someone.else' : 'iaf.test',
       accept: existingDecision,
       acceptMotivation:
@@ -234,12 +236,13 @@ test('creates a measure for an explicitly selected granted role independently of
   await expect(types).toBeEnabled();
   await expect(types.locator('option')).toHaveText(['Välj typ av åtgärd', 'Utbildning']);
   await types.selectOption(firstType);
-  // A proposing role cannot report executed measures, so only the planned option exists and it is preselected.
+  // A proposal has no timing and no dates: the one who approves it says when it runs.
   await expect(page.getByLabel('Genomförda åtgärder', { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Planerade åtgärder', { exact: true })).toBeChecked();
-  await expect(page.locator('[data-cy="measure-planned-only"]')).toBeVisible();
-  await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
-  await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
+  await expect(page.getByLabel('Planerade åtgärder', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-cy="measure-undated-proposal"]')).toContainText(
+    'Start- och slutdatum anges av den som godkänner förslaget'
+  );
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Gemensam utbildning');
   await page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true }).fill('Säkrare arbetssätt');
   await page.getByRole('button', { name: 'Lägg till förslag till åtgärd', exact: true }).click();
@@ -253,8 +256,6 @@ test('creates a measure for an explicitly selected granted role independently of
         addedByRole: 'NURSE',
         description: 'Gemensam utbildning',
         goal: 'Säkrare arbetssätt',
-        plannedStart: expect.stringMatching(/^2026-09-08T00:00:00[+-]\d{2}:\d{2}$/),
-        plannedComplete: expect.stringMatching(/^2026-09-10T00:00:00[+-]\d{2}:\d{2}$/),
       },
     },
   ]);
@@ -712,9 +713,56 @@ test('a manager can partially approve another author’s proposal without editin
   await expect(card).toContainText('Skapad av someone.else (Enhetschef)');
   await expect(card.getByRole('button', { name: /^Bedöm förslag/ })).toHaveCount(0);
   expect(state.writes).toEqual([
-    { method: 'PATCH', version: '"3"', data: { accept: 'REWORK', acceptMotivation: comment } },
+    {
+      method: 'PATCH',
+      version: '"3"',
+      data: {
+        accept: 'REWORK',
+        acceptMotivation: comment,
+        // The proposal's own dates were the starting point, and the approval settles them.
+        plannedStart: expect.stringMatching(/^2026-09-08T00:00:00[+-]\d{2}:\d{2}$/),
+        plannedComplete: expect.stringMatching(/^2026-09-10T00:00:00[+-]\d{2}:\d{2}$/),
+      },
+    },
   ]);
   expect(state.trace.errandPatches).toEqual([]);
+});
+
+// A proposal leaves its dates open, so approving it - whole or in part - is where they are set.
+test('approving a proposal without dates asks when it starts and ends', async ({ page, dismissCookieConsent }) => {
+  const state = await installMeasures(page, { foreignMeasure: true, undatedProposal: true });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByRole('button', { name: /^Bedöm förslag/ }).click();
+  const dialog = decisionDialog(page);
+  const start = dialog.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true });
+  const complete = dialog.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true });
+
+  // A rejection plans nothing, so it asks for no dates.
+  await dialog.getByRole('radio', { name: 'Avslå', exact: true }).check();
+  await expect(start).toHaveCount(0);
+
+  await dialog.getByRole('radio', { name: 'Godkänn', exact: true }).check();
+  await expect(start).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Ange när åtgärden ska påbörjas.');
+  await expect(dialog.getByRole('alert')).toContainText('Ange när åtgärden ska vara klar.');
+  expect(state.writes).toEqual([]);
+
+  await start.fill('2026-10-12');
+  await complete.fill('2026-11-30');
+  await dialog.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.writes).toEqual([
+    {
+      method: 'PATCH',
+      version: '"3"',
+      data: {
+        accept: 'TRUE',
+        plannedStart: expect.stringMatching(/^2026-10-12T00:00:00[+-]\d{2}:\d{2}$/),
+        plannedComplete: expect.stringMatching(/^2026-11-30T00:00:00[+-]\d{2}:\d{2}$/),
+      },
+    },
+  ]);
 });
 
 test('a decision conflict preserves the comment and does not retry', async ({ page, dismissCookieConsent }) => {

@@ -23,5 +23,20 @@ export const measureFollowUpAnswers = (desiredEffectAchieved: boolean, followUpD
 export const measureHoldsFollowUp = (measure: Pick<Measure, 'result' | 'resultText'>, answers: MeasureFollowUpAnswers): boolean =>
   measure.result === answers.result && measure.resultText === answers.resultText;
 
+/** Approved whole or in part: the measure is to be carried out. */
+export const isApprovedMeasure = (measure: Pick<Measure, 'accept'>): boolean => measure.accept === 'TRUE' || measure.accept === 'REWORK';
+
 export const isPlannedApprovedMeasure = (measure: Measure): boolean =>
-  (measure.accept === 'TRUE' || measure.accept === 'REWORK') && Boolean(measure.plannedStart || measure.plannedComplete);
+  isApprovedMeasure(measure) && Boolean(measure.plannedStart || measure.plannedComplete);
+
+/** The same day and time, however it is written. */
+const sameInstant = (left: string | undefined, right: string | undefined): boolean =>
+  left !== undefined && right !== undefined && Date.parse(left) === Date.parse(right);
+
+/** A measure starts when it was planned to: once set, its start date never changes. */
+export const changesStartDate = (existing: Pick<Measure, 'plannedStart'>, plannedStart: string | undefined): boolean =>
+  Boolean(existing.plannedStart) && plannedStart !== undefined && !sameInstant(plannedStart, existing.plannedStart);
+
+/** An approved measure's end date is moved by whoever follows the measure up, with its own command - not by editing. */
+export const changesApprovedEndDate = (existing: Pick<Measure, 'accept' | 'plannedComplete'>, plannedComplete: string | undefined): boolean =>
+  isApprovedMeasure(existing) && plannedComplete !== undefined && !sameInstant(plannedComplete, existing.plannedComplete);

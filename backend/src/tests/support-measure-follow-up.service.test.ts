@@ -187,6 +187,53 @@ test('ordinary editing cannot change the execution belonging to a saved follow-u
   expect(api.patches).toHaveLength(1);
 });
 
+describe('moving the end date of a measure being followed up', () => {
+  const moveTo = (plannedComplete: string, version = 3) => {
+    const { api, service } = setup();
+    return { api, move: () => service.changePlannedComplete('2281', 'errand-1', 'measure-1', `"${version}"`, { plannedComplete }, user) };
+  };
+
+  it('writes only the new end date, conditioned on the measure version', async () => {
+    const { api, move } = moveTo('2026-10-15T00:00:00Z');
+    await move();
+    expect(api.patches).toHaveLength(1);
+    expect(api.patches[0]).toMatchObject({ data: { plannedComplete: '2026-10-15T00:00:00Z' }, headers: { 'If-Match': '"3"' } });
+    expect(api.measure).toMatchObject({ plannedStart: '2026-09-08T12:00:00Z', plannedComplete: '2026-10-15T00:00:00Z', version: 4 });
+  });
+
+  it('refuses an end before the decided start', async () => {
+    const { api, move } = moveTo('2026-09-01T00:00:00Z');
+    await expect(move()).rejects.toMatchObject({ status: 400 });
+    expect(api.patches).toHaveLength(0);
+  });
+
+  it.each([{ accept: undefined }, { accept: 'FALSE' }, { plannedStart: undefined }, { result: 'COMPLETED' }] as const)(
+    'refuses a measure that is not planned, approved and open: %j',
+    async fields => {
+      const { api, move } = moveTo('2026-10-15T00:00:00Z');
+      api.measure = { ...api.measure, ...fields };
+      await expect(move()).rejects.toMatchObject({ status: 409 });
+      expect(api.patches).toHaveLength(0);
+    },
+  );
+
+  it('refuses a stale version and a locked errand before writing', async () => {
+    const stale = moveTo('2026-10-15T00:00:00Z', 2);
+    await expect(stale.move()).rejects.toMatchObject({ status: 412 });
+    const locked = moveTo('2026-10-15T00:00:00Z');
+    locked.api.parent.status = 'SOLVED';
+    await expect(locked.move()).rejects.toMatchObject({ status: 409 });
+    expect([...stale.api.patches, ...locked.api.patches]).toHaveLength(0);
+  });
+
+  it('is left to the one who follows the measure up, as the follow-up itself is', async () => {
+    const { api, move } = moveTo('2026-10-15T00:00:00Z');
+    api.measure.addedByUser = 'someone-else';
+    await expect(move()).rejects.toMatchObject({ status: 403 });
+    expect(api.patches).toHaveLength(0);
+  });
+});
+
 describe('who follows up a measure where the deployment names handler roles', () => {
   const unitManagers = 'MOCK_UNIT_MANAGERS';
   const roles = [
@@ -198,7 +245,12 @@ describe('who follows up a measure where the deployment names handler roles', ()
     // Proposed by a LEX investigator, approved since: the unit's manager is the one to follow it up.
     api.measure.addedByUser = 'lex-investigator';
     const service = new SupportMeasureService(api, roles);
-    return { api, save: () => service.followUp('2281', 'errand-1', 'measure-1', '"3"', answers, mockUser({ groups })) };
+    return {
+      api,
+      save: () => service.followUp('2281', 'errand-1', 'measure-1', '"3"', answers, mockUser({ groups })),
+      moveEnd: () =>
+        service.changePlannedComplete('2281', 'errand-1', 'measure-1', '"3"', { plannedComplete: '2026-10-15T00:00:00Z' }, mockUser({ groups })),
+    };
   };
 
   it("lets the unit's manager follow up a measure somebody else proposed", async () => {
@@ -213,5 +265,15 @@ describe('who follows up a measure where the deployment names handler roles', ()
 
     await expect(save()).rejects.toMatchObject({ status: 403 });
     expect(api.patches).toHaveLength(0);
+  });
+
+  it("lets the unit's manager move the end date of a measure somebody else proposed, and nobody else", async () => {
+    const manager = followUpAs([unitManagers]);
+    await expect(manager.moveEnd()).resolves.toBeUndefined();
+    expect(manager.api.patches).toHaveLength(1);
+
+    const proposer = followUpAs(['mock_lex_investigators']);
+    await expect(proposer.moveEnd()).rejects.toMatchObject({ status: 403 });
+    expect(proposer.api.patches).toHaveLength(0);
   });
 });

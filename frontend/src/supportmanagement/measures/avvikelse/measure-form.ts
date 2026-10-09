@@ -31,6 +31,18 @@ export const measureFormValues = (measure?: Measure, creationRoles: readonly Rol
 export type MeasureFormErrors = Partial<Record<keyof MeasureForm, string>>;
 
 export type MeasureDateField = 'plannedStart' | 'plannedComplete' | 'executed';
+export type PlannedMeasureDateField = Exclude<MeasureDateField, 'executed'>;
+
+/** What each date is asked as, wherever it is entered: the form or an approval. */
+export const measureDateLabels: Record<MeasureDateField, string> = {
+  plannedStart: 'När ska åtgärden påbörjas?',
+  plannedComplete: 'När ska åtgärden vara klar?',
+  executed: 'När genomfördes åtgärden?',
+};
+
+/** Whether this date field holds a planned date, which may be locked, rather than the executed one. */
+export const plannedDateField = (field: MeasureDateField): PlannedMeasureDateField | undefined =>
+  field === 'executed' ? undefined : field;
 
 /** The same timing choice controls both visible fields and the dates sent to the API. */
 export function measureDateFields(timing: MeasureForm['timing']): readonly MeasureDateField[] {
@@ -47,11 +59,52 @@ export function measureDateFields(timing: MeasureForm['timing']): readonly Measu
 export interface MeasureFormPolicy {
   /** Only a deciding role, or an already accepted measure, may be reported as executed. */
   canExecute: boolean;
+  /** A proposal has no timing to choose and no dates to give; see `measureIsUndatedProposal`. */
+  undatedProposal?: boolean;
   /** Today as YYYY-MM-DD; an executed date may not lie after it. Injectable for tests. */
   today?: string;
 }
 
 export const todayIsoDate = (): string => dayjs().format('YYYY-MM-DD');
+
+/** A date picked in the form as the timestamp the API stores. */
+export const measureDateTime = (date: string): string => dayjs(date).format('YYYY-MM-DDTHH:mm:ssZ');
+
+/** What is missing or wrong in a planned measure's dates, wherever they are entered: the form or an approval. */
+export function plannedMeasureDateErrors(
+  plannedStart: string,
+  plannedComplete: string
+): Pick<MeasureFormErrors, 'plannedStart' | 'plannedComplete'> {
+  const errors: Pick<MeasureFormErrors, 'plannedStart' | 'plannedComplete'> = {};
+  if (!plannedStart) errors.plannedStart = 'Ange när åtgärden ska påbörjas.';
+  if (!plannedComplete) errors.plannedComplete = 'Ange när åtgärden ska vara klar.';
+  if (plannedStart && plannedComplete && plannedComplete < plannedStart) {
+    errors.plannedComplete = 'Slutdatum får inte vara före startdatum.';
+  }
+  return errors;
+}
+
+/**
+ * A proposal is registered without dates: when the business starts on a measure is not for the one who proposes it
+ * to say. The dates are asked for when the proposal is approved. Holds while the measure is undecided and its role
+ * only proposes - which role that is, is the role configuration's to say.
+ */
+export function measureIsUndatedProposal(existing: Measure | undefined, roleDecides: boolean): boolean {
+  return !roleDecides && !existing?.accept && !existing?.executed;
+}
+
+/**
+ * Whether a planned date can no longer be edited in the form. The start never changes once set. An approved
+ * measure's end is moved with Ändra slutdatum, by whoever follows the measure up. The BFF holds the same rules.
+ */
+export const measurePlannedDateIsLocked = (measure: Measure | undefined, field: PlannedMeasureDateField): boolean =>
+  field === 'plannedStart' ? Boolean(measure?.plannedStart) : Boolean(measure && measureIsApproved(measure));
+
+/** Why a locked planned date cannot be edited, said beneath it. */
+export const lockedMeasureDateHelp: Record<PlannedMeasureDateField, string> = {
+  plannedStart: 'Startdatumet kan inte ändras.',
+  plannedComplete: 'Slutdatumet ändras med Ändra slutdatum, av den som följer upp åtgärden.',
+};
 
 /** Executed measures are facts, not proposals, so proposing roles can only register planned ones. */
 export function measureCanExecute(existing: Measure | undefined, roleDecides: boolean): boolean {
@@ -68,14 +121,11 @@ export function measureFormErrors(
   if (!existing && !values.addedByRole) errors.addedByRole = 'Välj vilken roll åtgärden registreras för.';
   if (!values.description.trim()) errors.description = 'Beskriv vad åtgärden innebär.';
   if (!values.goal.trim()) errors.goal = 'Beskriv vad åtgärden ska uppnå.';
+  if (policy.undatedProposal) return errors;
   switch (values.timing) {
     case 'planned':
       if (existing?.executed) errors.timing = 'En genomförd åtgärd kan inte återställas till planerad.';
-      if (!values.plannedStart) errors.plannedStart = 'Ange när åtgärden ska påbörjas.';
-      if (!values.plannedComplete) errors.plannedComplete = 'Ange när åtgärden ska vara klar.';
-      if (values.plannedStart && values.plannedComplete && values.plannedComplete < values.plannedStart) {
-        errors.plannedComplete = 'Slutdatum får inte vara före startdatum.';
-      }
+      Object.assign(errors, plannedMeasureDateErrors(values.plannedStart, values.plannedComplete));
       break;
     case 'executed':
       if (!policy.canExecute) errors.timing = 'Förslag kan bara registreras som planerade åtgärder.';
@@ -159,7 +209,9 @@ export function measureFormChanges(values: MeasureForm, existing: Measure): Meas
     if (value !== initial[key]) changes[key] = value;
   }
   for (const key of measureDateFields(values.timing)) {
-    if (values[key] && values[key] !== initial[key]) changes[key] = dayjs(values[key]).format('YYYY-MM-DDTHH:mm:ssZ');
+    const plannedKey = plannedDateField(key);
+    if (plannedKey && measurePlannedDateIsLocked(existing, plannedKey)) continue;
+    if (values[key] && values[key] !== initial[key]) changes[key] = measureDateTime(values[key]);
   }
   return changes;
 }

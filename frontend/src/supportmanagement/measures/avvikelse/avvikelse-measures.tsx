@@ -18,6 +18,7 @@ import {
 import { MeasureList } from '../measure-list';
 import { measureTypeLabel } from '../measure-types';
 import {
+  changeSupportMeasurePlannedComplete,
   createSupportMeasure,
   decideSupportMeasure,
   followUpSupportMeasure,
@@ -25,6 +26,7 @@ import {
   updateSupportMeasure,
 } from '../support-measure-service';
 import { AvvikelseMeasureDecisionDialog } from './avvikelse-measure-decision-dialog';
+import { AvvikelseMeasureEndDateDialog } from './avvikelse-measure-end-date-dialog';
 import { AvvikelseMeasureFollowUpDialog } from './avvikelse-measure-follow-up-dialog';
 import { AvvikelseMeasureForm, confirmDiscardMeasureDraft } from './avvikelse-measure-form';
 import { type MeasureForm, measureFormChanges, measureFormCreate } from './measure-form';
@@ -52,7 +54,8 @@ export function AvvikelseMeasures({
   const confirm = useConfirm();
   const [filters, setFilters] = useState(emptyMeasureFilters);
   const [dialog, setDialog] = useState<
-    { kind: 'edit' | 'decide'; measure: Measure } | { kind: 'follow-up'; measure: Measure; unavailable?: boolean }
+    | { kind: 'edit' | 'decide'; measure: Measure }
+    | { kind: 'follow-up' | 'end-date'; measure: Measure; unavailable?: boolean }
   >();
   const editing = dialog?.kind === 'edit' ? dialog.measure : undefined;
   const [revision, setRevision] = useState(0);
@@ -92,7 +95,7 @@ export function AvvikelseMeasures({
    */
   const rebaseOnCurrent = async (
     measureId: string,
-    kind: 'edit' | 'decide' | 'follow-up'
+    kind: 'edit' | 'decide' | 'follow-up' | 'end-date'
   ): Promise<Measure | undefined> => {
     const snapshot = await onSaved();
     // A failed reload is not evidence the measure is gone, and closing here would discard the draft. Leave the
@@ -100,9 +103,9 @@ export function AvvikelseMeasures({
     if (!snapshot) return undefined;
     const current = snapshot.measures.find((measure) => measure.id === measureId);
     if (current) setDialog({ kind, measure: current });
-    else if (kind === 'follow-up') {
+    else if (kind === 'follow-up' || kind === 'end-date') {
       // Preserve the answers even when the measure disappeared, and explicitly disable submission.
-      setDialog((open) => (open?.kind === 'follow-up' ? { ...open, unavailable: true } : open));
+      setDialog((open) => (open?.kind === kind ? { ...open, unavailable: true } : open));
     } else setDialog(undefined);
     return current;
   };
@@ -176,6 +179,26 @@ export function AvvikelseMeasures({
     if (!recovered) await onSaved();
   };
 
+  const saveEndDate = async (plannedComplete: string) => {
+    const measure = dialog?.kind === 'end-date' && !dialog.unavailable ? dialog.measure : undefined;
+    if (!canWrite || !errand.id || !measure?.id || !measureCanBeFollowedUp(measure)) {
+      throw new Error('Measure end date cannot be changed');
+    }
+    const measureId = measure.id;
+    try {
+      await changeSupportMeasurePlannedComplete(municipalityId, errand.id, measureId, measure.version, plannedComplete);
+    } catch (cause) {
+      // The date stays in the dialog, now over the current measure, so a retry is made on its fresh version.
+      if (isSupportErrandWriteConflict(cause)) await rebaseOnCurrent(measureId, 'end-date');
+      throw cause;
+    }
+    setDialog(undefined);
+    listHeading.current?.focus();
+    snackbar({ message: 'Slutdatumet har ändrats.', status: 'success' });
+    await onSaved();
+  };
+
+  const listActionsOpen = canWrite && !dirty && !dialog;
   const measures = followUp ? snapshot.measures.filter(measureBelongsInFollowUp) : snapshot.measures;
   const shownMeasures = filterMeasures(measures, filters, metadata.measureTypes ?? []);
 
@@ -248,6 +271,17 @@ export function AvvikelseMeasures({
           onDirtyChange={reportDirty}
         />
       )}
+      {/* Offered in both views: whoever follows a measure up moves its end, from wherever they see it. */}
+      {canWrite && dialog?.kind === 'end-date' && (
+        <AvvikelseMeasureEndDateDialog
+          measure={dialog.measure}
+          unavailable={dialog.unavailable}
+          title={measureTypeLabel(metadata.measureTypes, dialog.measure)}
+          onSave={saveEndDate}
+          onClose={() => setDialog(undefined)}
+          onDirtyChange={reportDirty}
+        />
+      )}
       {!canWrite && <p>Åtgärderna visas skrivskyddade.</p>}
       <section aria-labelledby={listHeadingId} className="border-t-1 pt-24 flex flex-col gap-16">
         <div className="flex flex-wrap items-start justify-between gap-16">
@@ -288,11 +322,8 @@ export function AvvikelseMeasures({
           mayFollowUp={snapshot.mayFollowUp}
           onEdit={canEdit && !dirty && !dialog ? (measure) => setDialog({ kind: 'edit', measure }) : undefined}
           onDecide={canDecide && !dirty && !dialog ? (measure) => setDialog({ kind: 'decide', measure }) : undefined}
-          onFollowUp={
-            followUp && canWrite && !dirty && !dialog
-              ? (measure) => setDialog({ kind: 'follow-up', measure })
-              : undefined
-          }
+          onFollowUp={followUp && listActionsOpen ? (measure) => setDialog({ kind: 'follow-up', measure }) : undefined}
+          onChangeEndDate={listActionsOpen ? (measure) => setDialog({ kind: 'end-date', measure }) : undefined}
         />
       </section>
     </div>

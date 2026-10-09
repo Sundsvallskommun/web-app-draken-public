@@ -1,7 +1,13 @@
 import { Body, Controller, Get, HeaderParam, OnUndefined, Param, Patch, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
+import {
+  CreateSupportMeasureDto,
+  DecideSupportMeasureDto,
+  FollowUpSupportMeasureDto,
+  PlannedCompleteSupportMeasureDto,
+  UpdateSupportMeasureDto,
+} from '@/dtos/support-measure.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
@@ -75,6 +81,21 @@ export class SupportMeasureController {
     @Body() data: DecideSupportMeasureDto,
   ) {
     await this.measures.decide(municipalityId, errandId, measureId, ifMatch, data, req.user);
+  }
+
+  @Patch('/supporterrands/:municipalityId/:errandId/measures/:measureId/planned-complete')
+  @OnUndefined(204)
+  @OpenAPI({ summary: 'Move the end date of a planned approved measure, from the follow-up; its start date stays as decided' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(PlannedCompleteSupportMeasureDto, 'body'))
+  async changePlannedComplete(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Param('measureId') measureId: string,
+    @HeaderParam('If-Match') ifMatch: string,
+    @Body() data: PlannedCompleteSupportMeasureDto,
+  ) {
+    await this.measures.changePlannedComplete(municipalityId, errandId, measureId, ifMatch, data, req.user);
   }
 
   @Patch('/supporterrands/:municipalityId/:errandId/measures/:measureId/follow-up')

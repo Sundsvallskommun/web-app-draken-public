@@ -6,6 +6,7 @@ import {
   FormErrorMessage,
   FormHelperText,
   FormLabel,
+  Input,
   Modal,
   RadioButton,
   Textarea,
@@ -14,7 +15,15 @@ import {
 import { isAxiosError } from 'axios';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
-import { measureCanBeDecided, type MeasureDecisionInput, measureDecisionPresentation } from '../measure-decision';
+import {
+  measureCanBeDecided,
+  type MeasureDecisionInput,
+  measureDecisionPresentation,
+  measureDecisionSetsDates,
+} from '../measure-decision';
+import { measureDateLabels, measureDateTime, measureFormValues, plannedMeasureDateErrors } from './measure-form';
+
+type DecisionErrors = { accept?: string; comment?: string; plannedStart?: string; plannedComplete?: string };
 
 const options: { value: MeasureDecisionInput['accept']; label: string; description: string }[] = [
   { value: 'TRUE', label: 'Godkänn', description: 'Förslaget får genomföras som det är.' },
@@ -40,17 +49,31 @@ export function AvvikelseMeasureDecisionDialog({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const id = useId();
+  // A proposal normally has no dates; one registered before that rule keeps its own as a starting point.
+  const proposedDates = measureFormValues(measure);
   const [accept, setAccept] = useState<MeasureDecisionInput['accept'] | ''>('');
   const [comment, setComment] = useState('');
-  const [errors, setErrors] = useState<{ accept?: string; comment?: string }>({});
+  const [plannedStart, setPlannedStart] = useState(proposedDates.plannedStart);
+  const [plannedComplete, setPlannedComplete] = useState(proposedDates.plannedComplete);
+  const [errors, setErrors] = useState<DecisionErrors>({});
   const [saveError, setSaveError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const errorSummary = useRef<HTMLDivElement>(null);
   const confirm = useConfirm();
-  const dirty = Boolean(accept || comment);
+  const dirty = Boolean(
+    accept ||
+      comment ||
+      plannedStart !== proposedDates.plannedStart ||
+      plannedComplete !== proposedDates.plannedComplete
+  );
   const commentRequired = accept === 'FALSE' || accept === 'REWORK';
+  // Approving, whole or in part, decides when the measure runs; a rejection has nothing to plan.
+  const datesRequired = measureDecisionSetsDates(accept);
+  const hasErrors = Boolean(
+    saveError || errors.accept || errors.comment || errors.plannedStart || errors.plannedComplete
+  );
   // After a conflict the container swaps in the current measure. If someone else decided it meanwhile, saying so
   // beats leaving a submit button that can only fail again - the comment stays readable until the user closes.
   const settled = !measureCanBeDecided(measure);
@@ -61,8 +84,8 @@ export function AvvikelseMeasureDecisionDialog({
     return () => onDirtyChange(false);
   }, [dirty, onDirtyChange]);
   useEffect(() => {
-    if (saveError || errors.accept || errors.comment) errorSummary.current?.focus();
-  }, [saveError, errors]);
+    if (hasErrors) errorSummary.current?.focus();
+  }, [hasErrors, errors]);
 
   const requestClose = async () => {
     if (busy.current) return;
@@ -85,20 +108,24 @@ export function AvvikelseMeasureDecisionDialog({
     event.preventDefault();
     if (busy.current || settled) return;
     const motivation = comment.trim();
-    const nextErrors = {
+    const nextErrors: DecisionErrors = {
       accept: accept ? undefined : 'Välj ett beslut.',
       comment: commentRequired && !motivation ? 'Skriv en kommentar till beslutet.' : undefined,
+      ...(datesRequired ? plannedMeasureDateErrors(plannedStart, plannedComplete) : {}),
     };
     setErrors(nextErrors);
     setSaveError(undefined);
-    if (!accept || nextErrors.comment) return;
+    if (!accept || Object.values(nextErrors).some(Boolean)) return;
     busy.current = true;
     setSaving(true);
     try {
+      const dates = { plannedStart: measureDateTime(plannedStart), plannedComplete: measureDateTime(plannedComplete) };
       await onSave(
-        accept === 'TRUE'
-          ? { accept, ...(motivation ? { acceptMotivation: motivation } : {}) }
-          : { accept, acceptMotivation: motivation }
+        accept === 'FALSE'
+          ? { accept, acceptMotivation: motivation }
+          : accept === 'REWORK'
+          ? { accept, acceptMotivation: motivation, ...dates }
+          : { accept, ...(motivation ? { acceptMotivation: motivation } : {}), ...dates }
       );
     } catch (cause) {
       setSaveError(decisionSaveError(cause));
@@ -160,7 +187,7 @@ export function AvvikelseMeasureDecisionDialog({
               </Alert>
             </div>
           )}
-          {(saveError || errors.accept || errors.comment) && (
+          {hasErrors && (
             <div
               ref={errorSummary}
               tabIndex={-1}
@@ -189,19 +216,22 @@ export function AvvikelseMeasureDecisionDialog({
                         </a>
                       </p>
                     )}
-                    {errors.comment && (
-                      <p>
-                        <a
-                          className="underline"
-                          href={`#${id}-comment`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            document.getElementById(`${id}-comment`)?.focus();
-                          }}
-                        >
-                          {errors.comment}
-                        </a>
-                      </p>
+                    {(['comment', 'plannedStart', 'plannedComplete'] as const).map(
+                      (field) =>
+                        errors[field] && (
+                          <p key={field}>
+                            <a
+                              className="underline"
+                              href={`#${id}-${field}`}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                document.getElementById(`${id}-${field}`)?.focus();
+                              }}
+                            >
+                              {errors[field]}
+                            </a>
+                          </p>
+                        )
                     )}
                   </Alert.Content.Description>
                 </Alert.Content>
@@ -235,6 +265,32 @@ export function AvvikelseMeasureDecisionDialog({
               </FormHelperText>
               {errors.accept && <FormErrorMessage>{errors.accept}</FormErrorMessage>}
             </FormControl>
+            {datesRequired && (
+              <div className="grid gap-24 sm:grid-cols-2" data-cy="measure-decision-dates">
+                {(
+                  [
+                    ['plannedStart', plannedStart, setPlannedStart],
+                    ['plannedComplete', plannedComplete, setPlannedComplete],
+                  ] as const
+                ).map(([field, value, setValue]) => (
+                  <FormControl key={field} id={`${id}-${field}`} invalid={Boolean(errors[field])} className="w-full">
+                    <FormLabel>{measureDateLabels[field]} (Obligatoriskt)</FormLabel>
+                    <Input
+                      id={`${id}-${field}`}
+                      type="date"
+                      value={value}
+                      onChange={(event) => setValue(event.target.value)}
+                      aria-required
+                      className="w-full"
+                    />
+                    {errors[field] && <FormErrorMessage>{errors[field]}</FormErrorMessage>}
+                  </FormControl>
+                ))}
+                <FormHelperText className="sm:col-span-2">
+                  När åtgärden ska påbörjas och vara klar. Det beslutas här, eftersom förslaget lämnar datumen öppna.
+                </FormHelperText>
+              </div>
+            )}
             <FormControl id={`${id}-comment`} invalid={Boolean(errors.comment)} className="w-full">
               <FormLabel>Beslutskommentar{commentRequired ? ' (Obligatoriskt)' : ' (Valfritt)'}</FormLabel>
               <Textarea
@@ -272,7 +328,7 @@ export function AvvikelseMeasureDecisionDialog({
 function decisionSaveError(cause: unknown): string {
   switch (isAxiosError(cause) ? cause.response?.status : undefined) {
     case 400:
-      return 'Beslutet kunde inte godkännas. Kontrollera valet och kommentaren. Dina uppgifter finns kvar.';
+      return 'Beslutet kunde inte godkännas. Kontrollera valet, kommentaren och datumen. Dina uppgifter finns kvar.';
     case 401:
     case 403:
       return 'Du saknar behörighet att fatta beslut om förslaget. Dina uppgifter finns kvar.';

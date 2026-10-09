@@ -8,6 +8,9 @@ import {
   measureFormErrors,
   measureFormRebase,
   measureFormValues,
+  measureIsUndatedProposal,
+  measurePlannedDateIsLocked,
+  plannedMeasureDateErrors,
 } from './measure-form';
 
 const plannedMeasure = {
@@ -25,6 +28,25 @@ test('edits only changed fields and preserves exact timestamps, creator and deci
   const form = { ...measureFormValues(plannedMeasure), goal: 'New goal' };
   expect(measureFormChanges(form, plannedMeasure)).toEqual({ goal: 'New goal' });
   expect(measureFormErrors(form, plannedMeasure)).toEqual({});
+});
+
+test('a start date never changes once set, and an approved end date moves only in the follow-up', () => {
+  const moved = (measure: typeof plannedMeasure & { accept?: string }) =>
+    measureFormChanges(
+      { ...measureFormValues(measure), plannedStart: '2026-09-09', plannedComplete: '2026-09-20' },
+      measure
+    );
+  for (const accept of ['TRUE', 'REWORK'] as const) {
+    expect(measurePlannedDateIsLocked({ ...plannedMeasure, accept }, 'plannedComplete')).toBe(true);
+    expect(moved({ ...plannedMeasure, accept })).toEqual({});
+  }
+  // Undecided, its end is still the registrar's, but its start is not.
+  expect(measurePlannedDateIsLocked(plannedMeasure, 'plannedStart')).toBe(true);
+  expect(Object.keys(moved(plannedMeasure))).toEqual(['plannedComplete']);
+  // Nothing to keep before a date is set: a new measure, or one never planned.
+  expect(measurePlannedDateIsLocked(undefined, 'plannedStart')).toBe(false);
+  expect(measurePlannedDateIsLocked({ ...plannedMeasure, plannedStart: undefined }, 'plannedStart')).toBe(false);
+  expect(measurePlannedDateIsLocked({ ...plannedMeasure, accept: 'FALSE' }, 'plannedComplete')).toBe(false);
 });
 
 test('collects all required field errors instead of reporting only the first', () => {
@@ -169,4 +191,40 @@ test('rebases a timing switch and its dates together', () => {
   const rebase = measureFormRebase(draft, { responsibleUser: true }, plannedMeasure, upstream);
   expect(rebase.conflicts).toEqual([]);
   expect(rebase.adopt).toEqual({ timing: 'executed', executed: '2026-09-11' });
+});
+
+test('a proposal is undated until it is decided, whatever role registered it', () => {
+  // A proposing role registers without dates; a deciding role's own measure is planned as before.
+  expect(measureIsUndatedProposal(undefined, false)).toBe(true);
+  expect(measureIsUndatedProposal(undefined, true)).toBe(false);
+  // An undecided proposal stays undated when it is edited; a decided one is planned like any other.
+  expect(measureIsUndatedProposal(plannedMeasure, false)).toBe(true);
+  expect(measureIsUndatedProposal({ ...plannedMeasure, accept: 'TRUE' }, false)).toBe(false);
+  expect(measureIsUndatedProposal({ ...plannedMeasure, accept: 'REWORK' }, false)).toBe(false);
+});
+
+test('a proposal asks neither for a timing nor for dates, and sends none', () => {
+  const proposal: MeasureForm = {
+    ...measureFormValues(),
+    type: 'EDUCATION',
+    addedByRole: 'LEX_INVESTIGATOR',
+    goal: 'Mål',
+    description: 'Beskrivning',
+  };
+  expect(measureFormErrors(proposal, undefined, { canExecute: false, undatedProposal: true })).toEqual({});
+  // The same form from a deciding role still has to say when the measure runs.
+  expect(measureFormErrors(proposal, undefined, { canExecute: true }).timing).toBeDefined();
+  expect(measureFormCreate(proposal)).not.toHaveProperty('plannedStart');
+  expect(measureFormCreate(proposal)).not.toHaveProperty('plannedComplete');
+});
+
+test('the planned dates are checked the same way in the form and in an approval', () => {
+  expect(plannedMeasureDateErrors('', '')).toEqual({
+    plannedStart: 'Ange när åtgärden ska påbörjas.',
+    plannedComplete: 'Ange när åtgärden ska vara klar.',
+  });
+  expect(plannedMeasureDateErrors('2026-10-12', '2026-10-01').plannedComplete).toBe(
+    'Slutdatum får inte vara före startdatum.'
+  );
+  expect(plannedMeasureDateErrors('2026-10-12', '2026-11-30')).toEqual({});
 });

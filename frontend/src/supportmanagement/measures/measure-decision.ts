@@ -1,9 +1,21 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export type MeasureDecision = 'proposal' | 'accepted' | 'rejected' | 'rework';
+
+/** When an approved measure is to start and be finished. A proposal leaves them open; the approval sets them. */
+interface MeasureApprovalDates {
+  plannedStart: string;
+  plannedComplete: string;
+}
+
 export type MeasureDecisionInput =
-  | { accept: 'TRUE'; acceptMotivation?: string }
-  | { accept: 'FALSE' | 'REWORK'; acceptMotivation: string };
+  | ({ accept: 'TRUE'; acceptMotivation?: string } & MeasureApprovalDates)
+  | ({ accept: 'REWORK'; acceptMotivation: string } & MeasureApprovalDates)
+  | { accept: 'FALSE'; acceptMotivation: string };
+
+/** Approving a proposal, whole or in part, plans it, so the decision has to say when it runs. */
+export const measureDecisionSetsDates = (accept: MeasureDecisionInput['accept'] | ''): boolean =>
+  accept === 'TRUE' || accept === 'REWORK';
 
 export const measureDecision = (measure: Pick<Measure, 'accept'>): MeasureDecision | undefined => {
   switch (measure.accept) {
