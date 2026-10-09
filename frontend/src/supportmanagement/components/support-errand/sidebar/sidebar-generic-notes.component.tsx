@@ -1,7 +1,7 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
 import { sanitizedInline } from '@common/services/sanitizer-service';
-import { getInitialsFromADUsername } from '@common/services/user-service';
+import { getInitialsFromADUsername, getNameFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -19,11 +19,18 @@ import {
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
-import { ExternalIdType, getSupportErrandById } from '@supportmanagement/services/support-errand-service';
+import {
+  ExternalIdType,
+  getSupportErrandById,
+  isSupportErrandLocked,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import {
   deleteSupportNote,
   getSupportNotes,
+  getSupportServiceNotes,
   saveSupportNote,
+  saveSupportServiceNote,
   SupportNote,
   updateSupportNote,
 } from '@supportmanagement/services/support-note-service';
@@ -58,11 +65,11 @@ export const SidebarGenericNotes: FC<{
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const pageSize = 8;
-  const [allowed, setAllowed] = useState(false);
-  // useEffect(() => {
-  //   const _a = validateAction(errand, user);
-  //   setAllowed(_a);
-  // }, [user, errand]);
+  const user = useUserStore((s) => s.user);
+  const serviceNote = noteIsTjansteanteckning(noteType);
+  // A service note is the handler's record of the errand: written by the assigned handler while the errand
+  // accepts writes, and never changed or removed once saved. The BFF enforces the same rules.
+  const allowed = !!supportErrand && validateAction(supportErrand, user) && !isSupportErrandLocked(supportErrand);
 
   const {
     register,
@@ -80,7 +87,9 @@ export const SidebarGenericNotes: FC<{
 
     let createNote = true;
 
-    const apiCall = note.id
+    const apiCall = serviceNote
+      ? saveSupportServiceNote(supportErrand!.id!, municipalityId, note.text, note.partyId)
+      : note.id
       ? updateSupportNote(supportErrand!.id!, municipalityId, note.id, note.text)
       : saveSupportNote(supportErrand!.id!, municipalityId, note.text, note.partyId);
 
@@ -114,7 +123,9 @@ export const SidebarGenericNotes: FC<{
   };
 
   useEffect(() => {
-    getSupportNotes(supportErrand!.id!, municipalityId).then((res) => setNotes(res.notes));
+    (serviceNote ? getSupportServiceNotes : getSupportNotes)(supportErrand!.id!, municipalityId).then((res) =>
+      setNotes(res.notes)
+    );
     if (selectedNote) {
       setSelectedNote(notes.map(makeGeneric).find((n) => n.id === selectedNote.id));
     }
@@ -223,7 +234,7 @@ export const SidebarGenericNotes: FC<{
                           rounded
                           color="juniskar"
                           size={'sm'}
-                          title={note.createdBy}
+                          title={getNameFromADUsername(note.createdBy, administrators) ?? note.createdBy}
                           initials={getInitialsFromADUsername(note.createdBy, administrators) || note.createdBy[0]}
                         />
                       </div>
@@ -239,68 +250,74 @@ export const SidebarGenericNotes: FC<{
                         </p>
 
                         <p className="my-0 flex justify-between">
-                          <span className="text-xs">{dayjs(note.date).format('D MMM, HH:mm')}</span>
+                          {/* Who wrote it, named as the handler list names them, else by their account. */}
+                          <span className="text-xs" data-cy="note-author-and-date">
+                            {getNameFromADUsername(note.createdBy, administrators) ?? note.createdBy} ·{' '}
+                            {dayjs(note.date).format('D MMM, HH:mm')}
+                          </span>
                         </p>
                       </div>
                     </div>
-                    <div className="relative">
-                      <PopupMenu position="left">
-                        <PopupMenu.Button
-                          size="sm"
-                          aria-label="Allternativ"
-                          data-cy={`options-${note.id}`}
-                          iconButton
-                          className="bg-transparent"
-                          variant="ghost"
-                        >
-                          <Ellipsis />
-                        </PopupMenu.Button>
-                        <PopupMenu.Panel>
-                          <PopupMenu.Items>
-                            <PopupMenu.Group>
-                              <PopupMenu.Item>
-                                <Button
-                                  data-cy="edit-note-button"
-                                  disabled={noteIsComment(noteType) && supportErrand?.status === 'SOLVED'}
-                                  leftIcon={<Pencil />}
-                                  onClick={() => {
-                                    updateNote(note);
-                                  }}
-                                >
-                                  Ändra
-                                </Button>
-                              </PopupMenu.Item>
-                            </PopupMenu.Group>
-                            <PopupMenu.Group>
-                              <PopupMenu.Item>
-                                <Button
-                                  data-cy="delete-note-button"
-                                  leftIcon={<Trash />}
-                                  onClick={() => {
-                                    confirm
-                                      .showConfirmation(
-                                        'Ta bort kommentar',
-                                        'Vill du ta bort kommentaren?',
-                                        'Ja',
-                                        'Nej',
-                                        'info',
-                                        'info'
-                                      )
-                                      .then((confirmed) => {
-                                        if (confirmed) {
-                                          removeNote(note);
-                                        }
-                                      });
-                                  }}
-                                >
-                                  Ta bort
-                                </Button>
-                              </PopupMenu.Item>
-                            </PopupMenu.Group>
-                          </PopupMenu.Items>
-                        </PopupMenu.Panel>
-                      </PopupMenu>
-                    </div>
+                    {!serviceNote && (
+                      <div className="relative">
+                        <PopupMenu position="left">
+                          <PopupMenu.Button
+                            size="sm"
+                            aria-label="Allternativ"
+                            data-cy={`options-${note.id}`}
+                            iconButton
+                            className="bg-transparent"
+                            variant="ghost"
+                          >
+                            <Ellipsis />
+                          </PopupMenu.Button>
+                          <PopupMenu.Panel>
+                            <PopupMenu.Items>
+                              <PopupMenu.Group>
+                                <PopupMenu.Item>
+                                  <Button
+                                    data-cy="edit-note-button"
+                                    disabled={noteIsComment(noteType) && supportErrand?.status === 'SOLVED'}
+                                    leftIcon={<Pencil />}
+                                    onClick={() => {
+                                      updateNote(note);
+                                    }}
+                                  >
+                                    Ändra
+                                  </Button>
+                                </PopupMenu.Item>
+                              </PopupMenu.Group>
+                              <PopupMenu.Group>
+                                <PopupMenu.Item>
+                                  <Button
+                                    data-cy="delete-note-button"
+                                    leftIcon={<Trash />}
+                                    onClick={() => {
+                                      confirm
+                                        .showConfirmation(
+                                          'Ta bort kommentar',
+                                          'Vill du ta bort kommentaren?',
+                                          'Ja',
+                                          'Nej',
+                                          'info',
+                                          'info'
+                                        )
+                                        .then((confirmed) => {
+                                          if (confirmed) {
+                                            removeNote(note);
+                                          }
+                                        });
+                                    }}
+                                  >
+                                    Ta bort
+                                  </Button>
+                                </PopupMenu.Item>
+                              </PopupMenu.Group>
+                            </PopupMenu.Items>
+                          </PopupMenu.Panel>
+                        </PopupMenu>
+                      </div>
+                    )}
                   </div>
                   <Divider />
                 </Fragment>
@@ -321,9 +338,17 @@ export const SidebarGenericNotes: FC<{
               placeholder={`Ny ${label_singular.toLocaleLowerCase()}`}
               aria-label={`Ny ${label_singular.toLocaleLowerCase()}`}
               value={text}
+              disabled={serviceNote && !allowed}
               {...register('text')}
             ></Textarea>
           </FormControl>
+          {serviceNote && (
+            <small className="my-0 text-dark-secondary" data-cy="service-note-rule">
+              {allowed
+                ? 'En sparad tjänsteanteckning kan inte ändras eller tas bort.'
+                : 'Endast ärendets handläggare kan skriva tjänsteanteckningar.'}
+            </small>
+          )}
           <Button
             color="primary"
             disabled={

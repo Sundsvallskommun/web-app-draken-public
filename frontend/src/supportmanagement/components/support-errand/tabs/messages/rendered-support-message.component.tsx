@@ -30,6 +30,7 @@ import {
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
+import { useSupportMessagingPhase } from './use-support-messaging-phase';
 
 type ChannelPresentation = {
   Icon: LucideIcon;
@@ -65,6 +66,8 @@ export const RenderedSupportMessage: FC<{
   const ChannelIcon = channelPresentation?.Icon;
 
   const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
+  // A reply is a message sent like any other, so it waits for the same phase.
+  const messagingPhase = useSupportMessagingPhase();
 
   const toastMessage = useSnackbar();
 
@@ -210,7 +213,7 @@ export const RenderedSupportMessage: FC<{
               type="button"
               className="self-start"
               color="vattjom"
-              disabled={isSupportErrandLocked(supportErrand) || !allowed}
+              disabled={isSupportErrandLocked(supportErrand) || !allowed || !!messagingPhase}
               size="sm"
               variant="primary"
               onClick={() => {

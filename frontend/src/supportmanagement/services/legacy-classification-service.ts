@@ -1,5 +1,6 @@
 import { appConfig } from '@config/appconfig';
 
+import { hasClassificationCategory } from './support-errand-emptiness';
 import type { SupportErrand } from './support-errand-service';
 import { getCategorizationLabels } from './support-errand-service';
 import type { SupportMetadata } from './support-metadata-service';
@@ -11,15 +12,11 @@ import type { SupportMetadata } from './support-metadata-service';
 
 const classificationValue = (value?: string): string => (value === 'NONE' ? '' : value) || '';
 
-/** Whether the errand carries a classification (category). */
-export const hasClassification = (errand: SupportErrand): boolean =>
-  !!classificationValue(errand.classification?.category);
-
 /** Shown from the classification: under `useLabelCategorization`, for errands without categorization labels. */
 export const showsLegacyClassification = (errand: SupportErrand): boolean =>
   appConfig.features.useLabelCategorization &&
   getCategorizationLabels(errand).length === 0 &&
-  hasClassification(errand);
+  hasClassificationCategory(errand.classification?.category);
 
 export const getClassificationCategoryDisplayName = (
   errand: SupportErrand,

@@ -26,6 +26,10 @@ interface SectionDefinition {
   icon?: string;
   fields: string[];
   defaultOpen?: boolean;
+  /** Information shown at the top of the section, before its fields. */
+  description?: string;
+  /** Information shown at the end of the section, after its fields. */
+  footnote?: string;
 }
 
 interface FormContext {
@@ -91,6 +95,11 @@ function getConditionalFields(schema: RJSFSchema): Map<string, ConditionalRule['
 
 function getRowDefinitions(uiSchema: UiSchema | undefined): RowDefinition[] {
   return (uiSchema?.['ui:rows'] ?? []) as RowDefinition[];
+}
+
+/** A section's own information - what it asks for, or where something it does not ask for is recorded. */
+function SectionInformation({ text }: Readonly<{ text: string }>) {
+  return <p className="text-small italic text-dark-secondary">{text}</p>;
 }
 
 function getSectionDefinitions(uiSchema: UiSchema | undefined): SectionDefinition[] {
@@ -367,8 +376,19 @@ function renderFields(
 }
 
 export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
-  const { properties, formData, formContext, uiSchema, disabled, readonly, idSchema, registry, required, title } =
-    props;
+  const {
+    properties,
+    formData,
+    formContext,
+    uiSchema,
+    disabled,
+    readonly,
+    description,
+    idSchema,
+    registry,
+    required,
+    title,
+  } = props;
 
   const ctx = formContext as FormContext | undefined;
   const externalFields = ctx?.externalFields ?? {};
@@ -425,6 +445,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             {required ? ctx?.requiredIndicator ?? ' *' : ''}
           </legend>
         )}
+        {description && <p className="mb-16 text-small text-dark-secondary">{description}</p>}
         {renderedFields}
       </fieldset>
     );
@@ -464,6 +485,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             }
           >
             <div className="flex min-w-0 max-w-full flex-col gap-32">
+              {section.description && <SectionInformation text={section.description} />}
               {renderFields(
                 sectionFieldsInOrder,
                 properties,
@@ -473,6 +495,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
                 renderedRows,
                 externalFields
               )}
+              {section.footnote && <SectionInformation text={section.footnote} />}
             </div>
           </SectionDisclosure>
         );

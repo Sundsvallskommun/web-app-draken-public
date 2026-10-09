@@ -30,14 +30,24 @@ import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
+import { SupportErrandJsonParameterController } from './controllers/supportmanagement/support-errand-json-parameter.controller';
+import { SupportErrandParameterController } from './controllers/supportmanagement/support-errand-parameter.controller';
 import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
+import { SupportFollowUpController } from './controllers/supportmanagement/support-follow-up.controller';
 import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
+import { SupportInvestigationAssignmentController } from './controllers/supportmanagement/support-investigation-assignment.controller';
+import { SupportInvestigationProfileController } from './controllers/supportmanagement/support-investigation-profile.controller';
+import { SupportInvestigationReportController } from './controllers/supportmanagement/support-investigation-report.controller';
+import { SupportMeasureController } from './controllers/supportmanagement/support-measure.controller';
+import { SupportMeasureActionPlanController } from './controllers/supportmanagement/support-measure-action-plan.controller';
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
+import { SupportPhaseController } from './controllers/supportmanagement/support-phase.controller';
+import { SupportSubscriptionController } from './controllers/supportmanagement/support-subscription.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
@@ -55,39 +65,49 @@ export const CONTROLLERS: NewableFunction[] = [
   BillingController,
   BillingDataCollectorController,
   CaseDataAttachmentController,
-  CasedataContractsController,
+  CaseDataConversationController,
   CaseDataDecisionAttachmentController,
   CaseDataDecisionsController,
   CaseDataErrandController,
   caseDataFacilitiesController,
   CaseDataHistoryController,
+  CasedataContractsController,
   CasedataNotesController,
   CasedataNotificationController,
   CasedataStakeholderController,
+  CaseStatusController,
+  EmployeeController,
   EstateInfoController,
   ExportController,
+  ExtraParameterController,
+  FeatureFlagController,
   HealthController,
   IndexController,
+  JsonSchemaController,
   MessageController,
+  OrganizationController,
+  RelationsController,
   SupportAttachmentController,
+  SupportConversationController,
   SupportErrandController,
+  SupportErrandJsonParameterController,
+  SupportErrandParameterController,
   SupportExportController,
   SupportFacilitiesController,
   SupportHandoverController,
   SupportHistoryController,
+  SupportInvestigationAssignmentController,
+  SupportInvestigationProfileController,
+  SupportFollowUpController,
+  SupportInvestigationReportController,
+  SupportMeasureActionPlanController,
   SupportMessageController,
   SupportMetadataController,
+  SupportMeasureController,
   SupportNoteController,
+  SupportPhaseController,
   SupportNotificationController,
+  SupportSubscriptionController,
   TemplateController,
   UserController,
-  RelationsController,
-  CaseStatusController,
-  CaseDataConversationController,
-  SupportConversationController,
-  JsonSchemaController,
-  ExtraParameterController,
-  FeatureFlagController,
-  EmployeeController,
-  OrganizationController,
 ];

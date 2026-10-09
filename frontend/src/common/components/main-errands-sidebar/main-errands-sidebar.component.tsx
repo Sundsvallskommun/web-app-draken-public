@@ -3,6 +3,7 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
+import { useNotificationPoller } from '@common/hooks/useNotificationPoller';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
@@ -14,7 +15,8 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
+import { getInvestigationFollowUp } from '@supportmanagement/investigation/investigation-variant-registry';
+import { CalendarCheck, ChartNoAxesColumn, ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -26,9 +28,24 @@ export const MainErrandsSidebar: FC<{
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
+  showPlannedMeasures?: boolean;
+  setShowPlannedMeasures?: (show: boolean) => void;
+  showFollowUp?: boolean;
+  setShowFollowUp?: (show: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
-}> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
+}> = ({
+  showAttestationTable,
+  setShowAttestationTable,
+  showContractTable,
+  setShowContractTable,
+  showPlannedMeasures = false,
+  setShowPlannedMeasures,
+  showFollowUp = false,
+  setShowFollowUp,
+  open,
+  setOpen,
+}) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const user = useUserStore((s) => s.user);
@@ -36,6 +53,10 @@ export const MainErrandsSidebar: FC<{
   const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
+  const followUp = getInvestigationFollowUp();
+  const followUpLabel = followUp?.label(user);
+  // Mounted once here, where both the bell and the panel live, so the whole app shares one poll loop.
+  const { refresh: refreshNotifications } = useNotificationPoller();
 
   const MainTitle = (open: boolean) => (
     <NextLink
@@ -98,6 +119,10 @@ export const MainErrandsSidebar: FC<{
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
                 setShowAttestationTable={setShowAttestationTable}
+                showPlannedMeasures={showPlannedMeasures}
+                setShowPlannedMeasures={setShowPlannedMeasures}
+                showFollowUp={showFollowUp}
+                setShowFollowUp={setShowFollowUp}
                 iconButton={!open}
               />
             </FormProvider>
@@ -117,7 +142,11 @@ export const MainErrandsSidebar: FC<{
             <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
             <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
               <Button
-                onClick={() => setShowAttestationTable(true)}
+                onClick={() => {
+                  setShowAttestationTable(true);
+                  setShowPlannedMeasures?.(false);
+                  setShowFollowUp?.(false);
+                }}
                 leftIcon={<SquarePen />}
                 className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
@@ -140,6 +169,55 @@ export const MainErrandsSidebar: FC<{
                     />
                   </span>
                 )}
+              </Button>
+            </div>
+          </>
+        )}
+        {appConfig.isSupportManagement && appConfig.features.useMeasures && setShowPlannedMeasures && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              <Button
+                onClick={() => {
+                  setShowPlannedMeasures(true);
+                  setShowAttestationTable(false);
+                  setShowFollowUp?.(false);
+                }}
+                leftIcon={<CalendarCheck />}
+                className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
+                variant={showPlannedMeasures ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={open ? undefined : 'Planerade åtgärder'}
+                data-cy="planned-measures-button"
+              >
+                {open && <span className="w-full flex justify-between">Planerade åtgärder</span>}
+              </Button>
+            </div>
+          </>
+        )}
+        {appConfig.isSupportManagement && followUp && setShowFollowUp && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              {open && (
+                <span className="text-small font-bold uppercase tracking-wide text-dark-secondary px-8">
+                  {followUp.heading}
+                </span>
+              )}
+              <Button
+                onClick={() => {
+                  setShowFollowUp(true);
+                  setShowAttestationTable(false);
+                  setShowPlannedMeasures?.(false);
+                }}
+                leftIcon={<ChartNoAxesColumn />}
+                className={`${open && 'justify-start'} ${!showFollowUp && 'hover:bg-dark-ghost'}`}
+                variant={showFollowUp ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={open ? undefined : followUpLabel}
+                data-cy="follow-up-button"
+              >
+                {open && <span className="w-full flex justify-between">{followUpLabel}</span>}
               </Button>
             </div>
           </>
@@ -175,7 +253,7 @@ export const MainErrandsSidebar: FC<{
         </div>
       </div>
 
-      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} refresh={refreshNotifications} />
     </aside>
   );
 };

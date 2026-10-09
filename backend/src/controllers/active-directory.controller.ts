@@ -1,53 +1,39 @@
 import authMiddleware from '@middlewares/auth.middleware';
-import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
+import { Controller, Get, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { ADMIN_GROUP, DOMAIN, MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import ApiService from '@/services/api.service';
+import { AssignableHandler, HandlerDirectoryService } from '@/services/handler-directory.service';
 
-export interface ResponseData<T> {
+export type { AdUser } from '@/services/handler-directory.service';
+
+interface ResponseData<T> {
   data: T;
   message: string;
 }
 
-export interface AdUser {
-  description?: string;
-  displayName: string;
-  domain?: string;
-  guid?: string;
-  isLinked?: string;
-  name: string;
-  ouPath?: string;
-  personId?: string;
-  schemaClassName?: string;
+/** Presentation metadata for one handler role, in the order the deployment configured it. */
+interface AssignableHandlerRole {
+  key: string;
+  label: string;
 }
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-let cachedAdmins: Pick<AdUser, 'displayName' | 'name' | 'guid'>[] | null = null;
-let cacheTimestamp = 0;
+export interface AssignableHandlersResponse extends ResponseData<AssignableHandler[]> {
+  /** Omitted entirely when the deployment assigns without roles, so the flat selector is unchanged. */
+  roles?: AssignableHandlerRole[];
+}
 
 @Controller()
 export class ActiveDirectoryController {
-  private apiService = new ApiService();
+  private readonly handlerDirectory = new HandlerDirectoryService();
 
   @Get('/users/admins')
-  @OpenAPI({ summary: 'Return all users in configured admin group' })
+  @OpenAPI({ summary: 'Return users in the configured assignable handler groups' })
   @UseBefore(authMiddleware)
-  async usersInAdminGroup(@Req() req: RequestWithUser, @Res() response: any): Promise<ResponseData<AdUser>> {
-    const now = Date.now();
-
-    if (cachedAdmins && now - cacheTimestamp < CACHE_TTL_MS) {
-      return response.status(200).send({ data: cachedAdmins, message: 'ok' });
-    }
-
-    const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${DOMAIN}/${ADMIN_GROUP}`;
-    const res = await this.apiService.get<AdUser[]>({ url }, req.user);
-    cachedAdmins = res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid }));
-    cacheTimestamp = now;
-
-    return response.status(200).send({ data: cachedAdmins, message: 'ok' });
+  async getAssignableHandlers(@Req() req: RequestWithUser): Promise<AssignableHandlersResponse> {
+    const data = await this.handlerDirectory.listHandlers(req.user);
+    const roles = this.handlerDirectory.roles;
+    if (!roles) return { data, message: 'ok' };
+    return { data, roles: roles.map(({ key, label }) => ({ key, label })), message: 'ok' };
   }
 }

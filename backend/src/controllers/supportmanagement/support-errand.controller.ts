@@ -1,11 +1,33 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDefined,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { JSONSchema } from 'class-validator-jsonschema';
 import FormData from 'form-data';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HeaderParam, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { apiServiceName } from '@/config/api-config';
+import { APPLICATION, MUNICIPALITY_ID, SUPERADMIN_GROUP, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName, resolveSupportManagementErrandSearch } from '@/config/api-config';
+import { resolveHandlerGroupRoles } from '@/config/handler-group-roles';
+import {
+  preservesIafVofInvestigationClassificationOwnerParameter,
+  resolveIafVofInvestigationClassificationOwner,
+} from '@/config/iaf-vof-investigation-classification';
 import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
@@ -17,15 +39,18 @@ import {
   Errand as SupportErrand,
   ErrandAction,
   ErrandAttachment,
+  ErrandPhase,
   ExternalTag,
   Label,
-  Notification,
+  Labels as SupportLabels,
+  MetadataResponse as SupportMetadata,
   PageErrand,
   Parameter,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
@@ -33,15 +58,39 @@ import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { AccessMapperService } from '@/services/access-mapper.service';
+import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
+import { EmploymentService } from '@/services/employment.service';
 import { getCasedataForwardTarget, isAllowedHandoverTarget } from '@/services/handover-targets.service';
+import { resolveInvestigationLocationTarget } from '@/services/investigation-handover-label.service';
+import {
+  RegistrationLocation,
+  RegistrationReportType,
+  resolveEmploymentLocations,
+  resolveRegistrationLabelsByIds,
+  resolveRegistrationLocations,
+  resolveRegistrationReportTypes,
+} from '@/services/investigation-registration.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
+import { ownHandlerParameterKeys } from '@/services/own-errands-filter';
 import {
-  buildErrandFilter,
+  assertRequestedErrandVersion,
+  assertSupportErrandAdminAssignable,
+  assertSupportErrandWritable,
+  buildSupportErrandClassificationUpdateBody,
+  CLOSED_SUPPORT_ERRAND_STATUS,
   ErrandFilterInput,
+  findInitialSupportErrandPhase,
+  getErrandVersion,
   getNewErrandDefaults,
+  NewErrandDefaults,
+  requireStrongErrandVersion,
   resolveDefaultLabels,
+  resolvePhaseStatus,
+  resolveSupportErrandClassification,
+  resolveSupportErrandStatusTransition,
   stripErrandVersions,
   SupportStakeholderRole,
   toAttachmentDto,
@@ -49,6 +98,16 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
+import { parseStatusGroups, SupportErrandListingService, SupportErrandStatusGroupCounts } from '@/services/support-errand-listing.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
+import {
+  assertSupportInvestigationClassificationContext,
+  selectErrandClassificationIndex,
+} from '@/services/support-investigation-classification-context.service';
+import { assertMayCloseReportedMisconduct, assertMayStartFollowUp } from '@/services/support-investigation-decision-readiness';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
 import { selectCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
@@ -60,6 +119,18 @@ enum Status {
   ASSIGNED = 'ASSIGNED',
   SOLVED = 'SOLVED',
 }
+
+const assertGenericUpdateFields = (data: Partial<SupportErrandDto>): void => {
+  if (data.activePhaseId !== undefined) {
+    throw new HttpException(400, 'Use the phase transition endpoint to change the active phase');
+  }
+  if (data.status !== undefined || data.resolution !== undefined || data.suspension !== undefined) {
+    throw new HttpException(400, 'Use the status transition endpoint to change status, resolution or suspension');
+  }
+  if (data.assignedUserId !== undefined) {
+    throw new HttpException(400, 'Use the administrator endpoint to change the assigned user');
+  }
+};
 
 class CExternalTag implements ExternalTag {
   @IsString()
@@ -94,20 +165,6 @@ export class CContactChannel implements ContactChannel {
   @IsString()
   @IsOptional()
   value?: string;
-}
-
-export class CJsonParameter {
-  @IsString()
-  key!: string;
-  @IsOptional()
-  value: any;
-  @IsString()
-  schemaId!: string;
-  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
-  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
-  @IsNumber()
-  @IsOptional()
-  version?: number;
 }
 
 export class CSupportStakeholder implements SupportStakeholder {
@@ -163,6 +220,64 @@ export class Classification {
   type!: string;
 }
 
+export class RequiredClassificationDto {
+  @IsString()
+  @MinLength(1)
+  category!: string;
+
+  @IsString()
+  @MinLength(1)
+  type!: string;
+}
+
+export class ClassificationLabelReferenceDto {
+  @IsString()
+  @MinLength(1)
+  id!: string;
+}
+
+/** One classification of the errand: the category path chosen in one legal base group. */
+export class InvestigationClassificationSelectionDto {
+  @IsDefined()
+  @IsObject()
+  @ValidateNested()
+  @TypeTransformer(() => RequiredClassificationDto)
+  @JSONSchema({ $ref: '#/components/schemas/RequiredClassificationDto' })
+  classification!: RequiredClassificationDto;
+
+  @IsDefined()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => ClassificationLabelReferenceDto)
+  @JSONSchema({ type: 'array', items: { $ref: '#/components/schemas/ClassificationLabelReferenceDto' } })
+  categoryLabels!: ClassificationLabelReferenceDto[];
+}
+
+export class UpdateSupportErrandClassificationDto {
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  expectedVersion!: number;
+
+  /** One classification per legal base group the investigation's legal bases reach. */
+  @IsDefined()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => InvestigationClassificationSelectionDto)
+  @JSONSchema({ type: 'array', items: { $ref: '#/components/schemas/InvestigationClassificationSelectionDto' } })
+  classifications!: InvestigationClassificationSelectionDto[];
+
+  @IsString()
+  @MinLength(1)
+  documentKey!: string;
+
+  @IsString()
+  @Matches(/^"(0|[1-9]\d*)"$/u)
+  documentETag!: string;
+}
+
 export class CSuspension implements Suspension {
   @IsString()
   @IsOptional()
@@ -171,6 +286,39 @@ export class CSuspension implements Suspension {
   @IsOptional()
   suspendedTo!: string;
 }
+
+export class UpdateSupportErrandStatusDto {
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  expectedVersion!: number;
+
+  @IsString()
+  @MinLength(1)
+  expectedStatus!: string;
+
+  @IsString()
+  @MinLength(1)
+  status!: string;
+
+  @IsString()
+  @IsOptional()
+  resolution?: string;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @TypeTransformer(() => CSuspension)
+  @JSONSchema({ $ref: '#/components/schemas/CSuspension' })
+  suspension?: CSuspension;
+}
+
+export class AssignSupportErrandDto {
+  @IsString()
+  @MinLength(1)
+  assignedUserId!: string;
+}
+
 export class CErrandAction implements ErrandAction {
   @IsString()
   @IsOptional()
@@ -188,49 +336,22 @@ export class CErrandAction implements ErrandAction {
   @IsOptional()
   displayValue?: string;
 }
-export class CNotification implements Notification {
+export class CErrandPhase implements ErrandPhase {
   @IsString()
   @IsOptional()
-  id?: string;
+  phaseId?: string;
   @IsString()
   @IsOptional()
-  created?: string;
+  name?: string;
   @IsString()
   @IsOptional()
-  modified?: string;
+  displayName?: string;
   @IsString()
   @IsOptional()
-  ownerFullName?: string;
-  @IsString()
-  ownerId!: string;
+  started?: string;
   @IsString()
   @IsOptional()
-  createdBy?: string;
-  @IsString()
-  @IsOptional()
-  createdByFullName?: string;
-  @IsString()
-  type!: string;
-  @IsString()
-  description!: string;
-  @IsString()
-  @IsOptional()
-  content?: string;
-  @IsString()
-  @IsOptional()
-  expires?: string;
-  @IsBoolean()
-  @IsOptional()
-  globalAcknowledged?: boolean;
-  @IsBoolean()
-  @IsOptional()
-  acknowledged?: boolean;
-  @IsString()
-  @IsOptional()
-  errandId?: string;
-  @IsString()
-  @IsOptional()
-  errandNumber?: string;
+  ended?: string;
 }
 export class SupportErrandDto implements Partial<SupportErrand> {
   @IsString()
@@ -260,11 +381,8 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters!: Parameter[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CJsonParameter)
-  jsonParameters?: CJsonParameter[];
+  // jsonParameters is intentionally absent: investigation documents are written only through the
+  // per-key endpoints in SupportErrandJsonParameterController, which enforce If-Match versioning.
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()
@@ -311,11 +429,6 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsArray()
   labels?: Label[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CNotification)
-  activeNotifications?: CNotification[];
   @IsOptional()
   @IsString()
   created?: string;
@@ -335,6 +448,14 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CErrandAction)
   actions?: CErrandAction[];
+  @IsString()
+  @IsOptional()
+  activePhaseId?: string;
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CErrandPhase)
+  phases?: CErrandPhase[];
 }
 
 class ForwardFormDto {
@@ -350,12 +471,61 @@ class ForwardFormDto {
   messageBodyPlaintext!: string;
 }
 
+/**
+ * Where the places a handler may register for come from: their employment in the organization tree,
+ * or the places AccessMapper configures for their account when no employment is a place there.
+ */
+type RegistrationLocationSource = 'employment' | 'access';
+
+interface HandlerLocations {
+  readonly source: RegistrationLocationSource;
+  readonly locations: readonly RegistrationLocation[];
+}
+
+/** What the registration form offers the signed-in handler. */
+export interface NewErrandOptionsResponse {
+  readonly reportTypes: readonly RegistrationReportType[];
+  readonly locations: readonly RegistrationLocation[];
+  readonly locationSource?: RegistrationLocationSource;
+  readonly priorities: readonly SupportPriority[];
+}
+
+/**
+ * What the handler chose in the registration form. Every field is optional on the wire: a drake
+ * without a configured form sends none of them and gets exactly the errand it always got.
+ */
+export class NewSupportErrandDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  locationLabelId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  reportTypeLabelId?: string;
+
+  @IsOptional()
+  @IsIn(Object.values(SupportPriority))
+  priority?: SupportPriority;
+}
+
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
+  private investigationPolicyService = new SupportInvestigationPolicyService();
+  private handlerRoles = resolveHandlerGroupRoles();
+  private superadminGroups = readRoleGroups(SUPERADMIN_GROUP);
+  private investigationAccessService = new SupportInvestigationAccessService();
+  private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
+  private accessMapperService = new AccessMapperService();
+  private employmentService = new EmploymentService();
+  private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
+  private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private errandSearch = resolveSupportManagementErrandSearch();
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
@@ -380,9 +550,37 @@ export class SupportErrandController {
     return '';
   }
 
-  private async buildFilterForRequest(req: RequestWithUser, input: ErrandFilterInput): Promise<string> {
-    const partyId = await this.resolveQueryPartyId(req, input.query);
-    return buildErrandFilter({ ...input, partyId });
+  /**
+   * The overview's criteria as the listing asks them: the party id its query names, if any, resolved, and Mina
+   * ärenden widened to the handler parameters that name the user - MAS/MAR's own errands. The list and its counts
+   * both come through here, so they always agree.
+   */
+  private async resolveOverviewCriteria(req: RequestWithUser, criteria: ErrandFilterInput): Promise<ErrandFilterInput> {
+    const stakeholderParameterKeys = ownHandlerParameterKeys(
+      criteria.stakeholders,
+      req.user,
+      this.investigationPolicyService.handlerParameters,
+      this.handlerRoles,
+    );
+    return {
+      ...criteria,
+      partyId: await this.resolveQueryPartyId(req, criteria.query),
+      ...(stakeholderParameterKeys ? { stakeholderParameterKeys } : {}),
+    };
+  }
+
+  /**
+   * Built per request from the controller's own collaborators, so a test that replaces `apiService`
+   * or the investigation policy reaches the listing too.
+   */
+  private errandListing(): SupportErrandListingService {
+    return new SupportErrandListingService({
+      apiService: this.apiService,
+      service: this.SERVICE,
+      namespace: this.namespace,
+      labelFilterProfile: this.investigationPolicyService.labelFilter,
+      errandSearch: this.errandSearch,
+    });
   }
 
   /**
@@ -393,14 +591,13 @@ export class SupportErrandController {
    */
   private async resolveStakeholderOrgNumber(s: SupportStakeholder, municipalityId: string, req: RequestWithUser): Promise<string | undefined> {
     const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
-    const organizationNumberSource =
-      organizationNumberFromParameter ||
-      (s.externalId
-        ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
-            logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
-            return '';
-          })
-        : '');
+    let organizationNumberSource = organizationNumberFromParameter;
+    if (!organizationNumberSource && s.externalId) {
+      organizationNumberSource = await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
+        logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+        return '';
+      });
+    }
     return formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
   }
 
@@ -508,6 +705,7 @@ export class SupportErrandController {
     @QueryParam('labelCategory') labelCategory: string,
     @QueryParam('labelType') labelType: string,
     @QueryParam('labelSubType') labelSubType: string,
+    @QueryParam('labelFilter') labelFilter: string,
     @QueryParam('channel') channel: string,
     @QueryParam('status') status: string,
     @QueryParam('resolution') resolution: string,
@@ -523,7 +721,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildFilterForRequest(req, {
+    const criteria = await this.resolveOverviewCriteria(req, {
       query,
       stakeholders,
       priority,
@@ -532,27 +730,23 @@ export class SupportErrandController {
       labelCategory,
       labelType,
       labelSubType,
+      labelFilter,
       channel,
       status,
       resolution,
       start,
       end,
     });
-    let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
-    url += filter;
-    if (sort) {
-      url += `&sort=${sort}`;
-    }
-    const res = await this.apiService.get<PageErrand>({ url }, req.user);
-    const data = res.data;
-    return response.status(200).send(data);
+    const errands = await this.errandListing().list(municipalityId, criteria, { page: page || 0, size: size || 8, sort }, req.user);
+    return response.status(200).send(errands);
   }
 
-  @Get('/countsupporterrands/:municipalityId')
-  @OpenAPI({ summary: 'Counts errands based on the provided filters' })
+  @Get('/countsupporterrands/:municipalityId/statusgroups')
+  @OpenAPI({ summary: 'Counts the errands matching the filters in each group of statuses, in the order the groups are given' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
-  async countErrands(
+  async countErrandsByStatusGroups(
     @Req() req: RequestWithUser,
+    @QueryParam('statusGroups') statusGroups: string,
     @QueryParam('query') query: string,
     @QueryParam('stakeholders') stakeholders: string,
     @QueryParam('priority') priority: string,
@@ -561,21 +755,22 @@ export class SupportErrandController {
     @QueryParam('labelCategory') labelCategory: string,
     @QueryParam('labelType') labelType: string,
     @QueryParam('labelSubType') labelSubType: string,
+    @QueryParam('labelFilter') labelFilter: string,
     @QueryParam('channel') channel: string,
-    @QueryParam('status') status: string,
     @QueryParam('resolution') resolution: string,
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<any> {
+  ): Promise<SupportErrandStatusGroupCounts> {
     if (!municipalityId) {
       console.error('No municipality id found, needed to fetch errands.');
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildFilterForRequest(req, {
+    const groups = parseStatusGroups(statusGroups);
+    const criteria = await this.resolveOverviewCriteria(req, {
       query,
       stakeholders,
       priority,
@@ -584,28 +779,24 @@ export class SupportErrandController {
       labelCategory,
       labelType,
       labelSubType,
+      labelFilter,
       channel,
-      status,
       resolution,
       start,
       end,
     });
-    // buildErrandFilter returns a fragment that starts with '&' so it can be appended to the paged
-    // errands URL; here it is the only query parameter, so drop the separator.
-    const queryString = filter.replace(/^&/, '');
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count${queryString ? `?${queryString}` : ''}`;
-    const res = await this.apiService.get<PageErrand>({ url }, req.user);
-    const data = res.data;
-    return response.status(200).send(data);
+    const counts = await this.errandListing().countByStatusGroups(municipalityId, criteria, groups, req.user);
+    return response.status(200).send({ counts });
   }
 
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
-  @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware)
+  @OpenAPI({ summary: 'Initiate a new support errand' })
+  @UseBefore(authMiddleware, validationMiddleware(NewSupportErrandDto, 'body'))
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
+    @Body() data: NewSupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     if (!municipalityId) {
@@ -614,29 +805,43 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    // Fetch metadata for labels for new errand
-    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
-    const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
+    const defaults = await this.assertRegistrationEnabled(req);
+
+    // The whole metadata rather than just its labels: a new errand also needs the phase it starts in.
+    const metadataRes = await this.readSupportMetadata(req, municipalityId);
+
+    // An errand created without a phase stands outside the workflow, and the phase strip has nothing
+    // to advance from. A namespace with no phases configured simply has no workflow, and the errand
+    // is created without one as before.
+    const initialPhase = findInitialSupportErrandPhase(metadataRes.data.phases);
+    const initialStatus = initialPhase ? (resolvePhaseStatus(Status.NEW, initialPhase) ?? Status.NEW) : Status.NEW;
+
+    const registration = await this.resolveRegistrationChoice(req, municipalityId, data, metadataRes.data);
 
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const errandDefaults = getNewErrandDefaults(APPLICATION);
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      classification: errandDefaults?.classification,
-      labels: errandDefaults?.labels
-        ? resolveDefaultLabels(
-            selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
-            errandDefaults.labels,
-          )
-        : [],
-      priority: SupportPriority.MEDIUM,
-      status: Status.NEW,
-      channel: ContactChannelType.PHONE,
+      ...(defaults.classification ? { classification: defaults.classification } : {}),
+      labels:
+        registration?.labels ??
+        (defaults.labels
+          ? resolveDefaultLabels(
+              selectCategorizationLabels(metadataRes.data.labels?.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
+              defaults.labels,
+            )
+          : []),
+      ...(defaults.parameters ? { parameters: defaults.parameters.map(parameter => ({ ...parameter })) } : {}),
+      ...(initialPhase?.id ? { activePhaseId: initialPhase.id } : {}),
+      priority: registration?.priority ?? SupportPriority.MEDIUM,
+      status: initialStatus,
+      channel: defaults.channel ?? ContactChannelType.PHONE,
       title: 'Empty errand',
     };
-    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
+    // A registration is the user's own act; the empty errand a drake opens on its own is not.
+    const notifySubscribers = registration ? undefined : false;
+    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body, notifySubscribers }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
       throw e;
@@ -649,13 +854,167 @@ export class SupportErrandController {
     return response.status(201).send(res.data);
   }
 
+  /**
+   * What the registration form offers the signed-in handler: the report types the application
+   * configures, and the places their employment - or else their AccessMapper configuration - gives.
+   *
+   * An application that registers without a form has nothing to answer here, and says so with the
+   * same 409 registration itself gives, rather than an empty form the handler could not submit.
+   */
+  @Get('/newerrand/:municipalityId/options')
+  @OpenAPI({ summary: 'The choices the registration form offers the signed-in handler' })
+  @UseBefore(authMiddleware)
+  async getNewErrandOptions(@Req() req: RequestWithUser, @Param('municipalityId') municipalityId: string): Promise<NewErrandOptionsResponse> {
+    const form = this.newErrandDefaults?.form;
+    if (!form) throw new HttpException(409, 'Registration is not configured for this application');
+    await this.assertRegistrationEnabled(req);
+
+    const metadata = await this.readSupportMetadata(req, municipalityId);
+    const labelStructure = metadata.data.labels?.labelStructure;
+
+    const handlerLocations = form.location ? await this.resolveHandlerLocations(req, municipalityId, labelStructure) : undefined;
+    return {
+      reportTypes: resolveRegistrationReportTypes(labelStructure, form.reportTypes),
+      locations: handlerLocations?.locations ?? [],
+      ...(handlerLocations ? { locationSource: handlerLocations.source } : {}),
+      priorities: form.priority ? Object.values(SupportPriority) : [],
+    };
+  }
+
+  /** Refuses unless this application registers errands, and hands back what it registers them with. */
+  private async assertRegistrationEnabled(req: RequestWithUser): Promise<NewErrandDefaults> {
+    const registrationState = await this.investigationPolicyService.getRegistrationState(req.user);
+    if (registrationState === 'unavailable') {
+      throw new HttpException(503, 'Support errand registration policy is temporarily unavailable');
+    }
+    if (registrationState === 'disabled' || !this.newErrandDefaults) {
+      throw new HttpException(409, 'Registration is not configured for this application');
+    }
+    return this.newErrandDefaults;
+  }
+
+  private readSupportMetadata(req: RequestWithUser, municipalityId: string) {
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
+    return this.apiService.get<SupportMetadata>({ url }, req.user);
+  }
+
+  /**
+   * The places the signed-in handler may register an errand for, as the form offers them: the unit
+   * their employment puts them at in the organization tree, main employment first. A handler whose
+   * employment is no place there - or whose employments cannot be read - picks among the places
+   * AccessMapper configures for their account, as registration always offered.
+   */
+  private async resolveHandlerLocations(
+    req: RequestWithUser,
+    municipalityId: string,
+    labelStructure: Label[] | undefined,
+  ): Promise<HandlerLocations> {
+    const employmentLocations = resolveEmploymentLocations(labelStructure, await this.readEmploymentOrganizationIds(req));
+    if (employmentLocations.length > 0) return { source: 'employment', locations: employmentLocations };
+
+    const patterns = await this.accessMapperService.findAccountLabelPatterns(req.user, municipalityId, this.namespace!, req.user.username);
+    return { source: 'access', locations: resolveRegistrationLocations(labelStructure, patterns) };
+  }
+
+  private async readEmploymentOrganizationIds(req: RequestWithUser): Promise<number[]> {
+    try {
+      const employments = await this.employmentService.readEmployments(req.user);
+      return employments.map(employment => employment.orgId).filter((organizationId): organizationId is number => typeof organizationId === 'number');
+    } catch (error) {
+      // The Employee API being unavailable must not stop registration; the configured places still are.
+      logger.warn('Could not read the employments of a registering handler; offering their configured places instead', error);
+      return [];
+    }
+  }
+
+  /**
+   * The labels and priority the handler chose, or nothing at all for an application that registers
+   * without a form.
+   *
+   * The place is checked against the places the handler is offered rather than taken on the client's
+   * word: the form only ever offers their places, so a request naming another one is not a handler
+   * who changed their mind. The report type likewise has to be one the application configures - it
+   * decides which investigation the errand gets, so it is not a free label.
+   */
+  private async resolveRegistrationChoice(
+    req: RequestWithUser,
+    municipalityId: string,
+    data: NewSupportErrandDto,
+    metadata: SupportMetadata,
+  ): Promise<{ labels: Label[]; priority: SupportPriority } | undefined> {
+    const form = this.newErrandDefaults?.form;
+    if (!form) {
+      if (data.locationLabelId || data.reportTypeLabelId || data.priority) {
+        throw new HttpException(400, 'This application registers errands without a form');
+      }
+      return undefined;
+    }
+
+    const labelStructure = metadata.labels?.labelStructure;
+    const reportTypes = resolveRegistrationReportTypes(labelStructure, form.reportTypes);
+    const reportType = reportTypes.find(candidate => candidate.labelId === data.reportTypeLabelId);
+    if (!reportType) {
+      throw new HttpException(400, 'Choose what is being reported');
+    }
+
+    const labelIds = [...reportType.chainIds];
+
+    if (form.location) {
+      const { locations } = await this.resolveHandlerLocations(req, municipalityId, labelStructure);
+      const location = locations.find(candidate => candidate.labelId === data.locationLabelId);
+      if (!location) {
+        throw new HttpException(400, 'Choose one of the places offered to you');
+      }
+      labelIds.push(...resolveInvestigationLocationTarget(labelStructure, location.labelId).chainIds);
+    }
+
+    return {
+      labels: resolveRegistrationLabelsByIds(labelStructure, [...new Set(labelIds)]),
+      priority: form.priority ? (data.priority ?? SupportPriority.MEDIUM) : SupportPriority.MEDIUM,
+    };
+  }
+
+  private async assertGenericClassificationUpdateAllowed(
+    req: RequestWithUser,
+    currentErrand: SupportErrand,
+    data: Partial<SupportErrandDto>,
+  ): Promise<void> {
+    const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
+    const policy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (!classificationFieldsRequested && (data.parameters === undefined || !policy)) return;
+
+    const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
+    if (owner === 'unavailable') {
+      throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
+    }
+    if (owner !== 'investigation') return;
+    if (classificationFieldsRequested) {
+      throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
+    }
+    if (policy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, data.parameters)) {
+      throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
+    }
+  }
+
+  /**
+   * Where the profile has a report, the channel says whether the errand was registered in Draken and
+   * so whether its report may be filled in. It stays what it was when the errand came in: changing it
+   * would open Katla's report, the record of what was reported, to editing.
+   */
+  private assertChannelUnchanged(currentErrand: SupportErrand, data: Partial<SupportErrandDto>): void {
+    if (!this.investigationPolicyService.profile.reportDocument) return;
+    if (data.channel === undefined || data.channel === currentErrand.channel) return;
+    throw new HttpException(409, 'The channel of this errand decides whether its report may be changed and cannot itself be changed');
+  }
+
   @Patch('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Update a support errand' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportErrandDto, 'body'))
   async updateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -664,25 +1023,241 @@ export class SupportErrandController {
       logger.error('No municipality id found, it is needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
+    assertGenericUpdateFields(data);
+    const requestedVersion = requireStrongErrandVersion(ifMatch);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
+    const currentErrand = await this.apiService.get<SupportErrand>(
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
+    assertRequestedErrandVersion(requestedVersion, currentVersion);
+    assertSupportErrandWritable(currentErrand.data, 'generic changes');
+    this.assertChannelUnchanged(currentErrand.data, data);
+
+    await this.assertGenericClassificationUpdateAllowed(req, currentErrand.data, data);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
-    const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
-      throw e;
-    });
+    const res = await this.apiService
+      .patch<any, Partial<SupportErrandDto>>(
+        {
+          url,
+          baseURL,
+          data: body,
+          headers: { 'If-Match': `"${currentVersion}"` },
+          followLocation: false,
+          propagateClientError: true,
+        },
+        req.user,
+      )
+      .catch(e => {
+        logger.error('Error when registering support errand');
+        logger.error(e);
+        throw e;
+      });
     return response.status(200).send(res.data);
+  }
+
+  @Patch('/supporterrands/:municipalityId/:id/status')
+  @HttpCode(200)
+  @OpenAPI({ summary: 'Apply one explicit status transition to a support errand' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportErrandStatusDto, 'body'))
+  async updateSupportErrandStatus(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Body() data: UpdateSupportErrandStatusDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (!municipalityId) {
+      logger.error('No municipality id found, it is needed to update the errand status.');
+      return response.status(400).send('Municipality id missing');
+    }
+
+    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const metadataUrl = `${municipalityId}/${this.namespace}/metadata`;
+    const baseURL = apiURL(this.SERVICE);
+    const [currentErrand, metadata] = await Promise.all([
+      this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
+      this.apiService.get<SupportMetadata>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
+    ]);
+    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
+    if (currentVersion !== data.expectedVersion) {
+      throw new HttpException(409, 'Support errand status has changed since it was loaded');
+    }
+    await assertMeasuresHandledBeforeClose({
+      apiService: this.apiService,
+      user: req.user,
+      errandUrl: url,
+      baseURL,
+      status: data.status,
+      required: this.requiresHandledMeasuresBeforeClose,
+    });
+
+    const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
+    // A close that has to move the errand into another phase first is one made before its workflow has ended.
+    assertMayCloseReportedMisconduct({
+      policyService: this.investigationPolicyService,
+      errand: currentErrand.data,
+      closesBeforeWorkflowEnds: data.status === CLOSED_SUPPORT_ERRAND_STATUS && Boolean(body.activePhaseId),
+    });
+    // Closing from an earlier phase enters each phase on the way and the one it closes in, and every one of
+    // them answers to the same rule as the phase button that would have entered it.
+    for (const enteredPhaseId of [...phaseSteps.map(step => step.activePhaseId), body.activePhaseId]) {
+      assertMayStartFollowUp({
+        policyService: this.investigationPolicyService,
+        handlerRoles: this.handlerRoles,
+        superadminGroups: this.superadminGroups,
+        user: req.user,
+        targetPhaseName: metadata.data.phases?.find(phase => phase.id === enteredPhaseId)?.name,
+      });
+    }
+    // Closing from an earlier phase steps along the workflow first: Support Management refuses a jump
+    // between phases. Each step is conditioned on the version the one before it left.
+    let version = currentVersion;
+    for (const step of phaseSteps) {
+      await this.apiService.patch<SupportErrand, (typeof phaseSteps)[number]>(
+        {
+          url,
+          baseURL,
+          data: step,
+          headers: { 'If-Match': `"${version}"` },
+          followLocation: false,
+          propagateClientError: true,
+          // Only the close itself is news; the phases it has to pass through on the way are not.
+          notifySubscribers: false,
+        },
+        req.user,
+      );
+      const stepped = await this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user);
+      version = getErrandVersion(stepped.data, stepped.headers?.etag);
+    }
+    await this.apiService.patch<SupportErrand, typeof body>(
+      {
+        url,
+        baseURL,
+        data: body,
+        headers: { 'If-Match': `"${version}"` },
+        followLocation: false,
+        propagateClientError: true,
+      },
+      req.user,
+    );
+
+    const savedErrand = await this.apiService.get<SupportErrand>(
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    return response.status(200).send({
+      ...savedErrand.data,
+      version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
+    });
+  }
+
+  @Patch('/supporterrands/:municipalityId/:id/classification')
+  @HttpCode(200)
+  @OpenAPI({ summary: 'Update the classification and labels of a support errand' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportErrandClassificationDto, 'body'))
+  async updateSupportErrandClassification(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Body() data: UpdateSupportErrandClassificationDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (!municipalityId) {
+      console.error('No municipality id found, it is needed to update errand classification.');
+      logger.error('No municipality id found, it is needed to update errand classification.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
+    if (classificationOwner === 'unavailable') {
+      throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
+    }
+    if (classificationOwner !== 'investigation') {
+      throw new HttpException(409, 'Investigation does not own classification for this application');
+    }
+    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (!iafVofClassificationPolicy) {
+      throw new HttpException(409, 'Investigation classification policy is unavailable');
+    }
+    const definition = this.investigationPolicyService.profile.documents.find(document => document.key === data.documentKey);
+    if (!definition) {
+      throw new HttpException(400, 'Unsupported investigation classification document');
+    }
+    // Classification is written together with the document that owns it, so it follows that
+    // document's access rather than carrying an access rule of its own. Reading that document is
+    // therefore not enough: this is a write. The document grant stays the authority even when the
+    // errand's own level is R and this write reaches labels: /access is trusted as given, and a
+    // grant on the key is a grant to what writing that document entails.
+    await this.investigationAccessService.assertCanWriteDocument(req.user, municipalityId, id, definition.key);
+    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
+    const baseURL = apiURL(this.SERVICE);
+    const [currentErrand, labelMetadata, classificationDocument] = await Promise.all([
+      this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
+      this.apiService.get<SupportLabels | null>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
+      this.jsonParameterService.readJsonParameter({
+        definition,
+        municipalityId,
+        errandId: id,
+        user: req.user,
+      }),
+    ]);
+    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
+    if (currentVersion !== data.expectedVersion) {
+      throw new HttpException(409, 'Support errand classification has changed since it was loaded');
+    }
+    assertSupportErrandWritable(currentErrand.data, 'investigation classification changes');
+    if (classificationDocument.etag !== data.documentETag) {
+      throw new HttpException(409, 'Investigation document has changed since classification was edited');
+    }
+    const classificationOwnerSelection = resolveIafVofInvestigationClassificationOwner(iafVofClassificationPolicy, currentErrand.data);
+    const classificationGroups = assertSupportInvestigationClassificationContext(
+      iafVofClassificationPolicy,
+      classificationOwnerSelection,
+      definition.key,
+      classificationDocument.document.value,
+      data.classifications.map(selection => selection.classification),
+    );
+    const resolvedClassifications = data.classifications.map(selection =>
+      resolveSupportErrandClassification(selection, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree),
+    );
+    // Every classification is kept as labels; the errand's own classification field holds only one.
+    const errandClassification = resolvedClassifications[selectErrandClassificationIndex(iafVofClassificationPolicy, classificationGroups)];
+    const categoryLabels = [
+      ...new Map(resolvedClassifications.flatMap(resolved => resolved.categoryLabels).map(label => [label.id, label])).values(),
+    ];
+    const body = buildSupportErrandClassificationUpdateBody(
+      { classification: errandClassification.classification, categoryLabels },
+      currentErrand.data.labels,
+      categoryLabels,
+      errandClassification.classification,
+      errandClassification.managedCategoryLabelIds,
+      errandClassification.managedRootResource,
+    );
+    await this.apiService.patch<SupportErrand, typeof body>(
+      { url, baseURL, data: body, headers: { 'If-Match': `"${data.expectedVersion}"` }, propagateClientError: true },
+      req.user,
+    );
+    const savedErrand = await this.apiService.get<SupportErrand>(
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    const savedVersion = getErrandVersion(savedErrand.data, savedErrand.headers?.etag);
+
+    return response.status(200).send({ ...savedErrand.data, version: savedVersion });
   }
 
   @Patch('/supporterrands/:municipalityId/:id/admin')
   @OpenAPI({ summary: 'Set user as admin for support errand' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(AssignSupportErrandDto, 'body'))
   async becomeAdminForSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: Partial<SupportErrandDto>,
+    @HeaderParam('If-Match') ifMatch: string,
+    @Body() data: AssignSupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
@@ -690,17 +1265,35 @@ export class SupportErrandController {
       logger.error('No municipality id found, it is needed to update errand.');
       return response.status(400).send('Municipality id missing');
     }
+    const requestedVersion = requireStrongErrandVersion(ifMatch);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body: Partial<SupportErrandDto> = {
-      assignedUserId: data.assignedUserId,
-      status: data?.status,
-    };
-    const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when setting administrator for support errand');
-      logger.error(e);
-      throw e;
-    });
+    const currentErrand = await this.apiService.get<SupportErrand>(
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
+    assertRequestedErrandVersion(requestedVersion, currentVersion);
+    assertSupportErrandAdminAssignable(currentErrand.data, 'administrator changes');
+
+    const body: AssignSupportErrandDto = { assignedUserId: data.assignedUserId };
+    const res = await this.apiService
+      .patch<any, AssignSupportErrandDto>(
+        {
+          url,
+          baseURL,
+          data: body,
+          headers: { 'If-Match': `"${currentVersion}"` },
+          followLocation: false,
+          propagateClientError: true,
+        },
+        req.user,
+      )
+      .catch(e => {
+        logger.error('Error when setting administrator for support errand');
+        logger.error(e);
+        throw e;
+      });
     return response.status(200).send(res.data);
   }
 

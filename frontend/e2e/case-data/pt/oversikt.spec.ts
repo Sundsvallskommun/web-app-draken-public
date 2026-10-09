@@ -4,9 +4,9 @@ import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { mockNotifications } from '../fixtures/mockNotifications';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 
 test.describe('Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {

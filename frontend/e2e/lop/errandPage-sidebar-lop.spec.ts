@@ -1,8 +1,16 @@
-import { test, expect } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { expect, test } from '../fixtures/base.fixture';
+import { mockEnv } from '../fixtures/mock-env';
+import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
+import { mockComments } from './fixtures/mockComments';
+import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
+import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockRelations } from './fixtures/mockRelations';
+import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
+import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
+import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockDifferentUserSupportErrand,
   mockEmptySupportErrand,
@@ -11,15 +19,8 @@ import {
   mockSupportErrand,
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
-import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
-import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
-import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
-import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
-import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
-import { mockRelations } from './fixtures/mockRelations';
-import { mockEnv } from '../fixtures/mock-env';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand page', () => {
@@ -28,6 +29,9 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
+    // The errand log loads notifications to mark notified events.
+    await mockRoute('**/supportnotifications/2281', [], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute(
       `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`,
@@ -51,6 +55,7 @@ test.describe('errand page', () => {
     // Actions (forward/suspend/solve) refetch the errand by id afterwards.
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse, { method: 'PATCH' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/status`, mockSupportErrand, { method: 'PATCH' });
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
   });
 
@@ -80,12 +85,14 @@ test.describe('errand page', () => {
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
 
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="self-assign-errand-button"]').click(),
     ]);
     const responseBody = await response.json();
     expect(responseBody.assignedUserId).toBe('kctest');
+    expect(statusRequest.postDataJSON()?.status).toBe('ONGOING');
     expect(response.status()).toBe(200);
   });
 
@@ -97,15 +104,25 @@ test.describe('errand page', () => {
     await expect(page.locator('[data-cy="admin-input"]')).toBeVisible();
     await page.locator('[data-cy="admin-input"]').selectOption({ index: 1 });
     await expect(page.locator('[data-cy="admin-input"]')).toHaveValue(`${mockSupportAdminsResponse.data[1].displayName}`);
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
-    const requestBody = response.request().postDataJSON();
+    const request = response.request();
+    const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody).toEqual({
       assignedUserId: mockSupportAdminsResponse.data[1].name,
-      status: 'ASSIGNED',
     });
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'ASSIGNED',
+      })
+    );
     expect(response.status()).toBe(200);
   });
 
@@ -124,18 +141,28 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="priority-input"]').selectOption('LOW');
     await expect(page.locator('[data-cy="priority-input"]')).toHaveValue('LOW');
 
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse(
         (resp) =>
           resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
           resp.request().method() === 'PATCH' &&
           resp.request().postDataJSON()?.priority === 'LOW'
       ),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
-    const requestBody = response.request().postDataJSON();
+    const request = response.request();
+    const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody.priority).toBe('LOW');
-    expect(requestBody.status).toBe('PENDING');
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'PENDING',
+      })
+    );
     expect(response.status()).toBe(200);
   });
 
@@ -219,13 +246,12 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="resume-button"]').click();
     const confirmDialog = page.locator(CONFIRM_DIALOG);
     const [response] = await Promise.all([
-      page.waitForResponse(
-        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
-      ),
+      page.waitForResponse((resp) => resp.url().endsWith('/status') && resp.request().method() === 'PATCH'),
       confirmDialog.getByRole('button', { name: 'Ja' }).click(),
     ]);
     expect(response.status()).toBe(200);
     const requestBody = response.request().postDataJSON();
+    expect(requestBody.status).toBe('ONGOING');
     expect(requestBody.suspension).toBeDefined();
     expect(Object.keys(requestBody.suspension).length).toBe(0);
     expect(JSON.stringify(requestBody.suspension)).toBe('{}');
@@ -287,7 +313,8 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator(`[aria-label="${mockSidebarButtons[2].label}"]`).click();
-    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(mockSupportHistory.totalElements);
+    // Events sharing a requestGroupId are one entry in the log, so there are fewer entries than events.
+    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(5);
     await page.locator('[data-cy="history-log"] div button').first().click();
     await page.locator('[data-cy="history-table-details-close-button"]').filter({ hasText: 'Stäng' }).click();
   });

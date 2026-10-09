@@ -1,0 +1,146 @@
+import assert from 'node:assert/strict';
+
+import type { AppConfigFeatures } from '@config/appconfig';
+import { resolveCategorizationControl } from '@supportmanagement/components/support-errand-basics-form/categorization-control';
+import { test } from 'vitest';
+
+import { defaultBasicsPlacement, type SupportErrandClassificationPlacement } from './classification-placement';
+import {
+  type InvestigationCapability,
+  type InvestigationVariantModule,
+  isInvestigationTabVisible,
+  resolveInvestigationVariant,
+} from './investigation-variant';
+
+/**
+ * Stage 4: prove the seam holds for an implementation that is not avvikelse.
+ *
+ * `investigation-variant.test.ts` covers the selection rules. This file covers the *shape* of the
+ * contract: that a second variant with different needs can be written against it without changing
+ * it. The fixtures below are deliberately not avvikelse and never import it - if this file ever
+ * needs something from `avvikelse/`, the contract has grown a coupling to one implementation.
+ */
+
+// A real second capability, not a cast: these fixtures stand in for a future variant, but the flag
+// that would select one is genuine.
+const OTHER: InvestigationCapability = 'useAotInvestigation';
+
+const features = (enabled: Partial<Record<InvestigationCapability | 'useInvestigation', boolean>>): AppConfigFeatures =>
+  ({
+    useInvestigation: false,
+    useAvvikelseInvestigation: false,
+    useAotInvestigation: false,
+    ...enabled,
+  } as AppConfigFeatures);
+
+/**
+ * The minimum a variant must supply. No notice, no categorization control, and a placement with no
+ * label tree - an investigation that categorizes from the ordinary category-root tree like every
+ * drake outside IAF/VOF. That this compiles is half the assertion.
+ */
+const minimalVariant: InvestigationVariantModule = {
+  id: 'fixture-minimal',
+  label: 'Utredning',
+  enabledBy: OTHER,
+  resolveClassificationPlacement: () => defaultBasicsPlacement,
+  renderTab: () => null,
+};
+
+/** A variant that does bring its own vocabulary, without being avvikelse. */
+const ownVocabularyPlacement: SupportErrandClassificationPlacement = {
+  owner: 'basics',
+  labelTree: { categoryClassification: 'FIXTURE_CATEGORY', typeClassification: 'FIXTURE_TYPE' },
+};
+
+const ownVocabularyVariant: InvestigationVariantModule = {
+  id: 'fixture-own-vocabulary',
+  label: 'Egen utredning',
+  enabledBy: OTHER,
+  resolveClassificationPlacement: () => ownVocabularyPlacement,
+  renderTab: () => null,
+  renderNotice: () => null,
+  renderCategorizationControl: () => null,
+};
+
+test('a variant needs only the required slots', () => {
+  // The optional slots stay optional: a variant that has nothing to say above the tab strip and no
+  // categorization control of its own does not have to supply stubs for them.
+  assert.equal(minimalVariant.renderNotice, undefined);
+  assert.equal(minimalVariant.renderCategorizationControl, undefined);
+  assert.equal(minimalVariant.decisionTab, undefined);
+  // Nothing is added to Ärendeuppgifter by a variant that does not ask for it.
+  assert.equal(minimalVariant.renderDetailsHeader, undefined);
+  // A variant that requires nothing before a phase holds no phase change.
+  assert.equal(minimalVariant.phaseEntryRequirements, undefined);
+  // A variant offering no follow-up across errands adds no section to the overview's sidebar.
+  assert.equal(minimalVariant.followUp, undefined);
+  // A variant with nothing to say about an errand the user may only know of leaves the errand page alone.
+  assert.equal(minimalVariant.limitedAccessNotice, undefined);
+  // A variant that does not keep errands from closing early leaves the early close where it is.
+  assert.equal(minimalVariant.closesOnlyAtWorkflowEnd, undefined);
+  // Nor does one whose workflow does not move the status take the status select away.
+  assert.equal(minimalVariant.statusFollowsWorkflow, undefined);
+  // Nor does one with no next step to tell put anything above the handling controls, or move the landing tab.
+  assert.equal(minimalVariant.nextStep, undefined);
+  // A variant with no say in who is responsible leaves the overview naming the assigned handler.
+  assert.equal(minimalVariant.overviewAssignee, undefined);
+  // Nor does one with no handlers to record beside the assignee change the sidebar.
+  assert.equal(minimalVariant.renderHandlerFields, undefined);
+  // Nor does one with nothing to conceal hide any document its access shows.
+  assert.equal(minimalVariant.concealedDocumentKeys, undefined);
+  // A variant whose work has no phase of its own names none, and is offered from any phase.
+  assert.equal(minimalVariant.requiredPhaseName, undefined);
+});
+
+test('a second capability selects its own variant and leaves avvikelse unselected', () => {
+  const both = [minimalVariant];
+
+  assert.equal(resolveInvestigationVariant(features({ [OTHER]: true }), both), minimalVariant);
+  assert.equal(resolveInvestigationVariant(features({ useAvvikelseInvestigation: true }), both), null);
+});
+
+test('the master switch gates a non-avvikelse variant the same way', () => {
+  const enabled = features({ [OTHER]: true, useInvestigation: true });
+  const masterOff = features({ [OTHER]: true });
+
+  const noPhases = { metadataPhases: undefined, errandPhases: undefined };
+
+  assert.equal(isInvestigationTabVisible(enabled, minimalVariant, noPhases), true);
+  assert.equal(isInvestigationTabVisible(masterOff, minimalVariant, noPhases), false);
+});
+
+/**
+ * The load-bearing one. A variant that does not bring its own label tree must leave Grundinformation
+ * exactly as it is for every other drake - the ordinary two-level or label control, chosen by the
+ * deployment flags alone. If avvikelse's vocabulary had leaked into the seam, this would come back
+ * as 'variant' or 'none'.
+ */
+test('a variant without its own label tree leaves the ordinary categorization control in place', () => {
+  const placement = minimalVariant.resolveClassificationPlacement(null);
+
+  assert.deepEqual(resolveCategorizationControl('label', placement), { kind: 'label' });
+  assert.deepEqual(resolveCategorizationControl('two-level', placement), { kind: 'two-level' });
+});
+
+test('a variant with its own label tree takes over the categorization control', () => {
+  const placement = ownVocabularyVariant.resolveClassificationPlacement(null);
+
+  assert.deepEqual(resolveCategorizationControl('label', placement), { kind: 'variant', disabled: false });
+});
+
+/**
+ * Ownership is the variant's decision, not the seam's: the same contract expresses "Grundinformation
+ * keeps classification" and "the investigation owns it", and shared code reads only `owner`.
+ */
+test('a variant decides where classification is persisted', () => {
+  const investigationOwned: InvestigationVariantModule = {
+    ...minimalVariant,
+    resolveClassificationPlacement: () => ({ owner: 'investigation' }),
+  };
+
+  assert.equal(minimalVariant.resolveClassificationPlacement(null).owner, 'basics');
+  assert.equal(investigationOwned.resolveClassificationPlacement(null).owner, 'investigation');
+  assert.deepEqual(resolveCategorizationControl('label', investigationOwned.resolveClassificationPlacement(null)), {
+    kind: 'none',
+  });
+});

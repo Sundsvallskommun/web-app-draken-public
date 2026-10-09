@@ -6,6 +6,7 @@ import { mockConversationMessages, mockConversations } from './fixtures/mockConv
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockEmptySupportErrand,
   mockSupportAttachments,
@@ -13,7 +14,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { MODAL_DIALOG } from '../utils/modal';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 
 test.describe('Errand page support attachments tab', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -21,6 +22,7 @@ test.describe('Errand page support attachments tab', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
@@ -97,6 +99,8 @@ test.describe('Errand page support attachments tab', () => {
       // The delete confirmation is a useConfirm dialog (role=dialog) named "Ta bort?".
       const confirmDialog = page.getByRole('dialog', { name: /Ta bort\?/ }).last();
       await expect(confirmDialog.getByRole('button', { name: 'Nej' })).toBeVisible();
+      // Answered mid-transition, the dialog can stay half open over the page and swallow the next click.
+      await expect(page.locator(CONFIRM_DIALOG)).toHaveCSS('opacity', '1');
       await Promise.all([
         page.waitForResponse(
           (resp) => resp.url().includes(`attachments/${attachment.id}`) && resp.request().method() === 'DELETE'

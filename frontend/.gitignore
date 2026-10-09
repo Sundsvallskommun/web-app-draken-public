@@ -24,7 +24,7 @@
 **/next-env.d.ts
 # production
 /build
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # misc
 .DS_Store

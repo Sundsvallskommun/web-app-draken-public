@@ -17,6 +17,8 @@ import {
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
+import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
@@ -33,6 +35,7 @@ const AttestationsFilteringComponent: FC<{
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const user = useUserStore((s) => s.user);
   const [show, setShow] = useState<boolean>(true);
+  const registrationEnabled = useInvestigationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
   const [showCreateInvoice, setShowCreateInvoice] = useState<boolean>(false);
 
   const closeCreateInvoice = () => {
@@ -58,15 +61,17 @@ const AttestationsFilteringComponent: FC<{
             >
               {show ? 'Dölj filter' : `Visa filter `}
             </Button>
-            <Link
-              href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-              target="_blank"
-              data-cy="register-new-errand-button"
-            >
-              <Button color={'vattjom'} variant={'primary'}>
-                Nytt ärende
-              </Button>
-            </Link>
+            {registrationEnabled && (
+              <Link
+                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+                target="_blank"
+                data-cy="register-new-errand-button"
+              >
+                <Button color={'vattjom'} variant={'primary'}>
+                  Nytt ärende
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

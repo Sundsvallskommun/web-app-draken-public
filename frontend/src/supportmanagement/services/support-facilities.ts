@@ -1,8 +1,7 @@
-import { ApiResponse, apiService } from '@common/services/api-service';
+import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import { saveChangedErrandParameters } from '@supportmanagement/services/support-parameter-service';
 
-import { ApiSupportErrand } from './support-errand-service';
-
-export interface FacilitiesPayload {
+interface FacilitiesPayload {
   propertyDesignations: string[];
   districtnames: string[];
   streets: string[];
@@ -18,19 +17,33 @@ interface Facility {
   };
 }
 
-export const saveFacilityInfo = (id: string, facilities: Facility[]) => {
-  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
-  const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
-  const payload: FacilitiesPayload = {
-    propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation || '') || [],
-    districtnames: facilities?.map((f) => f.extraParameters?.districtname || '') || [],
-    streets: facilities?.map((f) => f.address?.street || '') || [],
+/** The three parameters the facility list is stored as, with the presentation they are created with. */
+const FACILITY_PARAMETERS = [
+  { key: 'propertyDesignation', displayName: 'Fastighetsbeteckning' },
+  { key: 'districtname', displayName: 'Distriktnamn' },
+  { key: 'street', displayName: 'Adress' },
+] as const;
+
+/**
+ * Saves the facility list.
+ *
+ * Each of the three parameters is written on its own, conditioned on its own version, so saving
+ * facilities no longer rewrites every other parameter on the errand - and a concurrent edit to an
+ * unrelated parameter neither fails this save nor is overwritten by it. Unchanged parameters are
+ * skipped entirely.
+ */
+export const saveFacilityInfo = (id: string, facilities: Facility[], currentParameters: Parameter[] | undefined) => {
+  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID ?? '';
+  const values: Record<(typeof FACILITY_PARAMETERS)[number]['key'], string[]> = {
+    propertyDesignation: facilities?.map((f) => f.address?.propertyDesignation || '') || [],
+    districtname: facilities?.map((f) => f.extraParameters?.districtname || '') || [],
+    street: facilities?.map((f) => f.address?.street || '') || [],
   };
 
-  return apiService
-    .patch<ApiResponse<ApiSupportErrand>, FacilitiesPayload>(url, payload)
-    .then((res) => res.data)
-    .catch((e) => {
-      throw e;
-    });
+  return saveChangedErrandParameters(
+    municipalityId,
+    id,
+    currentParameters,
+    FACILITY_PARAMETERS.map((parameter) => ({ ...parameter, values: values[parameter.key] }))
+  );
 };

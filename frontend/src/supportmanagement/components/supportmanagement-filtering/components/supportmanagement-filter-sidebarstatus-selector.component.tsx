@@ -25,8 +25,23 @@ export const SupportManagementStatusValues: SupportManagementStatusFilter = {
 export const SupportManagementFilterSidebarStatusSelector: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
+  /** The planned-measures overview also replaces the errand table; a status click leaves it. */
+  showPlannedMeasures?: boolean;
+  setShowPlannedMeasures?: (show: boolean) => void;
+  /** So does the follow-up across errands. */
+  showFollowUp?: boolean;
+  setShowFollowUp?: (show: boolean) => void;
   iconButton: boolean;
-}> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
+}> = ({
+  showAttestationTable,
+  setShowAttestationTable,
+  showPlannedMeasures = false,
+  setShowPlannedMeasures,
+  showFollowUp = false,
+  setShowFollowUp,
+  iconButton,
+}) => {
+  const otherViewShown = showAttestationTable || showPlannedMeasures || showFollowUp;
   const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
   const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
   const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
@@ -99,9 +114,11 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
               updateStatusFilter(button.statuses as Status[]);
               setSidebarLabel(button.label);
               setShowAttestationTable(false);
+              setShowPlannedMeasures?.(false);
+              setShowFollowUp?.(false);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
+            variant={buttonIsActive && !otherViewShown ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={(() => {
               const DynIcon = iconMap[button.icon as string];
@@ -118,8 +135,8 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
                 ) : (
                   <Badge
                     className="min-w-fit px-4"
-                    inverted={!buttonIsActive || showAttestationTable}
-                    color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
+                    inverted={!buttonIsActive || otherViewShown}
+                    color={buttonIsActive && !otherViewShown ? 'tertiary' : 'vattjom'}
                     counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
                   />
                 )}

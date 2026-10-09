@@ -1,15 +1,31 @@
+import { HandlerSelectOptions } from '@common/components/handler-select/handler-select-options.component';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { withRequestGroup } from '@common/services/api-service';
+import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
+import { type Admin, getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
-  defaultSupportErrandInformation,
+  applyInvestigationHandover,
+  type InvestigationHandoverStep,
+} from '@supportmanagement/investigation/avvikelse/assignment/avvikelse-assignment-service';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import {
+  getInvestigationClosesOnlyAtWorkflowEnd,
+  getInvestigationHandlerFields,
+  getInvestigationStatusFollowsWorkflow,
+} from '@supportmanagement/investigation/investigation-variant-registry';
+import { useInvestigationNextStep } from '@supportmanagement/investigation/use-investigation-next-step';
+import {
   getSupportErrandById,
   isSupportErrandLocked,
+  readSupportErrandWriteSnapshot,
   Resolution,
+  resolveWorkingStatus,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
@@ -17,29 +33,92 @@ import {
   updateSupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  SupportErrandStatusAfterAssignmentError,
+  supportErrandWriteErrorMessage,
+} from '@supportmanagement/services/support-errand-write-version';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
+import {
+  closesFromActivePhase,
+  getActiveSupportPhaseId,
+  getSelectableSupportStatuses,
+  getSupportPhases,
+} from '@supportmanagement/services/support-phase-service';
 import dayjs from 'dayjs';
 import { CirclePause, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
+import {
+  saveParticipantsInTurn,
+  selectDirtyParticipants,
+  selectHasDirtyParticipant,
+  unsavedParticipantsMessage,
+  useErrandSaveParticipantsStore,
+} from '../errand-save/errand-save-participants';
+import { useSupportMessagingPhase } from '../tabs/messages/use-support-messaging-phase';
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
+import { SupportFollowErrandButtonComponent } from './buttons/support-follow-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
+import { SupportPhaseProcessButtonComponent } from './buttons/support-phase-process-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
 import { SupportSuspendErrandButtonComponent } from './buttons/support-suspend-errand-button.component';
+import { SupportNextStepCard } from './support-next-step-card.component';
 
 export const SidebarInfo: FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
+  hasUnsavedChanges: boolean;
 }> = (props) => {
   const user = useUserStore((s) => s.user);
+  const investigationProfile = useInvestigationProfileStore((s) => s.profile);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
+  const handlerRoles = useUserStore((s) => s.handlerRoles);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const router = useRouter();
+  const handlerFields = getInvestigationHandlerFields();
+  // Where the workflow moves the status by its own actions, there is no status to choose here.
+  const statusFollowsWorkflow = getInvestigationStatusFollowsWorkflow();
+  const nextStep = useInvestigationNextStep();
+  // Who may be given *this* errand, which is not the same question as who is a handler at all.
+  // Until it answers - and if it cannot - the full directory stands, so the selector is never empty.
+  const [assignable, setAssignable] = useState<HandlerDirectory>();
+  const assignableHandlers = assignable?.administrators ?? administrators;
+  const assignableRoles = assignable?.roles ?? handlerRoles;
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const closesOnlyAtWorkflowEnd =
+    getInvestigationClosesOnlyAtWorkflowEnd()?.({
+      errand: supportErrand,
+      profile: investigationProfile,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+      viewer: user,
+    }) ?? false;
+  // In the last phase of a workflow the phase button closes the errand, so it is not offered twice; and an errand the
+  // investigation closes only at the end of its workflow is not closed early.
+  const offersEarlyClose =
+    !(
+      appConfig.features.useUiPhases &&
+      closesFromActivePhase(getActiveSupportPhaseId(supportErrand?.phases), getSupportPhases(supportMetadata?.phases))
+    ) && !closesOnlyAtWorkflowEnd;
+  // The divider above forwarding and the early close only separates something when either is offered.
+  const offersForwardOrClose = appConfig.features.useEscalation || offersEarlyClose;
+  // Only a namespace with a phase model narrows the list - today IAF/VOF - because there each phase
+  // allows its own status and Support Management refuses the others.
+  const selectableStatuses = useMemo(
+    () =>
+      getSelectableSupportStatuses(
+        supportMetadata?.statuses,
+        supportErrand?.status,
+        getActiveSupportPhaseId(supportErrand?.phases),
+        getSupportPhases(supportMetadata?.phases)
+      ),
+    [supportMetadata?.statuses, supportMetadata?.phases, supportErrand?.status, supportErrand?.phases]
+  );
   const selectablePriorities = useMemo(() => {
     if (supportErrand?.priority && supportErrand?.status) {
       return [
@@ -54,6 +133,8 @@ export const SidebarInfo: FC<{
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const allowed = useMemo(() => {
+    // A limited read carries almost nothing of the errand, so it would pass for an empty or unassigned one.
+    if (supportErrand?.limitedAccess) return false;
     if (!supportErrandIsEmpty(supportErrand!)) {
       let _a = validateAction(supportErrand!, user);
       if (supportErrand!.assignedUserId?.toLocaleLowerCase() === undefined) {
@@ -98,73 +179,203 @@ export const SidebarInfo: FC<{
 
   const { admin, status, priority } = watch();
 
-  const onSubmit = async () => {
-    setError(false);
-    setIsLoading(true);
+  const errandId = supportErrand?.id;
+  useEffect(() => {
+    if (!errandId || !municipalityId) {
+      setAssignable(undefined);
+      return;
+    }
 
-    const municipalityId = defaultSupportErrandInformation.municipalityId;
+    let cancelled = false;
+    getAssignableHandlers(municipalityId, errandId)
+      .then((directory) => {
+        if (!cancelled) setAssignable(directory);
+      })
+      .catch((error) => {
+        // The full directory is already what is on screen; saying so beats an empty selector.
+        console.error('Failed to load the handlers assignable to this errand.', error);
+      });
 
+    return () => {
+      cancelled = true;
+    };
+  }, [errandId, municipalityId]);
+
+  // Resolved from the list the selector actually offered: a manager reached through AccessMapper
+  // need not be in any configured handler group, so looking only in the full directory would
+  // silently find nobody and skip the assignment.
+  const findChosenAdmin = () =>
+    [...assignableHandlers, ...administrators].find((a) => a.displayName === getValues().admin);
+
+  /** The person the selector gives the errand to, when that is a named handover - to LEX - and not an assignment. */
+  const findChosenHandover = () => {
+    const chosen = findChosenAdmin();
+    return chosen?.handoverStep && supportErrand?.assignedUserId !== chosen.adAccount ? chosen : undefined;
+  };
+
+  /**
+   * Gives the errand away in its named handover, which moves its access with it. That leaves the errand out of
+   * reach, so it is the last write of a save and the page leaves the errand. Answers whether it was handed over.
+   */
+  const handOver = async (recipient: Admin): Promise<boolean> => {
     try {
-      await updateSupportErrand(municipalityId, getValues());
+      const current = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
+      if (typeof current.version !== 'number') throw new Error('The support errand version is missing');
+      await applyInvestigationHandover(
+        municipalityId,
+        supportErrand!.id!,
+        recipient.handoverStep as InvestigationHandoverStep,
+        current.version,
+        recipient.adAccount
+      );
+      router.push('/oversikt');
+      return true;
+    } catch (e) {
+      console.error('Error when handing the errand over:', e);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: supportErrandWriteErrorMessage(e, 'Ärendet kunde inte lämnas över. Försök igen.'),
+        status: 'error',
+      });
+      setError(true);
+      return false;
+    }
+  };
 
-      // Handle admin change
-      const newAdminAccount = administrators.find((a) => a.displayName === getValues().admin)?.adAccount;
+  /** Writes the errand's own fields; answers whether they were saved. A failure is told in a toast. */
+  const saveErrandFields = async (): Promise<boolean> => {
+    try {
+      await updateSupportErrand(municipalityId, getValues(), supportErrand?.version, supportErrand?.parameters);
+
+      // Handle admin change. The update above is ours and moved the version on, so the version
+      // the form was loaded with can no longer be used as the precondition here.
+      const newAdmin = findChosenAdmin();
+      const newAdminAccount = newAdmin?.adAccount;
       if (supportErrand?.assignedUserId !== newAdminAccount) {
         const assigner = administrators.find((a) => a.adAccount === user.username);
-        if (newAdminAccount && assigner) {
-          const newStatus = newAdminAccount === assigner.adAccount ? Status.ONGOING : Status.ASSIGNED;
+        // A handover is not an assignment: the caller takes it once everything else is saved (handOver).
+        if (newAdminAccount && assigner && !newAdmin?.handoverStep) {
+          const newStatus =
+            newAdminAccount === assigner.adAccount
+              ? resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases)
+              : Status.ASSIGNED;
+          const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
           await setSupportErrandAdmin(
             supportErrand!.id!,
             municipalityId,
             newAdminAccount,
+            afterUpdate.version,
             newStatus,
             assigner.adAccount
           );
         }
       } else if (supportErrand?.status !== getValues().status) {
         // Handle status change
-        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getValues().status);
+        const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getValues().status, afterUpdate);
       }
 
       // Handle facility save
       if (props.unsavedFacility) {
         try {
-          await saveFacilityInfo(supportErrand!.id!, getValues().facilities);
+          // Each facility parameter is written on its own version, so what is needed here is the
+          // errand's current parameters rather than its version - and reading them fresh means the
+          // earlier commands in this save flow cannot leave them stale.
+          const current = await getSupportErrandById(supportErrand!.id!, municipalityId);
+          if (current.error) {
+            throw new Error('Could not read the current support errand parameters');
+          }
+          await saveFacilityInfo(supportErrand!.id!, getValues().facilities, current.errand.parameters);
           props.setUnsavedFacility(false);
-        } catch {
+        } catch (e) {
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Något gick fel när fastigheter i ärendet sparades',
+            message: supportErrandWriteErrorMessage(e, 'Något gick fel när fastigheter i ärendet sparades'),
             status: 'error',
           });
+          setError(true);
+          return false;
         }
       }
 
       // Single fetch + reset after all operations complete
       const e = await getSupportErrandById(getValues().id!, municipalityId);
+      if (e.error) throw new Error('Could not confirm the saved support errand');
       setSupportErrand(e.errand);
       reset(e.errand);
-
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Ärendet uppdaterades',
-        status: 'success',
-      });
+      return true;
     } catch (e) {
       console.error('Error when updating errand:', e);
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: 'Något gick fel när ärendet uppdaterades',
+        message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet uppdaterades'),
         status: 'error',
       });
       setError(true);
-    } finally {
-      setIsLoading(false);
+      return false;
     }
   };
+
+  // One save is one action for Support Management: its writes become one notification, not one each.
+  const onSubmit = (): Promise<boolean> =>
+    withRequestGroup(async () => {
+      setError(false);
+      setIsLoading(true);
+      try {
+        // Read before the save resets the form to the errand as saved.
+        const handover = findChosenHandover();
+        const saved = await saveErrandFields();
+        if (saved && handover) {
+          // The errand has left; whatever was to follow the save must not act on it.
+          if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
+          return false;
+        }
+        if (saved) toast('success', 'Ärendet uppdaterades');
+        return saved;
+      } finally {
+        setIsLoading(false);
+      }
+    });
+
+  const errandFieldsDirty = hasDirtyFields(formState.dirtyFields);
+  const hasDirtyParticipant = useErrandSaveParticipantsStore(selectHasDirtyParticipant);
+
+  /**
+   * Spara ärende saves the errand's own fields, then each part of the errand that holds a draft - the
+   * investigation documents - validated and saved on its own. A part that could not be saved is shown,
+   * with why, in its own place. A handover chosen in Ansvarig comes last, since it takes the errand
+   * out of reach: the errand's own fields first, because the drafts' writes move its version on.
+   */
+  const saveErrand = () =>
+    withRequestGroup(async () => {
+      setError(false);
+      setIsLoading(true);
+      try {
+        // Read before the save resets the form to the errand as saved.
+        const handover = findChosenHandover();
+        if (errandFieldsDirty && !(await saveErrandFields())) return;
+
+        const unsaved = await saveParticipantsInTurn(
+          selectDirtyParticipants(useErrandSaveParticipantsStore.getState())
+        );
+        if (unsaved.length > 0) {
+          setError(true);
+          toast('error', unsavedParticipantsMessage(unsaved));
+          unsaved[0].reveal();
+          return;
+        }
+        if (handover) {
+          if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
+          return;
+        }
+        toast('success', 'Ärendet uppdaterades');
+      } finally {
+        setIsLoading(false);
+      }
+    });
 
   useEffect(() => {
     if (administrators && supportErrand?.assignedUserId) {
@@ -191,20 +402,31 @@ export const SidebarInfo: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
 
-  const handleAction = (action: () => Promise<boolean>, success: () => void, fail: () => void) => {
+  /** Reads the errand back and shows it as it now stands. */
+  const showUpdatedErrand = async () => {
+    const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
+    if (res.error) throw new Error('Could not confirm the updated support errand');
+    setSupportErrand(res.errand);
+    reset(res.errand);
+  };
+
+  const handleAction = (action: () => Promise<boolean>, success: () => void, fail: (error: unknown) => void) => {
     return action()
       .then(async () => {
+        await showUpdatedErrand();
         success();
         setIsLoading(false);
-        const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
-        setSupportErrand(res.errand);
-        reset(res.errand);
       })
-      .catch(() => {
-        fail();
+      .catch(async (e) => {
+        fail(e);
         setError(true);
         setIsLoading(false);
-        return;
+        // The assignment landed although the status change after it did not: the errand on screen is
+        // stale, so show whose it is now and the version the next save has to be conditioned on.
+        if (e instanceof SupportErrandStatusAfterAssignmentError) {
+          await showUpdatedErrand().catch((error) => console.error(error));
+        }
+        return false;
       });
   };
 
@@ -219,11 +441,12 @@ export const SidebarInfo: FC<{
             supportErrand!.id!,
             municipalityId,
             admin?.adAccount!,
-            Status.ONGOING,
+            supportErrand?.version,
+            resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases),
             admin?.adAccount!
           ),
         () => toast('success', 'Handläggare tilldelades'),
-        () => toast('error', 'Något gick fel när handläggare tilldelades')
+        (e) => toast('error', supportErrandWriteErrorMessage(e, 'Något gick fel när handläggare tilldelades'))
       );
     } else {
       toast('error', 'Något gick fel');
@@ -233,6 +456,15 @@ export const SidebarInfo: FC<{
   const isAdmin = () => {
     return administrators.some((a) => a.adAccount === user.username);
   };
+
+  /**
+   * Taking an errand assigns it and moves it to Pågående, and those are two separate writes. When
+   * only the first one lands the errand is already the handler's, so hiding the action behind
+   * "someone else has it" strands it in Ny - where the message tab and the sidebar keep everything
+   * shut and nothing on screen runs the missing half again.
+   */
+  const errandIsAssignedToUser = supportErrand?.assignedUserId === user.username;
+  const canTakeErrand = !errandIsAssignedToUser || supportErrand?.status === Status.NEW;
 
   const solutionComponent = (label: string, info: string, icon: string) => (
     <>
@@ -323,11 +555,17 @@ export const SidebarInfo: FC<{
     }
   };
 
+  // Ny is not a reason to keep the handler from writing: `allowed` already says the errand is
+  // theirs, and an errand that arrives from an e-service is a real errand from the first minute.
+  // The parked and closed states are locked for every action and stay that way. A workflow is the
+  // exception: there messages are sent once the errand has left its first phase.
+  const messagingPhase = useSupportMessagingPhase();
   const messageSidebarIsDisabled =
     !supportErrand ||
     isSupportErrandLocked(supportErrand!) ||
     !allowed ||
-    [Status.NEW, Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
+    !!messagingPhase ||
+    [Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
 
   const onError = () => {
     console.error('Something went wrong when saving');
@@ -341,7 +579,8 @@ export const SidebarInfo: FC<{
 
       <div className="w-full mt-md flex flex-col gap-12">
         <>
-          <FormControl id="administrator" className="w-full">
+          {nextStep && <SupportNextStepCard step={nextStep} />}
+          <FormControl id="administrator" className="w-full" disabled={!!supportErrand?.limitedAccess}>
             <FormLabel className="flex justify-between text-small">
               Ansvarig{' '}
               <Button
@@ -349,7 +588,7 @@ export const SidebarInfo: FC<{
                 className="font-normal"
                 size="sm"
                 disabled={
-                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || supportErrand?.assignedUserId === user.username
+                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || !canTakeErrand || !!supportErrand?.limitedAccess
                 }
                 onClick={() => {
                   selfAssignSupportErrand();
@@ -369,40 +608,38 @@ export const SidebarInfo: FC<{
               value={admin}
             >
               {!supportErrand?.assignedUserId ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-              {administrators
-                .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                .map((a) => (
-                  <Select.Option key={a.adAccount}>
-                    {/* TODO Avatar */} {a.displayName}
-                  </Select.Option>
-                ))}
+              <HandlerSelectOptions administrators={assignableHandlers} roles={assignableRoles} />
             </Select>
           </FormControl>
 
-          <FormControl id="status" className="w-full" disabled={!allowed}>
-            <FormLabel className="text-small">Ärendestatus</FormLabel>
-            <Select
-              className="w-full"
-              size="sm"
-              data-cy="status-input"
-              placeholder="Välj status"
-              aria-label="Välj status"
-              {...register('status')}
-              value={status}
-              disabled={
-                supportErrand?.status === Status.SOLVED ||
-                supportErrand?.status === Status.REOPENED ||
-                (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
-              }
-            >
-              {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {supportMetadata?.statuses?.map((status, index) => (
-                <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
-                  {status?.displayName}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
+          {handlerFields?.({ locked: isSupportErrandLocked(supportErrand!) })}
+          {!statusFollowsWorkflow && (
+            <FormControl id="status" className="w-full" disabled={!allowed}>
+              <FormLabel className="text-small">Ärendestatus</FormLabel>
+              <Select
+                className="w-full"
+                size="sm"
+                data-cy="status-input"
+                placeholder="Välj status"
+                aria-label="Välj status"
+                {...register('status')}
+                value={status}
+                disabled={
+                  !!supportErrand?.limitedAccess ||
+                  supportErrand?.status === Status.SOLVED ||
+                  supportErrand?.status === Status.REOPENED ||
+                  (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
+                }
+              >
+                {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
+                {selectableStatuses.map((status, index) => (
+                  <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
+                    {status?.displayName}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {supportErrand?.status !== Status.SOLVED && supportErrand?.status !== Status.REOPENED && (
             <FormControl id="priority" className="w-full" disabled={!allowed}>
@@ -433,13 +670,13 @@ export const SidebarInfo: FC<{
             data-cy="save-button"
             type="button"
             disabled={
+              isLoading === true ||
               isSupportErrandLocked(supportErrand!) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-              formIsNotValid
+              !(errandFieldsDirty || hasDirtyParticipant) ||
+              (errandFieldsDirty && formIsNotValid)
             }
-            onClick={handleSubmit(() => {
-              return onSubmit();
-            }, onError)}
+            // The errand's fields are validated before anything is saved; the parts validate themselves.
+            onClick={errandFieldsDirty ? handleSubmit(saveErrand, onError) : () => void saveErrand()}
             variant="primary"
             color="primary"
             loading={isLoading === true}
@@ -452,7 +689,10 @@ export const SidebarInfo: FC<{
 
             {supportErrand?.status === Status.SOLVED ? (
               <>
-                {renderLabelSwitch(supportErrand.resolution!)}
+                {/* A workflow records no resolution, so a closed errand is simply closed. */}
+                {appConfig.features.useUiPhases
+                  ? solutionComponent('Avslutat', 'avslutade ärendet.', 'check')
+                  : renderLabelSwitch(supportErrand.resolution!)}
                 <SupportReopenErrandButton />
               </>
             ) : supportErrand?.status === Status.SUSPENDED || supportErrand?.status === Status.ASSIGNED ? (
@@ -500,11 +740,22 @@ export const SidebarInfo: FC<{
                 {allowed && !supportErrandIsEmpty(supportErrand!) && (
                   <>
                     <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                    <SupportStartProcessButtonComponent
-                      disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
-                      onSubmit={onSubmit}
-                      onError={onError}
-                    />
+                    {/* A namespace that runs a workflow starts and moves errands through its phases here, as
+                        CaseData does; every other one keeps the plain start button. */}
+                    {appConfig.features.useUiPhases ? (
+                      <SupportPhaseProcessButtonComponent
+                        disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                        hasUnsavedChanges={props.hasUnsavedChanges}
+                        onSubmit={onSubmit}
+                        onError={onError}
+                      />
+                    ) : (
+                      <SupportStartProcessButtonComponent
+                        disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                        onSubmit={onSubmit}
+                        onError={onError}
+                      />
+                    )}
                     {!messageSidebarIsDisabled && (
                       <Button
                         leftIcon={<Mail />}
@@ -518,13 +769,19 @@ export const SidebarInfo: FC<{
                       </Button>
                     )}
                     <SupportSuspendErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                    <Divider className="mt-8 mb-16" />
+                    {offersForwardOrClose && <Divider className="mt-8 mb-16" />}
                   </>
                 )}
                 <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                {offersEarlyClose && (
+                  <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                )}
               </div>
             )}
+            {/* Following is about notifications, not about edit rights, so it is available on every
+                status and to handlers who are not assigned to the errand. */}
+            <Divider className="mt-16 mb-16" />
+            <SupportFollowErrandButtonComponent />
           </>
         </div>
       </div>

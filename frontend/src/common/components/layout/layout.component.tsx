@@ -6,7 +6,9 @@ import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThe
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import { getLabelCategorizationHeading } from '@supportmanagement/services/support-errand-service';
+import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { getLabelCategorizedErrandHeading } from '@supportmanagement/services/support-errand-heading';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -26,6 +28,8 @@ export default function Layout({ title, children }: { title: string; children: R
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
+  const supportApplicationProfile = useInvestigationProfileStore((state) => state.profile);
+  const registrationEnabled = !appConfig.isSupportManagement || isSupportRegistrationEnabled(supportApplicationProfile);
 
   useEffect(() => {
     setHostName(window.location.hostname);
@@ -72,7 +76,7 @@ export default function Layout({ title, children }: { title: string; children: R
             />
             <span className="font-bold ml-8">
               {appConfig.features.useLabelCategorization
-                ? supportErrand && getLabelCategorizationHeading(supportErrand, supportMetadata)
+                ? supportErrand && getLabelCategorizedErrandHeading(supportErrand, supportMetadata)
                 : supportMetadata?.categories
                     ?.find((t) => t.name === supportErrand?.category)
                     ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||
@@ -91,6 +95,14 @@ export default function Layout({ title, children }: { title: string; children: R
       </span>
     </div>
   );
+
+  // CaseData renders the phase handler in the header; SupportManagement renders it in the errand
+  // body (above the errand information) — see support-errand.component.tsx.
+  const phaseHandler = <UiPhaseWrapper />;
+  const showPhaseHandler =
+    appConfig.isCaseData &&
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende'));
 
   return (
     <>
@@ -111,15 +123,17 @@ export default function Layout({ title, children }: { title: string; children: R
               </span>
 
               <Divider orientation="vertical" className="mx-24" />
-              <Link
-                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-                target="_blank"
-                data-cy="register-new-errand-button"
-              >
-                <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
-                  Nytt ärende
-                </Button>
-              </Link>
+              {registrationEnabled && (
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+                  target="_blank"
+                  data-cy="register-new-errand-button"
+                >
+                  <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
+                    Nytt ärende
+                  </Button>
+                </Link>
+              )}
             </div>
           }
           mobileMenu={
@@ -132,13 +146,15 @@ export default function Layout({ title, children }: { title: string; children: R
                   <div className="font-bold">{`${user.name} (${user.username})`}</div>
                 </PopupMenu.Group>
                 <PopupMenu.Items>
-                  <PopupMenu.Group>
-                    <PopupMenu.Item>
-                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                        <ExternalLink className="h-md" /> Nytt ärende
-                      </Link>
-                    </PopupMenu.Item>
-                  </PopupMenu.Group>
+                  {registrationEnabled && (
+                    <PopupMenu.Group>
+                      <PopupMenu.Item>
+                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                          <ExternalLink className="h-md" /> Nytt ärende
+                        </Link>
+                      </PopupMenu.Item>
+                    </PopupMenu.Group>
+                  )}
 
                   {userMenuGroups.map((group, groupindex) => (
                     <PopupMenu.Group key={`mobilegroup-${groupindex}`}>
@@ -151,19 +167,9 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={
-            appConfig.features.useUiPhases &&
-            !isMinLargeDevice &&
-            (pathName === '/registrera' || pathName.includes('arende')) ? (
-              <UiPhaseWrapper />
-            ) : null
-          }
+          bottomContent={showPhaseHandler && !isMinLargeDevice ? phaseHandler : null}
         >
-          {appConfig.features.useUiPhases &&
-          isMinLargeDevice &&
-          (pathName === '/registrera' || pathName.includes('arende')) ? (
-            <UiPhaseWrapper />
-          ) : null}
+          {showPhaseHandler && isMinLargeDevice ? phaseHandler : null}
         </PageHeader>
       </div>
 

@@ -1,31 +1,53 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  Label,
+  Phase,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { apiService, Data } from '@common/services/api-service';
-import { isKC, isLOK, isROB } from '@common/services/application-service';
+import { apiService, Data, withRequestGroup } from '@common/services/api-service';
+import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import { sanitized } from '@common/services/sanitizer-service';
-import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
+import {
+  basicsAcceptsClassification,
+  getSupportErrandClassificationPlacement,
+} from '@supportmanagement/investigation/investigation-classification-ownership';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { useCallback, useEffect, useRef } from 'react';
+import { CErrandPhase, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
-import {
-  getLegacyClassificationHeading,
-  hasClassification,
-  showsLegacyClassification,
-} from './legacy-classification-service';
+import { categorizesByLabelPaths } from './label-path-categorization';
+import { getLegacyClassificationHeading, showsLegacyClassification } from './legacy-classification-service';
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { isSupportErrandEmpty } from './support-errand-emptiness';
+import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
+import {
+  buildSupportErrandsSearchParameters,
+  buildSupportErrandStatusGroupCountParameters,
+} from './support-errand-query';
+import { Status } from './support-errand-status';
+import {
+  buildSupportErrandStatusTransitionRequest,
+  SupportErrandStatusSnapshot,
+  SupportErrandStatusTransitionChanges,
+  SupportErrandStatusTransitionRequest,
+} from './support-errand-status-transition';
+import { buildSupportErrandUpdateData } from './support-errand-update-data';
+import { SupportErrandStatusAfterAssignmentError, toStrongSupportErrandETag } from './support-errand-write-version';
+import { getMappedLabelSubType } from './support-label-classification-service';
 import { CATEGORIZATION_CLASSIFICATIONS, getLabelDisplayName } from './support-label-service';
 import { MessageRequest, sendMessage } from './support-message-service';
-import { SupportMetadata } from './support-metadata-service';
+import type { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
+import { saveChangedErrandParameters } from './support-parameter-service';
+import { getActiveSupportPhaseId, getPhaseMainStatus, getSupportPhases } from './support-phase-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
 export enum ExternalIdType {
@@ -63,11 +85,25 @@ type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
 
+/**
+ * Read-only JSON parameter projection returned with an errand. It is kept out
+ * of the generated SupportErrandDto because that DTO is the generic PATCH
+ * contract, where JSON documents are deliberately forbidden.
+ */
+interface SupportErrandJsonParameter {
+  key: string;
+  schemaId: string;
+  value?: unknown;
+  version?: number;
+}
+
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  version?: number;
   created?: string;
   modified?: string;
   touched?: string;
+  jsonParameters?: SupportErrandJsonParameter[];
 }
 
 export interface SupportErrand extends ApiSupportErrand {
@@ -75,8 +111,15 @@ export interface SupportErrand extends ApiSupportErrand {
   category: string;
   type: string;
   subType: string;
+  labels?: Label[];
+  classificationHasSubTypes?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
+  /**
+   * Support Management grants the user only limited read (LR): they may know of the errand, not work in
+   * it. Set by the client when it asked, never by the API, and it locks the errand.
+   */
+  limitedAccess?: boolean;
 }
 
 interface PagedApiSupportErrands extends ApiPagingData {
@@ -122,28 +165,18 @@ export const getSelectableChannels = (): [string, string][] => {
   return entries;
 };
 
-export enum Status {
-  NEW = 'NEW',
-  ONGOING = 'ONGOING',
-  PENDING = 'PENDING',
-  SUSPENDED = 'SUSPENDED',
-  ASSIGNED = 'ASSIGNED',
-  SOLVED = 'SOLVED',
-  AWAITING_INTERNAL_RESPONSE = 'AWAITING_INTERNAL_RESPONSE',
-  UPSTART = 'UPSTART',
-  PUBLISH_SELECTION = 'PUBLISH_SELECTION',
-  INTERNAL_CONTROL_AND_INTERVIEWS = 'INTERNAL_CONTROL_AND_INTERVIEWS',
-  REFERENCE_CHECK = 'REFERENCE_CHECK',
-  REVIEW = 'REVIEW',
-  SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
-  FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
-  SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
-  REOPENED = 'REOPENED',
-}
+export { Status };
 
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
   return (
-    !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
+    !!status &&
+    [
+      Status.PENDING,
+      Status.AWAITING_INTERNAL_RESPONSE,
+      Status.AWAITING_RESPONSE,
+      Status.SUSPENDED,
+      Status.ASSIGNED,
+    ].includes(status)
   );
 };
 
@@ -155,7 +188,67 @@ enum AttestationStatusLabel {
 
 export const newStatuses = [Status.NEW];
 
-export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
+/**
+ * The status an errand moves to when somebody takes it, resumes it or starts working on it.
+ *
+ * IAF/VOF's namespaces do not have `ONGOING` — their working status is `INQUIRY`. Every transition
+ * that used to hardcode `ONGOING` goes through this instead, so those drakar do not end up asking
+ * Support Management for a status their namespace has never heard of.
+ */
+export const getOngoingStatus = (): Status => (isIAFOrVOF() ? Status.INQUIRY : Status.ONGOING);
+
+/**
+ * Whether a closed errand can be reopened. IAF/VOF never offer it. The two always behave the same, so this
+ * follows the application rather than a runtime flag that could be set differently for each of them.
+ */
+export const canReopenSupportErrand = (): boolean => !isIAFOrVOF();
+
+/**
+ * The status an errand works in when it is taken, resumed or given back to its handler.
+ *
+ * Where the namespace runs a workflow that is the active phase's main status - the first one the
+ * phase allows, the same rule Support Management's phase change applies - because each phase owns
+ * its status and refuses the application-wide ongoing one. Everywhere else it is the ongoing status.
+ */
+export const resolveWorkingStatus = (
+  errandPhases: readonly CErrandPhase[] | undefined,
+  metadataPhases: readonly Phase[] | undefined
+): Status => {
+  const mainStatus = getPhaseMainStatus(getActiveSupportPhaseId(errandPhases), getSupportPhases(metadataPhases));
+  return (mainStatus as Status | undefined) ?? getOngoingStatus();
+};
+
+/**
+ * The status an errand waits in after asking for a completion. Where the active phase allows
+ * AWAITING_RESPONSE the errand waits there, whichever party was asked; every other namespace keeps
+ * its own pair, PENDING for the customer and AWAITING_INTERNAL_RESPONSE for a colleague.
+ */
+export const resolveAwaitingResponseStatus = (
+  requested: 'info' | 'internal',
+  errandPhases: readonly CErrandPhase[] | undefined,
+  metadataPhases: readonly Phase[] | undefined
+): Status => {
+  const activePhaseId = getActiveSupportPhaseId(errandPhases);
+  const activePhase = getSupportPhases(metadataPhases).find((phase) => phase.id === activePhaseId);
+  if (activePhase?.allowedStatuses?.includes(Status.AWAITING_RESPONSE)) return Status.AWAITING_RESPONSE;
+  return requested === 'info' ? Status.PENDING : Status.AWAITING_INTERNAL_RESPONSE;
+};
+
+// IAF/VOF's workflow gives each phase exactly one status - REVIEW in Granskning, INQUIRY in Utredning,
+// DECISION in Beslut, FOLLOW_UP in Uppföljning - so every one of them is an errand being worked on.
+// INQUIRY stays first: the first entry keys the "Öppna ärenden" filter.
+export const ongoingStatuses = isIAFOrVOF()
+  ? [
+      Status.INQUIRY,
+      Status.REVIEW,
+      Status.DECISION,
+      Status.FOLLOW_UP,
+      Status.AWAITING_RESPONSE,
+      Status.PENDING,
+      Status.AWAITING_INTERNAL_RESPONSE,
+      Status.REOPENED,
+    ]
+  : [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
 
 export const ongoingStatusesROB = [
   ...ongoingStatuses,
@@ -198,14 +291,16 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels?.length !== 0
-    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
-
-export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'TYPE');
-};
+export {
+  getLabelCategory,
+  getLabelCategoryFromName,
+  getLabelReportType,
+  getLabelSubType,
+  getLabelSubTypeFromName,
+  getLabelType,
+  getLabelTypeFromName,
+  getMappedLabelSubType,
+} from './support-label-classification-service';
 
 /** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
 export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
@@ -223,27 +318,6 @@ export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: S
   }
   const deepest = getCategorizationLabels(errand).at(-1);
   return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
-};
-
-export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
-};
-
-export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  return allTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  const allSubTypesFlattened = allTypesFlattened
-    .filter((l) => l?.labels && l.labels.length > 0)
-    .flatMap((l) => l.labels ?? []) as Label[];
-  return allSubTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
 };
 
 export enum Resolution {
@@ -365,6 +439,8 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   priority: 'MEDIUM',
   category: '',
   type: '',
+  subType: '',
+  classificationHasSubTypes: false,
   labels: [],
   contactReason: '',
   contactReasonDescription: undefined,
@@ -400,6 +476,7 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
+    errand?.limitedAccess === true ||
     errand?.status === Status.SOLVED ||
     errand?.status === Status.SUSPENDED ||
     errand?.status === Status.ASSIGNED ||
@@ -407,13 +484,20 @@ export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand
   );
 };
 
+/**
+ * Whether the errand may be handed over as it stands. One that is ASSIGNED only waits to be resumed, and a handover
+ * leaves it ASSIGNED anyway, so handing it on needs no resume first. A closed, parked or reopened errand, or one
+ * read only in part, may not be.
+ */
+export const isSupportErrandOpenToHandover = (errand: SupportErrand): boolean =>
+  errand.limitedAccess !== true && (errand.status === Status.ASSIGNED || !isSupportErrandLocked(errand));
+
 export const useSupportErrands = (
   municipalityId: string,
   page?: number,
   size?: number,
-  filter?: { [key: string]: string | boolean | number },
-  sort?: { [key: string]: 'asc' | 'desc' },
-  extraParameters?: { [key: string]: string }
+  filter?: SupportErrandFilterQuery,
+  sort?: SupportErrandSortQuery
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
   const setIsLoading = useConfigStore((s) => s.setIsLoading);
@@ -430,8 +514,24 @@ export const useSupportErrands = (
   const setSolvedSupportErrands = useUiSettingsStore((s) => s.setClosedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
+  // Each filter, sort or page change starts a new round of requests while the previous round may
+  // still be in flight, and the responses can land in any order. Whichever lands last used to win,
+  // so a slow earlier request overwrote the current one - and since the table only renders errands
+  // whose status the sidebar has selected, a result fetched for another status renders as an empty
+  // table next to a correct count. Only the newest round is allowed to write.
+  const latestRequestRef = useRef(0);
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      // An undefined filter means the overview has not composed one yet: fetching here would ask
+      // for every errand regardless of status, which is both the most expensive query we can make
+      // and the one most likely to come back last.
+      if (!filter) {
+        return;
+      }
+      const requestId = ++latestRequestRef.current;
+      const isLatestRequest = () => latestRequestRef.current === requestId;
+
       setIsLoading(true);
       setNewSupportErrands(null);
       setOngoingSupportErrands(null);
@@ -442,6 +542,7 @@ export const useSupportErrands = (
 
       const errandPromise = getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
+          if (!isLatestRequest()) return;
           setSupportErrands({ ...res, isLoading: false });
         })
         .catch(() => {
@@ -453,82 +554,34 @@ export const useSupportErrands = (
           });
         });
 
-      const sidebarUpdatePromises = [
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.NEW })
-          .then((res) => {
-            setNewSupportErrands(res);
-          })
-          .catch(() => {
-            setNewSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Nya ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, {
-          ...filter,
-          status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
-        })
-          .then((res) => {
-            setOngoingSupportErrands(res);
-          })
-          .catch(() => {
-            setOngoingSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Pågående ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.SUSPENDED}` })
-          .then((res) => {
-            setSuspendedSupportErrands(res);
-          })
-          .catch(() => {
-            setSuspendedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Parkerade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.ASSIGNED}` })
-          .then((res) => {
-            setAssignedSupportErrands(res);
-          })
-          .catch(() => {
-            setAssignedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Tilldelade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
-
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.SOLVED })
-          .then((res) => {
-            setSolvedSupportErrands(res);
-          })
-          .catch(() => {
-            setSolvedSupportErrands(0);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Avslutade ärenden kunde inte hämtas',
-              status: 'error',
-            });
-          }),
+      // The sidebar counts every status group under the same filter, so one request answers them all.
+      const sidebarCounters = [
+        { statuses: [Status.NEW], setCount: setNewSupportErrands },
+        { statuses: isROB() ? ongoingStatusesROB : ongoingStatuses, setCount: setOngoingSupportErrands },
+        { statuses: suspendedStatuses, setCount: setSuspendedSupportErrands },
+        { statuses: assignedStatuses, setCount: setAssignedSupportErrands },
+        { statuses: [Status.SOLVED], setCount: setSolvedSupportErrands },
       ];
+      const sidebarUpdatePromise = getSupportErrandStatusGroupCounts(
+        municipalityId,
+        filter,
+        sidebarCounters.map((counter) => counter.statuses)
+      )
+        .then((counts) => {
+          if (!isLatestRequest()) return;
+          sidebarCounters.forEach((counter, index) => counter.setCount(counts[index]));
+        })
+        .catch((e) => {
+          // A failed count leaves the counters unresolved, as each failed count always has.
+          console.error('Error: could not count errands.', e);
+        });
 
-      return Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
+      await Promise.allSettled([errandPromise, sidebarUpdatePromise]);
+      // A superseded round must not turn the loader off while the round that replaced it is still
+      // running.
+      if (isLatestRequest()) {
+        setIsLoading(false);
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -553,14 +606,14 @@ export const useSupportErrands = (
 
   useEffect(() => {
     if (typeof page !== 'undefined' && size && size > 0) {
-      fetchErrands().then(() => setIsLoading(false));
+      fetchErrands();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {
     if (supportErrands.page !== undefined && page !== supportErrands.page) {
-      fetchErrands(page).then(() => setIsLoading(false));
+      fetchErrands(page);
     }
     //eslint-disable-next-line
   }, [page]);
@@ -607,26 +660,8 @@ export const getSupportErrandByErrandNumber: (
     );
 };
 
-export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
-  if (!errand) {
-    return true;
-  }
-  if (appConfig.features.useLabelCategorization) {
-    // LEGACY_CLASSIFICATION: a classification alone counts as categorized
-    return !errand.id || (!errand.category && !hasClassification(errand));
-  }
-  if (
-    !errand?.id ||
-    !errand?.classification ||
-    errand?.classification.category === 'NONE' ||
-    errand?.classification.type === 'NONE' ||
-    errand?.category === '' ||
-    errand?.type === ''
-  ) {
-    return true;
-  }
-  return false;
-};
+export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) =>
+  isSupportErrandEmpty(errand, basicsAcceptsClassification(), categorizesByLabelPaths());
 
 // Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
 // and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
@@ -658,13 +693,22 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
     const labelPath = (classification: string) =>
       e.labels?.find((l) => l.classification === classification)?.resourcePath ?? '';
     const classificationValue = (value?: string) => (value === 'NONE' ? '' : value) || '';
+    const placement = getSupportErrandClassificationPlacement();
+    const labelPathsCategorize = categorizesByLabelPaths(placement);
     const ierrand: SupportErrand = {
       ...e,
-      category: appConfig.features.useLabelCategorization
+      category: labelPathsCategorize
         ? labelPath('CATEGORY') || labelPath('DEPARTMENT')
         : classificationValue(e.classification?.category),
-      type: appConfig.features.useLabelCategorization ? labelPath('TYPE') : classificationValue(e.classification?.type),
-      subType: appConfig.features.useLabelCategorization ? labelPath('SUBTYPE') : '',
+      type: labelPathsCategorize ? labelPath('TYPE') : classificationValue(e.classification?.type),
+      subType: labelPathsCategorize
+        ? labelPath('SUBTYPE')
+        : (placement.labelTree
+            ? (() => {
+                const subTypeLabel = getMappedLabelSubType(e);
+                return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
+              })()
+            : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -734,21 +778,14 @@ const getSupportErrands: (
   municipalityId: string,
   page?: number,
   size?: number,
-  filter?: { [key: string]: string | boolean | number },
-  sort?: { [key: string]: 'asc' | 'desc' }
+  filter?: SupportErrandFilterQuery,
+  sort?: SupportErrandSortQuery
 ) => Promise<SupportErrandsData> = (municipalityId, page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
   if (!municipalityId) {
     return Promise.reject('Municipality id missing');
   }
-  let url = `supporterrands/${municipalityId}?page=${page}&size=${size}`;
-  const filterQuery = Object.keys(filter)
-    .map((key) => key + '=' + filter[key])
-    .join('&');
-  const sortQuery = `${Object.keys(sort)
-    .map((key) => `sort=${key}%2C${sort[key]}`)
-    .join('&')}`;
-  url = filterQuery ? `supporterrands/${municipalityId}?page=${page}&size=${size}&${filterQuery}` : url;
-  url = sortQuery ? `${url}&${sortQuery}` : url;
+  const query = buildSupportErrandsSearchParameters(page, size, filter, sort);
+  const url = `supporterrands/${municipalityId}?${query}`;
   return apiService
     .get<PagedApiSupportErrands>(url)
     .then((res) => {
@@ -768,32 +805,68 @@ const getSupportErrands: (
     });
 };
 
-const getSupportErrandsCount: (
+/** How many errands match the filter in each group of statuses, in the order of the groups. */
+const getSupportErrandStatusGroupCounts = (
   municipalityId: string,
-  filter?: { [key: string]: string | boolean | number }
-) => Promise<any> = (municipalityId, filter = {}) => {
+  filter: SupportErrandFilterQuery,
+  statusGroups: readonly (readonly string[])[]
+): Promise<number[]> => {
   if (!municipalityId) {
     return Promise.reject('Municipality id missing');
   }
-  const filterQuery = Object.keys(filter)
-    .map((key) => key + '=' + filter[key])
-    .join('&');
-  const url = `countsupporterrands/${municipalityId}?${filterQuery}`;
+  const query = buildSupportErrandStatusGroupCountParameters(filter, statusGroups);
   return apiService
-    .get<any>(url)
+    .get<{ counts: number[] }>(`countsupporterrands/${municipalityId}/statusgroups?${query}`)
     .then((res) => {
-      return res.data.count;
-    })
-    .catch((e): null => {
-      return null;
+      const counts = res.data?.counts;
+      if (!Array.isArray(counts) || counts.length !== statusGroups.length) {
+        throw new Error('Unexpected status group counts');
+      }
+      return counts;
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
+/** One choice the registration form offers, identified the way a label always is: by its id. */
+export interface SupportRegistrationOption {
+  labelId: string;
+  displayName: string;
+  resourcePath: string;
+}
+
+/**
+ * What the signed-in handler may choose when registering. The places are theirs alone - the backend
+ * resolves them from the same configuration that decides who reaches which errands - so the form
+ * offers exactly what it will accept back.
+ */
+export interface SupportRegistrationOptions {
+  reportTypes: SupportRegistrationOption[];
+  locations: SupportRegistrationOption[];
+  /**
+   * Where the places come from: the unit the handler is employed at, or - when no employment is a place -
+   * the places configured for their account.
+   */
+  locationSource?: 'employment' | 'access';
+  /** Priority keys as Support Management spells them, e.g. `HIGH`; `findPriorityLabelForPriorityKey` names them. */
+  priorities: string[];
+}
+
+/** The handler's answers. A drake that registers without a form sends none of them. */
+export interface SupportRegistrationChoice {
+  reportTypeLabelId?: string;
+  locationLabelId?: string;
+  priority?: string;
+}
+
+export const getSupportRegistrationOptions: (municipalityId: string) => Promise<SupportRegistrationOptions> = (
   municipalityId
-) => {
+) => apiService.get<SupportRegistrationOptions>(`newerrand/${municipalityId}/options`).then((res) => res.data);
+
+export const initiateSupportErrand: (
+  municipalityId: string,
+  choice?: SupportRegistrationChoice
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, choice = {}) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, SupportRegistrationChoice>(`newerrand/${municipalityId}`, choice)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -809,21 +882,51 @@ interface UpdateResponse {
   errand: ApiSupportErrand | boolean;
 }
 
-type AllSettledResponse = ({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[];
-
+/**
+ * Writes the edited form back to the errand.
+ *
+ * `expectedVersion` is a required argument rather than a form field: form state is only reset
+ * when the errand page loads, so any version carried in it is stale as soon as another action
+ * has written to the errand. Pass the version of the errand currently in the store.
+ */
 export const updateSupportErrand: (
   municipalityId: string,
-  formdata: Partial<RegisterSupportErrandFormModel>
-) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
-  let responseObj: UpdateResponse = {
+  formdata: Partial<RegisterSupportErrandFormModel>,
+  expectedVersion: number | undefined,
+  currentParameters?: CParameter[]
+) => Promise<UpdateResponse> = async (municipalityId, formdata, expectedVersion, currentParameters) => {
+  if (!formdata.id) {
+    throw new Error('A support errand id is required before writing');
+  }
+  const errandId = formdata.id;
+  const ifMatch = toStrongSupportErrandETag(expectedVersion);
+  const stakeholders = buildStakeholdersList(formdata);
+  const data = buildSupportErrandUpdateData(formdata, stakeholders);
+  const responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
     errand: false,
   };
 
-  if (formdata.notes && formdata.id) {
+  try {
+    await apiService.patch<ApiSupportErrand, Partial<SupportErrandDto>>(
+      `supporterrands/${municipalityId}/${errandId}`,
+      data,
+      { headers: { 'If-Match': ifMatch } }
+    );
+    responseObj.errand = true;
+  } catch (e) {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  }
+
+  // Parameters live outside the errand body: each is versioned separately and only the ones whose
+  // values changed are written, so this save leaves everybody else's parameter edits alone.
+  await saveChangedErrandParameters(municipalityId, errandId, currentParameters, formdata.parameters);
+
+  if (formdata.notes) {
     try {
-      const noteRes = await saveSupportNote(formdata.id, municipalityId, formdata.notes);
+      const noteRes = await saveSupportNote(errandId, municipalityId, formdata.notes);
       responseObj.notes = noteRes;
     } catch (e) {
       responseObj.notes = false;
@@ -834,8 +937,8 @@ export const updateSupportErrand: (
 
   if (formdata.attachments && formdata.attachments.length > 0) {
     try {
-      const attachmentRes: AllSettledResponse = await saveSupportAttachments(
-        formdata.id!,
+      const attachmentRes = await saveSupportAttachments(
+        errandId,
         municipalityId,
         formdata.attachments as { file: File }[]
       );
@@ -847,64 +950,44 @@ export const updateSupportErrand: (
     responseObj.attachments = true;
   }
 
-  const stakeholders = buildStakeholdersList(formdata);
-
-  const data: Partial<SupportErrandDto> = {
-    ...(formdata.title && { title: formdata.title }),
-    ...(formdata.priority && {
-      priority: formdata.priority,
-    }),
-    // With label categorization the category/type fields hold label paths, not a classification.
-    ...(formdata.category &&
-      formdata.type &&
-      !appConfig.features.useLabelCategorization && {
-        classification: {
-          category: formdata.category,
-          type: formdata.type,
-        },
-      }),
-    labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
-    ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
-      contactReasonDescription: formdata.contactReasonDescription,
-    }),
-    businessRelated: !!formdata.businessRelated,
-    ...(formdata.status && { status: formdata.status }),
-    ...(formdata.status && {
-      suspension: {
-        suspendedFrom: undefined,
-        suspendedTo: undefined,
-      },
-    }),
-    ...(formdata.resolution && { resolution: formdata.resolution }),
-    ...(formdata.escalationEmail && { escalationEmail: formdata.escalationEmail }),
-    ...(formdata.channel && { channel: formdata.channel }),
-    ...(formdata.description && { description: formdata.description }),
-    ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
-    ...{ stakeholders: stakeholders },
-    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
-    parameters: formdata.parameters || [],
-  };
-  if (formdata.caseId) {
-    data.externalTags!.push({
-      key: 'caseId',
-      value: formdata.caseId,
-    });
+  if (!responseObj.notes || !responseObj.attachments) {
+    const failedChildren = [!responseObj.notes && 'note', !responseObj.attachments && 'attachments']
+      .filter(Boolean)
+      .join(' and ');
+    throw new Error(`Support errand was updated, but ${failedChildren} could not be saved`);
   }
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
-    .then(() => {
-      responseObj.errand = true;
-      return responseObj;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return responseObj;
 };
 
+/**
+ * Moves the errand through the workflow. `transitionId` is omitted only when the errand has no phase
+ * at all: it is then entering the workflow rather than moving within it, and the backend puts it in
+ * the first phase. The status follows the phase, since a phase declares which statuses it allows.
+ *
+ * The precondition is the phase the caller saw the errand in, not the errand's version: measures,
+ * documents and labels move the version without touching the phase.
+ */
+export const updateSupportErrandPhase = (
+  municipalityId: string,
+  id: string,
+  transitionId: string | undefined,
+  expectedActivePhaseId: string | undefined
+): Promise<SupportErrand> =>
+  apiService
+    .patch<ApiSupportErrand, { transitionId?: string; expectedActivePhaseId: string | null }>(
+      `supporterrands/${municipalityId}/${id}/phase`,
+      { ...(transitionId ? { transitionId } : {}), expectedActivePhaseId: expectedActivePhaseId ?? null }
+    )
+    .then((response) => mapApiSupportErrandToSupportErrand(response.data))
+    .catch((e) => {
+      console.error('Something went wrong when updating errand phase');
+      throw e;
+    });
+
 export const validateAction: (errand: SupportErrand, user: User) => boolean = (errand, user) => {
+  // Someone who may only know of the errand acts on nothing in it, whoever it is assigned to.
+  if (errand?.limitedAccess) return false;
   let allowed = false;
   if (user.username.toLocaleLowerCase() === errand?.assignedUserId?.toLocaleLowerCase()) {
     allowed = true;
@@ -912,60 +995,108 @@ export const validateAction: (errand: SupportErrand, user: User) => boolean = (e
   return allowed;
 };
 
+/**
+ * Reads the errand's current concurrency state from the API.
+ *
+ * Only for a write that follows one of *our own* writes in the same flow: that earlier write
+ * already verified the version the user was looking at, so the version it produced is causally
+ * ours and re-reading cannot mask someone else's edit. The first write in a flow must instead
+ * pass the snapshot the view was loaded with - reading immediately before writing satisfies the
+ * precondition without ever checking it, which is optimistic locking in name only.
+ */
+export const readSupportErrandWriteSnapshot = async (
+  errandId: string,
+  municipalityId: string
+): Promise<SupportErrandStatusSnapshot> => {
+  const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
+
+  return { status: current.data.status, version: current.data.version };
+};
+
+/**
+ * `expectedVersion` is the version of the errand the caller was looking at. Pass the value from
+ * the store, or from `readSupportErrandWriteSnapshot` when an earlier write in the same flow has
+ * already moved it on.
+ */
 export const setSupportErrandAdmin: (
   errandId: string,
   municipalityId: string,
   assignedUserId: string,
+  expectedVersion: number | undefined,
   status?: Status,
   assigner?: string
-) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, status?, assigner?) => {
-  const data: Partial<SupportErrandDto> = { assignedUserId, status };
+) => Promise<boolean> = (errandId, municipalityId, assignedUserId, expectedVersion, status?, assigner?) =>
+  // The assignment and the status it moves the errand to are one action, so one notification.
+  withRequestGroup(async () => {
+    const data = { assignedUserId };
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
+    try {
+      const ifMatch = toStrongSupportErrandETag(expectedVersion);
+      await apiService.patch<ApiSupportErrand, typeof data>(
+        `supporterrands/${municipalityId}/${errandId}/admin`,
+        data,
+        {
+          headers: { 'If-Match': ifMatch },
+        }
+      );
+    } catch (e) {
       console.error('Something went wrong when patching errand');
       throw e;
-    });
+    }
+
+    if (status === undefined) return true;
+
+    try {
+      // The assignment above is ours and succeeded, so it is the write that moved the version on.
+      const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
+      return await transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
+    } catch (e) {
+      // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
+      // different answer from the user than one that was never assigned at all.
+      console.error('Support errand was assigned, but its status could not be changed');
+      throw new SupportErrandStatusAfterAssignmentError(e);
+    }
+  });
+
+const transitionSupportErrandStatus = async (
+  errandId: string,
+  municipalityId: string,
+  status: Status,
+  expected: SupportErrandStatusSnapshot,
+  changes: SupportErrandStatusTransitionChanges = {}
+): Promise<boolean> => {
+  const command = buildSupportErrandStatusTransitionRequest(expected, status, changes);
+  await apiService.patch<ApiSupportErrand, SupportErrandStatusTransitionRequest>(
+    `supporterrands/${municipalityId}/${errandId}/status`,
+    command
+  );
+  return true;
 };
 
 export const setSupportErrandStatus: (
   errandId: string,
   municipalityId: string,
-  status: Status
-) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  status: Status,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = async (errandId, municipalityId, status, expected) => {
+  return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
+    suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+  }).catch((e) => {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  });
 };
 
 export const closeSupportErrand: (
   errandId: string,
   municipalityId: string,
-  resolution: Resolution
-) => Promise<boolean> = async (errandId, municipalityId, resolution) => {
-  const data: Partial<SupportErrandDto> = { status: Status.SOLVED, resolution };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  resolution: Resolution,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = async (errandId, municipalityId, resolution, expected) => {
+  return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, expected, { resolution }).catch((e) => {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  });
 };
 
 export const setSuspension: (
@@ -973,106 +1104,117 @@ export const setSuspension: (
   municipalityId: string,
   status: Status,
   date: string,
-  comment: string
-) => Promise<boolean> = async (errandId, municipalityId, status, date, comment) => {
-  if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
-    return Promise.reject('Invalid date');
-  }
-  const data: Partial<SupportErrandDto> = {
-    status,
-    suspension: {
+  comment: string,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = (errandId, municipalityId, status, date, comment, expected) =>
+  // Suspending and the comment that says why are one action, so one notification.
+  withRequestGroup(async () => {
+    if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
+      return Promise.reject('Invalid date');
+    }
+    const suspension = {
       suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
       suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
-    },
-  };
+    };
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(async () => {
-      if (status === Status.SUSPENDED && comment) {
-        const note = await saveSupportNote(errandId, municipalityId, comment);
-      }
-      return true;
+    return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
+      suspension: {
+        ...suspension,
+      },
     })
-    .catch((e) => {
-      console.error('Something went wrong when suspending errand');
-      throw e;
-    });
-};
+      .then(async () => {
+        if (status === Status.SUSPENDED && comment) {
+          await saveSupportNote(errandId, municipalityId, comment);
+        }
+        return true;
+      })
+      .catch((e) => {
+        console.error('Something went wrong when suspending errand');
+        throw e;
+      });
+  });
 
+/** The message, the forward, the assignment and the closing are one action, so one notification. */
 export const forwardSupportErrand: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
   data: ForwardFormProps,
   supportAttachment: SupportAttachment[]
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
-  if (!errand.id) {
-    throw 'No errand id found. Cannot forward errand without id.';
-  }
-  if (!data.recipient) {
-    throw 'No recipient found. Cannot forward errand without recipient.';
-  }
-  // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
-  if (data.recipient === 'EMAIL' && !data.message) {
-    throw 'No message found. Cannot forward errand by email without message.';
-  }
-
-  // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
-  // from status NEW), assign the current user so the errand always has a responsible person.
-  const assignSelfIfUnassigned = async () => {
-    if (!errand.assignedUserId) {
-      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, undefined, user.username);
+) => Promise<boolean> = (user, errand, municipalityId, data, supportAttachment) =>
+  withRequestGroup(async () => {
+    if (!errand.id) {
+      throw 'No errand id found. Cannot forward errand without id.';
     }
-  };
+    if (!data.recipient) {
+      throw 'No recipient found. Cannot forward errand without recipient.';
+    }
+    // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
+    if (data.recipient === 'EMAIL' && !data.message) {
+      throw 'No message found. Cannot forward errand by email without message.';
+    }
 
-  let attachmentId = [] as string[];
-  for (const att of supportAttachment) {
-    attachmentId.push(att.id);
-  }
-
-  if (data.recipient == 'EMAIL') {
-    const message: MessageRequest = {
-      municipalityId: municipalityId,
-      errandId: errand.id,
-      contactMeans: 'email',
-      recipientEmail: '',
-      headerReplyTo: '',
-      headerReferences: '',
-      emails: data.emails,
-      subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
-      htmlMessage: data.message,
-      plaintextMessage: data.messageBodyPlaintext,
-      senderName: user.name,
-      phoneNumbers: [],
-      attachments: [],
-      existingAttachments: [],
-      attachmentIds: attachmentId,
+    // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
+    // from status NEW), assign the current user so the errand always has a responsible person.
+    const assignSelfIfUnassigned = async () => {
+      if (errand.assignedUserId) return;
+      // Follows the message or forward call above, so the loaded version may already be ours-but-stale.
+      const current = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, current.version, undefined, user.username);
     };
-    if (isKC()) {
-      message.senderName = 'Kontakt  Sundsvall';
+
+    let attachmentId = [] as string[];
+    for (const att of supportAttachment) {
+      attachmentId.push(att.id);
     }
-    await sendMessage(message);
-    await assignSelfIfUnassigned();
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-  } else if (data.recipient == 'DEPARTMENT' && data.department) {
-    errand.stakeholders?.forEach((s) => {
-      if (!s.firstName && !s.organizationName) {
-        throw new Error('MISSING_NAME');
+
+    if (data.recipient == 'EMAIL') {
+      const message: MessageRequest = {
+        municipalityId: municipalityId,
+        errandId: errand.id,
+        contactMeans: 'email',
+        recipientEmail: '',
+        headerReplyTo: '',
+        headerReferences: '',
+        emails: data.emails,
+        subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
+        htmlMessage: data.message,
+        plaintextMessage: data.messageBodyPlaintext,
+        senderName: user.name,
+        phoneNumbers: [],
+        attachments: [],
+        existingAttachments: [],
+        attachmentIds: attachmentId,
+      };
+      if (isKC()) {
+        message.senderName = 'Kontakt  Sundsvall';
       }
-    });
-    delete data.existingEmail;
-    delete data.newEmail;
-    return apiService
-      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
-      .then(async () => {
-        await assignSelfIfUnassigned();
-        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-      })
-      .catch((e: AxiosError) => {
-        throw new Error(e.response?.data as string);
+      await sendMessage(message);
+      await assignSelfIfUnassigned();
+      const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
+      return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterMessage);
+    } else if (data.recipient == 'DEPARTMENT' && data.department) {
+      errand.stakeholders?.forEach((s) => {
+        if (!s.firstName && !s.organizationName) {
+          throw new Error('MISSING_NAME');
+        }
       });
-  } else {
-    throw new Error('Not implemented yet');
-  }
-};
+      delete data.existingEmail;
+      delete data.newEmail;
+      return apiService
+        .post<ApiSupportErrand, Partial<ForwardFormProps>>(
+          `supporterrands/${municipalityId}/${errand.id!}/forward`,
+          data
+        )
+        .then(async () => {
+          await assignSelfIfUnassigned();
+          const afterForward = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+          return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterForward);
+        })
+        .catch((e: AxiosError) => {
+          throw new Error(e.response?.data as string);
+        });
+    } else {
+      throw new Error('Not implemented yet');
+    }
+  });

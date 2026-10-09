@@ -46,6 +46,23 @@ describe('default-deny auth (swagger)', () => {
     expect(response.status).toBe(200);
   });
 
+  it('preserves notification types and investigation contracts when unused exports are removed', async () => {
+    const response = await request(server).get(`${prefix}/swagger.json`);
+    expect(response.status).toBe(200);
+    const spec = response.body as { components: { schemas: Record<string, unknown> } };
+    expect(spec.components.schemas.CasedataNotificationDto).toMatchObject({
+      properties: {
+        acknowledged: { type: 'boolean' },
+        globalAcknowledged: { type: 'boolean' },
+        errandId: { type: 'number' },
+      },
+    });
+    expect(spec.components.schemas.SupportInvestigationDocumentProfileDto).toMatchObject({
+      properties: { key: { type: 'string' }, schemaName: { type: 'string' } },
+    });
+    expect(spec.components.schemas).not.toHaveProperty('ContactInfo');
+  });
+
   it.each([
     ['the UI entry point', '/api-docs/'],
     ['the generated init script', '/api-docs/swagger-ui-init.js'],

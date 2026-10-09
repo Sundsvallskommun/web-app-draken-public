@@ -1,5 +1,10 @@
 import { apiService } from '@common/services/api-service';
-import { ParsedSupportEvent, SupportEvent, SupportEvents } from '@supportmanagement/interfaces/supportEvent';
+import {
+  ParsedSupportEvent,
+  SupportEvent,
+  SupportEventGroup,
+  SupportEvents,
+} from '@supportmanagement/interfaces/supportEvent';
 import dayjs from 'dayjs';
 
 const parseChange: (
@@ -40,4 +45,56 @@ export const getSupportErrandEvents: (
       console.error('Something went wrong when fetching errand events');
       throw e;
     });
+};
+
+/**
+ * When the errand's current handler took it up after it was given to them, as the errand's history tells it.
+ * Undefined when the history names no assignment to them.
+ */
+export const getSupportErrandAssigneeResumedAt = (
+  errandId: string,
+  municipalityId: string
+): Promise<string | undefined> =>
+  apiService
+    .get<{ resumedAt: string | null }>(`supporthistory/${municipalityId}/${errandId}/assignee-resumed`)
+    .then((res) => res.data?.resumedAt ?? undefined);
+
+/**
+ * Who gave the errand to its current handler, as the errand's history tells it. Undefined when the history names
+ * no assignment to them, or not who made it.
+ */
+export const getSupportErrandAssignedBy = (errandId: string, municipalityId: string): Promise<string | undefined> =>
+  apiService
+    .get<{ assignedBy: string | null }>(`supporthistory/${municipalityId}/${errandId}/assigned-by`)
+    .then((res) => res.data?.assignedBy ?? undefined);
+
+/**
+ * Collapse events that belong to the same operation into one log entry.
+ *
+ * Saving an errand can produce a handful of events in the same instant. Showing them as separate
+ * dots on the timeline makes one action look like several, so they are grouped by the upstream
+ * `requestGroupId`. Events without one stay on their own, which is the correct reading: there is
+ * nothing saying they belong together.
+ */
+export const groupSupportEvents = (events: ParsedSupportEvent[]): SupportEventGroup[] => {
+  const groups: SupportEventGroup[] = [];
+
+  events.forEach((event, index) => {
+    const openGroup = event.requestGroupId
+      ? groups.find((group) => group.latest.requestGroupId === event.requestGroupId)
+      : undefined;
+
+    if (openGroup) {
+      openGroup.events.push(event);
+      return;
+    }
+
+    groups.push({
+      key: event.requestGroupId ?? event.id ?? `event-${index}`,
+      latest: event,
+      events: [event],
+    });
+  });
+
+  return groups;
 };

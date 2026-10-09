@@ -83,6 +83,8 @@ describe('SupportConversationController read state', () => {
         url: `${mockMunicipalityId}/${mockSupportNamespace}/errands/${mockSupportErrandId}/communication/conversations/${mockConversationId}/messages/mark-as-read`,
         baseURL: apiURL(SUPPORT_SERVICE),
         data: request,
+        // Reading notifies no one following the errand.
+        notifySubscribers: false,
       },
       expect.anything(),
     );

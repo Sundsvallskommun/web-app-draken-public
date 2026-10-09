@@ -139,7 +139,8 @@ export class SupportMessageController {
       throw new HttpException(403, 'Forbidden');
     }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
-    const res = await this.apiService.put<any, any>({ url }, req.user);
+    // Reading is not news to anyone following the errand.
+    const res = await this.apiService.put<any, any>({ url, notifySubscribers: false }, req.user);
     return { data: res.data, message: 'success' };
   }
 
