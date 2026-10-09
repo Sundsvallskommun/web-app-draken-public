@@ -15,6 +15,8 @@ export interface SupportInvestigationInput {
   recommendationMotivation?: string;
 }
 
+export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];
+
 /**
  * The examinations an AoT investigation is made of, in the order the business examines them. Support
  * Management holds no list of its own - the sections are written when the investigation starts.
@@ -66,6 +68,26 @@ export const startSupportInvestigation = (
       console.error('Something went wrong when starting the investigation');
       throw e;
     });
+
+export const saveSupportInvestigationSection = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  sectionId: string,
+  section: { text?: string; assessment?: string }
+): Promise<Investigation> =>
+  apiService
+    .patch<Investigation, { text?: string; assessment?: string }>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections/${sectionId}`,
+      section
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when saving an examination of the investigation');
+      throw e;
+    });
+
+export const SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH = 8192;
 
 export const saveSupportInvestigation = (
   errandId: string,

@@ -531,7 +531,8 @@ export const SupportErrandDecisionTab: FC<{
 
           {supportErrand ? (
             <TemplatePdfPreview
-              draft
+              watermarked
+              title={t('common:decision.preview')}
               identifier={certificateTemplate(permitType)}
               parameters={toCertificateParameters(permitType, parameterInput(supportErrand), {
                 decisionText: outcomeLabel(outcomes, outcome),

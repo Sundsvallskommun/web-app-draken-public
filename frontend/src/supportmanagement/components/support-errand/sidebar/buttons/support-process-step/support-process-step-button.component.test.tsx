@@ -35,6 +35,11 @@ vi.mock('@supportmanagement/services/support-errand-service', () => ({
   Status: { ONGOING: 'ONGOING', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: { CLOSED: 'CLOSED' },
 }));
+vi.mock('@supportmanagement/services/support-statement-service', () => ({
+  getSupportStatements: vi.fn().mockResolvedValue([]),
+  isSupportStatementAwaitingAnswer: (statement: { status?: string }) => statement.status === 'ACTIVE',
+  isSupportStatementUnsent: (statement: { status?: string }) => !statement.status || statement.status === 'DRAFT',
+}));
 vi.mock('@supportmanagement/services/support-process-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getSupportErrandProcessState: vi.fn(),

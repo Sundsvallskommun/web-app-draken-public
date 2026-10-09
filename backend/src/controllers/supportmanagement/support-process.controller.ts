@@ -5,7 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { ErrandProcesses, PageProcessActivity, ProcessSignalRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import { ErrandProcessOverview, PageProcessActivity, ProcessSignalRequest } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -45,13 +45,16 @@ export class SupportProcessController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: Response<ErrandProcesses | string, any>,
-  ): Promise<Response<ErrandProcesses | string, any>> {
+    @Res() response: Response<ErrandProcessOverview | string, any>,
+  ): Promise<Response<ErrandProcessOverview | string, any>> {
     if (municipalityId !== MUNICIPALITY_ID) {
       return response.status(400).send('Invalid municipality id');
     }
 
-    const res = await this.apiService.get<ErrandProcesses>({ url: this.processesUrl(municipalityId, id), propagateClientError: true }, req.user);
+    const res = await this.apiService.get<ErrandProcessOverview>(
+      { url: this.processesUrl(municipalityId, id), propagateClientError: true },
+      req.user,
+    );
     return response.status(200).send(res.data ?? {});
   }
 
@@ -87,7 +90,7 @@ export class SupportProcessController {
     }
 
     const processesUrl = this.processesUrl(municipalityId, id);
-    const processes = await this.apiService.get<ErrandProcesses>({ url: processesUrl, propagateClientError: true }, req.user);
+    const processes = await this.apiService.get<ErrandProcessOverview>({ url: processesUrl, propagateClientError: true }, req.user);
     const processInstanceId = processes.data?.processes?.[0]?.processInstanceId;
     if (!processInstanceId) {
       throw new HttpException(404, 'The errand has no process to step');

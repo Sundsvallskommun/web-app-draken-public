@@ -121,14 +121,15 @@ export class TemplateController {
 
   @Post('/render/pdf/preview')
   @HttpCode(201)
-  @OpenAPI({ summary: 'Render draft-marked pdf preview of decision from stored template' })
+  @OpenAPI({ summary: 'Render a watermarked pdf preview from stored template' })
   @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
-  async decisionDraftPdf(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
+  async previewPdfWithWatermark(
+    @Req() req: RequestWithUser,
+    @Body() templateSelector: TemplateSelector,
+  ): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/pdf/preview`;
-    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
-      throw e;
-    });
-    return { data: response.data, message: `Decision draft PDF rendered` };
+    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user);
+    return { data: response.data, message: 'Watermarked PDF rendered' };
   }
 
   @Post('/render/direct/pdf')

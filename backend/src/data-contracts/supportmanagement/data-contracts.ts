@@ -92,7 +92,7 @@ export interface ThrowableProblem {
   detail?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: any;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface Violation {
@@ -247,6 +247,8 @@ export interface Label {
    * @minLength 1
    */
   classification: string;
+  /** Display name for the label classification, as registered for the namespace */
+  classificationDisplayName?: string;
   /** Display name for the label */
   displayName?: string;
   /** Resource path */
@@ -263,20 +265,22 @@ export interface Label {
    */
   deprecated?: boolean;
   labels?: Label[];
-  /** Free-form key/value data owned by the client. Stored and returned as-is by the service, which does not interpret the contents (apart from rejecting duplicate keys per label). Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  /** Free-form key/value data owned by the client, stored and returned as-is. Duplicate keys per label are rejected, and two keys are read by the service itself. processKey names the process an errand wearing the label runs. processStartMode says whether that process starts by itself when the errand changes (AUTOMATIC, which is also what leaving it out means) or only when a handler starts it (MANUAL); it has to be exactly one of those two, and is allowed only on a label that also has processKey. Both keys are matched exactly as spelled, and a key spelled like either of them in any other way is rejected. Other keys are conventions agreed between clients (e.g. 'escalationEmail'). */
   attributes?: LabelAttribute[];
 }
 
-/** Label attribute model. Free-form key/value data owned by the client; not interpreted by the service. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+/** Label attribute model. Free-form key/value data owned by the client. Keys are conventions agreed between clients (e.g. 'escalationEmail'), except processKey and processStartMode, which the service reads itself - see attributes on the label. */
 export interface LabelAttribute {
   /**
    * Attribute key
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 255
    */
   key: string;
   /**
    * Attribute value
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 16383
    */
   value: string;
 }
@@ -308,6 +312,9 @@ export interface JsonNode {
   string?: boolean;
   boolean?: boolean;
   number?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -319,11 +326,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -340,7 +344,7 @@ export interface JsonParameter {
    * JSON structure value
    * @example {"firstName":"Joe","lastName":"Doe"}
    */
-  value: any;
+  value: JsonNode;
   /**
    * ID referencing a schema in the json-schema service
    * @minLength 1
@@ -371,6 +375,7 @@ export interface ErrandProcessReport {
    * Id of the process instance in the process engine. Required when registering a start that succeeded, and left out when registering one that failed, since a start that never happened has no instance. Taken from the path when reporting on an instance; sending a different one there is rejected.
    * @minLength 0
    * @maxLength 64
+   * @pattern \S+
    */
   processInstanceId?: string;
   /**
@@ -532,7 +537,7 @@ export interface ErrandProcess {
   ended?: string;
   /** Why the process failed, set when the state says it did */
   error?: ProcessError;
-  /** What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at, through POST .../processes/{processInstanceId}/signals. Empty when the process waits for no person, which is the normal case for a gate the process passes by itself, and always empty for a process that has ended. */
+  /** What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at, through POST .../processes/{processInstanceId}/signals. Empty when the process waits for no person, which is the normal case for a gate the process passes by itself, and always empty for a process that has completed. A process that has FAILED keeps the signals it last reported, since an incident leaves it listening in the process engine. */
   awaitingSignals?: ProcessSignal[];
   /**
    * When the process was first registered on the errand
@@ -1019,6 +1024,34 @@ export interface LabelMoveRequest {
   dryRun: boolean;
 }
 
+/** Label classification model */
+export interface LabelClassification {
+  /** Label classification ID */
+  id?: string;
+  /**
+   * Label classification. Used as key and matched against the classification of the labels. Ignored on update
+   * @minLength 0
+   * @maxLength 255
+   * @pattern (?!\.{1,2}$)[^/\\;%]+
+   */
+  classification: string;
+  /**
+   * Display name for the label classification
+   * @maxLength 255
+   */
+  displayName?: string | null;
+  /**
+   * Timestamp when the label classification was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the label classification was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
 /** ExternalIdType model */
 export interface ExternalIdType {
   /** ExternalIdType ID */
@@ -1251,6 +1284,8 @@ export interface Errand {
   classification?: Classification;
   /** Status for the errand */
   status?: string;
+  /** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. An active errand never becomes a draft again. */
+  lifecycle?: ErrandLifecycleEnum;
   /** Resolution status for closed errands. Value can be set to anything */
   resolution?: string;
   /** Errand description text */
@@ -1351,10 +1386,25 @@ export interface ErrandAttachment {
   /** The channel the attachment was received via */
   channel?: ErrandAttachmentChannelEnum;
   /**
+   * The number of the attachment within the errand, counted from 1 in the order the attachments were added. A number is never reused within the errand. Left out for an attachment that has not been given a number yet
+   * @format int32
+   */
+  sequenceNumber?: number;
+  /**
+   * When the attachment came in. The same as created unless given
+   * @format date-time
+   */
+  received?: string;
+  /**
    * The attachment created date
    * @format date-time
    */
   created?: string;
+  /**
+   * The attachment modified date
+   * @format date-time
+   */
+  modified?: string;
   /** SHA-256 hash (hex encoded) of the attachment's raw content */
   hash?: string;
   /** What the attachment is for. Left out for an attachment without a purpose */
@@ -1382,6 +1432,8 @@ export interface ErrandLabel {
   version?: number;
   /** Label classification */
   classification?: string;
+  /** Display name for the label classification, as registered for the namespace */
+  classificationDisplayName?: string;
   /** Display name for the label */
   displayName?: string;
   /** Resource path */
@@ -1558,13 +1610,20 @@ export interface Parameter {
   /**
    * Parameter key
    * @minLength 1
+   * @maxLength 255
    */
   key: string;
-  /** Parameter display name */
+  /**
+   * Parameter display name
+   * @maxLength 255
+   */
   displayName?: string;
-  /** Parameter group name */
+  /**
+   * Parameter group name
+   * @maxLength 255
+   */
   group?: string;
-  /** Parameter values. Each value can have a maximum length of 3000 characters */
+  /** Parameter values. Each value must not be blank, and can have a maximum length of 3000 characters */
   values?: string[];
   /**
    * Optimistic locking version of the parameter
@@ -1722,6 +1781,16 @@ export interface ProcessSignalRequest {
   signal: string;
 }
 
+/** A request to start a process for an errand */
+export interface ProcessStartRequest {
+  /**
+   * Which process to start. May be omitted, or left blank, when startable.processKeys holds exactly one key, and is required when it holds several. The value must be one of those keys, exactly as given there: a request cannot name a process that the labels of the errand do not point at.
+   * @minLength 0
+   * @maxLength 128
+   */
+  processKey?: string;
+}
+
 /** CreateErrandNoteRequest model */
 export interface CreateErrandNoteRequest {
   /**
@@ -1807,6 +1876,8 @@ export interface Investigation {
   sections?: InvestigationSection[];
   /** Attachments of the errand linked to this investigation */
   attachments?: ErrandAttachment[];
+  /** Parameters of the investigation, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the investigation */
   createdBy?: string;
   /** User who last modified the investigation */
@@ -2595,6 +2666,11 @@ export interface Conversation {
 export interface UpdateErrandAttachmentRequest {
   /** What the attachment is for, named by the id of an attachment purpose of the namespace. Left as it is when omitted */
   purpose?: ErrandAttachmentPurpose;
+  /**
+   * When the attachment came in. Left as it is when omitted
+   * @format date-time
+   */
+  received?: string;
 }
 
 export interface PageSubscriberNotification {
@@ -2619,12 +2695,12 @@ export interface PageSubscriberNotification {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -2859,18 +2935,18 @@ export interface Operation {
 }
 
 /** The processes attached to an errand, and whether a new one may be started right now */
-export interface ErrandProcesses {
-  /** Whether a process may be started for this errand right now, and why not when it cannot be. Not answered yet: the field is absent until starting a process is offered by this API. Read it before offering a start action to the user, and treat its absence as unknown rather than as available. */
+export interface ErrandProcessOverview {
+  /** Whether a process may be started for this errand right now, and why not when it cannot be. Read this before offering a start action to the user. The same rules are enforced by POST .../processes/start, which answers 400 or 409 when they are not met - so a client that ignores this field can never start something it should not. It can only show a button that fails. */
   startable?: ProcessStartable;
-  /** Every process this errand has had, most recent first. Normally exactly one element. An empty list is not an error and does not mean the errand is broken. */
+  /** Every process this errand has had, most recent first. Normally exactly one element. An empty list is not an error and does not mean the errand is broken: see startable for whether a process can be started, and why not if it cannot. */
   processes?: ErrandProcess[];
 }
 
 /** Whether a process may be started for an errand, and which one */
 export interface ProcessStartable {
-  /** AVAILABLE means a process may be started right now; every other value says why one cannot be. LIVE_INSTANCE - a process is already running for this errand. PROCESS_COMPLETED - a process has already run to its end. An errand has one process life; a new process means a new errand. NO_PROCESS_KEY - no label on the errand carries a process key, so there is nothing to start. Setting the right label is the fix. NO_PROCESS_ENGINE - this namespace does not run processes at all. Treat any value you do not recognise as not startable - values may be added over time. */
+  /** AVAILABLE means a process may be started right now; every other value says why one cannot be. LIVE_INSTANCE - a process is already running for this errand. PROCESS_COMPLETED - a process has already run to its end. An errand has one process life; a new process means a new errand. START_PENDING - a start is already on its way to the process engine, and the process shows up among the processes once the process engine has registered it, normally within seconds. Show that the start is on its way rather than offering it again. NO_PROCESS_KEY - no label on the errand carries a processKey attribute the errand can be started with, so there is nothing to start. Setting the right label is the fix. NO_PROCESS_ENGINE - this namespace does not run processes at all. ERRAND_DRAFT - the errand is a draft. A process is started only once the errand has been made active. The answer is the same whether or not the labels start the process on their own: an errand whose process starts by itself is AVAILABLE too, and starting it by hand is how a start that failed is tried again. Treat any value you do not recognise as not startable - values may be added over time. */
   status?: string;
-  /** The process keys that are eligible to start, taken from the process key attribute on the labels of the errand. One element is the normal case. Two or more elements mean the errand carries labels pointing at different processes and a person has to choose. Empty whenever status is not AVAILABLE. */
+  /** The process keys that are eligible to start, taken from the processKey attribute on the labels of the errand. One element is the normal case: send it - or send nothing - to POST .../processes/start. Two or more elements mean the errand carries labels pointing at different processes and a person has to choose: ask the user and send the chosen key, otherwise the request is rejected with 400. An errand runs one process for the whole of its life, so once it has had one - a start that failed included - only the key of that process is offered. Empty whenever status is not AVAILABLE. */
   processKeys?: string[];
 }
 
@@ -3311,6 +3387,12 @@ export enum JobResponseStatusEnum {
   COMPLETED = "COMPLETED",
   STOPPED = "STOPPED",
   FAILED = "FAILED",
+}
+
+/** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. An active errand never becomes a draft again. */
+export enum ErrandLifecycleEnum {
+  DRAFT = "DRAFT",
+  ACTIVE = "ACTIVE",
 }
 
 /** The channel the attachment was received via */
