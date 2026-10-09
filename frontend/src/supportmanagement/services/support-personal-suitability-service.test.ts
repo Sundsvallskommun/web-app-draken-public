@@ -1,11 +1,12 @@
 import { expect, test } from 'vitest';
 
+import { mockEnv } from '../../tests/mock-env';
 import { supportSuitabilityPeople, supportSuitabilityProblem } from './support-personal-suitability-service';
 
 const fromCompanyData = {
   partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
   name: 'Edwin Molina',
-  identityCode: '198501120234',
+  identityCode: mockEnv.mockPersonNumber,
   roles: 'Verkställande direktör',
   addedByHand: false,
 };
@@ -15,7 +16,7 @@ test('a person taken from the company data carries their role, and the identity 
     {
       partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
       name: 'Edwin Molina',
-      identityCode: '19850112-0234',
+      identityCode: mockEnv.mockPersonNumberDashed,
       roles: 'Verkställande direktör',
       assessment: '',
       comment: '',

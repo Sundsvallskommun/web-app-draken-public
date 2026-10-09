@@ -1,4 +1,5 @@
 import { SaveRow } from '@common/components/save-row/save-row.component';
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import {
@@ -19,8 +20,11 @@ import { DecisionPremises } from '@supportmanagement/components/premises/decisio
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
+  certificateTemplate,
+  type DecisionParameterInput,
   decisionParameterValue,
   premisesFromDecisionParameters,
+  toCertificateParameters,
   toDecisionParameters,
 } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises as DecisionPremisesValue } from '@supportmanagement/services/support-decision-premises-service';
@@ -38,7 +42,11 @@ import {
   supportDecisionWithoutBlanks,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
-import { getLabelType, getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
+import {
+  getLabelType,
+  getMostSpecificLabelType,
+  type SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import {
   formatAddress,
   getPremisesAddress,
@@ -158,10 +166,9 @@ export const SupportErrandDecisionTab: FC<{
   const [servingArea, setServingArea] = useState('');
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
-  const servingPermit =
-    !!supportErrand &&
-    supportDecisionPermitType(getMostSpecificLabelType(supportErrand), supportErrand.process?.processKey) ===
-      'SERVERINGSTILLSTAND';
+  const typeLabel = supportErrand ? getMostSpecificLabelType(supportErrand) : undefined;
+  const permitType = supportDecisionPermitType(typeLabel, supportErrand?.process?.processKey);
+  const servingPermit = permitType === 'SERVERINGSTILLSTAND';
 
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
   const [opened, setOpened] = useState(isActive);
@@ -257,12 +264,21 @@ export const SupportErrandDecisionTab: FC<{
 
   const removeTerm = (index: number) => setTerms((current) => current.filter((_, position) => position !== index));
 
+  const parameterInput = (errand: SupportErrand): DecisionParameterInput => ({
+    errand,
+    errandType: typeLabel?.resourceName,
+    form: getDecisionBasisForm(errand, supportMetadata?.namespace)?.value,
+    premises: premisesToSend,
+    servingArea,
+    attachments: supportAttachments,
+    user,
+    today: dayjs().format('YYYY-MM-DD'),
+  });
+
   const save = async () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
     const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
-    const typeLabel = getMostSpecificLabelType(supportErrand);
-    const permitType = supportDecisionPermitType(typeLabel, supportErrand.process?.processKey);
     const permitName = getLabelType(supportErrand)?.displayName;
     const written = supportDecisionWithoutBlanks({
       outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
@@ -275,16 +291,7 @@ export const SupportErrandDecisionTab: FC<{
       validFrom,
       validTo,
       terms: writtenTerms,
-      parameters: toDecisionParameters(permitType, {
-        errand: supportErrand,
-        errandType: typeLabel?.resourceName,
-        form: getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
-        premises: premisesToSend,
-        servingArea,
-        attachments: supportAttachments,
-        user,
-        today: dayjs().format('YYYY-MM-DD'),
-      }),
+      parameters: toDecisionParameters(permitType, parameterInput(supportErrand)),
     });
 
     try {
@@ -521,6 +528,20 @@ export const SupportErrandDecisionTab: FC<{
               </Select>
             </FormControl>
           </DecisionCard>
+
+          {supportErrand ? (
+            <TemplatePdfPreview
+              watermarked
+              title={t('common:decision.preview')}
+              identifier={certificateTemplate(permitType)}
+              parameters={toCertificateParameters(permitType, parameterInput(supportErrand), {
+                decisionText: outcomeLabel(outcomes, outcome),
+                decisionMaker: decidedByRole,
+                validFrom,
+                terms: terms.filter(Boolean),
+              })}
+            />
+          ) : null}
 
           {handlesPremises ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-premises-to-send">

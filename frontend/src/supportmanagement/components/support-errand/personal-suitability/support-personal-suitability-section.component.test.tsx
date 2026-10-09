@@ -9,6 +9,7 @@ import {
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
+import { mockEnv } from '../../../../tests/mock-env';
 import { SupportPersonalSuitabilitySection } from './support-personal-suitability-section.component';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -31,7 +32,7 @@ const EDWIN = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
 const edwin: SupportSuitabilityPerson = {
   partyId: EDWIN,
   name: 'Edwin Molina',
-  identityCode: '19850112-0234',
+  identityCode: mockEnv.mockPersonNumberDashed,
   roles: 'Verkställande direktör',
   assessment: '',
   comment: '',

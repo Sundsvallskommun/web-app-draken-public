@@ -3,6 +3,11 @@ export const mockEnv = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api',
   application_name: process.env.NEXT_PUBLIC_APPLICATION ?? '',
   mockPersonNumber: '199001012385',
+  // The same test person number written the way a form is read, with a hyphen.
+  mockPersonNumberDashed: '19900101-2385',
+  // A second test person number (Skatteverket), for a second person on the same errand. Not a real person.
+  mockSecondaryPersonNumber: '198104122380',
+  mockSecondaryPersonNumberDashed: '19810412-2380',
   mockInvalidPersonNumber: '199001012386',
   mockNonexistentPersonNumber: '199909092380',
   // Test person number (Skatteverket) used by the PT errand fixture's owner.

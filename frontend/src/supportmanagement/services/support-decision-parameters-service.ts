@@ -191,6 +191,41 @@ const parametersFor = (permitType: string, input: DecisionParameterInput): Param
   return premisesParameters(input.form, input.premises);
 };
 
+const CERTIFICATE_TEMPLATES: Record<string, string> = {
+  SERVERINGSTILLSTAND: 'serving-permit-certificate',
+  TOBAKSFORSALJNING: 'tobacco-permit-certificate',
+};
+
+export const certificateTemplate = (permitType: string): string | undefined => CERTIFICATE_TEMPLATES[permitType];
+
+export interface CertificateDecision {
+  decisionText: string;
+  decisionMaker: string;
+  validFrom: string;
+  terms: string[];
+}
+
+/** What the permit template renders for the decision in hand, blank where nothing is known. */
+export const toCertificateParameters = (
+  permitType: string,
+  input: DecisionParameterInput,
+  decision: CertificateDecision
+): Record<string, string> => {
+  const terms = decision.terms.join('\n');
+  const parameters = {
+    premisesRestaurantNumber: '',
+    ...parametersFor(permitType, input),
+    decisionText: decision.decisionText,
+    decisionMaker: decision.decisionMaker,
+    decisionDate: input.today,
+    validFrom: decision.validFrom,
+    ...(permitType === 'TOBAKSFORSALJNING' ? { information: terms } : { conditions: terms }),
+    executionDate: '',
+    replacesDecision: '',
+  };
+  return Object.fromEntries(Object.entries(parameters).map(([key, value]) => [key, value ?? '']));
+};
+
 /** Every key of the permit's record, in its order; a key without a value carries the placeholder. */
 export const toDecisionParameters = (permitType: string, input: DecisionParameterInput): Parameter[] =>
   Object.entries(parametersFor(permitType, input)).map(([key, value]) => ({ key, values: [value || PLACEHOLDER] }));

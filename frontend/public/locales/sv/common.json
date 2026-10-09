@@ -300,6 +300,7 @@
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
+    "preview": "Förhandsgranskning av tillståndsbevis",
     "premises": {
       "label": "Serveringsställe",
       "number": "restaurangnummer {{number}}",
