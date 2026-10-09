@@ -69,6 +69,8 @@ export class InvestigationRiskLabelService {
         followLocation: false,
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,
+        // Derived from the investigation the user just saved, which already notified.
+        notifySubscribers: false,
       },
       user,
     );

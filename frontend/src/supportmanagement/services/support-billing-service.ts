@@ -292,6 +292,9 @@ const saveBillingRecordReferenceToErrand: (
   const url = `supporterrands/${municipalityId}/${errand.id}`;
   const tags: CExternalTag[] = (errand.externalTags ?? []).map((tag) => ({ ...tag }));
   const existingTag = tags.find((t) => t.key === 'billingRecordId');
+  // Saving an invoice the errand already points to changes nothing on the errand. Writing the same tag
+  // again would still move its version and tell everyone following the errand that it was updated.
+  if (existingTag?.value === billingRecordId) return Promise.resolve(true);
   if (existingTag) {
     existingTag.value = billingRecordId;
   } else {

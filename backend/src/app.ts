@@ -45,6 +45,7 @@ import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
 import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { isValidOrigin } from './utils/isValidateOrigin';
+import { requestGroupMiddleware } from './utils/request-group';
 import { isValidUrl } from './utils/util';
 
 passport.serializeUser(function (user, done) {
@@ -378,6 +379,8 @@ class App {
     // probe above it stay reachable, and before initializeRoutes() so every
     // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
     this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
+    // After the session work above, so nothing between here and the route can lose the group.
+    this.app.use(BASE_URL_PREFIX!, requestGroupMiddleware);
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {

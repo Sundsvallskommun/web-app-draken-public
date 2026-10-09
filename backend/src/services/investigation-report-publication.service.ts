@@ -134,6 +134,8 @@ export class InvestigationReportPublicationService {
       internal: {
         allowLocked: true,
         serverOwnedOverrides: { [input.reportsField]: reports.map(report => ({ ...report })) },
+        // The report list is bookkeeping around the attachment, and the attachment is the news.
+        notifySubscribers: false,
       },
     });
   }

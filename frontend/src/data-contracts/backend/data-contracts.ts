@@ -489,24 +489,6 @@ export interface CErrandAction {
   displayValue?: string;
 }
 
-export interface CNotification {
-  id?: string;
-  created?: string;
-  modified?: string;
-  ownerFullName?: string;
-  ownerId: string;
-  createdBy?: string;
-  createdByFullName?: string;
-  type: string;
-  description: string;
-  content?: string;
-  expires?: string;
-  globalAcknowledged?: boolean;
-  acknowledged?: boolean;
-  errandId?: string;
-  errandNumber?: string;
-}
-
 export interface CErrandPhase {
   phaseId?: string;
   name?: string;
@@ -537,7 +519,6 @@ export interface SupportErrandDto {
   suspension?: CSuspension;
   businessRelated?: boolean;
   labels?: any[];
-  activeNotifications?: CNotification[];
   created?: string;
   modified?: string;
   touched?: string;

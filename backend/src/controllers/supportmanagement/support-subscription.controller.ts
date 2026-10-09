@@ -109,8 +109,8 @@ export class SupportSubscriptionController {
    * to bootstrap it explicitly before it could subscribe to anything. Creating it lazily here keeps
    * that ceremony out of the client and makes every subscription call safe to fire blindly.
    *
-   * Concurrent calls share one resolve: the frontend subscribes implicitly from several parallel
-   * calls, which would otherwise create two subscribers on a user's first action.
+   * Concurrent calls share one resolve: the errand page reads the subscriptions while the follow
+   * button may be subscribing, which would otherwise create two subscribers on a user's first visit.
    */
   private resolveSubscriber(municipalityId: string, user: User): Promise<Subscriber> {
     const key = `${municipalityId}:${user.username}`;
@@ -145,7 +145,11 @@ export class SupportSubscriptionController {
       channels: DEFAULT_CHANNELS,
       eventFilters: [],
     };
-    await this.apiService.post<Subscriber, Subscriber>({ url: `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers`, data }, user);
+    // Created on the user's first visit, as a side effect; nothing anyone is to be told about.
+    await this.apiService.post<Subscriber, Subscriber>(
+      { url: `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers`, data, notifySubscribers: false },
+      user,
+    );
 
     // Read back rather than trust the created body: create can answer 201 empty, and another
     // instance may have created one at the same time.
@@ -206,10 +210,10 @@ export class SupportSubscriptionController {
   /**
    * Create a subscription for the logged in user.
    *
-   * Idempotent by design: the frontend subscribes implicitly every time a user acts on an errand, so
-   * this is called far more often than it creates anything. Upstream documents no conflict response
-   * for duplicates, so the existing subscriptions are compared here rather than relying on a status
-   * code.
+   * Idempotent by design: Support Management subscribes the handler itself when an errand is
+   * assigned, so following an errand the user already follows - or following twice from two tabs -
+   * must not create a second subscription. Upstream documents no conflict response for duplicates,
+   * so the existing subscriptions are compared here rather than relying on a status code.
    */
   @Post('/supportsubscriptions/:municipalityId')
   @HttpCode(201)

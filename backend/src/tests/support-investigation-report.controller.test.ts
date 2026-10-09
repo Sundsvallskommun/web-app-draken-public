@@ -132,6 +132,8 @@ describe('SupportInvestigationReportController', () => {
               },
             ],
           },
+          // The report list is bookkeeping; the attachment is what subscribers hear about.
+          notifySubscribers: false,
         },
       }),
     );

@@ -14,7 +14,10 @@ import {
   updateSupportErrand,
 } from './support-errand-service';
 
-vi.mock('@common/services/api-service', () => ({ apiService: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
+vi.mock('@common/services/api-service', () => ({
+  apiService: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+  withRequestGroup: <T>(action: () => Promise<T>) => action(),
+}));
 vi.mock('@config/appconfig', () => ({ appConfig: { features: {} } }));
 vi.mock('@sk-web-gui/react', () => ({ useSnackbar: vi.fn() }));
 vi.mock('@stores/index', () => ({ useConfigStore: vi.fn(), useSupportStore: vi.fn() }));

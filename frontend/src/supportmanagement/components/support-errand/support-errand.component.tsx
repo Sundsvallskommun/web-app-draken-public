@@ -22,6 +22,7 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount, getSupportServiceNotesCount } from '@supportmanagement/services/support-note-service';
+import { useAcknowledgeErrandNotifications } from '@supportmanagement/services/use-acknowledge-errand-notifications';
 import { useParams, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, type Resolver, useForm } from 'react-hook-form';
@@ -56,6 +57,10 @@ export const SupportErrandComponent: FC = () => {
   const registrationForm = !errandNumber && isSupportRegistrationForm(supportApplicationProfile);
   // Only a variant with something to say about an errand the user may merely know of asks for the level.
   const limitedAccessNotice = getInvestigationLimitedAccessNotice();
+  // Only the errand this page was opened for, never one still in the store from before it loaded.
+  useAcknowledgeErrandNotifications(
+    errandNumber && supportErrand?.errandNumber === errandNumber ? supportErrand.id : undefined
+  );
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(supportErrandFormSchema) as unknown as Resolver<SupportErrand>,

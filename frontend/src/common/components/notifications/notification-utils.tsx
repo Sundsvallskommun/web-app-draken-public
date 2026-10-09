@@ -4,6 +4,7 @@ import { NotificationEventView, NotificationView } from './notification-view';
 
 /** Fallback labels for everything that is not a removal. */
 const labelBySubType: Record<string, string> = {
+  ASSIGNMENT: 'Ärendet tilldelat',
   ATTACHMENT: 'Ny bilaga',
   DECISION: 'Nytt beslut',
   ERRAND: 'Ärende uppdaterat',
@@ -20,6 +21,7 @@ const labelBySubType: Record<string, string> = {
  * mottaget"), so an "uppdaterad" wording there would be plain wrong.
  */
 const removalLabelBySubType: Record<string, string> = {
+  ASSIGNMENT: 'Tilldelning borttagen',
   ATTACHMENT: 'Bilaga borttagen',
   DECISION: 'Beslut borttaget',
   MESSAGE: 'Meddelande borttaget',
@@ -28,6 +30,7 @@ const removalLabelBySubType: Record<string, string> = {
 
 /** Plural forms for the collapsed notification summary, falling back to the singular label. */
 const pluralBySubType: Record<string, string> = {
+  ASSIGNMENT: 'tilldelningar',
   ATTACHMENT: 'nya bilagor',
   DECISION: 'nya beslut',
   ERRAND: 'uppdateringar av ärendet',
@@ -146,6 +149,24 @@ export const matchEventToNotification = (
   event: { subType?: string; created?: string },
   notification: NotificationView
 ): boolean => notification.events.some((notificationEvent) => isSameEvent(event, notificationEvent));
+
+/**
+ * The newest event on an errand that the user has not acknowledged yet, from their own notifications.
+ *
+ * Undefined when nothing has happened there since they last opened it, or when they get no
+ * notifications for it at all.
+ */
+export const latestUnacknowledgedEvent = (
+  notifications: NotificationView[],
+  errandId: string | undefined
+): NotificationEventView | undefined =>
+  notifications
+    .filter((notification) => notification.errandId === errandId && !notification.acknowledged)
+    .flatMap((notification) => notification.events)
+    .reduce<NotificationEventView | undefined>(
+      (latest, event) => (!latest || dayjs(event.created).isAfter(dayjs(latest.created)) ? event : latest),
+      undefined
+    );
 
 /** Deep link that opens the errand on its log, with the events the notification covers highlighted. */
 export const notificationHref = (notification: NotificationView): string =>

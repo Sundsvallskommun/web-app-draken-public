@@ -1,3 +1,4 @@
+import { withRequestGroup } from '@common/services/api-service';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -43,7 +44,7 @@ export const SupportPhaseStartProcessButtonComponent: FC<{
   const { handleSubmit, reset } = useFormContext();
   const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
 
-  const handleStartProcess = async () => {
+  const startProcess = async () => {
     if (starting.current) return;
     starting.current = true;
     setIsStarting(true);
@@ -138,6 +139,9 @@ export const SupportPhaseStartProcessButtonComponent: FC<{
       setIsStarting(false);
     }
   };
+
+  // Saving, taking the errand, the phase moves and the status are one action, so one notification.
+  const handleStartProcess = () => withRequestGroup(startProcess);
 
   return (
     <Button

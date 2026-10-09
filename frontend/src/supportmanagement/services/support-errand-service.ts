@@ -4,7 +4,7 @@ import {
   Stakeholder as SupportStakeholder,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { apiService, Data } from '@common/services/api-service';
+import { apiService, Data, withRequestGroup } from '@common/services/api-service';
 import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import { sanitized } from '@common/services/sanitizer-service';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -1041,32 +1041,38 @@ export const setSupportErrandAdmin: (
   expectedVersion: number | undefined,
   status?: Status,
   assigner?: string
-) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, expectedVersion, status?, assigner?) => {
-  const data = { assignedUserId };
+) => Promise<boolean> = (errandId, municipalityId, assignedUserId, expectedVersion, status?, assigner?) =>
+  // The assignment and the status it moves the errand to are one action, so one notification.
+  withRequestGroup(async () => {
+    const data = { assignedUserId };
 
-  try {
-    const ifMatch = toStrongSupportErrandETag(expectedVersion);
-    await apiService.patch<ApiSupportErrand, typeof data>(`supporterrands/${municipalityId}/${errandId}/admin`, data, {
-      headers: { 'If-Match': ifMatch },
-    });
-  } catch (e) {
-    console.error('Something went wrong when patching errand');
-    throw e;
-  }
+    try {
+      const ifMatch = toStrongSupportErrandETag(expectedVersion);
+      await apiService.patch<ApiSupportErrand, typeof data>(
+        `supporterrands/${municipalityId}/${errandId}/admin`,
+        data,
+        {
+          headers: { 'If-Match': ifMatch },
+        }
+      );
+    } catch (e) {
+      console.error('Something went wrong when patching errand');
+      throw e;
+    }
 
-  if (status === undefined) return true;
+    if (status === undefined) return true;
 
-  try {
-    // The assignment above is ours and succeeded, so it is the write that moved the version on.
-    const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
-    return await transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
-  } catch (e) {
-    // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
-    // different answer from the user than one that was never assigned at all.
-    console.error('Support errand was assigned, but its status could not be changed');
-    throw new SupportErrandStatusAfterAssignmentError(e);
-  }
-};
+    try {
+      // The assignment above is ours and succeeded, so it is the write that moved the version on.
+      const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
+      return await transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
+    } catch (e) {
+      // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
+      // different answer from the user than one that was never assigned at all.
+      console.error('Support errand was assigned, but its status could not be changed');
+      throw new SupportErrandStatusAfterAssignmentError(e);
+    }
+  });
 
 const transitionSupportErrandStatus = async (
   errandId: string,
@@ -1116,108 +1122,115 @@ export const setSuspension: (
   date: string,
   comment: string,
   expected: SupportErrandStatusSnapshot
-) => Promise<boolean> = async (errandId, municipalityId, status, date, comment, expected) => {
-  if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
-    return Promise.reject('Invalid date');
-  }
-  const suspension = {
-    suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
-    suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
-  };
+) => Promise<boolean> = (errandId, municipalityId, status, date, comment, expected) =>
+  // Suspending and the comment that says why are one action, so one notification.
+  withRequestGroup(async () => {
+    if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
+      return Promise.reject('Invalid date');
+    }
+    const suspension = {
+      suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
+      suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
+    };
 
-  return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
-    suspension: {
-      ...suspension,
-    },
-  })
-    .then(async () => {
-      if (status === Status.SUSPENDED && comment) {
-        await saveSupportNote(errandId, municipalityId, comment);
-      }
-      return true;
+    return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
+      suspension: {
+        ...suspension,
+      },
     })
-    .catch((e) => {
-      console.error('Something went wrong when suspending errand');
-      throw e;
-    });
-};
+      .then(async () => {
+        if (status === Status.SUSPENDED && comment) {
+          await saveSupportNote(errandId, municipalityId, comment);
+        }
+        return true;
+      })
+      .catch((e) => {
+        console.error('Something went wrong when suspending errand');
+        throw e;
+      });
+  });
 
+/** The message, the forward, the assignment and the closing are one action, so one notification. */
 export const forwardSupportErrand: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
   data: ForwardFormProps,
   supportAttachment: SupportAttachment[]
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
-  if (!errand.id) {
-    throw 'No errand id found. Cannot forward errand without id.';
-  }
-  if (!data.recipient) {
-    throw 'No recipient found. Cannot forward errand without recipient.';
-  }
-  // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
-  if (data.recipient === 'EMAIL' && !data.message) {
-    throw 'No message found. Cannot forward errand by email without message.';
-  }
-
-  // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
-  // from status NEW), assign the current user so the errand always has a responsible person.
-  const assignSelfIfUnassigned = async () => {
-    if (errand.assignedUserId) return;
-    // Follows the message or forward call above, so the loaded version may already be ours-but-stale.
-    const current = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
-    await setSupportErrandAdmin(errand.id!, municipalityId, user.username, current.version, undefined, user.username);
-  };
-
-  let attachmentId = [] as string[];
-  for (const att of supportAttachment) {
-    attachmentId.push(att.id);
-  }
-
-  if (data.recipient == 'EMAIL') {
-    const message: MessageRequest = {
-      municipalityId: municipalityId,
-      errandId: errand.id,
-      contactMeans: 'email',
-      recipientEmail: '',
-      headerReplyTo: '',
-      headerReferences: '',
-      emails: data.emails,
-      subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
-      htmlMessage: data.message,
-      plaintextMessage: data.messageBodyPlaintext,
-      senderName: user.name,
-      phoneNumbers: [],
-      attachments: [],
-      existingAttachments: [],
-      attachmentIds: attachmentId,
-    };
-    if (isKC()) {
-      message.senderName = 'Kontakt  Sundsvall';
+) => Promise<boolean> = (user, errand, municipalityId, data, supportAttachment) =>
+  withRequestGroup(async () => {
+    if (!errand.id) {
+      throw 'No errand id found. Cannot forward errand without id.';
     }
-    await sendMessage(message);
-    await assignSelfIfUnassigned();
-    const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterMessage);
-  } else if (data.recipient == 'DEPARTMENT' && data.department) {
-    errand.stakeholders?.forEach((s) => {
-      if (!s.firstName && !s.organizationName) {
-        throw new Error('MISSING_NAME');
+    if (!data.recipient) {
+      throw 'No recipient found. Cannot forward errand without recipient.';
+    }
+    // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
+    if (data.recipient === 'EMAIL' && !data.message) {
+      throw 'No message found. Cannot forward errand by email without message.';
+    }
+
+    // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
+    // from status NEW), assign the current user so the errand always has a responsible person.
+    const assignSelfIfUnassigned = async () => {
+      if (errand.assignedUserId) return;
+      // Follows the message or forward call above, so the loaded version may already be ours-but-stale.
+      const current = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, current.version, undefined, user.username);
+    };
+
+    let attachmentId = [] as string[];
+    for (const att of supportAttachment) {
+      attachmentId.push(att.id);
+    }
+
+    if (data.recipient == 'EMAIL') {
+      const message: MessageRequest = {
+        municipalityId: municipalityId,
+        errandId: errand.id,
+        contactMeans: 'email',
+        recipientEmail: '',
+        headerReplyTo: '',
+        headerReferences: '',
+        emails: data.emails,
+        subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
+        htmlMessage: data.message,
+        plaintextMessage: data.messageBodyPlaintext,
+        senderName: user.name,
+        phoneNumbers: [],
+        attachments: [],
+        existingAttachments: [],
+        attachmentIds: attachmentId,
+      };
+      if (isKC()) {
+        message.senderName = 'Kontakt  Sundsvall';
       }
-    });
-    delete data.existingEmail;
-    delete data.newEmail;
-    return apiService
-      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
-      .then(async () => {
-        await assignSelfIfUnassigned();
-        const afterForward = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
-        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterForward);
-      })
-      .catch((e: AxiosError) => {
-        throw new Error(e.response?.data as string);
+      await sendMessage(message);
+      await assignSelfIfUnassigned();
+      const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
+      return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterMessage);
+    } else if (data.recipient == 'DEPARTMENT' && data.department) {
+      errand.stakeholders?.forEach((s) => {
+        if (!s.firstName && !s.organizationName) {
+          throw new Error('MISSING_NAME');
+        }
       });
-  } else {
-    throw new Error('Not implemented yet');
-  }
-};
+      delete data.existingEmail;
+      delete data.newEmail;
+      return apiService
+        .post<ApiSupportErrand, Partial<ForwardFormProps>>(
+          `supporterrands/${municipalityId}/${errand.id!}/forward`,
+          data
+        )
+        .then(async () => {
+          await assignSelfIfUnassigned();
+          const afterForward = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+          return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterForward);
+        })
+        .catch((e: AxiosError) => {
+          throw new Error(e.response?.data as string);
+        });
+    } else {
+      throw new Error('Not implemented yet');
+    }
+  });

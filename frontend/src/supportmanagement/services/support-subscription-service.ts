@@ -6,13 +6,16 @@ import { apiService } from '@common/services/api-service';
 // wrapper is kept here — adding one is the first step when the settings view is built.
 
 export const getMySubscriptions: (municipalityId: string) => Promise<Subscription[]> = (municipalityId) => {
-  return apiService
-    .get<Subscription[]>(`supportsubscriptions/${municipalityId}`)
-    .then((res) => res.data ?? [])
-    .catch((e) => {
-      console.error('Something went wrong when fetching subscriptions');
-      throw e;
-    });
+  return (
+    apiService
+      .get<Subscription[]>(`supportsubscriptions/${municipalityId}`)
+      // Only a list is a list of subscriptions: anything else would break every consumer that searches it.
+      .then((res) => (Array.isArray(res.data) ? res.data : []))
+      .catch((e) => {
+        console.error('Something went wrong when fetching subscriptions');
+        throw e;
+      })
+  );
 };
 
 export const followErrand: (municipalityId: string, errandId: string) => Promise<Subscription> = (
@@ -50,22 +53,3 @@ export const findErrandSubscription = (subscriptions: Subscription[], errandId: 
     (subscription) =>
       subscription.target?.type === SubscriptionTargetTypeEnum.ERRAND && subscription.target?.id === errandId
   );
-
-/**
- * Subscribe the current user to an errand because they just acted on it.
- *
- * This is how users get notifications without configuring anything: taking an errand, replying,
- * commenting or saving is taken as "I care about this one". The backend makes the call idempotent,
- * so this can be fired after any such action without checking first.
- *
- * Deliberately swallows its errors. It is a side effect of the user's actual action — failing to
- * subscribe must never make a successful reply look like it failed.
- */
-export const ensureErrandSubscription = async (municipalityId: string, errandId?: string): Promise<void> => {
-  if (!municipalityId || !errandId) return;
-  try {
-    await followErrand(municipalityId, errandId);
-  } catch (e) {
-    console.error('Could not create implicit subscription for errand', errandId);
-  }
-};

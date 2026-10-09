@@ -1,5 +1,6 @@
 import { HandlerSelectOptions } from '@common/components/handler-select/handler-select-options.component';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { withRequestGroup } from '@common/services/api-service';
 import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
 import { type Admin, getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
@@ -291,24 +292,26 @@ export const SidebarInfo: FC<{
     }
   };
 
-  const onSubmit = async (): Promise<boolean> => {
-    setError(false);
-    setIsLoading(true);
-    try {
-      // Read before the save resets the form to the errand as saved.
-      const handover = findChosenHandover();
-      const saved = await saveErrandFields();
-      if (saved && handover) {
-        // The errand has left; whatever was to follow the save must not act on it.
-        if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
-        return false;
+  // One save is one action for Support Management: its writes become one notification, not one each.
+  const onSubmit = (): Promise<boolean> =>
+    withRequestGroup(async () => {
+      setError(false);
+      setIsLoading(true);
+      try {
+        // Read before the save resets the form to the errand as saved.
+        const handover = findChosenHandover();
+        const saved = await saveErrandFields();
+        if (saved && handover) {
+          // The errand has left; whatever was to follow the save must not act on it.
+          if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
+          return false;
+        }
+        if (saved) toast('success', 'Ärendet uppdaterades');
+        return saved;
+      } finally {
+        setIsLoading(false);
       }
-      if (saved) toast('success', 'Ärendet uppdaterades');
-      return saved;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
 
   const errandFieldsDirty = hasDirtyFields(formState.dirtyFields);
   const hasDirtyParticipant = useErrandSaveParticipantsStore(selectHasDirtyParticipant);
@@ -319,30 +322,33 @@ export const SidebarInfo: FC<{
    * with why, in its own place. A handover chosen in Ansvarig comes last, since it takes the errand
    * out of reach: the errand's own fields first, because the drafts' writes move its version on.
    */
-  const saveErrand = async () => {
-    setError(false);
-    setIsLoading(true);
-    try {
-      // Read before the save resets the form to the errand as saved.
-      const handover = findChosenHandover();
-      if (errandFieldsDirty && !(await saveErrandFields())) return;
+  const saveErrand = () =>
+    withRequestGroup(async () => {
+      setError(false);
+      setIsLoading(true);
+      try {
+        // Read before the save resets the form to the errand as saved.
+        const handover = findChosenHandover();
+        if (errandFieldsDirty && !(await saveErrandFields())) return;
 
-      const unsaved = await saveParticipantsInTurn(selectDirtyParticipants(useErrandSaveParticipantsStore.getState()));
-      if (unsaved.length > 0) {
-        setError(true);
-        toast('error', unsavedParticipantsMessage(unsaved));
-        unsaved[0].reveal();
-        return;
+        const unsaved = await saveParticipantsInTurn(
+          selectDirtyParticipants(useErrandSaveParticipantsStore.getState())
+        );
+        if (unsaved.length > 0) {
+          setError(true);
+          toast('error', unsavedParticipantsMessage(unsaved));
+          unsaved[0].reveal();
+          return;
+        }
+        if (handover) {
+          if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
+          return;
+        }
+        toast('success', 'Ärendet uppdaterades');
+      } finally {
+        setIsLoading(false);
       }
-      if (handover) {
-        if (await handOver(handover)) toast('success', 'Ärendet lämnades över');
-        return;
-      }
-      toast('success', 'Ärendet uppdaterades');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
 
   useEffect(() => {
     if (administrators && supportErrand?.assignedUserId) {

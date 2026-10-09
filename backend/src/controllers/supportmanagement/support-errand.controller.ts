@@ -44,7 +44,6 @@ import {
   Label,
   Labels as SupportLabels,
   MetadataResponse as SupportMetadata,
-  Notification,
   PageErrand,
   Parameter,
   Priority as SupportPriority,
@@ -336,50 +335,6 @@ export class CErrandAction implements ErrandAction {
   @IsOptional()
   displayValue?: string;
 }
-export class CNotification implements Notification {
-  @IsString()
-  @IsOptional()
-  id?: string;
-  @IsString()
-  @IsOptional()
-  created?: string;
-  @IsString()
-  @IsOptional()
-  modified?: string;
-  @IsString()
-  @IsOptional()
-  ownerFullName?: string;
-  @IsString()
-  ownerId!: string;
-  @IsString()
-  @IsOptional()
-  createdBy?: string;
-  @IsString()
-  @IsOptional()
-  createdByFullName?: string;
-  @IsString()
-  type!: string;
-  @IsString()
-  description!: string;
-  @IsString()
-  @IsOptional()
-  content?: string;
-  @IsString()
-  @IsOptional()
-  expires?: string;
-  @IsBoolean()
-  @IsOptional()
-  globalAcknowledged?: boolean;
-  @IsBoolean()
-  @IsOptional()
-  acknowledged?: boolean;
-  @IsString()
-  @IsOptional()
-  errandId?: string;
-  @IsString()
-  @IsOptional()
-  errandNumber?: string;
-}
 export class CErrandPhase implements ErrandPhase {
   @IsString()
   @IsOptional()
@@ -473,11 +428,6 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsArray()
   labels?: Label[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CNotification)
-  activeNotifications?: CNotification[];
   @IsOptional()
   @IsString()
   created?: string;
@@ -888,7 +838,9 @@ export class SupportErrandController {
       channel: defaults.channel ?? ContactChannelType.PHONE,
       title: 'Empty errand',
     };
-    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
+    // A registration is the user's own act; the empty errand a drake opens on its own is not.
+    const notifySubscribers = registration ? undefined : false;
+    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body, notifySubscribers }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
       throw e;
@@ -1165,6 +1117,8 @@ export class SupportErrandController {
           headers: { 'If-Match': `"${version}"` },
           followLocation: false,
           propagateClientError: true,
+          // Only the close itself is news; the phases it has to pass through on the way are not.
+          notifySubscribers: false,
         },
         req.user,
       );

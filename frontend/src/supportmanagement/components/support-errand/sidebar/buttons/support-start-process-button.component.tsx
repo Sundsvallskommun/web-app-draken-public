@@ -1,3 +1,4 @@
+import { withRequestGroup } from '@common/services/api-service';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -31,7 +32,7 @@ export const SupportStartProcessButtonComponent: FC<{
   const [isStarting, setIsStarting] = useState(false);
   const { handleSubmit, reset } = useFormContext();
 
-  const handleStartProcess = async () => {
+  const startProcess = async () => {
     if (starting.current) return;
     starting.current = true;
     setIsStarting(true);
@@ -85,6 +86,9 @@ export const SupportStartProcessButtonComponent: FC<{
       setIsStarting(false);
     }
   };
+
+  // Saving, taking the errand and starting it are one action, so one notification.
+  const handleStartProcess = () => withRequestGroup(startProcess);
 
   if (!supportErrand || supportErrand.status !== Status.NEW) {
     return null;

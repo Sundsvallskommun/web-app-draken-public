@@ -27,7 +27,7 @@ import { statusGroupCountsFor } from '../../utils/status-group-counts';
 
 const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 const municipalityId = '2281';
-const errandId = 'f0a1d4c6-9b23-4f18-9c40-2b6e0a7c51de';
+export const errandId = 'f0a1d4c6-9b23-4f18-9c40-2b6e0a7c51de';
 export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'AOT').trim().toUpperCase();
 export const errandNumber = `${application}-2026-0001`;
 
@@ -110,6 +110,8 @@ export interface AotApiTrace {
   investigationDocumentRequests: string[];
   schemaRequests: string[];
   classificationPatches: number;
+  /** Errands whose notifications the user acknowledged, in order: one per errand page that opened. */
+  notificationAcknowledgements: string[];
 }
 
 export interface AotApiScenario {
@@ -163,6 +165,7 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
     investigationDocumentRequests: [],
     schemaRequests: [],
     classificationPatches: 0,
+    notificationAcknowledgements: [],
   };
 
   await page
@@ -198,7 +201,6 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
           lastName: 'Testare',
           email: 'aot.test@example.test',
           username: 'aot.test',
-          userSettings: { readNotificationsClearedDate: '' },
           permissions: {
             canEditCasedata: false,
             canEditSupportManagement: scenario.canEdit ?? true,
@@ -227,6 +229,18 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
     }
 
     if (method === 'GET' && path.endsWith(`/supportnotifications/${municipalityId}`)) {
+      await fulfillJson(route, []);
+      return;
+    }
+
+    const acknowledgeAll = path.match(/\/supportnotifications\/[^/]+\/([^/]+)\/acknowledge-all$/u);
+    if (method === 'PUT' && acknowledgeAll) {
+      trace.notificationAcknowledgements.push(acknowledgeAll[1]);
+      await fulfillJson(route, { acknowledged: [], failed: [] });
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith(`/supportsubscriptions/${municipalityId}`)) {
       await fulfillJson(route, []);
       return;
     }

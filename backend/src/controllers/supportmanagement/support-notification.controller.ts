@@ -18,6 +18,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
+import { currentRequestGroupId } from '@/utils/request-group';
 
 /**
  * One thing that happened on an errand, as the frontend consumes it.
@@ -118,15 +119,21 @@ export class SupportNotificationController {
    * Acknowledge several notifications.
    *
    * Upstream only acknowledges one notification per call, so the fan-out lives here rather than in
-   * the browser. The shared request-group id ties the individual calls together as one operation in
-   * the upstream event log. Failures are collected instead of thrown so that a single bad id does
+   * the browser. The shared request-group id - the one the browser sent for its action, when it sent
+   * one - ties the individual calls together as one operation in the upstream event log. Failures are collected instead of thrown so that a single bad id does
    * not discard the notifications that were acknowledged successfully.
    */
   private async acknowledgeMany(municipalityId: string, user: User, ids: string[]): Promise<AcknowledgeResultDto> {
-    const requestGroupId = randomUUID();
+    const requestGroupId = currentRequestGroupId() ?? randomUUID();
     const baseUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/notifications`;
     const results = await Promise.allSettled(
-      ids.map(id => this.apiService.put({ url: `${baseUrl}/${id}/acknowledge`, headers: { 'X-Request-Group-Id': requestGroupId } }, user)),
+      ids.map(id =>
+        // Acknowledging is the user reading; nobody following the errand is to hear of it.
+        this.apiService.put(
+          { url: `${baseUrl}/${id}/acknowledge`, headers: { 'X-Request-Group-Id': requestGroupId }, notifySubscribers: false },
+          user,
+        ),
+      ),
     );
 
     const acknowledged: string[] = [];

@@ -1,3 +1,4 @@
+import { withRequestGroup } from '@common/services/api-service';
 import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { closeErrandTabSoon } from '@common/utils/close-errand-tab';
@@ -111,7 +112,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     };
   };
 
-  const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
+  const closeErrand = async (resolution: Resolution, msg: boolean) => {
     if (!supportErrand?.id) return;
     const errandId = supportErrand.id;
     setIsLoading(true);
@@ -151,6 +152,10 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     setIsLoading(false);
     getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
   };
+
+  // Taking the errand, closing it and the closing message are one action, so one notification.
+  const handleCloseErrand = (resolution: Resolution, msg: boolean) =>
+    withRequestGroup(() => closeErrand(resolution, msg));
 
   /**
    * Closes a workflow errand with the status alone, reads the closed errand back into the page and then closes

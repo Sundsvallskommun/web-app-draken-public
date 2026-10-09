@@ -8,9 +8,6 @@ export const emptyUser: User = {
   lastName: '',
   email: '',
   username: '',
-  userSettings: {
-    readNotificationsClearedDate: '',
-  },
   permissions: {
     canEditCasedata: false,
     canEditSupportManagement: false,
@@ -26,9 +23,6 @@ const handleSetUserResponse = (res: ApiResponse<User>): User => ({
   username: res.data.username,
   firstName: res.data.firstName,
   lastName: res.data.lastName,
-  userSettings: {
-    readNotificationsClearedDate: res.data.userSettings.readNotificationsClearedDate,
-  },
   permissions: res.data.permissions,
   roleKeys: res.data.roleKeys,
   superadmin: res.data.superadmin === true,

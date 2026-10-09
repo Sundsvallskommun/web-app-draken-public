@@ -1061,12 +1061,23 @@ test.describe('Errand page', () => {
     // post-click await registers. The street is the last of the three to be written.
     const facilityParameterWrite = (key: string) => (request: { method(): string; url(): string }) =>
       request.method() === 'PUT' && request.url().endsWith(`/parameters/${key}`);
-    const [propertyDesignationWrite] = await Promise.all([
+    const [errandWrite, propertyDesignationWrite, streetWrite] = await Promise.all([
+      page.waitForRequest(
+        (request) =>
+          request.method() === 'PATCH' &&
+          request.url().endsWith('/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490')
+      ),
       page.waitForRequest(facilityParameterWrite('propertyDesignation')),
       page.waitForRequest(facilityParameterWrite('street')),
       page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click(),
     ]);
     expect(propertyDesignationWrite.postDataJSON().values).toHaveLength(1);
+    // One save is one action: Support Management groups its writes into one notification.
+    const saveGroupIds = [errandWrite, propertyDesignationWrite, streetWrite].map(
+      (write) => write.headers()['x-request-group-id']
+    );
+    expect(saveGroupIds[0]).toBeTruthy();
+    expect(new Set(saveGroupIds).size).toBe(1);
     await page.waitForResponse(
       (resp) => resp.url().includes('supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490') && resp.status() === 200
     );

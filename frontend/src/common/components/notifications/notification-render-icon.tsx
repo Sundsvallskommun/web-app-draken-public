@@ -23,6 +23,7 @@ const iconConfig: Record<string, { icon?: string; avatar?: boolean; defaultColor
   ERRAND: { icon: 'bell-ring', defaultColor: 'juniskar' },
   ATTACHMENT: { icon: 'file', defaultColor: 'vattjom' },
   DECISION: { icon: 'file-text', defaultColor: 'vattjom' },
+  ASSIGNMENT: { icon: 'user', defaultColor: 'bjornstigen' },
   // The avatar variant needs a name to build initials from; without one it renders as an empty
   // circle, so the icon is used instead.
   NOTE: { avatar: true, icon: 'clipboard-pen', defaultColor: 'juniskar' },

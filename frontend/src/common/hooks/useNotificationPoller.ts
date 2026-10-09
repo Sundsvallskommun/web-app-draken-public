@@ -2,6 +2,7 @@
 
 import { fetchNotifications } from '@common/components/notifications/notification-actions';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
 const POLL_INTERVAL_MS = 60_000;
@@ -36,12 +37,14 @@ export const useRefreshNotifications = (): (() => Promise<void>) => {
  * bell badge stale for as long as the user stayed on a page. Polling here means every consumer of
  * the store — badge, panel, errand log — sees the same up to date list.
  *
- * Polling pauses while the tab is hidden and catches up as soon as it becomes visible again. Mount
- * this once per app; everything else should use `useRefreshNotifications`.
+ * Polling pauses while the tab is hidden and catches up as soon as it becomes visible again. Changing
+ * view - opening the overview, say - also refreshes at once rather than waiting for the next tick.
+ * Mount this once per app; everything else should use `useRefreshNotifications`.
  */
 export const useNotificationPoller = (): { refresh: () => Promise<void> } => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const refresh = useRefreshNotifications();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!municipalityId) return;
@@ -76,7 +79,8 @@ export const useNotificationPoller = (): { refresh: () => Promise<void> } => {
       stop();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [municipalityId, refresh]);
+    // The view is a dependency on purpose: a new view starts a fresh poll that refreshes at once.
+  }, [municipalityId, refresh, pathname]);
 
   return { refresh };
 };

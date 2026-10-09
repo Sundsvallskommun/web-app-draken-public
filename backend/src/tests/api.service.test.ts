@@ -1,7 +1,10 @@
 import axios, { AxiosAdapter, AxiosError } from 'axios';
 
+import { apiServiceName } from '@/config/api-config';
 import ApiService from '@/services/api.service';
 import ApiTokenService from '@/services/api-token.service';
+import { REQUEST_GROUP_HEADER, runInRequestGroup } from '@/utils/request-group';
+import { apiURL } from '@/utils/util';
 
 import { mockUser } from './helpers/http';
 
@@ -71,6 +74,80 @@ describe('ApiService', () => {
     expect(follow).not.toHaveBeenCalled();
     expect(response).toMatchObject({ data: { saved: true }, status: 201 });
     expect(response.headers?.etag).toBe('"1"');
+  });
+
+  describe('request group', () => {
+    const capturedHeaders: Record<string, unknown>[] = [];
+    const capturingAdapter: AxiosAdapter = async config => {
+      capturedHeaders.push({ ...config.headers });
+      return { config, data: {}, headers: {}, status: 200, statusText: 'OK' };
+    };
+
+    beforeEach(() => {
+      capturedHeaders.length = 0;
+    });
+
+    it('sends the group of the request being handled to Support Management', async () => {
+      await runInRequestGroup('group-of-the-save', () =>
+        new ApiService().patch({ adapter: capturingAdapter, url: `${apiServiceName('supportmanagement')}/2281/errands/errand-1`, data: {} }, user),
+      );
+
+      expect(capturedHeaders[0][REQUEST_GROUP_HEADER]).toBe('group-of-the-save');
+    });
+
+    it('finds Support Management in baseURL as well, where most errand writes name it', async () => {
+      await runInRequestGroup('group-of-the-save', () =>
+        new ApiService().patch(
+          { adapter: capturingAdapter, baseURL: apiURL(apiServiceName('supportmanagement')), url: '2281/errands/errand-1', data: {} },
+          user,
+        ),
+      );
+
+      expect(capturedHeaders[0][REQUEST_GROUP_HEADER]).toBe('group-of-the-save');
+    });
+
+    it('sends no group to an API that does not read one', async () => {
+      await runInRequestGroup('group-of-the-save', () =>
+        new ApiService().get({ adapter: capturingAdapter, url: `${apiServiceName('employee')}/portalpersondata/someone` }, user),
+      );
+
+      expect(capturedHeaders[0]).not.toHaveProperty(REQUEST_GROUP_HEADER);
+    });
+
+    it('sends no group outside a request, and keeps one the caller set itself', async () => {
+      const errandUrl = `${apiServiceName('supportmanagement')}/2281/errands/errand-1`;
+      await new ApiService().get({ adapter: capturingAdapter, url: errandUrl }, user);
+      await runInRequestGroup('ambient', () =>
+        new ApiService().put({ adapter: capturingAdapter, url: errandUrl, headers: { [REQUEST_GROUP_HEADER]: 'explicit' } }, user),
+      );
+
+      expect(capturedHeaders[0]).not.toHaveProperty(REQUEST_GROUP_HEADER);
+      expect(capturedHeaders[1][REQUEST_GROUP_HEADER]).toBe('explicit');
+    });
+  });
+
+  describe('silent writes', () => {
+    const capturedHeaders: Record<string, unknown>[] = [];
+    const capturingAdapter: AxiosAdapter = async config => {
+      capturedHeaders.push({ ...config.headers });
+      return { config, data: {}, headers: {}, status: 200, statusText: 'OK' };
+    };
+
+    beforeEach(() => {
+      capturedHeaders.length = 0;
+    });
+
+    it('asks Support Management not to notify anyone of a write the system makes on its own', async () => {
+      await new ApiService().post({ adapter: capturingAdapter, url: TOKEN_URL, data: {}, notifySubscribers: false }, user);
+
+      expect(capturedHeaders[0]['X-notify']).toBe('false');
+    });
+
+    it('leaves every other write to notify as usual', async () => {
+      await new ApiService().post({ adapter: capturingAdapter, url: TOKEN_URL, data: {} }, user);
+
+      expect(capturedHeaders[0]).not.toHaveProperty('X-notify');
+    });
   });
 
   it('does not add upstream headers to existing controller response wrappers unless requested', async () => {

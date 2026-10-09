@@ -2133,6 +2133,8 @@ describe('updateSupportErrandStatus', () => {
       [{ activePhaseId: 'decision', status: 'DECISION' }, { 'If-Match': '"8"' }],
       [{ status: 'SOLVED', activePhaseId: 'follow-up' }, { 'If-Match': '"9"' }],
     ]);
+    // Only the close is news to the errand's subscribers; the steps on the way are silent.
+    expect(api.patch.mock.calls.map(([config]) => config.notifySubscribers)).toEqual([false, false, undefined]);
   });
 
   // Closing from the decision steps into the follow-up, which is the unit's to start, not LEX's.

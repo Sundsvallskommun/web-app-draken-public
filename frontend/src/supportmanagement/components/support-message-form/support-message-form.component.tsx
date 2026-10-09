@@ -7,6 +7,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { withRequestGroup } from '@common/services/api-service';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import {
@@ -287,7 +288,7 @@ export const SupportMessageForm: FC<{
     });
   };
 
-  const onSubmit: () => void = async () => {
+  const sendMessageAndFollowUp = async () => {
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
@@ -342,7 +343,8 @@ export const SupportMessageForm: FC<{
       });
     }
 
-    sendPromise
+    // Awaited so the status write after a completion request still belongs to this action's group.
+    await sendPromise
       .then(async () => {
         props.setShowMessageForm(false);
         setValue('messageBody', emailBody);
@@ -393,6 +395,9 @@ export const SupportMessageForm: FC<{
         clearErrors();
       });
   };
+
+  // Opening the conversation, the message and the status it may move the errand to are one action.
+  const onSubmit = () => withRequestGroup(sendMessageAndFollowUp);
 
   // Reply setup and new-message defaults. Headers, recipients and the selected template are
   // synced unconditionally so the UI matches the current scenario; only the body is preserved

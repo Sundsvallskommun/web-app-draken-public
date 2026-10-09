@@ -87,6 +87,8 @@ export interface WriteJsonParameterRequest<TKey extends string = string, TSchema
   readonly internal?: {
     readonly serverOwnedOverrides?: JsonObject;
     readonly allowLocked?: boolean;
+    /** `false` for the BFF's own bookkeeping, which is no news to the errand's subscribers. */
+    readonly notifySubscribers?: false;
   };
 }
 
@@ -544,6 +546,7 @@ export class SupportJsonParameterService {
         includeResponseHeaders: true,
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,
+        notifySubscribers: request.internal?.notifySubscribers,
       },
       request.user,
     );

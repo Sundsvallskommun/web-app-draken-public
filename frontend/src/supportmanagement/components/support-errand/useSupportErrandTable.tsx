@@ -1,9 +1,14 @@
+import {
+  getFilteredNotifications,
+  latestUnacknowledgedEvent,
+  notificationLabel,
+} from '@common/components/notifications/notification-utils';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { isIAFOrVOF } from '@common/services/application-service';
-import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
+import { prettyTime, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useEmployeeNameStore, useMetadataStore, useUserStore } from '@stores/index';
+import { useEmployeeNameStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { getInvestigationOverviewAssignee } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
@@ -20,6 +25,7 @@ import {
   primaryStakeholderNameorEmail,
 } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
@@ -65,6 +71,13 @@ export const useSupportErrandTable = (statuses: Status[]) => {
   const administrators = useUserStore((s) => s.administrators);
   const employeeNames = useEmployeeNameStore((s) => s.names);
   const investigationAssignee = getInvestigationOverviewAssignee();
+  const notifications = useSupportStore((s) => s.notifications);
+  const username = useUserStore((s) => s.user.username);
+  // The same notifications the panel shows, so the column never mentions something the bell leaves out.
+  const visibleNotifications = useMemo(
+    () => getFilteredNotifications(notifications, username),
+    [notifications, username]
+  );
 
   const labels = [
     {
@@ -88,17 +101,18 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       sortKey: 'touched',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => {
-        const notification = sortBy(errand?.activeNotifications ?? [], 'created').reverse()[0];
+        // What happened since the user last opened the errand; without that, when it last changed.
+        const unreadEvent = latestUnacknowledgedEvent(visibleNotifications, errand.id);
         return (
           <>
-            {!!notification ? (
+            {unreadEvent ? (
               <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
                 <div>
-                  <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
-                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                  <time dateTime={dayjs(unreadEvent.created).format('YYYY-MM-DD HH:mm')}>
+                    {dayjs(unreadEvent.created).format('YYYY-MM-DD HH:mm')}
                   </time>
                 </div>
-                <div className="italic">{truncate(notification?.description, 30)}</div>
+                <div className="italic">{truncate(notificationLabel(unreadEvent), 30)}</div>
               </div>
             ) : (
               dayjs(errand.touched).format('YYYY-MM-DD HH:mm')

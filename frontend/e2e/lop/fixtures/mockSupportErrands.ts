@@ -298,23 +298,6 @@ export const mockSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '2c9e9f0d-9447-4cf5-bec0-05bcf5edfc75',
-          errandNumber: 'LoP-0000001',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -372,23 +355,6 @@ export const mockSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: 'fe20c0ec-aa50-4358-b0d5-dd238d093421',
-          errandNumber: 'LoP-0000002',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -446,23 +412,6 @@ export const mockSupportErrands = {
       reporterUserId: 'kctest2',
       created: '2023-02-28T13:02:34.976+01:00',
       touched: '2023-02-28T13:02:34.976+01:00',
-      activeNotifications: [
-        {
-          id: '7251c861-a21a-49be-91c6-c2271f8efb5b',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: 'b5850245-85a0-427b-ae0f-9ccd51793ed2',
-          errandNumber: 'LoP-0000003',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -523,23 +472,6 @@ export const mockSupportErrands = {
       reporterUserId: 'kctest2',
       created: '2023-03-22T13:00:43.836+01:00',
       touched: '2023-03-22T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -618,23 +550,6 @@ export const mockOngoingSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -692,23 +607,6 @@ export const mockOngoingSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -769,23 +667,6 @@ export const mockOngoingSupportErrands = {
       reporterUserId: 'kctest2',
       created: '2023-03-22T13:00:43.836+01:00',
       touched: '2023-03-22T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -867,23 +748,6 @@ export const mockSuspendedSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -944,23 +808,6 @@ export const mockSuspendedSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1060,23 +907,6 @@ export const mockSolvedSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1134,23 +964,6 @@ export const mockSolvedSupportErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1211,23 +1024,6 @@ export const mockSolvedSupportErrands = {
       reporterUserId: 'kctest2',
       created: '2023-03-22T13:00:43.836+01:00',
       touched: '2023-03-22T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1306,23 +1102,6 @@ export const mockFilteredCategoryErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1383,23 +1162,6 @@ export const mockFilteredCategoryErrands = {
       reporterUserId: 'kctest2',
       created: '2023-02-28T13:00:43.836+01:00',
       touched: '2023-02-28T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1477,23 +1239,6 @@ export const mockFilteredPrioErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1571,23 +1316,6 @@ export const mockFilterDateErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1644,23 +1372,6 @@ export const mockFilterDateErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-28T13:04:20.427+01:00',
       touched: '2023-02-28T13:04:20.427+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1717,23 +1428,6 @@ export const mockFilterDateErrands = {
       reporterUserId: 'kctest2',
       created: '2023-02-28T13:02:34.976+01:00',
       touched: '2023-02-28T13:02:34.976+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1812,23 +1506,6 @@ export const mockFilterAdminErrands = {
       reporterUserId: 'kctest2',
       created: '2023-02-28T13:02:34.976+01:00',
       touched: '2023-02-28T13:02:34.976+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1888,23 +1565,6 @@ export const mockFilterAdminErrands = {
       reporterUserId: 'kctest2',
       created: '2023-02-28T13:00:43.836+01:00',
       touched: '2023-02-28T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1982,23 +1642,6 @@ export const mockFilterChannelErrands = {
       reporterUserId: 'kctest',
       created: '2023-02-22T13:06:02.567+01:00',
       touched: '2023-02-22T13:06:02.567+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -2058,23 +1701,6 @@ export const mockFilterChannelErrands = {
       reporterUserId: 'kctest2',
       created: '2023-03-22T13:00:43.836+01:00',
       touched: '2023-03-22T13:00:43.836+01:00',
-      activeNotifications: [
-        {
-          id: '3f60fdda-260a-466c-9c1d-eb4847cc3237',
-          created: '2025-02-12T13:41:46.955+01:00',
-          ownerFullName: '',
-          ownerId: '',
-          createdBy: '',
-          createdByFullName: '',
-          type: 'UPDATE',
-          description: 'Ärendet har uppdaterats.',
-          expires: '2025-03-14T12:41:46.89149Z',
-          globalAcknowledged: false,
-          acknowledged: false,
-          errandId: '0636ddf1-46fe-40bb-a718-8a170e628c24',
-          errandNumber: 'LoP-0000004',
-        },
-      ],
       stakeholders: [
         {
           externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',

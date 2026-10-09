@@ -12,9 +12,9 @@ import { FC, useEffect, useState } from 'react';
 /**
  * Turn notifications for this errand on or off.
  *
- * Subscriptions are otherwise created implicitly whenever the user acts on an errand, which is
- * convenient but invisible. This makes the current state visible and gives the user a way out of a
- * subscription they never asked for.
+ * Support Management subscribes the handler to an errand when it is assigned to them; everything
+ * else the user wants to hear about, they follow here. The button also shows that state, and lets the
+ * handler stop following an errand they were subscribed to by being assigned it.
  */
 export const SupportFollowErrandButtonComponent: FC = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);

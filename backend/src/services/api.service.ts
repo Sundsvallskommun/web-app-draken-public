@@ -1,10 +1,13 @@
 import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
+import { currentRequestGroupId, REQUEST_GROUP_HEADER } from '@utils/request-group';
 import { apiURL } from '@utils/util';
 import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+
+import { apiServiceName } from '@/config/api-config';
 
 import ApiTokenService from './api-token.service';
 
@@ -25,9 +28,31 @@ export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
   mapUnauthorizedToForbidden?: boolean;
   /** Upstream 5xx statuses the caller handles itself, surfaced with their own status instead of a generic 500. */
   propagateServerErrors?: readonly number[];
+  /**
+   * `false` makes a Support Management write silent: its subscribers are not notified of it. For what
+   * the system writes on its own - read markers, acknowledgements, derived labels, bookkeeping - never
+   * for something a user did. Support Management honours it from 17.0; older versions ignore it.
+   */
+  notifySubscribers?: false;
 };
 
+/** Support Management's switch for keeping one write from notifying the errand's subscribers. */
+const SILENT_WRITE_HEADERS = { 'X-notify': 'false' } as const;
+
 const apiTokenService = new ApiTokenService();
+
+/**
+ * Only Support Management reads the request group; no other upstream is sent a header it does not know.
+ * Callers name the service either in the url or in `baseURL` with a relative url, so both are read.
+ */
+const isSupportManagementRequest = (request: Pick<AxiosRequestConfig, 'baseURL' | 'url'>): boolean =>
+  `${request.baseURL ?? ''}/${request.url ?? ''}/`.includes(`/${apiServiceName('supportmanagement')}/`);
+
+/** The group header for a Support Management call made while handling a user's request, else nothing. */
+const requestGroupHeaders = (request: Pick<AxiosRequestConfig, 'baseURL' | 'url'>): Record<string, string> => {
+  const requestGroupId = currentRequestGroupId();
+  return requestGroupId && isSupportManagementRequest(request) ? { [REQUEST_GROUP_HEADER]: requestGroupId } : {};
+};
 
 /**
  * Render a request body for the error log. Multipart requests carry a form-data
@@ -82,6 +107,7 @@ class ApiService {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
+          ...requestGroupHeaders(request),
         };
         const isSimulatorRequest = request.url?.includes('simulatorserver');
         if (!isSimulatorRequest) {
@@ -140,13 +166,18 @@ class ApiService {
     );
   }
   private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
-    const { includeResponseHeaders, propagateClientError, mapUnauthorizedToForbidden, propagateServerErrors, ...axiosConfig } = config;
+    const { includeResponseHeaders, propagateClientError, mapUnauthorizedToForbidden, propagateServerErrors, notifySubscribers, ...axiosConfig } =
+      config;
     const defaultParams = {};
     const preparedConfig: AxiosRequestConfig = {
       ...axiosConfig,
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
-      headers: { ...axiosConfig.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
+      headers: {
+        ...axiosConfig.headers,
+        ...(notifySubscribers === false ? SILENT_WRITE_HEADERS : {}),
+        'X-Sent-By': [`type=adAccount; ${user.username}`],
+      },
       params: { ...defaultParams, ...axiosConfig.params },
       url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
     };
