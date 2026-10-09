@@ -494,6 +494,44 @@ stänger ärendet före den sista fasen, visas därför inte för ett missförh�
 samma sak (`assertMayCloseReportedMisconduct`): ett avslut som först måste flytta ärendet till en annan fas besvaras
 med 422. En avvikelse kan avslutas i förtid som förut.
 
+### Ingen status att välja
+
+Ärendets status flyttas av flödets egna handlingar: Återuppta ärende, överlämningarna och fasbytena. Sidopanelen
+visar därför inget val av Ärendestatus (`statusFollowsWorkflow` i varianten); Prioritet finns kvar. En variant
+utan sloten, som AOT, behåller statusvalet, och AOT-sviten håller fast det.
+
+### Nästa steg
+
+Den som öppnar ett ärende ska först få veta vad som ska göras. Överst i sidopanelens Handläggning, ovanför
+Ansvarig och knapparna det ofta pekar på, står kortet Nästa steg: en mening och en knapp till fliken där steget
+tas. Sidans egen rubrikrad lämnas orörd. Ärendet öppnar dessutom på den fliken, när det öppnas och när fasen
+byts (fasvalet av flik i `support-tabs-wrapper.tsx`), så länge sidan erbjuder fliken; annars landar det som förut
+på fasens egen flik.
+
+Regeln är `resolveAvvikelseNextStep` (`avvikelse-next-step.ts`) och läser det som redan finns: fasen, statusen,
+rollerna, de sparade dokumenten, klarmarkeringen, LEX-labeln och vilket beslut som gäller.
+
+| Läge | Nästa steg | Flik |
+| --- | --- | --- |
+| Ingen handläggare | Ta ärendet eller välj handläggare | - |
+| Tilldelat, parkerat | Återuppta ärende | - |
+| Väntar på komplettering | Svaret kommer under Meddelanden | Meddelanden |
+| Registrerat | Läs rapporten, starta handläggningen | Ärendeuppgifter |
+| Granskning | Granska rapporten, inled utredningen | Ärendeuppgifter |
+| Utredning hos LEX, utan initial bedömning (LEX-ansvarig) | Gör den initiala bedömningen | Ärendeuppgifter |
+| Utredning med misstänkt missförhållande | Tilldela LEX-ansvarig | - |
+| Rapporterat missförhållande kvar hos enheten | Fyll i Utredning enhetschef, LEX utreder sedan | Utredning |
+| Utredning inte klar | Skriv utredningen och markera den som klar (LEX-ansvarig: eller lämna till en LEX-utredare) | Utredning |
+| Utredning klar | Skicka till beslut (LEX-utredare: lämna till LEX-ansvarig) | - |
+| Beslut som gäller men inte är fattat | Ärendet beslutas under Beslut | Beslut |
+| Beslut fattat, eller inget beslut gäller | Gå vidare till uppföljning (LEX: återlämna till chef) | - / Beslut |
+| Uppföljning | Följ upp åtgärderna och avsluta | Uppföljning |
+
+Kortet talar bara till ärendets handläggare. Den som läser en annans ärende, eller bara får veta att det finns,
+får inget kort; ett ärende utan handläggare ber vem som helst om en. Slotten heter `nextStep` i
+variantkontraktet och svarar data, inte en komponent: kortet (`SupportNextStepCard`) och landningen är delade och
+visar ingenting för en variant utan slot. AOT-sviten håller fast att inget kort syns där.
+
 ### Avsluta först när åtgärderna är hanterade
 
 Ett IAF/VOF-ärende avslutas inte så länge en åtgärd väntar på något (`support-measure-closing.ts`). Det gäller ett

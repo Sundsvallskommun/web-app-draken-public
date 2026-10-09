@@ -17,7 +17,9 @@ import { useInvestigationProfileStore } from '@supportmanagement/investigation/i
 import {
   getInvestigationClosesOnlyAtWorkflowEnd,
   getInvestigationHandlerFields,
+  getInvestigationStatusFollowsWorkflow,
 } from '@supportmanagement/investigation/investigation-variant-registry';
+import { useInvestigationNextStep } from '@supportmanagement/investigation/use-investigation-next-step';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -64,6 +66,7 @@ import { SupportReopenErrandButton } from './buttons/support-reopen-errand-butto
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
 import { SupportSuspendErrandButtonComponent } from './buttons/support-suspend-errand-button.component';
+import { SupportNextStepCard } from './support-next-step-card.component';
 
 export const SidebarInfo: FC<{
   unsavedFacility: boolean;
@@ -79,6 +82,9 @@ export const SidebarInfo: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const router = useRouter();
   const handlerFields = getInvestigationHandlerFields();
+  // Where the workflow moves the status by its own actions, there is no status to choose here.
+  const statusFollowsWorkflow = getInvestigationStatusFollowsWorkflow();
+  const nextStep = useInvestigationNextStep();
   // Who may be given *this* errand, which is not the same question as who is a handler at all.
   // Until it answers - and if it cannot - the full directory stands, so the selector is never empty.
   const [assignable, setAssignable] = useState<HandlerDirectory>();
@@ -92,6 +98,15 @@ export const SidebarInfo: FC<{
       labelStructure: supportMetadata?.labels?.labelStructure,
       viewer: user,
     }) ?? false;
+  // In the last phase of a workflow the phase button closes the errand, so it is not offered twice; and an errand the
+  // investigation closes only at the end of its workflow is not closed early.
+  const offersEarlyClose =
+    !(
+      appConfig.features.useUiPhases &&
+      closesFromActivePhase(getActiveSupportPhaseId(supportErrand?.phases), getSupportPhases(supportMetadata?.phases))
+    ) && !closesOnlyAtWorkflowEnd;
+  // The divider above forwarding and the early close only separates something when either is offered.
+  const offersForwardOrClose = appConfig.features.useEscalation || offersEarlyClose;
   // Only a namespace with a phase model narrows the list - today IAF/VOF - because there each phase
   // allows its own status and Support Management refuses the others.
   const selectableStatuses = useMemo(
@@ -564,6 +579,7 @@ export const SidebarInfo: FC<{
 
       <div className="w-full mt-md flex flex-col gap-12">
         <>
+          {nextStep && <SupportNextStepCard step={nextStep} />}
           <FormControl id="administrator" className="w-full" disabled={!!supportErrand?.limitedAccess}>
             <FormLabel className="flex justify-between text-small">
               Ansvarig{' '}
@@ -597,31 +613,33 @@ export const SidebarInfo: FC<{
           </FormControl>
 
           {handlerFields?.({ locked: isSupportErrandLocked(supportErrand!) })}
-          <FormControl id="status" className="w-full" disabled={!allowed}>
-            <FormLabel className="text-small">Ärendestatus</FormLabel>
-            <Select
-              className="w-full"
-              size="sm"
-              data-cy="status-input"
-              placeholder="Välj status"
-              aria-label="Välj status"
-              {...register('status')}
-              value={status}
-              disabled={
-                !!supportErrand?.limitedAccess ||
-                supportErrand?.status === Status.SOLVED ||
-                supportErrand?.status === Status.REOPENED ||
-                (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
-              }
-            >
-              {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {selectableStatuses.map((status, index) => (
-                <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
-                  {status?.displayName}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
+          {!statusFollowsWorkflow && (
+            <FormControl id="status" className="w-full" disabled={!allowed}>
+              <FormLabel className="text-small">Ärendestatus</FormLabel>
+              <Select
+                className="w-full"
+                size="sm"
+                data-cy="status-input"
+                placeholder="Välj status"
+                aria-label="Välj status"
+                {...register('status')}
+                value={status}
+                disabled={
+                  !!supportErrand?.limitedAccess ||
+                  supportErrand?.status === Status.SOLVED ||
+                  supportErrand?.status === Status.REOPENED ||
+                  (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
+                }
+              >
+                {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
+                {selectableStatuses.map((status, index) => (
+                  <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
+                    {status?.displayName}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {supportErrand?.status !== Status.SOLVED && supportErrand?.status !== Status.REOPENED && (
             <FormControl id="priority" className="w-full" disabled={!allowed}>
@@ -751,22 +769,13 @@ export const SidebarInfo: FC<{
                       </Button>
                     )}
                     <SupportSuspendErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                    <Divider className="mt-8 mb-16" />
+                    {offersForwardOrClose && <Divider className="mt-8 mb-16" />}
                   </>
                 )}
                 <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                {/* In the last phase of a workflow the phase button closes the errand, so it is not offered twice;
-                    and an errand the investigation closes only at the end of its workflow is not closed early. */}
-                {!(
-                  appConfig.features.useUiPhases &&
-                  closesFromActivePhase(
-                    getActiveSupportPhaseId(supportErrand?.phases),
-                    getSupportPhases(supportMetadata?.phases)
-                  )
-                ) &&
-                  !closesOnlyAtWorkflowEnd && (
-                    <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                  )}
+                {offersEarlyClose && (
+                  <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                )}
               </div>
             )}
             {/* Following is about notifications, not about edit rights, so it is available on every

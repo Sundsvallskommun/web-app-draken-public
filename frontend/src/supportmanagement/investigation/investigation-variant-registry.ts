@@ -38,6 +38,14 @@ export const getInvestigationConcealedDocumentKeys = (): InvestigationVariantMod
 export const getInvestigationClosesOnlyAtWorkflowEnd = (): InvestigationVariantModule['closesOnlyAtWorkflowEnd'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.closesOnlyAtWorkflowEnd : undefined;
 
+/** Whether the running variant moves the errand's status by its own actions, leaving no status to choose. */
+export const getInvestigationStatusFollowsWorkflow = (): boolean =>
+  appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.statusFollowsWorkflow) : false;
+
+/** What the errand's handler does next, where the running variant says. */
+export const getInvestigationNextStep = (): InvestigationVariantModule['nextStep'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.nextStep : undefined;
+
 /** Who the overview names as responsible for an errand, where the running variant has a say in it. */
 export const getInvestigationOverviewAssignee = (): InvestigationVariantModule['overviewAssignee'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.overviewAssignee : undefined;

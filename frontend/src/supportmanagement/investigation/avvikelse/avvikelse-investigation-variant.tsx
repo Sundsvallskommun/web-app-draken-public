@@ -25,6 +25,7 @@ import { resolveAvvikelseClassificationPlacement } from './avvikelse-classificat
 import { isAvvikelseReportedMisconductErrand } from './avvikelse-classification-policy';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
+import { resolveAvvikelseNextStep } from './avvikelse-next-step';
 import { unitFollowUpMenuLabel } from './follow-up/unit-follow-up-scope';
 import { concealedAvvikelseDocumentKeys } from './hsl-investigation-visibility';
 
@@ -227,4 +228,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
    * close from the follow-up stays. The BFF refuses the early close as well.
    */
   closesOnlyAtWorkflowEnd: (context: InvestigationErrandContext) => isAvvikelseReportedMisconductErrand(context.errand),
+  /** The status moves when the handler resumes the errand, hands it over or changes phase; nobody sets it by hand. */
+  statusFollowsWorkflow: true,
+  /** The handler is told what to do next and taken to where it is done: the report, a document, the decision. */
+  nextStep: resolveAvvikelseNextStep,
 });

@@ -78,6 +78,10 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.limitedAccessNotice, undefined);
   // A variant that does not keep errands from closing early leaves the early close where it is.
   assert.equal(minimalVariant.closesOnlyAtWorkflowEnd, undefined);
+  // Nor does one whose workflow does not move the status take the status select away.
+  assert.equal(minimalVariant.statusFollowsWorkflow, undefined);
+  // Nor does one with no next step to tell put anything above the handling controls, or move the landing tab.
+  assert.equal(minimalVariant.nextStep, undefined);
   // A variant with no say in who is responsible leaves the overview naming the assigned handler.
   assert.equal(minimalVariant.overviewAssignee, undefined);
   // Nor does one with no handlers to record beside the assignee change the sidebar.

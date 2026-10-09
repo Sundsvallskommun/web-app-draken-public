@@ -50,7 +50,6 @@ test('säger att behörigheten är begränsad och låser ärendet när Support M
   for (const control of [
     'self-assign-errand-button',
     'admin-input',
-    'status-input',
     'priority-input',
     'save-button',
     'solved-button',
@@ -68,4 +67,7 @@ test('visar ärendet som vanligt när användaren får läsa och ändra det', as
 
   await expect(nextPhaseButton(page)).toBeEnabled();
   await expect(limitedAccessAlert(page)).toHaveCount(0);
+  // The status follows the workflow's own actions, so there is none to choose by hand.
+  await expect(page.locator('[data-cy="status-input"]')).toHaveCount(0);
+  await expect(page.locator('[data-cy="priority-input"]')).toBeEnabled();
 });

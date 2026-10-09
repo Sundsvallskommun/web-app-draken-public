@@ -82,6 +82,16 @@ test.describe('AOT:s ärendesida', () => {
     expect(trace.classificationPatches).toBe(0);
   });
 
+  test('behåller statusvalet i Handläggning', async ({ page, dismissCookieConsent }) => {
+    await installAotApiMock(page);
+    await visitErrand(page, dismissCookieConsent);
+
+    // Att avvikelsens arbetsflöde flyttar statusen själv får inte ta bort statusvalet för en annan drake.
+    await expect(page.locator('[data-cy="status-input"]')).toBeVisible();
+    // Inte heller får avvikelsens nästa steg visas här.
+    await expect(page.locator('[data-cy="support-next-step"]')).toHaveCount(0);
+  });
+
   test('behåller de vanliga flikarna vid sidan av utredningen', async ({ page, dismissCookieConsent }) => {
     await installAotApiMock(page);
     await visitErrand(page, dismissCookieConsent);

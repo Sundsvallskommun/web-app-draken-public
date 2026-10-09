@@ -16,6 +16,7 @@ import {
   getInvestigationVariant,
 } from '@supportmanagement/investigation/investigation-variant-registry';
 import { useInvestigationAccess } from '@supportmanagement/investigation/use-investigation-access';
+import { useInvestigationNextStep } from '@supportmanagement/investigation/use-investigation-next-step';
 import { MEASURE_FOLLOW_UP_PHASE_NAME, MEASURES_PHASE_NAME } from '@supportmanagement/measures/measure-phases';
 import { SupportMeasuresTab } from '@supportmanagement/measures/support-measures-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
@@ -380,8 +381,11 @@ export const SupportTabsWrapper: FC<{
   // is decided. It lands when it is opened and again when its phase changes, so a completed phase change
   // takes the handler to the new phase's tab - and at no other time, so a tab the handler picks is never
   // taken from them. It waits for the investigation profile and access to settle, since the decision tab
-  // is only offered once they have, and access is read anew after every phase change.
+  // is only offered once they have, and access is read anew after every phase change. Where the variant
+  // names the handler's next step, the errand lands where that step is taken instead - the report before
+  // the handling starts, say - as long as the page offers that tab.
   const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
+  const nextStep = useInvestigationNextStep();
   const landedPhaseTab = useRef<string | undefined>(undefined);
   const activePhaseId = getActiveSupportPhaseId(supportErrand?.phases);
   const phaseTabsSettled =
@@ -395,11 +399,15 @@ export const SupportTabsWrapper: FC<{
     const landing = `${supportErrand.id}|${activePhaseId ?? ''}`;
     if (landedPhaseTab.current === landing) return;
     landedPhaseTab.current = landing;
-    const phaseTabKey = resolvePhaseTabKey(tabs, errandPhases);
+    const nextStepTabKey = tabs.some((tab) => tab.visibleFor && tab.key === nextStep?.tab?.key)
+      ? nextStep?.tab?.key
+      : undefined;
+    const phaseTabKey = nextStepTabKey ?? resolvePhaseTabKey(tabs, errandPhases);
     if (phaseTabKey) setActiveTabKey(phaseTabKey);
   }, [
     activePhaseId,
     errandPhases,
+    nextStep?.tab?.key,
     phaseTabsSettled,
     setActiveTabKey,
     supportErrand?.id,

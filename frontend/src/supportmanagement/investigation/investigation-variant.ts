@@ -38,6 +38,20 @@ export interface InvestigationErrandContext {
   readonly viewer: InvestigationViewer;
 }
 
+/** What the next step is judged on: the errand and its viewer, where the errand is in the workflow, and who reads it. */
+export interface InvestigationNextStepContext extends InvestigationErrandContext {
+  readonly phases: SupportPhaseContext;
+  /** The viewer's account, which tells the errand's handler from somebody reading along. */
+  readonly viewerAccount: string | undefined;
+}
+
+/** What the handler does next, and the tab of the errand page it is done in. */
+export interface InvestigationNextStep {
+  readonly text: string;
+  /** The tab the work is done in: the errand opens on it, and the step offers to go there. */
+  readonly tab?: { readonly key: string; readonly label: string };
+}
+
 /** What a phase entry requirement is judged on. A requirement may hold one role back where it lets another through. */
 export type InvestigationPhaseEntryContext = InvestigationErrandContext;
 
@@ -218,6 +232,17 @@ export interface InvestigationVariantModule {
    * every errand closable as before.
    */
   readonly closesOnlyAtWorkflowEnd?: (context: InvestigationErrandContext) => boolean;
+  /**
+   * The errand's status follows the workflow's own actions - resuming it, the handovers, the phases - so it is not
+   * chosen by hand and the sidebar offers no status select. A variant without the slot keeps the select.
+   */
+  readonly statusFollowsWorkflow?: boolean;
+  /**
+   * What the errand's handler does next, and where. The sidebar says it above the handling controls, and the errand
+   * opens on its tab when it is opened or its phase changes. A variant without the slot shows nothing and keeps the
+   * phase's own tab.
+   */
+  readonly nextStep?: (context: InvestigationNextStepContext) => InvestigationNextStep | undefined;
 }
 
 /** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */
