@@ -1,5 +1,5 @@
 /** The words of a piece of editor markup: tags, non-breaking spaces and runs of whitespace taken out. */
-export const visibleMarkupText = (markup: unknown): string =>
+const visibleMarkupText = (markup: unknown): string =>
   typeof markup === 'string'
     ? markup
         .replace(/<[^>]*>/g, ' ')
