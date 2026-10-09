@@ -1,5 +1,6 @@
 'use client';
 
+import { useSupportStore } from '@stores/index';
 import type { AvvikelseClassificationLabelTree } from '@supportmanagement/investigation/avvikelse/avvikelse-classification-policy';
 import {
   applyAvvikelseLabelClassificationSelection,
@@ -13,7 +14,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { type FieldError, useFormContext, useWatch } from 'react-hook-form';
 
-import { avvikelseClassificationContent } from './avvikelse-classification-content';
+import { avvikelseClassificationContent, avvikelseReportKind } from './avvikelse-classification-content';
 
 const errorMessage = (error: FieldError | undefined): string | undefined =>
   typeof error?.message === 'string' ? error.message : undefined;
@@ -44,6 +45,9 @@ export const AvvikelseLabelCategorization: FC<{
   onClassificationChange?: () => void;
 }> = ({ supportMetadata, disabled = false, labelTree, legalBases, legalBaseRules = [], onClassificationChange }) => {
   const configuredLabelTree = requireLabelTree(labelTree);
+  // The selectors name what the errand reports: a reported misconduct is not called a deviation.
+  const supportErrand = useSupportStore((state) => state.supportErrand);
+  const content = avvikelseClassificationContent(avvikelseReportKind(supportErrand));
   const {
     control,
     register,
@@ -55,8 +59,8 @@ export const AvvikelseLabelCategorization: FC<{
   // onto. Register them during render so watch/setValue are connected before
   // the first user interaction, including in an optimized production build.
   register('labels');
-  register('category', { required: 'Välj avvikelsetyp' });
-  register('type', { required: 'Välj avvikelsetyp' });
+  register('category', { required: content.typePlaceholder });
+  register('type', { required: content.typePlaceholder });
   register('subType', {
     validate: (value, values) => !values.classificationHasSubTypes || Boolean(value) || 'Välj underkategori',
   });
@@ -143,14 +147,14 @@ export const AvvikelseLabelCategorization: FC<{
         <h3 id="avvikelse-label-categorization-heading" className="text-h4-md">
           Kategorisering
         </h3>
-        <p className="mt-xs">Välj avvikelsetyp och detaljerad typ för att klassificera ärendet.</p>
+        <p className="mt-xs">{content.typePlaceholder} och underkategori för att klassificera ärendet.</p>
       </div>
 
       <LabelClassification
         catalog={model.catalog}
         value={selection}
         disabled={disabled}
-        content={avvikelseClassificationContent}
+        content={content}
         errors={{
           type: errorMessage(errors.category ?? (!selection.typeCode ? errors.type : undefined)),
           subtype: selection.typeCode ? errorMessage(errors.subType) : undefined,

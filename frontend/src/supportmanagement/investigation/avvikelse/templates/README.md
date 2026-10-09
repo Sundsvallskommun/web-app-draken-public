@@ -53,3 +53,6 @@ VOF-namespacet. Inget har publicerats i produktionsmiljön.
 
 En ändrad text publiceras som en ny version av samma identifierare (`POST /2281/templates`); formuläret använder
 alltid den senaste versionen. Redan ifyllda utredningstexter påverkas inte.
+
+SOL/LSS-mallen frågar "Varför inträffade händelsen?" i stället för "Varför uppstod avvikelsen?", eftersom ett
+missförhållande också får den. Ändringen är gjord i filen men inte publicerad i test.

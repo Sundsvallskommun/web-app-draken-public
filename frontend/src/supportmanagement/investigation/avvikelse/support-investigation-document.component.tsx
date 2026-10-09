@@ -843,7 +843,7 @@ export function SupportInvestigationDocument({
           fieldId: classificationFieldId,
           ancestorIds: [],
           label: 'Kategorisering',
-          message: error instanceof Error ? error.message : 'Kontrollera avvikelsetyp och underkategori.',
+          message: error instanceof Error ? error.message : 'Kontrollera typ och underkategori.',
         });
       }
       setValidationErrors(errors);
@@ -1107,6 +1107,7 @@ export function SupportInvestigationDocument({
                     <FormProvider {...classificationMethods}>
                       <AvvikelseGroupedLabelCategorization
                         supportMetadata={supportMetadata}
+                        reportKind={reportedMisconduct ? 'misconduct' : 'deviation'}
                         labelTree={classificationLabelTree}
                         disabled={formReadonly || classificationReadonly || isSaving}
                         legalBases={legalBases}

@@ -1,9 +1,9 @@
 {
   "name": "utredning-sol-lss",
-  "version": "2.2",
+  "version": "2.3",
   "value": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/2.2",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/2.3",
     "title": "Utredning Lex Sarah",
     "type": "object",
     "additionalProperties": false,
@@ -79,7 +79,7 @@
       },
       "reportedEventDescription": {
         "title": "Typ av beskrivet missförhållande/risk",
-        "description": "Händelsebeskrivningen i den inrapporterade avvikelsen. Fylls i av Draken.",
+        "description": "Händelsebeskrivningen i rapporten. Fylls i av Draken.",
         "type": "string",
         "contentMediaType": "text/html",
         "readOnly": true
@@ -452,5 +452,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 2.2 of the lex Sarah investigation schema"
+  "description": "WSO2 request body for version 2.3 of the lex Sarah investigation schema"
 }

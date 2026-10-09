@@ -532,6 +532,17 @@ får inget kort; ett ärende utan handläggare ber vem som helst om en. Slotten 
 variantkontraktet och svarar data, inte en komponent: kortet (`SupportNextStepCard`) och landningen är delade och
 visar ingenting för en variant utan slot. AOT-sviten håller fast att inget kort syns där.
 
+### Ett missförhållande kallas inte avvikelse
+
+Ett ärende som rapporterats som missförhållande ska inte tala om en avvikelse. Kategoriseringens väljare namnger
+det ärendet rapporterar (`avvikelseReportKind` i `avvikelse-classification-content.ts`): Avvikelsetyp för en
+avvikelse, Typ av missförhållande för ett missförhållande. Felmeddelandena om kategoriseringen säger typ och
+underkategori, och platsfältet i rapporten säger händelsen, så att de passar båda. Schematexter kan inte följa
+ärendet, eftersom samma schema gäller båda och rapportens PDF läser dem. Därför säger enhetschefens utredning
+(1.7) det inträffade och händelsen där ett missförhållande visar dem, liksom SOL/LSS-mallens text och
+Bakgrunden i Utredning Lex Sarah (2.3). Lagrumsfrågan säger fortfarande avvikelsen, eftersom den bara visas för
+en avvikelse.
+
 ### Avsluta först när åtgärderna är hanterade
 
 Ett IAF/VOF-ärende avslutas inte så länge en åtgärd väntar på något (`support-measure-closing.ts`). Det gäller ett

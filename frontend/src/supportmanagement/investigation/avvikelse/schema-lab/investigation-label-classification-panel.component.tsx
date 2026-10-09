@@ -62,7 +62,7 @@ export function InvestigationLabelClassificationPanel({
         </div>
       )}
       {fields.length === 0 ? (
-        <p className="text-small">{avvikelseGroupedClassificationContent.noLegalBases}</p>
+        <p className="text-small">{avvikelseGroupedClassificationContent('deviation').noLegalBases}</p>
       ) : (
         <AvvikelseGroupedClassificationFields
           fields={fields}

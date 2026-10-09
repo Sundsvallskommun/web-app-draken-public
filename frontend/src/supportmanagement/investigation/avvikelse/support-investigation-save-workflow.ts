@@ -67,11 +67,11 @@ const persistedClassificationError = (
 ): string | undefined => {
   if (state === 'known-valid' || state === 'legacy-unknown') return undefined;
   if (state === 'known-disallowed-legal-base') {
-    return 'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori för varje valt lagrum.';
+    return 'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig typ och underkategori för varje valt lagrum.';
   }
   if (state === 'known-missing-required-type')
     return 'Välj underkategori för varje valt lagrum innan utredningen sparas.';
-  return 'Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.';
+  return 'Välj typ och underkategori för varje valt lagrum innan utredningen sparas.';
 };
 
 type PersistedClassificationInput = Pick<
@@ -155,7 +155,7 @@ export async function prepareInvestigationClassification({
     throw new Error('Klassificeringsprofilens labelträd saknas. Ladda om sidan innan utredningen sparas.');
   }
   if (!(await triggerValidation())) {
-    throw new Error('Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.');
+    throw new Error('Välj typ och underkategori för varje valt lagrum innan utredningen sparas.');
   }
 
   const draft = getDraft();

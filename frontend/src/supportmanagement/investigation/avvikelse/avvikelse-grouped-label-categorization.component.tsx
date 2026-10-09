@@ -5,7 +5,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { avvikelseGroupedClassificationContent } from './avvikelse-classification-content';
+import { avvikelseGroupedClassificationContent, type AvvikelseReportKind } from './avvikelse-classification-content';
 import type { AvvikelseClassificationLabelTree } from './avvikelse-classification-policy';
 import { AvvikelseGroupedClassificationFields } from './avvikelse-grouped-classification-fields.component';
 import {
@@ -19,8 +19,6 @@ import {
   type LabelClassificationSelection,
 } from './label-classification';
 import type { InvestigationClassificationDraft } from './support-investigation-save-workflow';
-
-const INCOMPLETE_CLASSIFICATION_MESSAGE = 'Välj avvikelsetyp och underkategori för varje valt lagrum.';
 
 const normalizeLegalBase = (legalBase: string): string => legalBase.trim().toUpperCase();
 
@@ -38,6 +36,8 @@ export const AvvikelseGroupedLabelCategorization: FC<{
   legalBaseRules: readonly LabelClassificationLegalBaseRule[];
   groups: readonly AvvikelseClassificationGroup[];
   errandClassificationGroupPriority: readonly string[];
+  /** What the errand reports, which the categorization names its choices after. */
+  reportKind: AvvikelseReportKind;
   onClassificationChange?: () => void;
 }> = ({
   supportMetadata,
@@ -47,8 +47,10 @@ export const AvvikelseGroupedLabelCategorization: FC<{
   legalBaseRules,
   groups,
   errandClassificationGroupPriority,
+  reportKind,
   onClassificationChange,
 }) => {
+  const content = avvikelseGroupedClassificationContent(reportKind);
   const {
     control,
     register,
@@ -85,7 +87,7 @@ export const AvvikelseGroupedLabelCategorization: FC<{
       const selections = getAvvikelseGroupedClassificationSelection(modelRef.current, labels, values);
       return getMissingAvvikelseGroupedClassificationChoices(modelRef.current, selections).length === 0
         ? true
-        : INCOMPLETE_CLASSIFICATION_MESSAGE;
+        : content.everyLegalBase;
     },
   });
   const [watchedLabels, category, type, subType] = useWatch({
@@ -152,18 +154,14 @@ export const AvvikelseGroupedLabelCategorization: FC<{
         <h3 id="avvikelse-label-categorization-heading" className="text-h4-md">
           Kategorisering
         </h3>
-        <p className="mt-xs">
-          {fields.length === 0
-            ? avvikelseGroupedClassificationContent.noLegalBases
-            : avvikelseGroupedClassificationContent.everyLegalBase}
-        </p>
+        <p className="mt-xs">{fields.length === 0 ? content.noLegalBases : content.everyLegalBase}</p>
       </div>
 
       {warnsOfMissingClassification && (
         <Alert type="warning" className="mb-lg" data-cy="avvikelse-classification-missing">
           <Alert.Icon />
           <Alert.Content>
-            <Alert.Content.Description>{avvikelseGroupedClassificationContent.missing}</Alert.Content.Description>
+            <Alert.Content.Description>{content.missing}</Alert.Content.Description>
           </Alert.Content>
         </Alert>
       )}
@@ -172,6 +170,7 @@ export const AvvikelseGroupedLabelCategorization: FC<{
         fields={fields}
         selections={selections}
         disabled={disabled}
+        reportKind={reportKind}
         onChange={changeGroup}
       />
     </section>

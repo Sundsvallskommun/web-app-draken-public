@@ -73,7 +73,7 @@ på samma ID till `PlainTextareaWidget` för motiveringen, som är ren text och 
 oförändrat och UI-schemat lästes tillbaka identiskt med artefakten.
 
 Den 7 oktober 2026 publicerades `2281_utredning-sol-lss_2.0`, Utredning Lex Sarah enligt verksamhetens
-utredningsmall (se [Utredning Lex Sarah 2.0–2.2](#utredning-lex-sarah-2022)), i testmiljön. Schema och UI
+utredningsmall (se [Utredning Lex Sarah 2.0–2.3](#utredning-lex-sarah-2023)), i testmiljön. Schema och UI
 Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 2.0. Inget har publicerats i
 produktionsmiljön. Utredningar som redan är sparade är bundna till 1.4.
 
@@ -161,7 +161,13 @@ egen rubrik (Riskbedömning HSL) får sin markering av RJSF och saknar den i ett
 Besluten (`beslut-hsl`, `beslut-sol-lss`) har ingen klarmarkering och är oförändrat strikta: ett beslut fattas eller
 fattas inte.
 
-## Utredning Lex Sarah 2.0–2.2
+## Utredning Lex Sarah 2.0–2.3
+
+Version 2.3 ändrar bara beskrivningen av händelsebeskrivningen i Bakgrund, som sa "den inrapporterade avvikelsen":
+ett missförhållande kallas inte avvikelse (se avvikelse-README). Samtidigt säger `utredning-enhetschef` 1.7 det
+inträffade och händelsen i stället för avvikelsen i orsaken, frågan om misstänkt missförhållande och riskbedömningens
+allvarlighetsgrad, och lagrumsfältets beskrivning nämner inte längre de låsta lagrummen, som numera döljs. Båda är
+förberedda lokalt men inte publicerade i test.
 
 Version 2.2 gör två ändringar till efter testrundan:
 

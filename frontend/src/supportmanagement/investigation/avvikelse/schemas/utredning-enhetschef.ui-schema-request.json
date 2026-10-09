@@ -133,5 +133,5 @@
     "completed": { "ui:widget": "RadiobuttonWidget" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.6 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.7 of Utredning enhetschef in Draken"
 }

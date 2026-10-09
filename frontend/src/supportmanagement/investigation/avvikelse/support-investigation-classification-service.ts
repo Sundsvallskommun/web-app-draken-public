@@ -60,7 +60,7 @@ export const buildSupportInvestigationClassificationRequest = (
   }
   for (const classification of update.classifications) {
     if (!classification.category || !classification.type) {
-      throw new Error(`Avvikelsetyp för ${classification.groupLabel} måste väljas innan klassificeringen kan sparas.`);
+      throw new Error(`Typ för ${classification.groupLabel} måste väljas innan klassificeringen kan sparas.`);
     }
     if (classification.requiresSubType && !classification.subType) {
       throw new Error(`Underkategori för ${classification.groupLabel} måste väljas innan klassificeringen kan sparas.`);

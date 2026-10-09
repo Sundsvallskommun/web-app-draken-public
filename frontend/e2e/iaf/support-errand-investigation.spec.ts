@@ -1579,7 +1579,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
-      'Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.'
+      'Välj typ och underkategori för varje valt lagrum innan utredningen sparas.'
     );
     expect(trace.puts).toHaveLength(0);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -1625,7 +1625,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
-      'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori för varje valt lagrum.'
+      'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig typ och underkategori för varje valt lagrum.'
     );
     expect(trace.puts).toHaveLength(0);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -2030,6 +2030,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(managerDocument.getByText(/^HSL –/u)).toHaveCount(0);
     await expect(page.locator(`#${managerKey}_riskAssessmentSolLss_probability`)).toBeVisible();
     await expect(managerDocument.locator(classificationFieldSelector)).toHaveCount(0);
+    // The investigation speaks of what happened, not of a deviation.
+    await expect(managerDocument.getByText(/Händelsens allvarlighetsgrad/u).first()).toBeVisible();
+    await expect(managerDocument.getByText(/Orsak till det inträffade/u).first()).toBeVisible();
+    await expect(managerDocument.getByText(/Avvikelsens allvarlighetsgrad|Orsak till avvikelse/u)).toHaveCount(0);
 
     await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
     const solLssDocument = page.locator(`[data-cy="investigation-document-${solLssKey}"]`);
@@ -2095,6 +2099,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(legalBases.locator('input:checked')).toHaveCount(0);
     await expect(legalBases.getByText(/^HSL –/u)).toHaveCount(0);
     await legalBases.getByText(/^LSS –/u).click();
+    // A reported misconduct is not called a deviation.
+    await expect(
+      solLssDocument.getByRole('combobox', { name: 'Typ av missförhållande (obligatoriskt)', exact: true })
+    ).toBeVisible();
     await solLssDocument
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);

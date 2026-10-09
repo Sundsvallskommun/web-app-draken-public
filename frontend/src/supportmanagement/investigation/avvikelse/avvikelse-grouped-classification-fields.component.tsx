@@ -2,7 +2,7 @@
 
 import type { FC } from 'react';
 
-import { avvikelseClassificationContent } from './avvikelse-classification-content';
+import { avvikelseClassificationContent, type AvvikelseReportKind } from './avvikelse-classification-content';
 import {
   type AvvikelseGroupedClassificationSelection,
   LabelClassification,
@@ -29,8 +29,10 @@ export const AvvikelseGroupedClassificationFields: FC<{
   fields: readonly AvvikelseGroupedClassificationField[];
   selections: AvvikelseGroupedClassificationSelection;
   disabled?: boolean;
+  /** What the errand reports, which the selectors name their choices after. The schema lab has no errand. */
+  reportKind?: AvvikelseReportKind;
   onChange: (groupKey: string, selection: LabelClassificationSelection) => void;
-}> = ({ fields, selections, disabled = false, onChange }) => (
+}> = ({ fields, selections, disabled = false, reportKind = 'deviation', onChange }) => (
   <div className="flex flex-col gap-lg">
     {fields.map(({ key, label, catalog, missing }) => (
       <fieldset key={key} className="flex min-w-0 flex-col gap-sm" data-cy={`avvikelse-label-categorization-${key}`}>
@@ -39,9 +41,9 @@ export const AvvikelseGroupedClassificationFields: FC<{
           catalog={catalog}
           value={selections[key] ?? {}}
           disabled={disabled}
-          content={avvikelseClassificationContent}
+          content={avvikelseClassificationContent(reportKind)}
           errors={{
-            type: missing === 'type' ? 'Välj avvikelsetyp' : undefined,
+            type: missing === 'type' ? avvikelseClassificationContent(reportKind).typePlaceholder : undefined,
             subtype: missing === 'subtype' ? 'Välj underkategori' : undefined,
           }}
           onChange={(selection) => onChange(key, selection)}
