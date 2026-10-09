@@ -4,7 +4,7 @@ import { appConfig } from '@config/appconfig';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
-import { findHeldPhaseEntryRequirement } from '@supportmanagement/investigation/investigation-variant';
+import { findHeldPhaseEntryRequirement, hidesPhaseEntry } from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
 import { useMeasuresCloseRefusal } from '@supportmanagement/measures/use-measures-close-refusal';
@@ -53,9 +53,31 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
 
   const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
   const activePhaseId = getActiveSupportPhaseId(supportErrand?.phases);
+  // What the investigation requires before a phase is entered is the variant's to say, not this hook's.
+  const phaseEntryRequirements = appConfig.features.useInvestigation
+    ? getInvestigationVariant()?.phaseEntryRequirements
+    : undefined;
+  const phaseEntryContext = useMemo(
+    () => ({
+      errand: supportErrand,
+      profile: investigationProfile,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+      viewer: user,
+    }),
+    [supportErrand, investigationProfile, supportMetadata?.labels?.labelStructure, user]
+  );
+  // A move that is never this viewer's to make is not offered at all.
   const availableTransitions = useMemo(
-    () => getAvailablePhaseTransitions(activePhaseId, phases),
-    [activePhaseId, phases]
+    () =>
+      getAvailablePhaseTransitions(activePhaseId, phases).filter(
+        ({ target }) =>
+          !hidesPhaseEntry(
+            phaseEntryRequirements,
+            (phaseName) => isSupportPhaseNamed(target, phaseName),
+            phaseEntryContext
+          )
+      ),
+    [activePhaseId, phases, phaseEntryRequirements, phaseEntryContext]
   );
   const selectedTransition = availableTransitions.find(({ transition }) => transition.id === selectedTransitionId);
   const locked = !supportErrand || isSupportErrandLocked(supportErrand);
@@ -65,18 +87,12 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   // In the last phase, when it allows closing, closing is the step left to take and the button takes it.
   const closesErrand = !entersWorkflow && closesFromActivePhase(activePhaseId, phases);
 
-  // What the investigation requires before a phase is entered is the variant's to say, not this hook's.
-  // While one is unmet for the chosen move, the button does what it asks instead of moving the errand -
-  // and says so, rather than promising a phase change the handler will not get.
+  // While a requirement is unmet for the chosen move, the button does what it asks instead of moving the
+  // errand - and says so, rather than promising a phase change the handler will not get.
   const heldRequirement = findHeldPhaseEntryRequirement(
-    appConfig.features.useInvestigation ? getInvestigationVariant()?.phaseEntryRequirements : undefined,
+    phaseEntryRequirements,
     (phaseName) => isSupportPhaseNamed(selectedTransition?.target, phaseName),
-    {
-      errand: supportErrand,
-      profile: investigationProfile,
-      labelStructure: supportMetadata?.labels?.labelStructure,
-      viewer: user,
-    }
+    phaseEntryContext
   );
 
   useEffect(() => {

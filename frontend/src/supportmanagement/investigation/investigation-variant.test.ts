@@ -7,6 +7,7 @@ import { test } from 'vitest';
 import { defaultBasicsPlacement } from './classification-placement';
 import {
   findHeldPhaseEntryRequirement,
+  hidesPhaseEntry,
   type InvestigationCapability,
   type InvestigationVariantModule,
   isDecisionTabVisible,
@@ -140,4 +141,18 @@ test('the first unmet requirement for the target phase holds the move, in the or
     undefined
   );
   assert.equal(findHeldPhaseEntryRequirement(undefined, toDecision, context), undefined);
+});
+
+test('an unmet hiding requirement keeps the move out of sight instead of holding it', () => {
+  const hiding = (met: boolean) => ({ phaseName: 'FOLLOW_UP', hidesTransition: true as const, isMet: () => met });
+  const context = { errand: undefined, profile: undefined, labelStructure: [], viewer: {} };
+  const toFollowUp = (phaseName: string) => phaseName === 'FOLLOW_UP';
+  const toDecision = (phaseName: string) => phaseName === 'DECISION';
+
+  assert.equal(hidesPhaseEntry([hiding(false)], toFollowUp, context), true);
+  assert.equal(hidesPhaseEntry([hiding(true)], toFollowUp, context), false);
+  assert.equal(hidesPhaseEntry([hiding(false)], toDecision, context), false);
+  assert.equal(hidesPhaseEntry(undefined, toFollowUp, context), false);
+  // Hidden is not held: there is no button left to say why.
+  assert.equal(findHeldPhaseEntryRequirement([hiding(false)], toFollowUp, context), undefined);
 });

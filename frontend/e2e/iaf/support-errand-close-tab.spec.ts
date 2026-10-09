@@ -70,3 +70,23 @@ test('closing the errand before its last phase closes the tab', async ({ page, d
   expect((await written).postDataJSON()).toMatchObject({ status: 'SOLVED' });
   await expect.poll(() => closeCalls(page), { timeout: 5000 }).toBe(1);
 });
+
+/**
+ * A reported misconduct goes to LEX, is decided and is followed up before it closes. The close offered before the
+ * last phase is not there for it - the close from the follow-up is - while a deviation keeps it as before.
+ */
+for (const [eventType, offered] of [
+  ['MISSFORHALLANDE', false],
+  ['AVVIKELSE', true],
+] as const) {
+  test(`${offered ? 'offers' : 'offers no'} early close on a ${eventType.toLowerCase()} in the investigation`, async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, { eventType, activePhaseName: 'INVESTIGATION', assignedUserId: 'iaf.test' });
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="manage-sidebar"]')).toBeVisible();
+    await expect(page.locator('[data-cy="solved-button"]')).toHaveCount(offered ? 1 : 0);
+  });
+}

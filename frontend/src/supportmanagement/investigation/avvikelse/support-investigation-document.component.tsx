@@ -5,6 +5,7 @@ import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
 import { Alert, Button, Label, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
@@ -32,6 +33,7 @@ import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-poli
 import {
   LEX_ASSESSMENT_SCHEMA_NAME,
   LEX_DECISION_SCHEMA_NAME,
+  LEX_INVESTIGATION_SCHEMA_NAME,
   UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
 } from './avvikelse-schema-names';
 import {
@@ -132,6 +134,8 @@ interface SupportInvestigationDocumentProps {
   definition: InvestigationDocumentDefinition;
   readable: boolean;
   readonly: boolean;
+  /** The viewer may hand the errand back from this document: they write in it, and the errand is open to a handover. */
+  canHandBack: boolean;
   classificationReadonly: boolean;
   refreshAccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
@@ -177,6 +181,7 @@ export function SupportInvestigationDocument({
   definition,
   readable,
   readonly,
+  canHandBack,
   classificationReadonly,
   refreshAccess,
   onDirtyChange,
@@ -185,6 +190,7 @@ export function SupportInvestigationDocument({
 }: Readonly<SupportInvestigationDocumentProps>) {
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
+  const setActiveTabKey = useSupportStore((state) => state.setActiveTabKey);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
@@ -409,10 +415,11 @@ export function SupportInvestigationDocument({
   // The errand goes back to the manager once LEX has decided on it, so the handover sits at the foot of
   // the lex Sarah decision - and at the foot of LEX-ansvarig's initial assessment, once a saved assessment
   // declines to lex-investigate it. Only while the errand is actually with LEX, which the access label says.
-  // The backend authorizes each step on write access to the same document.
+  // The backend authorizes each step on write access to the same document. An errand handed to LEX waits as
+  // ASSIGNED, and handing it back needs no resume first.
   const handsBackToManager =
     (definition.schemaName === LEX_DECISION_SCHEMA_NAME || definition.schemaName === LEX_ASSESSMENT_SCHEMA_NAME) &&
-    !readonly &&
+    canHandBack &&
     Boolean(errandId) &&
     isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
   const returnStep =
@@ -1084,6 +1091,11 @@ export function SupportInvestigationDocument({
                     onGenerate={generateReport}
                     onPreview={() => void previewReport()}
                     onUnlock={() => void unlockDocument()}
+                    onGoToMeasures={
+                      appConfig.features.useMeasures && definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME
+                        ? () => setActiveTabKey('measures')
+                        : undefined
+                    }
                   />
                 ),
               }

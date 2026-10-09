@@ -8,6 +8,7 @@ import {
   configuredInvestigationDocuments,
   isInvestigationDocumentEditable,
   resolveInvestigationTabState,
+  selectedInvestigationDocumentKey,
   visibleInvestigationDocuments,
 } from './investigation-tab-state';
 
@@ -87,6 +88,30 @@ test('readers see the document but only editors can change it', () => {
     assert.equal(isInvestigationDocumentEditable(document(), state), grant === 'edit');
   }
   assert.equal(isInvestigationDocumentEditable(document(), access({})), false);
+});
+
+test('the tab opens on the first document the user can write in, not the first they can read', () => {
+  const managerInvestigation = document();
+  const lexInvestigation = { ...document(), key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss' };
+  const documents = [managerInvestigation, lexInvestigation];
+  const lexInvestigator = access({ 'utredning-enhetschef': 'read', 'utredning-sol-lss': 'edit' });
+
+  assert.equal(selectedInvestigationDocumentKey(documents, lexInvestigator, undefined), 'utredning-sol-lss');
+  // A tab the user picks stays picked.
+  assert.equal(
+    selectedInvestigationDocumentKey(documents, lexInvestigator, 'utredning-enhetschef'),
+    'utredning-enhetschef'
+  );
+  // Someone who can only read falls back to the first document.
+  assert.equal(
+    selectedInvestigationDocumentKey(
+      documents,
+      access({ 'utredning-enhetschef': 'read', 'utredning-sol-lss': 'read' }),
+      undefined
+    ),
+    'utredning-enhetschef'
+  );
+  assert.equal(selectedInvestigationDocumentKey([], lexInvestigator, undefined), undefined);
 });
 
 test('only granted documents belonging to this tab and errand are offered', () => {

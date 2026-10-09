@@ -1,5 +1,6 @@
 'use client';
 
+import { Alert } from '@sk-web-gui/react';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -101,6 +102,9 @@ export const AvvikelseGroupedLabelCategorization: FC<{
     [model, selections]
   );
   const showErrors = Boolean(errors.labels);
+  // Said while the investigation is being written, not only when a save marking it finished is refused. Once a
+  // save has asked, the selectors name what is missing themselves.
+  const warnsOfMissingClassification = !disabled && !showErrors && model.groups.length > 0 && missingChoices.length > 0;
 
   const publish = (update: AvvikelseGroupedClassificationUpdate) => {
     const errandClassification = update.errandClassification;
@@ -154,6 +158,15 @@ export const AvvikelseGroupedLabelCategorization: FC<{
             : avvikelseGroupedClassificationContent.everyLegalBase}
         </p>
       </div>
+
+      {warnsOfMissingClassification && (
+        <Alert type="warning" className="mb-lg" data-cy="avvikelse-classification-missing">
+          <Alert.Icon />
+          <Alert.Content>
+            <Alert.Content.Description>{avvikelseGroupedClassificationContent.missing}</Alert.Content.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <AvvikelseGroupedClassificationFields
         fields={fields}

@@ -477,11 +477,19 @@ svaret; saknas historiken, eller är kontot ingen LEX-ansvarig, står den först
 ### LEX tar inte ärendet till uppföljning
 
 Uppföljningen av åtgärderna görs av enheten. En handläggare som bara har LEX-roller (LEX-ansvarig och/eller
-LEX-utredare) och försöker byta till Uppföljning får fasknappen Uppföljningen görs av enheten, och en dialog som
-säger åt hen att återlämna ärendet med Återlämna till chef i beslutet (`LexFollowUpRequirement`,
-`leavesFollowUpToTheUnit`). Den som har en roll till utöver LEX hålls inte tillbaka, eftersom hen kan agera i den.
+LEX-utredare) erbjuds inte Inled uppföljning alls: fasvillkoret döljer övergången (`hidesTransition`,
+`leavesFollowUpToTheUnit`), och LEX återlämnar i stället ärendet med Återlämna till chef i beslutet. Den som har
+en roll till utöver LEX ser knappen, eftersom hen kan agera i den.
 BFF:en håller samma regel (`assertMayStartFollowUp`), både i fasbytet och när ett ärende avslutas från en tidigare
 fas, eftersom avslutet då går genom Uppföljning. Där svarar den 422.
+
+### Ett missförhållande avslutas inte i förtid
+
+Ett missförhållande går till LEX, beslutas och följs upp innan det avslutas. Knappen Avsluta ärendet, som annars
+stänger ärendet före den sista fasen, visas därför inte för ett missförhållande, oavsett roll
+(`closesOnlyAtWorkflowEnd` i varianten). Avslutet från uppföljningen, med fasknappen, finns kvar. BFF:en vägrar
+samma sak (`assertMayCloseReportedMisconduct`): ett avslut som först måste flytta ärendet till en annan fas besvaras
+med 422. En avvikelse kan avslutas i förtid som förut.
 
 ### Avsluta först när åtgärderna är hanterade
 

@@ -8,6 +8,7 @@ import type { InvestigationProfile } from '../investigation-profile';
 import type {
   InvestigationCategorizationControlProps,
   InvestigationDetailsHeaderProps,
+  InvestigationErrandContext,
   InvestigationHandlerFieldsProps,
   InvestigationPhaseEntryContext,
   InvestigationPhaseEntryRequirementProps,
@@ -21,6 +22,7 @@ import {
   requiresLexAssignment,
 } from './assignment/avvikelse-assignment-policy';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
+import { isAvvikelseReportedMisconductErrand } from './avvikelse-classification-policy';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 import { unitFollowUpMenuLabel } from './follow-up/unit-follow-up-scope';
@@ -102,10 +104,6 @@ const LexManagerHandoverRequirement = dynamic(
     import('./assignment/lex-manager-handover-requirement.component').then(
       (module) => module.LexManagerHandoverRequirement
     ),
-  { loading: () => null }
-);
-const LexFollowUpRequirement = dynamic(
-  () => import('./assignment/lex-follow-up-requirement.component').then((module) => module.LexFollowUpRequirement),
   { loading: () => null }
 );
 
@@ -194,13 +192,13 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     },
     /**
      * The unit follows up the measures, not LEX: a LEX handler hands the decided errand back to its manager, who
-     * starts the follow-up. The BFF holds the same rule, for the close that passes through the follow-up too.
+     * starts the follow-up, so the move is not offered to them at all. The BFF holds the same rule, for the close
+     * that passes through the follow-up too.
      */
     {
       phaseName: MEASURE_FOLLOW_UP_PHASE_NAME,
-      actionLabel: 'Uppföljningen görs av enheten',
+      hidesTransition: true as const,
       isMet: (context: InvestigationPhaseEntryContext) => !leavesFollowUpToTheUnit(context.viewer),
-      render: (props: InvestigationPhaseEntryRequirementProps) => <LexFollowUpRequirement {...props} />,
     },
   ],
   /**
@@ -224,4 +222,9 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   concealedDocumentKeys: concealedAvvikelseDocumentKeys,
   /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */
   overviewAssignee: lexOverviewAssignee,
+  /**
+   * A reported misconduct goes to LEX, is decided and is followed up before it closes. Nobody closes it early; the
+   * close from the follow-up stays. The BFF refuses the early close as well.
+   */
+  closesOnlyAtWorkflowEnd: (context: InvestigationErrandContext) => isAvvikelseReportedMisconductErrand(context.errand),
 });

@@ -21,6 +21,11 @@ interface InvestigationReportControlsProps {
   /** Renders the form as it currently is, without saving it. */
   readonly onPreview: () => void;
   readonly onUnlock: () => void;
+  /**
+   * Set for an investigation whose investigator also proposes measures. Those are registered in the Åtgärder tab,
+   * away from the document, so finishing the investigation reminds of them and leads there.
+   */
+  readonly onGoToMeasures?: () => void;
 }
 
 /**
@@ -40,6 +45,7 @@ export function InvestigationReportControls({
   onGenerate,
   onPreview,
   onUnlock,
+  onGoToMeasures,
 }: Readonly<InvestigationReportControlsProps>) {
   const pending = reports.some(isPendingInvestigationReport);
   const canGenerate = completedInDraft && canEdit && !busy;
@@ -55,6 +61,14 @@ export function InvestigationReportControls({
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
+      )}
+      {completedInDraft && onGoToMeasures && (
+        <div className="flex flex-wrap items-center gap-12" data-cy="investigation-measures-reminder">
+          <span>Har du förslag på åtgärder? Registrera dem i fliken Åtgärder innan du tilldelar ärendet.</span>
+          <Button type="button" variant="tertiary" size="sm" onClick={onGoToMeasures}>
+            Gå till Åtgärder
+          </Button>
+        </div>
       )}
       <p className="text-small">
         När du har färdigställt utredningen kan du skapa en rapport. Rapporten kommer att läggas till som en bilaga på

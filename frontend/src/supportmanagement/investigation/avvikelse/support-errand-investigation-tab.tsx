@@ -2,7 +2,10 @@
 
 import { Alert, Button, Spinner, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportErrandLocked,
+  isSupportErrandOpenToHandover,
+} from '@supportmanagement/services/support-errand-service';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { InvestigationDocumentPlacement } from '../investigation-profile';
@@ -15,6 +18,7 @@ import {
   type InvestigationTabState,
   isInvestigationDocumentEditable,
   resolveInvestigationTabState,
+  selectedInvestigationDocumentKey,
   visibleInvestigationDocuments,
 } from './investigation-tab-state';
 import { recordSavedInvestigationDocument } from './record-saved-investigation-document';
@@ -110,6 +114,7 @@ function InvestigationDocuments({
   const profileStatus = useInvestigationProfileStore((state) => state.status);
   // Errand-wide readonly. Each document adds its own read-only grant on top of it below.
   const errandReadonly = !supportErrand || isSupportErrandLocked(supportErrand);
+  const errandOpenToHandover = supportErrand ? isSupportErrandOpenToHandover(supportErrand) : false;
   const copy = tabCopy[placement];
   const applicability = getInvestigationDocumentApplicability(supportErrand);
   const documentContext = useMemo<InvestigationDocumentContext>(
@@ -127,8 +132,7 @@ function InvestigationDocuments({
     () => visibleInvestigationDocuments(profile, documentContext),
     [documentContext, profile]
   );
-  const selectedKey =
-    visibleDocuments.find((document) => document.key === activeDocumentKey)?.key ?? visibleDocuments[0]?.key;
+  const selectedKey = selectedInvestigationDocumentKey(visibleDocuments, access, activeDocumentKey);
   const activeTab = Math.max(
     0,
     documents.findIndex((document) => document.key === selectedKey)
@@ -258,6 +262,7 @@ function InvestigationDocuments({
                     tabState === 'ready' && visibleDocuments.some((document) => document.key === definition.key)
                   }
                   readonly={errandReadonly || !isInvestigationDocumentEditable(definition, access)}
+                  canHandBack={errandOpenToHandover && isInvestigationDocumentEditable(definition, access)}
                   classificationReadonly={!canEditSupportManagement}
                   refreshAccess={refreshAccess}
                   onDirtyChange={dirtyCallbacks[definition.key]}

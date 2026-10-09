@@ -5,11 +5,13 @@ import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationState } from '@/dtos/support-investigation-profile.dto';
 import {
   assertInvestigationCompletedBeforeDecision,
+  assertMayCloseReportedMisconduct,
   assertMaySendToDecision,
   assertMayStartFollowUp,
   investigationNotCompletedMessage,
   LEX_HANDLER_CANNOT_START_FOLLOW_UP,
   LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION,
+  REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END,
 } from '@/services/support-investigation-decision-readiness';
 
 import { mockUser } from './helpers/http';
@@ -185,5 +187,31 @@ describe('who may start the follow-up', () => {
     expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'DECISION')).not.toThrow();
     expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'FOLLOW_UP', { rolesConfigured: false })).not.toThrow();
     expect(startFollowUp(['MOCK_LEX_MANAGERS'], 'FOLLOW_UP', { withPolicy: false })).not.toThrow();
+  });
+});
+
+describe('closing a reported misconduct', () => {
+  const close =
+    (errand: Errand, closesBeforeWorkflowEnds: boolean, { withPolicy = true } = {}) =>
+    () =>
+      assertMayCloseReportedMisconduct({
+        policyService: {
+          iafVofClassificationPolicy: withPolicy ? resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE) : undefined,
+        },
+        errand,
+        closesBeforeWorkflowEnds,
+      });
+
+  it('refuses closing it before the workflow has run its course, whoever asks', () => {
+    expect(close(reportedMisconduct([]), true)).toThrow(REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END);
+  });
+
+  it('closes it at the end of the workflow, and closes a deviation early as before', () => {
+    expect(close(reportedMisconduct([]), false)).not.toThrow();
+    expect(close(ordinaryDeviation([]), true)).not.toThrow();
+  });
+
+  it('holds nothing back outside IAF/VOF', () => {
+    expect(close(reportedMisconduct([]), true, { withPolicy: false })).not.toThrow();
   });
 });

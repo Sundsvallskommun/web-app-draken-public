@@ -892,6 +892,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toContainText(
       'skapa en rapport och tilldela ärendet till LEX-ansvarig'
     );
+    // Only the lex Sarah investigator proposes measures, so only their investigation reminds of them.
+    await expect(controls.locator('[data-cy="investigation-measures-reminder"]')).toHaveCount(0);
     // One click saves the form as completed and creates the report.
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
     await controls.locator('[data-cy="investigation-report-generate"]').click();
@@ -1131,6 +1133,70 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await confirmDialog.getByRole('button', { name: 'Ja, ersätt', exact: true }).click();
     await expect(text).not.toContainText('Egen text');
     await expect(text).toContainText('Mall SOL/LSS/HSL');
+  });
+
+  // The investigator's measure proposals are registered in the Åtgärder tab, away from the investigation, and are
+  // easily forgotten. Finishing the investigation reminds of them and leads there.
+  test('påminner utredaren om åtgärdsförslagen när Utredning Lex Sarah markeras som klar', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: {},
+      eventType: 'MISSFORHALLANDE',
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
+        { name: 'useMeasures', enabled: true },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await page
+      .locator('[data-cy="support-investigation-tab"]')
+      .getByRole('tab', { name: 'Utredning Lex Sarah', exact: true })
+      .click();
+    const document = page.locator('[data-cy="investigation-document-utredning-sol-lss"]');
+    const reminder = document.locator('[data-cy="investigation-measures-reminder"]');
+    await expect(document).toBeVisible();
+    await expect(reminder).toHaveCount(0);
+
+    await document.locator('#utredning-sol-lss_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(reminder).toContainText('Registrera dem i fliken Åtgärder');
+    await reminder.getByRole('button', { name: 'Gå till Åtgärder', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  // The classification is demanded when the investigation is marked finished; the warning says so while it is
+  // still being written, instead of only when that save is refused.
+  test('varnar så länge kategoriseringen saknas för de valda lagrummen', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, { documents: {}, classification: { category: 'NONE', type: 'NONE' }, labels: [] });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const classification = managerDocument.locator(classificationFieldSelector);
+    const warning = managerDocument.locator('[data-cy="avvikelse-classification-missing"]');
+    // Without a lagrum there is nothing to categorize yet, and so nothing missing.
+    await expect(classification).toBeVisible();
+    await expect(warning).toHaveCount(0);
+
+    await managerDocument.locator(`#${managerKey}_legalBases-group`).getByText(/^SoL –/u).click();
+    await expect(warning).toContainText('Kategoriseringen är inte ifylld');
+
+    await classification
+      .locator(socialClassificationSelector)
+      .locator('[data-cy="label-classification-type"]')
+      .selectOption(iafLabelFixture.classification.legalCertainty.resourcePath);
+    await classification
+      .locator(socialClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]')
+      .selectOption(iafLabelFixture.classification.deficientHandling.resourcePath);
+    await expect(warning).toHaveCount(0);
   });
 
   // A misconduct's lagrum is SoL and LSS from the start, so its only template is chosen before the
@@ -2229,6 +2295,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
       await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeEnabled();
       await expect(page.getByRole('heading', { name: 'Registrera nytt ärende' })).toHaveCount(0);
+      // An errand the investigation will classify has no type yet, and says nothing about one missing.
+      await expect(page.getByText('(Ärendetyp saknas)')).toHaveCount(0);
       await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toBeEnabled();
 
       // Editing anything else must be savable: the errand PATCH leaves classification alone in

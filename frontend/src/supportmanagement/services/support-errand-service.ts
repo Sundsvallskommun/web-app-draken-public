@@ -332,7 +332,7 @@ export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
     errand.labels?.find((label) => label.classification === classification)
   ).filter((label): label is Label => !!label);
 
-export const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
+const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
 
 /** Heading under label categorization: the deepest label (type, else category, else department). */
 export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
@@ -507,6 +507,14 @@ export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand
     errand?.status === Status.REOPENED
   );
 };
+
+/**
+ * Whether the errand may be handed over as it stands. One that is ASSIGNED only waits to be resumed, and a handover
+ * leaves it ASSIGNED anyway, so handing it on needs no resume first. A closed, parked or reopened errand, or one
+ * read only in part, may not be.
+ */
+export const isSupportErrandOpenToHandover = (errand: SupportErrand): boolean =>
+  errand.limitedAccess !== true && (errand.status === Status.ASSIGNED || !isSupportErrandLocked(errand));
 
 export const useSupportErrands = (
   municipalityId: string,

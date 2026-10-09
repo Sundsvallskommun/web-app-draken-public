@@ -36,7 +36,11 @@ const assessment = (value: Record<string, unknown>) => ({
 
 async function installAssessedErrand(
   page: Page,
-  { withLex = true, saved }: { withLex?: boolean; saved?: Record<string, unknown> } = {}
+  {
+    withLex = true,
+    saved,
+    errandStatus,
+  }: { withLex?: boolean; saved?: Record<string, unknown>; errandStatus?: string } = {}
 ) {
   const profile = defaultInvestigationProfile();
   profile.documents = [
@@ -52,6 +56,7 @@ async function installAssessedErrand(
   return installIafApiMock(page, {
     ...withPlaceStructure({ withLex }),
     assignedUserId: 'iaf.test',
+    ...(errandStatus ? { errandStatus } : {}),
     investigationProfile: profile,
     roleKeys: ['lex-ansvarig'],
     documents: saved ? { [lexAssessmentKey]: assessment(saved) } : {},
@@ -121,6 +126,27 @@ test('lämnar tillbaka ärendet till en chef för platsen när bedömningen avb�
   await page.locator('[data-cy="decline-lex-button"]').click();
   const dialog = page.locator('[data-cy="handler-assignment-modal"]');
   await expect(dialog).toContainText('Motiveringen sparas som en tjänsteanteckning på ärendet.');
+  await dialog.getByRole('button', { name: 'Lämna tillbaka ärendet', exact: true }).click();
+
+  await expect
+    .poll(() => trace.handovers)
+    .toEqual([expect.objectContaining({ step: 'decline-lex', assignedUserId: 'nora.chef' })]);
+});
+
+// A handover leaves the errand ASSIGNED with LEX. Handing it straight back needs no resume first.
+test('lämnar tillbaka ett tilldelat ärende utan att det först återupptas', async ({ page, dismissCookieConsent }) => {
+  const trace = await installAssessedErrand(page, {
+    errandStatus: 'ASSIGNED',
+    saved: {
+      ivoNotification: 'no',
+      lexInvestigationDecision: 'not_investigate',
+      notInvestigatedMotivation: motivation,
+    },
+  });
+  await openDetails(page, dismissCookieConsent);
+
+  await page.locator('[data-cy="decline-lex-button"]').click();
+  const dialog = page.locator('[data-cy="handler-assignment-modal"]');
   await dialog.getByRole('button', { name: 'Lämna tillbaka ärendet', exact: true }).click();
 
   await expect

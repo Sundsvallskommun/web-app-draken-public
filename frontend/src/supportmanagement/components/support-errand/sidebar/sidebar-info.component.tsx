@@ -13,7 +13,11 @@ import {
   applyInvestigationHandover,
   type InvestigationHandoverStep,
 } from '@supportmanagement/investigation/avvikelse/assignment/avvikelse-assignment-service';
-import { getInvestigationHandlerFields } from '@supportmanagement/investigation/investigation-variant-registry';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import {
+  getInvestigationClosesOnlyAtWorkflowEnd,
+  getInvestigationHandlerFields,
+} from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -67,6 +71,7 @@ export const SidebarInfo: FC<{
   hasUnsavedChanges: boolean;
 }> = (props) => {
   const user = useUserStore((s) => s.user);
+  const investigationProfile = useInvestigationProfileStore((s) => s.profile);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
@@ -80,6 +85,13 @@ export const SidebarInfo: FC<{
   const assignableHandlers = assignable?.administrators ?? administrators;
   const assignableRoles = assignable?.roles ?? handlerRoles;
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const closesOnlyAtWorkflowEnd =
+    getInvestigationClosesOnlyAtWorkflowEnd()?.({
+      errand: supportErrand,
+      profile: investigationProfile,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+      viewer: user,
+    }) ?? false;
   // Only a namespace with a phase model narrows the list - today IAF/VOF - because there each phase
   // allows its own status and Support Management refuses the others.
   const selectableStatuses = useMemo(
@@ -743,14 +755,18 @@ export const SidebarInfo: FC<{
                   </>
                 )}
                 <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                {/* In the last phase of a workflow the phase button closes the errand, so it is not offered twice. */}
+                {/* In the last phase of a workflow the phase button closes the errand, so it is not offered twice;
+                    and an errand the investigation closes only at the end of its workflow is not closed early. */}
                 {!(
                   appConfig.features.useUiPhases &&
                   closesFromActivePhase(
                     getActiveSupportPhaseId(supportErrand?.phases),
                     getSupportPhases(supportMetadata?.phases)
                   )
-                ) && <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />}
+                ) &&
+                  !closesOnlyAtWorkflowEnd && (
+                    <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                  )}
               </div>
             )}
             {/* Following is about notifications, not about edit rights, so it is available on every

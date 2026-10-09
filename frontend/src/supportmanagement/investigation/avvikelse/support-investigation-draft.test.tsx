@@ -39,7 +39,10 @@ vi.mock('@stores/index', async () => ({
   useMetadataStore: (selector: (state: { supportMetadata: undefined }) => unknown) =>
     selector({ supportMetadata: undefined }),
 }));
-vi.mock('@supportmanagement/services/support-errand-service', () => ({ isSupportErrandLocked: () => false }));
+vi.mock('@supportmanagement/services/support-errand-service', () => ({
+  isSupportErrandLocked: () => false,
+  isSupportErrandOpenToHandover: () => true,
+}));
 vi.mock('react-hook-form', async (original) => ({
   ...(await original<typeof import('react-hook-form')>()),
   useFormContext: () => ({ register: vi.fn(), resetField: vi.fn(), getValues: () => 1 }),

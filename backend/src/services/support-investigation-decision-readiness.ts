@@ -4,6 +4,7 @@ import {
   IAF_VOF_FOLLOW_UP_PHASE_NAME,
   resolveIafVofDecisionInvestigationDocumentKey,
 } from '@/config/iaf-vof-decision-investigation';
+import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { LEX_HANDLER_ROLE_KEYS, LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from '@/config/investigation-handover-steps';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -22,6 +23,8 @@ export const LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION =
 
 export const LEX_HANDLER_CANNOT_START_FOLLOW_UP =
   'Uppföljningen görs av enheten. Återlämna ärendet till chefen, som tar det vidare till uppföljning.';
+
+export const REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END = 'Ett missförhållande avslutas först när processen är klar, från uppföljningen.';
 
 interface AssertMayEnterPhaseRequest {
   readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy'>;
@@ -73,6 +76,25 @@ export const assertMayStartFollowUp = ({ targetPhaseName, ...request }: AssertMa
   const held = heldIafVofHandlerRoleKeys(request);
   if (held?.length && held.every(roleKey => LEX_HANDLER_ROLE_KEYS.includes(roleKey))) {
     throw new HttpException(422, LEX_HANDLER_CANNOT_START_FOLLOW_UP);
+  }
+};
+
+interface AssertMayCloseRequest {
+  readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy'>;
+  readonly errand: Pick<Errand, 'parameters' | 'labels'>;
+  /** The close has to move the errand through phases first: it is not yet in the phase its workflow closes from. */
+  readonly closesBeforeWorkflowEnds: boolean;
+}
+
+/**
+ * Refuses closing an IAF/VOF reported misconduct before its workflow has run its course. A misconduct goes to LEX,
+ * is decided and is followed up; a close that skips that is refused whoever asks. The close at the end of the
+ * workflow, from the follow-up, is untouched.
+ */
+export const assertMayCloseReportedMisconduct = ({ policyService, errand, closesBeforeWorkflowEnds }: AssertMayCloseRequest): void => {
+  if (!closesBeforeWorkflowEnds || !policyService.iafVofClassificationPolicy) return;
+  if (resolveIafVofInvestigationDocumentApplicability(errand) === 'reported-misconduct') {
+    throw new HttpException(422, REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END);
   }
 };
 

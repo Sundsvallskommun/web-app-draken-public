@@ -8,7 +8,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   ApiSupportErrand,
   forwardSupportErrand,
+  isSupportErrandOpenToHandover,
   mapApiSupportErrandToSupportErrand,
+  Status,
   SupportErrand,
   supportErrandIsEmpty,
   updateSupportErrand,
@@ -204,5 +206,22 @@ describe('without label categorization', () => {
 
     expect(patchedBody().classification).toEqual({ category: 'BOU', type: 'OTHER' });
     expect(patchedBody().labels).toEqual([]);
+  });
+});
+
+describe('isSupportErrandOpenToHandover', () => {
+  const errandIn = (status: Status, limitedAccess = false) =>
+    ({ ...supportErrand, status, limitedAccess } as SupportErrand);
+
+  test('hands on an errand that only waits to be resumed, as well as one being handled', () => {
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ASSIGNED))).toBe(true);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ONGOING))).toBe(true);
+  });
+
+  test('never hands on a closed, parked or reopened errand, or one read only in part', () => {
+    expect(isSupportErrandOpenToHandover(errandIn(Status.SOLVED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.SUSPENDED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.REOPENED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ASSIGNED, true))).toBe(false);
   });
 });

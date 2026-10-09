@@ -47,21 +47,38 @@ export interface InvestigationPhaseEntryRequirementProps {
 }
 
 /**
- * Something the variant requires before the errand may enter a phase. While it is unmet, the phase
- * change is held and `render` is shown instead, so the handler can deal with it or leave the errand
- * where it is. Shared code only asks; what the requirement is stays the variant's.
+ * Something the variant requires before the errand may enter a phase. Shared code only asks; what the
+ * requirement is stays the variant's.
  */
-interface InvestigationPhaseEntryRequirement {
+interface PhaseEntryRequirementBase {
   /** The workflow phase whose entry the requirement guards. */
   readonly phaseName: string;
+  readonly isMet: (context: InvestigationPhaseEntryContext) => boolean;
+}
+
+/**
+ * While unmet, the phase change is held and `render` is shown instead, so the handler can deal with it
+ * or leave the errand where it is.
+ */
+interface HoldingPhaseEntryRequirement extends PhaseEntryRequirementBase {
+  readonly hidesTransition?: false;
   /**
    * What the phase button says while the requirement is unmet. The button then does that, not the phase
    * change, so it must not promise a phase change the handler will not get.
    */
   readonly actionLabel: string;
-  readonly isMet: (context: InvestigationPhaseEntryContext) => boolean;
   readonly render: (props: InvestigationPhaseEntryRequirementProps) => ReactNode;
 }
+
+/**
+ * While unmet, the move is not offered at all: for a move that is never this viewer's to make, where a
+ * button could only ever explain why not.
+ */
+interface HidingPhaseEntryRequirement extends PhaseEntryRequirementBase {
+  readonly hidesTransition: true;
+}
+
+type InvestigationPhaseEntryRequirement = HoldingPhaseEntryRequirement | HidingPhaseEntryRequirement;
 
 export interface InvestigationHandlerFieldsProps {
   /**
@@ -167,7 +184,8 @@ export interface InvestigationVariantModule {
   readonly decisionTab?: InvestigationDecisionTabSlot;
   /**
    * What has to be done before the errand may enter a phase, in the order it has to be done: the first
-   * one unmet holds the phase change. A variant with none omits this.
+   * one unmet holds the phase change, and one that hides the move keeps it from being offered at all. A
+   * variant with none omits this.
    */
   readonly phaseEntryRequirements?: readonly InvestigationPhaseEntryRequirement[];
   /** The follow-up across errands, for a variant that offers one. */
@@ -194,6 +212,12 @@ export interface InvestigationVariantModule {
    * to say. A variant without the slot shows every document the access does.
    */
   readonly concealedDocumentKeys?: (context: InvestigationErrandContext) => readonly string[];
+  /**
+   * Whether the errand closes only at the end of its workflow, from the phase that closes it. The close offered
+   * before that, which would skip the phases still ahead, is then not offered. A variant without the slot leaves
+   * every errand closable as before.
+   */
+  readonly closesOnlyAtWorkflowEnd?: (context: InvestigationErrandContext) => boolean;
 }
 
 /** The requirement holding a move into the phase `isTargetPhase` names, if any: the first unmet one. */
@@ -201,8 +225,22 @@ export const findHeldPhaseEntryRequirement = (
   requirements: readonly InvestigationPhaseEntryRequirement[] | undefined,
   isTargetPhase: (phaseName: string) => boolean,
   context: InvestigationPhaseEntryContext
-): InvestigationPhaseEntryRequirement | undefined =>
-  requirements?.find((requirement) => isTargetPhase(requirement.phaseName) && !requirement.isMet(context));
+): HoldingPhaseEntryRequirement | undefined =>
+  requirements?.find(
+    (requirement): requirement is HoldingPhaseEntryRequirement =>
+      !requirement.hidesTransition && isTargetPhase(requirement.phaseName) && !requirement.isMet(context)
+  );
+
+/** Whether an unmet requirement keeps the move into the phase `isTargetPhase` names out of this viewer's sight. */
+export const hidesPhaseEntry = (
+  requirements: readonly InvestigationPhaseEntryRequirement[] | undefined,
+  isTargetPhase: (phaseName: string) => boolean,
+  context: InvestigationPhaseEntryContext
+): boolean =>
+  requirements?.some(
+    (requirement) =>
+      requirement.hidesTransition === true && isTargetPhase(requirement.phaseName) && !requirement.isMet(context)
+  ) ?? false;
 
 /**
  * Implementations are mutually exclusive, but two flags being on is representable and is a

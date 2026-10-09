@@ -69,13 +69,17 @@ async function installInvestigatedErrand(
 const nextPhaseButton = (page: Page) => page.locator('[data-cy="next-phase-button"]');
 const requirementDialog = (page: Page) => page.locator('[data-cy="investigation-completion-requirement"]');
 
-async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {
+async function openErrand(page: Page, dismissCookieConsent: () => Promise<void>) {
   const errandResponse = page.waitForResponse(
     (response) => response.url().includes(`/supporterrands/errandnumber/${errandNumber}`) && response.status() === 200
   );
   await page.goto(`arende/${errandNumber}`);
   await errandResponse;
   await dismissCookieConsent();
+}
+
+async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {
+  await openErrand(page, dismissCookieConsent);
   await expect(nextPhaseButton(page)).toBeEnabled();
 }
 
@@ -195,24 +199,18 @@ test('a LEX manager sends the finished lex Sarah investigation to the decision',
 });
 
 /** The follow-up is the unit's: LEX hands the decided errand back to its manager, who starts it. */
-test('a LEX manager is held back from starting the follow-up and told to hand the errand back', async ({
-  page,
-  dismissCookieConsent,
-}) => {
+test('a LEX manager is not offered the follow-up', async ({ page, dismissCookieConsent }) => {
   const trace = await installInvestigatedErrand(page, {
     eventType: 'MISSFORHALLANDE',
     activePhaseName: 'DECISION',
     roleKeys: ['lex-ansvarig'],
   });
-  await visitErrand(page, dismissCookieConsent);
+  await openErrand(page, dismissCookieConsent);
 
-  await expect(nextPhaseButton(page)).toHaveText('Uppföljningen görs av enheten');
-  await nextPhaseButton(page).click();
-  const dialog = page.locator('[data-cy="lex-follow-up-requirement"]');
-  await expect(dialog).toContainText('Återlämna det till chefen med Återlämna till chef längst ned i beslutet');
-  await dialog.getByRole('button', { name: 'Stäng', exact: true }).last().click();
-
-  await expect(dialog).toHaveCount(0);
+  // The sidebar is drawn, and has no move to the follow-up in it.
+  await expect(page.locator('[data-cy="manage-sidebar"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Inled uppföljning', exact: true })).toHaveCount(0);
+  await expect(nextPhaseButton(page)).toHaveCount(0);
   expect(trace.phasePatches).toEqual([]);
 });
 

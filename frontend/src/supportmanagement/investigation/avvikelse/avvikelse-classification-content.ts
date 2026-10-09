@@ -17,4 +17,5 @@ export const avvikelseClassificationContent: LabelClassificationContent = Object
 export const avvikelseGroupedClassificationContent = Object.freeze({
   noLegalBases: 'Välj lagrum för att kunna kategorisera ärendet.',
   everyLegalBase: 'Välj avvikelsetyp och underkategori för varje valt lagrum.',
+  missing: 'Kategoriseringen är inte ifylld. Den krävs innan utredningen kan markeras som klar.',
 });

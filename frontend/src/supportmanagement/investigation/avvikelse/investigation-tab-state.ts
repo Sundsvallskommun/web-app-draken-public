@@ -57,6 +57,19 @@ export const isInvestigationDocumentEditable = (
 ): boolean => investigationDocumentAccess(access, document.key) === 'edit';
 
 /**
+ * The document the tab shows: the one the user chose, else the first they can write in, else the first they reach.
+ * A LEX investigator reads the unit manager's investigation as well, but opens the errand to write their own.
+ */
+export const selectedInvestigationDocumentKey = (
+  visibleDocuments: InvestigationProfile['documents'],
+  access: InvestigationAccessState,
+  chosenKey: string | undefined
+): string | undefined =>
+  visibleDocuments.find((document) => document.key === chosenKey)?.key ??
+  visibleDocuments.find((document) => isInvestigationDocumentEditable(document, access))?.key ??
+  visibleDocuments[0]?.key;
+
+/**
  * What an investigation tab shows once a capability flag has made it visible.
  *
  * Visibility no longer depends on the runtime profile, so every unusable profile has to explain

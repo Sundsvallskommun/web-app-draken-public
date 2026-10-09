@@ -160,6 +160,13 @@ export const SupportErrandComponent: FC = () => {
   }, [supportErrand, municipalityId, setNotesCount, setServiceNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
+  // No heading rather than a placeholder: an errand the investigation classifies has no type yet, and that is
+  // not a fault worth announcing.
+  const errandHeading = !supportErrand
+    ? undefined
+    : appConfig.features.useLabelCategorization
+    ? getLabelCategorizedErrandHeading(supportErrand, supportMetadata)
+    : categoriesList?.find((category) => category.name === supportErrand.classification?.category)?.displayName;
 
   if (registrationBlocked) {
     return (
@@ -221,12 +228,11 @@ export const SupportErrandComponent: FC = () => {
                       )}
                       {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
-                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useLabelCategorization
-                              ? getLabelCategorizedErrandHeading(supportErrand!, supportMetadata)
-                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                  ?.displayName}
-                          </h1>
+                          {errandHeading && (
+                            <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
+                              {errandHeading}
+                            </h1>
+                          )}
                           {isIAFOrVOF() && <SupportErrandSummary />}
                         </>
                       ) : (

@@ -80,6 +80,7 @@ import {
   assertSupportErrandAdminAssignable,
   assertSupportErrandWritable,
   buildSupportErrandClassificationUpdateBody,
+  CLOSED_SUPPORT_ERRAND_STATUS,
   ErrandFilterInput,
   findInitialSupportErrandPhase,
   getErrandVersion,
@@ -103,7 +104,7 @@ import {
   assertSupportInvestigationClassificationContext,
   selectErrandClassificationIndex,
 } from '@/services/support-investigation-classification-context.service';
-import { assertMayStartFollowUp } from '@/services/support-investigation-decision-readiness';
+import { assertMayCloseReportedMisconduct, assertMayStartFollowUp } from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
@@ -1094,6 +1095,12 @@ export class SupportErrandController {
     });
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
+    // A close that has to move the errand into another phase first is one made before its workflow has ended.
+    assertMayCloseReportedMisconduct({
+      policyService: this.investigationPolicyService,
+      errand: currentErrand.data,
+      closesBeforeWorkflowEnds: data.status === CLOSED_SUPPORT_ERRAND_STATUS && Boolean(body.activePhaseId),
+    });
     // Closing from an earlier phase enters each phase on the way and the one it closes in, and every one of
     // them answers to the same rule as the phase button that would have entered it.
     for (const enteredPhaseId of [...phaseSteps.map(step => step.activePhaseId), body.activePhaseId]) {

@@ -2,7 +2,10 @@
 
 import { Disclosure } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportErrandLocked,
+  isSupportErrandOpenToHandover,
+} from '@supportmanagement/services/support-errand-service';
 import { Info } from 'lucide-react';
 import { FC, useCallback, useMemo, useState } from 'react';
 
@@ -68,6 +71,7 @@ export const LexInitialAssessment: FC<InvestigationDetailsHeaderProps> = ({
                   definition={definition}
                   readable
                   readonly={errandReadonly || documentAccess !== 'edit'}
+                  canHandBack={isSupportErrandOpenToHandover(supportErrand) && documentAccess === 'edit'}
                   classificationReadonly={!canEditSupportManagement}
                   refreshAccess={refreshAccess}
                   onDirtyChange={(isDirty) => onDirtyChange(definition.key, isDirty)}
