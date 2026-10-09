@@ -5,7 +5,12 @@ import {
   type UnitFollowUpTab,
 } from './unit-follow-up-filters';
 import { followUpKeyFigureLabel } from './unit-follow-up-key-figures';
-import { FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_YES_NO, type FollowUpOption } from './unit-follow-up-rows';
+import {
+  FOLLOW_UP_MEASURE_STATUSES,
+  FOLLOW_UP_POLICE_REPORT,
+  FOLLOW_UP_YES_NO,
+  type FollowUpOption,
+} from './unit-follow-up-rows';
 
 /** One chosen value, as a chip names it, and the filters as they are once it is taken away. */
 export interface ActiveFollowUpFilter {
@@ -44,7 +49,7 @@ const offeredOptions = (
   causeAreas: options.causeAreas,
   legalBases: options.legalBases,
   ivoNotification: FOLLOW_UP_YES_NO,
-  policeReport: FOLLOW_UP_YES_NO,
+  policeReport: FOLLOW_UP_POLICE_REPORT,
   statuses: options.statuses,
   measureTypes: options.measureTypes,
   measureStatuses: FOLLOW_UP_MEASURE_STATUSES,

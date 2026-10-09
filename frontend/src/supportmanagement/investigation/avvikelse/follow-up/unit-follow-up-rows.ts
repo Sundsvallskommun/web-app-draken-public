@@ -25,7 +25,6 @@ export interface FollowUpOption {
 /** The label classifications the follow-up filters on, as the avvikelse label tree names them. */
 const FOLLOW_UP_LABEL_CLASSIFICATIONS = Object.freeze({
   reportType: 'REPORT_TYPE',
-  legalBase: 'PROVISION',
   category: 'CATEGORY',
   subcategory: 'TYPE',
 });
@@ -61,10 +60,16 @@ export const FOLLOW_UP_MEASURE_STATUSES: readonly FollowUpOption[] = Object.free
   { value: 'rejected', label: 'Avslagen' },
 ]);
 
-/** Ja or Nej - for IVO, police report and a measure's effect alike. */
+/** Ja or Nej - for IVO and a measure's effect alike. */
 export const FOLLOW_UP_YES_NO: readonly FollowUpOption[] = Object.freeze([
   { value: 'yes', label: 'Ja' },
   { value: 'no', label: 'Nej' },
+]);
+
+/** The lex Sarah investigation also answers whether to report to the police with Ej aktuellt. */
+export const FOLLOW_UP_POLICE_REPORT: readonly FollowUpOption[] = Object.freeze([
+  ...FOLLOW_UP_YES_NO,
+  { value: 'not_applicable', label: 'Ej aktuellt' },
 ]);
 
 export interface FollowUpMeasureRow {
@@ -123,6 +128,7 @@ const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowCon
     .map((label) => normalizeSupportManagementResourcePath(label.resourcePath))
     .filter((path) => path !== '');
   const created = day(errand.created);
+  const { legalBases } = errand.investigation;
   return {
     id: errand.id,
     errandNumber: errand.errandNumber,
@@ -133,17 +139,18 @@ const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowCon
     riskValueHsl: errand.investigation.riskValueHsl,
     riskValueSolLss: errand.investigation.riskValueSolLss,
     ivoNotification: yesNo(errand.investigation.ivoNotification),
-    policeReport: yesNo(errand.investigation.policeReport),
+    policeReport: FOLLOW_UP_POLICE_REPORT.find((option) => option.value === errand.investigation.policeReport),
     decidedMisconduct: coded(errand.investigation.decidedMisconductDegree, context.vocabulary.misconductDegrees),
     status: errand.status
       ? { value: errand.status, label: context.statusName(errand.status) ?? errand.status }
       : undefined,
-    legalBases: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.legalBase),
+    // What the investigation that classifies the errand says; the BFF falls back to the reported legal base.
+    legalBases: legalBases.map((code) => coded(code, context.vocabulary.legalBases)!),
     categories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.category),
     subcategories: labelsOf(errand.labels, FOLLOW_UP_LABEL_CLASSIFICATIONS.subcategory),
     measureCount: errand.measures.length,
     labelPaths,
-    keyFigures: followUpKeyFiguresOf({ labelPaths, status: errand.status, created }, context.keyFigures),
+    keyFigures: followUpKeyFiguresOf({ labelPaths, legalBases, status: errand.status, created }, context.keyFigures),
   };
 };
 

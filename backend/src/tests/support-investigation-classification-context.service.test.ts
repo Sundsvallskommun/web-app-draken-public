@@ -4,7 +4,7 @@ import {
   IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
   IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
   IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
-  IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+  IAF_VOF_REPORTED_MISCONDUCT_LEGAL_BASES,
   type IafVofInvestigationClassificationPolicy,
 } from '@/config/iaf-vof-investigation-classification';
 import {
@@ -16,7 +16,7 @@ const policy: IafVofInvestigationClassificationPolicy = {
   defaultOwnerDocumentKey: 'manager-document',
   reportedMisconductOwnerDocumentKey: 'social-document',
   labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
-  forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+  reportedMisconductLegalBases: IAF_VOF_REPORTED_MISCONDUCT_LEGAL_BASES,
   legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
   legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
   classificationGroups: IAF_VOF_INVESTIGATION_CLASSIFICATION_GROUPS,
@@ -117,15 +117,17 @@ describe('assertSupportInvestigationClassificationContext', () => {
     ).toThrow('does not own classification for this errand');
   });
 
-  it('requires the exact forced legal-base set for reported misconduct even when owner keys are shared', () => {
+  it('lets LEX choose SoL, LSS or both for a reported misconduct, never HSL, even when owner keys are shared', () => {
     const reportedOwner = owner('reported-misconduct');
 
-    expect(() =>
-      assertSupportInvestigationClassificationContext(policy, reportedOwner, 'manager-document', document('SOL', 'LSS'), [
-        classification('CATEGORY/SOL_LSS'),
-      ]),
-    ).not.toThrow();
-    for (const legalBases of [['SOL'], ['SOL', 'LSS', 'HSL'], ['SOL', 'SOL', 'LSS']]) {
+    for (const legalBases of [['SOL'], ['LSS'], ['SOL', 'LSS']]) {
+      expect(() =>
+        assertSupportInvestigationClassificationContext(policy, reportedOwner, 'manager-document', document(...legalBases), [
+          classification('CATEGORY/SOL_LSS'),
+        ]),
+      ).not.toThrow();
+    }
+    for (const legalBases of [['HSL'], ['SOL', 'LSS', 'HSL'], ['SOL', 'SOL', 'LSS'], []]) {
       expect(() =>
         assertSupportInvestigationClassificationContext(policy, reportedOwner, 'manager-document', document(...legalBases), [
           classification('CATEGORY/SOL_LSS'),

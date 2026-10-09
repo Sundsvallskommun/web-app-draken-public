@@ -34,7 +34,8 @@ export interface IafVofInvestigationClassificationPolicy {
   /** LEX-ansvarig's initial assessment, where the profile has one: it can decline a suspected lex Sarah matter. */
   readonly lexAssessmentDocumentKey?: string;
   readonly labelTree: IafVofInvestigationClassificationLabelTree;
-  readonly forcedLegalBases: readonly string[];
+  /** The legal bases a reported misconduct falls under: LEX chooses among them, and HSL is never one. */
+  readonly reportedMisconductLegalBases: readonly string[];
   readonly legalBasesPointer: string;
   readonly legalBaseRules: readonly IafVofInvestigationClassificationLegalBaseRule[];
   readonly classificationGroups: readonly IafVofInvestigationClassificationGroup[];
@@ -67,11 +68,9 @@ const REPORTED_MISCONDUCT_LABELS = Object.freeze({
   resourcePaths: Object.freeze(['REPORT_TYPE/ABUSE', 'REPORT_TYPE/ADVERSE_INCIDENT']),
   resourceNames: Object.freeze(['ABUSE', 'ADVERSE_INCIDENT']),
 });
-const HSL_LEGAL_BASE_LABELS = Object.freeze({
-  classification: 'PROVISION',
-  resourcePaths: Object.freeze(['PROVISION/HSL']),
-  resourceNames: Object.freeze(['HSL']),
-});
+/** The label classification an errand's reported legal bases carry, as `PROVISION/<legal base>`. */
+const LEGAL_BASE_LABEL_CLASSIFICATION = 'PROVISION';
+const HSL_LEGAL_BASE = 'HSL';
 
 export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE: IafVofInvestigationClassificationLabelTree = Object.freeze({
   root: Object.freeze({ resource: 'CATEGORY', classification: 'CATEGORY_ROOT' }),
@@ -95,7 +94,7 @@ export const IAF_VOF_INVESTIGATION_CLASSIFICATION_GROUPS: readonly IafVofInvesti
 export const IAF_VOF_ERRAND_CLASSIFICATION_GROUP_PRIORITY = Object.freeze(['SOL_LSS', 'HSL']);
 
 export const IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER = '/legalBases';
-export const IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES = Object.freeze(['SOL', 'LSS']);
+export const IAF_VOF_REPORTED_MISCONDUCT_LEGAL_BASES = Object.freeze(['SOL', 'LSS']);
 
 const resolveUniqueDocumentKey = (profile: SupportInvestigationProfileDto, schemaName: string): string | undefined => {
   const matches = profile.documents.filter(document => document.schemaName === schemaName);
@@ -121,7 +120,7 @@ export const resolveIafVofInvestigationClassificationPolicy = (
     reportedMisconductOwnerDocumentKey,
     ...(lexAssessmentDocumentKey ? { lexAssessmentDocumentKey } : {}),
     labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
-    forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+    reportedMisconductLegalBases: IAF_VOF_REPORTED_MISCONDUCT_LEGAL_BASES,
     legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
     legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
     classificationGroups: IAF_VOF_INVESTIGATION_CLASSIFICATION_GROUPS,
@@ -167,24 +166,29 @@ const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {
   );
 };
 
-const hasHslLegalBase = (errand: ClassificationOwnerErrand): boolean => {
-  const selectedPaths = new Set(HSL_LEGAL_BASE_LABELS.resourcePaths.map(normalizeResourcePath));
-  const selectedNames = new Set(HSL_LEGAL_BASE_LABELS.resourceNames.map(normalizeCode));
+const isLegalBaseLabel = (label: ClassificationOwnerLabel, legalBase: string): boolean => {
+  const resourcePath = label.resourcePath?.trim();
+  if (resourcePath) return normalizeResourcePath(resourcePath) === normalizeResourcePath(`${LEGAL_BASE_LABEL_CLASSIFICATION}/${legalBase}`);
+  // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
+  // fallback also requires the label to be a legal base.
   return (
-    errand.labels?.some(label => {
-      const resourcePath = label.resourcePath?.trim();
-      if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
-      // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
-      // fallback also requires the label to be a legal base.
-      return (
-        typeof label.classification === 'string' &&
-        normalizeCode(label.classification) === HSL_LEGAL_BASE_LABELS.classification &&
-        typeof label.resourceName === 'string' &&
-        selectedNames.has(normalizeCode(label.resourceName))
-      );
-    }) ?? false
+    typeof label.classification === 'string' &&
+    normalizeCode(label.classification) === LEGAL_BASE_LABEL_CLASSIFICATION &&
+    typeof label.resourceName === 'string' &&
+    normalizeCode(label.resourceName) === normalizeCode(legalBase)
   );
 };
+
+/**
+ * The legal bases the errand was reported under: its `PROVISION` labels, as the policy's legal bases. What the report
+ * said, not what an investigation found.
+ */
+export const resolveIafVofReportedLegalBases = (errand: Pick<Errand, 'labels'>): string[] =>
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES.map(rule => rule.legalBase).filter(
+    legalBase => errand.labels?.some(label => isLegalBaseLabel(label, legalBase)) ?? false,
+  );
+
+const hasHslLegalBase = (errand: ClassificationOwnerErrand): boolean => resolveIafVofReportedLegalBases(errand).includes(HSL_LEGAL_BASE);
 
 export const resolveIafVofInvestigationDocumentApplicability = (
   errand: ClassificationOwnerErrand,

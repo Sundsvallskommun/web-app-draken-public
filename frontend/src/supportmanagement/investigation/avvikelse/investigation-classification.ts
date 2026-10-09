@@ -166,19 +166,19 @@ export const normalizeContextualInvestigationFormData = (
   if (placement.owner !== 'investigation') return normalized;
 
   const { policy } = placement;
-  const schemaHasLegalBases = schemaContainsDataPointer(schema, policy.legalBasesPointer);
-  const isDistinctReportedMisconductDocument =
-    documentKey === policy.reportedMisconductOwnerDocumentKey &&
-    policy.reportedMisconductOwnerDocumentKey !== policy.defaultOwnerDocumentKey;
+  // The unit manager does not choose the legal bases of a reported misconduct: their investigation is given both
+  // social ones, which keep its SoL/LSS template and risk assessment, and does not show them. LEX states which of
+  // them apply in the lex Sarah investigation, where nothing is set for them.
   const forceSocialLegalBases =
-    schemaHasLegalBases &&
-    (isDistinctReportedMisconductDocument || (reportedMisconduct && documentKey === policy.defaultOwnerDocumentKey));
+    reportedMisconduct &&
+    documentKey === policy.defaultOwnerDocumentKey &&
+    schemaContainsDataPointer(schema, policy.legalBasesPointer);
 
   return forceSocialLegalBases
     ? normalizeInvestigationFormData(
         schemaName,
         schema,
-        setJsonPointer(normalized, policy.legalBasesPointer, [...policy.forcedLegalBases])
+        setJsonPointer(normalized, policy.legalBasesPointer, [...policy.reportedMisconductLegalBases])
       )
     : normalized;
 };
@@ -202,18 +202,19 @@ export const getInvestigationClassificationUiSchema = (
   const { policy } = placement;
   const legalBasesSegments = jsonPointerSegments(policy.legalBasesPointer);
   const legalBasesField = legalBasesSegments.at(-1) ?? '';
-  const setUiSchemaReadonly = (current: UiSchema, segments: readonly string[]): UiSchema => {
+  const hideUiSchemaField = (current: UiSchema, segments: readonly string[]): UiSchema => {
     const [segment, ...remaining] = segments;
     if (!segment) return current;
     const child = (current[segment] ?? {}) as UiSchema;
     return {
       ...current,
-      [segment]: remaining.length === 0 ? { ...child, 'ui:readonly': true } : setUiSchemaReadonly(child, remaining),
+      [segment]: remaining.length === 0 ? { ...child, 'ui:widget': 'hidden' } : hideUiSchemaField(child, remaining),
     };
   };
+  // The legal bases of a misconduct are LEX's to state; the unit manager's investigation of one does not show its own.
   const contextualUiSchema: UiSchema =
     reportedMisconduct && key === policy.defaultOwnerDocumentKey
-      ? setUiSchemaReadonly(uiSchema, legalBasesSegments)
+      ? hideUiSchemaField(uiSchema, legalBasesSegments)
       : uiSchema;
 
   if (!isClassificationDocumentKey(key, policy)) return contextualUiSchema;

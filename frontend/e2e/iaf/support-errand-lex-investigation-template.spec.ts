@@ -6,6 +6,7 @@ import {
   errandNumber,
   iafLabelFixture,
   installIafApiMock,
+  latestSchemaIds,
   reportDocumentProfile,
 } from './fixtures/investigation-flow.mock';
 
@@ -85,6 +86,11 @@ test('a new lex Sarah investigation follows the template, its background filled 
   await expect(document.locator(`#${key}_reportedEventDescription`)).toContainText(reported);
   await expect(document.locator(`#${key}_reportReceivedDate`)).toHaveValue('2026-10-06');
   await expect(document.locator(`#${key}_reportReceivedDate`)).not.toBeEditable();
+  // The summary of the report starts as a copy of it, which the investigator rewrites; the report itself stays.
+  const summary = document.locator(`#${key}_reportSummary`);
+  await expect(summary).toContainText(reported);
+  await expect(summary).toHaveAttribute('contenteditable', 'true');
+  await expect(summary).toHaveAttribute('aria-readonly', 'false');
 
   // A large answer starts at about three times a medium one, before either grows with its text.
   const medium = await editorHeight(page, 'occurrenceTime');
@@ -96,7 +102,7 @@ test('a new lex Sarah investigation follows the template, its background filled 
   await expect(document).toContainText('registreras i fliken Åtgärder.');
 });
 
-test('every No asks for a motivation, and the background is saved with the investigation', async ({
+test('every No offers a motivation, Ej aktuellt none, and the background is saved with the investigation', async ({
   page,
   dismissCookieConsent,
 }) => {
@@ -107,7 +113,17 @@ test('every No asks for a motivation, and the background is saved with the inves
   await expect(motivation).toHaveCount(0);
   await document.locator(`#${key}_individualNotified`).getByRole('radio', { name: 'Nej', exact: true }).check();
   await expect(motivation).toBeVisible();
+  // Ej aktuellt asks for nothing more.
+  await document
+    .locator(`#${key}_representativeNotified`)
+    .getByRole('radio', { name: 'Ej aktuellt', exact: true })
+    .check();
+  await expect(document.locator(`#${key}_representativeNotifiedMotivation`)).toHaveCount(0);
 
+  // A misconduct can fall under both SoL and LSS; LEX states which.
+  const legalBases = document.locator(`#${key}_legalBases-group`);
+  await legalBases.getByText(/^SoL –/u).click();
+  await legalBases.getByText(/^LSS –/u).click();
   await document
     .locator('[data-cy="label-classification-type"]')
     .selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
@@ -118,12 +134,15 @@ test('every No asks for a motivation, and the background is saved with the inves
 
   await expect.poll(() => trace.puts.filter((put) => put.key === key).length).toBe(1);
   expect(trace.puts.find((put) => put.key === key)?.body).toEqual({
-    schemaId: expect.stringContaining(`${key}_2.0`),
+    schemaId: latestSchemaIds[key],
     value: expect.objectContaining({
+      legalBases: ['SOL', 'LSS'],
       investigator: 'Iaf Testare',
       reportedEventDescription: `<p>${reported}</p>`,
+      reportSummary: `<p>${reported}</p>`,
       reportReceivedDate: '2026-10-06',
       individualNotified: 'no',
+      representativeNotified: 'not_applicable',
     }),
   });
 });

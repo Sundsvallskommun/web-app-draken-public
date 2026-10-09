@@ -19,6 +19,7 @@ const VOCABULARY_SCHEMAS = Object.freeze({
  * the latest published schemas, so a renamed cause area shows its current name on every errand.
  */
 export interface UnitFollowUpVocabulary {
+  readonly legalBases: ReadonlyMap<string, string>;
   readonly causeAreas: ReadonlyMap<string, string>;
   readonly misconductDegrees: ReadonlyMap<string, string>;
   readonly riskValuesHsl: readonly number[];
@@ -26,6 +27,7 @@ export interface UnitFollowUpVocabulary {
 }
 
 export const EMPTY_UNIT_FOLLOW_UP_VOCABULARY: UnitFollowUpVocabulary = Object.freeze({
+  legalBases: new Map<string, string>(),
   causeAreas: new Map<string, string>(),
   misconductDegrees: new Map<string, string>(),
   riskValuesHsl: [],
@@ -103,6 +105,11 @@ export const buildUnitFollowUpVocabulary = ({
   lexInvestigation,
   lexDecision,
 }: VocabularySchemas): UnitFollowUpVocabulary => ({
+  // The unit manager's investigation offers every legal base; LEX's offers the two of lex Sarah.
+  legalBases: new Map([
+    ...readChoiceTitles(lexInvestigation, 'legalBases'),
+    ...readChoiceTitles(managerInvestigation, 'legalBases'),
+  ]),
   causeAreas: new Map([
     ...readChoiceTitles(lexInvestigation, 'causeAreas'),
     ...readChoiceTitles(managerInvestigation, 'causeAreas'),

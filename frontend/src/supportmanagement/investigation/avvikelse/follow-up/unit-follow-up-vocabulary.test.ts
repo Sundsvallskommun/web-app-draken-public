@@ -38,6 +38,13 @@ test('offers no risk values for an assessment that declares no calculation', () 
   assert.deepEqual(readRiskValues(undefined, 'riskAssessmentHsl'), []);
 });
 
+test('names the legal bases from both investigations, LEX offering only the two of lex Sarah', () => {
+  assert.deepEqual([...buildUnitFollowUpVocabulary({ lexInvestigation: lexSchema }).legalBases.keys()], ['SOL', 'LSS']);
+  const both = buildUnitFollowUpVocabulary({ managerInvestigation: managerSchema, lexInvestigation: lexSchema });
+  assert.deepEqual([...both.legalBases.keys()].sort(), ['HSL', 'LSS', 'SOL']);
+  assert.equal(both.legalBases.get('SOL'), 'SoL – Socialtjänstlagen');
+});
+
 test('builds the vocabulary from whichever schemas could be read', () => {
   const vocabulary = buildUnitFollowUpVocabulary({ lexInvestigation: lexSchema });
 

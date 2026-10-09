@@ -5,7 +5,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
 | `utredning-enhetschef`      | 1.6           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 2.0           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-sol-lss`         | 2.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
@@ -73,9 +73,17 @@ på samma ID till `PlainTextareaWidget` för motiveringen, som är ren text och 
 oförändrat och UI-schemat lästes tillbaka identiskt med artefakten.
 
 Den 7 oktober 2026 publicerades `2281_utredning-sol-lss_2.0`, Utredning Lex Sarah enligt verksamhetens
-utredningsmall (se [Utredning Lex Sarah 2.0](#utredning-lex-sarah-20)), i testmiljön. Schema och UI Schema lästes
-tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 2.0. Inget har publicerats i
+utredningsmall (se [Utredning Lex Sarah 2.0–2.2](#utredning-lex-sarah-2022)), i testmiljön. Schema och UI
+Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 2.0. Inget har publicerats i
 produktionsmiljön. Utredningar som redan är sparade är bundna till 1.4.
+
+Den 9 oktober 2026 publicerades `2281_utredning-sol-lss_2.1` i testmiljön: utan frågan om IVO-anmälan och med lagrum
+som LEX-utredaren väljer (se samma avsnitt). Schema och UI Schema lästes tillbaka och var identiska med artefakterna,
+och `versions/latest` pekar på 2.1. Inget har publicerats i produktionsmiljön.
+
+Samma dag publicerades `2281_utredning-sol-lss_2.2` i testmiljön: med sammanfattning av rapporten och Ej aktuellt
+på ställningstagandena (se samma avsnitt). Schema och UI Schema lästes tillbaka och var identiska med artefakterna,
+och `versions/latest` pekar på 2.2. Inget har publicerats i produktionsmiljön.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
@@ -129,7 +137,7 @@ Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, va
 | Schema                 | Krav som gäller först vid klarmarkering                                                                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
-| `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej i ställningstagandena har sin motivering                                                    |
+| `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej har sin motivering. 2.1: dessutom minst ett lagrum. 2.2: lagrum och sammanfattning av rapporten, motiveringarna är frivilliga |
 | `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`                                                                                                                    |
 
 Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
@@ -153,7 +161,29 @@ egen rubrik (Riskbedömning HSL) får sin markering av RJSF och saknar den i ett
 Besluten (`beslut-hsl`, `beslut-sol-lss`) har ingen klarmarkering och är oförändrat strikta: ett beslut fattas eller
 fattas inte.
 
-## Utredning Lex Sarah 2.0
+## Utredning Lex Sarah 2.0–2.2
+
+Version 2.2 gör två ändringar till efter testrundan:
+
+- **Sammanfattning av rapporten** (`reportSummary`) i Bakgrund: utredarens egen beskrivning av vad rapporten gäller,
+  för rapporter som är långa eller flera om samma sak. Den börjar som en kopia av händelsebeskrivningen
+  (`prefillNewInvestigationDocument`) och kan skrivas om, medan den inrapporterade texten står kvar låst ovanför.
+  Den krävs vid klarmarkering och kommer med i den utskrivna rapporten.
+- **Ej aktuellt** på de fem ställningstagandena (`$defs/yesNoNotApplicable`, koden `not_applicable`), till exempel
+  när det inte finns någon god man. Motiveringen visas fortfarande bara vid Nej, men är frivillig, även vid
+  klarmarkering. Verksamhetsuppföljningens filter Polisanmälan har Ej aktuellt som eget val.
+
+Version 2.1 gör två ändringar efter testrundan den 8 oktober 2026:
+
+- Frågan om anmälan till IVO (`proposedIvoNotification`) är borttagen ur Förslag till beslut. Graden av
+  missförhållande visar redan om ärendet ska anmälas, och det formella beslutet fattar LEX-ansvarig.
+- LEX-utredaren väljer lagrum (`legalBases`): SoL, LSS eller båda. Tidigare satte Draken SOL och LSS och låste fältet.
+  HSL är inget lex Sarah-lagrum och finns inte bland valen, och BFF:en avvisar det i kategoriseringen. Som i
+  enhetschefens utredning krävs lagrummen först vid klarmarkering, och kategoriseringen visas när ett lagrum är valt.
+  Verksamhetsuppföljningen läser ett missförhållandes lagrum härifrån, så att statistiken skiljer LSS från SoL.
+
+Inga dokument i produktion är bundna till 2.0. I testmiljön behåller ett dokument som redan sparats mot 2.0 sitt
+schema, och därmed frågan och de låsta lagrummen.
 
 Version 2.0 av `utredning-sol-lss` följer verksamhetens utredningsmall för lex Sarah, i mallens ordning och med
 titeln Utredning Lex Sarah:
@@ -163,8 +193,8 @@ titeln Utredning Lex Sarah:
 | Bakgrund                           | `investigator`, `reportedEventDescription`, `reportReceivedDate` - ifyllda av Draken och låsta                                   |
 | Vad har hänt?                      | Elva textsvar, från vad som rapporterats till händelseanalysen                                                                   |
 | Varför har det hänt?               | Orsaker (`causeAreas`), fyra textsvar och fem Ja/Nej-ställningstaganden som motiveras vid Nej                                     |
-| Förslag till beslut                | `proposedMisconductDegree` (samma alternativ som förut), `proposedIvoNotification` och `proposalMotivation`                      |
-| Kategorisering                     | Lagrum och ärendets kategorisering, oförändrade                                                                                  |
+| Förslag till beslut                | `proposedMisconductDegree` (samma alternativ som förut) och `proposalMotivation`                                                 |
+| Kategorisering                     | Lagrum och ärendets kategorisering; från 2.1 väljer LEX-utredaren lagrum                                                         |
 | Avsluta utredning och skapa rapport | Klarmarkering och rapport som i alla utredningar                                                                                |
 
 **Bakgrunden** fylls i när en utredning som inte är sparad öppnas (`prefillNewInvestigationDocument`) och sparas
@@ -187,7 +217,7 @@ JSON Schema-API:t. **Sektionernas informationstexter** anges som `description` (
 en sektion i `ui:sections`.
 
 **Motiveringen** till ett Nej visas så fort frågan besvaras med Nej och tas bort ur dokumentet när svaret ändras
-till Ja. Den krävs först vid klarmarkering, så ett utkast går att spara.
+till Ja (från 2.2 även till Ej aktuellt). I 2.0 och 2.1 krävs den vid klarmarkering; från 2.2 är den frivillig.
 
 Fälten Typ av händelse, Utredningsmall, Primär bakomliggande orsak och Dokumentation om samtal finns inte i 2.0.
 Utredningar som redan är sparade är bundna till 1.4 och visar sina fält som förut. Polisanmälan finns kvar som

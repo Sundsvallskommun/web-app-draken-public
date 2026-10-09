@@ -7,6 +7,7 @@
       "legalBases",
       "investigator",
       "reportedEventDescription",
+      "reportSummary",
       "reportReceivedDate",
       "reportedMisconduct",
       "occurrenceTime",
@@ -35,7 +36,6 @@
       "requiresPoliceReport",
       "requiresPoliceReportMotivation",
       "proposedMisconductDegree",
-      "proposedIvoNotification",
       "proposalMotivation",
       "completed",
       "reports"
@@ -46,7 +46,7 @@
         "title": "Bakgrund",
         "icon": "info",
         "defaultOpen": true,
-        "fields": ["investigator", "reportedEventDescription", "reportReceivedDate"]
+        "fields": ["investigator", "reportedEventDescription", "reportSummary", "reportReceivedDate"]
       },
       {
         "id": "what-happened",
@@ -97,7 +97,7 @@
         "title": "Förslag till beslut",
         "icon": "gavel",
         "defaultOpen": true,
-        "fields": ["proposedMisconductDegree", "proposedIvoNotification", "proposalMotivation"]
+        "fields": ["proposedMisconductDegree", "proposalMotivation"]
       },
       {
         "id": "categorization",
@@ -115,11 +115,11 @@
       }
     ],
     "legalBases": {
-      "ui:widget": "ComboboxWidget",
-      "ui:readonly": true,
+      "ui:widget": "checkboxes",
       "ui:options": {
         "multiple": true,
-        "className": "w-full max-w-[40rem]"
+        "className": "w-full max-w-[48rem]",
+        "showRequiredIndicator": true
       }
     },
     "investigator": {
@@ -136,6 +136,15 @@
         "className": "w-full",
         "size": "medium",
         "disableToolbar": true
+      }
+    },
+    "reportSummary": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full",
+        "size": "medium",
+        "disableToolbar": false,
+        "showRequiredIndicator": true
       }
     },
     "reportReceivedDate": {
@@ -332,9 +341,6 @@
         "className": "w-full max-w-[48rem]"
       }
     },
-    "proposedIvoNotification": {
-      "ui:widget": "RadiobuttonWidget"
-    },
     "proposalMotivation": {
       "ui:widget": "TexteditorWidget",
       "ui:options": {
@@ -350,5 +356,5 @@
       "ui:widget": "hidden"
     }
   },
-  "description": "UI schema for version 2.0 of Utredning Lex Sarah in Draken"
+  "description": "UI schema for version 2.2 of Utredning Lex Sarah in Draken"
 }

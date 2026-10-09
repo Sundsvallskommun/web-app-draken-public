@@ -53,11 +53,11 @@ export const assertSupportInvestigationClassificationContext = (
     throw new HttpException(409, 'The investigation document contains duplicate legal bases');
   }
 
+  // LEX chooses which of SoL and LSS a reported misconduct falls under; HSL is not a lex Sarah legal base.
   if (owner.mode === 'reported-misconduct') {
-    const forcedLegalBases = new Set(policy.forcedLegalBases.map(legalBase => legalBase.trim().toUpperCase()));
-    const actualLegalBases = new Set(normalizedLegalBases);
-    if (actualLegalBases.size !== forcedLegalBases.size || [...forcedLegalBases].some(legalBase => !actualLegalBases.has(legalBase))) {
-      throw new HttpException(409, 'The reported-misconduct investigation document must contain exactly the policy-forced legal bases');
+    const allowedLegalBases = new Set(policy.reportedMisconductLegalBases.map(legalBase => legalBase.trim().toUpperCase()));
+    if (normalizedLegalBases.some(legalBase => !allowedLegalBases.has(legalBase))) {
+      throw new HttpException(409, 'A reported misconduct is investigated under SoL or LSS, never HSL');
     }
   }
 

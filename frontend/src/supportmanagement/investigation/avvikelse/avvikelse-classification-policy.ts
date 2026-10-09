@@ -41,7 +41,11 @@ export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
     categoryClassification: 'CATEGORY',
     typeClassification: 'TYPE',
   }) satisfies AvvikelseClassificationLabelTree,
-  forcedLegalBases: Object.freeze(['SOL', 'LSS']),
+  /**
+   * The legal bases a reported misconduct falls under: SoL and LSS, never HSL. LEX chooses among them in the lex
+   * Sarah investigation; the unit manager's investigation of a misconduct is given both.
+   */
+  reportedMisconductLegalBases: Object.freeze(['SOL', 'LSS']),
   legalBasesPointer: '/legalBases',
   legalBaseRules: Object.freeze([
     Object.freeze({ legalBase: 'HSL', allowedClassificationCategories: Object.freeze(['CATEGORY/HSL']) }),

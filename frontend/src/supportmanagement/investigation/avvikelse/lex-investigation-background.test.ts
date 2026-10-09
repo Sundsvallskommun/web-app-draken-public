@@ -15,12 +15,13 @@ const errand = (overrides: Record<string, unknown> = {}) =>
     ...overrides,
   } as unknown as SupportErrand);
 
-test('fills in the investigator, what was reported and the day the investigator took the errand up', () => {
+test('fills in the investigator, what was reported, a summary to rewrite and the day the investigator took it up', () => {
   assert.deepEqual(
     lexInvestigationBackground({ errand: errand(), profile, administrators, resumedAt: '2026-10-08T09:00:00+02:00' }),
     {
       investigator: 'Lisa Utredare',
       reportedEventDescription: '<p>Kvällsbesöket uteblev.</p>',
+      reportSummary: '<p>Kvällsbesöket uteblev.</p>',
       reportReceivedDate: '2026-10-08',
     }
   );

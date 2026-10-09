@@ -26,6 +26,7 @@ describe('the unit follow-up of one errand', () => {
       errand({
         jsonParameters: [
           parameter('utredning-enhetschef', {
+            legalBases: ['HSL', 'SOL'],
             riskAssessmentHsl: { calculatedRiskValue: 6 },
             riskAssessmentSolLss: { calculatedRiskValue: 9 },
             causeAreas: ['procedures_routines_guidelines'],
@@ -37,6 +38,7 @@ describe('the unit follow-up of one errand', () => {
     );
 
     expect(followUp?.investigation).toEqual({
+      legalBases: ['HSL', 'SOL'],
       riskValueHsl: 6,
       riskValueSolLss: 9,
       causeAreas: ['procedures_routines_guidelines', 'environment_organization'],
@@ -44,6 +46,37 @@ describe('the unit follow-up of one errand', () => {
       ivoNotification: 'yes',
       decidedMisconductDegree: 'serious_misconduct',
     });
+  });
+
+  // The investigation that classifies the errand names its legal bases: LEX's once the errand is a misconduct.
+  it("reads the legal bases of a misconduct from LEX's investigation, whatever the unit manager's says", () => {
+    const followUp = toUnitFollowUpErrand(
+      VOF_SUPPORT_INVESTIGATION_PROFILE,
+      errand({
+        labels: [{ id: 'abuse', classification: 'REPORT_TYPE', displayName: 'Missförhållande', resourcePath: 'REPORT_TYPE/ABUSE' }],
+        jsonParameters: [parameter('utredning-enhetschef', { legalBases: ['SOL', 'LSS'] }), parameter('utredning-sol-lss', { legalBases: ['LSS'] })],
+      }),
+    );
+
+    expect(followUp?.investigation.legalBases).toEqual(['LSS']);
+  });
+
+  it('counts the legal bases the errand was reported under until the investigation names any', () => {
+    const reportedUnderHsl = { labels: [{ id: 'hsl', classification: 'PROVISION', displayName: 'HSL', resourcePath: 'PROVISION/HSL' }] };
+
+    expect(toUnitFollowUpErrand(VOF_SUPPORT_INVESTIGATION_PROFILE, errand(reportedUnderHsl))?.investigation.legalBases).toEqual(['HSL']);
+    expect(
+      toUnitFollowUpErrand(
+        VOF_SUPPORT_INVESTIGATION_PROFILE,
+        errand({ ...reportedUnderHsl, jsonParameters: [parameter('utredning-enhetschef', { legalBases: [] })] }),
+      )?.investigation.legalBases,
+    ).toEqual(['HSL']);
+    expect(
+      toUnitFollowUpErrand(
+        VOF_SUPPORT_INVESTIGATION_PROFILE,
+        errand({ ...reportedUnderHsl, jsonParameters: [parameter('utredning-enhetschef', { legalBases: ['SOL'] })] }),
+      )?.investigation.legalBases,
+    ).toEqual(['SOL']);
   });
 
   it('takes the IVO answer from the HSL decision when the errand has no lex Sarah decision', () => {
@@ -58,7 +91,7 @@ describe('the unit follow-up of one errand', () => {
 
   // Support Management leaves out the documents the user may not read, so their facts are just absent.
   it('leaves every investigation fact empty when no document is readable', () => {
-    expect(toUnitFollowUpErrand(VOF_SUPPORT_INVESTIGATION_PROFILE, errand())?.investigation).toEqual({ causeAreas: [] });
+    expect(toUnitFollowUpErrand(VOF_SUPPORT_INVESTIGATION_PROFILE, errand())?.investigation).toEqual({ legalBases: [], causeAreas: [] });
   });
 
   it('keeps the labels and measures slim, without versions or attachments', () => {

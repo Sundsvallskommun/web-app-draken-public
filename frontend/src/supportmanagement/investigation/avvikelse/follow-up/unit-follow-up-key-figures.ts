@@ -4,9 +4,13 @@ import { AVVIKELSE_CLASSIFICATION_POLICY } from '../avvikelse-classification-pol
 
 export type FollowUpKeyFigureKey = 'deviations' | 'misconducts' | 'legalBaseHsl' | 'legalBaseSolLss' | 'notStarted';
 
-/** What an errand's key figures are read from: its labels' resource paths, its status and its registration day. */
+/**
+ * What an errand's key figures are read from: its labels' resource paths, its legal bases as the BFF resolved them,
+ * its status and its registration day.
+ */
 export interface FollowUpKeyFigureFacts {
   readonly labelPaths: readonly string[];
+  readonly legalBases: readonly string[];
   readonly status?: string;
   readonly created?: string;
 }
@@ -37,18 +41,21 @@ const DEVIATION_REPORT_TYPE = 'REPORT_TYPE/DEVIATION';
 /** An errand waiting longer than this in its first status is one nobody has started on. */
 const NOT_STARTED_AFTER_DAYS = 30;
 
-const { reportedMisconductSelector, hslLegalBaseSelector, classificationGroups } = AVVIKELSE_CLASSIFICATION_POLICY;
+const { reportedMisconductSelector, classificationGroups } = AVVIKELSE_CLASSIFICATION_POLICY;
 
-/** The legal base labels of one classification group: HSL alone, or SoL and LSS together. */
-const legalBasePaths = (groupKey: string): string[] =>
-  (classificationGroups.find((group) => group.key === groupKey)?.legalBases ?? []).map(
-    ({ legalBase }) => `${hslLegalBaseSelector.labels.classification}/${legalBase}`
-  );
+/** The legal bases of one classification group: HSL alone, or SoL and LSS together. */
+const groupLegalBases = (groupKey: string): string[] =>
+  (classificationGroups.find((group) => group.key === groupKey)?.legalBases ?? []).map(({ legalBase }) => legalBase);
 
 const carriesAny =
   (paths: readonly string[]) =>
   ({ labelPaths }: FollowUpKeyFigureFacts): boolean =>
     labelPaths.some((path) => paths.includes(path));
+
+const investigatedUnderAny =
+  (codes: readonly string[]) =>
+  ({ legalBases }: FollowUpKeyFigureFacts): boolean =>
+    legalBases.some((code) => codes.includes(code));
 
 const isNotStarted = ({ status, created }: FollowUpKeyFigureFacts, context: FollowUpKeyFigureContext): boolean =>
   status !== undefined &&
@@ -57,8 +64,9 @@ const isNotStarted = ({ status, created }: FollowUpKeyFigureFacts, context: Foll
   context.today.startOf('day').diff(dayjs(created).startOf('day'), 'day') > NOT_STARTED_AFTER_DAYS;
 
 /**
- * The follow-up's key figures, in the order the cards are drawn. Report type and legal base are read from
- * the same label paths the classification policy reads, so a misconduct LEX took over counts as one.
+ * The follow-up's key figures, in the order the cards are drawn. Report type is read from the same label paths
+ * the classification policy reads, so a misconduct LEX took over counts as one. Legal base is what the
+ * investigation that classifies the errand says, or the one it was reported under until the investigation says.
  */
 const FOLLOW_UP_KEY_FIGURES: readonly FollowUpKeyFigureDefinition[] = Object.freeze([
   {
@@ -77,13 +85,13 @@ const FOLLOW_UP_KEY_FIGURES: readonly FollowUpKeyFigureDefinition[] = Object.fre
     key: 'legalBaseHsl',
     label: 'Ärenden med lagrum HSL',
     warnsWhenAny: false,
-    applies: carriesAny(legalBasePaths('HSL')),
+    applies: investigatedUnderAny(groupLegalBases('HSL')),
   },
   {
     key: 'legalBaseSolLss',
     label: 'Ärenden med lagrum SOL/LSS',
     warnsWhenAny: false,
-    applies: carriesAny(legalBasePaths('SOL_LSS')),
+    applies: investigatedUnderAny(groupLegalBases('SOL_LSS')),
   },
   {
     key: 'notStarted',

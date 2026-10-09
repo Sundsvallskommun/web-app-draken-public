@@ -16,7 +16,7 @@ import {
   type UnitFollowUpFilters,
   type UnitFollowUpTab,
 } from './unit-follow-up-filters';
-import { FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_YES_NO } from './unit-follow-up-rows';
+import { FOLLOW_UP_MEASURE_STATUSES, FOLLOW_UP_POLICE_REPORT, FOLLOW_UP_YES_NO } from './unit-follow-up-rows';
 import type { UnitFollowUpPeriod } from './unit-follow-up-service';
 import type { UnitFollowUpVocabulary } from './unit-follow-up-vocabulary';
 
@@ -103,7 +103,7 @@ export const UnitFollowUpFilterBar: FC<UnitFollowUpFilterBarProps> = ({
       />
       <FollowUpMultiSelectFilter
         label={FOLLOW_UP_FILTER_LABELS.policeReport}
-        options={FOLLOW_UP_YES_NO}
+        options={FOLLOW_UP_POLICE_REPORT}
         selected={filters.policeReport}
         onChange={set('policeReport')}
         data-cy="follow-up-filter-police"

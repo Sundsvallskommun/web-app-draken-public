@@ -23,7 +23,7 @@ const errand: FollowUpErrandRow = {
   riskValueSolLss: 9,
   ivoNotification: { value: 'yes', label: 'Ja' },
   status: { value: 'INQUIRY', label: 'Pågående' },
-  legalBases: [{ value: 'sol', label: 'SoL' }],
+  legalBases: [{ value: 'SOL', label: 'SoL – Socialtjänstlagen' }],
   categories: [],
   subcategories: [],
   measureCount: 1,
@@ -51,7 +51,7 @@ test('shows every errand while nothing is chosen', () => {
 
 test('keeps an errand that carries any of the chosen values', () => {
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ reportTypes: ['deviation', 'abuse'] })), true);
-  assert.equal(matchesFollowUpErrandFilters(errand, filters({ legalBases: ['hsl'] })), false);
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ legalBases: ['HSL'] })), false);
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ ivoNotification: ['no'] })), false);
   // An errand with no answer is not one with the chosen answer.
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['yes'] })), false);

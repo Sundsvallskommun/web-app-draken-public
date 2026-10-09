@@ -20,7 +20,7 @@ const artifacts = [
   },
   {
     name: 'utredning-sol-lss',
-    version: '2.0',
+    version: '2.2',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
@@ -332,7 +332,7 @@ const incompleteInvestigations: Record<string, Record<string, unknown>> = {
   'utredning-enhetschef': { legalBases: ['HSL'], riskAssessmentHsl: { probability: 2 } },
   // Nothing answered at all: the unit manager has opened the investigation and put it down again.
   'utredning-enhetschef (tomt)': {},
-  // A No not yet motivated: the motivation is asked for when the investigation is completed.
+  // The report not yet summarized: the summary is asked for when the investigation is completed.
   'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], individualNotified: 'no' },
   'utredning-hsl': { analysisTeamParticipants: [{ unit: 'Hemtjänst Norr' }] },
 };
@@ -459,6 +459,29 @@ test('unit manager rejects fields and templates that do not match the selected l
   assert.equal(validate({ ...allLegalBases, riskAssessmentSolLss: undefined }), true);
   assert.equal(validate({ ...allLegalBases, completed: 'yes', riskAssessmentSolLss: undefined }), false);
   assert.equal(validate({ ...allLegalBases, legalBases: ['HSL', 'SOL', 'SOL'] }), false);
+});
+
+// LEX states the legal bases a misconduct falls under: SoL, LSS or both. HSL is not a lex Sarah legal base.
+test('the lex Sarah investigation lets LEX choose SoL, LSS or both, and never HSL', () => {
+  const schema = readJson('utredning-sol-lss.schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+  for (const legalBases of [['SOL'], ['LSS'], ['SOL', 'LSS']]) {
+    assert.equal(validate({ legalBases }), true, ajv.errorsText(validate.errors));
+  }
+  for (const legalBases of [['HSL'], ['SOL', 'HSL'], ['SOL', 'SOL']]) {
+    assert.equal(validate({ legalBases }), false, JSON.stringify(legalBases));
+  }
+  // As in the unit manager's investigation, they are required once the investigation is marked complete.
+  assert.equal(validate({}), true, ajv.errorsText(validate.errors));
+  assert.equal(validate({ completed: 'yes' }), false);
+  assert.equal(validate({ completed: 'yes', legalBases: [] }), false);
+  const summarized = { reportSummary: '<p>Kvällsbesöket uteblev.</p>' };
+  assert.equal(validate({ ...summarized, completed: 'yes', legalBases: [] }), false);
+  assert.equal(
+    validate({ ...summarized, completed: 'yes', legalBases: ['LSS'] }),
+    true,
+    ajv.errorsText(validate.errors)
+  );
 });
 
 test('the HSL investigation no longer carries the IVO decision', () => {
@@ -711,8 +734,9 @@ test('pending and confirmed publications fit every existing report schema withou
   }
 });
 
-// The lex Sarah investigation template: the background is Draken's, every text answer has the size the
-// template gives it, and every No is motivated - shown as soon as it is answered, required once completed.
+// The lex Sarah investigation template: the background is Draken's, apart from the investigator's own summary of the
+// report, every text answer has the size the template gives it, and each of the five questions is answered Ja, Nej or
+// Ej aktuellt - a No with a motivation that is offered but never required.
 test('the lex Sarah investigation follows the investigation template', () => {
   const schema = readJson('utredning-sol-lss.schema-request.json').value;
   const uiSchema = readJson('utredning-sol-lss.ui-schema-request.json').value;
@@ -744,19 +768,36 @@ test('the lex Sarah investigation follows the investigation template', () => {
   // Verksamhetsuppföljning's Polisanmälan filter reads the answer under the name it had in 1.x.
   assert.equal(schema.properties.requiresPoliceReport.title, 'Ska ärendet polisanmälas?');
 
-  const motivated = [
+  // The summary is the investigator's, in Bakgrund, and required once the investigation is completed.
+  assert.equal(schema.properties.reportSummary.readOnly, undefined);
+  const background = uiSchema['ui:sections'].find((section: { id: string }) => section.id === 'background');
+  assert.deepEqual(background.fields, [
+    'investigator',
+    'reportedEventDescription',
+    'reportSummary',
+    'reportReceivedDate',
+  ]);
+
+  const questions = [
     'individualNotified',
     'representativeNotified',
     'documentedInRecord',
     'feedbackGiven',
     'requiresPoliceReport',
   ];
-  for (const question of motivated) {
+  const completed = { legalBases: ['SOL', 'LSS'], reportSummary: '<p>Kvällsbesöket uteblev.</p>', completed: 'yes' };
+  assert.equal(validate(completed), true);
+  assert.equal(validate({ ...completed, reportSummary: undefined }), false);
+  for (const question of questions) {
     const motivation = `${question}Motivation`;
-    const answered = { legalBases: ['SOL', 'LSS'], [question]: 'no' };
-    assert.equal(validate(answered), true, `${question}: a draft may leave the motivation for later`);
-    assert.equal(validate({ ...answered, completed: 'yes' }), false, `${question}: a completed No is motivated`);
-    assert.equal(validate({ ...answered, [motivation]: '<p>Därför.</p>', completed: 'yes' }), true);
-    assert.equal(validate({ ...answered, [question]: 'yes', [motivation]: '<p>Därför.</p>' }), false);
+    for (const answer of ['yes', 'no', 'not_applicable']) {
+      assert.equal(validate({ ...completed, [question]: answer }), true, `${question}: ${answer} needs no motivation`);
+    }
+    assert.equal(validate({ ...completed, [question]: 'no', [motivation]: '<p>Därför.</p>' }), true);
+    // The motivation belongs to a No alone.
+    for (const answer of ['yes', 'not_applicable']) {
+      assert.equal(validate({ ...completed, [question]: answer, [motivation]: '<p>Därför.</p>' }), false);
+    }
+    assert.equal(validate({ ...completed, [question]: 'kanske' }), false);
   }
 });

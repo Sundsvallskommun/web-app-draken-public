@@ -262,11 +262,16 @@ test('mock roles make only the owned investigation editable', async ({ page }) =
     .locator(`#${solLssIdPrefix}_individualNotified`)
     .getByRole('radio', { name: 'Ja', exact: true });
   await expect(individualNotified).toBeDisabled();
-  await expect(page.locator(`#${solLssIdPrefix}_legalBases`)).toHaveValue('SOL, LSS');
+  // LEX chooses the legal bases of a misconduct, SoL or LSS: nothing is chosen for them, and only LEX may choose.
+  const lexLegalBases = page.locator(`#${solLssIdPrefix}_legalBases-group`);
+  await expect(lexLegalBases.locator('input')).toHaveCount(2);
+  await expect(lexLegalBases.locator('input:checked')).toHaveCount(0);
+  await expect(lexLegalBases.getByLabel(/^SoL –/u)).toBeDisabled();
   await expect(activePanel.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
 
   await page.locator('[data-cy="investigation-lab-role"]').selectOption('lexInvestigator');
   await expect(individualNotified).toBeEnabled();
+  await expect(lexLegalBases.getByLabel(/^SoL –/u)).toBeEnabled();
   await expect(activePanel.locator('[data-cy="schema-submit-button"]')).toBeVisible();
 });
 

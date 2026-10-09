@@ -62,7 +62,7 @@ const snapshot: UnitFollowUpSnapshot = {
       status: 'INQUIRY',
       created: '2026-05-03T09:00:00.000+02:00',
       labels: [deviation, hsl, ...unit('Granlunda 1')],
-      investigation: { riskValueHsl: 3, causeAreas: ['communication_information'] },
+      investigation: { legalBases: ['HSL'], riskValueHsl: 3, causeAreas: ['communication_information'] },
       measures: [],
     },
     {
@@ -72,6 +72,8 @@ const snapshot: UnitFollowUpSnapshot = {
       created: '2026-05-24T10:00:00.000+02:00',
       labels: [misconduct, sol, ...unit('Granlunda 2')],
       investigation: {
+        // LEX found the misconduct falls under LSS, whatever the report was filed under.
+        legalBases: ['LSS'],
         riskValueSolLss: 9,
         causeAreas: ['procedures_routines_guidelines'],
         ivoNotification: 'yes',
@@ -99,7 +101,12 @@ const snapshot: UnitFollowUpSnapshot = {
       status: 'SOLVED',
       created: '2026-05-17T08:00:00.000+02:00',
       labels: [deviation, hsl, ...unit('Granlunda 1')],
-      investigation: { riskValueHsl: 6, causeAreas: ['procedures_routines_guidelines'], ivoNotification: 'no' },
+      investigation: {
+        legalBases: ['HSL'],
+        riskValueHsl: 6,
+        causeAreas: ['procedures_routines_guidelines'],
+        ivoNotification: 'no',
+      },
       measures: [{ id: 'm3', type: 'EDUCATION', accept: 'TRUE', executed: '2026-04-05', result: 'NOT_COMPLETED' }],
     },
     {
@@ -108,8 +115,9 @@ const snapshot: UnitFollowUpSnapshot = {
       errandNumber: `${application}-2026-0003`,
       status: 'NEW',
       created: '2026-01-15T08:00:00.000+01:00',
+      // Reported under HSL but not investigated yet: the BFF counts it under the legal base it was reported under.
       labels: [deviation, hsl, ...unit('Granlunda 1')],
-      investigation: { causeAreas: [] },
+      investigation: { legalBases: ['HSL'], causeAreas: [] },
       measures: [],
     },
   ],

@@ -57,6 +57,7 @@
       "legalBases": ["SOL", "LSS"],
       "investigator": "Lisa Utredare",
       "reportedEventDescription": "<p>Den enskilde fick inte sitt stöd vid kvällsbesöket.</p>",
+      "reportSummary": "<p>Ett kvällsbesök i hemtjänsten uteblev utan att någon underrättades.</p>",
       "reportReceivedDate": "2026-08-02",
       "reportedMisconduct": "<p>Kvällsbesöket uteblev utan att någon underrättades.</p>",
       "occurrenceTime": "<p>Den 1 augusti på kvällen.</p>",
@@ -78,11 +79,10 @@
       "representativeNotified": "no",
       "representativeNotifiedMotivation": "<p>Den enskilde ville inte att närstående underrättas.</p>",
       "documentedInRecord": "yes",
-      "feedbackGiven": "yes",
+      "feedbackGiven": "not_applicable",
       "requiresPoliceReport": "no",
       "requiresPoliceReportMotivation": "<p>Det inträffade är inte av den karaktären.</p>",
       "proposedMisconductDegree": "misconduct",
-      "proposedIvoNotification": "no",
       "proposalMotivation": "<p>Utredarens samlade motivering.</p>",
       "completed": "no",
       "reports": [
@@ -121,10 +121,16 @@
         }
       },
       {
-        "description": "en klar utredning motiverar varje Nej",
+        "description": "ett ställningstagande är Ja, Nej eller Ej aktuellt",
         "value": {
           "legalBases": ["SOL", "LSS"],
-          "feedbackGiven": "no",
+          "feedbackGiven": "kanske"
+        }
+      },
+      {
+        "description": "en klar utredning sammanfattar rapporten",
+        "value": {
+          "legalBases": ["SOL", "LSS"],
           "completed": "yes"
         }
       }

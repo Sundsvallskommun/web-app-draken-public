@@ -1,9 +1,9 @@
 {
   "name": "utredning-sol-lss",
-  "version": "2.0",
+  "version": "2.2",
   "value": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/2.0",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/2.2",
     "title": "Utredning Lex Sarah",
     "type": "object",
     "additionalProperties": false,
@@ -31,20 +31,44 @@
             "title": "Nej"
           }
         ]
+      },
+      "yesNoNotApplicable": {
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "yes",
+            "title": "Ja"
+          },
+          {
+            "const": "no",
+            "title": "Nej"
+          },
+          {
+            "const": "not_applicable",
+            "title": "Ej aktuellt"
+          }
+        ]
       }
     },
-    "required": ["legalBases"],
     "properties": {
       "legalBases": {
-        "title": "Lagrum",
-        "description": "Missförhållanden utreds enligt SOL/LSS. Värdet sätts och låses av Draken.",
+        "title": "Vilket eller vilka lagrum gäller för missförhållandet?",
+        "description": "Välj ett eller båda. Lex Sarah gäller SoL och LSS, inte HSL. Lagrummen styr kategoriseringen och statistiken.",
         "type": "array",
-        "const": ["SOL", "LSS"],
-        "default": ["SOL", "LSS"],
-        "readOnly": true,
+        "maxItems": 2,
+        "uniqueItems": true,
         "items": {
           "type": "string",
-          "enum": ["SOL", "LSS"]
+          "oneOf": [
+            {
+              "const": "SOL",
+              "title": "SoL – Socialtjänstlagen"
+            },
+            {
+              "const": "LSS",
+              "title": "LSS – Lagen om stöd och service till vissa funktionshindrade"
+            }
+          ]
         }
       },
       "investigator": {
@@ -59,6 +83,12 @@
         "type": "string",
         "contentMediaType": "text/html",
         "readOnly": true
+      },
+      "reportSummary": {
+        "title": "Sammanfattning av rapporten",
+        "description": "Vad rapporten gäller, med utredarens ord. Fältet börjar som en kopia av händelsebeskrivningen och kan skrivas om; den inrapporterade texten ovan ändras inte.",
+        "type": "string",
+        "contentMediaType": "text/html"
       },
       "reportReceivedDate": {
         "title": "När togs den muntliga eller skriftliga rapporten emot?",
@@ -175,51 +205,51 @@
       },
       "individualNotified": {
         "title": "Har den enskilde som berörs underrättats om att ett missförhållande har rapporterats?",
-        "$ref": "#/$defs/yesNo"
+        "$ref": "#/$defs/yesNoNotApplicable"
       },
       "individualNotifiedMotivation": {
         "title": "Motivering",
-        "description": "Motivera varför svaret är Nej.",
+        "description": "Frivillig. Förklara varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "representativeNotified": {
         "title": "Har god man, förvaltare eller närstående underrättats om att ett missförhållande har rapporterats?",
-        "$ref": "#/$defs/yesNo"
+        "$ref": "#/$defs/yesNoNotApplicable"
       },
       "representativeNotifiedMotivation": {
         "title": "Motivering",
-        "description": "Motivera varför svaret är Nej.",
+        "description": "Frivillig. Förklara varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "documentedInRecord": {
         "title": "Finns information om att en lex Sarah-rapportering har skett i den enskildes personakt?",
-        "$ref": "#/$defs/yesNo"
+        "$ref": "#/$defs/yesNoNotApplicable"
       },
       "documentedInRecordMotivation": {
         "title": "Motivering",
-        "description": "Motivera varför svaret är Nej.",
+        "description": "Frivillig. Förklara varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "feedbackGiven": {
         "title": "Har den enskilde fått återkoppling om de åtgärder som har vidtagits?",
-        "$ref": "#/$defs/yesNo"
+        "$ref": "#/$defs/yesNoNotApplicable"
       },
       "feedbackGivenMotivation": {
         "title": "Motivering",
-        "description": "Motivera varför svaret är Nej.",
+        "description": "Frivillig. Förklara varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
       "requiresPoliceReport": {
         "title": "Ska ärendet polisanmälas?",
-        "$ref": "#/$defs/yesNo"
+        "$ref": "#/$defs/yesNoNotApplicable"
       },
       "requiresPoliceReportMotivation": {
         "title": "Motivering",
-        "description": "Motivera varför svaret är Nej.",
+        "description": "Frivillig. Förklara varför svaret är Nej.",
         "type": "string",
         "contentMediaType": "text/html"
       },
@@ -249,10 +279,6 @@
             "title": "Allvarligt missförhållande – anmäls till IVO"
           }
         ]
-      },
-      "proposedIvoNotification": {
-        "title": "Föreslår utredningen anmälan enligt lex Sarah till IVO?",
-        "$ref": "#/$defs/yesNo"
       },
       "proposalMotivation": {
         "title": "Motivering till bedömning",
@@ -401,7 +427,7 @@
         }
       },
       {
-        "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar.",
+        "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar: lagrummen och sammanfattningen av rapporten. Motiveringarna till ett Nej är frivilliga.",
         "if": {
           "properties": {
             "completed": {
@@ -414,68 +440,11 @@
           "$comment": "Kraven ligger under then.allOf: sektionsmallen läser then.properties och then.required i rot-allOf som en synlighetsregel, och ett fält får inte försvinna ur formuläret före klarmarkeringen.",
           "allOf": [
             {
-              "if": {
-                "properties": {
-                  "individualNotified": {
-                    "const": "no"
-                  }
-                },
-                "required": ["individualNotified"]
-              },
-              "then": {
-                "required": ["individualNotifiedMotivation"]
-              }
-            },
-            {
-              "if": {
-                "properties": {
-                  "representativeNotified": {
-                    "const": "no"
-                  }
-                },
-                "required": ["representativeNotified"]
-              },
-              "then": {
-                "required": ["representativeNotifiedMotivation"]
-              }
-            },
-            {
-              "if": {
-                "properties": {
-                  "documentedInRecord": {
-                    "const": "no"
-                  }
-                },
-                "required": ["documentedInRecord"]
-              },
-              "then": {
-                "required": ["documentedInRecordMotivation"]
-              }
-            },
-            {
-              "if": {
-                "properties": {
-                  "feedbackGiven": {
-                    "const": "no"
-                  }
-                },
-                "required": ["feedbackGiven"]
-              },
-              "then": {
-                "required": ["feedbackGivenMotivation"]
-              }
-            },
-            {
-              "if": {
-                "properties": {
-                  "requiresPoliceReport": {
-                    "const": "no"
-                  }
-                },
-                "required": ["requiresPoliceReport"]
-              },
-              "then": {
-                "required": ["requiresPoliceReportMotivation"]
+              "required": ["legalBases", "reportSummary"],
+              "properties": {
+                "legalBases": {
+                  "minItems": 1
+                }
               }
             }
           ]
@@ -483,5 +452,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 2.0 of the lex Sarah investigation schema"
+  "description": "WSO2 request body for version 2.2 of the lex Sarah investigation schema"
 }

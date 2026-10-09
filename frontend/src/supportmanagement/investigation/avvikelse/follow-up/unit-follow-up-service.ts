@@ -15,6 +15,11 @@ export interface UnitFollowUpLabel {
 
 /** The investigation and decision facts the BFF read from the documents the user may read. */
 interface UnitFollowUpInvestigation {
+  /**
+   * The legal bases the investigation that classifies the errand names - LEX's for a misconduct - or, until it names
+   * any, the ones the errand was reported under.
+   */
+  readonly legalBases: string[];
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
   readonly causeAreas: string[];

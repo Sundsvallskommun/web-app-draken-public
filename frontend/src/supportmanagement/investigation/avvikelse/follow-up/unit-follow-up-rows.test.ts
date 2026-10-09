@@ -9,6 +9,7 @@ import type { UnitFollowUpErrand } from './unit-follow-up-service';
 const context: FollowUpRowContext = {
   labelStructure: [],
   vocabulary: {
+    legalBases: new Map([['LSS', 'LSS – Lagen om stöd och service till vissa funktionshindrade']]),
     causeAreas: new Map([['procedures_routines_guidelines', 'Processer, rutiner, arbetssätt, riktlinjer']]),
     misconductDegrees: new Map([['serious_misconduct', 'Allvarligt missförhållande']]),
     riskValuesHsl: [],
@@ -34,6 +35,8 @@ const errand: UnitFollowUpErrand = {
     { id: 'unit', classification: 'LOCATION', displayName: 'Granlunda 2' },
   ],
   investigation: {
+    // LEX found the misconduct falls under LSS, whatever the report was filed under.
+    legalBases: ['LSS'],
     riskValueSolLss: 9,
     causeAreas: ['procedures_routines_guidelines', 'retired_code'],
     ivoNotification: 'yes',
@@ -68,12 +71,22 @@ test('shows an errand by its unit, report type, causes, risk, decision and measu
   assert.equal(row.ivoNotification?.label, 'Ja');
   assert.equal(row.decidedMisconduct?.label, 'Allvarligt missförhållande');
   assert.equal(row.status?.label, 'Pågående');
-  assert.deepEqual(row.legalBases, [{ value: 'sol', label: 'SoL' }]);
+  assert.deepEqual(row.legalBases, [
+    { value: 'LSS', label: 'LSS – Lagen om stöd och service till vissa funktionshindrade' },
+  ]);
   assert.deepEqual(row.categories, [{ value: 'cat', label: 'Brister i rättssäkerhet' }]);
   assert.deepEqual(row.subcategories, [{ value: 'sub', label: 'Bristande handläggning' }]);
   assert.equal(row.measureCount, 2);
   assert.deepEqual(row.labelPaths, ['REPORT_TYPE/ABUSE', 'PROVISION/SOL']);
   assert.deepEqual(row.keyFigures, ['misconducts', 'legalBaseSolLss']);
+});
+
+test('names a police report the investigation found not applicable', () => {
+  const [row] = toFollowUpRows(
+    [{ ...errand, investigation: { ...errand.investigation, policeReport: 'not_applicable' } }],
+    context
+  ).errands;
+  assert.deepEqual(row.policeReport, { value: 'not_applicable', label: 'Ej aktuellt' });
 });
 
 test('counts an errand still new more than thirty days after it was registered as not started', () => {

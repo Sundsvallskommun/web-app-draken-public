@@ -1,6 +1,12 @@
 import type { Errand, ErrandLabel, Measure } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 
+import {
+  resolveIafVofInvestigationClassificationOwner,
+  resolveIafVofInvestigationClassificationPolicy,
+  resolveIafVofReportedLegalBases,
+} from './iaf-vof-investigation-classification';
+
 /**
  * Where each fact the unit follow-up shows is written, by the fixed IAF/VOF schema role that holds it.
  * The profile maps a role to its persistence key, so a deployment with its own keys still resolves.
@@ -13,6 +19,12 @@ const FOLLOW_UP_SOURCES = Object.freeze({
 });
 
 interface UnitFollowUpInvestigation {
+  /**
+   * The legal bases the errand was investigated under, from the investigation that classifies it: LEX's for a
+   * reported misconduct, the unit manager's otherwise. Until that investigation names any, the ones it was reported
+   * under.
+   */
+  readonly legalBases: string[];
   /** The risk values the unit manager's investigation calculated, per legal base group. */
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
@@ -100,6 +112,11 @@ export const toUnitFollowUpErrand = (profile: SupportInvestigationProfileDto, er
   const lex = readDocument(errand, documentKey(profile, FOLLOW_UP_SOURCES.lexInvestigation));
   const hslDecision = readDocument(errand, documentKey(profile, FOLLOW_UP_SOURCES.hslDecision));
   const lexDecision = readDocument(errand, documentKey(profile, FOLLOW_UP_SOURCES.lexDecision));
+  const classificationPolicy = resolveIafVofInvestigationClassificationPolicy(profile);
+  const classifying = classificationPolicy
+    ? readDocument(errand, resolveIafVofInvestigationClassificationOwner(classificationPolicy, errand).documentKey)
+    : undefined;
+  const investigatedLegalBases = readCodes(classifying, 'legalBases');
 
   return {
     id: errand.id,
@@ -109,6 +126,7 @@ export const toUnitFollowUpErrand = (profile: SupportInvestigationProfileDto, er
     created: errand.created,
     labels: (errand.labels ?? []).map(({ id, classification, displayName, resourcePath }) => ({ id, classification, displayName, resourcePath })),
     investigation: {
+      legalBases: investigatedLegalBases.length > 0 ? investigatedLegalBases : resolveIafVofReportedLegalBases(errand),
       riskValueHsl: readRiskValue(manager, 'riskAssessmentHsl'),
       riskValueSolLss: readRiskValue(manager, 'riskAssessmentSolLss'),
       causeAreas: [...new Set([...readCodes(manager, 'causeAreas'), ...readCodes(lex, 'causeAreas')])],

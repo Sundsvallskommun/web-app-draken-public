@@ -2024,17 +2024,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    const managerLegalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
-    const managerHsl = managerLegalBases.getByLabel(/^HSL –/u);
-    const managerLss = managerLegalBases.getByLabel(/^LSS –/u);
-    const managerSol = managerLegalBases.getByLabel(/^SoL –/u);
-
-    await expect(managerHsl).not.toBeChecked();
-    await expect(managerLss).toBeChecked();
-    await expect(managerSol).toBeChecked();
-    await expect(managerHsl).toBeDisabled();
-    await expect(managerLss).toBeDisabled();
-    await expect(managerSol).toBeDisabled();
+    // The legal bases of a misconduct are LEX's to state: the unit manager does not see them, but still assesses the
+    // SoL/LSS risk they bring.
+    await expect(managerDocument.locator(`#${managerKey}_legalBases-group`)).toHaveCount(0);
+    await expect(managerDocument.getByText(/^HSL –/u)).toHaveCount(0);
+    await expect(page.locator(`#${managerKey}_riskAssessmentSolLss_probability`)).toBeVisible();
     await expect(managerDocument.locator(classificationFieldSelector)).toHaveCount(0);
 
     await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
@@ -2096,6 +2090,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .getByRole('radio', { name: 'Ja', exact: true });
     await feedbackGiven.check();
     await expect(feedbackGiven).toBeChecked();
+    // LEX states the legal bases of the misconduct; nothing is chosen for them, and HSL is not on offer.
+    const legalBases = solLssDocument.locator(`#${solLssKey}_legalBases-group`);
+    await expect(legalBases.locator('input:checked')).toHaveCount(0);
+    await expect(legalBases.getByText(/^HSL –/u)).toHaveCount(0);
+    await legalBases.getByText(/^LSS –/u).click();
     await solLssDocument
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
@@ -2111,9 +2110,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts[0].key).toBe(solLssKey);
     expect(trace.puts[0].headers['if-match']).toBeUndefined();
     expect(trace.puts[0].body).toEqual({
-      schemaId: expect.stringContaining(`${solLssKey}_2.0`),
+      schemaId: latestSchemaIds[solLssKey],
       value: expect.objectContaining({
-        legalBases: ['SOL', 'LSS'],
+        legalBases: ['LSS'],
         feedbackGiven: 'yes',
       }),
     });

@@ -32,12 +32,11 @@ export const getLabClassificationFields = (
   schemaName: string,
   formData: InvestigationFormData
 ): AvvikelseGroupedClassificationField[] | undefined => {
-  const { defaultOwnerSchemaName, reportedMisconductOwnerSchemaName, forcedLegalBases, classificationGroups } =
+  const { defaultOwnerSchemaName, reportedMisconductOwnerSchemaName, classificationGroups } =
     AVVIKELSE_CLASSIFICATION_POLICY;
   if (schemaName !== defaultOwnerSchemaName && schemaName !== reportedMisconductOwnerSchemaName) return undefined;
-  // The SoL/LSS investigation categorizes reported misconduct, whose legal bases are always the forced ones.
-  const legalBases =
-    schemaName === reportedMisconductOwnerSchemaName ? forcedLegalBases : getInvestigationLegalBases(formData);
+  // Both investigations categorize by the legal bases chosen in them: LEX chooses SoL, LSS or both.
+  const legalBases = getInvestigationLegalBases(formData);
 
   return getChosenAvvikelseClassificationGroups(legalBases, classificationGroups).flatMap(({ group, label }) => {
     const catalog = labCatalogsByGroupKey[group.key];

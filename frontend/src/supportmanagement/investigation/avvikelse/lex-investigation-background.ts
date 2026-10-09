@@ -36,7 +36,8 @@ const reportedEventDescription = (
 /**
  * The background of a lex Sarah investigation as the errand tells it: who investigates it, what was reported,
  * and the day the investigator took the errand up - the day the report reached them. Draken fills it in for an
- * investigation not yet saved, and the investigation keeps it, locked. What the errand does not tell is left out.
+ * investigation not yet saved, and the investigation keeps it, locked. The summary of the report starts as a copy
+ * of what was reported, which the investigator rewrites. What the errand does not tell is left out.
  */
 export const lexInvestigationBackground = ({
   errand,
@@ -55,7 +56,7 @@ export const lexInvestigationBackground = ({
 
   return {
     ...(investigator ? { investigator } : {}),
-    ...(description ? { reportedEventDescription: description } : {}),
+    ...(description ? { reportedEventDescription: description, reportSummary: description } : {}),
     ...(received ? { reportReceivedDate: received } : {}),
   };
 };

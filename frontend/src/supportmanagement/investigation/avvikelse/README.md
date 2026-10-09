@@ -90,15 +90,18 @@ lagrum. Deklarationen styr placering och koppling, men de valda värdena och der
 SupportManagement-labels. De lagras inte i utredningsdokumentets RJSF-formulärdata eller JSON Parameter.
 
 En vanlig avvikelse kategoriseras i enhetschefsutredningen. När ärendets `eventType` är `MISSFORHALLANDE` ägs
-redigeringen i stället av SOL/LSS-utredningen; lagrummen SOL och LSS är då förvalda och skrivskyddade. Regeln ger
-ett enda redigeringsställe, även om samma externa fält kan deklareras av båda schematyperna.
+redigeringen i stället av SOL/LSS-utredningen, där LEX-utredaren väljer lagrum: SoL, LSS eller båda. HSL är inget
+lex Sarah-lagrum, och schemat (2.1) erbjuder det inte. Enhetschefens utredning av ett missförhållande visar inget
+lagrumsfält. Dokumentet får ändå SOL och LSS (`reportedMisconductLegalBases`), eftersom de bär utredningsmallen och
+riskbedömningen SOL/LSS som enhetschefen fortfarande fyller i. Regeln ger ett enda redigeringsställe, även om
+samma externa fält kan deklareras av båda schematyperna.
 
 Kategoriseringen görs en gång per lagrumsgrupp (`classificationGroups` i `avvikelse-classification-policy.ts`): HSL
 har en egen väljare, och SoL och LSS delar en. En väljare visas bara när något av gruppens lagrum är valt, erbjuder
 bara de kategorier de valda lagrummen tillåter och har dem som rubrik, alltså HSL, SoL, LSS eller SoL/LSS. Tills
-metadatan skiljer SoL och LSS åt har de samma kategorilista. Ett missförhållande har alltid lagrummen SOL och LSS och
-kategoriseras därför bara i SoL/LSS-gruppen. Tas ett lagrum bort så att en grupp inte längre nås, försvinner också
-gruppens kategorisering. Varje grupps väg sparas som ärendets labels, och ärendets eget `classification`, som bara
+metadatan skiljer SoL och LSS åt har de samma kategorilista. Ett missförhållande har bara SoL och LSS att välja
+bland och kategoriseras därför bara i SoL/LSS-gruppen. Tas ett lagrum bort så att en grupp inte längre nås,
+försvinner också gruppens kategorisering. Varje grupps väg sparas som ärendets labels, och ärendets eget `classification`, som bara
 rymmer en, tar den grupp som `errandClassificationGroupPriority` rangordnar först: SoL/LSS före HSL. Gruppregeln
 (`getChosenAvvikelseClassificationGroups`) och väljarna (`AvvikelseGroupedClassificationFields`) delas av ärendet och
 labben, så att labben visar samma väljare som ärendet.
@@ -149,7 +152,7 @@ schemarollen `utredning-enhetschef`, eller till `utredning-sol-lss` vid missför
 för att hitta rollen och profilens `key` används för persistens, så egna stabila dokumentnycklar stöds utan att
 verksamhetsregeln blir dynamisk konfiguration.
 
-Samma IAF/VOF-modul äger parameter-/labelselectorn, lagrumspekaren, tvingade lagrum, tillåtna
+Samma IAF/VOF-modul äger parameter-/labelselectorn, lagrumspekaren, ett missförhållandes lagrum, tillåtna
 klassificeringsrötter och labelträdets Support Management-vokabulär. Backend och frontend implementerar samma fasta
 regel och tester låser pariteten. Persistensmappningen är avsiktligt fast: owner sparas i
 `classification.category`, category i `classification.type` och type som vald label. Alla andra appar behåller
@@ -421,10 +424,10 @@ enhetschefen som kunde rättat till det är då redan utskriven ur ärendet.
 
 Bytet har en följdverkan utanför labeln. `REPORT_TYPE/ABUSE` är en av de paths
 `resolveIafVofInvestigationClassificationOwner` läser, så klassificeringsägandet flyttas från
-enhetschefsutredningen till SoL/LSS-utredningen och SOL och LSS blir tvingade lagrum. Ärendets
+enhetschefsutredningen till SoL/LSS-utredningen, där LEX väljer bland SOL och LSS. Ärendets
 parameter `eventType` lämnas däremot orörd och står kvar som `AVVIKELSE`.
 
-En känd konsekvens av de tvingade lagrummen: ett ärende med både HSL och SOL/LSS som blir
+En känd konsekvens av att enhetschefens utredning får SOL och LSS förvalda: ett ärende med både HSL och SOL/LSS som blir
 missförhållande får sina lagrum normaliserade till SOL/LSS nästa gång enhetschefsdokumentet **sparas**,
 vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skrivrätt på
 enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
@@ -561,7 +564,8 @@ och ett ärende hos LEX först när det lämnats tillbaka. Når perioden fler ä
 | Kolumn / filter | Källa |
 | --- | --- |
 | Enhet | ärendets djupaste plats-etikett |
-| Typ, Lagrum, Avvikelsetyp, Underkategori | etiketterna `REPORT_TYPE`, `PROVISION`, `CATEGORY`, `TYPE` |
+| Typ, Avvikelsetyp, Underkategori | etiketterna `REPORT_TYPE`, `CATEGORY`, `TYPE` |
+| Lagrum | `legalBases` i utredningen som kategoriserar ärendet: LEX-utredningen för ett missförhållande, annars enhetschefens. Tills den utredningen anger något: `PROVISION`-etiketterna, alltså det lagrum rapporten skickades in under |
 | Orsak | `causeAreas` i enhetschefens och LEX-utredningen |
 | Riskvärde HSL / SOL/LSS | `calculatedRiskValue` i enhetschefens `riskAssessmentHsl` / `riskAssessmentSolLss` |
 | Polisanmälan | `requiresPoliceReport` i `utredning-sol-lss` |
@@ -584,7 +588,7 @@ avgör vad BFF:en läser; övriga filter, sorteringen och översättningen görs
 | --- | --- |
 | Rapporterade avvikelser | bär `REPORT_TYPE/DEVIATION` |
 | Rapporterade missförhållanden | bär en av klassificeringspolicyns `reportedMisconductSelector`-paths (`REPORT_TYPE/ABUSE`, `REPORT_TYPE/ADVERSE_INCIDENT`), alltså också ett misstänkt missförhållande LEX tagit över |
-| Ärenden med lagrum HSL / SOL/LSS | bär ett lagrum i policyns klassificeringsgrupp `HSL` respektive `SOL_LSS` |
+| Ärenden med lagrum HSL / SOL/LSS | har ett lagrum (enligt raden Lagrum ovan) i policyns klassificeringsgrupp `HSL` respektive `SOL_LSS` |
 | Ej påbörjade ärenden (>30 dagar) | står kvar i `NEW` (`newStatuses`) mer än 30 dagar efter registreringen; kortet är orange så länge det räknar något |
 
 Ett kort är en knapp som visar ärendena bakom talet. Det byter till Ärenden-fliken, behåller valda enheter och
