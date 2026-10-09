@@ -15,6 +15,8 @@ export interface SupportInvestigationInput {
   recommendationMotivation?: string;
 }
 
+export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];
+
 /**
  * The examinations an AoT investigation is made of, in the order the business examines them. Support
  * Management holds no list of its own - the sections are written when the investigation starts.
