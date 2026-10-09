@@ -3,10 +3,10 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Alert, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { SUPPORT_PARAMETER_VALUE_MAX_LENGTH } from '@supportmanagement/services/support-pbi-service';
 import {
   assessSupportSuitability,
   getSupportSuitabilityPeople,
-  SUPPORT_PARAMETER_VALUE_MAX_LENGTH,
   SUPPORT_SUITABILITY_ASSESSMENTS,
   type SupportSuitabilityAssessmentName,
   type SupportSuitabilityPerson,

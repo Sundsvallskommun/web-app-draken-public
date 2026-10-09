@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -33,6 +33,12 @@ const PBI_ADDED_BY_HAND = 'MANUAL';
 const PBI_ROLE_PARAMETER = 'PBI_ROLE';
 const PBI_ROLE_MAX_LENGTH = 200;
 
+const PBI_KNOWLEDGE_TEST_PARAMETER = 'PBI_KNOWLEDGE_TEST';
+const PBI_KNOWLEDGE_TEST_DATE_PARAMETER = 'PBI_KNOWLEDGE_TEST_DATE';
+const PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER = 'PBI_KNOWLEDGE_TEST_COMMENT';
+const PBI_KNOWLEDGE_TEST_STATUSES = ['APPROVED', 'FAILED', 'BOOKED', 'RETAKE', 'NOT_APPLICABLE'];
+const DATE_WITHOUT_TIME = /^\d{4}-\d{2}-\d{2}$/;
+
 const SUPPORT_PARAMETER_VALUE_MAX_LENGTH = 3000;
 
 export class MarkPbiDto {
@@ -60,6 +66,21 @@ export class AssessPbiDto {
   comment?: string;
 }
 
+export class KnowledgeTestPbiDto {
+  @IsOptional()
+  @IsIn(PBI_KNOWLEDGE_TEST_STATUSES)
+  status?: string;
+
+  @IsOptional()
+  @Matches(DATE_WITHOUT_TIME)
+  testedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(SUPPORT_PARAMETER_VALUE_MAX_LENGTH)
+  comment?: string;
+}
+
 interface PbiCandidate extends OrganizationEngagement {
   partyId?: string;
   marked: boolean;
@@ -76,6 +97,9 @@ interface PbiPerson {
   addedByHand: boolean;
   assessment?: string;
   assessmentComment?: string;
+  knowledgeTest?: string;
+  knowledgeTestDate?: string;
+  knowledgeTestComment?: string;
 }
 
 const isPersonIdentity = (engagement: OrganizationEngagement): boolean => {
@@ -91,7 +115,13 @@ const hasPbiParameter = (stakeholder: Stakeholder): boolean =>
 
 const isPbi = (partyId: string) => (stakeholder: Stakeholder) => stakeholder.externalId === partyId && hasPbiParameter(stakeholder);
 
-const PBI_PARAMETERS = new Set([PBI_PARAMETER, PBI_SOURCE_PARAMETER, PBI_ROLE_PARAMETER, PBI_ASSESSMENT_PARAMETER, PBI_ASSESSMENT_COMMENT_PARAMETER]);
+const PBI_ASSESSMENT_PARAMETERS = [PBI_ASSESSMENT_PARAMETER, PBI_ASSESSMENT_COMMENT_PARAMETER];
+
+const PBI_KNOWLEDGE_TEST_PARAMETERS = [PBI_KNOWLEDGE_TEST_PARAMETER, PBI_KNOWLEDGE_TEST_DATE_PARAMETER, PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER];
+
+const PBI_CARRIED_PARAMETERS = [PBI_SOURCE_PARAMETER, PBI_ROLE_PARAMETER, ...PBI_ASSESSMENT_PARAMETERS, ...PBI_KNOWLEDGE_TEST_PARAMETERS];
+
+const PBI_PARAMETERS = new Set([PBI_PARAMETER, ...PBI_CARRIED_PARAMETERS]);
 
 const engagementRoles = (engagement: OrganizationEngagement | undefined): string =>
   (engagement?.relations ?? [])
@@ -108,17 +138,21 @@ const valueOfParameter = (stakeholder: Stakeholder | undefined, key: string): st
 /** A stakeholder that exists only because a handler named them a person of significant influence. */
 const wasAddedByHand = (stakeholder: Stakeholder): boolean => valueOfParameter(stakeholder, PBI_SOURCE_PARAMETER) === PBI_ADDED_BY_HAND;
 
-/** Everything the marking carries. Rewriting a verdict must not drop where the person came from or what they are. */
-const pbiParametersOf = (stakeholder: Stakeholder, verdict?: AssessPbiDto): Parameter[] => {
-  const role = valueOfParameter(stakeholder, PBI_ROLE_PARAMETER);
-  return [
-    pbiParameter,
-    ...(wasAddedByHand(stakeholder) ? [{ key: PBI_SOURCE_PARAMETER, values: [PBI_ADDED_BY_HAND] }] : []),
-    ...(role ? [{ key: PBI_ROLE_PARAMETER, values: [role] }] : []),
-    ...(verdict ? [{ key: PBI_ASSESSMENT_PARAMETER, values: [verdict.assessment] }] : []),
-    ...(verdict?.comment?.trim() ? [{ key: PBI_ASSESSMENT_COMMENT_PARAMETER, values: [verdict.comment.trim()] }] : []),
-  ];
-};
+const parametersWritten = (values: [string, string | undefined][]): Parameter[] =>
+  values.flatMap(([key, value]) => (value?.trim() ? [{ key, values: [value.trim()] }] : []));
+
+/**
+ * Everything the marking carries. One examination writing its own verdict must leave the others standing,
+ * along with where the person came from and what they are.
+ */
+const pbiParametersOf = (stakeholder: Stakeholder, rewritten: string[], values: Parameter[]): Parameter[] => [
+  pbiParameter,
+  ...PBI_CARRIED_PARAMETERS.filter(key => !rewritten.includes(key)).flatMap(key => {
+    const carried = valueOfParameter(stakeholder, key);
+    return carried ? [{ key, values: [carried] }] : [];
+  }),
+  ...values,
+];
 
 const markedStakeholders = (errand: Errand): Stakeholder[] =>
   (errand.stakeholders ?? []).filter(stakeholder => hasPbiParameter(stakeholder) && stakeholder.externalId);
@@ -223,6 +257,9 @@ export class SupportPbiController {
           addedByHand: wasAddedByHand(stakeholder),
           assessment: valueOfParameter(stakeholder, PBI_ASSESSMENT_PARAMETER),
           assessmentComment: valueOfParameter(stakeholder, PBI_ASSESSMENT_COMMENT_PARAMETER),
+          knowledgeTest: valueOfParameter(stakeholder, PBI_KNOWLEDGE_TEST_PARAMETER),
+          knowledgeTestDate: valueOfParameter(stakeholder, PBI_KNOWLEDGE_TEST_DATE_PARAMETER),
+          knowledgeTestComment: valueOfParameter(stakeholder, PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER),
         };
       }),
     );
@@ -443,7 +480,71 @@ export class SupportPbiController {
       errand,
       stakeholders.map(stakeholder =>
         isPbi(partyId)(stakeholder)
-          ? { ...stakeholder, parameters: [...withoutPbiParameters(stakeholder), ...pbiParametersOf(stakeholder, data)] }
+          ? {
+              ...stakeholder,
+              parameters: [
+                ...withoutPbiParameters(stakeholder),
+                ...pbiParametersOf(
+                  stakeholder,
+                  PBI_ASSESSMENT_PARAMETERS,
+                  parametersWritten([
+                    [PBI_ASSESSMENT_PARAMETER, data.assessment],
+                    [PBI_ASSESSMENT_COMMENT_PARAMETER, data.comment],
+                  ]),
+                ),
+              ],
+            }
+          : stakeholder,
+      ),
+      req.user,
+    );
+    return response.status(204).send();
+  }
+
+  /**
+   * The knowledge test of one person, written whole: a status the handler cleared is a status the errand
+   * no longer carries. Whether enough of the people passed is the handler's judgement, not a rule here.
+   */
+  @Patch('/supportpbi/:municipalityId/:id/:partyId/knowledgetest')
+  @OpenAPI({ summary: 'Set the knowledge test of a person of significant influence' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(KnowledgeTestPbiDto, 'body'))
+  async setKnowledgeTest(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('partyId') partyId: string,
+    @Body() data: KnowledgeTestPbiDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+    const errand = await this.readErrand(municipalityId, id, req.user);
+    const stakeholders = errand.stakeholders ?? [];
+    if (!stakeholders.some(isPbi(partyId))) {
+      throw new HttpException(404, 'No person of significant influence with that party id on the errand');
+    }
+
+    await this.writeStakeholders(
+      municipalityId,
+      errand,
+      stakeholders.map(stakeholder =>
+        isPbi(partyId)(stakeholder)
+          ? {
+              ...stakeholder,
+              parameters: [
+                ...withoutPbiParameters(stakeholder),
+                ...pbiParametersOf(
+                  stakeholder,
+                  PBI_KNOWLEDGE_TEST_PARAMETERS,
+                  parametersWritten([
+                    [PBI_KNOWLEDGE_TEST_PARAMETER, data.status],
+                    [PBI_KNOWLEDGE_TEST_DATE_PARAMETER, data.testedAt],
+                    [PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER, data.comment],
+                  ]),
+                ),
+              ],
+            }
           : stakeholder,
       ),
       req.user,
