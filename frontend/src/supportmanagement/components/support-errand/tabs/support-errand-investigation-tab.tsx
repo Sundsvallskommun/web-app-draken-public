@@ -46,12 +46,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   const [investigation, setInvestigation] = useState<Investigation>();
   const [statementsEdited, setStatementsEdited] = useState(false);
   const saveStatements = useRef<() => Promise<boolean>>(undefined);
-  const [suitabilityEdited, setSuitabilityEdited] = useState(false);
-  const saveSuitability = useRef<() => Promise<boolean>>(undefined);
   const [financialEdited, setFinancialEdited] = useState(false);
   const saveFinancial = useRef<() => Promise<boolean>>(undefined);
-  const [knowledgeTestEdited, setKnowledgeTestEdited] = useState(false);
-  const saveKnowledgeTest = useRef<() => Promise<boolean>>(undefined);
   const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,8 +114,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited || knowledgeTestEdited);
-  }, [edited, statementsEdited, suitabilityEdited, financialEdited, knowledgeTestEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || financialEdited);
+  }, [edited, statementsEdited, financialEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -190,10 +186,8 @@ export const SupportErrandInvestigationTab: React.FC<{
 
     savedInvestigation.current = investigation;
     const statementsSaved = (await saveStatements.current?.()) ?? true;
-    const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
     const financialSaved = (await saveFinancial.current?.()) ?? true;
-    const knowledgeTestSaved = (await saveKnowledgeTest.current?.()) ?? true;
-    if (!statementsSaved || !suitabilitySaved || !financialSaved || !knowledgeTestSaved) return false;
+    if (!statementsSaved || !financialSaved) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -282,13 +276,9 @@ export const SupportErrandInvestigationTab: React.FC<{
                 writable={!readOnly}
                 onStatementsEdited={setStatementsEdited}
                 saveStatements={saveStatements}
-                onSuitabilityEdited={setSuitabilityEdited}
-                saveSuitability={saveSuitability}
                 onFinancialEdited={setFinancialEdited}
                 onFinancialSaved={receiveFromSection}
                 saveFinancial={saveFinancial}
-                onKnowledgeTestEdited={setKnowledgeTestEdited}
-                saveKnowledgeTest={saveKnowledgeTest}
                 investigationId={investigation.id}
               />
             ))}

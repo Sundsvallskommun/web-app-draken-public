@@ -3,23 +3,26 @@
 import { searchPerson } from '@common/services/adress-service';
 import { invalidSsnMessage } from '@common/services/helper-service';
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
-import { SupportPbiByHand } from '@supportmanagement/services/support-pbi-service';
+import {
+  normalizeIdentity,
+  PBI_ROLE_MAX_LENGTH,
+  PbiPersonToAdd,
+  stakeholderName,
+} from '@supportmanagement/services/support-pbi-service';
 import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const SUPPORT_PBI_ROLE_MAX_LENGTH = 200;
+type FoundPerson = Omit<PbiPersonToAdd, 'role'>;
 
-interface FoundPerson {
-  partyId: string;
-  name: string;
-}
-
-const digitsOf = (value: string): string => value.replace(/\D/g, '');
-
+/**
+ * Names a person the company data does not offer. The personal number is looked up in Citizen for the party id
+ * and the name; the stakeholder that is added carries the party id, and the personal number only the way every
+ * stakeholder on the errand does.
+ */
 export const SupportPbiAddDialog: FC<{
   show: boolean;
   onClose: () => void;
-  onAdd: (person: SupportPbiByHand) => Promise<boolean>;
+  onAdd: (person: PbiPersonToAdd) => Promise<boolean>;
 }> = ({ show, onClose, onAdd }) => {
   const { t } = useTranslation();
   const [identityCode, setIdentityCode] = useState('');
@@ -40,19 +43,25 @@ export const SupportPbiAddDialog: FC<{
     setProblem(undefined);
     setFound(undefined);
 
-    if (digitsOf(identityCode).length !== 12) {
+    const personNumber = normalizeIdentity(identityCode);
+    if (personNumber.length !== 12) {
       setProblem(invalidSsnMessage);
       return;
     }
 
     setBusy(true);
     try {
-      const person = await searchPerson(identityCode);
+      const person = await searchPerson(personNumber);
       if (!person?.personId) {
         setProblem(t('common:company.pbi.add.not_found'));
         return;
       }
-      setFound({ partyId: person.personId, name: [person.firstName, person.lastName].filter(Boolean).join(' ') });
+      setFound({
+        partyId: person.personId,
+        firstName: person.firstName ?? '',
+        lastName: person.lastName ?? '',
+        personNumber,
+      });
     } catch {
       setProblem(t('common:company.pbi.add.not_found'));
     } finally {
@@ -63,7 +72,7 @@ export const SupportPbiAddDialog: FC<{
   const add = async () => {
     if (!found) return;
     setBusy(true);
-    const added = await onAdd({ partyId: found.partyId, role: role.trim() || undefined });
+    const added = await onAdd({ ...found, role: role.trim() || undefined });
     setBusy(false);
     if (added) close();
   };
@@ -92,14 +101,14 @@ export const SupportPbiAddDialog: FC<{
         {found ? (
           <>
             <div className="border-1 rounded-groups p-16" data-cy="pbi-add-found">
-              <span className="font-semibold">{found.name}</span>
+              <span className="font-semibold">{stakeholderName(found)}</span>
             </div>
             <FormControl className="w-full">
               <FormLabel>{t('common:company.pbi.add.role')}</FormLabel>
               <Input
                 value={role}
                 disabled={busy}
-                maxLength={SUPPORT_PBI_ROLE_MAX_LENGTH}
+                maxLength={PBI_ROLE_MAX_LENGTH}
                 placeholder={t('common:company.pbi.add.role_placeholder')}
                 data-cy="pbi-add-role"
                 onChange={(e) => setRole(e.currentTarget.value)}

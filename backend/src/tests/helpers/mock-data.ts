@@ -13,8 +13,6 @@ export const mockPersonNumberShort = '9001012385';
 export const mockInvalidPersonNumber = '199001012386';
 // The value below is a non existing test person number for testing validation, it is not a real person number
 export const mockNonexistentPersonNumber = '199909092380';
-// The value below is a second test person number, for a person the company data does not name. It is not a real person number
-export const mockSecondaryPersonNumber = '198104122380';
 
 // The value below is an organization number for testing validation, it is not a real organization number.
 // Its third digit is 6, which is what tells the errand search it is an organization number.

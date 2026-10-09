@@ -41,7 +41,6 @@ import { SupportMessageController } from './controllers/supportmanagement/suppor
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
-import { SupportPbiController } from './controllers/supportmanagement/support-pbi.controller';
 import { SupportProcessController } from './controllers/supportmanagement/support-process.controller';
 import { SupportStatementController } from './controllers/supportmanagement/support-statement.controller';
 import { TemplateController } from './controllers/template.controller';
@@ -86,7 +85,6 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportMessageController,
   SupportMetadataController,
   SupportNoteController,
-  SupportPbiController,
   SupportProcessController,
   SupportNotificationController,
   TemplateController,
