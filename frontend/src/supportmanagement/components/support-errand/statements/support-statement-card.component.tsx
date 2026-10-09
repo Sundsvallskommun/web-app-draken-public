@@ -2,6 +2,7 @@
 
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import type { ErrandAttachment, Statement } from '@common/data-contracts/supportmanagement/data-contracts';
+import { getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Alert,
@@ -17,7 +18,8 @@ import {
 } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import { getSupportPbiCandidates } from '@supportmanagement/services/support-pbi-service';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { pbiCandidates } from '@supportmanagement/services/support-pbi-service';
 import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
   attachmentsOfKind,
@@ -56,6 +58,7 @@ import {
 } from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
 import { FC, useEffect, useRef, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
@@ -239,6 +242,7 @@ export const SupportStatementCard: FC<{
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const { getValues } = useFormContext<SupportErrand>();
   const user = useUserStore((s) => s.user);
   const fileInput = useRef<HTMLInputElement>(null);
   const peopleAskedFor = useRef(false);
@@ -315,7 +319,13 @@ export const SupportStatementCard: FC<{
     const readPeople = async () => {
       setBusy(true);
       try {
-        const candidates = supportReferralPeople(await getSupportPbiCandidates(errandId, municipalityId));
+        const company = supportErrand?.stakeholders?.find(
+          (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+        )?.externalId;
+        const engagements = company ? await getLegalEntityEngagements(company) : [];
+        const candidates = supportReferralPeople(
+          pbiCandidates(engagements, [...(getValues('customer') ?? []), ...(getValues('contacts') ?? [])])
+        );
         setPeople(candidates);
         setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
       } catch {
@@ -327,7 +337,7 @@ export const SupportStatementCard: FC<{
     };
 
     void readPeople();
-  }, [peopleNeeded, errandId, municipalityId, t, toastMessage]);
+  }, [peopleNeeded, supportErrand?.stakeholders, getValues, t, toastMessage]);
 
   const togglePerson = (partyId: string) =>
     setChosenPartyIds((current) =>
