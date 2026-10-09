@@ -55,7 +55,7 @@
     "followup": "Uppföljning",
     "unsaved_title": "Du har osparade ändringar",
     "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
-    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslut.",
     "unsaved_leave": "Byt flik ändå",
     "unsaved_stay": "Stanna kvar"
   },
@@ -260,6 +260,7 @@
   },
   "decision": {
     "heading": "Beslut",
+    "intro": "Fatta beslutet utifrån underlaget ovan.",
     "loading": "Hämtar beslut",
     "error": "Beslutet kunde inte hämtas.",
     "locked": "Låst",
@@ -271,11 +272,14 @@
     "decided_at": "Beslutsdatum",
     "legal_basis": "Lagrum",
     "delegation": "Delegationspunkt",
-    "justification": "Motivering",
+    "justification": "Beslutsmotivering",
+    "justification_help": "Detta blir beslutets skäl.",
+    "justification_placeholder": "Motivera beslutet...",
     "terms": "Villkor",
-    "outcome": "Utfall",
-    "outcome_placeholder": "Välj utfall",
-    "role": "Beslutsfattare enligt delegationsordning",
+    "outcome": "Beslut",
+    "outcome_placeholder": "Välj beslut...",
+    "role": "Välj beslutsfattare",
+    "role_help": "Ange vem som fattar beslutet enligt delegationsordningen.",
     "roles": {
       "handlaggare": "Handläggare",
       "utskottet": "Utskottet",
@@ -285,7 +289,7 @@
     "add_term": "Lägg till villkor",
     "term_label": "Villkor {{number}}",
     "remove_term": "Ta bort villkor {{number}}",
-    "save": "Spara beslutet",
+    "save": "Spara beslut",
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
@@ -295,7 +299,132 @@
     "valid_to": "Gäller till (lämna tomt för tills vidare)",
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
-    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
+    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
+    "premises": {
+      "label": "Serveringsställe",
+      "number": "restaurangnummer {{number}}",
+      "new_number": "nytt restaurangnummer",
+      "sent": "Serveringsställe som skickas med beslutet: {{premises}}",
+      "not_chosen": "Inget restaurangnummer är valt under Serveringsställe. Beslutet sparas utan uppgifter om serveringsställe."
+    },
+    "basis": {
+      "heading": "Beslutsunderlag",
+      "intro": "En sammanställning av de uppgifter beslutet ska grundas på, hämtade från ärendet.",
+      "errand": {
+        "heading": "Vad ärendet avser",
+        "type": "Ärendetyp",
+        "number": "Ärendenummer"
+      },
+      "holder": {
+        "heading": "Tillståndshavare",
+        "organization": "Organisation",
+        "organization_number": "Organisationsnummer",
+        "name": "Namn",
+        "address": "Adress",
+        "phone": "Telefon",
+        "email": "E-post",
+        "missing": "Ärendet saknar ärendeägare."
+      },
+      "premises": {
+        "heading": "Serveringsställe",
+        "name": "Namn",
+        "address": "Besöksadress",
+        "address_from": {
+          "FORM": "Besöksadress (ansökan)",
+          "OWNER": "Besöksadress (ärendeägare)"
+        },
+        "contact": "Kontakt",
+        "responsible": "Serveringsansvariga",
+        "right_of_disposal": "Förfoganderätt till lokalen",
+        "cooperation_agreement": "Samarbetsavtal",
+        "visitor_arrangement": "Besöksarrangemang",
+        "sales_site": "Försäljningsplats"
+      },
+      "operation": {
+        "heading": "Verksamheten",
+        "focus": "Inriktning",
+        "hotel_service": "Hotellservice",
+        "description": "Beskrivning",
+        "focus_description": "Beskrivning av inriktning",
+        "serving_to": "Servering avser",
+        "fair": "Mässa",
+        "order": "Ordning och nykterhet",
+        "food_sales": "Stadigvarande livsmedelsförsäljning",
+        "brews_on_site": "Tillverkar folköl på stället",
+        "food_registered": "Livsmedelsregistrerad",
+        "self_monitoring": "Egenkontrollprogram",
+        "distance_sales": "Distansförsäljning",
+        "supplier_agreement": "Avtal med tillverkare eller partihandlare",
+        "hazardous_products": "Särskilt farliga produkter"
+      },
+      "serving_hours": {
+        "heading": "Begärda serveringstider",
+        "period": "Period",
+        "period_public": "Period (allmänheten)",
+        "period_private": "Period (slutet sällskap)",
+        "indoor": "Serveringstid inne",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor": "Serveringstid ute",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "time": "Serveringstid",
+        "sales_time": "Försäljningstid",
+        "dates_note": "Övrigt om datum"
+      },
+      "serving_premises": {
+        "heading": "Serveringslokaler",
+        "drawing": "Planritning",
+        "kitchen_drawing": "Planritning kök",
+        "seats": "Sittplatser",
+        "outdoor_seats": "Sittplatser uteservering",
+        "max_persons": "Max antal personer",
+        "description": "Lokaler inom vilka servering får ske"
+      },
+      "serving": {
+        "heading": "Servering",
+        "drinks": "Alkoholdrycker",
+        "food": "Serverar mat",
+        "menu": "Meny",
+        "drinks_menu": "Dryckesmeny"
+      },
+      "production": {
+        "heading": "Produktionen",
+        "beer": "Starköl (liter)",
+        "wine": "Vin (liter)",
+        "spirits": "Spritdrycker (liter)",
+        "cider": "Cider eller andra jästa drycker (liter)",
+        "started": "Produktionen startade",
+        "dependency": "Beroende till annan tillverkare",
+        "dependency_description": "Beskrivning av beroendet",
+        "description": "Produktionsbeskrivning"
+      },
+      "event": {
+        "heading": "Tillställningen",
+        "type": "Typ av tillställning",
+        "guests": "Beräknat antal gäster",
+        "guest_kind": "Gäster",
+        "invitation": "Hur gästerna bjudits in",
+        "police_permit": "Tillstånd från Polismyndigheten"
+      },
+      "financing": {
+        "heading": "Finansiering",
+        "sources": "Finansieringskällor",
+        "own_funds": "Egna medel",
+        "bank_loan": "Banklån",
+        "private_loan": "Privatlån",
+        "other": "Annan finansiering",
+        "notes": "Övrigt om finansiering"
+      },
+      "referrals": "Remissvar",
+      "no_form": "Ärendet har inga ärendeuppgifter från ansökan att visa.",
+      "loading": "Hämtar ärendeuppgifterna …",
+      "attachment": "Bifogad som bilaga: {{fileName}} (se Bilagor)",
+      "attachment_pending": "Bifogad som bilaga (se Bilagor)",
+      "attachment_missing": "Bilaga saknas",
+      "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
+      "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
+    }
   },
   "attachments": {
     "edit": "Ändra",

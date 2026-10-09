@@ -1,5 +1,5 @@
 import { Alert, Button } from '@sk-web-gui/react';
-import { FC } from 'react';
+import { FC, ReactElement } from 'react';
 
 /**
  * The save button of a tab that owns its own resource, with what is written but not yet saved
@@ -8,6 +8,7 @@ import { FC } from 'react';
  */
 export const SaveRow: FC<{
   label: string;
+  leftIcon?: ReactElement;
   loadingText?: string;
   saving?: boolean;
   disabled?: boolean;
@@ -16,11 +17,12 @@ export const SaveRow: FC<{
   unsavedTitle?: string;
   unsavedText?: string;
   dataCy: string;
-}> = ({ label, loadingText, saving, disabled, onSave, unsaved, unsavedTitle, unsavedText, dataCy }) => (
+}> = ({ label, leftIcon, loadingText, saving, disabled, onSave, unsaved, unsavedTitle, unsavedText, dataCy }) => (
   <div className="flex items-center gap-16">
     <Button
       variant="primary"
       color="vattjom"
+      leftIcon={leftIcon}
       loading={saving}
       loadingText={loadingText}
       disabled={disabled}
@@ -31,7 +33,7 @@ export const SaveRow: FC<{
     </Button>
 
     {unsaved ? (
-      <Alert type="info" data-cy={`${dataCy}-unsaved`}>
+      <Alert type="info" className="max-w-[56rem]" data-cy={`${dataCy}-unsaved`}>
         <Alert.Icon />
         <Alert.Content>
           <Alert.Content.Title>{unsavedTitle}</Alert.Content.Title>

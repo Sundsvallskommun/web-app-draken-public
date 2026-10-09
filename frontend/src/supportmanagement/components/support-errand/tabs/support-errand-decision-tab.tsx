@@ -1,8 +1,11 @@
 import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
+import { appConfig } from '@config/appconfig';
 import {
   Button,
+  Divider,
   FormControl,
+  FormHelperText,
   FormLabel,
   Input,
   Label,
@@ -12,6 +15,15 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
+import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
+import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
+import {
+  decisionParameterValue,
+  premisesFromDecisionParameters,
+  toDecisionParameters,
+} from '@supportmanagement/services/support-decision-parameters-service';
+import type { DecisionPremises as DecisionPremisesValue } from '@supportmanagement/services/support-decision-premises-service';
 import {
   createSupportDecision,
   getSupportDecisions,
@@ -27,10 +39,17 @@ import {
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import { getLabelType, getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
+import {
+  formatAddress,
+  getPremisesAddress,
+  hasServingPremises,
+} from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
-import { Plus, Trash } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
+import { CircleCheck, Plus, Trash } from 'lucide-react';
+import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
 
 const outcomeLabel = (outcomes: DecisionOutcome[], name: string | undefined): string =>
   outcomes.find((outcome) => outcome.name === name)?.displayName || name || '';
@@ -38,9 +57,28 @@ const outcomeLabel = (outcomes: DecisionOutcome[], name: string | undefined): st
 const termTexts = (decision: Decision | undefined): string[] =>
   [...(decision?.terms ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((term) => term.text ?? '');
 
+const DecisionCard: FC<{ children: ReactNode }> = ({ children }) => (
+  <div className="border-1 rounded-12 p-16">{children}</div>
+);
+
+/** Address and restaurant number (or "new") as text. */
+const usePremisesText = () => {
+  const { t } = useTranslation();
+
+  return (premises: DecisionPremisesValue): string =>
+    [
+      formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city }),
+      premises.choice.kind === 'EXISTING'
+        ? t('common:decision.premises.number', { number: premises.choice.restaurantNumber })
+        : t('common:decision.premises.new_number'),
+    ].join(' · ');
+};
+
 const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> = ({ decision, outcomes }) => {
   const { t } = useTranslation();
+  const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
+  const premises = premisesFromDecisionParameters(decision.parameters);
 
   return (
     <div className="flex flex-col gap-16" data-cy="decision-summary">
@@ -62,6 +100,14 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
         <dd className="m-0">{decision.legalBasis || empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.delegation')}</dt>
         <dd className="m-0">{decision.delegationReference || empty}</dd>
+        {premises ? (
+          <>
+            <dt className="text-dark-secondary">{t('common:decision.premises.label')}</dt>
+            <dd className="m-0" data-cy="decision-summary-premises">
+              {premisesText(premises)}
+            </dd>
+          </>
+        ) : null}
       </dl>
       {decision.justification ? (
         <div>
@@ -91,8 +137,10 @@ export const SupportErrandDecisionTab: FC<{
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const canEdit = useUserStore((s) => s.user.permissions.canEditSupportManagement);
+  const user = useUserStore((s) => s.user);
+  const canEdit = user.permissions.canEditSupportManagement;
   const toastMessage = useSnackbar();
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -107,8 +155,30 @@ export const SupportErrandDecisionTab: FC<{
   const [validFrom, setValidFrom] = useState('');
   const [validTo, setValidTo] = useState('');
   const [terms, setTerms] = useState<string[]>([]);
+  const [servingArea, setServingArea] = useState('');
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const servingPermit =
+    !!supportErrand &&
+    supportDecisionPermitType(getMostSpecificLabelType(supportErrand), supportErrand.process?.processKey) ===
+      'SERVERINGSTILLSTAND';
+
+  const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
+  const [opened, setOpened] = useState(isActive);
+  if (isActive && !opened) setOpened(true);
+  const handlesPremises = appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand);
+  const premises = useMemo(
+    () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
+    [supportErrand, supportMetadata?.namespace]
+  );
+  const savedPremises = useMemo(() => premisesFromDecisionParameters(decisions[0]?.parameters), [decisions]);
+  const decisionPremises = useDecisionPremises(
+    handlesPremises && opened ? municipalityId : undefined,
+    premises,
+    savedPremises
+  );
+  const premisesText = usePremisesText();
+  const premisesToSend = decisionPremises.decided ?? savedPremises;
 
   useEffect(() => {
     if (!supportErrand?.id) return;
@@ -142,6 +212,7 @@ export const SupportErrandDecisionTab: FC<{
     setValidTo(draft.validTo ?? '');
     setJustification(draft.justification ?? '');
     setTerms(termTexts(draft));
+    setServingArea(decisionParameterValue(draft.parameters, 'servingAreaDescription') ?? '');
   };
 
   useEffect(() => {
@@ -151,18 +222,24 @@ export const SupportErrandDecisionTab: FC<{
 
   const formInHand = () => ({
     outcome,
+    decidedByRole,
     legalBasis,
     delegationReference,
     justification,
     terms: terms.filter(Boolean),
+    premises: premisesToSend ?? null,
+    servingArea,
   });
 
   const formAsSaved = () => ({
     outcome: outcomeWithoutConditions(decision?.outcome),
+    decidedByRole: decision?.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]),
     legalBasis: decision?.legalBasis ?? '',
     delegationReference: decision?.delegationReference ?? '',
     justification: decision?.justification ?? '',
     terms: termTexts(decision),
+    premises: savedPremises ?? null,
+    servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
   });
 
   const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
@@ -198,6 +275,16 @@ export const SupportErrandDecisionTab: FC<{
       validFrom,
       validTo,
       terms: writtenTerms,
+      parameters: toDecisionParameters(permitType, {
+        errand: supportErrand,
+        errandType: typeLabel?.resourceName,
+        form: getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
+        premises: premisesToSend,
+        servingArea,
+        attachments: supportAttachments,
+        user,
+        today: dayjs().format('YYYY-MM-DD'),
+      }),
     });
 
     try {
@@ -232,13 +319,50 @@ export const SupportErrandDecisionTab: FC<{
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
-      <h2 className="text-h2-md">{t('common:decision.heading')}</h2>
+      {supportErrand ? (
+        <>
+          <SupportErrandDecisionBasis
+            supportErrand={supportErrand}
+            supportMetadata={supportMetadata}
+            premisesHandling={
+              handlesPremises ? (
+                <DecisionPremises state={decisionPremises} readOnly={!canEdit || isLoading || error || !editable} />
+              ) : undefined
+            }
+            servingPremisesHandling={
+              servingPermit ? (
+                <FormControl id="decision-serving-area" className="w-full pt-12">
+                  <FormLabel>{t('common:decision.basis.serving_premises.description')}</FormLabel>
+                  <Textarea
+                    className="w-full"
+                    rows={3}
+                    value={servingArea}
+                    onChange={(event) => setServingArea(event.target.value)}
+                    disabled={!canEdit || isLoading || error || !editable}
+                    data-cy="decision-serving-area"
+                  />
+                </FormControl>
+              ) : undefined
+            }
+          />
+          <Divider />
+        </>
+      ) : null}
+
+      <div>
+        <h2 className="text-h2-md mb-8">{t('common:decision.heading')}</h2>
+        {!isLoading && !error && editable ? (
+          <p className="m-0 text-dark-secondary">{t('common:decision.intro')}</p>
+        ) : null}
+      </div>
 
       {isLoading ? <Spinner size={3} aria-label={t('common:decision.loading')} /> : null}
       {error ? <p>{t('common:decision.error')}</p> : null}
 
       {!isLoading && !error && decision && !editable ? (
-        <DecisionSummary decision={decision} outcomes={outcomes} />
+        <DecisionCard>
+          <DecisionSummary decision={decision} outcomes={outcomes} />
+        </DecisionCard>
       ) : null}
 
       {!isLoading && !error && !decision && !writable ? (
@@ -246,130 +370,169 @@ export const SupportErrandDecisionTab: FC<{
       ) : null}
 
       {!isLoading && !error && editable ? (
-        <div className="flex flex-col gap-16 max-w-[48rem]">
-          <FormControl id="decision-outcome" className="w-full" required>
-            <FormLabel>{t('common:decision.outcome')}</FormLabel>
-            <Select
-              className="w-full"
-              value={outcome}
-              onChange={(event) => setOutcome(event.target.value)}
-              disabled={!canEdit}
-              data-cy="decision-outcome"
-            >
-              <Select.Option value="" disabled>
-                {t('common:decision.outcome_placeholder')}
-              </Select.Option>
-              {selectableSupportDecisionOutcomes(outcomes).map((option) => (
-                <Select.Option key={option.name} value={option.name}>
-                  {option.displayName || option.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl id="decision-role" className="w-full">
-            <FormLabel>{t('common:decision.role')}</FormLabel>
-            <Select
-              className="w-full"
-              value={decidedByRole}
-              onChange={(event) => setDecidedByRole(event.target.value)}
-              disabled={!canEdit}
-              data-cy="decision-role"
-            >
-              {SUPPORT_DECISION_ROLE_KEYS.map((key) => (
-                <Select.Option key={key} value={t(key)}>
-                  {t(key)}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl id="decision-legal-basis" className="w-full">
-            <FormLabel>{t('common:decision.legal_basis')}</FormLabel>
-            <Input value={legalBasis} onChange={(event) => setLegalBasis(event.target.value)} disabled={!canEdit} />
-          </FormControl>
-
-          <FormControl id="decision-delegation" className="w-full">
-            <FormLabel>{t('common:decision.delegation')}</FormLabel>
-            <Input
-              value={delegationReference}
-              onChange={(event) => setDelegationReference(event.target.value)}
-              disabled={!canEdit}
-            />
-          </FormControl>
-
-          <div className="flex gap-16">
-            <FormControl id="decision-valid-from" className="w-full">
-              <FormLabel>{t('common:decision.valid_from')}</FormLabel>
-              <Input
-                type="date"
-                value={validFrom}
-                onChange={(event) => setValidFrom(event.target.value)}
+        <div className="flex flex-col gap-16">
+          <DecisionCard>
+            <FormControl id="decision-outcome" className="w-full" required>
+              <FormLabel>{t('common:decision.outcome')}</FormLabel>
+              <Select
+                className="w-full max-w-[28rem]"
+                value={outcome}
+                onChange={(event) => setOutcome(event.target.value)}
                 disabled={!canEdit}
-                data-cy="decision-valid-from"
+                data-cy="decision-outcome"
+              >
+                <Select.Option value="" disabled>
+                  {t('common:decision.outcome_placeholder')}
+                </Select.Option>
+                {selectableSupportDecisionOutcomes(outcomes).map((option) => (
+                  <Select.Option key={option.name} value={option.name}>
+                    {option.displayName || option.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          </DecisionCard>
+
+          <DecisionCard>
+            <FormControl id="decision-justification" className="w-full">
+              <FormLabel>{t('common:decision.justification')}</FormLabel>
+              <FormHelperText className="p-0 m-0 text-small text-dark-secondary">
+                {t('common:decision.justification_help')}
+              </FormHelperText>
+              <Textarea
+                className="w-full"
+                rows={4}
+                value={justification}
+                placeholder={t('common:decision.justification_placeholder')}
+                onChange={(event) => setJustification(event.target.value)}
+                disabled={!canEdit}
+                data-cy="decision-justification"
               />
             </FormControl>
+          </DecisionCard>
 
-            <FormControl id="decision-valid-to" className="w-full">
-              <FormLabel>{t('common:decision.valid_to')}</FormLabel>
-              <Input
-                type="date"
-                value={validTo}
-                onChange={(event) => setValidTo(event.target.value)}
-                disabled={!canEdit}
-                data-cy="decision-valid-to"
-              />
-            </FormControl>
-          </div>
-
-          <FormControl id="decision-justification" className="w-full">
-            <FormLabel>{t('common:decision.justification')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={4}
-              value={justification}
-              onChange={(event) => setJustification(event.target.value)}
-              disabled={!canEdit}
-            />
-          </FormControl>
-
-          <div className="flex flex-col gap-8">
-            <FormLabel>{t('common:decision.terms')}</FormLabel>
-            {terms.map((term, index) => (
-              <div key={`term-${index}`} className="flex gap-8 items-center">
+          <DecisionCard>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+              <FormControl id="decision-legal-basis" className="w-full">
+                <FormLabel>{t('common:decision.legal_basis')}</FormLabel>
                 <Input
                   className="w-full"
-                  value={term}
-                  onChange={(event) => setTerm(index, event.target.value)}
+                  value={legalBasis}
+                  onChange={(event) => setLegalBasis(event.target.value)}
                   disabled={!canEdit}
-                  aria-label={t('common:decision.term_label', { number: index + 1 })}
                 />
-                <Button
-                  iconButton
-                  variant="tertiary"
-                  showBackground={false}
-                  onClick={() => removeTerm(index)}
+              </FormControl>
+
+              <FormControl id="decision-delegation" className="w-full">
+                <FormLabel>{t('common:decision.delegation')}</FormLabel>
+                <Input
+                  className="w-full"
+                  value={delegationReference}
+                  onChange={(event) => setDelegationReference(event.target.value)}
                   disabled={!canEdit}
-                  aria-label={t('common:decision.remove_term', { number: index + 1 })}
-                >
-                  <Trash size={16} />
-                </Button>
-              </div>
-            ))}
-            <Button
-              variant="tertiary"
-              size="sm"
-              leftIcon={<Plus size={16} />}
-              onClick={() => setTerms((current) => [...current, ''])}
-              disabled={!canEdit}
-              data-cy="decision-add-term"
-            >
-              {t('common:decision.add_term')}
-            </Button>
-          </div>
+                />
+              </FormControl>
+            </div>
+          </DecisionCard>
+
+          <DecisionCard>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+              <FormControl id="decision-valid-from" className="w-full">
+                <FormLabel>{t('common:decision.valid_from')}</FormLabel>
+                <Input
+                  type="date"
+                  className="w-full"
+                  value={validFrom}
+                  onChange={(event) => setValidFrom(event.target.value)}
+                  disabled={!canEdit}
+                  data-cy="decision-valid-from"
+                />
+              </FormControl>
+
+              <FormControl id="decision-valid-to" className="w-full">
+                <FormLabel>{t('common:decision.valid_to')}</FormLabel>
+                <Input
+                  type="date"
+                  className="w-full"
+                  value={validTo}
+                  onChange={(event) => setValidTo(event.target.value)}
+                  disabled={!canEdit}
+                  data-cy="decision-valid-to"
+                />
+              </FormControl>
+            </div>
+          </DecisionCard>
+
+          <DecisionCard>
+            <div className="flex flex-col items-start gap-8">
+              <FormLabel>{t('common:decision.terms')}</FormLabel>
+              {terms.map((term, index) => (
+                <div key={`term-${index}`} className="flex gap-8 items-center w-full">
+                  <Input
+                    className="w-full"
+                    value={term}
+                    onChange={(event) => setTerm(index, event.target.value)}
+                    disabled={!canEdit}
+                    aria-label={t('common:decision.term_label', { number: index + 1 })}
+                  />
+                  <Button
+                    iconButton
+                    variant="tertiary"
+                    showBackground={false}
+                    onClick={() => removeTerm(index)}
+                    disabled={!canEdit}
+                    aria-label={t('common:decision.remove_term', { number: index + 1 })}
+                  >
+                    <Trash size={16} />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="tertiary"
+                size="sm"
+                leftIcon={<Plus size={16} />}
+                onClick={() => setTerms((current) => [...current, ''])}
+                disabled={!canEdit}
+                data-cy="decision-add-term"
+              >
+                {t('common:decision.add_term')}
+              </Button>
+            </div>
+          </DecisionCard>
+
+          <DecisionCard>
+            <FormControl id="decision-role" className="w-full">
+              <FormLabel>{t('common:decision.role')}</FormLabel>
+              <FormHelperText className="p-0 m-0 text-small text-dark-secondary">
+                {t('common:decision.role_help')}
+              </FormHelperText>
+              <Select
+                className="w-full max-w-[28rem]"
+                value={decidedByRole}
+                onChange={(event) => setDecidedByRole(event.target.value)}
+                disabled={!canEdit}
+                data-cy="decision-role"
+              >
+                {SUPPORT_DECISION_ROLE_KEYS.map((key) => (
+                  <Select.Option key={key} value={t(key)}>
+                    {t(key)}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          </DecisionCard>
+
+          {handlesPremises ? (
+            <p className="text-small text-dark-secondary m-0" data-cy="decision-premises-to-send">
+              {premisesToSend
+                ? t('common:decision.premises.sent', { premises: premisesText(premisesToSend) })
+                : t('common:decision.premises.not_chosen')}
+            </p>
+          ) : null}
 
           <SaveRow
             label={t('common:decision.save')}
+            leftIcon={<CircleCheck size={18} />}
             loadingText={t('common:decision.saving')}
             saving={isSaving}
             disabled={!canEdit || !outcome || isSaving}

@@ -1,5 +1,6 @@
-import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import FileUpload from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
+import { imageMimeTypes } from '@common/components/file-upload/mime-types';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';

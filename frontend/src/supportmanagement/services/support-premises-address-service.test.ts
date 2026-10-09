@@ -2,7 +2,7 @@ import type { CSupportStakeholder } from 'src/data-contracts/backend/data-contra
 import { describe, expect, test } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
-import { getPremisesAddress } from './support-premises-address-service';
+import { getPremisesAddress, hasServingPremises } from './support-premises-address-service';
 
 const NAMESPACE = 'AOT';
 const PERMANENT_SERVING = 'aot_alcohol_serving_permit_application_permanent_serving';
@@ -187,4 +187,16 @@ describe.each([
       expect(getPremisesAddress(errandFor(schemaName, { besoksadress: BESOKSADRESS }), NAMESPACE)?.source).toBe('FORM');
     });
   }
+});
+
+describe('hasServingPremises', () => {
+  // Until it is decided what tells a serving permit from the other errands, every errand has one.
+  test('every errand has a serveringsställe for now, with or without a process', () => {
+    expect(hasServingPremises({ process: { processKey: 'alcohol-serving' } })).toBe(true);
+    expect(hasServingPremises({ process: { processKey: 'tobacco-sales' } })).toBe(true);
+    expect(hasServingPremises({})).toBe(true);
+    expect(hasServingPremises(undefined)).toBe(true);
+  });
+
+  test.todo('tobacco, folköl and supervision errands have none once the condition is known');
 });

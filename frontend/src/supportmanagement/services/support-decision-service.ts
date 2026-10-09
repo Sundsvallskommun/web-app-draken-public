@@ -1,4 +1,9 @@
-import type { Decision, DecisionOutcome, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import type {
+  Decision,
+  DecisionOutcome,
+  Label,
+  Parameter,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
 export interface SupportDecisionInput {
@@ -12,6 +17,8 @@ export interface SupportDecisionInput {
   validFrom?: string;
   validTo?: string;
   terms?: string[];
+  /** Metadata for the process, e.g. the premises. */
+  parameters?: Pick<Parameter, 'key' | 'values'>[];
 }
 
 const PERMIT_TYPE_ATTRIBUTE = 'permitType';

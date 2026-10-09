@@ -8,7 +8,15 @@ import {
 } from '@/controllers/supportmanagement/support-decision.controller';
 
 import { mockReq, mockRes } from './helpers/http';
-import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
+import {
+  mockCity,
+  mockMunicipalityId,
+  mockRestaurantNumber,
+  mockStreet,
+  mockSupportErrandId,
+  mockSupportNamespace,
+  mockZipCode,
+} from './helpers/mock-data';
 
 const MUNICIPALITY_ID = mockMunicipalityId;
 const NAMESPACE = mockSupportNamespace;
@@ -20,6 +28,14 @@ interface ApiStub {
   patch: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
 }
+
+// What the decision says about the premises, for the process to act on.
+const PREMISES_PARAMETERS = [
+  { key: 'restaurantNumber', values: [mockRestaurantNumber] },
+  { key: 'street', values: [mockStreet] },
+  { key: 'postalCode', values: [mockZipCode] },
+  { key: 'city', values: [mockCity] },
+];
 
 const decisionsUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}/decisions`;
 
@@ -59,6 +75,19 @@ describe('CreateSupportDecisionDto', () => {
     // The status, method and decider are the controller's to set, never the client's.
     expect(serializedErrors).toMatch(/status/);
     expect(serializedErrors).toMatch(/decidedBy/);
+  });
+
+  it('accepts parameters as keys with lists of values, and nothing else in them', async () => {
+    const options = { whitelist: true, forbidNonWhitelisted: true };
+    const withParameters = (parameters: unknown) =>
+      plainToInstance(CreateSupportDecisionDto, { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters });
+    await expect(validate(withParameters(PREMISES_PARAMETERS), options)).resolves.toEqual([]);
+    await expect(validate(withParameters([]), options)).resolves.toEqual([]);
+
+    const errorsOf = async (parameters: unknown) => JSON.stringify(await validate(withParameters(parameters), options));
+    expect(await errorsOf([{ key: '', values: [mockStreet] }])).toMatch(/key/);
+    expect(await errorsOf([{ key: 'street', values: mockStreet }])).toMatch(/values/);
+    expect(await errorsOf([{ key: 'street', values: [mockStreet], version: 1 }])).toMatch(/version/);
   });
 
   it('refuses a decision without the kind of permit it issues, which PartyAssets needs', async () => {
@@ -117,6 +146,21 @@ describe('createDecision', () => {
 
     expect(api.patch).not.toHaveBeenCalled();
     expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it('writes the parameters with the draft, so they are in place when the decision is concluded', async () => {
+    const { controller, api } = makeController();
+
+    await controller.createDecision(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters: PREMISES_PARAMETERS },
+      mockRes(),
+    );
+
+    const [createConfig] = api.post.mock.calls[0];
+    expect(createConfig.data).toMatchObject({ status: 'DRAFT', parameters: PREMISES_PARAMETERS });
   });
 
   it('removes the draft when a term cannot be written, and reports the failure', async () => {
@@ -222,6 +266,17 @@ describe('updateDecision', () => {
       expect.objectContaining({ url: `${decisionsUrl}/${DECISION_ID}/terms`, data: { sortOrder: 1, text: 'Nytt villkor' } }),
       req.user,
     );
+  });
+
+  it('writes the parameters sent with an update, and sends none when there are none to change', async () => {
+    const { controller, api } = makeController();
+
+    await controller.updateDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, { parameters: PREMISES_PARAMETERS }, mockRes());
+    await controller.updateDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, { justification: 'Ny motivering' }, mockRes());
+
+    expect(api.patch.mock.calls[0][0].data).toMatchObject({ parameters: PREMISES_PARAMETERS });
+    // Support Management leaves the stored parameters as they are when the list is omitted.
+    expect(api.patch.mock.calls[1][0].data).not.toHaveProperty('parameters');
   });
 
   it('leaves the terms alone when none are sent', async () => {
