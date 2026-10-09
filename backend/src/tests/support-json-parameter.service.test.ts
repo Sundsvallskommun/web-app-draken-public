@@ -312,6 +312,24 @@ describe('SupportJsonParameterService', () => {
     expect(api.putCalls).toHaveLength(0);
   });
 
+  // An emptied rich-text editor leaves `<p><br></p>` behind, which a plain required or minLength
+  // check would take for an answer - the way Beslut SoL/LSS could be saved without a motivation.
+  it('treats a rich-text answer without words as missing', async () => {
+    const motivatedSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      required: ['motivation'],
+      properties: { motivation: { type: 'string', minLength: 1, contentMediaType: 'text/html' } },
+    });
+    const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(motivatedSchema, 200)]);
+
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { motivation: '<p><br></p>' }))).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("must have required property 'motivation'"),
+    });
+
+    expect(api.putCalls).toHaveLength(0);
+  });
+
   const stampedSchema = () =>
     schema(DEFINITION.schemaName, SCHEMA_ID, {
       type: 'object',

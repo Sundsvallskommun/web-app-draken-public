@@ -269,6 +269,32 @@ test('normalization drops server-controlled properties, whatever the form or the
 
 // Untouched multi-selects emit [] on mount; a stored document without those keys must not read
 // as changed, so an empty list normalizes to no answer at all.
+// An emptied rich-text editor leaves `<p><br></p>`, which `required` and `minLength` would take for an
+// answer. That is how a Beslut SoL/LSS could be saved without its motivation.
+test('normalization treats rich text without words as unanswered, so a required motivation is missed', () => {
+  const normalized = normalizeInvestigationFormData('beslut-sol-lss', solLssDecisionSchema, {
+    decisionMotivation: '<p><br></p>',
+  });
+
+  // The decision schema requires the motivation, so an answer left out is one the save refuses.
+  assert.ok(solLssDecisionSchema.required?.includes('decisionMotivation'));
+  assert.equal('decisionMotivation' in normalized, false);
+});
+
+test('normalization keeps rich text that has words, and plain text it does not read as markup', () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      motivation: { type: 'string', contentMediaType: 'text/html' },
+      note: { type: 'string' },
+    },
+  };
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-hsl', schema, { motivation: '<p>Skäl&nbsp;</p>', note: '<p><br></p>' }),
+    { motivation: '<p>Skäl&nbsp;</p>', note: '<p><br></p>' }
+  );
+});
+
 test('normalization drops empty root arrays and keeps answered ones', () => {
   const schema: RJSFSchema = {
     type: 'object',

@@ -1,3 +1,4 @@
+import { isBlankMarkup } from '@common/utils/visible-markup-text';
 import type { Experimental_DefaultFormStateBehavior, RJSFSchema } from '@rjsf/utils';
 
 import {
@@ -266,6 +267,25 @@ function dropEmptyArrays(formData: InvestigationFormData): InvestigationFormData
   return answered;
 }
 
+/**
+ * A rich-text answer without words is no answer either: an editor that was typed in and emptied
+ * leaves `<p><br></p>`, which would otherwise satisfy a required motivation. Every rich-text field the
+ * investigation schemas declare is a root property.
+ */
+function dropBlankMarkup(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
+  const blank = Object.entries(schema.properties ?? {})
+    .filter(
+      ([name, property]) =>
+        isRecord(property) && property.contentMediaType === 'text/html' && isBlankMarkup(formData[name])
+    )
+    .map(([name]) => name);
+  if (blank.length === 0) return formData;
+
+  const answered = { ...formData };
+  for (const name of blank) delete answered[name];
+  return answered;
+}
+
 function dropServerControlledProperties(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
   const serverControlled = Object.entries(schema.properties ?? {})
     .filter(([name, property]) => isServerControlledProperty(property) && hasOwn(formData, name))
@@ -288,8 +308,9 @@ export function normalizeInvestigationFormData(
   formData: InvestigationFormData
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
-  const schemaOwnedData = dropEmptyArrays(
-    dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {})
+  const schemaOwnedData = dropBlankMarkup(
+    schema,
+    dropEmptyArrays(dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {}))
   );
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) {

@@ -67,8 +67,10 @@ import {
 } from './investigation-schema-debug-panel.component';
 import {
   changedInvestigationTemplate,
+  investigationTextIsReplaceable,
   offersInvestigationTextTemplates,
   readInvestigationTemplate,
+  readInvestigationText,
   withInvestigationText,
 } from './investigation-text-template';
 import { declinesLexInvestigation, hasLexDeclinedInvestigation } from './lex-initial-assessment';
@@ -250,10 +252,11 @@ export function SupportInvestigationDocument({
     },
     [setDocumentDirty]
   );
-  const offerInvestigationTemplateText = useInvestigationTextTemplate(
+  const investigationTextTemplate = useInvestigationTextTemplate(
     documentState?.formData,
     applyInvestigationTemplateText
   );
+  const startingInvestigationTemplateText = investigationTextTemplate.startingText;
 
   useEffect(() => {
     onDirtyChange(isDirty || classificationDirty);
@@ -307,13 +310,28 @@ export function SupportInvestigationDocument({
             administrators: useUserStore.getState().administrators,
           }));
         if (cancelled) return;
-        const loadedFormData = normalizeContextualInvestigationFormData(
+        const normalizedStartingData = normalizeContextualInvestigationFormData(
           definition.key,
           definition.schemaName,
           loadedSchema.schema,
           startingData,
           reportedMisconduct
         );
+        // A misconduct's lagrum leaves the new document a single template, chosen before anyone opens
+        // it, so the choice that fills the text never happens. Its text is part of the start instead.
+        const preselectedTemplate =
+          !storedDocument && offersInvestigationTextTemplates(loadedSchema.schema)
+            ? changedInvestigationTemplate(startingData, normalizedStartingData)
+            : undefined;
+        const templateText =
+          preselectedTemplate &&
+          investigationTextIsReplaceable(readInvestigationText(normalizedStartingData), undefined)
+            ? await startingInvestigationTemplateText(preselectedTemplate)
+            : undefined;
+        if (cancelled) return;
+        const loadedFormData = templateText
+          ? withInvestigationText(normalizedStartingData, templateText)
+          : normalizedStartingData;
         setDocumentState({
           schema: loadedSchema.schema,
           uiSchema,
@@ -356,6 +374,7 @@ export function SupportInvestigationDocument({
     documentState,
     loadState,
     refreshAccess,
+    startingInvestigationTemplateText,
   ]);
 
   useEffect(() => {
@@ -1043,7 +1062,7 @@ export function SupportInvestigationDocument({
           setNotice(undefined);
           const chosenTemplate = changedInvestigationTemplate(documentState.formData, normalizedData);
           if (chosenTemplate && offersInvestigationTextTemplates(documentState.schema)) {
-            void offerInvestigationTemplateText(chosenTemplate);
+            void investigationTextTemplate.offer(chosenTemplate);
           }
         }}
         onSubmit={(formData) => submitDocument(formData)}

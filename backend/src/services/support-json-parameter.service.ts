@@ -4,6 +4,7 @@ import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
+import { isBlankMarkup } from '@/utils/visible-markup-text';
 
 import ApiService, { type ApiResponse } from './api.service';
 import { isPendingInvestigationReport } from './investigation-report-publication.service';
@@ -362,6 +363,23 @@ const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject
  * - `x-draken-server-owned: true` names a value only the BFF writes, kept from the stored document
  *   unless the BFF's own caller overrides it.
  */
+/**
+ * A rich-text answer without words is no answer. An editor that was typed in and emptied leaves
+ * `<p><br></p>`, which `required` and `minLength` would accept, so a required motivation could be
+ * saved empty. Every rich-text field the investigation schemas declare is a root property.
+ */
+const dropBlankMarkup = (schema: JsonSchema, value: JsonObject): JsonObject => {
+  const properties = isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
+  const blank = Object.entries(properties)
+    .filter(([name, property]) => isRecord(property) && property.contentMediaType === 'text/html' && isBlankMarkup(value[name]))
+    .map(([name]) => name);
+  if (blank.length === 0) return value;
+
+  const answered: Record<string, JsonValue> = { ...value };
+  for (const name of blank) delete answered[name];
+  return answered;
+};
+
 const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: ServerStampContext): JsonObject => {
   const properties = isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
   const timestamp = context.now.toISOString();
@@ -520,7 +538,7 @@ export class SupportJsonParameterService {
     }
     const schema = await this.requireSchemaBinding(request, request.data.schemaId, existing ? 502 : 400);
     if (!request.internal?.allowLocked) assertLockedDocumentWrite(schema, existing?.document.value, request.data.value);
-    const value = applyServerStamps(schema, request.data.value, {
+    const value = applyServerStamps(schema, dropBlankMarkup(schema, request.data.value), {
       existingValue: existing?.document.value,
       now: this.clock(),
       savedBy: request.user.username,

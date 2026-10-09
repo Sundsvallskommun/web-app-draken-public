@@ -25,7 +25,10 @@ När mallvalet ändras, av handläggaren eller automatiskt när lagrummen bara t
 - direkt, om texten är tom eller fortfarande är exakt vad en tidigare mall lade dit;
 - efter en fråga, om någon har skrivit i texten. Svarar handläggaren nej står texten kvar och bara mallvalet ändras.
 
-Ett befintligt dokument fylls aldrig i när det öppnas, bara när valet ändras.
+Ett befintligt dokument fylls aldrig i när det öppnas, bara när valet ändras. Ett nytt dokument vars mall redan är
+vald när det öppnas startar med mallens text: för ett missförhållande låser Draken lagrummet till SoL och LSS, så
+SOL/LSS-mallen är den enda och väljs innan handläggaren hunnit göra valet som fyller texten. Texten är då en del av
+dokumentets start, som förifyllningen, och räknas inte som en osparad ändring.
 
 Texten läses rå och renderas aldrig, så den får inte innehålla Pebble-syntax. Den får bara använda den markup som
 editorn behåller: `h2`, `p`, `br`, `strong` och `em`. Rubrikerna är `h2` eftersom `h1` är rapportens titel i PDF:en.

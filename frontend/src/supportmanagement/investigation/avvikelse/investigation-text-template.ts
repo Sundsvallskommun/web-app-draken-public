@@ -1,3 +1,4 @@
+import { visibleMarkupText } from '@common/utils/visible-markup-text';
 import type { RJSFSchema } from '@rjsf/utils';
 
 import type { InvestigationFormData } from './investigation-document';
@@ -37,23 +38,14 @@ export const changedInvestigationTemplate = (
   return typeof template === 'string' && template !== previous?.[TEMPLATE_FIELD] ? template : undefined;
 };
 
-/** The words of a piece of editor markup, so that the editor's own reformatting does not count as an edit. */
-const visibleText = (markup: unknown): string =>
-  typeof markup === 'string'
-    ? markup
-        .replace(/<[^>]*>/g, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-    : '';
-
 /**
  * Whether a template may replace the investigation text without asking: when the text is empty, or
  * still exactly what an earlier template put there.
  */
 export const investigationTextIsReplaceable = (text: unknown, insertedTemplateText: string | undefined): boolean => {
-  const current = visibleText(text);
-  return current === '' || (insertedTemplateText !== undefined && current === visibleText(insertedTemplateText));
+  // Compared by words, so that the editor's own reformatting does not count as an edit.
+  const current = visibleMarkupText(text);
+  return current === '' || (insertedTemplateText !== undefined && current === visibleMarkupText(insertedTemplateText));
 };
 
 export const readInvestigationText = (formData: InvestigationFormData | undefined): unknown => formData?.[TEXT_FIELD];

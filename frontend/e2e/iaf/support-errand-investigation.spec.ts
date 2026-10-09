@@ -1133,6 +1133,33 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(text).toContainText('Mall SOL/LSS/HSL');
   });
 
+  // A misconduct's lagrum is SoL and LSS from the start, so its only template is chosen before the
+  // investigator could choose it - and the choice that fills the text never happened.
+  test('ger ett nytt missförhållande SOL/LSS-mallens text från början, utan att dokumentet räknas som ändrat', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: {},
+      eventType: 'MISSFORHALLANDE',
+      investigationTextTemplates: {
+        'avvikelse.investigation.sol-lss': '<h2>Mall SOL/LSS</h2><p>[Vägledning SOL/LSS]</p>',
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const text = managerDocument.getByRole('textbox', { name: 'Utredningstext', exact: true });
+    await expect(text).toContainText('Mall SOL/LSS');
+    await expect(text).toContainText('[Vägledning SOL/LSS]');
+    // The template's text is where the document starts, not an edit to save.
+    await expect(
+      page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' })
+    ).toBeDisabled();
+  });
+
   test('följer Adminpanels avstängda utredningsflagga deterministiskt', async ({ page, dismissCookieConsent }) => {
     const trace = await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
