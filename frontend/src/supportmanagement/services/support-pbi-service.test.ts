@@ -112,10 +112,19 @@ test('a verdict is written beside the marking and leaves source and role alone',
 });
 
 test('the knowledge test is written beside the verdict, and each examination leaves the other alone', () => {
-  const assessed = withAssessment(withPbi(stakeholder({}), { source: 'COMPANY' }), { assessment: 'APPROVED', comment: '' });
+  const assessed = withAssessment(withPbi(stakeholder({}), { source: 'COMPANY' }), {
+    assessment: 'APPROVED',
+    comment: '',
+  });
   const tested = withKnowledgeTest(assessed, { status: 'BOOKED', testedAt: ' 2026-11-01 ', comment: '   ' });
 
-  expect(keysOf(tested)).toEqual(['PBI', 'PBI_SOURCE', 'PBI_ASSESSMENT', 'PBI_KNOWLEDGE_TEST', 'PBI_KNOWLEDGE_TEST_DATE']);
+  expect(keysOf(tested)).toEqual([
+    'PBI',
+    'PBI_SOURCE',
+    'PBI_ASSESSMENT',
+    'PBI_KNOWLEDGE_TEST',
+    'PBI_KNOWLEDGE_TEST_DATE',
+  ]);
   expect(pbiOf(tested).knowledgeTest).toEqual({ status: 'BOOKED', testedAt: '2026-11-01', comment: '' });
   expect(pbiOf(withAssessment(tested, { assessment: 'DEFICIENCY', comment: 'Skuld.' })).knowledgeTest.status).toBe(
     'BOOKED'
