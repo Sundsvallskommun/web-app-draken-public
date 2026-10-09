@@ -23,28 +23,28 @@ export const mockUser = ({ permissions, ...overrides }: MockUserOverrides = {}):
 
 export const mockReq = (user: User = mockUser()): RequestWithUser => ({ user }) as RequestWithUser;
 
-export interface MockResponse {
+export interface MockResponse<T = unknown> {
   status: ReturnType<typeof vi.fn>;
   send: ReturnType<typeof vi.fn>;
   setHeader: ReturnType<typeof vi.fn>;
   /** Last status passed to status(); undefined when the handler only called send(). */
   statusCode?: number;
   /** Last payload passed to send(). */
-  body?: unknown;
+  body?: T;
   /** Headers recorded by setHeader(), keyed exactly as the handler wrote them. */
   headers: Record<string, unknown>;
 }
 
 /** Chainable express response double: `status()`, `send()` and `setHeader()` all return the response,
  *  as express does. Read the recorded payload off `res.body` rather than the return value of the handler. */
-export const mockRes = (): MockResponse => {
-  const res: MockResponse = {
+export const mockRes = <T = unknown>(): MockResponse<T> => {
+  const res: MockResponse<T> = {
     status: vi.fn((code: number) => {
       res.statusCode = code;
       return res;
     }),
     send: vi.fn((body: unknown) => {
-      res.body = body;
+      res.body = body as T;
       return res;
     }),
     setHeader: vi.fn((name: string, value: unknown) => {

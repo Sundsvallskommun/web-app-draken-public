@@ -1,3 +1,4 @@
+import { useRefreshNotifications } from '@common/hooks/useNotificationPoller';
 import { isIAFOrVOF } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
@@ -8,7 +9,7 @@ import {
   useSupportErrandTable,
 } from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
+import { acknowledgeAllForErrand } from '@supportmanagement/services/support-notification-service';
 import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -19,6 +20,7 @@ export const SupportErrandsTable: FC = () => {
   const data = useSupportStore((s) => s.supportErrands);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const refreshNotifications = useRefreshNotifications();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -50,10 +52,17 @@ export const SupportErrandsTable: FC = () => {
   };
 
   const openErrandeInNewWindow = async (errand: SupportErrand) => {
-    if (errand.activeNotifications && errand.activeNotifications.length > 0) {
-      await globalAcknowledgeSupportNotification(errand, municipalityId).catch(() => {
-        throw new Error('Failed to acknowledge notification');
+    if (errand.id && errand.activeNotifications && errand.activeNotifications.length > 0) {
+      // Acknowledging must not block opening the errand; a failure just leaves them unread.
+      const result = await acknowledgeAllForErrand(municipalityId, errand.id).catch((e) => {
+        console.error('Something went wrong when acknowledging notifications for errand', e);
+        return undefined;
       });
+      if (result?.failed.length) {
+        console.error(`Could not acknowledge ${result.failed.length} notification(s) for errand ${errand.id}`);
+      }
+      // The bell reads from the store, so it would keep showing the old count until the next poll.
+      await refreshNotifications();
     }
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
