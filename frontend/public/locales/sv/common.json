@@ -81,13 +81,39 @@
       "confirm_yes": "Ja",
       "confirm_no": "Nej",
       "unsaved": "Spara ändringarna av ärendets intressenter innan du ändrar PBI-markeringar.",
-      "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
+      "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade. Försök igen.",
       "error": "PBI-markeringen kunde inte sparas.",
-      "unresolved": "Kan inte slås upp i folkbokföringen"
+      "unresolved": "Kan inte slås upp i folkbokföringen",
+      "list": {
+        "heading": "Personer med betydande inflytande",
+        "description": "Personerna nedan är markerade som PBI på ärendet. De kommer från bolagsdatan eller har lagts till för hand.",
+        "empty": "Inga personer är markerade som PBI på ärendet ännu."
+      },
+      "add": {
+        "open": "Lägg till PBI",
+        "title": "Lägg till person med betydande inflytande",
+        "description": "Sök personen i folkbokföringen med personnummer. Personnummer sparas aldrig på ärendet.",
+        "identity": "Personnummer",
+        "identity_placeholder": "ååååmmddxxxx",
+        "search": "Sök",
+        "confirm": "Lägg till",
+        "cancel": "Avbryt",
+        "not_found": "Personen kunde inte hittas i folkbokföringen.",
+        "role": "Roll (frivillig)",
+        "role_placeholder": "Till exempel Finansiär eller Delägare"
+      },
+      "remove": {
+        "title": "Ta bort PBI",
+        "text_from_company": "Personen avmarkeras som PBI men står kvar i bolagsdatan.",
+        "text_by_hand": "Personen togs in för hand och tas bort från ärendet helt.",
+        "confirm_yes": "Ta bort",
+        "cancel": "Avbryt",
+        "aria": "Ta bort {{name}} som PBI"
+      }
     }
   },
   "investigation": {
-    "heading": "Utredning – lämplighetsprövning",
+    "heading": "Utredning - lämplighetsprövning",
     "title": "Utredning av ansökan",
     "intro": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas utifrån sökandens personliga och ekonomiska förhållanden enligt 8 kap. 12 § alkohollagen.",
     "start": "Starta utredning",
@@ -105,7 +131,7 @@
     "saved": "Utredningen är sparad.",
     "completed_at": "Avslutad {{date}}",
     "save_error": "Utredningen kunde inte sparas.",
-    "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
+    "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade - försök igen.",
     "sections": {
       "statements": "Remisser och yttranden",
       "personal_suitability": "Personlig lämplighet",
@@ -113,7 +139,7 @@
       "knowledge_test": "Kunskapsprov",
       "premises": "Lokal och serveringsställe"
     },
-    "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6–8 veckor.",
+    "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",
     "started_at": "Utredning påbörjad",
@@ -200,7 +226,21 @@
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       },
-      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund."
+      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
+      "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",
+      "awaiting_statements": {
+        "title": "Remisser väntar på svar",
+        "text": "Ärendet har remisser som är skickade men ännu inte avgjorda. Registrera svaret, eller återkalla remissen, innan ärendet går vidare till beslut.",
+        "go_to_investigation": "Till utredningsfliken",
+        "cancel": "Avbryt"
+      },
+      "unsent_statements": {
+        "title": "Remisser som inte har skickats",
+        "text": "Det finns påbörjade remisser som inte har skickats. Ingen väntar på dem, men de blir kvar som utkast på ärendet. Vill du gå vidare till beslut ändå?",
+        "confirm_yes": "Gå vidare",
+        "cancel": "Avbryt"
+      },
+      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -396,5 +436,106 @@
     "confirm_yes": "Ja",
     "confirm_no": "Nej",
     "change_purpose_error": "Bilagetypen kunde inte sparas"
+  },
+  "statements": {
+    "description": "Hantera varje remiss på ett ställe: välj instans, skapa underlag (PDF), och registrera status och utfall när svaret kommer. Om en instans avstyrker på saklig grund kan det utgöra skäl för avslag.",
+    "loading": "Hämtar remisser",
+    "empty": "Inga remisser tillagda ännu. Klicka \"Lägg till remiss\" för att börja hantera en remiss.",
+    "add": "Lägg till remiss",
+    "remove": "Ta bort remiss",
+    "open": "Öppna",
+    "counterparty": "Remissinstans",
+    "counterparty_placeholder": "Välj instans...",
+    "choose_counterparty_first": "Välj remissinstans ovan för att skapa ett underlag.",
+    "choose_counterparty_first_short": "Välj remissinstans först",
+    "generate": "Generera PDF",
+    "generated": "Underlaget har skapats och registrerats som bilaga på ärendet. Ladda ner det från fliken Bilagor. Status satt till \"Skapad\".",
+    "upload": "Ladda upp svar",
+    "tagged_as": "Taggas automatiskt som {{purpose}}",
+    "attachment_request": "Skapat underlag",
+    "attachment_response": "Uppladdat svar",
+    "attachment_title": "Remiss - {{counterparty}} - {{errandNumber}}",
+    "attachment_filename": "Remiss - {{counterparty}} - {{errandNumber}}.pdf",
+    "sent_at": "Datum skickad",
+    "responded_at": "Datum svar",
+    "status_label": "Status",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall...",
+    "response_text": "Yttrande / kommentar",
+    "response_text_placeholder": "Sammanfatta vad instansen anfört i sitt yttrande...",
+    "status": {
+      "draft": "Skapad",
+      "active": "Skickad",
+      "completed": "Besvarad",
+      "cancelled": "Återkallad"
+    },
+    "validation": {
+      "counterparty": "Välj remissinstans.",
+      "outcome_required": "Välj utfall innan remissen markeras som besvarad.",
+      "outcome_needs_completed": "Ett utfall kan bara registreras när remissen är besvarad.",
+      "responded_at": "Ange datum för svaret.",
+      "sent_at": "Ange datum då remissen skickades.",
+      "underlay_missing": "Skapa underlaget innan remissen markeras som skickad.",
+      "response_missing": "Ladda upp instansens svar.",
+      "template": "Välj en mall för underlaget.",
+      "people": "Välj minst en person.",
+      "people_without_identity": "En av de valda personerna saknar personnummer. Mallen kan inte skapas utan det.",
+      "due_at": "Ange datum då svaret senast ska komma in."
+    },
+    "toast": {
+      "read_failed": "Remisserna kunde inte hämtas.",
+      "add_failed": "Remissen kunde inte läggas till.",
+      "save_failed": "Remissen kunde inte sparas.",
+      "generate_failed": "Underlaget kunde inte skapas.",
+      "upload_failed": "Svaret kunde inte laddas upp.",
+      "remove_failed": "Remissen kunde inte tas bort.",
+      "open_failed": "Bilagan kunde inte öppnas.",
+      "incomplete": "Kontrollera remisserna innan du sparar utredningen.",
+      "people_failed": "Personerna i bolaget kunde inte hämtas."
+    },
+    "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp.",
+    "template": "Välj mall",
+    "template_placeholder": "Välj mall...",
+    "due_at": "Svar önskas senast",
+    "preview": "Förhandsgranskning",
+    "people_listed": "Personer som ska räknas upp i underlaget",
+    "people_one_each": "Personer att skapa ett underlag per",
+    "people_empty": "Inga personer med engagemang i bolaget kunde hämtas.",
+    "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf",
+    "locked_to_underlay": "Remissinstans och mall är låsta till det underlag som redan skapats. Behöver du remittera till någon annan, lägg till en ny remiss.",
+    "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen."
+  },
+  "personal_suitability": {
+    "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig.",
+    "loading": "Hämtar personer med betydande inflytande",
+    "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
+    "comment": "Kommentar",
+    "comment_placeholder": "Kommentar om {{person}}s personliga lämplighet…",
+    "assessment_placeholder": "Välj bedömning…",
+    "assessment_for": "Bedömning för {{person}}",
+    "assessment": {
+      "approved": "Ingen anmärkning",
+      "deficiency": "Anmärkning finns",
+      "pending": "Under utredning"
+    },
+    "validation": {
+      "no_people": "Inga personer är markerade som PBI.",
+      "assessment_required": "Varje person behöver en bedömning."
+    },
+    "toast": {
+      "save_failed": "Bedömningen kunde inte sparas",
+      "incomplete": "Varje person som ändrats behöver en bedömning innan utredningen kan sparas."
+    },
+    "comment_too_long": "Kommentaren får vara högst 3000 tecken."
+  },
+  "financial_suitability": {
+    "financing": "Finansiering",
+    "financing_none": "Ansökan anger ingen finansiering.",
+    "financing_notes": "Övriga upplysningar om finansieringen",
+    "assessment": "Bedömning av ekonomisk lämplighet",
+    "toast": {
+      "save_failed": "Bedömningen kunde inte sparas"
+    },
+    "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
   }
 }

@@ -61,6 +61,19 @@ main.container {
   word-break: break-word;
 }
 
+// Quill's placeholder is absolutely positioned and does not stretch the editor. A writing area that
+// collapses to one line therefore lets a wrapped placeholder spill past the frame.
+.investigation-text-editor {
+  .ql-editor {
+    min-height: 12rem;
+    overflow-wrap: anywhere;
+  }
+
+  .ql-editor.ql-blank::before {
+    @apply text-dark-secondary;
+  }
+}
+
 .case-description-editor .ql-container {
   height: 100%;
   box-sizing: border-box;

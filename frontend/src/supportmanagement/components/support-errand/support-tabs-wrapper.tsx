@@ -29,7 +29,7 @@ import {
   SupportProcessStepName,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -152,6 +152,24 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const attachmentsAreLoaded = !!supportAttachments;
+  const attachmentCount = countAttachment(supportAttachments ?? []);
+  const countWhenLastSeen = useRef<number | undefined>(undefined);
+  const countBecomesTheBaseline =
+    countWhenLastSeen.current === undefined ||
+    activeTabKey === 'attachments' ||
+    attachmentCount < countWhenLastSeen.current;
+
+  if (attachmentsAreLoaded && countBecomesTheBaseline) {
+    countWhenLastSeen.current = attachmentCount;
+  }
+
+  const newAttachmentCount = attachmentsAreLoaded
+    ? Math.max(0, attachmentCount - (countWhenLastSeen.current ?? attachmentCount))
+    : 0;
+  const newAttachmentNote = newAttachmentCount === 1 ? ', 1 ny' : `, ${newAttachmentCount} nya`;
+  const attachmentTabLabel = `Bilagor (${attachmentCount}${newAttachmentCount > 0 ? newAttachmentNote : ''})`;
+
   const process = getSupportErrandProcess(supportErrand);
 
   const awaitsStep = (step: SupportProcessStepName): boolean =>
@@ -217,7 +235,7 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'attachments',
-        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        label: attachmentTabLabel,
         content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
         disabled: false,
         visibleFor: true,
@@ -286,6 +304,7 @@ export const SupportTabsWrapper: FC<{
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      attachmentTabLabel,
       conversationMessageTree,
       messageTabLabel,
       messageTree,

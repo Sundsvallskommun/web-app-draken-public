@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
+import { AssessPbiDto, MarkPbiDto, SupportPbiController } from '@/controllers/supportmanagement/support-pbi.controller';
 
 import { mockReq, mockRes } from './helpers/http';
 import {
@@ -12,6 +12,7 @@ import {
   mockOrganizationPartyId,
   mockPersonNumber,
   mockSecondaryCitizenPartyId,
+  mockSecondaryPersonNumber,
   mockSupportErrandId,
   mockSupportNamespace,
 } from './helpers/mock-data';
@@ -25,6 +26,18 @@ const markedPbi = {
   externalIdType: 'PRIVATE',
   externalId: mockSecondaryCitizenPartyId,
   parameters: [{ key: 'PBI', values: ['true'], version: 2 }],
+};
+
+const pbiAddedByHand = {
+  role: 'CONTACT',
+  externalIdType: 'PRIVATE',
+  externalId: mockSecondaryCitizenPartyId,
+  firstName: mockFirstName,
+  lastName: mockLastName,
+  parameters: [
+    { key: 'PBI', values: ['true'] },
+    { key: 'PBI_SOURCE', values: ['MANUAL'] },
+  ],
 };
 
 const engagements = [
@@ -48,7 +61,8 @@ const makeController = (stakeholders: object[] = [applicantCompany]) => {
   const api: ApiStub = {
     get: vi.fn(async (config: { url?: string }) => {
       if (config.url === errandUrl) return { data: { id: mockSupportErrandId, version: 7, stakeholders }, message: 'success' };
-      if (config.url?.endsWith(`/${mockCitizenPartyId}`)) return { data: { givenname: mockFirstName, lastname: mockLastName }, message: 'success' };
+      if (config.url?.endsWith('/personnumber')) return { data: mockSecondaryPersonNumber, message: 'success' };
+      if (config.url?.startsWith('citizen/')) return { data: { givenname: mockFirstName, lastname: mockLastName }, message: 'success' };
       throw new Error(`Unexpected GET ${config.url}`);
     }),
     post: vi.fn(resolvedBatch),
@@ -246,12 +260,267 @@ describe('unmarkPbi', () => {
     expect(config.data.stakeholders).toEqual([applicantCompany, owner, { ...markedPbi, parameters: [] }]);
   });
 
+  it('takes a person who was added by hand off the errand, since nothing else put them there', async () => {
+    const { controller, api } = makeController([applicantCompany, pbiAddedByHand]);
+    const res = mockRes();
+
+    await controller.unmarkPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, res);
+
+    expect(res.statusCode).toBe(204);
+    expect(api.patch.mock.calls[0][0].data.stakeholders).toEqual([applicantCompany]);
+  });
+
   it('answers 404 and writes nothing when the person is not marked', async () => {
     const { controller, api } = makeController();
 
     await expect(controller.unmarkPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockCitizenPartyId, mockRes())).rejects.toMatchObject({
       status: 404,
     });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('fetchPbi', () => {
+  it('reads the people off the errand and dresses the ones the company data knows', async () => {
+    const { controller } = makeController([applicantCompany, { ...markedPbi, externalId: mockCitizenPartyId }]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as { people: object[] }).people).toEqual([
+      {
+        partyId: mockCitizenPartyId,
+        name: 'Person i bolaget',
+        identityCode: mockPersonNumber,
+        roles: 'Styrelseledamot',
+        addedByHand: false,
+        assessment: undefined,
+        assessmentComment: undefined,
+      },
+    ]);
+  });
+
+  it('answers with the table and the named people from one look at the company data', async () => {
+    const { controller, organizationService } = makeController([applicantCompany, { ...markedPbi, externalId: mockCitizenPartyId }]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect(organizationService.getOrganizationEngagements).toHaveBeenCalledTimes(1);
+    expect((res.body as { candidates: object[] }).candidates).toHaveLength(engagements.length);
+  });
+
+  it('names a person who was added by hand from the stakeholder, since no company data holds them', async () => {
+    const { controller } = makeController([applicantCompany, pbiAddedByHand]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as { people: object[] }).people).toMatchObject([
+      { partyId: mockSecondaryCitizenPartyId, name: `${mockFirstName} ${mockLastName}`, addedByHand: true },
+    ]);
+  });
+
+  it('reads the personal number of a person added by hand back from Citizen rather than off the errand', async () => {
+    const { controller } = makeController([applicantCompany, pbiAddedByHand]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as { people: { identityCode: string }[] }).people[0].identityCode).toBe(mockSecondaryPersonNumber);
+    expect(JSON.stringify(pbiAddedByHand)).not.toContain(mockSecondaryPersonNumber);
+  });
+
+  it('gives a person added by hand the role the handler typed, and one from the company data its engagements', async () => {
+    const byHandWithRole = { ...pbiAddedByHand, parameters: [...pbiAddedByHand.parameters, { key: 'PBI_ROLE', values: ['Finansiär'] }] };
+    const { controller } = makeController([applicantCompany, byHandWithRole, { ...markedPbi, externalId: mockCitizenPartyId }]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as { people: { roles: string }[] }).people.map(person => person.roles)).toEqual(['Finansiär', 'Styrelseledamot']);
+  });
+
+  it('answers with the people of an errand that has no company data at all', async () => {
+    const { controller, organizationService } = makeController([pbiAddedByHand]);
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect(organizationService.getOrganizationEngagements).not.toHaveBeenCalled();
+    expect((res.body as { people: object[] }).people).toMatchObject([{ partyId: mockSecondaryCitizenPartyId, addedByHand: true }]);
+  });
+
+  it('rejects a municipality id other than the configured one', async () => {
+    const { controller } = makeController();
+    const res = mockRes();
+
+    await controller.fetchPbi(mockReq(), mockSupportErrandId, '1984', res);
+
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('addPbiByHand', () => {
+  it('adds a person the company data never named, marking where they came from', async () => {
+    const { controller, api } = makeController([applicantCompany]);
+    const res = mockRes();
+
+    await controller.addPbiByHand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { partyId: mockSecondaryCitizenPartyId }, res);
+
+    expect(res.statusCode).toBe(201);
+    const added = api.patch.mock.calls[0][0].data.stakeholders.slice(-1)[0];
+    expect(added).toMatchObject({ role: 'CONTACT', externalIdType: 'PRIVATE', externalId: mockSecondaryCitizenPartyId });
+    expect(added.parameters).toEqual([
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_SOURCE', values: ['MANUAL'] },
+    ]);
+    expect(JSON.stringify(added)).not.toContain(mockPersonNumber);
+  });
+
+  it('marks a stakeholder the errand already has without claiming it was added by hand', async () => {
+    const contact = {
+      role: 'CONTACT',
+      externalIdType: 'PRIVATE',
+      externalId: mockSecondaryCitizenPartyId,
+      parameters: [{ key: 'title', values: ['VD'] }],
+    };
+    const { controller, api } = makeController([applicantCompany, contact]);
+
+    await controller.addPbiByHand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { partyId: mockSecondaryCitizenPartyId }, mockRes());
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.slice(-1)[0];
+    expect(written.parameters).toEqual([
+      { key: 'title', values: ['VD'] },
+      { key: 'PBI', values: ['true'] },
+    ]);
+  });
+
+  it('writes nothing when the person is already named on the errand', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.addPbiByHand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { partyId: mockSecondaryCitizenPartyId }, mockRes());
+
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('keeps the role the handler typed beside the marking', async () => {
+    const { controller, api } = makeController([applicantCompany]);
+
+    await controller.addPbiByHand(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { partyId: mockSecondaryCitizenPartyId, role: '  Finansiär  ' },
+      mockRes(),
+    );
+
+    const added = api.patch.mock.calls[0][0].data.stakeholders.slice(-1)[0];
+    expect(added.parameters).toContainEqual({ key: 'PBI_ROLE', values: ['Finansiär'] });
+  });
+
+  it('survives a verdict being written over it, so the person keeps where they came from and what they are', async () => {
+    const byHandWithRole = { ...pbiAddedByHand, parameters: [...pbiAddedByHand.parameters, { key: 'PBI_ROLE', values: ['Finansiär'] }] };
+    const { controller, api } = makeController([applicantCompany, byHandWithRole]);
+
+    await controller.assessPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { assessment: 'APPROVED' }, mockRes());
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.slice(-1)[0];
+    expect(written.parameters.map((parameter: { key: string }) => parameter.key)).toEqual(['PBI', 'PBI_SOURCE', 'PBI_ROLE', 'PBI_ASSESSMENT']);
+  });
+
+  it('rejects a municipality id other than the configured one and writes nothing', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.addPbiByHand(mockReq(), mockSupportErrandId, '1984', { partyId: mockCitizenPartyId }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('AssessPbiDto', () => {
+  it('takes one of the three verdicts a handler may set, and a comment is optional', async () => {
+    const approved = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED' }));
+    const commented = await validate(plainToInstance(AssessPbiDto, { assessment: 'DEFICIENCY', comment: 'Skuld.' }));
+
+    expect(approved).toHaveLength(0);
+    expect(commented).toHaveLength(0);
+  });
+
+  it('refuses a comment longer than a parameter value can hold', async () => {
+    const atTheLimit = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED', comment: 'x'.repeat(3000) }));
+    const overIt = await validate(plainToInstance(AssessPbiDto, { assessment: 'APPROVED', comment: 'x'.repeat(3001) }));
+
+    expect(atTheLimit).toHaveLength(0);
+    expect(overIt).toHaveLength(1);
+  });
+
+  it('refuses a verdict the investigation section does not know', async () => {
+    const errors = await validate(plainToInstance(AssessPbiDto, { assessment: 'NOT_APPLICABLE' }));
+
+    expect(errors).toHaveLength(1);
+  });
+});
+
+describe('assessPbi', () => {
+  it('writes the verdict beside the marking, leaving the marking in place', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.assessPbi(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      mockSecondaryCitizenPartyId,
+      { assessment: 'DEFICIENCY', comment: 'Skuld hos Kronofogden.' },
+      mockRes(),
+    );
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.find(
+      (stakeholder: { externalId?: string }) => stakeholder.externalId === mockSecondaryCitizenPartyId,
+    );
+    expect(written.parameters).toEqual([
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_ASSESSMENT', values: ['DEFICIENCY'] },
+      { key: 'PBI_ASSESSMENT_COMMENT', values: ['Skuld hos Kronofogden.'] },
+    ]);
+  });
+
+  it('leaves out an empty comment rather than storing a blank one', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+
+    await controller.assessPbi(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      mockSecondaryCitizenPartyId,
+      { assessment: 'APPROVED', comment: '   ' },
+      mockRes(),
+    );
+
+    const written = api.patch.mock.calls[0][0].data.stakeholders.find(
+      (stakeholder: { externalId?: string }) => stakeholder.externalId === mockSecondaryCitizenPartyId,
+    );
+    expect(written.parameters.map((parameter: { key: string }) => parameter.key)).toEqual(['PBI', 'PBI_ASSESSMENT']);
+  });
+
+  it('refuses to assess someone who is not marked on the errand', async () => {
+    const { controller, api } = makeController([applicantCompany]);
+
+    await expect(
+      controller.assessPbi(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockSecondaryCitizenPartyId, { assessment: 'APPROVED' }, mockRes()),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a municipality other than its own', async () => {
+    const { controller, api } = makeController([applicantCompany, markedPbi]);
+    const res = mockRes();
+
+    await controller.assessPbi(mockReq(), mockSupportErrandId, '1984', mockSecondaryCitizenPartyId, { assessment: 'APPROVED' }, res);
+
+    expect(res.statusCode).toBe(400);
     expect(api.patch).not.toHaveBeenCalled();
   });
 });

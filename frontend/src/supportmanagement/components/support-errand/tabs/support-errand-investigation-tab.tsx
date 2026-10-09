@@ -1,7 +1,6 @@
-import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
-import { Button, Disclosure, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportInvestigation,
@@ -15,6 +14,9 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { InvestigationConclusionDisclosure } from './disclosure/investigation-conclusion-disclosure.component';
+import { SectionDisclosure } from './disclosure/investigation-disclosure.component';
+
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
   [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
@@ -27,22 +29,6 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
     <span>{value}</span>
   </div>
 );
-
-const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ section }) => {
-  const { t } = useTranslation();
-
-  return (
-    <Disclosure variant="alt" className="w-full" data-cy={`section-${section.sectionKey}`}>
-      <Disclosure.Header>
-        <Disclosure.Title>{section.heading}</Disclosure.Title>
-        <Disclosure.Button />
-      </Disclosure.Header>
-      <Disclosure.Content>
-        <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
-      </Disclosure.Content>
-    </Disclosure>
-  );
-};
 
 export const SupportErrandInvestigationTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -58,6 +44,14 @@ export const SupportErrandInvestigationTab: React.FC<{
   const toastMessage = useSnackbar();
 
   const [investigation, setInvestigation] = useState<Investigation>();
+  const [statementsEdited, setStatementsEdited] = useState(false);
+  const saveStatements = useRef<() => Promise<boolean>>(undefined);
+  const [suitabilityEdited, setSuitabilityEdited] = useState(false);
+  const saveSuitability = useRef<() => Promise<boolean>>(undefined);
+  const [financialEdited, setFinancialEdited] = useState(false);
+  const saveFinancial = useRef<() => Promise<boolean>>(undefined);
+  const savedInvestigation = useRef<Investigation>(undefined);
+  const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,6 +63,13 @@ export const SupportErrandInvestigationTab: React.FC<{
   });
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const setTabSaver = useSupportStore((s) => s.setTabSaver);
+  const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
+
+  useEffect(() => {
+    setTabSaver('investigation', saver);
+    return () => setTabSaver('investigation', undefined);
+  }, [saver, setTabSaver]);
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
@@ -85,6 +86,14 @@ export const SupportErrandInvestigationTab: React.FC<{
       merge(result);
     },
     [merge]
+  );
+
+  const receiveFromSection = useCallback(
+    (result: Investigation) => {
+      savedInvestigation.current = result;
+      receiveKeepingUnsavedEdits(result);
+    },
+    [receiveKeepingUnsavedEdits]
   );
 
   useEffect(() => {
@@ -107,8 +116,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited);
-  }, [edited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited);
+  }, [edited, statementsEdited, suitabilityEdited, financialEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -166,31 +175,53 @@ export const SupportErrandInvestigationTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 
-  const save = () => {
-    if (!errandId || !investigation?.id) return;
+  const reportSaved = () =>
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: t('common:investigation.saved'),
+      status: 'success',
+    });
+
+  const save = async (): Promise<boolean> => {
+    if (!errandId || !investigation?.id) return true;
+
+    savedInvestigation.current = investigation;
+    const statementsSaved = (await saveStatements.current?.()) ?? true;
+    const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
+    const financialSaved = (await saveFinancial.current?.()) ?? true;
+    if (!statementsSaved || !suitabilitySaved || !financialSaved) return false;
+
+    const latest = savedInvestigation.current;
+    if (!edited) {
+      reportSaved();
+      return true;
+    }
+
     setIsSaving(true);
-    saveSupportInvestigation(errandId, municipalityId, investigation.id, {
-      version: investigation.version ?? 0,
-      summary: values.summary,
-      conclusion: values.conclusion,
-      recommendation: values.recommendation || undefined,
-      recommendationMotivation: values.recommendationMotivation,
-    })
-      .then((result) => {
-        receive(result);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: t('common:investigation.saved'),
-          status: 'success',
-        });
-      })
-      .catch((failure) => {
-        reportFailure(failure);
-        reload();
-      })
-      .finally(() => setIsSaving(false));
+    try {
+      receive(
+        await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
+          version: latest?.version ?? 0,
+          summary: values.summary,
+          conclusion: values.conclusion,
+          recommendation: values.recommendation || undefined,
+          recommendationMotivation: values.recommendationMotivation,
+        })
+      );
+      reportSaved();
+      return true;
+    } catch (error) {
+      reportFailure(error);
+      reload();
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // The saver is registered once; the ref keeps it pointing at the current fields.
+  saveLatest.current = save;
 
   const sections = useMemo(() => sectionsInOrder(investigation), [investigation]);
 
@@ -240,90 +271,24 @@ export const SupportErrandInvestigationTab: React.FC<{
             ) : null}
           </div>
           <p className="text-small text-dark-secondary italic m-0">{t('common:investigation.processing_time')}</p>
-
           <div className="flex flex-col gap-8">
             {sections.map((section) => (
-              <SectionDisclosure key={section.id ?? section.sectionKey} section={section} />
+              <SectionDisclosure
+                key={section.id ?? section.sectionKey}
+                section={section}
+                writable={!readOnly}
+                onStatementsEdited={setStatementsEdited}
+                saveStatements={saveStatements}
+                onSuitabilityEdited={setSuitabilityEdited}
+                saveSuitability={saveSuitability}
+                onFinancialEdited={setFinancialEdited}
+                onFinancialSaved={receiveFromSection}
+                saveFinancial={saveFinancial}
+                investigationId={investigation.id}
+              />
             ))}
-
-            <Disclosure variant="alt" className="w-full" data-cy="investigation-conclusion-section">
-              <Disclosure.Header>
-                <Disclosure.Title>{t('common:investigation.conclusion_heading')}</Disclosure.Title>
-                <Disclosure.Button />
-              </Disclosure.Header>
-              <Disclosure.Content>
-                <div className="flex flex-col gap-16">
-                  <FormControl id="investigation-summary" className="w-full">
-                    <FormLabel>{t('common:investigation.summary')}</FormLabel>
-                    <Textarea
-                      className="w-full"
-                      rows={3}
-                      value={values.summary}
-                      disabled={readOnly}
-                      onChange={(event) => set('summary', event.target.value)}
-                      data-cy="investigation-summary"
-                    />
-                  </FormControl>
-
-                  <FormControl id="investigation-conclusion" className="w-full">
-                    <FormLabel>{t('common:investigation.conclusion')}</FormLabel>
-                    <Textarea
-                      className="w-full"
-                      rows={3}
-                      value={values.conclusion}
-                      disabled={readOnly}
-                      onChange={(event) => set('conclusion', event.target.value)}
-                      data-cy="investigation-conclusion"
-                    />
-                  </FormControl>
-
-                  <FormControl id="investigation-recommendation" className="w-full max-w-[32rem]">
-                    <FormLabel>{t('common:investigation.recommendation')}</FormLabel>
-                    <Select
-                      className="w-full"
-                      value={values.recommendation}
-                      disabled={readOnly}
-                      onChange={(event) => set('recommendation', event.target.value)}
-                      data-cy="investigation-recommendation"
-                    >
-                      <Select.Option value="">{t('common:investigation.recommendation_placeholder')}</Select.Option>
-                      {outcomes.map((outcome) => (
-                        <Select.Option key={outcome.name} value={outcome.name}>
-                          {outcome.displayName || outcome.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl id="investigation-motivation" className="w-full">
-                    <FormLabel>{t('common:investigation.recommendation_motivation')}</FormLabel>
-                    <Textarea
-                      className="w-full"
-                      rows={3}
-                      value={values.recommendationMotivation}
-                      disabled={readOnly}
-                      onChange={(event) => set('recommendationMotivation', event.target.value)}
-                      data-cy="investigation-motivation"
-                    />
-                  </FormControl>
-                </div>
-              </Disclosure.Content>
-            </Disclosure>
+            <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
           </div>
-
-          {readOnly ? null : (
-            <SaveRow
-              label={t('common:investigation.save')}
-              loadingText={t('common:investigation.saving')}
-              saving={isSaving}
-              disabled={isSaving}
-              onSave={save}
-              unsaved={edited}
-              unsavedTitle={t('common:investigation.unsaved')}
-              unsavedText={t('common:tabs.unsaved_investigation')}
-              dataCy="save-investigation"
-            />
-          )}
         </div>
       ) : null}
     </div>
