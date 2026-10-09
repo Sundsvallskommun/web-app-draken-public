@@ -14,7 +14,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { MODAL_DIALOG } from '../utils/modal';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 
 test.describe('Errand page support attachments tab', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -99,6 +99,8 @@ test.describe('Errand page support attachments tab', () => {
       // The delete confirmation is a useConfirm dialog (role=dialog) named "Ta bort?".
       const confirmDialog = page.getByRole('dialog', { name: /Ta bort\?/ }).last();
       await expect(confirmDialog.getByRole('button', { name: 'Nej' })).toBeVisible();
+      // Answered mid-transition, the dialog can stay half open over the page and swallow the next click.
+      await expect(page.locator(CONFIRM_DIALOG)).toHaveCSS('opacity', '1');
       await Promise.all([
         page.waitForResponse(
           (resp) => resp.url().includes(`attachments/${attachment.id}`) && resp.request().method() === 'DELETE'
