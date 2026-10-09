@@ -29,7 +29,7 @@ För KS (Kontakt Sundsvall):
 | API               | Version |
 | ----------------- | ------: |
 | CaseData          |   12.10 |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -63,7 +63,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    15.1 |
+| SupportManagement   |    15.2 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.1 |
@@ -81,14 +81,14 @@ För ROB (Rekrytering och bemanning):
 | Employee          |     2.0 |
 | LegalEntity       |     2.0 |
 | SimulatorServer   |     2.0 |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Templating        |     2.1 |
 
 För KA (Kontakt Ånge):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -100,7 +100,7 @@ För IK (Intern kundtjänst):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -112,7 +112,7 @@ För MSVA (MittSverige Vatten & avfall):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -124,7 +124,7 @@ För SE (Servicecenter Ekonomi):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -136,7 +136,7 @@ För BOU (Barn- och utbildningsförvaltningen):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -149,7 +149,7 @@ För LOK (Lokalplanering):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    15.1 |
+| SupportManagement |    15.2 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -228,6 +228,37 @@ medan ärendet tar emot ändringar. En sparad tjänsteanteckning kan inte ändra
 Draken. AccessMapper ger behörighet till anteckningar som en resurs och kan inte skilja typerna åt,
 så reglerna ligger i backenden (`support-note.service.ts`). Texten får vara högst 2048 tecken, vilket
 är Support Managements gräns.
+
+### Notiser i supportärenden
+
+SupportManagement-drakarna får sina notiser från Support Managements prenumerationsmodell. CaseData
+(MEX, PT) har kvar sitt eget notis-API, och `notification-actions.ts` är det enda stället som väljer
+mellan dem.
+
+- **Vem får notiser.** Support Management prenumererar handläggaren på ärendet när det tilldelas.
+  Övriga ärenden följer användaren själv med **Följ ärendet** i sidopanelen. Knappen visar också om
+  man följer ärendet och låter en sluta följa det. Draken prenumererar aldrig någon på eget initiativ.
+- **En notis per ärende.** Support Management samlar allt som hänt sedan användaren senast kvitterade
+  i en notis per ärende och användare (`GET /supportnotifications/:municipalityId`). Klockan hämtar
+  listan en gång i minuten, pausar i en dold flik och hämtar direkt när användaren byter vy.
+- **Kvittens.** Ett ärendes notiser kvitteras när ärendet öppnas, hur användaren än kommer dit
+  (`PUT /supportnotifications/:municipalityId/:errandId/acknowledge-all`). I panelen går det också att
+  markera notiser som lästa. En kvitterad notis ligger kvar tills Support Management låter den gå ut.
+  **Senaste aktivitet** i översikten visar den senaste händelse användaren inte har kvitterat, och
+  annars när ärendet senast ändrades.
+- **En handling blir en notis.** Alla anrop under en användarhandling bär samma `X-Request-Group-Id`,
+  så Support Management gör en notis av dem. Frontend sätter id:t med `withRequestGroup`, och
+  följdskrivningarna hör till samma handling: statusen efter en tilldelning, självtilldelningen innan
+  ett ärende stängs eller vidarebefordras, faserna vid Starta handläggning och statusen efter en
+  kompletteringsbegäran. BFF:en skickar id:t vidare till Support Management, eller ger requesten ett
+  eget id om webbläsaren inte skickade något (`utils/request-group.ts`).
+- **Tysta skrivningar.** Det systemet skriver på egen hand notifierar ingen. Det gäller läsmarkeringar,
+  kvittenser, prenumeranten som skapas vid första besöket, RISK/HIGH_HSL-etiketten som härleds ur
+  utredningen, rapportens bokföring runt bilagan, faserna ett ärende passerar när det stängs från en
+  tidigare fas och det tomma ärende en drake öppnar utan registreringsformulär. BFF:en skickar då
+  `X-notify: false` (`notifySubscribers: false` i `ApiService`). Support Management läser headern från
+  17.0, alltså i dag bara för drakar med `SUPPORTMANAGEMENT_API_TARGET=sprint`; äldre versioner
+  ignorerar den. Ändringar användaren själv gör ska aldrig vara tysta.
 
 ### Krav
 
