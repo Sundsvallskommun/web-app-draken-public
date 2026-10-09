@@ -46,7 +46,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement-sprint',
-    version: '17.0',
+    version: '17.1',
     // Generated as the one Support Management contract application code imports,
     // so the domain keeps a single TypeScript owner.
     dataContractName: 'supportmanagement',
