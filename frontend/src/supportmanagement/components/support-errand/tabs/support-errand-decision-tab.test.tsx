@@ -13,7 +13,7 @@ import { SupportErrandDecisionTab } from './support-errand-decision-tab';
 // The form is under test; the basis above it and the premises lookup have tests of their own.
 vi.mock('./support-errand-decision-basis.component', () => ({ SupportErrandDecisionBasis: () => null }));
 vi.mock('@supportmanagement/components/premises/use-decision-premises', () => ({
-  useDecisionPremises: () => ({ parameters: undefined }),
+  useDecisionPremises: () => ({ decided: undefined }),
 }));
 vi.mock('@supportmanagement/services/support-decision-service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@supportmanagement/services/support-decision-service')>()),

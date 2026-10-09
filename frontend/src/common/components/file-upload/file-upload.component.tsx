@@ -9,16 +9,7 @@ import { FC, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 
 import { useFileUpload } from './file-upload-dragdrop-context';
-
-export const imageMimeTypes = [
-  'image/jpeg',
-  'image/gif',
-  'image/png',
-  'image/tiff',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-];
+import { imageMimeTypes } from './mime-types';
 
 const FileUpload: FC<{
   dragDrop: boolean;

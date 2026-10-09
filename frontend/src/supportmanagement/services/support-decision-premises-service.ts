@@ -1,5 +1,4 @@
 import type { Address } from '@common/data-contracts/licensed-business/data-contracts';
-import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 
 import type { PremisesAddressMatch, RestaurantNumberWithAssignment } from './licensed-business-service';
 import type { PremisesAddress } from './support-premises-address-service';
@@ -15,12 +14,8 @@ export interface DecisionPremisesAddress {
 }
 
 export interface DecisionPremises extends DecisionPremisesAddress {
-  /** Absent: the process creates a new number. */
-  restaurantNumber?: string;
+  choice: PremisesChoice;
 }
-
-/** Parameter keys the process reads; a contract with it. */
-const KEYS = { restaurantNumber: 'restaurantNumber', street: 'street', postalCode: 'postalCode', city: 'city' };
 
 const complete = (
   street: string | undefined,
@@ -44,20 +39,11 @@ export const decisionPremisesAddress = (
   return registerHasNoMatch ? complete(premises?.street, premises?.postalCode, premises?.city) : undefined;
 };
 
-export const toDecisionPremisesParameters = (address: DecisionPremisesAddress, choice: PremisesChoice): Parameter[] => [
-  ...(choice.kind === 'EXISTING' ? [{ key: KEYS.restaurantNumber, values: [choice.restaurantNumber] }] : []),
-  { key: KEYS.street, values: [address.street] },
-  { key: KEYS.postalCode, values: [address.postalCode] },
-  { key: KEYS.city, values: [address.city] },
-];
-
-/** Undefined when the decision carries no premises. */
-export const fromDecisionParameters = (parameters: Parameter[] | undefined): DecisionPremises | undefined => {
-  const value = (key: string) => parameters?.find((parameter) => parameter.key === key)?.values?.[0];
-  const address = complete(value(KEYS.street), value(KEYS.postalCode), value(KEYS.city));
-
-  return address ? { ...address, restaurantNumber: value(KEYS.restaurantNumber) } : undefined;
-};
+/** The settled address with the choice; sent with the decision (see support-decision-parameters-service). */
+export const toDecisionPremises = (address: DecisionPremisesAddress, choice: PremisesChoice): DecisionPremises => ({
+  ...address,
+  choice,
+});
 
 /** What the process does with the choice. */
 export type PremisesChoiceEffect = 'NEW_NUMBER' | 'REPLACE_ASSIGNMENT' | 'NEW_ASSIGNMENT';
