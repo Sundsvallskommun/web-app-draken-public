@@ -9,10 +9,12 @@ import {
   SupportErrand,
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
+import { existsOnlyAsPbi, isPbi, pbiOf, withoutPbi, withPbi } from '@supportmanagement/services/support-pbi-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
 import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
@@ -37,6 +39,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
   const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const { t } = useTranslation();
 
   const errandId = supportErrand?.id;
 
@@ -71,6 +74,50 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
     setStakeholderContacts(contacts);
     setStakeholderCustomers(customer);
   };
+
+  const writeStakeholders = (customer: SupportStakeholderFormModel[], contacts: SupportStakeholderFormModel[]) => {
+    setValue('contacts', contacts, { shouldDirty: true, shouldValidate: true });
+    setValue('customer', customer, { shouldDirty: true, shouldValidate: true });
+    setStakeholderContacts(contacts);
+    setStakeholderCustomers(customer);
+  };
+
+  const replaceStakeholder = (updated: SupportStakeholderFormModel) =>
+    writeStakeholders(
+      stakeholderCustomers.map((c) => (c.internalId === updated.internalId ? updated : c)),
+      stakeholderContacts.map((c) => (c.internalId === updated.internalId ? updated : c))
+    );
+
+  /** A person already on the errand is marked in place: no source, so unmarking leaves them where they are. */
+  const onMarkPbi = (person: SupportStakeholderFormModel) => replaceStakeholder(withPbi(person, {}));
+
+  /** One who exists only for the marking leaves the errand with it; anyone else only loses the PBI parameters. */
+  const onUnmarkPbi = (marked: SupportStakeholderFormModel) => {
+    if (!existsOnlyAsPbi(marked)) {
+      replaceStakeholder(withoutPbi(marked));
+      return;
+    }
+    return deleteConfirm
+      .showConfirmation(
+        t('common:company.pbi.unmark_title'),
+        t('common:company.pbi.unmark_removes', { name: `${marked.firstName ?? ''} ${marked.lastName ?? ''}`.trim() }),
+        t('common:company.pbi.unmark_yes'),
+        t('common:company.pbi.unmark_no'),
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (confirmed) {
+          writeStakeholders(
+            stakeholderCustomers.filter((c) => c.internalId !== marked.internalId),
+            stakeholderContacts.filter((c) => c.internalId !== marked.internalId)
+          );
+        }
+      });
+  };
+
+  const canBePbi = (contact: SupportStakeholderFormModel) =>
+    appConfig.features.useCompanyInformation && contact.externalIdType !== ExternalIdType.COMPANY;
 
   const onMakeOwner = async (stakeholder: SupportStakeholderFormModel) => {
     stakeholder.role = 'PRIMARY';
@@ -180,6 +227,18 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                 Ta bort
               </Button>
 
+              {canBePbi(contact) ? (
+                <Button
+                  disabled={isSupportErrandLocked(supportErrand!)}
+                  data-cy={isPbi(contact) ? 'unmark-pbi-button' : 'mark-pbi-button'}
+                  variant="link"
+                  className="text-body"
+                  onClick={() => (isPbi(contact) ? onUnmarkPbi(contact) : onMarkPbi(contact))}
+                >
+                  {isPbi(contact) ? t('common:company.pbi.unmark') : t('common:company.pbi.mark')}
+                </Button>
+              ) : null}
+
               {contact.role === 'CONTACT' && stakeholderCustomers.length === 0 ? (
                 <Button
                   disabled={isSupportErrandLocked(supportErrand!)}
@@ -249,6 +308,14 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
+                    {isPbi(contact) ? (
+                      <p className="my-xs mt-0 flex items-center gap-8 text-small" data-cy="stakeholder-pbi">
+                        <span className="rounded-button bg-vattjom-surface-accent text-white px-8 font-bold">
+                          {t('common:company.pbi.badge')}
+                        </span>
+                        <span>{pbiOf(contact).role}</span>
+                      </p>
+                    ) : null}
                     <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-title`}>
                       {title}
                     </p>

@@ -7,6 +7,9 @@ export const mockEnv = {
   mockNonexistentPersonNumber: '199909092380',
   // Test person number (Skatteverket) used by the PT errand fixture's owner.
   mockPtPersonNumber: '199001162396',
+  // Two more fake people (also used in e2e fixtures), for tests where several stakeholders need distinct identities.
+  mockSecondaryPersonNumber: '196407201653',
+  mockTertiaryPersonNumber: '197311194612',
   mockOrganizationNumber: '556026-9986',
   mockInvalidOrganizationNumber: '556026-9987',
   mockEmail: 'a@example.com',

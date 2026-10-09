@@ -1,74 +1,81 @@
 'use client';
 
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Alert, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
-import { SUPPORT_PARAMETER_VALUE_MAX_LENGTH } from '@supportmanagement/services/support-pbi-service';
+import { Alert, FormControl, FormLabel, Select, Textarea } from '@sk-web-gui/react';
+import { useSupportStore } from '@stores/index';
+import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import {
-  assessSupportSuitability,
-  getSupportSuitabilityPeople,
-  SUPPORT_SUITABILITY_ASSESSMENTS,
-  type SupportSuitabilityAssessmentName,
-  type SupportSuitabilityPerson,
-} from '@supportmanagement/services/support-personal-suitability-service';
-import { FC, MutableRefObject, useCallback, useEffect, useState } from 'react';
+  hyphenatedIdentity,
+  PBI_ASSESSMENTS,
+  PbiAssessmentName,
+  pbiOf,
+  pbiProblem,
+  pbiRoles,
+  stakeholderName,
+  SUPPORT_PARAMETER_VALUE_MAX_LENGTH,
+  withAssessment,
+} from '@supportmanagement/services/support-pbi-service';
+import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
-import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
-import { useAnnounceSupportPbiWrite } from '../pbi/use-announce-support-pbi-write';
+import { useSupportPbi } from '../tabs/use-support-pbi';
 
 const PersonCard: FC<{
-  person: SupportSuitabilityPerson;
+  person: SupportStakeholderFormModel;
+  engagements: LegalEntityEngagement[];
   writable: boolean;
-  problem: string | undefined;
-  onAssessment: (assessment: SupportSuitabilityAssessmentName) => void;
-  onComment: (comment: string) => void;
-}> = ({ person, writable, problem, onAssessment, onComment }) => {
+  onChange: (person: SupportStakeholderFormModel) => void;
+}> = ({ person, engagements, writable, onChange }) => {
   const { t } = useTranslation();
+  const name = stakeholderName(person);
+  const { assessment, comment } = pbiOf(person);
+  const problem = pbiProblem(person);
 
   return (
-    <div className="border-1 rounded-groups p-16 flex flex-col gap-12" data-cy={`suitability-${person.partyId}`}>
+    <div className="border-1 rounded-groups p-16 flex flex-col gap-12" data-cy={`suitability-${person.internalId}`}>
       <div className="flex items-start justify-between gap-16">
         <div className="flex flex-col min-w-0">
-          <span className="font-semibold truncate">{person.name}</span>
+          <span className="font-semibold truncate">{name}</span>
           <span className="text-small text-dark-secondary">
-            {[person.identityCode, person.roles].filter(Boolean).join(' · ')}
+            {[hyphenatedIdentity(person.personNumber), pbiRoles(person, engagements)].filter(Boolean).join(' · ')}
           </span>
         </div>
         <Select
           className="w-[22rem] shrink-0"
-          value={person.assessment}
+          value={assessment}
           disabled={!writable}
-          data-cy={`suitability-assessment-${person.partyId}`}
-          aria-label={t('common:personal_suitability.assessment_for', { person: person.name })}
-          onChange={(e) => onAssessment(e.currentTarget.value as SupportSuitabilityAssessmentName)}
+          data-cy={`suitability-assessment-${person.internalId}`}
+          aria-label={t('common:personal_suitability.assessment_for', { person: name })}
+          onChange={(e) =>
+            onChange(withAssessment(person, { assessment: e.currentTarget.value as PbiAssessmentName, comment }))
+          }
         >
           <Select.Option value="">{t('common:personal_suitability.assessment_placeholder')}</Select.Option>
-          {SUPPORT_SUITABILITY_ASSESSMENTS.map((candidate) => (
+          {PBI_ASSESSMENTS.map((candidate) => (
             <Select.Option key={candidate.assessment} value={candidate.assessment}>
               {t(candidate.translationKey)}
             </Select.Option>
           ))}
         </Select>
       </div>
-      <FormControl className="w-full">
+      <FormControl className="w-full" invalid={!!problem}>
         <FormLabel>{t('common:personal_suitability.comment')}</FormLabel>
         <Textarea
           className="w-full"
           rows={3}
           maxLength={SUPPORT_PARAMETER_VALUE_MAX_LENGTH}
           maxLengthWarningText={t('common:personal_suitability.comment_too_long')}
-          value={person.comment}
+          value={comment}
           disabled={!writable}
-          data-cy={`suitability-comment-${person.partyId}`}
-          placeholder={t('common:personal_suitability.comment_placeholder', { person: person.name })}
-          onChange={(e) => onComment(e.currentTarget.value)}
+          data-cy={`suitability-comment-${person.internalId}`}
+          placeholder={t('common:personal_suitability.comment_placeholder', { person: name })}
+          onChange={(e) => onChange(withAssessment(person, { assessment, comment: e.currentTarget.value }))}
         />
       </FormControl>
       {problem ? (
-        <p className="text-small text-error-text-primary m-0" data-cy={`suitability-problem-${person.partyId}`}>
+        <p className="text-small text-error-text-primary m-0" data-cy={`suitability-problem-${person.internalId}`}>
           {t(problem)}
         </p>
       ) : null}
@@ -76,126 +83,26 @@ const PersonCard: FC<{
   );
 };
 
-export const SupportPersonalSuitabilitySection: FC<{
-  writable: boolean;
-  onEdited: (edited: boolean) => void;
-  saveRef: MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ writable, onEdited, saveRef }) => {
+/**
+ * One card per person marked on the errand. The verdict is written onto the stakeholder in the form and saved by
+ * Spara ärende, so the card has no state of its own: what it shows is what the form holds.
+ */
+export const SupportPersonalSuitabilitySection: FC<{ writable: boolean }> = ({ writable }) => {
   const { t } = useTranslation();
-  const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const [people, setPeople] = useState<SupportSuitabilityPerson[]>();
-  const [loaded, setLoaded] = useState<SupportSuitabilityPerson[]>([]);
-  const [problems, setProblems] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
   const [adding, setAdding] = useState(false);
 
-  const errandId = supportErrand?.id;
-  const pbiSignal = useSupportStore((s) => s.pbiSignal);
-  const pbiSignalAt = pbiSignal?.errandId === errandId ? pbiSignal?.at : undefined;
-
-  /** A person who was already on the card keeps whatever the handler has typed but not yet saved. */
-  const absorb = useCallback((read: SupportSuitabilityPerson[]) => {
-    setLoaded(read);
-    setPeople((current) => read.map((person) => current?.find((held) => held.partyId === person.partyId) ?? person));
-  }, []);
-
-  /** The marking is changed in Grundinformation as well, so the card follows every write wherever it was made. */
-  useEffect(() => {
-    if (!errandId) return;
-
-    let abandoned = false;
-    getSupportSuitabilityPeople(errandId, municipalityId)
-      .then((read) => {
-        if (!abandoned) absorb(read);
-      })
-      .catch(() => {
-        if (!abandoned) absorb([]);
-      });
-
-    return () => {
-      abandoned = true;
-    };
-  }, [errandId, municipalityId, absorb, pbiSignalAt]);
-
-  const addByHand = useAddSupportPbiByHand();
-  const announce = useAnnounceSupportPbiWrite();
-
-  const change = (partyId: string, changes: Partial<SupportSuitabilityPerson>) =>
-    setPeople((current) =>
-      (current ?? []).map((person) => (person.partyId === partyId ? { ...person, ...changes } : person))
-    );
-
-  const asLoaded = (partyId: string) => loaded.find((person) => person.partyId === partyId);
-
-  const isEdited = (person: SupportSuitabilityPerson): boolean => {
-    const before = asLoaded(person.partyId);
-    return !before || before.assessment !== person.assessment || before.comment !== person.comment;
-  };
-
-  const edited = (people ?? []).some(isEdited);
-
-  useEffect(() => {
-    onEdited(edited);
-  }, [edited, onEdited]);
-
-  /**
-   * A comment cannot be written without a verdict, since the verdict is what the service stores it
-   * beside. Saving the rest would leave the card edited for good, so the whole section waits.
-   */
-  const saveAll = useCallback(async (): Promise<boolean> => {
-    const changed = (people ?? []).filter(isEdited);
-    if (!errandId || changed.length === 0) return true;
-
-    const found = Object.fromEntries(
-      changed
-        .filter((person) => !person.assessment)
-        .map((person) => [person.partyId, 'common:personal_suitability.validation.assessment_required'])
-    );
-    setProblems(found);
-    if (Object.keys(found).length > 0) {
-      toastMessage(getToastOptions({ message: t('common:personal_suitability.toast.incomplete'), status: 'error' }));
-      return false;
-    }
-
-    setBusy(true);
-    try {
-      for (const person of changed) {
-        await assessSupportSuitability(errandId, municipalityId, person.partyId, {
-          assessment: person.assessment as SupportSuitabilityAssessmentName,
-          comment: person.comment,
-        });
-      }
-      await announce();
-      setLoaded(people ?? []);
-      return true;
-    } catch {
-      toastMessage(getToastOptions({ message: t('common:personal_suitability.toast.save_failed'), status: 'error' }));
-      return false;
-    } finally {
-      setBusy(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [announce, people, loaded, errandId, municipalityId, t, toastMessage]);
-
-  useEffect(() => {
-    saveRef.current = saveAll;
-  }, [saveAll, saveRef]);
-
-  if (!people) {
-    return (
-      <div className="flex items-center gap-12 text-dark-secondary" data-cy="suitability-loading">
-        <Spinner size={2} /> {t('common:personal_suitability.loading')}
-      </div>
-    );
-  }
+  const organizationPartyId = supportErrand?.stakeholders?.find(
+    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+  )?.externalId;
+  const pbi = useSupportPbi(organizationPartyId);
+  const canWrite = writable && pbi.canEdit;
 
   return (
     <div className="flex flex-col gap-16" data-cy="personal-suitability-section">
       <p className="text-dark-secondary m-0">{t('common:personal_suitability.description')}</p>
 
-      {people.length === 0 ? (
+      {pbi.people.length === 0 ? (
         <Alert type="info" data-cy="suitability-empty">
           <Alert.Icon />
           <Alert.Content>
@@ -204,22 +111,21 @@ export const SupportPersonalSuitabilitySection: FC<{
         </Alert>
       ) : null}
 
-      {people.map((person) => (
+      {pbi.people.map((person) => (
         <PersonCard
-          key={person.partyId}
+          key={person.internalId}
           person={person}
-          writable={writable && !busy}
-          problem={problems[person.partyId]}
-          onAssessment={(assessment) => change(person.partyId, { assessment })}
-          onComment={(comment) => change(person.partyId, { comment })}
+          engagements={pbi.engagements}
+          writable={canWrite}
+          onChange={pbi.replace}
         />
       ))}
 
-      {writable ? (
-        <AddPbiButton disabled={busy} onClick={() => setAdding(true)} label={t('common:company.pbi.add.open')} />
+      {canWrite ? (
+        <AddPbiButton disabled={false} onClick={() => setAdding(true)} label={t('common:company.pbi.add.open')} />
       ) : null}
 
-      <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={addByHand} />
+      <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={pbi.addByHand} />
     </div>
   );
 };

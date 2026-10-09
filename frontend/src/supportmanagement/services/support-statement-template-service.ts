@@ -1,7 +1,7 @@
 import { engagementRoles } from '@common/services/legal-entity-service';
 
 import type { SupportErrand } from './support-errand-service';
-import type { SupportPbiCandidate } from './support-pbi-service';
+import { engagementIsPerson, hyphenatedIdentity, normalizeIdentity, SupportPbiCandidate } from './support-pbi-service';
 import { supportStatementCounterparty, supportStatementCounterpartyKey } from './support-statement-counterparties';
 
 export const SupportReferralPersons = {
@@ -144,9 +144,6 @@ export interface SupportReferralPerson {
   marked: boolean;
 }
 
-const hyphenated = (identityCode: string): string =>
-  /^\d{12}$/.test(identityCode) ? `${identityCode.slice(0, 8)}-${identityCode.slice(8)}` : identityCode;
-
 const splitName = (name: string): { firstName: string; lastName: string } => {
   const parts = name.trim().split(/\s+/);
   return parts.length < 2
@@ -154,16 +151,20 @@ const splitName = (name: string): { firstName: string; lastName: string } => {
     : { firstName: parts.slice(0, -1).join(' '), lastName: parts.at(-1) ?? '' };
 };
 
+/**
+ * The people a referral can be about: everyone the company data names, with the ones marked on the errand ticked.
+ * The key is the party id when the person is a stakeholder, otherwise the identity, since only a choice hangs on it.
+ */
 export const supportReferralPeople = (candidates: SupportPbiCandidate[]): SupportReferralPerson[] =>
   candidates
-    .filter((candidate) => candidate.partyId && candidate.name)
-    .map((candidate) => ({
-      partyId: candidate.partyId as string,
-      name: candidate.name as string,
-      ...splitName(candidate.name as string),
-      personalNumber: hyphenated(candidate.identity?.code ?? ''),
-      roles: engagementRoles(candidate),
-      marked: !!candidate.marked,
+    .filter(({ engagement }) => engagementIsPerson(engagement) && engagement.name)
+    .map(({ engagement, marked, stakeholder }) => ({
+      partyId: stakeholder?.externalId || normalizeIdentity(engagement.identity?.code),
+      name: engagement.name as string,
+      ...splitName(engagement.name as string),
+      personalNumber: hyphenatedIdentity(engagement.identity?.code),
+      roles: engagementRoles(engagement),
+      marked,
     }));
 
 interface SupportStatementPremises {

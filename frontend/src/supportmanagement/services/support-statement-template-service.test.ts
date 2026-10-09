@@ -1,5 +1,12 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
+vi.mock('@common/components/file-upload/file-upload.component', () => ({
+  imageMimeTypes: [],
+  documentMimeTypes: [],
+}));
+
+import { mockEnv } from '../../tests/mock-env';
+import { hyphenatedIdentity } from './support-pbi-service';
 import {
   supportReferralPeople,
   SupportReferralPersons,
@@ -9,6 +16,9 @@ import {
   supportStatementTemplateProblem,
   supportStatementTemplates,
 } from './support-statement-template-service';
+
+const robotNumber = mockEnv.mockPersonNumber;
+const androidNumber = mockEnv.mockSecondaryPersonNumber;
 
 const owner = {
   role: 'PRIMARY',
@@ -40,7 +50,7 @@ const people = [
     name: 'Erik Exempelsson',
     firstName: 'Erik',
     lastName: 'Exempelsson',
-    personalNumber: '19800101-1234',
+    personalNumber: hyphenatedIdentity(robotNumber),
     roles: 'Styrelseledamot',
     marked: true,
   },
@@ -143,7 +153,7 @@ test('the police referral lists the people, with their roles, and asks for no de
   });
 
   expect(parameters.persons).toEqual([
-    { personalNumber: '19800101-1234', name: 'Erik Exempelsson', roles: 'Styrelseledamot' },
+    { personalNumber: hyphenatedIdentity(robotNumber), name: 'Erik Exempelsson', roles: 'Styrelseledamot' },
   ]);
   expect(parameters).not.toHaveProperty('replyDeadline');
 });
@@ -163,7 +173,7 @@ test('a criminal record is asked for one person at a time, under the authority t
     requesterPostalCode: '851 85',
     handlerEmail: 'anna.andersson@sundsvall.se',
     caseNumber: 'AOT-26100008',
-    personalNumber: '19800101-1234',
+    personalNumber: hyphenatedIdentity(robotNumber),
     firstName: 'Erik',
     lastName: 'Exempelsson',
   });
@@ -183,7 +193,7 @@ test('the tax agency is told what the errand is about, in the words of its own t
   ).toMatchObject({
     caseType: 'ansökan om serveringstillstånd',
     applicantName: 'Krogen Exempel AB',
-    representatives: [{ personalNumber: '19800101-1234', name: 'Erik Exempelsson' }],
+    representatives: [{ personalNumber: hyphenatedIdentity(robotNumber), name: 'Erik Exempelsson' }],
   });
 });
 
@@ -215,7 +225,7 @@ test('the tobacco form about a person carries that one person', () => {
   ).toMatchObject({
     applicantName: 'Krogen Exempel AB',
     pbiName: 'Erik Exempelsson',
-    pbiPersonalNumber: '19800101-1234',
+    pbiPersonalNumber: hyphenatedIdentity(robotNumber),
   });
 });
 
@@ -241,9 +251,15 @@ test('how many documents a template makes is read off the template', () => {
 
 test('an identity code is written the way a form is read, with a hyphen', () => {
   expect(
-    supportReferralPeople([{ name: 'Erik Exempelsson', partyId: 'p1', identity: { code: '198001011234' } }])[0]
+    supportReferralPeople([
+      {
+        engagement: { name: 'Erik Exempelsson', identity: { type: 'PERSONNUMMER', code: robotNumber } },
+        marked: false,
+      },
+    ])[0]
   ).toMatchObject({
-    personalNumber: '19800101-1234',
+    partyId: robotNumber,
+    personalNumber: hyphenatedIdentity(robotNumber),
   });
 });
 
@@ -251,13 +267,19 @@ test('the people are read off the company engagements, surname last', () => {
   expect(
     supportReferralPeople([
       {
-        partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
-        name: 'Maria Anna Exempelsdotter',
-        identity: { code: '198505055678' },
-        relations: [{ description: 'VD' }, { description: 'Styrelsesuppleant' }],
+        engagement: {
+          name: 'Maria Anna Exempelsdotter',
+          identity: { type: 'PERSONNUMMER', code: androidNumber },
+          relations: [{ description: 'VD' }, { description: 'Styrelsesuppleant' }],
+        },
         marked: true,
+        stakeholder: { externalId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11' } as never,
       },
-      { name: 'Utan identitet' },
+      {
+        engagement: { name: 'Ägarbolaget AB', identity: { type: 'ORGANISATIONSNUMMER', code: '5560269986' } },
+        marked: false,
+      },
+      { engagement: { name: 'Utan identitet' }, marked: false },
     ])
   ).toEqual([
     {
@@ -265,7 +287,7 @@ test('the people are read off the company engagements, surname last', () => {
       name: 'Maria Anna Exempelsdotter',
       firstName: 'Maria Anna',
       lastName: 'Exempelsdotter',
-      personalNumber: '19850505-5678',
+      personalNumber: hyphenatedIdentity(androidNumber),
       roles: 'VD, Styrelsesuppleant',
       marked: true,
     },

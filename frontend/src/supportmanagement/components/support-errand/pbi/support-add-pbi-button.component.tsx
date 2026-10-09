@@ -16,7 +16,7 @@ export const AddPbiButton = ({ disabled, onClick, label }: AddPbiButtonProps) =>
         size="sm"
         rightIcon={<UserPlus size={18} />}
         disabled={disabled}
-        data-cy="suitability-pbi-add-open"
+        data-cy="pbi-add-open"
         onClick={onClick}
       >
         {label}
