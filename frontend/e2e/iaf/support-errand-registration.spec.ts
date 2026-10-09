@@ -45,14 +45,13 @@ test.describe('Registrering i IAF/VOF', () => {
       'Avvikelse',
       'Missförhållande',
     ]);
-    await expect(form.locator('[data-cy="registration-location"] option')).toHaveText(['Välj', 'Hemtjänst Norr']);
+    // The only place on the account is chosen already.
+    await expect(form.locator('[data-cy="registration-location-input"]')).toHaveValue('Hemtjänst Norr');
 
     const submit = form.locator('[data-cy="registration-submit"]');
     await expect(submit).toBeDisabled();
 
     await form.locator('[data-cy="registration-report-type"]').selectOption('abuse');
-    await expect(submit).toBeDisabled();
-    await form.locator('[data-cy="registration-location"]').selectOption('unit');
     await expect(form.locator('[data-cy="registration-priority"]')).toHaveCount(0);
     await expect(submit).toBeEnabled();
 
@@ -60,6 +59,40 @@ test.describe('Registrering i IAF/VOF', () => {
 
     await expect.poll(() => trace.registrations).toEqual([{ reportTypeLabelId: 'abuse', locationLabelId: 'unit' }]);
     await expect(page).toHaveURL(new RegExp(`/arende/${errandNumber}$`, 'u'));
+  });
+
+  // An account can reach many places, so they are searched for rather than scrolled through.
+  test('låter handläggaren söka fram platsen bland flera', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, {
+      investigationProfileResponse: registrationProfile(),
+      registrationOptions: {
+        ...registrationOptions,
+        locations: [
+          { labelId: 'unit', displayName: 'Hemtjänst Norr', resourcePath: 'LOCATION/VOF/HEMTJANST_NORR' },
+          { labelId: 'south', displayName: 'Hemtjänst Syd', resourcePath: 'LOCATION/VOF/HEMTJANST_SYD' },
+          { labelId: 'granlunda', displayName: 'Granlunda', resourcePath: 'LOCATION/VOF/GRANLUNDA' },
+        ],
+      },
+    });
+
+    await visitRegistration(page, dismissCookieConsent);
+
+    const form = page.locator('[data-cy="support-registration-form"]');
+    const location = form.locator('[data-cy="registration-location-input"]');
+    // Several places leave the choice to the handler.
+    await expect(location).toHaveValue('');
+    await location.click();
+    await location.pressSequentially('Syd');
+    await expect(page.getByRole('option', { name: 'Hemtjänst Norr' })).toHaveCount(0);
+    await page.getByRole('option', { name: 'Hemtjänst Syd' }).click();
+    await expect(location).toHaveValue('Hemtjänst Syd');
+
+    await form.locator('[data-cy="registration-report-type"]').selectOption('deviation');
+    await form.locator('[data-cy="registration-submit"]').click();
+
+    await expect
+      .poll(() => trace.registrations)
+      .toEqual([{ reportTypeLabelId: 'deviation', locationLabelId: 'south' }]);
   });
 
   // An errand has to belong to a place, so a handler configured for none is told why rather than

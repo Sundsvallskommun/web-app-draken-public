@@ -18,9 +18,11 @@ test('starts at the main employment, and asks nothing when there is only that on
   assert.equal(registrationLocationIsFixed(options('employment', 'main', 'second')), false);
 });
 
-test('leaves a configured place for the handler to choose', () => {
-  assert.equal(initialRegistrationLocationId(options('access', 'unit')), '');
-  assert.equal(initialRegistrationLocationId(options(undefined, 'unit')), '');
+test('starts at the only configured place, and leaves several for the handler to choose among', () => {
+  assert.equal(initialRegistrationLocationId(options('access', 'unit')), 'unit');
+  assert.equal(initialRegistrationLocationId(options(undefined, 'unit')), 'unit');
+  assert.equal(initialRegistrationLocationId(options('access', 'unit', 'other')), '');
+  // Still a choice, so the handler sees which place it is and can search for another account's places.
   assert.equal(registrationLocationIsFixed(options('access', 'unit')), false);
   assert.equal(initialRegistrationLocationId(options('employment')), '');
 });
