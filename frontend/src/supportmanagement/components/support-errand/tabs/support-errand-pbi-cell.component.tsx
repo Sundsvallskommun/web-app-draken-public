@@ -1,33 +1,30 @@
 import { Checkbox, useConfirm } from '@sk-web-gui/react';
-import { SupportPbiCandidate } from '@supportmanagement/services/support-pbi-service';
+import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { engagementIsPerson, SupportPbiCandidate } from '@supportmanagement/services/support-pbi-service';
 import { useTranslation } from 'react-i18next';
 
 export interface PbiMarking {
   canEdit: boolean;
-  busyPartyId?: string;
-  onMark: (partyId: string) => void;
-  onUnmark: (partyId: string) => void;
+  busyIdentity?: string;
+  onMark: (candidate: SupportPbiCandidate) => void;
+  onUnmark: (stakeholder: SupportStakeholderFormModel) => void;
 }
 
-export const SupportErrandPbiCell: React.FC<{ engagement: SupportPbiCandidate; marking: PbiMarking }> = ({
-  engagement,
+export const SupportErrandPbiCell: React.FC<{ candidate: SupportPbiCandidate; marking: PbiMarking }> = ({
+  candidate,
   marking,
 }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  const { partyId, marked, name, unresolved } = engagement;
-  if (!partyId) {
-    return unresolved ? (
-      <span className="text-small text-dark-secondary">{t('common:company.pbi.unresolved')}</span>
-    ) : null;
-  }
+  const { engagement, marked, stakeholder } = candidate;
+  if (!engagementIsPerson(engagement)) return null;
 
   const confirmMarking = () =>
     confirm
       .showConfirmation(
         t('common:company.pbi.confirm_title'),
         <div className="flex flex-col gap-8">
-          <strong>{name}</strong>
+          <strong>{engagement.name}</strong>
           <span>{t('common:company.pbi.confirm_text')}</span>
         </div>,
         t('common:company.pbi.confirm_yes'),
@@ -35,15 +32,15 @@ export const SupportErrandPbiCell: React.FC<{ engagement: SupportPbiCandidate; m
         'primary'
       )
       .then((confirmed) => {
-        if (confirmed) marking.onMark(partyId);
+        if (confirmed) marking.onMark(candidate);
       });
 
   return (
     <Checkbox
-      checked={!!marked}
-      disabled={!marking.canEdit || !!marking.busyPartyId}
-      aria-label={t('common:company.pbi.checkbox_aria', { name })}
-      onChange={() => (marked ? marking.onUnmark(partyId) : confirmMarking())}
+      checked={marked}
+      disabled={!marking.canEdit || !!marking.busyIdentity}
+      aria-label={t('common:company.pbi.checkbox_aria', { name: engagement.name })}
+      onChange={() => (marked && stakeholder ? marking.onUnmark(stakeholder) : confirmMarking())}
       data-cy="pbi-checkbox"
     />
   );

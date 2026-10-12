@@ -30,7 +30,7 @@ import {
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
@@ -76,6 +76,13 @@ export const SupportTabsWrapper: FC<{
   const [processActivities, setProcessActivities] = useState<ProcessActivity[]>([]);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const { dirtyFields } = useFormState({ control: methods.control });
+  const stakeholdersAreUnsaved = !!dirtyFields.contacts || !!dirtyFields.customer;
+
+  // The stakeholders are saved by Spara ärende, so a changed one holds the process step the way an unsaved tab does.
+  useEffect(() => {
+    setUnsavedTab('basics', stakeholdersAreUnsaved);
+  }, [stakeholdersAreUnsaved, setUnsavedTab]);
 
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 

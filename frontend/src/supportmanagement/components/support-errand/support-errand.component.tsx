@@ -14,6 +14,7 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
+import { pbiProblemAmong } from '@supportmanagement/services/support-pbi-service';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
@@ -35,6 +36,9 @@ let formSchema = yup
     channel: yup.string().required('Välj kanal'),
     description: yup.string(),
     parameters: yup.array(),
+    // A person of significant influence may not carry a comment without a verdict; the card shows the message.
+    customer: yup.array().test('pbi-verdicts', 'pbi', (stakeholders) => !pbiProblemAmong(stakeholders as never)),
+    contacts: yup.array().test('pbi-verdicts', 'pbi', (stakeholders) => !pbiProblemAmong(stakeholders as never)),
   })
   .required();
 

@@ -54,6 +54,7 @@
     "decision": "Beslut",
     "followup": "Uppföljning",
     "unsaved_title": "Du har osparade ändringar",
+    "unsaved_basics": "Intressenterna är inte sparade. Det du ändrat ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara ärende.",
     "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
     "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
     "unsaved_leave": "Byt flik ändå",
@@ -77,22 +78,13 @@
       "column": "PBI",
       "checkbox_aria": "Person med betydande inflytande: {{name}}",
       "confirm_title": "Markera som PBI",
-      "confirm_text": "Vill du markera personen som PBI? Om du trycker JA kommer personen att läggas som ett ärendeintressent under övriga parter.",
+      "confirm_text": "Vill du markera personen som PBI? Personen läggs till bland ärendets intressenter under övriga parter och sparas med Spara ärende.",
       "confirm_yes": "Ja",
       "confirm_no": "Nej",
-      "unsaved": "Spara ändringarna av ärendets intressenter innan du ändrar PBI-markeringar.",
-      "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade. Försök igen.",
-      "error": "PBI-markeringen kunde inte sparas.",
-      "unresolved": "Kan inte slås upp i folkbokföringen",
-      "list": {
-        "heading": "Personer med betydande inflytande",
-        "description": "Personerna nedan är markerade som PBI på ärendet. De kommer från bolagsdatan eller har lagts till för hand.",
-        "empty": "Inga personer är markerade som PBI på ärendet ännu."
-      },
       "add": {
         "open": "Lägg till PBI",
         "title": "Lägg till person med betydande inflytande",
-        "description": "Sök personen i folkbokföringen med personnummer. Personnummer sparas aldrig på ärendet.",
+        "description": "Sök personen i folkbokföringen med personnummer. Personen läggs till bland ärendets intressenter och sparas med Spara ärende.",
         "identity": "Personnummer",
         "identity_placeholder": "ååååmmddxxxx",
         "search": "Sök",
@@ -102,14 +94,13 @@
         "role": "Roll (frivillig)",
         "role_placeholder": "Till exempel Finansiär eller Delägare"
       },
-      "remove": {
-        "title": "Ta bort PBI",
-        "text_from_company": "Personen avmarkeras som PBI men står kvar i bolagsdatan.",
-        "text_by_hand": "Personen togs in för hand och tas bort från ärendet helt.",
-        "confirm_yes": "Ta bort",
-        "cancel": "Avbryt",
-        "aria": "Ta bort {{name}} som PBI"
-      }
+      "badge": "PBI",
+      "unmark": "Avmarkera som PBI",
+      "mark": "Markera som PBI",
+      "unmark_title": "Avmarkera som PBI?",
+      "unmark_removes": "{{name}} lades till för PBI-markeringen och tas bort från ärendets intressenter.",
+      "unmark_yes": "Ta bort",
+      "unmark_no": "Avbryt"
     }
   },
   "investigation": {
@@ -378,7 +369,6 @@
   },
   "personal_suitability": {
     "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig.",
-    "loading": "Hämtar personer med betydande inflytande",
     "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
     "comment": "Kommentar",
     "comment_placeholder": "Kommentar om {{person}}s personliga lämplighet…",
@@ -390,12 +380,7 @@
       "pending": "Under utredning"
     },
     "validation": {
-      "no_people": "Inga personer är markerade som PBI.",
       "assessment_required": "Varje person behöver en bedömning."
-    },
-    "toast": {
-      "save_failed": "Bedömningen kunde inte sparas",
-      "incomplete": "Varje person som ändrats behöver en bedömning innan utredningen kan sparas."
     },
     "comment_too_long": "Kommentaren får vara högst 3000 tecken."
   },
@@ -411,7 +396,6 @@
   },
   "knowledge_test": {
     "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Sätt status, provdatum och kommentar per person.",
-    "loading": "Hämtar personer med betydande inflytande",
     "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
     "comment": "Kommentar",
     "comment_placeholder": "Kommentar om {{person}}s kunskapsprov…",
@@ -425,9 +409,6 @@
       "booked": "Bokat",
       "retake": "Omprov",
       "not_applicable": "Ej aktuellt"
-    },
-    "toast": {
-      "save_failed": "Kunskapsprovet kunde inte sparas"
     }
   }
 }

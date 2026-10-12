@@ -7,12 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { PbiMarking, SupportErrandPbiCell } from './support-errand-pbi-cell.component';
 
 export const SupportErrandCompanyEngagements: React.FC<{
-  engagements: SupportPbiCandidate[];
+  candidates: SupportPbiCandidate[];
   companyName?: string | null;
   onShowBusinessDescription?: () => void;
   pbiMarking?: PbiMarking;
-  pbiNotice?: string;
-}> = ({ engagements, companyName, onShowBusinessDescription, pbiMarking, pbiNotice }) => {
+}> = ({ candidates, companyName, onShowBusinessDescription, pbiMarking }) => {
   const { t } = useTranslation();
 
   return (
@@ -42,7 +41,6 @@ export const SupportErrandCompanyEngagements: React.FC<{
             </div>
           </Card>
         ) : null}
-        {pbiNotice ? <p className="text-dark-secondary mb-16">{pbiNotice}</p> : null}
         <Table dense background data-cy="company-engagements">
           <Table.Header>
             <Table.HeaderColumn>{t('common:company.role')}</Table.HeaderColumn>
@@ -51,14 +49,14 @@ export const SupportErrandCompanyEngagements: React.FC<{
             {pbiMarking ? <Table.HeaderColumn>{t('common:company.pbi.column')}</Table.HeaderColumn> : null}
           </Table.Header>
           <Table.Body>
-            {engagements.map((engagement) => (
-              <Table.Row key={`${engagement.identity?.code}-${engagement.name}`}>
-                <Table.Column>{engagementRoles(engagement)}</Table.Column>
-                <Table.Column>{engagement.name}</Table.Column>
-                <Table.Column>{engagement.identity?.code}</Table.Column>
+            {candidates.map((candidate) => (
+              <Table.Row key={`${candidate.engagement.identity?.code}-${candidate.engagement.name}`}>
+                <Table.Column>{engagementRoles(candidate.engagement)}</Table.Column>
+                <Table.Column>{candidate.engagement.name}</Table.Column>
+                <Table.Column>{candidate.engagement.identity?.code}</Table.Column>
                 {pbiMarking ? (
                   <Table.Column>
-                    <SupportErrandPbiCell engagement={engagement} marking={pbiMarking} />
+                    <SupportErrandPbiCell candidate={candidate} marking={pbiMarking} />
                   </Table.Column>
                 ) : null}
               </Table.Row>

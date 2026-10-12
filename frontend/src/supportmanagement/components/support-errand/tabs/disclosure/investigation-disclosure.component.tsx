@@ -18,34 +18,24 @@ export const SectionDisclosure: React.FC<{
   writable: boolean;
   onStatementsEdited: (edited: boolean) => void;
   saveStatements: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-  onSuitabilityEdited: (edited: boolean) => void;
-  saveSuitability: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
   onFinancialEdited: (edited: boolean) => void;
   onFinancialSaved: (investigation: Investigation) => void;
   saveFinancial: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-  onKnowledgeTestEdited: (edited: boolean) => void;
-  saveKnowledgeTest: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 }> = ({
   section,
   investigationId,
   writable,
   onStatementsEdited,
   saveStatements,
-  onSuitabilityEdited,
-  saveSuitability,
   onFinancialEdited,
   onFinancialSaved,
   saveFinancial,
-  onKnowledgeTestEdited,
-  saveKnowledgeTest,
 }) => {
   const { t } = useTranslation();
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
-    personal_suitability: (
-      <SupportPersonalSuitabilitySection writable={writable} onEdited={onSuitabilityEdited} saveRef={saveSuitability} />
-    ),
+    personal_suitability: <SupportPersonalSuitabilitySection writable={writable} />,
     financial_suitability: (
       <SupportFinancialSuitabilitySection
         section={section}
@@ -56,9 +46,7 @@ export const SectionDisclosure: React.FC<{
         saveRef={saveFinancial}
       />
     ),
-    knowledge_test: (
-      <SupportKnowledgeTestSection writable={writable} onEdited={onKnowledgeTestEdited} saveRef={saveKnowledgeTest} />
-    ),
+    knowledge_test: <SupportKnowledgeTestSection writable={writable} />,
   };
 
   return (

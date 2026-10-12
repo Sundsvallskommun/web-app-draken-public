@@ -1,109 +1,101 @@
 // @vitest-environment jsdom
-import { useConfigStore, useSupportStore } from '@stores/index';
-import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
-import {
-  assessSupportSuitability,
-  getSupportSuitabilityPeople,
-  type SupportSuitabilityPerson,
-} from '@supportmanagement/services/support-personal-suitability-service';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { useSupportStore, useUserStore } from '@stores/index';
+import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { hyphenatedIdentity, pbiOf, withAssessment, withPbi } from '@supportmanagement/services/support-pbi-service';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
+import { mockEnv } from '../../../../tests/mock-env';
 import { SupportPersonalSuitabilitySection } from './support-personal-suitability-section.component';
 
+vi.mock('@common/components/file-upload/file-upload.component', () => ({ imageMimeTypes: [], documentMimeTypes: [] }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getLegalEntityEngagements: vi.fn().mockResolvedValue([]),
+}));
 vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useSnackbar: () => vi.fn(),
 }));
-const reset = vi.fn();
-vi.mock('react-hook-form', () => ({ useFormContext: () => ({ formState: { dirtyFields: {} }, reset }) }));
-vi.mock('@supportmanagement/services/support-errand-service', () => ({ getSupportErrandById: vi.fn() }));
-vi.mock('@supportmanagement/services/support-personal-suitability-service', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  getSupportSuitabilityPeople: vi.fn(),
-  assessSupportSuitability: vi.fn(),
+
+const form: { customer: SupportStakeholderFormModel[]; contacts: SupportStakeholderFormModel[] } = {
+  customer: [],
+  contacts: [],
+};
+const setValue = vi.fn((name: 'customer' | 'contacts', value: SupportStakeholderFormModel[]) => {
+  form[name] = value;
+});
+vi.mock('react-hook-form', () => ({
+  useFormContext: () => ({ watch: (name: 'customer' | 'contacts') => form[name], setValue }),
 }));
 
-const ERRAND_ID = 'd2c1e9a4-7b53-4f08-9a16-5c3b8e7d4f02';
-const EDWIN = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
+const EDWIN = 'edwin';
 
-const edwin: SupportSuitabilityPerson = {
-  partyId: EDWIN,
-  name: 'Edwin Molina',
-  identityCode: '19850112-0234',
-  roles: 'Verkställande direktör',
-  assessment: '',
-  comment: '',
-};
-
-/** The errand as it stands once the verdict has been written to the stakeholder. */
-const errandWithVerdict = {
-  id: ERRAND_ID,
-  stakeholders: [
-    {
-      externalId: EDWIN,
-      parameters: [
-        { key: 'PBI', values: ['true'] },
-        { key: 'PBI_ASSESSMENT', values: ['APPROVED'] },
-        { key: 'PBI_ASSESSMENT_COMMENT', values: ['Inget att anmärka.'] },
-      ],
-    },
-  ],
-};
-
-const saveRef = { current: undefined as (() => Promise<boolean>) | undefined };
-
-const mountSection = () =>
-  render(<SupportPersonalSuitabilitySection writable={true} onEdited={vi.fn()} saveRef={saveRef} />);
+const edwin = withPbi(
+  {
+    internalId: EDWIN,
+    externalId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
+    externalIdType: 'PRIVATE',
+    role: 'CONTACT',
+    firstName: 'Edwin',
+    lastName: 'Molina',
+    personNumber: mockEnv.mockPersonNumber,
+    emails: [],
+    phoneNumbers: [],
+    parameters: [],
+  } as never,
+  { source: 'COMPANY', role: 'Verkställande direktör' }
+);
 
 const fieldOf = (part: string) => document.querySelector(`[data-cy="suitability-${part}-${EDWIN}"]`) as HTMLElement;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  saveRef.current = undefined;
-  useSupportStore.setState({ supportErrand: { id: ERRAND_ID } as never, pbiSignal: undefined });
-  useConfigStore.setState({ municipalityId: '2281' } as never);
-  vi.mocked(getSupportSuitabilityPeople).mockResolvedValue([edwin]);
-  vi.mocked(assessSupportSuitability).mockResolvedValue(undefined);
-  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: errandWithVerdict } as never);
+  form.customer = [];
+  form.contacts = [edwin];
+  useSupportStore.setState({ supportErrand: { id: 'e1', status: 'ONGOING', stakeholders: [] } as never });
+  useUserStore.setState({ user: { permissions: { canEditSupportManagement: true } } } as never);
 });
 
 afterEach(cleanup);
 
-const writeAVerdict = async () => {
-  mountSection();
-  await waitFor(() => expect(fieldOf('assessment')).toBeTruthy());
-  fireEvent.change(fieldOf('assessment'), { target: { value: 'APPROVED' } });
-  fireEvent.change(fieldOf('comment'), { target: { value: 'Inget att anmärka.' } });
-  await expect(saveRef.current?.()).resolves.toBe(true);
-};
+test('a card per marked person, with the personal number written the way a form is read and the role beside it', () => {
+  render(<SupportPersonalSuitabilitySection writable={true} />);
 
-test('the errand is read back after a verdict, so saving Grundinformation cannot write it away again', async () => {
-  await writeAVerdict();
-
-  expect(getSupportErrandById).toHaveBeenCalledWith(ERRAND_ID, '2281');
-  expect(useSupportStore.getState().supportErrand).toEqual(errandWithVerdict);
+  expect(screen.getByText('Edwin Molina')).toBeTruthy();
+  expect(screen.getByText(`${hyphenatedIdentity(mockEnv.mockPersonNumber)} · Verkställande direktör`)).toBeTruthy();
+  expect(document.querySelector('[data-cy="suitability-empty"]')).toBeNull();
 });
 
-test('the form that owns the stakeholders is told, and keeps what the handler has not saved', async () => {
-  await writeAVerdict();
+test('a verdict is written onto the stakeholder in the form, where Spara ärende picks it up', () => {
+  // The form is mocked, so the re-render that watch() would cause is done by hand between the two edits.
+  const { rerender } = render(<SupportPersonalSuitabilitySection writable={true} />);
 
-  expect(reset).toHaveBeenCalledWith(errandWithVerdict, { keepDirtyValues: true });
+  fireEvent.change(fieldOf('assessment'), { target: { value: 'DEFICIENCY' } });
+  rerender(<SupportPersonalSuitabilitySection writable={true} />);
+  fireEvent.change(fieldOf('comment'), { target: { value: 'Skuld hos Kronofogden.' } });
+
+  expect(setValue).toHaveBeenCalledWith('contacts', expect.anything(), { shouldDirty: true, shouldValidate: true });
+  expect(pbiOf(form.contacts[0])).toMatchObject({
+    source: 'COMPANY',
+    role: 'Verkställande direktör',
+    assessment: 'DEFICIENCY',
+    comment: 'Skuld hos Kronofogden.',
+  });
 });
 
-test('every list of the people is told to read itself afresh', async () => {
-  await writeAVerdict();
+test('a comment without a verdict is pointed out on the card', () => {
+  form.contacts = [withAssessment(edwin, { assessment: '', comment: 'Skuld.' })];
+  render(<SupportPersonalSuitabilitySection writable={true} />);
 
-  expect(useSupportStore.getState().pbiSignal?.errandId).toBe(ERRAND_ID);
+  expect(fieldOf('problem').textContent).toBe('common:personal_suitability.validation.assessment_required');
 });
 
-test('nothing is read back when no verdict was changed', async () => {
-  mountSection();
-  await waitFor(() => expect(fieldOf('assessment')).toBeTruthy());
+test('nobody marked shows the empty notice, and a read-only section offers no way to add', () => {
+  form.contacts = [];
+  render(<SupportPersonalSuitabilitySection writable={false} />);
 
-  await expect(saveRef.current?.()).resolves.toBe(true);
-
-  expect(assessSupportSuitability).not.toHaveBeenCalled();
-  expect(getSupportErrandById).not.toHaveBeenCalled();
+  expect(document.querySelector('[data-cy="suitability-empty"]')).toBeTruthy();
+  expect(document.querySelector('[data-cy="pbi-add-open"]')).toBeNull();
 });
