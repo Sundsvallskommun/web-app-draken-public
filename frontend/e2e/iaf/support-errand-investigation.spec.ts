@@ -12,6 +12,7 @@ import {
   errandNumber,
   existingManagerDocument,
   iafLabelFixture,
+  iafPlaceFixture,
   installIafApiMock,
   investigationKeys,
   investigationTabKeys,
@@ -2312,17 +2313,33 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
   }
 
-  // A misconduct just handed to LEX is not categorized yet. Opened straight from a link, the errand can arrive
+  // B2. Tilldela LEX-ansvarig (assign-lex) leaves the errand a misconduct under the LEX access label, assigned and
+  // not categorized yet - the lex Sarah investigation does that. Opened straight from a link, the errand can arrive
   // before the investigation profile does, and the directory can write the account in another case than the
   // session: the errand is still its handler's to resume.
-  test('den som tilldelats ett okategoriserat ärende kan återuppta det när profilen kommer efter ärendet', async ({
+  test('LEX-ansvarig som fått ärendet via Tilldela LEX-ansvarig kan återuppta det', async ({
     page,
     dismissCookieConsent,
   }) => {
     await installIafApiMock(page, {
       eventType: 'MISSFORHALLANDE',
       classification: { category: 'NONE', type: 'NONE' },
-      labels: [],
+      labels: [
+        {
+          id: iafLabelFixture.reportType.misconduct.id,
+          classification: 'REPORT_TYPE',
+          displayName: 'Missförhållande',
+          resourceName: 'ABUSE',
+          resourcePath: iafLabelFixture.reportType.misconduct.resourcePath,
+        },
+        {
+          id: iafPlaceFixture.accessLex.id,
+          classification: 'ACCESS',
+          displayName: 'LEX',
+          resourceName: 'LEX',
+          resourcePath: iafPlaceFixture.accessLex.resourcePath,
+        },
+      ],
       errandStatus: 'ASSIGNED',
       roleKeys: ['lex-ansvarig'],
       administrators: [
@@ -2338,6 +2355,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="resume-button"]')).toBeEnabled();
+    await page.locator('[data-cy="resume-button"]').click();
+    await expect(page.locator(CONFIRM_DIALOG)).toHaveCSS('opacity', '1');
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja', exact: true }).click();
+    await expect(toast(page, 'Ärende återupptogs')).toBeVisible();
+    await expect(page.locator('[data-cy="resume-button"]')).toHaveCount(0);
   });
 
   for (const state of ['active', 'unavailable'] as const) {
