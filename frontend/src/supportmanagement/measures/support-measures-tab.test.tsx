@@ -307,13 +307,13 @@ test('editing an approved measure leaves both dates alone, and the measures view
   expect(screen.getByText('Slutdatumet ändras med Ändra slutdatum, av den som följer upp åtgärden.')).toBeTruthy();
 });
 
-test('lists the measures as they were registered, and gathers them per person when asked to', async () => {
+test('lists the latest added measure first, and gathers the measures per person when asked to', async () => {
   mocks.read.mockResolvedValue({
     ...snapshot,
     measures: [
-      { ...measure, id: 'late', created: '2026-09-12T09:00:00+02:00', description: 'Senast' },
-      { ...measure, id: 'early', created: '2026-09-10T09:00:00+02:00', addedByUser: 'other', description: 'Först' },
       { ...measure, id: 'middle', created: '2026-09-11T09:00:00+02:00', addedByUser: 'CREATOR', description: 'Sedan' },
+      { ...measure, id: 'early', created: '2026-09-10T09:00:00+02:00', addedByUser: 'other', description: 'Först' },
+      { ...measure, id: 'late', created: '2026-09-12T09:00:00+02:00', description: 'Senast' },
     ],
   });
   render(<Harness followUp={false} />);
@@ -323,14 +323,14 @@ test('lists the measures as they were registered, and gathers them per person wh
       .map((card) => within(card).getByText(/^(Först|Sedan|Senast)$/).textContent);
 
   expect(descriptions(await screen.findByRole('list', { name: 'Registrerade åtgärder' }))).toEqual([
-    'Först',
-    'Sedan',
     'Senast',
+    'Sedan',
+    'Först',
   ]);
 
   fireEvent.change(screen.getByRole('combobox', { name: 'Sortera efter' }), { target: { value: 'person' } });
-  // One account whatever its case, and each person's own measures still in the order they were registered.
-  expect(descriptions(screen.getByRole('list', { name: /^creator \(2\)$/i }))).toEqual(['Sedan', 'Senast']);
+  // One account whatever its case, and each person's own measures still with the latest added first.
+  expect(descriptions(screen.getByRole('list', { name: /^creator \(2\)$/i }))).toEqual(['Senast', 'Sedan']);
   expect(descriptions(screen.getByRole('list', { name: 'other (1)' }))).toEqual(['Först']);
   expect(screen.queryByRole('list', { name: 'Registrerade åtgärder' })).toBeNull();
 

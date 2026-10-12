@@ -152,10 +152,10 @@ och utredning och är inte åtgärdstyper.
    åtgärd som ett kort med status, beskrivning, mål, datum samt skapare och den
    roll åtgärden registrerades i. Ovanför listan finns filter på status, beslut,
    registreringsroll, åtgärdstyp och fritext (`measure-filters.ts`); rollerna och
-   typerna i filtret är de som förekommer i listan. Listan är kronologisk efter när
-   åtgärderna registrerades (`created`), äldst först. Med "Sortera efter: Person"
-   samlas i stället varje persons åtgärder under personens namn, fortfarande
-   kronologiskt inom personen, så att det syns vem som har gjort vad
+   typerna i filtret är de som förekommer i listan. Listan visar den senast tillagda
+   åtgärden först (`created`), eftersom ärendet har olika handläggare över tid. Med
+   "Sortera efter: Person" samlas i stället varje persons åtgärder under personens
+   namn, med den senast tillagda först även där, så att det syns vem som har gjort vad
    (`measure-sort.ts`). Sorteringen är inget filter och ligger kvar när filtren rensas.
 8. En oförändrad historisk typ behålls även om den är utgången eller inte längre
    erbjuds för rollen. Fel behåller utkastet; versionskonflikter kräver omläsning.

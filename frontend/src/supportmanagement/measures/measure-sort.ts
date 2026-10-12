@@ -1,26 +1,29 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 
-/** How the list is ordered: as the measures were registered, or by who registered them. */
+/** How the list is ordered: by when the measures were added, or by who added them. */
 export type MeasureSort = 'created' | 'person';
 
 export const measureSortOptions: readonly { value: MeasureSort; label: string }[] = [
-  { value: 'created', label: 'Datum' },
+  { value: 'created', label: 'Senast tillagd' },
   { value: 'person', label: 'Person' },
 ];
 
 /** A measure without a registration time is placed after those that have one. */
 const createdAt = (measure: Pick<Measure, 'created'>): number => {
   const time = measure.created ? Date.parse(measure.created) : Number.NaN;
-  return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+  return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
 };
 
-/** Chronologically, oldest first. Measures registered at the same time, or without one, keep the order they came in. */
+/**
+ * The latest added first: an errand has several handlers over time, and what was added last is what the one
+ * opening it has not seen. Measures registered at the same time, or without one, keep the order they came in.
+ */
 export const sortMeasuresByCreated = <T extends Pick<Measure, 'created'>>(measures: readonly T[]): T[] =>
   measures
     .map((measure, index) => ({ measure, index }))
     .sort((left, right) => {
       const [leftTime, rightTime] = [createdAt(left.measure), createdAt(right.measure)];
-      return leftTime === rightTime ? left.index - right.index : leftTime - rightTime;
+      return leftTime === rightTime ? left.index - right.index : rightTime - leftTime;
     })
     .map(({ measure }) => measure);
 
@@ -33,8 +36,8 @@ export interface MeasureGroup<T> {
 }
 
 /**
- * The measures of each person together, so it shows who did what: people by name, each person's measures
- * chronologically, and those nobody is recorded for last.
+ * The measures of each person together, so it shows who did what: people by name, each person's measures with the
+ * latest added first, and those nobody is recorded for last.
  */
 export const groupMeasuresByPerson = <T extends Pick<Measure, 'created' | 'addedByUser'>>(
   measures: readonly T[],

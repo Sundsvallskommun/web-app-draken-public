@@ -4,14 +4,15 @@ import { groupMeasuresByPerson, sortMeasuresByCreated } from './measure-sort';
 
 const measure = (id: string, created?: string, addedByUser?: string) => ({ id, created, addedByUser });
 
-test('orders the measures as they were registered, oldest first, whatever offset the time is written in', () => {
+// Ä10. An errand has several handlers over time, so the list opens on what was added last.
+test('puts the latest added measure first, whatever offset the time is written in', () => {
   const sorted = sortMeasuresByCreated([
-    measure('third', '2026-10-09T10:00:00+02:00'),
-    measure('first', '2026-10-08T23:30:00+02:00'),
-    // 07:30 UTC is 09:30 Swedish time: before the third, after the first.
-    measure('second', '2026-10-09T07:30:00Z'),
+    measure('latest', '2026-10-09T10:00:00+02:00'),
+    measure('earliest', '2026-10-08T23:30:00+02:00'),
+    // 07:30 UTC is 09:30 Swedish time: before the latest, after the earliest.
+    measure('between', '2026-10-09T07:30:00Z'),
   ]);
-  expect(sorted.map(({ id }) => id)).toEqual(['first', 'second', 'third']);
+  expect(sorted.map(({ id }) => id)).toEqual(['latest', 'between', 'earliest']);
 });
 
 test('keeps the given order for measures registered at the same time, and puts those without a time last', () => {
@@ -24,7 +25,7 @@ test('keeps the given order for measures registered at the same time, and puts t
   expect(sorted.map(({ id }) => id)).toEqual(['a', 'b', 'undated', 'unreadable']);
 });
 
-test('gathers each person’s measures, people by name and their measures chronologically', () => {
+test('gathers each person’s measures, people by name and their measures with the latest first', () => {
   const names: Record<string, string> = { 'ann.berg': 'Ann Berg', 'örjan.ek': 'Örjan Ek' };
   const groups = groupMeasuresByPerson(
     [
@@ -38,8 +39,8 @@ test('gathers each person’s measures, people by name and their measures chrono
   );
 
   expect(groups.map(({ person, measures }) => [person, measures.map(({ id }) => id)])).toEqual([
-    ['Ann Berg', ['ann-early', 'ann-late']],
-    ['Örjan Ek', ['örjan-early', 'örjan-late']],
+    ['Ann Berg', ['ann-late', 'ann-early']],
+    ['Örjan Ek', ['örjan-late', 'örjan-early']],
     // Nobody is recorded for it, so it comes last and under no name.
     [undefined, ['nobody']],
   ]);

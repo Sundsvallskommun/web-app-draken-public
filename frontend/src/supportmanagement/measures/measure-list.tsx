@@ -30,7 +30,7 @@ export function MeasureList({
   currentUser?: string;
   /** The BFF's answer on whether the user's role follows up measures; absent, the registrar does. */
   mayFollowUp?: boolean;
-  /** Chronologically as registered, or gathered by who registered them. */
+  /** The latest added first, or gathered by who registered them. */
   sort?: MeasureSort;
   onEdit?: (measure: Measure) => void;
   onDecide?: (measure: Measure) => void;
