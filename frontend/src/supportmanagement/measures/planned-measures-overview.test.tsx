@@ -134,6 +134,30 @@ test('narrows the list by free text and explains an empty match', async () => {
   expect(screen.getByText('Inga planerade åtgärder matchar sökningen.')).toBeTruthy();
 });
 
+// Ö1. A span over the deadlines, with labelled date fields that work without a pointer.
+test('narrows the list to the measures whose end date falls within a span, and clears it again', async () => {
+  render(<PlannedMeasuresOverview />);
+  await screen.findAllByTestId('planned-measure-row');
+  const from = screen.getByLabelText('Slutdatum från');
+  const to = screen.getByLabelText('Slutdatum till');
+  expect(screen.getByRole('group', { name: 'Slutdatum inom datumspann' })).toBeTruthy();
+
+  // The second measure was due in January 2020, the first later.
+  fireEvent.change(to, { target: { value: '2020-12-31' } });
+  expect(screen.getAllByTestId('planned-measure-row')).toHaveLength(1);
+  expect(screen.getByText('Visar 1 av 2 åtgärder.')).toBeTruthy();
+  // Each end keeps the other from being set past it.
+  expect((from as HTMLInputElement).max).toBe('2020-12-31');
+
+  fireEvent.change(from, { target: { value: '2020-06-01' } });
+  expect(screen.queryAllByTestId('planned-measure-row')).toHaveLength(0);
+  expect(screen.getByText('Inga planerade åtgärder matchar urvalet.')).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Rensa datum' }));
+  expect(screen.getAllByTestId('planned-measure-row')).toHaveLength(2);
+  expect(screen.queryByRole('button', { name: 'Rensa datum' })).toBeNull();
+});
+
 test('says when there is nothing to work with and when the list is cut short', async () => {
   mocks.read.mockResolvedValue({ ...snapshot, measures: [], truncated: true });
   render(<PlannedMeasuresOverview />);

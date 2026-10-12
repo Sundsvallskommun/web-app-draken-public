@@ -1,5 +1,5 @@
 import { getNameFromADUsername } from '@common/services/user-service';
-import { Badge, Button, Label, Link, SearchField, Spinner } from '@sk-web-gui/react';
+import { Badge, Button, FormControl, FormLabel, Input, Label, Link, SearchField, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useUserStore } from '@stores/index';
 import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
@@ -10,9 +10,12 @@ import { measureDecisionPresentation } from './measure-decision';
 import { measureTypeLabel } from './measure-types';
 import {
   describeDeadlineDistance,
+  emptyPlannedMeasureDateRange,
   filterPlannedMeasures,
+  filterPlannedMeasuresByDate,
   formatDeadlineDay,
   groupPlannedMeasures,
+  isPlannedMeasureDateRangeSet,
   isPlannedMeasureOverdue,
   plannedMeasureDeadline,
   type PlannedMeasureGroup,
@@ -45,6 +48,7 @@ export function PlannedMeasuresOverview() {
   const administrators = useUserStore((s) => s.administrators);
   const [state, setState] = useState<OverviewState>({ status: 'loading' });
   const [text, setText] = useState('');
+  const [dateRange, setDateRange] = useState(emptyPlannedMeasureDateRange);
   const generation = useRef(0);
   const id = useId();
 
@@ -100,7 +104,11 @@ export function PlannedMeasuresOverview() {
   const types = useMemo(() => snapshot?.metadata.measureTypes ?? [], [snapshot]);
   const roles = snapshot?.metadata.roles ?? [];
   const measures = useMemo(() => snapshot?.measures ?? [], [snapshot]);
-  const shown = useMemo(() => filterPlannedMeasures(measures, text, types), [measures, text, types]);
+  const shown = useMemo(
+    () => filterPlannedMeasuresByDate(filterPlannedMeasures(measures, text, types), dateRange),
+    [measures, text, types, dateRange]
+  );
+  const dateRangeSet = isPlannedMeasureDateRangeSet(dateRange);
   const groups = useMemo(() => groupPlannedMeasures(shown), [shown]);
   const overdueCount = useMemo(
     () => groupPlannedMeasures(measures).find((group) => group.bucket === 'overdue')?.measures.length ?? 0,
@@ -281,6 +289,8 @@ export function PlannedMeasuresOverview() {
             <p className="m-0 py-16 text-dark-secondary" data-cy="planned-measures-empty">
               {measures.length === 0
                 ? 'Det finns inga planerade åtgärder att arbeta med.'
+                : dateRangeSet
+                ? 'Inga planerade åtgärder matchar urvalet.'
                 : 'Inga planerade åtgärder matchar sökningen.'}
             </p>
           ) : (
@@ -291,9 +301,10 @@ export function PlannedMeasuresOverview() {
       break;
   }
 
-  const summary = text.trim()
-    ? `Visar ${shown.length} av ${measures.length} åtgärder.`
-    : `${measures.length} åtgärder${overdueCount ? ` · ${overdueCount} försenade` : ''}.`;
+  const summary =
+    text.trim() || dateRangeSet
+      ? `Visar ${shown.length} av ${measures.length} åtgärder.`
+      : `${measures.length} åtgärder${overdueCount ? ` · ${overdueCount} försenade` : ''}.`;
 
   // Same frame as the errand table and the attestation view: a filter strip on top, the heading and the
   // agenda in the container below.
@@ -312,6 +323,42 @@ export function PlannedMeasuresOverview() {
             className="flex-grow max-w-[48rem]"
             data-cy="planned-measures-search"
           />
+          {/* A span of deadlines, either end open. Each field keeps the other from being set past it. */}
+          <fieldset className="m-0 flex flex-wrap items-end gap-12 border-0 p-0" data-cy="planned-measures-date-range">
+            <legend className="sr-only">Slutdatum inom datumspann</legend>
+            <FormControl id={`${id}-from`} size="sm">
+              <FormLabel>Slutdatum från</FormLabel>
+              <Input
+                id={`${id}-from`}
+                type="date"
+                size="sm"
+                value={dateRange.from}
+                max={dateRange.to || undefined}
+                onChange={(event) => setDateRange((range) => ({ ...range, from: event.target.value }))}
+              />
+            </FormControl>
+            <FormControl id={`${id}-to`} size="sm">
+              <FormLabel>Slutdatum till</FormLabel>
+              <Input
+                id={`${id}-to`}
+                type="date"
+                size="sm"
+                value={dateRange.to}
+                min={dateRange.from || undefined}
+                onChange={(event) => setDateRange((range) => ({ ...range, to: event.target.value }))}
+              />
+            </FormControl>
+            {dateRangeSet && (
+              <Button
+                type="button"
+                size="sm"
+                variant="tertiary"
+                onClick={() => setDateRange(emptyPlannedMeasureDateRange)}
+              >
+                Rensa datum
+              </Button>
+            )}
+          </fieldset>
           {state.status === 'ready' && (
             <p role="status" className="text-small m-0" data-cy="planned-measures-summary">
               {summary}

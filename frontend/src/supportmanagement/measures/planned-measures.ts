@@ -39,6 +39,37 @@ export function filterPlannedMeasures(
   );
 }
 
+/** A span of days, each written `YYYY-MM-DD`; an empty end bounds nothing. */
+export interface PlannedMeasureDateRange {
+  readonly from: string;
+  readonly to: string;
+}
+
+export const emptyPlannedMeasureDateRange: PlannedMeasureDateRange = { from: '', to: '' };
+
+export const isPlannedMeasureDateRangeSet = (range: PlannedMeasureDateRange): boolean =>
+  Boolean(range.from || range.to);
+
+/**
+ * The measures whose deadline - the date the agenda orders them by - falls within the span, both ends included.
+ * The day is read in the handler's own time zone, as the agenda shows it. A span that is set leaves out a measure
+ * without any date, which the agenda could not place in it.
+ */
+export function filterPlannedMeasuresByDate(
+  measures: readonly PlannedSupportMeasure[],
+  range: PlannedMeasureDateRange
+): PlannedSupportMeasure[] {
+  if (!isPlannedMeasureDateRangeSet(range)) return [...measures];
+  return measures.filter((measure) => {
+    // Asked for the value first: dayjs reads a missing date as now.
+    const value = plannedMeasureDeadline(measure);
+    const deadline = dayjs(value);
+    if (!value || !deadline.isValid()) return false;
+    const day = deadline.format('YYYY-MM-DD');
+    return (!range.from || day >= range.from) && (!range.to || day <= range.to);
+  });
+}
+
 /** The agenda's time buckets, in the order they are shown. */
 export type PlannedMeasureBucket = 'overdue' | 'soon' | 'later';
 

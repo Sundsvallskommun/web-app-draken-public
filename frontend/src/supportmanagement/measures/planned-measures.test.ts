@@ -7,6 +7,7 @@ import { test } from 'vitest';
 import {
   describeDeadlineDistance,
   filterPlannedMeasures,
+  filterPlannedMeasuresByDate,
   formatDeadlineDay,
   groupPlannedMeasures,
   isPlannedMeasureOverdue,
@@ -127,4 +128,24 @@ test('the distance to the deadline is worded in whole days from today', () => {
   assert.equal(describeDeadlineDistance('2026-09-27T00:00:00', today), 'om 13 dagar');
   assert.equal(describeDeadlineDistance('2026-09-10T00:00:00', today), '4 dagar sedan');
   assert.equal(describeDeadlineDistance(undefined, today), '');
+});
+
+// Ö1. A span of days over the date the agenda orders by, either end open.
+test('a date span keeps the measures whose deadline falls within it, both ends included', () => {
+  const measures = [
+    planned({ id: 'before', plannedComplete: '2026-09-30T12:00:00' }),
+    planned({ id: 'first-day', plannedComplete: '2026-10-01T12:00:00' }),
+    planned({ id: 'last-day', plannedComplete: '2026-10-15T12:00:00' }),
+    planned({ id: 'after', plannedComplete: '2026-10-16T12:00:00' }),
+    // Planned by its start alone: the start is the date the agenda places it by.
+    planned({ id: 'by-start', plannedComplete: undefined, plannedStart: '2026-10-10T12:00:00' }),
+    planned({ id: 'undated', plannedComplete: undefined }),
+  ];
+  const ids = (from: string, to: string) => filterPlannedMeasuresByDate(measures, { from, to }).map(({ id }) => id);
+
+  assert.deepEqual(ids('2026-10-01', '2026-10-15'), ['first-day', 'last-day', 'by-start']);
+  assert.deepEqual(ids('2026-10-10', ''), ['last-day', 'after', 'by-start']);
+  assert.deepEqual(ids('', '2026-09-30'), ['before']);
+  // No span set is no filter, and keeps what has no date too.
+  assert.deepEqual(ids('', ''), ['before', 'first-day', 'last-day', 'after', 'by-start', 'undated']);
 });

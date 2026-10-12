@@ -391,6 +391,10 @@ Reglerna är rena funktioner i `planned-measures.ts` (`plannedMeasureBucket`,
   om när fönstret återfår fokus, så att en uppföljning som gjorts i ärendefliken syns direkt.
 - Fritextsökningen i filterbandet matchar ärendenummer, rubrik, åtgärdstyp, beskrivning, mål
   och ansvarig; sammanfattningen bredvid anger antal och antal försenade.
+- Fälten **Slutdatum från** och **Slutdatum till** begränsar listan till åtgärder vars datum i
+  agendan (slutdatum, annars startdatum) ligger inom spannet, med båda ändar inräknade
+  (`filterPlannedMeasuresByDate`). Ett tomt fält begränsar ingenting, och Rensa datum tar bort
+  spannet. Urvalet görs i klienten på det som redan är inläst.
 
 Valet av agenda framför en tabell med detaljpanel eller ärendegrupper med kort gjordes den
 14 september 2026 utifrån tre skisser; agendan träffar frågan "vad ska vara klart, och när?"
