@@ -297,7 +297,12 @@ export function AvvikelseMeasures({
           </h3>
           {/* The plan is made from the stored measures by the BFF; follow-up shows the same list but offers no plan. */}
           {!followUp && canWrite && (
-            <MeasureActionPlanButton errand={errand} municipalityId={municipalityId} measureCount={measures.length} />
+            <MeasureActionPlanButton
+              errand={errand}
+              municipalityId={municipalityId}
+              measureCount={measures.length}
+              onCreated={onSaved}
+            />
           )}
         </div>
         {measures.length > 0 && (

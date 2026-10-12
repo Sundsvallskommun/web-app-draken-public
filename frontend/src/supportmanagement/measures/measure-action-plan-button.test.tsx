@@ -46,7 +46,8 @@ test('is disabled with an explanation while the errand has no measures', () => {
 
 test('creates the plan from the stored measures, names the attached file and refreshes the attachments', async () => {
   mocks.create.mockResolvedValue({ fileName, attachmentId: 'plan-1' });
-  render(<MeasureActionPlanButton errand={errand} municipalityId="2281" measureCount={2} />);
+  const onCreated = vi.fn(async () => undefined);
+  render(<MeasureActionPlanButton errand={errand} municipalityId="2281" measureCount={2} onCreated={onCreated} />);
   expect(button()).toHaveProperty('disabled', false);
   expect(screen.getByText('Alla registrerade åtgärder samlas i en PDF som läggs som bilaga på ärendet.')).toBeTruthy();
 
@@ -60,6 +61,8 @@ test('creates the plan from the stored measures, names the attached file and ref
     })
   );
   expect(mocks.refresh).toHaveBeenCalledWith('2281', 'errand-one');
+  // The plan is an attachment on the errand: the tab is told, so the errand's version follows the handler's write.
+  expect(onCreated).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(button()).toHaveProperty('disabled', false));
   expect(mocks.create).toHaveBeenCalledTimes(1);
 });

@@ -27,10 +27,13 @@ export function MeasureActionPlanButton({
   errand,
   municipalityId,
   measureCount,
+  onCreated,
 }: {
   errand: SupportErrand;
   municipalityId: string;
   measureCount: number;
+  /** The plan is an attachment on the errand, which moves its version: the tab takes that in as its own write. */
+  onCreated?: () => Promise<unknown>;
 }) {
   const snackbar = useSnackbar();
   const [busy, setBusy] = useState(false);
@@ -46,7 +49,7 @@ export function MeasureActionPlanButton({
         message: `Handlingsplanen ${created.fileName} har skapats och lagts som en bilaga på ärendet.`,
         status: 'success',
       });
-      await refreshSupportAttachments(municipalityId, errand.id);
+      await Promise.all([refreshSupportAttachments(municipalityId, errand.id), onCreated?.()]);
     } catch (cause) {
       snackbar({ message: failureMessage(cause), status: 'error' });
     } finally {

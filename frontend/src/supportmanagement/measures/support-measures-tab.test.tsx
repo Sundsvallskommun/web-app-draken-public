@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { emptyUser } from '@common/services/user-service';
+import { useSupportStore } from '@stores/support-store';
 import { useUserStore } from '@stores/user-store';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { FormProvider, useForm } from 'react-hook-form';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -83,6 +84,7 @@ beforeEach(() => {
   mocks.update.mockResolvedValue(undefined);
   mocks.followUp.mockResolvedValue(undefined);
   mocks.changeEnd.mockResolvedValue(undefined);
+  useSupportStore.setState({ supportErrand: undefined });
   useUserStore.setState({
     user: {
       ...emptyUser,
@@ -336,6 +338,36 @@ test('lists the measures as they were registered, and gathers them per person wh
   fireEvent.change(screen.getByRole('searchbox', { name: 'Sök' }), { target: { value: 'Först' } });
   fireEvent.click(screen.getByRole('button', { name: 'Rensa filter' }));
   expect(screen.getByRole('list', { name: /^creator \(2\)$/i })).toBeTruthy();
+});
+
+// B3. The handler saves the errand with the tab open and then changes a measure: both are their own writes, and the
+// next save must not be refused as somebody else's change.
+test('the errand’s known version follows a measure changed after the errand was saved with the tab open', async () => {
+  const moveEndDate = async (date: string) => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Ändra slutdatum Utbildning' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('När ska åtgärden vara klar? (Obligatoriskt)'), {
+      target: { value: date },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Spara slutdatum' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  };
+  const knownVersion = () => useSupportStore.getState().supportErrand?.version;
+  useSupportStore.setState({ supportErrand: { ...errand } });
+  render(<Harness />);
+  await screen.findByText('Utbilda personalen');
+
+  // Spara ärende in the sidebar: the errand is at 5 now, and the list on screen was read at 4.
+  act(() => useSupportStore.setState({ supportErrand: { ...errand, version: 5 } }));
+  mocks.read.mockResolvedValue({ ...snapshot, errandVersion: 6 });
+  await moveEndDate('2026-10-15');
+  await waitFor(() => expect(knownVersion()).toBe(6));
+
+  // Two steps where the handler made one: somebody else wrote too, and the errand has to find that out itself.
+  mocks.read.mockResolvedValue({ ...snapshot, errandVersion: 8 });
+  await moveEndDate('2026-10-20');
+  await waitFor(() => expect(mocks.read).toHaveBeenCalledTimes(3));
+  expect(knownVersion()).toBe(6);
 });
 
 test('returning to a tab reloads measures changed in the other view', async () => {

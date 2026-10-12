@@ -1,6 +1,9 @@
 import { Button, Spinner } from '@sk-web-gui/react';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
+import {
+  knownSupportErrandVersion,
+  useAdvanceErrandVersion,
+} from '@supportmanagement/services/use-advance-errand-version';
 import { isAxiosError } from 'axios';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -55,9 +58,11 @@ export function SupportMeasuresTab({
       try {
         if (!errand.id) throw new Error('Missing errand ID');
         const snapshot = await getSupportMeasures(municipalityId, errand.id);
-        if (request !== generation.current) return undefined;
-        // Our own write moved the errand's version too; anything more is somebody else's to find out about.
+        // Our own write moved the errand's version too; anything more is somebody else's to find out about. Told
+        // before the reload is weighed against a newer one: a refresh that overtook this read shows its own list,
+        // but only this read knows which version the write started from.
         if (expectedErrandVersion !== undefined) advanceErrandVersion(expectedErrandVersion, snapshot.errandVersion);
+        if (request !== generation.current) return undefined;
         setState({ status: 'ready', snapshot, refreshing: false });
         return snapshot;
       } catch (cause) {
@@ -133,7 +138,9 @@ export function SupportMeasuresTab({
             errand={errand}
             municipalityId={municipalityId}
             onDirtyChange={onDirtyChange}
-            onSaved={() => load(state.snapshot.errandVersion)}
+            // The baseline is what the page knows now, not what the list read when it was loaded: the errand may
+            // have been saved since, with this tab open, and the list's version is then already behind.
+            onSaved={() => load(knownSupportErrandVersion(errand.id))}
             followUp={followUp}
           />
         </div>
