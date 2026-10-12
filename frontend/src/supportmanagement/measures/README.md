@@ -208,8 +208,10 @@ datumet bevaras.
 Den som följer upp en åtgärd kan också flytta dess slutdatum med **Ändra slutdatum**, så länge
 åtgärden inte är uppföljd. Knappen finns både här och under Åtgärder, och det är det enda sättet att flytta
 slutdatumet på en godkänd åtgärd. Dialogen visar startdatumet men erbjuder det inte, och slutdatumet får
-inte ligga före startdatumet. Skrivningen går genom `PATCH .../measures/:measureId/planned-complete`,
-som bara tar `plannedComplete`. Den gäller samma regler som uppföljningen: samma roll (eller skaparen,
+inte ligga före startdatumet. Åtgärdens beskrivning, som annars är låst när åtgärden är godkänd, går att
+skriva om i samma steg: det är där den som flyttar datumet skriver varför. Beskrivningen sparas bara
+tillsammans med ett ändrat slutdatum. Skrivningen går genom `PATCH .../measures/:measureId/planned-complete`,
+som tar `plannedComplete` och en valfri `description`. Den gäller samma regler som uppföljningen: samma roll (eller skaparen,
 utan roller), en planerad och godkänd åtgärd och åtgärdens `If-Match`. Därför kan enhetschefen flytta
 slutdatumet på ett förslag från LEX som enhetschefen själv har godkänt.
 

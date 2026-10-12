@@ -34,6 +34,23 @@ test('moves only the end date, through its own route and with the measure versio
   );
 });
 
+// Ä11. The one moving the date says why in the description, and both are saved in the one request.
+test('sends a rewritten description with the end date it explains', async () => {
+  await changeSupportMeasurePlannedComplete(
+    '2281',
+    'errand/id',
+    'measure/id',
+    4,
+    '2026-10-15T00:00:00+02:00',
+    'Utbildningen flyttas: föreläsaren är sjuk.'
+  );
+  expect(apiService.patch).toHaveBeenLastCalledWith(
+    'supporterrands/2281/errand%2Fid/measures/measure%2Fid/planned-complete',
+    { plannedComplete: '2026-10-15T00:00:00+02:00', description: 'Utbildningen flyttas: föreläsaren är sjuk.' },
+    { headers: { 'If-Match': '"4"' } }
+  );
+});
+
 test('does not follow up a measure without its version', async () => {
   await expect(
     followUpSupportMeasure('2281', 'errand', 'measure', undefined, {

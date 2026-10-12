@@ -159,6 +159,28 @@ describe('measure write handlers (over HTTP)', () => {
     );
   });
 
+  it('takes a rewritten description with the end date, and refuses an emptied one', async () => {
+    const approved = { ...measure, accept: 'TRUE', plannedStart: '2026-09-08T00:00:00Z', plannedComplete: '2026-09-30T00:00:00Z' };
+    apiGet.mockImplementation(async (config: { url?: string }) => ({
+      data: config.url?.endsWith('/measures/measure-1') ? approved : errand,
+      status: 200,
+    }));
+    const move = (description: string) =>
+      request(server)
+        .patch(`${measuresUrl}/measure-1/planned-complete`)
+        .set('If-Match', '"3"')
+        .send({ plannedComplete: '2026-10-15T00:00:00Z', description });
+
+    expect((await move('   ')).status).toBe(400);
+    expect(apiPatch).not.toHaveBeenCalled();
+
+    expect((await move('Flyttas: föreläsaren är sjuk.')).status).toBe(204);
+    expect(apiPatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ data: { plannedComplete: '2026-10-15T00:00:00Z', description: 'Flyttas: föreläsaren är sjuk.' } }),
+      expect.anything(),
+    );
+  });
+
   it.each([{}, { plannedComplete: 'snart' }, { plannedComplete: '2026-10-15T00:00:00Z', plannedStart: '2026-10-01T00:00:00Z' }])(
     'rejects a missing end date or one sent with other fields: %j',
     async body => {

@@ -201,6 +201,20 @@ describe('moving the end date of a measure being followed up', () => {
     expect(api.measure).toMatchObject({ plannedStart: '2026-09-08T12:00:00Z', plannedComplete: '2026-10-15T00:00:00Z', version: 4 });
   });
 
+  it('writes a rewritten description in the same request as the date it explains', async () => {
+    const { api, service } = setup();
+    await service.changePlannedComplete(
+      '2281',
+      'errand-1',
+      'measure-1',
+      '"3"',
+      { plannedComplete: '2026-10-15T00:00:00Z', description: 'Flyttas: föreläsaren är sjuk.' },
+      user,
+    );
+    expect(api.patches).toHaveLength(1);
+    expect(api.patches[0].data).toEqual({ plannedComplete: '2026-10-15T00:00:00Z', description: 'Flyttas: föreläsaren är sjuk.' });
+  });
+
   it('refuses an end before the decided start', async () => {
     const { api, move } = moveTo('2026-09-01T00:00:00Z');
     await expect(move()).rejects.toMatchObject({ status: 400 });

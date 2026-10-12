@@ -364,7 +364,8 @@ export class SupportMeasureService {
   /**
    * Moves an approved measure's end date. The start never changes, but the end may slip, and only the one who follows
    * the measure up moves it - not whoever registered it. A measure already followed up is done, and keeps the end it
-   * had.
+   * had. The description, otherwise locked once the measure is approved, may be rewritten in the same step: it is
+   * where the one moving the date says why.
    */
   async changePlannedComplete(
     municipalityId: string,
@@ -381,10 +382,14 @@ export class SupportMeasureService {
       throw new HttpException(409, 'Slutdatumet kan bara ändras på en planerad och godkänd åtgärd som inte är uppföljd.');
     }
     assertMeasureDates({ plannedComplete: data.plannedComplete }, existing);
-    await this.apiService.patch<Measure, Pick<Measure, 'plannedComplete'>>(
+    await this.apiService.patch<Measure, Pick<Measure, 'plannedComplete' | 'description'>>(
       {
         url: `${url}/measures/${encodeURIComponent(measureId)}`,
-        data: { plannedComplete: data.plannedComplete },
+        // One write: the date and the words explaining it are saved together or not at all.
+        data: {
+          plannedComplete: data.plannedComplete,
+          ...(data.description !== undefined ? { description: data.description } : {}),
+        },
         headers: { 'If-Match': ifMatch },
         followLocation: false,
         propagateClientError: true,

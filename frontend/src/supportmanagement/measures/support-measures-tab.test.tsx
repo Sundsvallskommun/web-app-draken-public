@@ -289,11 +289,49 @@ test('the follow-up moves the end date and shows the decided start without offer
       'errand-one',
       'measure-one',
       3,
-      expect.stringMatching(/^2026-10-15T00:00:00[+-]\d{2}:\d{2}$/)
+      expect.stringMatching(/^2026-10-15T00:00:00[+-]\d{2}:\d{2}$/),
+      // The description was left as it was, so it is not sent.
+      undefined
     )
   );
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(await screen.findByText('Planerat datum: 2026-09-10 – 2026-10-15')).toBeTruthy();
+});
+
+// Ä11. Moving the end date opens the description, so the one moving it can write why.
+test('the description can be rewritten when the end date is moved, and is saved with it', async () => {
+  render(<Harness />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Ändra slutdatum Utbildning' }));
+  const dialog = await screen.findByRole('dialog');
+  const description = within(dialog).getByRole('textbox', { name: 'Beskrivning av åtgärd (Obligatoriskt)' });
+  const save = within(dialog).getByRole('button', { name: 'Spara slutdatum' });
+  expect((description as HTMLTextAreaElement).value).toBe('Utbilda personalen');
+
+  // The step is the date's: a description rewritten on its own is not saved from here.
+  fireEvent.change(description, { target: { value: 'Utbilda personalen. Flyttas: föreläsaren är sjuk.' } });
+  expect(save).toHaveProperty('disabled', true);
+
+  fireEvent.change(within(dialog).getByLabelText('När ska åtgärden vara klar? (Obligatoriskt)'), {
+    target: { value: '2026-10-15' },
+  });
+  fireEvent.change(description, { target: { value: '   ' } });
+  fireEvent.click(save);
+  expect(await within(dialog).findByText('Beskriv vad åtgärden innebär.')).toBeTruthy();
+  expect(mocks.changeEnd).not.toHaveBeenCalled();
+
+  fireEvent.change(description, { target: { value: 'Utbilda personalen. Flyttas: föreläsaren är sjuk.' } });
+  fireEvent.click(save);
+  await waitFor(() =>
+    expect(mocks.changeEnd).toHaveBeenCalledWith(
+      '2281',
+      'errand-one',
+      'measure-one',
+      3,
+      expect.stringMatching(/^2026-10-15T00:00:00[+-]\d{2}:\d{2}$/),
+      'Utbilda personalen. Flyttas: föreläsaren är sjuk.'
+    )
+  );
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 });
 
 test('editing an approved measure leaves both dates alone, and the measures view offers moving the end', async () => {

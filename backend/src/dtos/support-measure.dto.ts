@@ -69,10 +69,18 @@ export class DecideSupportMeasureDto {
   plannedComplete?: string;
 }
 
-/** Moves an approved measure's end date from the follow-up; its start is part of the decision and stays. */
+/**
+ * Moves an approved measure's end date from the follow-up; its start is part of the decision and stays. The
+ * description may be rewritten in the same step, which is where the one moving the date says why.
+ */
 export class PlannedCompleteSupportMeasureDto {
   @IsISO8601({ strict: true }, { message: 'Ange när åtgärden ska vara klar.' })
   plannedComplete!: string;
+
+  @ValidateIf((_, value: unknown) => value !== undefined)
+  @IsString()
+  @Matches(/\S/, { message: 'Beskriv vad åtgärden innebär.' })
+  description?: string;
 }
 
 /** One follow-up command; measure details cannot be supplied. */

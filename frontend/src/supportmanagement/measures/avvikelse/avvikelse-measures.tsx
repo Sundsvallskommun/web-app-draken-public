@@ -181,14 +181,21 @@ export function AvvikelseMeasures({
     if (!recovered) await onSaved();
   };
 
-  const saveEndDate = async (plannedComplete: string) => {
+  const saveEndDate = async (plannedComplete: string, description?: string) => {
     const measure = dialog?.kind === 'end-date' && !dialog.unavailable ? dialog.measure : undefined;
     if (!canWrite || !errand.id || !measure?.id || !measureCanBeFollowedUp(measure)) {
       throw new Error('Measure end date cannot be changed');
     }
     const measureId = measure.id;
     try {
-      await changeSupportMeasurePlannedComplete(municipalityId, errand.id, measureId, measure.version, plannedComplete);
+      await changeSupportMeasurePlannedComplete(
+        municipalityId,
+        errand.id,
+        measureId,
+        measure.version,
+        plannedComplete,
+        description
+      );
     } catch (cause) {
       // The date stays in the dialog, now over the current measure, so a retry is made on its fresh version.
       if (isSupportErrandWriteConflict(cause)) await rebaseOnCurrent(measureId, 'end-date');

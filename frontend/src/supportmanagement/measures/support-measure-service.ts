@@ -99,17 +99,21 @@ export async function followUpSupportMeasure(
   );
 }
 
-/** Moves an approved measure's end date from the follow-up; the BFF keeps its start as decided. */
+/**
+ * Moves an approved measure's end date from the follow-up; the BFF keeps its start as decided. A description is
+ * sent only when it was rewritten in the same step, to say why the date moves.
+ */
 export async function changeSupportMeasurePlannedComplete(
   municipalityId: string,
   errandId: string,
   measureId: string,
   version: Measure['version'],
-  plannedComplete: string
+  plannedComplete: string,
+  description?: string
 ): Promise<void> {
-  await apiService.patch<void, Pick<Measure, 'plannedComplete'>>(
+  await apiService.patch<void, Pick<Measure, 'plannedComplete' | 'description'>>(
     `${measuresUrl(municipalityId, errandId)}/${encodeURIComponent(measureId)}/planned-complete`,
-    { plannedComplete },
+    { plannedComplete, ...(description !== undefined ? { description } : {}) },
     { headers: { 'If-Match': measureETag(version) } }
   );
 }

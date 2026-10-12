@@ -1,5 +1,16 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Alert, Button, FormControl, FormErrorMessage, FormLabel, Input, Modal, useConfirm } from '@sk-web-gui/react';
+import {
+  Alert,
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  Input,
+  Modal,
+  Textarea,
+  useConfirm,
+} from '@sk-web-gui/react';
 import { isAxiosError } from 'axios';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
@@ -8,7 +19,7 @@ import { measureDateLabels, measureDateTime, measureFormValues, plannedMeasureDa
 
 /**
  * Moves an approved measure's end date from the follow-up. The start is part of the decision, so it is shown and not
- * offered: only the end may slip.
+ * offered: only the end may slip. The description is open in the same step, so the one moving the date can write why.
  */
 export function AvvikelseMeasureEndDateDialog({
   measure,
@@ -21,8 +32,8 @@ export function AvvikelseMeasureEndDateDialog({
   measure: Measure;
   unavailable?: boolean;
   title: string;
-  /** Receives the new end date as the timestamp the API stores. */
-  onSave: (plannedComplete: string) => Promise<void>;
+  /** Receives the new end date as the timestamp the API stores, and the description where it was rewritten. */
+  onSave: (plannedComplete: string, description?: string) => Promise<void>;
   onClose: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
@@ -30,13 +41,18 @@ export function AvvikelseMeasureEndDateDialog({
   const heading = useRef<HTMLSpanElement>(null);
   const busy = useRef(false);
   const { plannedStart, plannedComplete: savedEnd } = measureFormValues(measure);
+  const savedDescription = measure.description ?? '';
   const [plannedComplete, setPlannedComplete] = useState(savedEnd);
+  const [description, setDescription] = useState(savedDescription);
   const [dateError, setDateError] = useState<string>();
+  const [descriptionError, setDescriptionError] = useState<string>();
   const [saveError, setSaveError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const confirm = useConfirm();
   const available = !unavailable && measureCanBeFollowedUp(measure);
-  const dirty = plannedComplete !== savedEnd;
+  const dateChanged = plannedComplete !== savedEnd;
+  const descriptionChanged = description !== savedDescription;
+  const dirty = dateChanged || descriptionChanged;
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -49,7 +65,7 @@ export function AvvikelseMeasureEndDateDialog({
       dirty &&
       !(await confirm.showConfirmation(
         'Avbryt ändringen?',
-        'Det nya slutdatumet sparas inte. Vill du fortsätta?',
+        'Dina ändringar sparas inte. Vill du fortsätta?',
         'Ja, avbryt',
         'Nej, behåll',
         'warning',
@@ -64,13 +80,15 @@ export function AvvikelseMeasureEndDateDialog({
     event.preventDefault();
     if (busy.current || !available) return;
     const error = plannedMeasureDateErrors(plannedStart, plannedComplete).plannedComplete;
+    const missingDescription = description.trim() ? undefined : 'Beskriv vad åtgärden innebär.';
     setDateError(error);
+    setDescriptionError(missingDescription);
     setSaveError(undefined);
-    if (error) return;
+    if (error || missingDescription) return;
     busy.current = true;
     setSaving(true);
     try {
-      await onSave(measureDateTime(plannedComplete));
+      await onSave(measureDateTime(plannedComplete), descriptionChanged ? description : undefined);
     } catch (cause) {
       setSaveError(endDateSaveError(cause));
     } finally {
@@ -99,7 +117,6 @@ export function AvvikelseMeasureEndDateDialog({
         <form onSubmit={submit} noValidate aria-busy={saving} className="flex flex-col gap-24">
           <section aria-label="Åtgärden" className="border-1 rounded-12 p-16 flex flex-col gap-8">
             <h4 className="font-bold">{title}</h4>
-            {measure.description && <p className="whitespace-pre-wrap break-words">{measure.description}</p>}
             {plannedStart && (
               <p data-cy="measure-decided-start">
                 <strong>Påbörjas:</strong> {plannedStart}
@@ -129,8 +146,26 @@ export function AvvikelseMeasureEndDateDialog({
             />
             {dateError && <FormErrorMessage>{dateError}</FormErrorMessage>}
           </FormControl>
+          <FormControl id={`${id}-description`} invalid={Boolean(descriptionError)} className="w-full">
+            <FormLabel>Beskrivning av åtgärd (Obligatoriskt)</FormLabel>
+            <Textarea
+              id={`${id}-description`}
+              value={description}
+              rows={6}
+              onChange={(event) => setDescription(event.target.value)}
+              disabled={saving || !available}
+              aria-required
+              aria-describedby={`${id}-description-help`}
+              className="w-full"
+            />
+            <FormHelperText id={`${id}-description-help`}>
+              Skriv här varför slutdatumet ändras. Beskrivningen sparas tillsammans med det nya datumet.
+            </FormHelperText>
+            {descriptionError && <FormErrorMessage>{descriptionError}</FormErrorMessage>}
+          </FormControl>
           <div className="flex flex-wrap gap-12">
-            <Button type="submit" disabled={saving || !available || !dirty} loading={saving}>
+            {/* The step is the date's: the description is rewritten to explain a move, not on its own. */}
+            <Button type="submit" disabled={saving || !available || !dateChanged} loading={saving}>
               Spara slutdatum
             </Button>
             <Button type="button" variant="secondary" disabled={saving} onClick={() => void requestClose()}>
@@ -152,7 +187,7 @@ function endDateSaveError(cause: unknown): string {
       return 'Du saknar behörighet att ändra åtgärdens slutdatum.';
     case 409:
     case 412:
-      return 'Åtgärden har ändrats av någon annan. Ditt datum finns kvar: kontrollera det och spara igen.';
+      return 'Åtgärden har ändrats av någon annan. Dina ändringar finns kvar: kontrollera dem och spara igen.';
     default:
       return 'Slutdatumet kunde inte sparas. Ladda om åtgärderna innan du försöker igen.';
   }
