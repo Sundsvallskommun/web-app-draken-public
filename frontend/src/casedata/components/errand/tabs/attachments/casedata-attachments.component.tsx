@@ -19,7 +19,7 @@ import {
   replaceAttachmentFile,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { imageMimeTypes } from '@common/components/file-upload/mime-types';
 import { isCroppableImage } from '@common/components/image-cropper/crop-geometry';
 import { CroppedImage } from '@common/components/image-cropper/crop-image';
 import { useToastMessages } from '@common/hooks/use-toast-messages';

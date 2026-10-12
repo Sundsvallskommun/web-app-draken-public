@@ -3,12 +3,16 @@ export const mockEnv = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api',
   application_name: process.env.NEXT_PUBLIC_APPLICATION ?? '',
   mockPersonNumber: '199001012385',
+  // The same test person number written the way a form is read, with a hyphen.
+  mockPersonNumberDashed: '19900101-2385',
+  // A second test person number (Skatteverket), for a second person on the same errand. Not a real person.
+  mockSecondaryPersonNumber: '198104122380',
+  mockSecondaryPersonNumberDashed: '19810412-2380',
   mockInvalidPersonNumber: '199001012386',
   mockNonexistentPersonNumber: '199909092380',
   // Test person number (Skatteverket) used by the PT errand fixture's owner.
   mockPtPersonNumber: '199001162396',
-  // Two more fake people (also used in e2e fixtures), for tests where several stakeholders need distinct identities.
-  mockSecondaryPersonNumber: '196407201653',
+  // A third fake person (also used in e2e fixtures), for tests where several stakeholders need distinct identities.
   mockTertiaryPersonNumber: '197311194612',
   mockOrganizationNumber: '556026-9986',
   mockInvalidOrganizationNumber: '556026-9987',
@@ -20,6 +24,10 @@ export const mockEnv = {
   // (avoids strict-mode collisions when asserting per-stakeholder phone). PTS test range.
   mockSecondaryPhoneNumber: '0701740636',
   mockAdUsername: 'abc01abc',
+  mockFirstName: 'Test',
+  mockLastName: 'Testsson',
+  // Shaped like an errand number; it does not identify any real errand.
+  mockErrandNumber: 'AOT-26010000',
   mockCompanyName: 'Testbolaget AB',
   // Fake addresses: no real street, and Swedish postal codes never start with 0. Postal codes keep the
   // space users often type, so code under test can show it normalizes.

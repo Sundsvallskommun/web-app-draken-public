@@ -7,7 +7,7 @@ import {
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { imageMimeTypes } from '@common/components/file-upload/mime-types';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';

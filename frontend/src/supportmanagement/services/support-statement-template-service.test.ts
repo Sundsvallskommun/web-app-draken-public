@@ -24,7 +24,7 @@ const owner = {
   role: 'PRIMARY',
   organizationName: 'Krogen Exempel AB',
   externalId: 'd5727c45-8c19-42a0-a04a-5ef11d108618',
-  parameters: [{ key: 'organizationNumber', values: ['556676-3081'] }],
+  parameters: [{ key: 'organizationNumber', values: [mockEnv.mockOrganizationNumber] }],
   address: 'Storgatan 1',
   zipCode: '852 30',
   city: 'Sundsvall',
@@ -139,7 +139,7 @@ test('a referral to an authority with an address of its own carries it', () => {
     replyDeadline: '2026-10-22',
     premisesStreet: 'Storgatan 1',
     premisesPostalAddress: '852 30 Sundsvall',
-    applicantOrgNumber: '556676-3081',
+    applicantOrgNumber: mockEnv.mockOrganizationNumber,
   });
 });
 
@@ -208,7 +208,7 @@ test('the inspection form names the permit holder rather than an applicant', () 
     })
   ).toMatchObject({
     permitHolderName: 'Krogen Exempel AB',
-    permitHolderOrgNumber: '556676-3081',
+    permitHolderOrgNumber: mockEnv.mockOrganizationNumber,
   });
 });
 
