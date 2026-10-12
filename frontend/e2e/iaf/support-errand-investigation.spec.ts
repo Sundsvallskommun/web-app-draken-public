@@ -917,6 +917,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     );
     // Only the lex Sarah investigator proposes measures, so only their investigation reminds of them.
     await expect(controls.locator('[data-cy="investigation-measures-reminder"]')).toHaveCount(0);
+    // Nor is a finished HSL investigation told that the errand has no measures: that is said to the unit manager.
+    await expect(controls.locator('[data-cy="investigation-no-measures-notice"]')).toHaveCount(0);
     // One click saves the form as completed and creates the report.
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
     await controls.locator('[data-cy="investigation-report-generate"]').click();
@@ -1184,12 +1186,55 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .click();
     const document = page.locator('[data-cy="investigation-document-utredning-sol-lss"]');
     const reminder = document.locator('[data-cy="investigation-measures-reminder"]');
+    const measuresLink = document.locator('[data-cy="investigation-measures-link"]');
     await expect(document).toBeVisible();
     await expect(reminder).toHaveCount(0);
+    // Ä9. Where measures are registered is said from the start, with the way there.
+    await expect(measuresLink).toContainText('Åtgärder registreras under fliken Åtgärder.');
 
     await document.locator('#utredning-sol-lss_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
     await expect(reminder).toContainText('Registrera dem i fliken Åtgärder');
-    await reminder.getByRole('button', { name: 'Gå till Åtgärder', exact: true }).click();
+    await measuresLink.getByRole('button', { name: 'Gå till Åtgärder', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  // Ä7 and Ä9. The unit's measures are registered in Åtgärder: every investigation leads there, and the unit
+  // manager who finishes theirs with none is told so - as information, not as something that stops them.
+  test('leder till Åtgärder från utredningen och säger när enhetschefen markerar klart utan åtgärder', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
+        { name: 'useMeasures', enabled: true },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const notice = document.locator('[data-cy="investigation-no-measures-notice"]');
+    const measuresLink = document.locator('[data-cy="investigation-measures-link"]');
+    await expect(measuresLink).toContainText('Åtgärder registreras under fliken Åtgärder.');
+    await expect(notice).toHaveCount(0);
+
+    await document.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(notice).toContainText('Det finns inga åtgärder i ärendet. Lägg till åtgärder under fliken Åtgärder.');
+    // Information, not a refusal: the investigation is saved as completed all the same.
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].body).toMatchObject({ value: { completed: 'yes' } });
+
+    const goToMeasures = measuresLink.getByRole('button', { name: 'Gå till Åtgärder', exact: true });
+    await goToMeasures.focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
   });
 

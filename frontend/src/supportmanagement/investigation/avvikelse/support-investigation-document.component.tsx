@@ -15,6 +15,7 @@ import {
   applyAvvikelseGroupedClassificationSelection,
   getAvvikelseGroupedClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
+import { useErrandMeasureCount } from '@supportmanagement/measures/measure-count';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { latestKnownSupportErrandVersion } from '@supportmanagement/services/support-errand-write-version';
@@ -446,6 +447,13 @@ export function SupportInvestigationDocument({
   // The errand's classification is demanded when the investigation is marked finished, not while it
   // is being written; the schema's own requirements wait for the same answer.
   const markedComplete = documentState ? isInvestigationCompleted(documentState.schema, documentState.formData) : false;
+  // The unit manager's investigation is where the unit's measures are decided on, so finishing it without any is
+  // worth saying - once, as information: nothing requires a measure.
+  const measureCount = useErrandMeasureCount(
+    municipalityId,
+    errandId,
+    appConfig.features.useMeasures && definition.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME && markedComplete
+  );
   const classificationPrerequisites = {
     required: classificationOwner,
     completed: markedComplete,
@@ -1099,11 +1107,9 @@ export function SupportInvestigationDocument({
                     onGenerate={generateReport}
                     onPreview={() => void previewReport()}
                     onUnlock={() => void unlockDocument()}
-                    onGoToMeasures={
-                      appConfig.features.useMeasures && definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME
-                        ? () => setActiveTabKey('measures')
-                        : undefined
-                    }
+                    onGoToMeasures={appConfig.features.useMeasures ? () => setActiveTabKey('measures') : undefined}
+                    proposesMeasures={definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME}
+                    withoutMeasures={measureCount === 0}
                   />
                 ),
               }

@@ -22,10 +22,14 @@ interface InvestigationReportControlsProps {
   readonly onPreview: () => void;
   readonly onUnlock: () => void;
   /**
-   * Set for an investigation whose investigator also proposes measures. Those are registered in the Åtgärder tab,
-   * away from the document, so finishing the investigation reminds of them and leads there.
+   * Set where the errand has measures: they are registered in the Åtgärder tab, away from the document, so every
+   * investigation leads there from where it is finished.
    */
   readonly onGoToMeasures?: () => void;
+  /** The investigator proposes measures others decide on, so finishing the investigation reminds of them. */
+  readonly proposesMeasures?: boolean;
+  /** The errand is known to have no measures, which the one finishing the investigation is told - not stopped by. */
+  readonly withoutMeasures?: boolean;
 }
 
 /**
@@ -46,6 +50,8 @@ export function InvestigationReportControls({
   onPreview,
   onUnlock,
   onGoToMeasures,
+  proposesMeasures = false,
+  withoutMeasures = false,
 }: Readonly<InvestigationReportControlsProps>) {
   const pending = reports.some(isPendingInvestigationReport);
   const canGenerate = completedInDraft && canEdit && !busy;
@@ -62,9 +68,25 @@ export function InvestigationReportControls({
           </Alert.Content>
         </Alert>
       )}
-      {completedInDraft && onGoToMeasures && (
-        <div className="flex flex-wrap items-center gap-12" data-cy="investigation-measures-reminder">
-          <span>Har du förslag på åtgärder? Registrera dem i fliken Åtgärder innan du tilldelar ärendet.</span>
+      {completedInDraft && withoutMeasures && onGoToMeasures && (
+        <Alert type="info" data-cy="investigation-no-measures-notice">
+          <Alert.Icon />
+          <Alert.Content>
+            <Alert.Content.Description>
+              Det finns inga åtgärder i ärendet. Lägg till åtgärder under fliken Åtgärder.
+            </Alert.Content.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {onGoToMeasures && (
+        <div className="flex flex-wrap items-center gap-12" data-cy="investigation-measures-link">
+          {completedInDraft && proposesMeasures ? (
+            <span data-cy="investigation-measures-reminder">
+              Har du förslag på åtgärder? Registrera dem i fliken Åtgärder innan du tilldelar ärendet.
+            </span>
+          ) : (
+            <span>Åtgärder registreras under fliken Åtgärder.</span>
+          )}
           <Button type="button" variant="tertiary" size="sm" onClick={onGoToMeasures}>
             Gå till Åtgärder
           </Button>
