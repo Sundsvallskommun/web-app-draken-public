@@ -85,6 +85,11 @@ Samma dag publicerades `2281_utredning-sol-lss_2.2` i testmiljön: med sammanfat
 på ställningstagandena (se samma avsnitt). Schema och UI Schema lästes tillbaka och var identiska med artefakterna,
 och `versions/latest` pekar på 2.2. Inget har publicerats i produktionsmiljön.
 
+Den 12 oktober 2026 publicerades `2281_utredning-enhetschef_1.7` och `2281_utredning-sol-lss_2.3` i testmiljön, med
+orden som passar både avvikelse och missförhållande (se samma avsnitt). Schema och UI Schema lästes tillbaka för
+båda och var identiska med artefakterna, och `versions/latest` pekar på 1.7 respektive 2.3. Inget har publicerats i
+produktionsmiljön.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -166,8 +171,7 @@ fattas inte.
 Version 2.3 ändrar bara beskrivningen av händelsebeskrivningen i Bakgrund, som sa "den inrapporterade avvikelsen":
 ett missförhållande kallas inte avvikelse (se avvikelse-README). Samtidigt säger `utredning-enhetschef` 1.7 det
 inträffade och händelsen i stället för avvikelsen i orsaken, frågan om misstänkt missförhållande och riskbedömningens
-allvarlighetsgrad, och lagrumsfältets beskrivning nämner inte längre de låsta lagrummen, som numera döljs. Båda är
-förberedda lokalt men inte publicerade i test.
+allvarlighetsgrad, och lagrumsfältets beskrivning nämner inte längre de låsta lagrummen, som numera döljs.
 
 Version 2.2 gör två ändringar till efter testrundan:
 
