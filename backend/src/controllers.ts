@@ -47,6 +47,7 @@ import { SupportMetadataController } from './controllers/supportmanagement/suppo
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
 import { SupportPhaseController } from './controllers/supportmanagement/support-phase.controller';
+import { SupportPlaceManagerController } from './controllers/supportmanagement/support-place-manager.controller';
 import { SupportSubscriptionController } from './controllers/supportmanagement/support-subscription.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
@@ -106,6 +107,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportMeasureController,
   SupportNoteController,
   SupportPhaseController,
+  SupportPlaceManagerController,
   SupportNotificationController,
   SupportSubscriptionController,
   TemplateController,

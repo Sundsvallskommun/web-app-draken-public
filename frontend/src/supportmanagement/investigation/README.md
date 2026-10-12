@@ -51,6 +51,12 @@ delad kod erbjuder:
   Planerade åtgärder gör. Registret lämnar ut den via `getInvestigationFollowUp`, och `useInvestigation` släcker
   den med resten. För avvikelse: Verksamhetsuppföljning – Enhet, Enheter eller Verksamhetsområde. Utan slot,
   ingen sektion i sidomenyn.
+- `administration` — valfritt avsnitt i översiktens sidomeny för det variantens administratörer ställer in, under
+  en egen rubrik (`heading`) och med en egen knapp (`label`). Varianten avgör vem som erbjuds det (`isOfferedTo`,
+  ur `roleKeys` och `superadmin` från `/me`); sloten styr bara vad som visas, BFF:en avgör vad som får göras.
+  Knappen byter ut ärendetabellen mot `render()`. Regeln ligger i `resolveInvestigationAdministration` och
+  registret lämnar ut den via `getInvestigationAdministration`; `useInvestigation` släcker den med resten. För
+  avvikelse: Chefer per plats, för medlemmar i `SUPERADMIN_GROUP`. Utan slot, ingen sektion i sidomenyn.
 - `limitedAccessNotice` — valfri text för ett ärende där Support Management bara ger användaren begränsad
   läsning (`LR` i `/access`): hen får veta att ärendet finns, inte arbeta i det. Med sloten frågar ärendesidan
   efter nivån (`GET /supporterrands/:m/:id/errand-access`), låser vid `LR` hela ärendet (`limitedAccess` i

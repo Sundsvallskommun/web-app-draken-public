@@ -14,6 +14,7 @@ import type {
   InvestigationPhaseEntryRequirementProps,
   InvestigationTabProps,
   InvestigationVariantModule,
+  InvestigationViewer,
 } from '../investigation-variant';
 import {
   handsErrandToLexManager,
@@ -98,6 +99,12 @@ const UndecidedProposalsRequirement = dynamic(
 /** Lazy for the same bundle reason as the categorization control. */
 const UnitFollowUp = dynamic(
   () => import('./follow-up/unit-follow-up.component').then((module) => module.UnitFollowUp),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
+const PlaceManagers = dynamic(
+  () => import('./place-managers/place-managers.component').then((module) => module.PlaceManagers),
   { loading: () => null }
 );
 
@@ -227,6 +234,16 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     heading: 'Verksamhetsuppföljning',
     label: unitFollowUpMenuLabel,
     render: () => <UnitFollowUp />,
+  },
+  /**
+   * Chefer per plats: which places each manager has, set in AccessMapper. It changes who reaches which errands, so
+   * it is the administrators' alone - the BFF refuses everybody else.
+   */
+  administration: {
+    heading: 'Administration',
+    label: 'Chefer per plats',
+    isOfferedTo: (viewer: InvestigationViewer) => viewer.superadmin === true,
+    render: () => <PlaceManagers />,
   },
   /**
    * `ACCESS/LEX` leaves the unit manager and head of operations with limited read on the errand while LEX

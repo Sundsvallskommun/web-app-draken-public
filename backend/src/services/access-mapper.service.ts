@@ -1,19 +1,16 @@
 import { apiServiceName } from '@/config/api-config';
 import { ACCESS_MAPPER_ROLE_TYPE } from '@/config/investigation-manager-roles';
-import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import { AccessGroup, AccessUser } from '@/data-contracts/access-mapper/data-contracts';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
 
 import ApiService from './api.service';
+import { placeAccessPattern } from './place-manager-assignments';
 
 const SERVICE = apiServiceName('access-mapper');
 
 /** The access type whose patterns are written against Support Management label resource paths. */
 const LABEL_ACCESS_TYPE = 'label';
-
-/** The pattern AccessMapper stores for a place: the place's own path, covering everything under it. */
-const locationAccessPattern = (locationResourcePath: string): string => `${normalizeSupportManagementResourcePath(locationResourcePath)}/**`;
 
 /**
  * Reads Support Management's access configuration.
@@ -33,7 +30,7 @@ export class AccessMapperService {
    * nothing else: a manager is configured on the place they manage.
    */
   async findLocationAccessCandidates(user: User, municipalityId: string, namespace: string, locationResourcePath: string): Promise<string[]> {
-    const pattern = locationAccessPattern(locationResourcePath);
+    const pattern = placeAccessPattern(locationResourcePath);
     const response = await this.apiService.get<AccessUser[]>(
       {
         url: `${municipalityId}/${namespace}/access-config/user`,
@@ -78,6 +75,49 @@ export class AccessMapperService {
       if (hasStatus(error, 404)) return [];
       throw error;
     }
+  }
+
+  /** Every person's own access configuration in the namespace. A person's places are among their label patterns. */
+  async listAccessUsers(user: User, municipalityId: string, namespace: string): Promise<AccessUser[]> {
+    const response = await this.apiService.get<AccessUser[]>(
+      { url: `${municipalityId}/${namespace}/access-config/user`, baseURL: apiURL(SERVICE), propagateClientError: true },
+      user,
+    );
+    return response.data ?? [];
+  }
+
+  async createAccessUser(user: User, municipalityId: string, namespace: string, accessUser: AccessUser): Promise<void> {
+    await this.apiService.post<void, AccessUser>(
+      {
+        url: `${municipalityId}/${namespace}/access-config/user`,
+        baseURL: apiURL(SERVICE),
+        data: accessUser,
+        propagateClientError: true,
+        // The created entry is not read back: the caller already holds what it wrote.
+        followLocation: false,
+      },
+      user,
+    );
+  }
+
+  /** Replaces a person's whole configuration: AccessMapper has no partial update, and no version to condition one on. */
+  async updateAccessUser(user: User, municipalityId: string, namespace: string, id: string, accessUser: AccessUser): Promise<void> {
+    await this.apiService.put<void, AccessUser>(
+      {
+        url: `${municipalityId}/${namespace}/access-config/user/${encodeURIComponent(id)}`,
+        baseURL: apiURL(SERVICE),
+        data: accessUser,
+        propagateClientError: true,
+      },
+      user,
+    );
+  }
+
+  async deleteAccessUser(user: User, municipalityId: string, namespace: string, id: string): Promise<void> {
+    await this.apiService.delete<void>(
+      { url: `${municipalityId}/${namespace}/access-config/user/${encodeURIComponent(id)}`, baseURL: apiURL(SERVICE), propagateClientError: true },
+      user,
+    );
   }
 }
 

@@ -32,6 +32,9 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   /** So does the follow-up across errands. */
   showFollowUp?: boolean;
   setShowFollowUp?: (show: boolean) => void;
+  /** And so does what the administrators set. */
+  showAdministration?: boolean;
+  setShowAdministration?: (show: boolean) => void;
   iconButton: boolean;
 }> = ({
   showAttestationTable,
@@ -40,9 +43,11 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   setShowPlannedMeasures,
   showFollowUp = false,
   setShowFollowUp,
+  showAdministration = false,
+  setShowAdministration,
   iconButton,
 }) => {
-  const otherViewShown = showAttestationTable || showPlannedMeasures || showFollowUp;
+  const otherViewShown = showAttestationTable || showPlannedMeasures || showFollowUp || showAdministration;
   const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
   const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
   const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
@@ -130,6 +135,7 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
               setShowAttestationTable(false);
               setShowPlannedMeasures?.(false);
               setShowFollowUp?.(false);
+              setShowAdministration?.(false);
             }}
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !otherViewShown ? 'primary' : 'ghost'}

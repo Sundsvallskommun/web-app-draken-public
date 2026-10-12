@@ -54,6 +54,25 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
   });
 
   /**
+   * Verksamhetsuppföljningen och Chefer per plats är avvikelsens egna avsnitt i sidomenyn. Det senare
+   * erbjuds bara administratörer, så AOT prövas som administratör: avsnittet ska saknas för att AOT inte
+   * har det, inte för att användaren saknar behörighet.
+   */
+  test('har inga av avvikelsens avsnitt i sidomenyn, inte heller för en administratör', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installAotApiMock(page, { superadmin: true });
+
+    await page.goto('oversikt/');
+    await dismissCookieConsent();
+
+    await expect(page.locator('[data-cy="main-table"]')).toBeVisible();
+    await expect(page.locator('[data-cy="administration-button"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="follow-up-button"]')).toHaveCount(0);
+  });
+
+  /**
    * Den tomma profilen är inte ett fel: BFF:en har ingen registrerad profil för AOT och svarar med
    * state 'inactive'. Appen ska måla klart ändå - AppInitializer håller tillbaka första renderingen
    * tills profilen har landat, så en regression här ger en evig laddningsskärm snarare än ett fel.

@@ -9,7 +9,10 @@ import { appConfig } from '@config/appconfig';
 import { useConfigStore, useUserStore } from '@stores/index';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
-import { getInvestigationFollowUp } from '@supportmanagement/investigation/investigation-variant-registry';
+import {
+  getInvestigationAdministration,
+  getInvestigationFollowUp,
+} from '@supportmanagement/investigation/investigation-variant-registry';
 import { PlannedMeasuresOverview } from '@supportmanagement/measures/planned-measures-overview';
 import { useState } from 'react';
 
@@ -20,7 +23,9 @@ export function OversiktPageClient() {
   const [showContractTable, setShowContractTable] = useState<boolean>(false);
   const [showPlannedMeasures, setShowPlannedMeasures] = useState<boolean>(false);
   const [showFollowUp, setShowFollowUp] = useState<boolean>(false);
+  const [showAdministration, setShowAdministration] = useState<boolean>(false);
   const followUp = getInvestigationFollowUp();
+  const administration = getInvestigationAdministration(user);
 
   return (
     <>
@@ -35,6 +40,8 @@ export function OversiktPageClient() {
           showPlannedMeasures={showPlannedMeasures}
           setShowFollowUp={setShowFollowUp}
           showFollowUp={showFollowUp}
+          setShowAdministration={setShowAdministration}
+          showAdministration={showAdministration}
         >
           {(() => {
             if (appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations) {
@@ -42,6 +49,9 @@ export function OversiktPageClient() {
             }
             if (followUp && showFollowUp && municipalityId) {
               return followUp.render();
+            }
+            if (administration && showAdministration && municipalityId) {
+              return administration.render();
             }
             if (appConfig.features.useMeasures && showPlannedMeasures && municipalityId) {
               return <PlannedMeasuresOverview />;

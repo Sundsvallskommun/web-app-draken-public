@@ -119,6 +119,8 @@ export interface AotApiScenario {
   investigationProfile?: unknown;
   investigationProfileStatus?: number;
   canEdit?: boolean;
+  /** Signs the user in as a member of the superadmin group. */
+  superadmin?: boolean;
 }
 
 const apiResponse = (data: unknown) => ({ data, message: 'success' });
@@ -207,6 +209,7 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
             canViewAttestations: false,
             canEditAttestations: false,
           },
+          ...(scenario.superadmin ? { superadmin: true } : {}),
         })
       );
       return;

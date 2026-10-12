@@ -167,6 +167,20 @@ interface InvestigationFollowUpSlot {
 }
 
 /**
+ * Something the variant's administrators set, offered in the overview's sidebar under its own heading - who
+ * manages which place, say. Who is offered it is the variant's to say, and the BFF's to enforce: the slot only
+ * decides what is shown. A variant without one omits the slot, and the sidebar shows no such section.
+ */
+interface InvestigationAdministrationSlot {
+  /** The sidebar heading the entry sits under. */
+  readonly heading: string;
+  /** The sidebar entry. */
+  readonly label: string;
+  readonly isOfferedTo: (viewer: InvestigationViewer) => boolean;
+  readonly render: () => ReactNode;
+}
+
+/**
  * One investigation implementation, named for what it does rather than for who uses it.
  *
  * A module declares the capability flag that enables it, so adding a drake that wants existing
@@ -214,6 +228,8 @@ export interface InvestigationVariantModule {
   readonly phaseEntryRequirements?: readonly InvestigationPhaseEntryRequirement[];
   /** The follow-up across errands, for a variant that offers one. */
   readonly followUp?: InvestigationFollowUpSlot;
+  /** What the variant's administrators set from the overview, for a variant with something to administer. */
+  readonly administration?: InvestigationAdministrationSlot;
   /**
    * The alert the errand page shows when Support Management grants the viewer only limited read (LR) on
    * the errand: they may know it exists, not work in it, so the page also locks every field. A variant
@@ -314,6 +330,17 @@ export const isInvestigationTabVisible = (
   phases: SupportPhaseContext
 ): boolean =>
   features.useInvestigation && variant !== null && hasReachedSupportPhase(variant.requiredPhaseName, phases);
+
+/**
+ * What the variant lets this viewer administer from the overview. The master switch turns it off with the rest of
+ * the investigation; beyond it the variant's own slot decides who is offered it. No slot, no section.
+ */
+export const resolveInvestigationAdministration = (
+  features: AppConfigFeatures,
+  variant: InvestigationVariantModule | null,
+  viewer: InvestigationViewer
+): InvestigationVariantModule['administration'] =>
+  features.useInvestigation && variant?.administration?.isOfferedTo(viewer) ? variant.administration : undefined;
 
 /**
  * The master switch and the phase gate apply to the decision tab exactly as they apply to the

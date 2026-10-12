@@ -20,6 +20,7 @@ export const defaultPermissions: () => Permissions = () => ({
   canViewAttestations: false,
   canEditAttestations: false,
   canViewOtherNamespaces: false,
+  canAdministerPlaceManagers: false,
 });
 
 enum RoleOrderEnum {
@@ -50,6 +51,7 @@ const roles = new Map<InternalRole, Partial<Permissions>>([
       canEditSupportManagement: true,
       canViewAttestations: true,
       canEditAttestations: true,
+      canAdministerPlaceManagers: true,
     },
   ],
   [

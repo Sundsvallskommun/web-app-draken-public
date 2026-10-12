@@ -9,6 +9,7 @@ import {
   type InvestigationCapability,
   type InvestigationVariantModule,
   isInvestigationTabVisible,
+  resolveInvestigationAdministration,
   resolveInvestigationVariant,
 } from './investigation-variant';
 
@@ -74,6 +75,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.phaseEntryRequirements, undefined);
   // A variant offering no follow-up across errands adds no section to the overview's sidebar.
   assert.equal(minimalVariant.followUp, undefined);
+  // Nor does one with nothing for its administrators to set.
+  assert.equal(minimalVariant.administration, undefined);
   // A variant with nothing to say about an errand the user may only know of leaves the errand page alone.
   assert.equal(minimalVariant.limitedAccessNotice, undefined);
   // A variant that does not keep errands from closing early leaves the early close where it is.
@@ -92,6 +95,28 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.concealedDocumentKeys, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
   assert.equal(minimalVariant.requiredPhaseName, undefined);
+});
+
+test('an administration section is offered by the variant, to the viewers it names, under the master switch', () => {
+  const administration = {
+    heading: 'Administration',
+    label: 'Fixture',
+    isOfferedTo: ({ superadmin }: { superadmin?: boolean }) => superadmin === true,
+    render: () => null,
+  };
+  const administeredVariant: InvestigationVariantModule = { ...minimalVariant, administration };
+  const enabled = features({ [OTHER]: true, useInvestigation: true });
+
+  assert.equal(resolveInvestigationAdministration(enabled, administeredVariant, { superadmin: true }), administration);
+  assert.equal(resolveInvestigationAdministration(enabled, administeredVariant, { superadmin: false }), undefined);
+  assert.equal(resolveInvestigationAdministration(enabled, administeredVariant, { roleKeys: ['ANY'] }), undefined);
+  assert.equal(
+    resolveInvestigationAdministration(features({ [OTHER]: true }), administeredVariant, { superadmin: true }),
+    undefined
+  );
+  // A variant without the slot offers nothing, to anybody; neither does a deployment without a variant.
+  assert.equal(resolveInvestigationAdministration(enabled, minimalVariant, { superadmin: true }), undefined);
+  assert.equal(resolveInvestigationAdministration(enabled, null, { superadmin: true }), undefined);
 });
 
 test('a second capability selects its own variant and leaves avvikelse unselected', () => {

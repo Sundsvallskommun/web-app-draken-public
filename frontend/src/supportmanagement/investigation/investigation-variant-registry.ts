@@ -2,7 +2,12 @@ import { appConfig } from '@config/appconfig';
 
 import { aotInvestigationVariant } from './aot/aot-investigation-variant';
 import { avvikelseInvestigationVariant } from './avvikelse/avvikelse-investigation-variant';
-import { type InvestigationVariantModule, resolveInvestigationVariant } from './investigation-variant';
+import {
+  type InvestigationVariantModule,
+  type InvestigationViewer,
+  resolveInvestigationAdministration,
+  resolveInvestigationVariant,
+} from './investigation-variant';
 
 /**
  * Every investigation implementation. Adding one is adding a module here plus its capability flag.
@@ -25,6 +30,15 @@ export const getInvestigationVariant = (): InvestigationVariantModule | null =>
  */
 export const getInvestigationFollowUp = (): InvestigationVariantModule['followUp'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.followUp : undefined;
+
+/**
+ * What the running variant lets this viewer administer from the overview, if anything: undefined for a variant
+ * without the slot, and for a viewer it is not offered to.
+ */
+export const getInvestigationAdministration = (
+  viewer: InvestigationViewer
+): InvestigationVariantModule['administration'] =>
+  resolveInvestigationAdministration(appConfig.features, getInvestigationVariant(), viewer);
 
 /** The fields the running variant adds beside Ansvarig in the sidebar, if any. */
 export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>

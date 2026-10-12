@@ -794,6 +794,53 @@ Kandidaterna returneras grupperade per roll, och klienten renderar dem med `Sele
 som handläggarlistan i sidopanelen. Utredaren väljer; backend löser upp samma lista igen vid
 skrivningen och avvisar alla utanför den, så väljaren kan inte bredda vem som får ta emot ärendet.
 
+### Chefer per plats: administratören sätter platserna
+
+Vilka platser en chef har läses in en gång (posterna med `origin: AUTOMATIC`) och justeras sedan för hand i
+Draken. Översiktens sidomeny har därför avsnittet Administration med knappen Chefer per plats (variantens
+`administration`), som bara erbjuds medlemmar i `SUPERADMIN_GROUP`. Vyn ligger i `place-managers/`.
+
+**Bara platserna sätts här.** Av de två halvorna ovan skriver Draken den ena: personens mönster på platsen.
+Rollen (`UNIT_MANAGER`, `HEAD_OF_OPERATIONS`) och rollens rättigheter följer med AD-gruppen, som beställs för
+sig och aldrig skrivs från Draken. En person kan alltså få en plats innan rollen finns. Vyn visar då
+Saknar chefsroll, och personen går inte att välja som chef förrän gruppen är på plats.
+
+**Vad som visas.** Till vänster platsstrukturen som träd, från nivån under toppnoden ner till enheterna. En
+enhet är den djupaste noden med classification `LOCATION` på sin gren, alltså nivån AccessMapper-mönstren
+skrivs mot; avdelningarna under en enhet följer enheten och visas inte. Varje nivå ovanför är ett område,
+vad den än är klassad som. Trädet går att söka i (orden får ligga på olika nivåer) och filtrera på enheter
+utan person, och varje område säger hur många av dess enheter som saknar person. Till höger den valda
+platsens personer med namn, roll, omfattning (Enheten, `2 av 12 enheter`, Alla 12 enheter) och ursprung
+(Inläst automatiskt eller Satt för hand).
+
+**Vad som skrivs.** Att lägga till en person på en enhet lägger till enhetens mönster. Att lägga till på ett
+område lägger till ett mönster per enhet under området, som inläsningen gör: chefen slås upp på enhetens eget
+mönster, så ett enda mönster på området skulle ge åtkomst utan att göra personen valbar som chef. Att ta
+bort från ett område tar bort alla enheter under det, och ett mönster som ligger på området självt. En
+person som har ett sådant mönster visas med Hela *området* som ett mönster. Ligger mönstret på en nivå
+ovanför den valda platsen tas det bort där, inte här.
+
+**BFF:en** (`support-place-manager.controller.ts`, logiken i `place-manager-assignments.ts`):
+
+| Rutt | Gör |
+| --- | --- |
+| `GET /supportplacemanagers/:m` | Varje persons platser (ur `access-config/user`) och chefsrollerna i visningsordning |
+| `POST /supportplacemanagers/:m/people` | Namn och chefsroller för de konton som visas, högst 150 per anrop |
+| `PUT /supportplacemanagers/:m/people/:adAccount/places` | `{ add, remove }` med platsernas label-id; svarar med personens platser efteråt |
+
+- Alla tre kräver behörigheten `canAdministerPlaceManagers`, som bara `SUPERADMIN_GROUP` ger, och svarar 404 i
+  en applikation utan avvikelsens klassificeringspolicy. AccessMapper frågar inte själv vem som anropar, så
+  kontrollen i BFF:en är den enda som finns.
+- Platser namnges med label-id och slås upp i metadataträdet; en label som inte är en enhet eller har enheter
+  under sig avvisas med 400.
+- Skrivningen ändrar bara personens platsmönster. Roll, rättigheter och andra labelmönster på posten lämnas som
+  de är. En ändrad post märks `origin: MANUAL`; en post som inte längre ger något tas bort.
+- AccessMapper har ingen versionering och ingen delvis uppdatering. BFF:en läser därför personens post precis
+  före skrivningen och ersätter den hel. Två administratörer som ändrar samma person samtidigt kan skriva
+  över varandra. AccessMapper för ingen historik, så BFF:en loggar vem som ändrade vems platser.
+- En person som inte finns i AccessMapper måste finnas i katalogen för att läggas till. Kontot skrivs med
+  gemener; en befintlig post behåller sin stavning och hittas oavsett skiftläge.
+
 ## Rapporter: publicering och återhämtning
 
 `InvestigationReportPublicationService` i backend äger publiceringsförloppet. Controllern

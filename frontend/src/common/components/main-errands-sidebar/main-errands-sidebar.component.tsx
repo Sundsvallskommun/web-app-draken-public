@@ -15,8 +15,19 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { getInvestigationFollowUp } from '@supportmanagement/investigation/investigation-variant-registry';
-import { CalendarCheck, ChartNoAxesColumn, ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
+import {
+  getInvestigationAdministration,
+  getInvestigationFollowUp,
+} from '@supportmanagement/investigation/investigation-variant-registry';
+import {
+  CalendarCheck,
+  ChartNoAxesColumn,
+  ChevronsLeft,
+  ChevronsRight,
+  FileText,
+  SquarePen,
+  UserCog,
+} from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -32,6 +43,8 @@ export const MainErrandsSidebar: FC<{
   setShowPlannedMeasures?: (show: boolean) => void;
   showFollowUp?: boolean;
   setShowFollowUp?: (show: boolean) => void;
+  showAdministration?: boolean;
+  setShowAdministration?: (show: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
 }> = ({
@@ -43,6 +56,8 @@ export const MainErrandsSidebar: FC<{
   setShowPlannedMeasures,
   showFollowUp = false,
   setShowFollowUp,
+  showAdministration = false,
+  setShowAdministration,
   open,
   setOpen,
 }) => {
@@ -55,6 +70,7 @@ export const MainErrandsSidebar: FC<{
   const applicationEnvironment = getApplicationEnvironment();
   const followUp = getInvestigationFollowUp();
   const followUpLabel = followUp?.label(user);
+  const administration = getInvestigationAdministration(user);
   // Mounted once here, where both the bell and the panel live, so the whole app shares one poll loop.
   const { refresh: refreshNotifications } = useNotificationPoller();
 
@@ -123,6 +139,8 @@ export const MainErrandsSidebar: FC<{
                 setShowPlannedMeasures={setShowPlannedMeasures}
                 showFollowUp={showFollowUp}
                 setShowFollowUp={setShowFollowUp}
+                showAdministration={showAdministration}
+                setShowAdministration={setShowAdministration}
                 iconButton={!open}
               />
             </FormProvider>
@@ -146,6 +164,7 @@ export const MainErrandsSidebar: FC<{
                   setShowAttestationTable(true);
                   setShowPlannedMeasures?.(false);
                   setShowFollowUp?.(false);
+                  setShowAdministration?.(false);
                 }}
                 leftIcon={<SquarePen />}
                 className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
@@ -182,6 +201,7 @@ export const MainErrandsSidebar: FC<{
                   setShowPlannedMeasures(true);
                   setShowAttestationTable(false);
                   setShowFollowUp?.(false);
+                  setShowAdministration?.(false);
                 }}
                 leftIcon={<CalendarCheck />}
                 className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
@@ -209,6 +229,7 @@ export const MainErrandsSidebar: FC<{
                   setShowFollowUp(true);
                   setShowAttestationTable(false);
                   setShowPlannedMeasures?.(false);
+                  setShowAdministration?.(false);
                 }}
                 leftIcon={<ChartNoAxesColumn />}
                 className={`${open && 'justify-start'} ${!showFollowUp && 'hover:bg-dark-ghost'}`}
@@ -218,6 +239,34 @@ export const MainErrandsSidebar: FC<{
                 data-cy="follow-up-button"
               >
                 {open && <span className="w-full flex justify-between">{followUpLabel}</span>}
+              </Button>
+            </div>
+          </>
+        )}
+        {appConfig.isSupportManagement && administration && setShowAdministration && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              {open && (
+                <span className="text-small font-bold uppercase tracking-wide text-dark-secondary px-8">
+                  {administration.heading}
+                </span>
+              )}
+              <Button
+                onClick={() => {
+                  setShowAdministration(true);
+                  setShowAttestationTable(false);
+                  setShowPlannedMeasures?.(false);
+                  setShowFollowUp?.(false);
+                }}
+                leftIcon={<UserCog />}
+                className={`${open && 'justify-start'} ${!showAdministration && 'hover:bg-dark-ghost'}`}
+                variant={showAdministration ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={open ? undefined : administration.label}
+                data-cy="administration-button"
+              >
+                {open && <span className="w-full flex justify-between">{administration.label}</span>}
               </Button>
             </div>
           </>

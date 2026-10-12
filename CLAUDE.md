@@ -56,8 +56,11 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   handover routes (`.../investigation-handover/{step}`, `.../unit-manager` and
   `.../location-managers/{labelId}`), which write the `access/*` labels that move an errand between
   the unit manager and the LEX roles, and the `LOCATION` label chain that moves a wrongly routed
-  errand to the unit it concerns. A wrong routing is corrected in the labels only; the incoming
-  JSON parameter stays the record of what was reported. The one exception is the profile's
+  errand to the unit it concerns, and for the `supportplacemanagers/...` routes, which write which
+  places a manager has to AccessMapper - places only, never a role, and for the superadmin group
+  alone; the variant's `administration` slot is what offers that view. A wrong routing is corrected
+  in the labels only; the incoming JSON parameter stays the record of what was reported. The one
+  exception is the profile's
   `reportDocument` (Katla's `avvikelse-plats-handelse`): the `json-parameters` route writes it only
   on an errand registered in Draken (channel `WEB_UI`) that has not reached Utredning, and the
   generic errand PATCH refuses a channel change wherever the profile has a report.

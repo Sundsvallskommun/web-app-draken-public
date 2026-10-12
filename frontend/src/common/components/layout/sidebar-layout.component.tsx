@@ -15,6 +15,8 @@ export default function SidebarLayout({
   setShowPlannedMeasures,
   showFollowUp = false,
   setShowFollowUp,
+  showAdministration = false,
+  setShowAdministration,
 }: {
   title: string;
   children: ReactNode;
@@ -26,6 +28,8 @@ export default function SidebarLayout({
   setShowPlannedMeasures?: (show: boolean) => void;
   showFollowUp?: boolean;
   setShowFollowUp?: (show: boolean) => void;
+  showAdministration?: boolean;
+  setShowAdministration?: (show: boolean) => void;
 }) {
   const [hostName] = useState(() =>
     typeof globalThis.window === 'undefined' ? '' : globalThis.window.location.hostname
@@ -47,6 +51,8 @@ export default function SidebarLayout({
             setShowPlannedMeasures={setShowPlannedMeasures}
             showFollowUp={showFollowUp}
             setShowFollowUp={setShowFollowUp}
+            showAdministration={showAdministration}
+            setShowAdministration={setShowAdministration}
           />{' '}
           <div className={`w-full grow flex ${open ? 'pl-[32rem]' : 'pl-[5.6rem]'} transition-all`}>{children}</div>
         </div>

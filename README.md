@@ -169,6 +169,11 @@ med den AD-grupp som har den. Samma lista fyller handläggarlistan, grupperad pe
 registreringsroller för åtgärder. `/me` anger vilka roller den inloggade har via sina grupper (`roleKeys`,
 utelämnat när inga roller är konfigurerade) och om hen är med i `SUPERADMIN_GROUP` (`superadmin`).
 
+Medlemmar i `SUPERADMIN_GROUP` sätter också vilka platser varje enhetschef och verksamhetschef har, under
+Administration → Chefer per plats i översiktens sidomeny. Draken skriver bara platserna, som mönster på
+personen i AccessMapper. Chefsrollen följer med en AD-grupp som beställs för sig. Se
+`frontend/src/supportmanagement/investigation/avvikelse/README.md`.
+
 Övriga drakar anger handläggarlistan med `ASSIGNABLE_HANDLER_GROUPS`, kommaseparerat:
 
 ```env

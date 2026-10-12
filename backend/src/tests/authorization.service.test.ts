@@ -11,6 +11,7 @@ describe('authorization.service', () => {
         canViewAttestations: false,
         canEditAttestations: false,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: false,
       });
     });
 
@@ -22,13 +23,14 @@ describe('authorization.service', () => {
   });
 
   describe('getPermissions (internal roles)', () => {
-    it('maps draken_superadmin to view+edit attestations and support edit', () => {
+    it('maps draken_superadmin to view+edit attestations, support edit and the place managers', () => {
       expect(getPermissions(['draken_superadmin'], true)).toEqual({
         canEditCasedata: false,
         canEditSupportManagement: true,
         canViewAttestations: true,
         canEditAttestations: true,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: true,
       });
     });
 
@@ -39,6 +41,7 @@ describe('authorization.service', () => {
         canViewAttestations: true,
         canEditAttestations: false,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: false,
       });
     });
 
@@ -50,6 +53,7 @@ describe('authorization.service', () => {
         canViewAttestations: true,
         canEditAttestations: true,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: true,
       });
     });
 
@@ -66,6 +70,7 @@ describe('authorization.service', () => {
         canViewAttestations: true,
         canEditAttestations: false,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: false,
       });
     });
   });
@@ -92,6 +97,7 @@ describe('authorization.service', () => {
         canViewAttestations: true,
         canEditAttestations: false,
         canViewOtherNamespaces: true,
+        canAdministerPlaceManagers: false,
       });
     });
 
