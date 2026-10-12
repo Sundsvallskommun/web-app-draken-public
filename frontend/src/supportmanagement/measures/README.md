@@ -150,9 +150,12 @@ och utredning och är inte åtgärdstyper.
    användaren själv har registrerat (`addedByUser` jämfört med sessionens
    användarnamn, skiftlägesokänsligt), och backend avvisar andra med 403. Listan visar varje
    åtgärd som ett kort med status, beskrivning, mål, datum samt skapare och den
-   roll åtgärden registrerades i. Ovanför listan finns filter på status, beslut,
-   registreringsroll, åtgärdstyp och fritext (`measure-filters.ts`); rollerna och
-   typerna i filtret är de som förekommer i listan. Listan visar den senast tillagda
+   roll åtgärden registrerades i. Ovanför listan finns filtren Genomförande
+   (Planerad, Genomförd), Godkännande (Ej bedömd, Godkänd, Avslagen, Delvis godkänd),
+   Registrerad av, Åtgärdstyp och fritext (`measure-filters.ts`). De heter efter vad de
+   filtrerar på, så att inget av dem tas för ärendets status eller beslutet i ärendet,
+   och värdena är samma ord som står på korten. Rollerna och typerna i filtret är de
+   som förekommer i listan. Listan visar den senast tillagda
    åtgärden först (`created`), eftersom ärendet har olika handläggare över tid. Med
    "Sortera efter: Person" samlas i stället varje persons åtgärder under personens
    namn, med den senast tillagda först även där, så att det syns vem som har gjort vad

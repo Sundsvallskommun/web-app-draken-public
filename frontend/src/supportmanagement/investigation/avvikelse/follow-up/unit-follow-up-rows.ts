@@ -56,7 +56,8 @@ export type FollowUpMeasureStatus = 'executed' | 'planned' | 'proposed' | 'rejec
 export const FOLLOW_UP_MEASURE_STATUSES: readonly FollowUpOption[] = Object.freeze([
   { value: 'executed', label: 'Genomförd' },
   { value: 'planned', label: 'Planerad' },
-  { value: 'proposed', label: 'Förslag' },
+  // The word the measure cards and their filter use for a proposal nobody has decided on.
+  { value: 'proposed', label: 'Ej bedömd' },
   { value: 'rejected', label: 'Avslagen' },
 ]);
 

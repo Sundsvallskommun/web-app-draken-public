@@ -264,7 +264,7 @@ test('creates a measure for an explicitly selected granted role independently of
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: 'Utbildning', exact: true }) });
   await expect(created).toContainText('Skapad av authenticated-user (HSL)');
-  await expect(created.getByText('Förslag', { exact: true })).toBeVisible();
+  await expect(created.getByText('Ej bedömd', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Beskriv syftet med åtgärden (Obligatoriskt)', { exact: true })).toHaveValue('');
   expect(state.trace.puts).toEqual([]);
   expect(state.trace.errandPatches).toEqual([]);
@@ -569,22 +569,22 @@ test('filters the list by status, decision, role, type and text', async ({ page,
   const summary = page.locator('[data-cy="measure-filter-summary"]');
   await expect(summary).toHaveText('2 åtgärder.');
 
-  await filters.getByLabel('Status', { exact: true }).selectOption('executed');
+  await filters.getByLabel('Genomförande', { exact: true }).selectOption('executed');
   await expect(cards).toHaveCount(1);
   await expect(cards.first().getByRole('heading', { name: 'Utbildning', exact: true })).toBeVisible();
   await expect(summary).toHaveText('Visar 1 av 2 åtgärder.');
 
   await filters.getByRole('button', { name: 'Rensa filter', exact: true }).click();
   await expect(cards).toHaveCount(2);
-  await filters.getByLabel('Beslut', { exact: true }).selectOption('rework');
+  await filters.getByLabel('Godkännande', { exact: true }).selectOption('rework');
   await expect(cards.first().getByRole('heading', { name: 'Tidigare åtgärdstyp', exact: true })).toBeVisible();
   await expect(cards).toHaveCount(1);
 
   await filters.getByLabel('Sök', { exact: true }).fill('rutin');
   await expect(page.getByText('Inga åtgärder matchar filtret.')).toBeVisible();
-  await filters.getByLabel('Beslut', { exact: true }).selectOption('');
+  await filters.getByLabel('Godkännande', { exact: true }).selectOption('');
   await expect(cards).toHaveCount(1);
-  await expect(filters.getByLabel('Registrerad i rollen', { exact: true }).locator('option')).toHaveText([
+  await expect(filters.getByLabel('Registrerad av', { exact: true }).locator('option')).toHaveText([
     'Alla',
     'Enhetschef',
   ]);

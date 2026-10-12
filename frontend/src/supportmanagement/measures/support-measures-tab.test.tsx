@@ -115,7 +115,16 @@ test('follow-up shows only planned approved measures and offers completion inste
   expect(screen.queryByText('Ej planerad')).toBeNull();
   expect(screen.queryByRole('button', { name: /Lägg till|Bedöm förslag|Redigera/ })).toBeNull();
   expect(screen.getAllByRole('checkbox', { name: 'Utförd: Utbildning' })).toHaveLength(2);
-  fireEvent.change(screen.getByRole('combobox', { name: 'Beslut' }), { target: { value: 'accepted' } });
+  // Ä12. The filters are named for what they filter, and their values are the words on the cards.
+  const filterOptions = (name: string) =>
+    within(screen.getByRole('combobox', { name }))
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+  expect(filterOptions('Genomförande')).toEqual(['Alla', 'Planerad', 'Genomförd']);
+  expect(filterOptions('Godkännande')).toEqual(['Alla', 'Ej bedömd', 'Godkänd', 'Avslagen', 'Delvis godkänd']);
+  expect(screen.getByRole('combobox', { name: 'Registrerad av' })).toBeTruthy();
+  expect(screen.getByRole('combobox', { name: 'Åtgärdstyp' })).toBeTruthy();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Godkännande' }), { target: { value: 'accepted' } });
   expect(screen.queryByText('Delvis godkänd åtgärd')).toBeNull();
 });
 

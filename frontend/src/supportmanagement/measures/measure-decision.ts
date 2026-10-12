@@ -41,8 +41,9 @@ interface DecisionPresentation {
 }
 
 const presentation: Record<MeasureDecision, DecisionPresentation> = {
+  // A proposal nobody has decided on yet. "Förslag" alone read as a kind of measure beside the decided ones.
   proposal: {
-    label: 'Förslag',
+    label: 'Ej bedömd',
     color: 'bjornstigen',
     iconClassName: 'bg-vattjom-background-200 text-vattjom-text-primary',
     motivationLabel: 'Beslutskommentar',
@@ -70,6 +71,9 @@ const presentation: Record<MeasureDecision, DecisionPresentation> = {
     motivationClassName: 'bg-warning-background-100 border-warning-surface-primary',
   },
 };
+
+/** What a decision state is called, on the card and wherever the list is filtered by it. */
+export const measureDecisionLabel = (decision: MeasureDecision): string => presentation[decision].label;
 
 export function measureDecisionPresentation(measure: Pick<Measure, 'accept'>): DecisionPresentation {
   const decision = measureDecision(measure);

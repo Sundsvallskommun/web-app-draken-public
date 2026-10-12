@@ -1,20 +1,23 @@
 import { Button, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useId } from 'react';
 
+import { measureDecisionLabel } from './measure-decision';
 import { emptyMeasureFilters, isMeasureFilterActive, type MeasureFilters } from './measure-filters';
 import { type MeasureSort, measureSortOptions } from './measure-sort';
 
+// The filters are named for what they sort the measures by, so that neither is taken for the errand's own status or
+// for the decision on the errand. Their values are the words the cards carry.
 const statusOptions: { value: MeasureFilters['status']; label: string }[] = [
   { value: '', label: 'Alla' },
-  { value: 'planned', label: 'Planerade' },
-  { value: 'executed', label: 'Genomförda' },
+  { value: 'planned', label: 'Planerad' },
+  { value: 'executed', label: 'Genomförd' },
 ];
 const decisionOptions: { value: MeasureFilters['decision']; label: string }[] = [
   { value: '', label: 'Alla' },
-  { value: 'proposal', label: 'Förslag' },
-  { value: 'accepted', label: 'Godkända' },
-  { value: 'rejected', label: 'Avslagna' },
-  { value: 'rework', label: 'Delvis godkända' },
+  ...(['proposal', 'accepted', 'rejected', 'rework'] as const).map((decision) => ({
+    value: decision,
+    label: measureDecisionLabel(decision),
+  })),
 ];
 
 export function MeasureFilterBar({
@@ -72,9 +75,9 @@ export function MeasureFilterBar({
       data-cy="measure-filters"
     >
       <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-5">
-        {select('status', 'Status', statusOptions)}
-        {select('decision', 'Beslut', decisionOptions)}
-        {select('role', 'Registrerad i rollen', [{ value: '', label: 'Alla' }, ...roles])}
+        {select('status', 'Genomförande', statusOptions)}
+        {select('decision', 'Godkännande', decisionOptions)}
+        {select('role', 'Registrerad av', [{ value: '', label: 'Alla' }, ...roles])}
         {select('type', 'Åtgärdstyp', [{ value: '', label: 'Alla' }, ...types])}
         <FormControl id={`${id}-text`} size="sm" className="w-full">
           <FormLabel>Sök</FormLabel>
