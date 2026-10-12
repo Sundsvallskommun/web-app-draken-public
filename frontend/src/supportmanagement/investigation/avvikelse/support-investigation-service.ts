@@ -6,6 +6,7 @@ import {
   type LoadedSupportInvestigationDocument,
   parseOwnErrandWrites,
   parseParentErrandVersion,
+  parseReportErrandWrites,
   parseSupportInvestigationDocument,
   type SavedSupportInvestigationDocument,
   type SupportInvestigationDocument,
@@ -151,6 +152,7 @@ export async function createSupportInvestigationReport(
   return {
     ...parseSupportInvestigationDocument(response.data.data?.document, key, response.headers.etag),
     parentErrandVersion: parseParentErrandVersion(response.headers['x-errand-version']),
+    ownErrandWrites: parseReportErrandWrites(response.headers['x-errand-writes']),
     report: parseReportEntry(response.data.data?.report),
   };
 }

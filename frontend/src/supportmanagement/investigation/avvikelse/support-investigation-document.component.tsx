@@ -589,7 +589,7 @@ export function SupportInvestigationDocument({
     );
     onSaved(saved.document);
     setDocumentDirty(false);
-    // A report retry can perform zero writes or several writes, so its readback proves no parent baseline.
+    // A readback proves no parent baseline unless the BFF says how many of the version steps were this request's own.
     return advanceVersion
       ? advanceParentVersion(knownVersion, saved.parentErrandVersion, saved.ownErrandWrites)
       : knownVersion;
@@ -744,7 +744,9 @@ export function SupportInvestigationDocument({
       sessionStorage.setItem(publicationKey, operationId);
       const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key, operationId);
       sessionStorage.removeItem(publicationKey);
-      applySavedDocument(created, false);
+      // The publication is several writes on the errand; the BFF says how many, and the page's version follows them
+      // so that the next errand write - handing the errand on, say - is not refused as somebody else's change.
+      applySavedDocument(created, created.ownErrandWrites !== undefined);
       await rememberOwnWriteVersion();
       toastSuccess(`Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`);
       try {

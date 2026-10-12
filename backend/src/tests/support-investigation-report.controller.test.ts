@@ -140,6 +140,8 @@ describe('SupportInvestigationReportController', () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.setHeader).toHaveBeenCalledWith('ETag', '"5"');
     expect(res.setHeader).toHaveBeenCalledWith('X-Errand-Version', '11');
+    // The reservation, and whatever moved the errand from there to the confirmation: all of it this request's own.
+    expect(res.setHeader).toHaveBeenCalledWith('X-Errand-Writes', '2');
     expect(res.send).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -281,9 +283,12 @@ describe('durable report publication', () => {
   it('reuses a completed publication when the success response was lost', async () => {
     const { controller, apiService, documentService } = makeController({ completed: 'yes' });
     await call(controller);
-    await call(controller);
+    const retry = resDouble();
+    await controller.createReport(mockReq(), mockMunicipalityId, mockSupportErrandId, KEY, { operationId: OPERATION_ID }, retry);
     expect(uploaded(apiService)).toHaveLength(1);
     expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(2);
+    // The retry wrote nothing, and says so: none of the errand's version steps are its own.
+    expect(retry.setHeader).toHaveBeenCalledWith('X-Errand-Writes', '0');
   });
 
   it('serializes concurrent publication attempts on the document ETag', async () => {

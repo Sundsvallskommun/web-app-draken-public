@@ -181,6 +181,39 @@ test("a LEX investigator's handover offers first the LEX manager who gave them t
   expect(trace.phasePatches).toEqual([]);
 });
 
+// Creating the report moves the errand's version several steps. The page follows them, so handing the errand on
+// right afterwards is not refused as somebody else's change.
+test('a LEX investigator hands the errand on right after creating the report', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installInvestigatedErrand(page, {
+    eventType: 'MISSFORHALLANDE',
+    managerValue: { completed: 'yes' },
+    lexValue: { completed: 'yes' },
+    roleKeys: ['lex-utredare'],
+    administrators: [
+      { name: 'iaf.test', displayName: 'Testare Iaf', guid: 'guid-investigator', roleKeys: ['lex-utredare'] },
+      { name: 'lex.giver', displayName: 'Örjan Östberg', guid: 'guid-giver', roleKeys: ['lex-ansvarig'] },
+    ],
+    assignedBy: 'lex.giver',
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+  await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
+  await page.locator('[data-cy="investigation-report-generate"]:visible').click();
+  await expect.poll(() => trace.reports.filter((report) => !report.preview).length).toBe(1);
+  await expect(page.locator('[data-cy="investigation-report-list"]:visible')).toContainText('Rapport_1.pdf');
+
+  await nextPhaseButton(page).click();
+  const dialog = page.locator('[data-cy="handler-assignment-modal"]');
+  await dialog.locator('[data-cy="handler-assignment-confirm"]').click();
+
+  await expect.poll(() => trace.adminPatches).toEqual(['lex.giver']);
+  await expect(dialog.getByText('Ärendet har ändrats av någon annan')).toHaveCount(0);
+});
+
 test('a LEX manager sends the finished lex Sarah investigation to the decision', async ({
   page,
   dismissCookieConsent,

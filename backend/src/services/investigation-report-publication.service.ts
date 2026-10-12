@@ -51,6 +51,10 @@ interface PublicationDependencies {
 /** Coordinates two independent upstream resources through the document's conditional write.
  * Only the request that confirms its reservation may upload. Retries reconcile an existing
  * attachment; they never repeat an upload whose outcome is unknown, even across BFF restarts.
+ *
+ * Every step moves the errand's version, and the answer says how many of the steps were this request's own
+ * (`ownErrandWrites`), as a document save does: the page can then follow the errand's version instead of being left
+ * at the one it loaded, where its next errand write would be refused as somebody else's change.
  */
 export class InvestigationReportPublicationService {
   constructor(private readonly dependencies: PublicationDependencies) {}
@@ -60,16 +64,18 @@ export class InvestigationReportPublicationService {
     const existing = reports.find(entry => publicationSuffix.exec(entry.fileName)?.[1] === operationId) ?? reports.find(isPendingInvestigationReport);
     if (!existing) return undefined;
     if (existing.attachmentId) {
-      return { ...input.stored, parentErrandVersion: input.parentVersion, report: existing };
+      return { ...input.stored, parentErrandVersion: input.parentVersion, ownErrandWrites: 0, report: existing };
     }
-    return this.confirm(input, existing, await this.findAttachment(input, existing.fileName));
+    const confirmed = await this.confirm(input, existing, await this.findAttachment(input, existing.fileName));
+    // The reservation and the upload were an earlier request's; only what moved since this one read the errand is its own.
+    return { ...confirmed, ownErrandWrites: confirmed.parentErrandVersion - input.parentVersion };
   }
 
   async publish(input: PublicationRequest, entry: SupportInvestigationReportEntry, pdfBase64: string) {
     const reports = readInvestigationReportEntries(input.stored.document.value[input.reportsField]);
     // The document ETag serializes competing publications and unlocks. If the response is lost,
     // this request must also stop: it cannot prove that it owns the reservation.
-    await this.writeReports(input, input.stored, [...reports, entry]);
+    const reserved = await this.writeReports(input, input.stored, [...reports, entry]);
     let attachmentId: string | undefined;
     try {
       attachmentId = await attachPdfToSupportErrand({
@@ -82,7 +88,9 @@ export class InvestigationReportPublicationService {
       if (isRecord(cause) && cause.status === 403) throw cause;
       throw new HttpException(503, 'Rapporten är reserverad men uppladdningen kunde inte bekräftas. Försök igen för att kontrollera resultatet.');
     }
-    return this.confirm(input, entry, attachmentId ?? (await this.findAttachment(input, entry.fileName)));
+    const confirmed = await this.confirm(input, entry, attachmentId ?? (await this.findAttachment(input, entry.fileName)));
+    // The reservation is one step, read back right after it; the upload and the confirmation are the steps from there.
+    return { ...confirmed, ownErrandWrites: 1 + (confirmed.parentErrandVersion - reserved.parentErrandVersion) };
   }
 
   private async findAttachment(input: PublicationRequest, fileName: string): Promise<string> {

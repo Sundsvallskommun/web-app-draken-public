@@ -86,6 +86,16 @@ export function parseOwnErrandWrites(value: unknown): number {
   return Number.isSafeInteger(writes) ? writes : 1;
 }
 
+/**
+ * How many of the errand's version steps a report publication says were its own. A retry may have made none, and
+ * a BFF that does not say leaves the page's version where it was.
+ */
+export function parseReportErrandWrites(value: unknown): number | undefined {
+  return typeof value === 'string' && /^(0|[1-9]\d*)$/u.test(value) && Number.isSafeInteger(Number(value))
+    ? Number(value)
+    : undefined;
+}
+
 export function parseParentErrandVersion(value: unknown): number {
   const version = typeof value === 'string' && /^(0|[1-9]\d*)$/u.test(value) ? Number(value) : Number.NaN;
   if (!Number.isSafeInteger(version)) throw new Error('Ärendets nya version saknas i dokumentsvaret.');

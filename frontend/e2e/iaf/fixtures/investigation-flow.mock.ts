@@ -1293,6 +1293,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/admin`)) {
       const body = requestBody(request) as { assignedUserId?: string } | undefined;
+      // Like the BFF: an assignment is conditioned on the errand's version, and a stale one is refused.
+      if (request.headers()['if-match'] !== `"${errandVersion}"`) {
+        await fulfillJson(route, { message: 'If-Match does not match the current errand version' }, 412);
+        return;
+      }
       errandAssignedUserId = body?.assignedUserId;
       trace.adminPatches.push(body?.assignedUserId);
       errandVersion += 1;
@@ -1538,12 +1543,16 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         etag: `"${nextVersion}"`,
       };
       documents[key] = updated;
-      errandVersion += 1;
+      // Like the BFF: the reservation, the upload and the confirmation each move the errand's version, and the
+      // answer says that all three steps were this request's own.
+      const reportErrandWrites = 3;
+      errandVersion += reportErrandWrites;
       const { etag, ...responseDocument } = updated;
       await fulfillJson(route, { data: { document: responseDocument, report: entry }, message: 'attached' }, 201, {
         etag,
         'x-errand-version': String(errandVersion),
-        'access-control-expose-headers': 'ETag, X-Errand-Version',
+        'x-errand-writes': String(reportErrandWrites),
+        'access-control-expose-headers': 'ETag, X-Errand-Version, X-Errand-Writes',
       });
       return;
     }

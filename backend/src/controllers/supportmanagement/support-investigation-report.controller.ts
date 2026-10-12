@@ -153,6 +153,7 @@ export class SupportInvestigationReportController {
       if (recovered) {
         response.setHeader('ETag', recovered.etag);
         response.setHeader('X-Errand-Version', String(recovered.parentErrandVersion));
+        response.setHeader('X-Errand-Writes', String(recovered.ownErrandWrites));
         return response
           .status(201)
           .send({ data: { document: recovered.document, report: recovered.report }, message: 'Investigation report attached' });
@@ -191,6 +192,8 @@ export class SupportInvestigationReportController {
 
     response.setHeader('ETag', written.etag);
     response.setHeader('X-Errand-Version', String(written.parentErrandVersion));
+    // How many of the errand's version steps were this publication's own, so the page can follow the version.
+    response.setHeader('X-Errand-Writes', String(written.ownErrandWrites));
     return response.status(201).send({
       data: { document: written.document, report: written.report },
       message: 'Investigation report attached',

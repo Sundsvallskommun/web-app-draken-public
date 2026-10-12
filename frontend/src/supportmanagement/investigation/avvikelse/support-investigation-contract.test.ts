@@ -5,6 +5,7 @@ import { test } from 'vitest';
 import {
   parseOwnErrandWrites,
   parseParentErrandVersion,
+  parseReportErrandWrites,
   parseSupportInvestigationDocument,
 } from './support-investigation-contract';
 
@@ -37,6 +38,15 @@ test('reads how many errand writes the save made, one when the BFF does not say'
   assert.equal(parseOwnErrandWrites('2'), 2);
   for (const value of [undefined, '', '0', '-1', '1.5', 'två']) {
     assert.equal(parseOwnErrandWrites(value), 1);
+  }
+});
+
+test('reads how many errand writes a report made, none included, and nothing when the BFF does not say', () => {
+  assert.equal(parseReportErrandWrites('3'), 3);
+  // A retry of a publication that was already confirmed writes nothing.
+  assert.equal(parseReportErrandWrites('0'), 0);
+  for (const value of [undefined, '', '-1', '1.5', '03', 'tre']) {
+    assert.equal(parseReportErrandWrites(value), undefined);
   }
 });
 
