@@ -132,7 +132,10 @@ export const SidebarInfo: FC<{
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const allowed = useMemo(() => {
+  // Not memoized: whether an errand counts as empty depends on who owns its classification, which the investigation
+  // profile says, and the profile can arrive after the errand. An errand the investigation classifies is not an
+  // unfinished registration, and its handler acts on it.
+  const allowed = (() => {
     // A limited read carries almost nothing of the errand, so it would pass for an empty or unassigned one.
     if (supportErrand?.limitedAccess) return false;
     if (!supportErrandIsEmpty(supportErrand!)) {
@@ -147,10 +150,11 @@ export const SidebarInfo: FC<{
         }
       }
       return _a;
-    } else {
-      return administrators.some((a) => a.adAccount === user.username);
     }
-  }, [user, supportErrand, administrators]);
+    // Accounts are one account whatever their case, as when the errand's own handler is compared.
+    const username = user.username.toLocaleLowerCase();
+    return administrators.some((a) => a.adAccount.toLocaleLowerCase() === username);
+  })();
 
   const toast = (kind: 'success' | 'error', label: string) =>
     toastMessage({

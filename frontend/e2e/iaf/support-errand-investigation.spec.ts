@@ -1185,7 +1185,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(classification).toBeVisible();
     await expect(warning).toHaveCount(0);
 
-    await managerDocument.locator(`#${managerKey}_legalBases-group`).getByText(/^SoL –/u).click();
+    await managerDocument
+      .locator(`#${managerKey}_legalBases-group`)
+      .getByText(/^SoL –/u)
+      .click();
     await expect(warning).toContainText('Kategoriseringen är inte ifylld');
 
     await classification
@@ -2280,6 +2283,34 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       }
     });
   }
+
+  // A misconduct just handed to LEX is not categorized yet. Opened straight from a link, the errand can arrive
+  // before the investigation profile does, and the directory can write the account in another case than the
+  // session: the errand is still its handler's to resume.
+  test('den som tilldelats ett okategoriserat ärende kan återuppta det när profilen kommer efter ärendet', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      eventType: 'MISSFORHALLANDE',
+      classification: { category: 'NONE', type: 'NONE' },
+      labels: [],
+      errandStatus: 'ASSIGNED',
+      roleKeys: ['lex-ansvarig'],
+      administrators: [
+        { name: 'IAF.TEST', displayName: 'Testare Iaf', guid: 'admin-guid', roleKeys: ['lex-ansvarig'] },
+      ],
+    });
+    // Registered after the mock, so it runs first: the profile is held back until the errand has been drawn.
+    await page.route('**/supportmanagement/investigation-profile', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.fallback();
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="resume-button"]')).toBeEnabled();
+  });
 
   for (const state of ['active', 'unavailable'] as const) {
     test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
