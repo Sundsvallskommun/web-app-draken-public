@@ -77,7 +77,7 @@ import {
 } from './investigation-text-template';
 import { declinesLexInvestigation, hasLexDeclinedInvestigation } from './lex-initial-assessment';
 import { prefillNewInvestigationDocument } from './new-investigation-document-prefill';
-import { readSavedInvestigationDocument } from './saved-investigation-document';
+import { awaitsPrerequisiteDocument, readSavedInvestigationDocument } from './saved-investigation-document';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
   decisionDocumentWording,
@@ -204,9 +204,7 @@ export function SupportInvestigationDocument({
   const prerequisite = definition.prerequisiteDocumentKey
     ? profile?.documents.find((document) => document.key === definition.prerequisiteDocumentKey)
     : undefined;
-  const prerequisiteMissing =
-    definition.prerequisiteDocumentKey !== undefined &&
-    !supportErrand?.jsonParameters?.some((parameter) => parameter.key === definition.prerequisiteDocumentKey);
+  const prerequisiteMissing = awaitsPrerequisiteDocument(supportErrand, definition);
   // What the handler is told the document is. The investigation wording predates the decision tab.
   const wording = isDecision ? decisionDocumentWording : investigationDocumentWording;
   const [loadState, setLoadState] = useState<LoadState>('loading');

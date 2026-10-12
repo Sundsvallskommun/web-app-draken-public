@@ -865,6 +865,28 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts).toHaveLength(0);
   });
 
+  // B4. After LEX hands the errand back, the unit manager reads the decision but not the lex Sarah investigation
+  // it answers, so the errand they are given carries the one and not the other.
+  test('visar ingen förutsättningsvarning för ett fattat beslut när läsaren inte ser utredningen det besvarar', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [misconductDecisionKey]: allExistingInvestigationDocuments()[misconductDecisionKey] },
+      eventType: 'MISSFORHALLANDE',
+      documentAccess: { [managerKey]: 'edit', [misconductDecisionKey]: 'read' },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+
+    const document = page.locator(`[data-cy="investigation-document-${misconductDecisionKey}"]`);
+    await expect(document.locator(`#${misconductDecisionKey}_decisionMotivation`)).toBeVisible();
+    await expect(document.locator('[data-cy="investigation-document-prerequisite"]')).toHaveCount(0);
+    await expect(document).not.toContainText('kan fattas först när');
+  });
+
   test('markerar HSL-utredningen klar, låser den, skapar numrerade rapporter och låser upp igen', async ({
     page,
     dismissCookieConsent,
