@@ -93,7 +93,7 @@ test('marking keeps every parameter the form owns and adds the source and the ty
 
 test('a verdict is written beside the marking and leaves source and role alone', () => {
   const marked = withPbi(stakeholder({}), { source: 'MANUAL', role: 'Finansiär' });
-  const assessed = withAssessment(marked, { assessment: 'DEFICIENCY', comment: ' Skuld hos Kronofogden. ' });
+  const assessed = withAssessment(marked, { assessment: 'DEFICIENCY', comment: 'Skuld hos Kronofogden.' });
 
   expect(keysOf(assessed)).toEqual(['PBI', 'PBI_SOURCE', 'PBI_ROLE', 'PBI_ASSESSMENT', 'PBI_ASSESSMENT_COMMENT']);
   expect(pbiOf(assessed)).toEqual({
@@ -145,6 +145,19 @@ test('unmarking removes every PBI parameter and nothing else', () => {
     { assessment: 'APPROVED', comment: 'Inget.' }
   );
   expect(withoutPbi(assessed).parameters).toEqual([{ key: 'title', values: ['VD'] }]);
+});
+
+test('a comment is stored as it was typed, since the field reads it back between two keystrokes', () => {
+  const marked = withPbi(stakeholder({}), { source: 'COMPANY' });
+
+  const midSentence = withAssessment(marked, { assessment: 'APPROVED', comment: 'Ingen anmärkning ' });
+  expect(pbiOf(midSentence).comment).toBe('Ingen anmärkning ');
+
+  const midTest = withKnowledgeTest(marked, { status: 'BOOKED', testedAt: '', comment: 'Bokat till ' });
+  expect(pbiOf(midTest).knowledgeTest.comment).toBe('Bokat till ');
+
+  const blank = withAssessment(marked, { assessment: 'APPROVED', comment: '   ' });
+  expect(blank.parameters?.map((parameter) => parameter.key)).not.toContain('PBI_ASSESSMENT_COMMENT');
 });
 
 test('a comment without a verdict is the one thing a marked person may not carry', () => {

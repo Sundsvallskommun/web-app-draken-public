@@ -108,21 +108,24 @@ export const existsOnlyAsPbi = (stakeholder: Pick<SupportStakeholderFormModel, '
 const otherParameters = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>): Parameter[] =>
   (stakeholder.parameters ?? []).filter((parameter) => !PBI_PARAMETERS.has(parameter.key));
 
-const knowledgeTestParameters = (test: PbiKnowledgeTest | undefined): Parameter[] =>
-  (
-    [
-      [PBI_KNOWLEDGE_TEST_PARAMETER, test?.status],
-      [PBI_KNOWLEDGE_TEST_DATE_PARAMETER, test?.testedAt],
-      [PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER, test?.comment],
-    ] as [string, string | undefined][]
-  ).flatMap(([key, value]) => (value?.trim() ? [{ key, values: [value.trim()] }] : []));
+const settledParameter = (key: string, value: string | undefined): Parameter[] =>
+  value?.trim() ? [{ key, values: [value.trim()] }] : [];
+
+const writtenParameter = (key: string, value: string | undefined): Parameter[] =>
+  value?.trim() ? [{ key, values: [value] }] : [];
+
+const knowledgeTestParameters = (test: PbiKnowledgeTest | undefined): Parameter[] => [
+  ...settledParameter(PBI_KNOWLEDGE_TEST_PARAMETER, test?.status),
+  ...settledParameter(PBI_KNOWLEDGE_TEST_DATE_PARAMETER, test?.testedAt),
+  ...writtenParameter(PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER, test?.comment),
+];
 
 const pbiParameters = (pbi: Partial<Pbi>): Parameter[] => [
   { key: PBI_PARAMETER, values: ['true'] },
   ...(pbi.source ? [{ key: PBI_SOURCE_PARAMETER, values: [pbi.source] }] : []),
-  ...(pbi.role?.trim() ? [{ key: PBI_ROLE_PARAMETER, values: [pbi.role.trim()] }] : []),
+  ...settledParameter(PBI_ROLE_PARAMETER, pbi.role),
   ...(pbi.assessment ? [{ key: PBI_ASSESSMENT_PARAMETER, values: [pbi.assessment] }] : []),
-  ...(pbi.comment?.trim() ? [{ key: PBI_ASSESSMENT_COMMENT_PARAMETER, values: [pbi.comment.trim()] }] : []),
+  ...writtenParameter(PBI_ASSESSMENT_COMMENT_PARAMETER, pbi.comment),
   ...knowledgeTestParameters(pbi.knowledgeTest),
 ];
 
