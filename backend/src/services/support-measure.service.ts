@@ -16,7 +16,7 @@ import { User } from '@/interfaces/users.interface';
 import ApiService from './api.service';
 import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
 import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from './support-investigation-access.service';
-import { closeRequiresHandledMeasures, unhandledMeasuresMessage } from './support-measure-closing';
+import { closeRequiresHandledMeasures, undecidedProposalsMessage, unhandledMeasuresMessage } from './support-measure-closing';
 import {
   changesApprovedEndDate,
   changesStartDate,
@@ -52,6 +52,11 @@ export interface SupportMeasuresSnapshot {
    * is handled, and in an application that closes errands whatever their measures.
    */
   closeRefusal?: string;
+  /**
+   * Why the errand may not go on to the follow-up yet: proposals that wait for their decision. In the words the
+   * phase change itself is refused with, and absent where nothing waits or the application has no such rule.
+   */
+  followUpRefusal?: string;
 }
 
 export interface PlannedSupportMeasuresSnapshot {
@@ -156,6 +161,7 @@ export class SupportMeasureService {
       );
     // The same rule the close itself is refused by, so the client offers no close the BFF would turn down.
     const closeRefusal = this.closeRequiresHandled ? unhandledMeasuresMessage(result.data ?? []) : undefined;
+    const followUpRefusal = this.closeRequiresHandled ? undecidedProposalsMessage(result.data ?? []) : undefined;
     return {
       measures: result.data,
       errandVersion: getErrandVersion(errand.data, errand.headers?.etag),
@@ -164,6 +170,7 @@ export class SupportMeasureService {
       canWrite,
       ...(mayFollowUp === undefined ? {} : { mayFollowUp }),
       ...(closeRefusal ? { closeRefusal } : {}),
+      ...(followUpRefusal ? { followUpRefusal } : {}),
     };
   }
 

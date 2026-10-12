@@ -6,6 +6,7 @@ import {
   existingManagerDocument,
   installIafApiMock,
   type IafApiScenario,
+  solDeviationScenario,
 } from './fixtures/investigation-flow.mock';
 
 test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), 'Körs med IAF/VOF-profilen.');
@@ -32,7 +33,10 @@ async function installInvestigatedErrand(
     roleKeys?: string[];
     activePhaseName?: IafApiScenario['activePhaseName'];
     useMeasures?: boolean;
-  } & Pick<IafApiScenario, 'administrators' | 'assignedBy' | 'measuresCloseRefusal'>
+  } & Pick<
+    IafApiScenario,
+    'administrators' | 'assignedBy' | 'measuresCloseRefusal' | 'measuresFollowUpRefusal' | 'labels' | 'classification'
+  >
 ) {
   const manager = existingManagerDocument();
   manager.value = { ...manager.value, ...managerValue };
@@ -249,6 +253,52 @@ test('a LEX manager is not offered the follow-up', async ({ page, dismissCookieC
 
 test('the unit manager starts the follow-up', async ({ page, dismissCookieConsent }) => {
   const trace = await installInvestigatedErrand(page, { activePhaseName: 'DECISION', roleKeys: ['enhetschef'] });
+  await visitErrand(page, dismissCookieConsent);
+
+  await expect(nextPhaseButton(page)).toHaveText('Inled uppföljning');
+  await nextPhaseButton(page).click();
+  await expect.poll(() => trace.phasePatches.length).toBe(1);
+});
+
+// Ä13. The follow-up follows up what was approved: the unit decides on every proposal before the errand goes there.
+test('the follow-up waits for the proposals to be decided, and the button leads to them', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const refusal =
+    'Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda: 2 förslag väntar på att godkännas, delvis godkännas eller avslås.';
+  // A deviation under SoL calls for no decision, so nothing but the proposals stands before the follow-up.
+  const trace = await installInvestigatedErrand(page, {
+    ...solDeviationScenario(),
+    activePhaseName: 'DECISION',
+    roleKeys: ['enhetschef'],
+    useMeasures: true,
+    measuresFollowUpRefusal: refusal,
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await expect(nextPhaseButton(page)).toHaveText('Bedöm åtgärdsförslagen');
+  // The next step says the same, and leads to where the proposals are decided.
+  await expect(page.locator('[data-cy="support-next-step-text"]')).toHaveText(
+    'Det finns åtgärdsförslag som inte är bedömda. Bedöm dem under Åtgärder innan ärendet går vidare till uppföljning.'
+  );
+  await expect(page.locator('[data-cy="support-next-step-tab"]')).toHaveText('Gå till Åtgärder');
+
+  await nextPhaseButton(page).click();
+  const dialog = page.locator('[data-cy="undecided-proposals-requirement"]');
+  await expect(dialog).toContainText(refusal);
+  expect(trace.phasePatches).toHaveLength(0);
+  await dialog.getByRole('button', { name: 'Gå till Åtgärder', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the follow-up is offered as before once no proposal waits', async ({ page, dismissCookieConsent }) => {
+  const trace = await installInvestigatedErrand(page, {
+    activePhaseName: 'DECISION',
+    roleKeys: ['enhetschef'],
+    useMeasures: true,
+  });
   await visitErrand(page, dismissCookieConsent);
 
   await expect(nextPhaseButton(page)).toHaveText('Inled uppföljning');

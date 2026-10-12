@@ -330,6 +330,21 @@ inte läsas ändras fasen inte heller, och ett fel visas. Kontrollen görs bara 
 matchas exakt mot metadatans `name`, aldrig mot visningsnamnet, så ett namespace
 utan en sådan fas berörs inte.
 
+## Fasbyte till uppföljning
+
+Uppföljningen följer upp det som godkändes, så ärendet går inte till fasen
+`FOLLOW_UP` medan något förslag väntar på bedömning. BFF:en äger regeln:
+`assertProposalsDecidedBeforeFollowUp` vägrar fasbytet med 422, och samma text
+följer med åtgärdsläsningen som `followUpRefusal` (`undecidedProposalsMessage`).
+Regeln gäller de applikationer som också kräver hanterade åtgärder före avslut
+(`closeRequiresHandledMeasures`); övriga får aldrig något `followUpRefusal`.
+
+I klienten läser `useMeasuresFollowUpRefusal` svaret när ärendet har en väg till
+uppföljningen. Fasknappen heter då Bedöm åtgärdsförslagen och öppnar en dialog
+med BFF:ens text och en väg till Åtgärder, och Nästa steg-kortet säger samma sak.
+Åtgärdsfliken lämnar varje läsning till `measure-summary.ts`, så knappen följer
+med så snart förslagen är bedömda.
+
 ## Verifiering och införande
 
 Testkällor täcker explicit gruppmatchning, delade typer, dynamiska metadataändringar,

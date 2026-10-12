@@ -5,6 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { APPLICATION, SUPERADMIN_GROUP, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { type HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
+import { IAF_VOF_FOLLOW_UP_PHASE_NAME } from '@/config/iaf-vof-decision-investigation';
 import { Errand as SupportErrand, MetadataResponse as SupportMetadata } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -21,7 +22,11 @@ import {
 } from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
-import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
+import {
+  assertMeasuresHandledBeforeClose,
+  assertProposalsDecidedBeforeFollowUp,
+  closeRequiresHandledMeasures,
+} from '@/services/support-measure-closing';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -136,6 +141,15 @@ export class SupportPhaseController {
       errandId: id,
       errand: currentErrand.data,
       targetPhaseName,
+    });
+    // The follow-up follows up what was approved, so every proposal is decided before the errand enters it.
+    await assertProposalsDecidedBeforeFollowUp({
+      apiService: this.apiService,
+      user: req.user,
+      errandUrl: url,
+      baseURL,
+      entersFollowUp: targetPhaseName === IAF_VOF_FOLLOW_UP_PHASE_NAME,
+      required: this.requiresHandledMeasuresBeforeClose,
     });
     // A phase carries its status with it, so a move into a phase that closes the errand is a close
     // and answers to the same rule as the close button.

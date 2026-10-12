@@ -90,6 +90,12 @@ const InvestigationCompletionRequirement = dynamic(
 );
 
 /** Lazy for the same bundle reason as the categorization control. */
+const UndecidedProposalsRequirement = dynamic(
+  () => import('./undecided-proposals-requirement.component').then((module) => module.UndecidedProposalsRequirement),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
 const UnitFollowUp = dynamic(
   () => import('./follow-up/unit-follow-up.component').then((module) => module.UnitFollowUp),
   { loading: () => null }
@@ -200,6 +206,16 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
       phaseName: MEASURE_FOLLOW_UP_PHASE_NAME,
       hidesTransition: true as const,
       isMet: (context: InvestigationPhaseEntryContext) => !leavesFollowUpToTheUnit(context.viewer),
+    },
+    /**
+     * The follow-up follows up what was approved, so the unit decides on every proposal before the errand goes
+     * there. The BFF says whether any waits, and refuses the move on the same rule.
+     */
+    {
+      phaseName: MEASURE_FOLLOW_UP_PHASE_NAME,
+      actionLabel: 'Bedöm åtgärdsförslagen',
+      isMet: (context: InvestigationPhaseEntryContext) => !context.measuresFollowUpRefusal,
+      render: (props: InvestigationPhaseEntryRequirementProps) => <UndecidedProposalsRequirement {...props} />,
     },
   ],
   /**

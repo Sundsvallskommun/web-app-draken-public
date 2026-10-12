@@ -15,7 +15,7 @@ import {
   applyAvvikelseGroupedClassificationSelection,
   getAvvikelseGroupedClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
-import { useErrandMeasureCount } from '@supportmanagement/measures/measure-count';
+import { useErrandMeasureSummary } from '@supportmanagement/measures/measure-summary';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { latestKnownSupportErrandVersion } from '@supportmanagement/services/support-errand-write-version';
@@ -449,11 +449,14 @@ export function SupportInvestigationDocument({
   const markedComplete = documentState ? isInvestigationCompleted(documentState.schema, documentState.formData) : false;
   // The unit manager's investigation is where the unit's measures are decided on, so finishing it without any is
   // worth saying - once, as information: nothing requires a measure.
-  const measureCount = useErrandMeasureCount(
+  const measureCount = useErrandMeasureSummary(
     municipalityId,
-    errandId,
-    appConfig.features.useMeasures && definition.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME && markedComplete
-  );
+    supportErrand,
+    appConfig.features.useMeasures &&
+      definition.schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME &&
+      markedComplete,
+    'any'
+  )?.count;
   const classificationPrerequisites = {
     required: classificationOwner,
     completed: markedComplete,

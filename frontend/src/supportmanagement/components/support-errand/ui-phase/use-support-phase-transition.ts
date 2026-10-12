@@ -8,6 +8,7 @@ import { findHeldPhaseEntryRequirement, hidesPhaseEntry } from '@supportmanageme
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
 import { useMeasuresCloseRefusal } from '@supportmanagement/measures/use-measures-close-refusal';
+import { useMeasuresFollowUpRefusal } from '@supportmanagement/measures/use-measures-follow-up-refusal';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -57,14 +58,17 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   const phaseEntryRequirements = appConfig.features.useInvestigation
     ? getInvestigationVariant()?.phaseEntryRequirements
     : undefined;
+  // What the errand's measures say about the move is the BFF's answer, read where the move is on offer.
+  const measuresFollowUpRefusal = useMeasuresFollowUpRefusal();
   const phaseEntryContext = useMemo(
     () => ({
       errand: supportErrand,
       profile: investigationProfile,
       labelStructure: supportMetadata?.labels?.labelStructure,
       viewer: user,
+      measuresFollowUpRefusal,
     }),
-    [supportErrand, investigationProfile, supportMetadata?.labels?.labelStructure, user]
+    [supportErrand, investigationProfile, supportMetadata?.labels?.labelStructure, user, measuresFollowUpRefusal]
   );
   // A move that is never this viewer's to make is not offered at all.
   const availableTransitions = useMemo(
@@ -207,7 +211,9 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
 
   /** The requirement that holds the move, shown while the handler deals with it. */
   const phaseEntryRequirementDialog: ReactNode =
-    requirementShown && heldRequirement ? heldRequirement.render({ onClose: () => setRequirementShown(false) }) : null;
+    requirementShown && heldRequirement
+      ? heldRequirement.render({ onClose: () => setRequirementShown(false), context: phaseEntryContext })
+      : null;
 
   return {
     availableTransitions,

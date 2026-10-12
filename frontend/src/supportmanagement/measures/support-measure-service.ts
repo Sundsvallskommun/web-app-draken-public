@@ -21,6 +21,8 @@ export interface MeasuresSnapshot {
   mayFollowUp?: boolean;
   /** Why the errand may not be closed yet, as the close would be refused; absent once nothing stands in the way. */
   closeRefusal?: string;
+  /** Why the errand may not go on to the follow-up yet: proposals that wait for their decision. */
+  followUpRefusal?: string;
 }
 
 export interface PlannedMeasuresSnapshot {

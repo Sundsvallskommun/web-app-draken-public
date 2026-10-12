@@ -29,6 +29,7 @@ const STEP_TABS = Object.freeze({
   details: { key: 'details', label: 'Ärendeuppgifter' },
   messages: { key: 'messages', label: 'Meddelanden' },
   investigation: { key: 'investigation', label: 'Utredning' },
+  measures: { key: 'measures', label: 'Åtgärder' },
   decision: { key: 'decision', label: 'Beslut' },
   followUp: { key: 'follow-up', label: 'Uppföljning' },
 });
@@ -83,9 +84,25 @@ const investigationStep = (context: InvestigationNextStepContext): Investigation
     : { text: 'Utredningen är klar. Skicka ärendet till beslut med knappen nedan.' };
 };
 
-const decisionStep = ({ errand, profile, viewer }: InvestigationNextStepContext): InvestigationNextStep => {
+/** The follow-up follows up what was approved: proposals still waiting are decided on before the errand goes there. */
+const proposalsFirst = ({ measuresFollowUpRefusal }: InvestigationNextStepContext): InvestigationNextStep | undefined =>
+  measuresFollowUpRefusal
+    ? {
+        text: 'Det finns åtgärdsförslag som inte är bedömda. Bedöm dem under Åtgärder innan ärendet går vidare till uppföljning.',
+        tab: STEP_TABS.measures,
+      }
+    : undefined;
+
+const decisionStep = (context: InvestigationNextStepContext): InvestigationNextStep => {
+  const { errand, profile, viewer } = context;
   const applicability = resolveAvvikelseDocumentApplicability(errand);
-  if (!applicability) return { text: 'Ärendet kräver inget beslut. Gå vidare till uppföljning med knappen nedan.' };
+  if (!applicability) {
+    return (
+      proposalsFirst(context) ?? {
+        text: 'Ärendet kräver inget beslut. Gå vidare till uppföljning med knappen nedan.',
+      }
+    );
+  }
   const decisionDocument = findInvestigationDocumentBySchemaName(
     profile,
     applicability === 'reported-misconduct' ? LEX_DECISION_SCHEMA_NAME : HSL_DECISION_SCHEMA_NAME
@@ -98,7 +115,7 @@ const decisionStep = ({ errand, profile, viewer }: InvestigationNextStepContext)
         text: 'Beslutet är fattat. Uppföljningen görs av enheten: återlämna ärendet med Återlämna till chef under Beslut.',
         tab: STEP_TABS.decision,
       }
-    : { text: 'Beslutet är fattat. Gå vidare till uppföljning med knappen nedan.' };
+    : proposalsFirst(context) ?? { text: 'Beslutet är fattat. Gå vidare till uppföljning med knappen nedan.' };
 };
 
 /**

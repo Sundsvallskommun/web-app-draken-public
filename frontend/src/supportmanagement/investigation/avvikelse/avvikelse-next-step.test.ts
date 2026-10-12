@@ -64,7 +64,8 @@ const step = (
   {
     viewer = {} as InvestigationViewer,
     account = 'chef.enhet',
-  }: { viewer?: InvestigationViewer; account?: string } = {}
+    measuresFollowUpRefusal,
+  }: { viewer?: InvestigationViewer; account?: string; measuresFollowUpRefusal?: string } = {}
 ) =>
   resolveAvvikelseNextStep({
     errand: errandValue,
@@ -73,6 +74,7 @@ const step = (
     viewer,
     viewerAccount: account,
     phases: { metadataPhases, errandPhases: errandValue.phases },
+    measuresFollowUpRefusal,
   });
 
 const lexManager = { roleKeys: ['lex-ansvarig'] };
@@ -166,6 +168,29 @@ test('the decision is taken in Beslut where one applies, and the decided errand 
   // LEX leaves the follow-up to the unit; the unit moves on to it.
   assert.match(step(decided, { viewer: lexManager, account: 'lex.ansvarig' })?.text ?? '', /Återlämna till chef/u);
   assert.match(step(decided, { account: 'lex.ansvarig' })?.text ?? '', /Gå vidare till uppföljning/u);
+});
+
+// Ä13. The follow-up follows up what was approved, so the unit is sent to the proposals before the phase button.
+test('proposals that wait for a decision come before the follow-up, for the unit that starts it', () => {
+  const refusal = 'Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda.';
+  const decided = errand({
+    phase: 'phase-decision',
+    labels: [misconductLabel, lexLabel],
+    assignedUserId: 'lex.ansvarig',
+    documents: { 'lex-decision': { decidedMisconductDegree: 'no_misconduct' } },
+  });
+
+  const unit = step(decided, { account: 'lex.ansvarig', measuresFollowUpRefusal: refusal });
+  assert.equal(unit?.tab?.key, 'measures');
+  assert.match(unit?.text ?? '', /åtgärdsförslag som inte är bedömda/u);
+  // An errand that calls for no decision waits for its proposals just the same.
+  assert.equal(step(errand({ phase: 'phase-decision' }), { measuresFollowUpRefusal: refusal })?.tab?.key, 'measures');
+
+  // LEX does not start the follow-up, so it hands the errand back as before; and a decision not yet taken comes first.
+  const lex = step(decided, { viewer: lexManager, account: 'lex.ansvarig', measuresFollowUpRefusal: refusal });
+  assert.match(lex?.text ?? '', /Återlämna till chef/u);
+  const undecided = errand({ phase: 'phase-decision', labels: [hslLabel] });
+  assert.equal(step(undecided, { measuresFollowUpRefusal: refusal })?.tab?.key, 'decision');
 });
 
 test('the follow-up is done in Uppföljning', () => {

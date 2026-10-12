@@ -2,6 +2,7 @@ import {
   closeRequiresHandledMeasures,
   countUnhandledMeasures,
   isUnhandledMeasure,
+  undecidedProposalsMessage,
   unhandledMeasuresMessage,
 } from '@/services/support-measure-closing';
 
@@ -72,6 +73,21 @@ describe('support-measure-closing', () => {
 
     it('counts the two kinds apart', () => {
       expect(countUnhandledMeasures([proposal, approvedPlanned, followedUp, rejected])).toEqual({ undecided: 1, unfollowed: 1 });
+    });
+  });
+
+  // Ä13. The follow-up follows up what was approved, so the errand waits for every proposal to be decided.
+  describe('undecidedProposalsMessage', () => {
+    it('says how many proposals wait, and what has to happen to them', () => {
+      expect(undecidedProposalsMessage([proposal, { ...proposal, id: 'a2' }, approvedPlanned])).toBe(
+        'Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda: 2 förslag väntar på att godkännas, delvis godkännas eller avslås.',
+      );
+    });
+
+    // A measure that is approved and not yet followed up is exactly what the follow-up is for.
+    it('says nothing once every proposal is decided, whatever is left to follow up', () => {
+      expect(undecidedProposalsMessage([approvedPlanned, rejected, followedUp, executedDirectly])).toBeUndefined();
+      expect(undecidedProposalsMessage([])).toBeUndefined();
     });
   });
 });

@@ -184,6 +184,10 @@ test('says why the errand cannot be closed while a measure is unhandled, where c
   const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
 
   expect(snapshot.closeRefusal).toBe('Ärendet kan inte avslutas förrän alla åtgärder är hanterade: 1 åtgärd väntar på beslut.');
+  // Ä13. The same proposal keeps the errand from the follow-up, and the snapshot says so in the refusal's words.
+  expect(snapshot.followUpRefusal).toBe(
+    'Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda: 1 förslag väntar på att godkännas, delvis godkännas eller avslås.',
+  );
 });
 
 test('names no close refusal once every measure is handled, or where closing does not require it', async () => {
@@ -193,14 +197,18 @@ test('names no close refusal once every measure is handled, or where closing doe
     .mockResolvedValueOnce(response(current))
     .mockResolvedValueOnce(response([rejected]))
     .mockResolvedValueOnce(response(metadata));
-  expect(await required.service.read(mockMunicipalityId, mockSupportErrandId, user)).not.toHaveProperty('closeRefusal');
+  const decided = await required.service.read(mockMunicipalityId, mockSupportErrandId, user);
+  expect(decided).not.toHaveProperty('closeRefusal');
+  expect(decided).not.toHaveProperty('followUpRefusal');
 
   const notRequired = setup();
   notRequired.get
     .mockResolvedValueOnce(response(current))
     .mockResolvedValueOnce(response([{ ...measure, accept: undefined }]))
     .mockResolvedValueOnce(response(metadata));
-  expect(await notRequired.service.read(mockMunicipalityId, mockSupportErrandId, user)).not.toHaveProperty('closeRefusal');
+  const unruled = await notRequired.service.read(mockMunicipalityId, mockSupportErrandId, user);
+  expect(unruled).not.toHaveProperty('closeRefusal');
+  expect(unruled).not.toHaveProperty('followUpRefusal');
 });
 
 test('propagates denied access instead of showing a falsely empty list', async () => {

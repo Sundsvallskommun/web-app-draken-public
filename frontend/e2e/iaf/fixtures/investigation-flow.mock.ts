@@ -287,6 +287,8 @@ export interface IafApiScenario {
   assignedBy?: string;
   /** Why the errand may not be closed yet, as the measures snapshot says it. Left out, nothing stands in the way. */
   measuresCloseRefusal?: string;
+  /** Why the errand may not go on to the follow-up yet, as the measures snapshot says it: proposals not decided on. */
+  measuresFollowUpRefusal?: string;
   /** Errand parameters beside the reported event type, each with its own version. */
   parameters?: Array<{ key: string; displayName?: string; values: string[]; version?: number }>;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
@@ -1379,6 +1381,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         registration: { status: 'unconfigured', roleTypes: [] },
         canWrite: true,
         ...(scenario.measuresCloseRefusal ? { closeRefusal: scenario.measuresCloseRefusal } : {}),
+        ...(scenario.measuresFollowUpRefusal ? { followUpRefusal: scenario.measuresFollowUpRefusal } : {}),
       });
       return;
     }

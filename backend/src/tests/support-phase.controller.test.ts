@@ -197,6 +197,61 @@ describe('updateSupportErrandPhase', () => {
     expect(api.patch).not.toHaveBeenCalled();
   });
 
+  // Ä13. The unit decides on every proposal before the errand goes on to the follow-up.
+  describe('a move into the follow-up', () => {
+    const followUpPhases = [
+      { id: 'decision', name: 'DECISION', transitions: [{ id: 'start-follow-up', targetPhaseId: 'follow-up' }] },
+      { id: 'follow-up', name: 'FOLLOW_UP' },
+    ];
+    const moveIntoFollowUp = (measures: unknown[], required = true) => {
+      const { controller, api } = makeController();
+      (controller as unknown as { requiresHandledMeasuresBeforeClose: boolean }).requiresHandledMeasuresBeforeClose = required;
+      api.get.mockImplementation(async (config: { url?: string }) => {
+        if (config.url === metadataUrl) return { data: { phases: followUpPhases }, message: 'success' };
+        if (config.url === `${errandUrl}/measures`) return { data: measures, message: 'success' };
+        return {
+          data: { id: mockSupportErrandId, phases: [{ phaseId: 'decision' }], status: 'ONGOING', version: 7 },
+          message: 'success',
+          headers: { etag: '"7"' },
+        };
+      });
+      const move = controller.updateSupportErrandPhase(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedActivePhaseId: 'decision', transitionId: 'start-follow-up' },
+        mockRes(),
+      );
+      return { api, move };
+    };
+
+    it('is refused while a proposal waits for its decision, before anything is written', async () => {
+      const { api, move } = moveIntoFollowUp([{ id: 'proposal' }, { id: 'approved', accept: 'TRUE', plannedComplete: '2026-09-30T00:00:00Z' }]);
+      await expect(move).rejects.toMatchObject({
+        status: 422,
+        message:
+          'Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda: 1 förslag väntar på att godkännas, delvis godkännas eller avslås.',
+      });
+      expect(api.patch).not.toHaveBeenCalled();
+    });
+
+    it('goes through once every proposal is decided, with measures still to follow up', async () => {
+      const { api, move } = moveIntoFollowUp([
+        { id: 'approved', accept: 'TRUE', plannedComplete: '2026-09-30T00:00:00Z' },
+        { id: 'rejected', accept: 'FALSE' },
+      ]);
+      await move;
+      expect(api.patch).toHaveBeenCalled();
+    });
+
+    it('is not held to the measures in an application without the rule', async () => {
+      const { api, move } = moveIntoFollowUp([{ id: 'proposal' }], false);
+      await move;
+      expect(api.get).not.toHaveBeenCalledWith(expect.objectContaining({ url: `${errandUrl}/measures` }), expect.anything());
+      expect(api.patch).toHaveBeenCalled();
+    });
+  });
+
   // A move that carries no closing status is an ordinary step and never reads the measures.
   it('does not consult the measures for a phase move that does not close the errand', async () => {
     const { controller, api } = makeController();

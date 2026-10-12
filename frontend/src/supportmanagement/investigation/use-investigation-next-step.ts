@@ -1,6 +1,7 @@
 'use client';
 
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useMeasuresFollowUpRefusal } from '@supportmanagement/measures/use-measures-follow-up-refusal';
 import { useMemo } from 'react';
 
 import { useInvestigationProfileStore } from './investigation-profile-store';
@@ -17,6 +18,7 @@ export function useInvestigationNextStep(): InvestigationNextStep | undefined {
   const profile = useInvestigationProfileStore((state) => state.profile);
   const user = useUserStore((state) => state.user);
   const nextStep = getInvestigationNextStep();
+  const measuresFollowUpRefusal = useMeasuresFollowUpRefusal();
 
   return useMemo(
     () =>
@@ -27,7 +29,16 @@ export function useInvestigationNextStep(): InvestigationNextStep | undefined {
         viewer: user,
         viewerAccount: user.username,
         phases: { metadataPhases: supportMetadata?.phases, errandPhases: errand?.phases },
+        measuresFollowUpRefusal,
       }),
-    [errand, nextStep, profile, supportMetadata?.labels?.labelStructure, supportMetadata?.phases, user]
+    [
+      errand,
+      measuresFollowUpRefusal,
+      nextStep,
+      profile,
+      supportMetadata?.labels?.labelStructure,
+      supportMetadata?.phases,
+      user,
+    ]
   );
 }

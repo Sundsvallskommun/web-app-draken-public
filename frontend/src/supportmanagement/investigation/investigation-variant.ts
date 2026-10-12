@@ -43,6 +43,8 @@ export interface InvestigationNextStepContext extends InvestigationErrandContext
   readonly phases: SupportPhaseContext;
   /** The viewer's account, which tells the errand's handler from somebody reading along. */
   readonly viewerAccount: string | undefined;
+  /** Why the errand's measures keep it from the follow-up, as the BFF says it; undefined when nothing is known to. */
+  readonly measuresFollowUpRefusal?: string;
 }
 
 /** What the handler does next, and the tab of the errand page it is done in. */
@@ -53,11 +55,19 @@ export interface InvestigationNextStep {
 }
 
 /** What a phase entry requirement is judged on. A requirement may hold one role back where it lets another through. */
-export type InvestigationPhaseEntryContext = InvestigationErrandContext;
+export interface InvestigationPhaseEntryContext extends InvestigationErrandContext {
+  /**
+   * Why the errand's measures keep it from the follow-up, in the words the BFF refuses the move with. Undefined
+   * when nothing stands in the way, where measures are off and while it is not known.
+   */
+  readonly measuresFollowUpRefusal?: string;
+}
 
 export interface InvestigationPhaseEntryRequirementProps {
   /** Abandons the phase change; the requirement is asked for again on the next attempt. */
   readonly onClose: () => void;
+  /** What the requirement was judged on, for a requirement that explains itself from it. */
+  readonly context: InvestigationPhaseEntryContext;
 }
 
 /**

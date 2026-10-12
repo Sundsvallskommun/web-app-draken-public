@@ -62,6 +62,51 @@ export const unhandledMeasuresMessage = (measures: readonly Measure[]): string |
   return `Ärendet kan inte avslutas förrän alla åtgärder är hanterade: ${parts.join(' och ')}.`;
 };
 
+/**
+ * Why the errand cannot go on to the follow-up: proposals nobody has decided on. The follow-up follows up what was
+ * approved, so a proposal has to be approved, partly approved or rejected first. Undefined when none waits.
+ */
+export const undecidedProposalsMessage = (measures: readonly Measure[]): string | undefined => {
+  const { undecided } = countUnhandledMeasures(measures);
+  if (undecided === 0) return undefined;
+  return `Ärendet kan inte gå vidare till uppföljning förrän alla åtgärdsförslag är bedömda: ${undecided} förslag väntar på att godkännas, delvis godkännas eller avslås.`;
+};
+
+interface AssertProposalsDecidedRequest {
+  readonly apiService: Pick<ApiService, 'get'>;
+  readonly user: User;
+  /** The errand's upstream path, without a trailing slash. */
+  readonly errandUrl: string;
+  readonly baseURL: string;
+  /** Whether the write would move the errand into the phase its measures are followed up in. */
+  readonly entersFollowUp: boolean;
+  /** Whether this application holds its errands to their measures at all. */
+  readonly required: boolean;
+}
+
+/**
+ * Refuses to move an errand into the follow-up while a proposal still waits for its decision. The same rule the
+ * measures snapshot tells the client (`followUpRefusal`), so the phase button explains instead of failing.
+ */
+export const assertProposalsDecidedBeforeFollowUp = async ({
+  apiService,
+  user,
+  errandUrl,
+  baseURL,
+  entersFollowUp,
+  required,
+}: AssertProposalsDecidedRequest): Promise<void> => {
+  if (!entersFollowUp || !required) return;
+
+  const measures = await apiService.get<Measure[]>(
+    { url: `${errandUrl}/measures`, baseURL, propagateClientError: true, mapUnauthorizedToForbidden: true },
+    user,
+  );
+  // 422, as for the close: the errand is as the handler left it, and the message names what is missing.
+  const undecided = undecidedProposalsMessage(measures.data ?? []);
+  if (undecided) throw new HttpException(422, undecided);
+};
+
 interface AssertMeasuresHandledRequest {
   readonly apiService: Pick<ApiService, 'get'>;
   readonly user: User;

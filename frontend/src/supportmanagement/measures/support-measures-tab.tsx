@@ -13,7 +13,7 @@ import { useFormContext } from 'react-hook-form';
 // mounted (the in-place reload after a save), which hides and re-shows the surrounding subtree and makes the
 // design system's Headless UI transitions throw "Did you forget to passthrough the ref".
 import { AvvikelseMeasures } from './avvikelse/avvikelse-measures';
-import { useMeasureCountStore } from './measure-count';
+import { recordMeasuresSnapshot } from './measure-summary';
 import { getSupportMeasures, type MeasuresSnapshot } from './support-measure-service';
 
 type MeasuresState =
@@ -63,8 +63,9 @@ export function SupportMeasuresTab({
         // before the reload is weighed against a newer one: a refresh that overtook this read shows its own list,
         // but only this read knows which version the write started from.
         if (expectedErrandVersion !== undefined) advanceErrandVersion(expectedErrandVersion, snapshot.errandVersion);
-        // What is told outside the tab about the errand's measures - that it has none, say - follows every read.
-        useMeasureCountStore.getState().setCount(errand.id, snapshot.measures.length);
+        // What is told outside the tab about the errand's measures - that it has none, that proposals wait for a
+        // decision - follows every read.
+        recordMeasuresSnapshot(errand.id, snapshot);
         if (request !== generation.current) return undefined;
         setState({ status: 'ready', snapshot, refreshing: false });
         return snapshot;
