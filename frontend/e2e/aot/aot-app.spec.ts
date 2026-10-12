@@ -73,6 +73,21 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
   });
 
   /**
+   * Notiser i användarmenyn är avvikelsens val av e-post och SMS. AOT erbjuder inget sådant val, så
+   * menyn ska se ut som den alltid har gjort: färgläge och utloggning.
+   */
+  test('har ingen notisinställning i användarmenyn', async ({ page, dismissCookieConsent }) => {
+    await installAotApiMock(page);
+
+    await page.goto('oversikt/');
+    await dismissCookieConsent();
+    await page.locator('[data-cy="avatar-aside"] .sk-usermenu-button').click();
+
+    await expect(page.getByRole('menuitem', { name: 'Logga ut' })).toBeVisible();
+    await expect(page.locator('[data-cy="notification-settings-button"]')).toHaveCount(0);
+  });
+
+  /**
    * Den tomma profilen är inte ett fel: BFF:en har ingen registrerad profil för AOT och svarar med
    * state 'inactive'. Appen ska måla klart ändå - AppInitializer håller tillbaka första renderingen
    * tills profilen har landat, så en regression här ger en evig laddningsskärm snarare än ett fel.

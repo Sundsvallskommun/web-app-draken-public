@@ -57,6 +57,11 @@ delad kod erbjuder:
   Knappen byter ut ärendetabellen mot `render()`. Regeln ligger i `resolveInvestigationAdministration` och
   registret lämnar ut den via `getInvestigationAdministration`; `useInvestigation` släcker den med resten. För
   avvikelse: Chefer per plats, för medlemmar i `SUPERADMIN_GROUP`. Utan slot, ingen sektion i sidomenyn.
+- `notificationChannels` — valfri lista över de kanaler (`EMAIL`, `SMS`) en användare själv får välja att bli
+  notifierad på utöver notiserna i Draken. Med sloten får användarmenyn valet Notiser (`useUserMenu` i
+  `common/components/layout/userMenuGroups.tsx`), som öppnar `NotificationSettingsDialog`. Registret lämnar ut
+  listan via `getInvestigationNotificationChannels`, och `useInvestigation` släcker den med resten. För
+  avvikelse: e-post och SMS. Utan slot, ingen rad i användarmenyn.
 - `limitedAccessNotice` — valfri text för ett ärende där Support Management bara ger användaren begränsad
   läsning (`LR` i `/access`): hen får veta att ärendet finns, inte arbeta i det. Med sloten frågar ärendesidan
   efter nivån (`GET /supporterrands/:m/:id/errand-access`), låser vid `LR` hela ärendet (`limitedAccess` i

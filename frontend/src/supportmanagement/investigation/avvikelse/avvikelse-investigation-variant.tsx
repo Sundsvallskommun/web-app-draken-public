@@ -245,6 +245,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     isOfferedTo: (viewer: InvestigationViewer) => viewer.superadmin === true,
     render: () => <PlaceManagers />,
   },
+  /** A manager or LEX handler may want to hear of an errand away from Draken: by e-mail, by SMS, or both. */
+  notificationChannels: Object.freeze(['EMAIL', 'SMS'] as const),
   /**
    * `ACCESS/LEX` leaves the unit manager and head of operations with limited read on the errand while LEX
    * has it: the errand is shown locked, with this alert.

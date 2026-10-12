@@ -32,7 +32,7 @@ import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { userMenuGroups } from '../layout/userMenuGroups';
+import { useUserMenu } from '../layout/userMenuGroups';
 
 export const MainErrandsSidebar: FC<{
   showAttestationTable: boolean;
@@ -71,6 +71,7 @@ export const MainErrandsSidebar: FC<{
   const followUp = getInvestigationFollowUp();
   const followUpLabel = followUp?.label(user);
   const administration = getInvestigationAdministration(user);
+  const { menuGroups: userMenuGroups, dialogs: userMenuDialogs } = useUserMenu();
   // Mounted once here, where both the bell and the panel live, so the whole app shares one poll loop.
   const { refresh: refreshNotifications } = useNotificationPoller();
 
@@ -303,6 +304,7 @@ export const MainErrandsSidebar: FC<{
       </div>
 
       <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} refresh={refreshNotifications} />
+      {userMenuDialogs}
     </aside>
   );
 };

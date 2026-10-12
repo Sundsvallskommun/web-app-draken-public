@@ -15,7 +15,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { Fragment, useEffect, useState } from 'react';
 
 import { PageHeader } from './page-header.component';
-import { userMenuGroups } from './userMenuGroups';
+import { useUserMenu } from './userMenuGroups';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
@@ -98,6 +98,7 @@ export default function Layout({ title, children }: { title: string; children: R
 
   // CaseData renders the phase handler in the header; SupportManagement renders it in the errand
   // body (above the errand information) — see support-errand.component.tsx.
+  const { menuGroups: userMenuGroups, dialogs: userMenuDialogs } = useUserMenu();
   const phaseHandler = <UiPhaseWrapper />;
   const showPhaseHandler =
     appConfig.isCaseData &&
@@ -174,6 +175,7 @@ export default function Layout({ title, children }: { title: string; children: R
       </div>
 
       {children}
+      {userMenuDialogs}
 
       <CookieConsent
         title={`Kakor på ${hostName}`}

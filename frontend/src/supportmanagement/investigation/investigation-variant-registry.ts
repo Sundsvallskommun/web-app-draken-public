@@ -40,6 +40,10 @@ export const getInvestigationAdministration = (
 ): InvestigationVariantModule['administration'] =>
   resolveInvestigationAdministration(appConfig.features, getInvestigationVariant(), viewer);
 
+/** The channels the running variant lets a user choose to be notified on, if it offers a choice. */
+export const getInvestigationNotificationChannels = (): InvestigationVariantModule['notificationChannels'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.notificationChannels : undefined;
+
 /** The fields the running variant adds beside Ansvarig in the sidebar, if any. */
 export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.renderHandlerFields : undefined;

@@ -264,6 +264,19 @@ mellan dem.
   `X-notify: false` (`notifySubscribers: false` i `ApiService`). Support Management läser headern från
   17.0, alltså i dag bara för drakar med `SUPPORTMANAGEMENT_API_TARGET=sprint`; äldre versioner
   ignorerar den. Ändringar användaren själv gör ska aldrig vara tysta.
+- **E-post och SMS väljer användaren själv.** I IAF och VOF har användarmenyn valet **Notiser**, där
+  användaren kryssar i om notiserna också ska komma med e-post eller SMS. Valet lagras som kanaler på
+  användarens prenumerant i Support Management (`GET`/`PATCH /supportsubscribers/:municipalityId/me`),
+  och dialogen visar det som ligger där; Draken har inget eget förval.
+  - Notiserna i Draken går inte att välja bort: BFF:en lägger alltid till kanalen `INTERNAL`.
+  - BFF:en tar bara emot kanalens typ. En egen adress eller ett eget nummer (`destination`) avvisas, så
+    e-post och SMS går till det som hör till kontot.
+  - Menyvalet kommer ur utredningsvariantens slot `notificationChannels`. Drakar utan sloten har ingen
+    sådan rad i menyn.
+  - **Rollprofilerna går före.** En prenumeration som pekar på en prenumerationsprofil (rollnotiserna i
+    IAF/VOF) levereras på profilens kanaler så länge profilen har några. Användarens eget val gäller då
+    bara övriga prenumerationer, till exempel ärenden hen följer. Först när en profil saknar kanaler
+    levereras dess händelser på användarens egna.
 
 ### Krav
 

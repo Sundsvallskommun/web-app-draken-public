@@ -1,6 +1,15 @@
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+
 import { apiServiceName } from '@/config/api-config';
-import { SupportSubscriptionController } from '@/controllers/supportmanagement/support-subscription.controller';
-import { IdentifierTypeEnum, Subscriber, Subscription, SubscriptionTargetTypeEnum } from '@/data-contracts/supportmanagement/data-contracts';
+import { SubscriberUpdateDto, SupportSubscriptionController } from '@/controllers/supportmanagement/support-subscription.controller';
+import {
+  IdentifierTypeEnum,
+  NotificationChannelTypeEnum,
+  Subscriber,
+  Subscription,
+  SubscriptionTargetTypeEnum,
+} from '@/data-contracts/supportmanagement/data-contracts';
 
 import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockAdUsername, mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
@@ -218,6 +227,27 @@ describe('SupportSubscriptionController', () => {
       const [config] = api.patch.mock.calls[0];
       expect(config.url).toBe(`${SUBSCRIBERS_URL}/${SUBSCRIBER_ID}`);
       expect(config.data).toEqual({ pausedFrom: '2026-01-01T00:00:00Z' });
+    });
+
+    it('stores the chosen channels once each, and always the one in Draken', async () => {
+      const { controller, api } = makeController();
+      const { EMAIL, INTERNAL, SMS } = NotificationChannelTypeEnum;
+
+      await controller.updateMySubscriber(mockReq(), MUNICIPALITY_ID, { channels: [{ type: SMS }, { type: EMAIL }, { type: SMS }] }, mockRes());
+      await controller.updateMySubscriber(mockReq(), MUNICIPALITY_ID, { channels: [] }, mockRes());
+
+      expect(api.patch.mock.calls[0][0].data).toEqual({ channels: [{ type: INTERNAL }, { type: SMS }, { type: EMAIL }] });
+      // Unticking everything leaves the notifications in Draken, which are not the user's to turn off here.
+      expect(api.patch.mock.calls[1][0].data).toEqual({ channels: [{ type: INTERNAL }] });
+    });
+
+    it("takes a channel by its kind only, never with an address or number of the caller's choosing", async () => {
+      const options = { whitelist: true, forbidNonWhitelisted: true };
+      const body = (channels: unknown) => plainToInstance(SubscriberUpdateDto, { channels });
+
+      await expect(validate(body([{ type: 'EMAIL' }, { type: 'SMS' }]), options)).resolves.toEqual([]);
+      expect(await validate(body([{ type: 'EMAIL', destination: 'someone@example.test' }]), options)).not.toEqual([]);
+      expect(await validate(body([{ type: 'FAX' }]), options)).not.toEqual([]);
     });
   });
 });

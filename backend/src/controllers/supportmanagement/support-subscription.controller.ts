@@ -1,5 +1,5 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -21,12 +21,13 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 
+/**
+ * A way to be notified. Deliberately without Support Management's `destination`: e-mail and SMS go to the address
+ * and number the account has, never to one a request names, so an errand is not sent to a private address.
+ */
 class NotificationChannelDto {
-  @IsString()
+  @IsEnum(NotificationChannelTypeEnum)
   type!: NotificationChannelTypeEnum;
-  @IsString()
-  @IsOptional()
-  destination?: string;
 }
 
 class EventFilterDto {
@@ -49,7 +50,7 @@ class SubscriptionTargetDto {
  * Patchable parts of a subscriber. `identifier` is deliberately absent: it identifies who receives
  * the notifications and is derived from the session, never from the request body.
  */
-class SubscriberUpdateDto {
+export class SubscriberUpdateDto {
   @IsString()
   @IsOptional()
   name?: string;
@@ -86,6 +87,13 @@ class SubscriptionCreateDto {
 }
 
 const DEFAULT_CHANNELS: NotificationChannel[] = [{ type: NotificationChannelTypeEnum.INTERNAL }];
+
+/**
+ * The channels to store: each kind once, and always the one in Draken. Choosing e-mail or SMS adds to the
+ * notifications in Draken; it does not replace them.
+ */
+const withInAppChannel = (channels: readonly NotificationChannelDto[]): NotificationChannel[] =>
+  [...new Set([NotificationChannelTypeEnum.INTERNAL, ...channels.map(channel => channel.type)])].map(type => ({ type }));
 
 const sameTarget = (a?: SubscriptionTarget, b?: SubscriptionTarget): boolean => a?.type === b?.type && (a?.id ?? null) === (b?.id ?? null);
 
@@ -185,7 +193,8 @@ export class SupportSubscriptionController {
   ): Promise<Subscriber> {
     const subscriber = await this.resolveSubscriber(municipalityId, req.user);
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers/${subscriber.id}`;
-    const res = await this.apiService.patch<Subscriber, SubscriberUpdateDto>({ url, data }, req.user).catch(e => {
+    const update: Partial<Subscriber> = data.channels ? { ...data, channels: withInAppChannel(data.channels) } : { ...data };
+    const res = await this.apiService.patch<Subscriber, Partial<Subscriber>>({ url, data: update }, req.user).catch(e => {
       logger.error('Error when updating subscriber');
       logger.error(e);
       throw e;

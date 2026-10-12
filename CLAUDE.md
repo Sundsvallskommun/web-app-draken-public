@@ -324,4 +324,6 @@ upstream model, so no conflict detection is available for them.
   in `withRequestGroup` (`common/services/api-service.ts`) so it becomes one notification. A write the
   system makes on its own (read markers, acknowledgements, derived labels, bookkeeping) passes
   `notifySubscribers: false` to `ApiService`, which sends `X-notify: false`; never use it for what a user
-  did. CaseData keeps its own notification API.
+  did. CaseData keeps its own notification API. A user chooses e-mail and SMS beside the notifications in
+  Draken from Notiser in the user menu, where the variant offers it (`notificationChannels`, avvikelse
+  only). The BFF stores the kind of channel and nothing else: never a destination, and always `INTERNAL`.

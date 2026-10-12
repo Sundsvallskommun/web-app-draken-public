@@ -1,5 +1,6 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { AppConfigFeatures } from '@config/appconfig';
+import type { SelectableNotificationChannel } from '@supportmanagement/components/notification-settings/notification-channel-settings';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
 import type { ReactNode } from 'react';
@@ -230,6 +231,12 @@ export interface InvestigationVariantModule {
   readonly followUp?: InvestigationFollowUpSlot;
   /** What the variant's administrators set from the overview, for a variant with something to administer. */
   readonly administration?: InvestigationAdministrationSlot;
+  /**
+   * The channels a user may choose to be notified on beside the notifications in Draken, from Notiser in the user
+   * menu. The choice is the user's own, stored on their Support Management subscriber. A variant without the slot
+   * offers no choice, and the user menu has no such entry.
+   */
+  readonly notificationChannels?: readonly SelectableNotificationChannel[];
   /**
    * The alert the errand page shows when Support Management grants the viewer only limited read (LR) on
    * the errand: they may know it exists, not work in it, so the page also locks every field. A variant
