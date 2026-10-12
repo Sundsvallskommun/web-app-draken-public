@@ -19,6 +19,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { getInvestigationChannelLabel } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   deleteSupportAttachment,
@@ -480,7 +481,9 @@ export const SupportErrandAttachmentsTab: FC<{
                       </span>{' '}
                       {isKnownAttachmentChannel(attachment?.channel as string | undefined) && (
                         <span>
-                          <b>Kanal: </b> {getAttachmentChannelLabel(attachment?.channel as string | undefined)}
+                          <b>Kanal: </b>{' '}
+                          {getInvestigationChannelLabel(attachment?.channel as string | undefined) ??
+                            getAttachmentChannelLabel(attachment?.channel as string | undefined)}
                         </span>
                       )}
                     </div>

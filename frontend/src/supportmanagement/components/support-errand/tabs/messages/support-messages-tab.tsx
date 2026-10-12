@@ -3,7 +3,11 @@ import { Alert, Button, Divider, FormControl, FormLabel, Icon, Select } from '@s
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
-import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
+import {
+  getChannelLabel,
+  isSupportErrandLocked,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
@@ -158,7 +162,7 @@ export const SupportMessagesTab: FC<{
                 Alla kanaler
               </Select.Option>
               <Select.Option value={SupportCommunicationType.Draken}>Draken</Select.Option>
-              <Select.Option value={SupportCommunicationType.WebMessage}>E-tjänst</Select.Option>
+              <Select.Option value={SupportCommunicationType.WebMessage}>{getChannelLabel('ESERVICE')}</Select.Option>
               <Select.Option value={SupportCommunicationType.Email}>E-post</Select.Option>
               <Select.Option value={SupportCommunicationType.MinaSidor}>Mina sidor</Select.Option>
               <Select.Option value={SupportCommunicationType.Sms}>SMS</Select.Option>

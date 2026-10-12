@@ -10,9 +10,9 @@ import {
   showsLegacyClassification,
 } from '@supportmanagement/services/legacy-classification-service';
 import {
-  Channels,
   findPriorityLabelForPriorityKey,
   getCategorizationLabels,
+  getChannelLabel,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
@@ -66,7 +66,7 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-small">Inkom via</span>
-          <span className="text-small">{Channels[errand?.channel as keyof typeof Channels]}</span>
+          <span className="text-small">{getChannelLabel(errand?.channel)}</span>
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-small">Registrerades</span>

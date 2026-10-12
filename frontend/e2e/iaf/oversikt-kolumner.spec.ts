@@ -122,6 +122,8 @@ test('visar rapporttyp och ärendenummer i en egen kolumn, lika i IAF och VoF', 
   await expect(reportTypeCell).toContainText(errandNumber);
   await expect(row.getByText(errandNumber, { exact: true })).toHaveCount(1);
   await expect(row.locator('td').nth(4)).not.toContainText('Missförhållande');
+  // Ä3. The report came in through Katla, Draken's own e-service, which is named apart from OpenE's.
+  await expect(row.locator('td').nth(5)).toContainText('Draken e-tjänst');
 
   // The row still opens the errand, whichever columns it has.
   await expect(row).toHaveAttribute('aria-label', `Ärende ${errandNumber}, öppna ärende i ny flik`);

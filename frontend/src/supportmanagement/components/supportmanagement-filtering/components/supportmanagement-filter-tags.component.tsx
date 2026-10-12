@@ -5,7 +5,7 @@ import { useUiSettingsStore } from '@stores/ui-settings-store';
 import type { LabelFilterGroupProjection } from '@supportmanagement/filters/label-filter-projector';
 import { reduceLabelFilterSelection } from '@supportmanagement/filters/label-filter-selection';
 import { Priority } from '@supportmanagement/interfaces/priority';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { getChannelLabel, Status } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import { FC, useEffect, useMemo } from 'react';
@@ -210,7 +210,7 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
       ))}
       {channels.map((channel, channelIndex) => (
         <Chip key={`caseChannel-${channelIndex}`} aria-label="Rensa Kanal" onClick={() => handleRemoveChannel(channel)}>
-          {(Channels as Record<string, string>)[channel]}
+          {getChannelLabel(channel)}
         </Chip>
       ))}
       {priorities.map((priority, prioIndex) => (

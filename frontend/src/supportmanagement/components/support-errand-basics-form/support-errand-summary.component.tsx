@@ -2,7 +2,7 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { prettyTime } from '@common/services/helper-service';
 import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
-import { Channels } from '@supportmanagement/services/support-errand-service';
+import { getChannelLabelInSentence } from '@supportmanagement/services/support-errand-service';
 import { getLabelReportType } from '@supportmanagement/services/support-label-classification-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -44,7 +44,7 @@ export const SupportErrandSummary: React.FC<{}> = () => {
 
           <div className="pr-sm">
             <div data-cy="errandRegisteredLabel" className="font-bold">
-              Inkom via {(Channels as Record<string, string>)[supportErrand?.channel!]?.toLowerCase()}
+              Inkom via {getChannelLabelInSentence(supportErrand?.channel)}
             </div>
             <div data-cy="errandRegistered">{prettyTime(supportErrand?.created!)}</div>
           </div>

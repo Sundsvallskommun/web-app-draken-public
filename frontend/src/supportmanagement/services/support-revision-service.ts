@@ -7,7 +7,7 @@ import {
   SupportRevisionDifference,
 } from '@supportmanagement/interfaces/supportRevisionDiff';
 
-import { Channels } from './support-errand-service';
+import { Channels, getChannelLabel } from './support-errand-service';
 
 const extractValues: (d: SupportRevisionDifference) => {
   value: string | { [key: string]: string };
@@ -142,15 +142,13 @@ const parseAdministratorDiff: (
 };
 
 const parseExternalTagDiff: (d: SupportRevisionDifference) => { title: string; description: string } = (d) => {
-  const externalTagValues: Record<string, Channels> = {
-    CHAT: Channels.CHAT,
-    SOCIAL_MEDIA: Channels.SOCIAL_MEDIA,
-    EMAIL: Channels.EMAIL,
-    IN_PERSON: Channels.IN_PERSON,
-    PHONE: Channels.PHONE,
-    ESERVICE: Channels.ESERVICE,
-    ESERVICE_INTERNAL: Channels.ESERVICE_INTERNAL,
-  };
+  // The channels a tag can name, each by the name it is shown under.
+  const externalTagValues: Record<string, string | undefined> = Object.fromEntries(
+    ['CHAT', 'SOCIAL_MEDIA', 'EMAIL', 'IN_PERSON', 'PHONE', 'ESERVICE', 'ESERVICE_INTERNAL'].map((channel) => [
+      channel,
+      getChannelLabel(channel),
+    ])
+  );
   const operation = parseDiffOperation(d);
   let value, fromValue;
   try {

@@ -42,6 +42,10 @@ export const getInvestigationClosesOnlyAtWorkflowEnd = (): InvestigationVariantM
 export const getInvestigationStatusFollowsWorkflow = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.statusFollowsWorkflow) : false;
 
+/** The running variant's own name for a channel, where it has one. Undefined for every other channel and drake. */
+export const getInvestigationChannelLabel = (channel: string | undefined): string | undefined =>
+  appConfig.features.useInvestigation && channel ? getInvestigationVariant()?.channelLabels?.[channel] : undefined;
+
 /** Whether the running variant does without parked errands. False for every drake without the slot. */
 export const getInvestigationWithoutSuspension = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.withoutSuspension) : false;

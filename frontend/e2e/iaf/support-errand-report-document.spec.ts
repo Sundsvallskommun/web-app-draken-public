@@ -76,5 +76,7 @@ test.describe('Rapporten för ett ärende registrerat i Draken', () => {
 
     await expect(page.getByRole('heading', { name: 'Ärendeuppgifter', exact: true })).toBeVisible();
     await expect(page.locator('[data-cy="avvikelse-report-document"]')).toHaveCount(0);
+    // Ä3. Katla is Draken's own e-service, and is named so that it is not taken for an OpenE e-service.
+    await expect(page.locator('[data-cy="errandRegisteredLabel"]')).toHaveText('Inkom via Draken e-tjänst');
   });
 });

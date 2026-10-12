@@ -12,7 +12,7 @@ import { useEmployeeNameStore, useMetadataStore, useSupportStore, useUserStore }
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { getInvestigationOverviewAssignee } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
-  Channels,
+  getChannelLabel,
   getLabelReportType,
   getMappedLabelSubType,
   Status,
@@ -218,7 +218,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-          <div>{(Channels as Record<string, string>)[errand?.channel!]}</div>
+          <div>{getChannelLabel(errand?.channel)}</div>
           <div className="m-0 italic truncate">
             {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
           </div>

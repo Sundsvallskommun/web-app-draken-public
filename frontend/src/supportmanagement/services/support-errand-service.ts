@@ -17,6 +17,7 @@ import {
   basicsAcceptsClassification,
   getSupportErrandClassificationPlacement,
 } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { getInvestigationChannelLabel } from '@supportmanagement/investigation/investigation-variant-registry';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
@@ -157,8 +158,23 @@ export enum Channels {
 // LOK is limited to phone, email and internal e-service.
 const LOK_SELECTABLE_CHANNELS: (keyof typeof Channels)[] = ['PHONE', 'EMAIL', 'ESERVICE_INTERNAL'];
 
+/**
+ * What a channel is called where it is shown. The running investigation may name one of its own apart from the
+ * shared name - Katla's e-service, beside OpenE's. `Channels` itself stays what the code compares channels by.
+ */
+export const getChannelLabel = (channel: string | undefined): string | undefined =>
+  getInvestigationChannelLabel(channel) ?? (channel ? (Channels as Record<string, string>)[channel] : undefined);
+
+/** The channel's name inside a sentence: a shared name in lower case, a name the investigation gave as it is written. */
+export const getChannelLabelInSentence = (channel: string | undefined): string | undefined =>
+  getInvestigationChannelLabel(channel) ??
+  (channel ? (Channels as Record<string, string>)[channel]?.toLowerCase() : undefined);
+
 export const getSelectableChannels = (): [string, string][] => {
-  const entries = Object.entries(Channels) as [string, string][];
+  const entries = (Object.keys(Channels) as string[]).map((key): [string, string] => [
+    key,
+    getChannelLabel(key) ?? key,
+  ]);
   if (isLOK()) {
     return entries.filter(([key]) => LOK_SELECTABLE_CHANNELS.includes(key as keyof typeof Channels));
   }

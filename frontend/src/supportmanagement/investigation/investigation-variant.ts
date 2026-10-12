@@ -248,6 +248,13 @@ export interface InvestigationVariantModule {
    */
   readonly statusFollowsWorkflow?: boolean;
   /**
+   * What the variant calls a channel whose shared name would mislead where it runs - an e-service of its own beside
+   * the ones every drake means by the word. Keyed by the channel's own key, such as `ESERVICE`; the key and the
+   * shared enum are untouched, so nothing that compares channels changes. A variant without the slot keeps every
+   * shared name.
+   */
+  readonly channelLabels?: Readonly<Record<string, string>>;
+  /**
    * The errands are never parked: the sidebar offers no Parkera ärende and the overview lists no parked errands.
    * An errand that is parked all the same is still resumed. A variant without the slot keeps both.
    */

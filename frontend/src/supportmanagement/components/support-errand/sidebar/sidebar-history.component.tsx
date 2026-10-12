@@ -8,6 +8,7 @@ import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
 import {
   Channels,
+  getChannelLabel,
   ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
@@ -73,8 +74,8 @@ export const SidebarHistory: React.FC<{}> = () => {
     Object.entries(Priority).forEach((e) => {
       _km[e[0]] = e[1];
     });
-    Object.entries(Channels).forEach((e) => {
-      _km[e[0]] = e[1];
+    Object.keys(Channels).forEach((channel) => {
+      _km[channel] = getChannelLabel(channel) ?? channel;
     });
     _km['true'] = 'Ja';
     _km['false'] = 'Nej';

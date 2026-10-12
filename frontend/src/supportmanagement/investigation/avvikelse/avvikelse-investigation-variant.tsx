@@ -248,6 +248,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   statusFollowsWorkflow: true,
   /** The organisation has decided not to park errands: an errand waits in the status its phase gives it. */
   withoutSuspension: true,
+  /** Reports come in through Katla, Draken's own e-service, which is not to be taken for an OpenE e-service. */
+  channelLabels: { ESERVICE: 'Draken e-tjänst' },
   /** The handler is told what to do next and taken to where it is done: the report, a document, the decision. */
   nextStep: resolveAvvikelseNextStep,
 });
