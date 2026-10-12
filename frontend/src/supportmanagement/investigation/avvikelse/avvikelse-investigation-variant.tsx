@@ -246,6 +246,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   closesOnlyAtWorkflowEnd: (context: InvestigationErrandContext) => isAvvikelseReportedMisconductErrand(context.errand),
   /** The status moves when the handler resumes the errand, hands it over or changes phase; nobody sets it by hand. */
   statusFollowsWorkflow: true,
+  /** The organisation has decided not to park errands: an errand waits in the status its phase gives it. */
+  withoutSuspension: true,
   /** The handler is told what to do next and taken to where it is done: the report, a document, the decision. */
   nextStep: resolveAvvikelseNextStep,
 });

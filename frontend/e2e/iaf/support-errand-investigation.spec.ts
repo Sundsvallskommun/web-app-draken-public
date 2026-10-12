@@ -2429,6 +2429,27 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="resume-button"]')).toHaveCount(0);
   });
 
+  // Ä14. The organisation does not park errands. One that is parked all the same is still its handler's to resume.
+  test('erbjuder inte Parkera ärende i handläggningen', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, { documents: { [managerKey]: existingManagerDocument() } });
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')).toBeVisible();
+    await expect(page.locator('[data-cy="suspend-button"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="manage-sidebar"]')).not.toContainText('Parkera ärende');
+  });
+
+  test('låter ett redan parkerat ärende återupptas', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      errandStatus: 'SUSPENDED',
+    });
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="resume-button"]')).toBeEnabled();
+    await expect(page.locator('[data-cy="suspend-button"]')).toHaveCount(0);
+  });
+
   for (const state of ['active', 'unavailable'] as const) {
     test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
       page,

@@ -248,6 +248,11 @@ export interface InvestigationVariantModule {
    */
   readonly statusFollowsWorkflow?: boolean;
   /**
+   * The errands are never parked: the sidebar offers no Parkera ärende and the overview lists no parked errands.
+   * An errand that is parked all the same is still resumed. A variant without the slot keeps both.
+   */
+  readonly withoutSuspension?: boolean;
+  /**
    * What the errand's handler does next, and where. The sidebar says it above the handling controls, and the errand
    * opens on its tab when it is opened or its phase changes. A variant without the slot shows nothing and keeps the
    * phase's own tab.

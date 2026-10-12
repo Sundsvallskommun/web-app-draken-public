@@ -3,6 +3,7 @@ import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { getInvestigationWithoutSuspension } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   assignedStatuses,
   closedStatuses,
@@ -52,6 +53,8 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
+  // A deployment whose errands are never parked has no list of parked errands to offer.
+  const withoutSuspension = getInvestigationWithoutSuspension();
 
   const updateStatusFilter = (ss: Status[]) => {
     try {
@@ -79,13 +82,17 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
-      {
-        label: getStatusLabel(suspendedStatuses) ?? '',
-        key: suspendedStatuses[0],
-        statuses: suspendedStatuses,
-        icon: 'circle-pause',
-        totalStatusErrands: suspendedSupportErrands,
-      },
+      ...(withoutSuspension
+        ? []
+        : [
+            {
+              label: getStatusLabel(suspendedStatuses) ?? '',
+              key: suspendedStatuses[0],
+              statuses: suspendedStatuses,
+              icon: 'circle-pause',
+              totalStatusErrands: suspendedSupportErrands,
+            },
+          ]),
       {
         label: getStatusLabel(assignedStatuses) ?? '',
         key: assignedStatuses[0],
@@ -101,7 +108,14 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: solvedSupportErrands,
       },
     ],
-    [newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
+    [
+      newSupportErrands,
+      ongoingSupportErrands,
+      suspendedSupportErrands,
+      assignedSupportErrands,
+      solvedSupportErrands,
+      withoutSuspension,
+    ]
   );
 
   return (

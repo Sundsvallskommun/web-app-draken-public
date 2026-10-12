@@ -18,6 +18,7 @@ import {
   getInvestigationClosesOnlyAtWorkflowEnd,
   getInvestigationHandlerFields,
   getInvestigationStatusFollowsWorkflow,
+  getInvestigationWithoutSuspension,
 } from '@supportmanagement/investigation/investigation-variant-registry';
 import { useInvestigationNextStep } from '@supportmanagement/investigation/use-investigation-next-step';
 import {
@@ -84,6 +85,8 @@ export const SidebarInfo: FC<{
   const handlerFields = getInvestigationHandlerFields();
   // Where the workflow moves the status by its own actions, there is no status to choose here.
   const statusFollowsWorkflow = getInvestigationStatusFollowsWorkflow();
+  // Whether errands are parked at all is the investigation's to say; an errand already parked is still resumed.
+  const withoutSuspension = getInvestigationWithoutSuspension();
   const nextStep = useInvestigationNextStep();
   // Who may be given *this* errand, which is not the same question as who is a handler at all.
   // Until it answers - and if it cannot - the full directory stands, so the selector is never empty.
@@ -772,7 +775,11 @@ export const SidebarInfo: FC<{
                         Nytt meddelande
                       </Button>
                     )}
-                    <SupportSuspendErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                    {!withoutSuspension && (
+                      <SupportSuspendErrandButtonComponent
+                        disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                      />
+                    )}
                     {offersForwardOrClose && <Divider className="mt-8 mb-16" />}
                   </>
                 )}

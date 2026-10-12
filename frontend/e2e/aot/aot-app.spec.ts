@@ -46,6 +46,8 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
     await dismissCookieConsent();
 
     await expect(page.locator('[data-cy="Verksamhet-filter"]')).toBeVisible();
+    // Avvikelse does without parked errands; that is its own decision, and AOT keeps the list.
+    await expect(page.locator('[aria-label="status-button-SUSPENDED"]')).toBeVisible();
     await expect(page.getByRole('group', { name: 'Lagrum' })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Rapporttyp' })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Klassificering' })).toHaveCount(0);

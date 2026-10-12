@@ -125,4 +125,8 @@ test('visar rapporttyp och ärendenummer i en egen kolumn, lika i IAF och VoF', 
 
   // The row still opens the errand, whichever columns it has.
   await expect(row).toHaveAttribute('aria-label', `Ärende ${errandNumber}, öppna ärende i ny flik`);
+
+  // Ä14. The organisation does not park errands, so the menu offers no list of parked ones.
+  await expect(page.locator('[aria-label="status-button-NEW"]')).toBeVisible();
+  await expect(page.locator('[aria-label="status-button-SUSPENDED"]')).toHaveCount(0);
 });

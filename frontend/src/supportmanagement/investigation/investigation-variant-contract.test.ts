@@ -80,6 +80,7 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.closesOnlyAtWorkflowEnd, undefined);
   // Nor does one whose workflow does not move the status take the status select away.
   assert.equal(minimalVariant.statusFollowsWorkflow, undefined);
+  assert.equal(minimalVariant.withoutSuspension, undefined);
   // Nor does one with no next step to tell put anything above the handling controls, or move the landing tab.
   assert.equal(minimalVariant.nextStep, undefined);
   // A variant with no say in who is responsible leaves the overview naming the assigned handler.

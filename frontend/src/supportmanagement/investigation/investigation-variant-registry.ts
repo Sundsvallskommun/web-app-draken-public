@@ -42,6 +42,10 @@ export const getInvestigationClosesOnlyAtWorkflowEnd = (): InvestigationVariantM
 export const getInvestigationStatusFollowsWorkflow = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.statusFollowsWorkflow) : false;
 
+/** Whether the running variant does without parked errands. False for every drake without the slot. */
+export const getInvestigationWithoutSuspension = (): boolean =>
+  appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.withoutSuspension) : false;
+
 /** What the errand's handler does next, where the running variant says. */
 export const getInvestigationNextStep = (): InvestigationVariantModule['nextStep'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.nextStep : undefined;
