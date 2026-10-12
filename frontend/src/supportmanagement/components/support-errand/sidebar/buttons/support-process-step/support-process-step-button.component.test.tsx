@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { completeSupportDecision, getSupportDecisions } from '@supportmanagement/services/support-decision-service';
-import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandById,
+  setSupportErrandAdmin,
+  setSupportErrandStatus,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import {
   getSupportErrandProcessState,
   sendSupportProcessSignal,
+  startSupportProcess,
 } from '@supportmanagement/services/support-process-service';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { FC, PropsWithChildren } from 'react';
@@ -44,6 +50,7 @@ vi.mock('@supportmanagement/services/support-process-service', async (importOrig
   ...(await importOriginal<object>()),
   getSupportErrandProcessState: vi.fn(),
   sendSupportProcessSignal: vi.fn(),
+  startSupportProcess: vi.fn(),
 }));
 
 const ERRAND_ID = 'errand-1';
@@ -60,6 +67,9 @@ const errandAt = (currentActivityId: string, awaitingSignals: string[]): Support
       awaitingSignals: awaitingSignals.map((name) => ({ name })),
     },
   } as unknown as SupportErrand);
+
+const errandWithoutAProcess = (status = 'NEW'): SupportErrand =>
+  ({ id: ERRAND_ID, status, modified: '2026-10-02T10:00:00Z', process: undefined } as unknown as SupportErrand);
 
 const Wrapper: FC<PropsWithChildren> = ({ children }) => {
   const methods = useForm({ defaultValues: {} });
@@ -99,6 +109,7 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue(true as never);
   vi.mocked(sendSupportProcessSignal).mockReset().mockResolvedValue(undefined);
+  vi.mocked(startSupportProcess).mockReset().mockResolvedValue(undefined);
   vi.mocked(getSupportErrandProcessState).mockReset();
   vi.mocked(getSupportErrandById)
     .mockReset()
@@ -226,4 +237,67 @@ test('concluding the decision starts the watching, since the model has no signal
 
   await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
   await waitFor(() => expect(useSupportStore.getState().processSignal?.errandId).toBe(ERRAND_ID));
+});
+
+test('an errand without a process is offered a start when Support Management says it may be started', async () => {
+  useSupportStore.setState({ supportErrand: errandWithoutAProcess() });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: undefined,
+    startability: 'AVAILABLE',
+    processKeys: ['internal-inspection'],
+  });
+
+  renderButton();
+
+  const button = await theButton('start_process');
+  button.click();
+
+  await waitFor(() => expect(startSupportProcess).toHaveBeenCalledWith(ERRAND_ID, '2281', 'internal-inspection'));
+  await waitFor(() => expect(useSupportStore.getState().processSignal?.errandId).toBe(ERRAND_ID));
+  expect(setSupportErrandStatus).not.toHaveBeenCalled();
+  expect(setSupportErrandAdmin).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('no start is offered when the labels of the errand point at no process', async () => {
+  useSupportStore.setState({ supportErrand: errandWithoutAProcess() });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: undefined,
+    startability: 'NO_PROCESS_KEY',
+    processKeys: [],
+  });
+
+  renderButton();
+
+  await waitFor(() => expect(getSupportErrandProcessState).toHaveBeenCalled());
+  expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
+});
+
+test('a solved errand that never had a process is left alone', async () => {
+  useSupportStore.setState({ supportErrand: errandWithoutAProcess('SOLVED') });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: undefined,
+    startability: 'AVAILABLE',
+    processKeys: ['alcohol-serving'],
+  });
+
+  renderButton();
+
+  await waitFor(() => expect(getSupportErrandProcessState).toHaveBeenCalled());
+  expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
+});
+
+test('a process that failed is not offered a restart from the errand page', async () => {
+  useSupportStore.setState({
+    supportErrand: {
+      ...errandWithoutAProcess(),
+      process: { processStatus: 'FAILED', currentActivityId: 'external_task_create_protocol', awaitingSignals: [] },
+    } as unknown as SupportErrand,
+  });
+
+  renderButton();
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(getSupportErrandProcessState).not.toHaveBeenCalled();
+  expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
 });

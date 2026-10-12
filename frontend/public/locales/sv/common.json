@@ -176,6 +176,8 @@
       "step_taken": "{{step}} markerades som klar",
       "stepped_by": "Ärendet stegades vidare av {{by}}",
       "reported": "Processen rapporterade {{activity}}",
+      "started": "Processen startades",
+      "started_by": "Processen startades av {{by}}",
       "cancelled": "Processen avbröts",
       "cancelled_by": "Processen avbröts av {{by}}"
     },
@@ -183,6 +185,12 @@
       "confirm_no": "Nej",
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
       "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
+      "start_process": {
+        "label": "Starta process",
+        "done": "Processen startas. Ärendet uppdateras när den har registrerats.",
+        "error": "Något gick fel vid start av processen",
+        "choose": "Ärendets etiketter pekar på flera processer. Rätta kategoriseringen innan processen startas."
+      },
       "start_handling": {
         "label": "Starta handläggning",
         "done": "Handläggning startad",

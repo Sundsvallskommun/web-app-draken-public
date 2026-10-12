@@ -64,7 +64,7 @@ test('errand types sharing a process are named by the one they hang under, not b
 test('a process no errand type starts has no name, and neither has one without metadata', () => {
   const metadata = metadataWith([label('Alkohol', undefined, [label('Serveringstillstånd', 'alcohol-serving')])]);
 
-  expect(supportProcessName('supervision', metadata)).toBe('');
+  expect(supportProcessName('internal-inspection', metadata)).toBe('');
   expect(supportProcessName('alcohol-serving', undefined)).toBe('');
   expect(supportProcessName(undefined, metadata)).toBe('');
 });

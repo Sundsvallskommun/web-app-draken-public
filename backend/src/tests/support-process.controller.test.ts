@@ -90,3 +90,46 @@ describe('sendProcessSignal', () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 });
+
+describe('startProcess', () => {
+  it('asks Support Management to start the process the labels point at', async () => {
+    const { controller, api } = makeController({ processes: [], startable: { status: 'AVAILABLE', processKeys: ['internal-inspection'] } });
+    const res = mockRes();
+
+    await controller.startProcess(mockReq(), mockSupportErrandId, mockMunicipalityId, { processKey: 'internal-inspection' }, res);
+
+    expect(res.statusCode).toBe(202);
+    expect(api.get).not.toHaveBeenCalled();
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post.mock.calls[0][0]).toMatchObject({
+      url: expect.stringContaining(`${processesUrl}/start`),
+      data: { processKey: 'internal-inspection' },
+      propagateClientError: true,
+    });
+  });
+
+  it('sends no key when none is given, since Support Management picks the only eligible one itself', async () => {
+    const { controller, api } = makeController({ processes: [] });
+
+    await controller.startProcess(mockReq(), mockSupportErrandId, mockMunicipalityId, {}, mockRes());
+
+    expect(api.post.mock.calls[0][0].data).toEqual({});
+  });
+
+  it('rejects a municipality id other than the configured one and starts nothing', async () => {
+    const { controller, api } = makeController({ processes: [] });
+    const res = mockRes();
+
+    await controller.startProcess(mockReq(), mockSupportErrandId, '9999', {}, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('passes on the refusal of Support Management rather than claiming a start', async () => {
+    const { controller, api } = makeController({ processes: [] });
+    api.post.mockRejectedValueOnce(new Error('409'));
+
+    await expect(controller.startProcess(mockReq(), mockSupportErrandId, mockMunicipalityId, {}, mockRes())).rejects.toThrow('409');
+  });
+});

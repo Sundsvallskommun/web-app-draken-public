@@ -14,6 +14,8 @@ const CONCURRENT_TASKS = 'CONCURRENT_EXTERNAL_TASKS';
 const CANCELLATION = 'process_cancelled';
 const MISSING_ROLE = /has no stakeholder with role '([^']+)'/;
 const SIGNAL_SENDER = /sent by (\S+)/;
+const START_REQUESTER = /requested by (\S+)/;
+const START = 'START';
 const HTTP_STATUS = /^\d{3}$/;
 const REFUSAL = ' error: {status=';
 
@@ -30,6 +32,8 @@ const serviceThatRefused = (message: string): { service: string; status: string 
 };
 
 const senderOfSignal = (message: string): string | undefined => SIGNAL_SENDER.exec(message)?.[1];
+
+const requesterOfStart = (message: string): string | undefined => START_REQUESTER.exec(message)?.[1];
 
 const technicalText = (parts: (string | undefined)[]): string | undefined => {
   const detail = parts.filter(Boolean).join(': ');
@@ -64,6 +68,13 @@ export const supportProcessActivityMessage = (activity: ProcessActivity): Suppor
 
   if (activity.severity === 'ERROR') {
     return { key: 'common:process.trouble.unknown', detail };
+  }
+
+  // A manual start; SM puts the process key in activityId, so the type is what identifies it.
+  if (activity.activityType === START) {
+    const by = requesterOfStart(activity.message ?? '');
+    if (by) return { key: 'common:process.log.started_by', values: { by }, detail };
+    return { key: 'common:process.log.started', detail };
   }
 
   if (activity.activityType === 'SIGNAL') {

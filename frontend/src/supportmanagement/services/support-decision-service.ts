@@ -35,7 +35,8 @@ const PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT: Record<string, string> =
   'tobacco-sales-change': 'TOBAKSFORSALJNING',
   'tobacco-sales-closure': 'TOBAKSFORSALJNING',
   'e-cigarette-sales': 'ECIGARETTFORSALJNING',
-  supervision: 'TILLSYN',
+  'internal-inspection': 'TILLSYN',
+  'external-inspection': 'TILLSYN',
 };
 
 const PERMIT_TYPE_OF_AN_UNKNOWN_PROCESS = 'PERMIT';
