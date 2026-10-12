@@ -1,6 +1,7 @@
 'use client';
 
 import TextEditor from '@common/components/dynamic-text-editor';
+import { plainTextToHtml } from '@common/utils/plain-text-to-html';
 import { ariaDescribedByIds, titleId, type WidgetProps } from '@rjsf/utils';
 import { cx } from '@sk-web-gui/react';
 import { useEffect, useRef } from 'react';
@@ -26,6 +27,7 @@ export function RjsfTextEditor({
   onChange,
   onFocus,
   options,
+  schema,
   disabled,
   readonly,
   rawErrors,
@@ -39,6 +41,13 @@ export function RjsfTextEditor({
   // A named size says how much text the editor shows before it grows, wherever the schema was written.
   const sizeClassName = textEditorSizeClassName(options.size);
   const isReadonly = Boolean(disabled || readonly);
+  // The editor reads its value as markup, where a line break means nothing. A read-only editor can be showing text
+  // that was written elsewhere as plain text - Katla's report, for one - so its lines are shown as the paragraphs
+  // they are. A property declared as HTML is markup whatever it looks like, and what is being edited is the editor's.
+  const shownMarkup =
+    isReadonly && schema.contentMediaType !== 'text/html' && /\n/u.test(markupValue)
+      ? plainTextToHtml(markupValue)
+      : markupValue;
   // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
   const labelHidden = Boolean(hideLabel || options.hideLabel);
 
@@ -88,7 +97,7 @@ export function RjsfTextEditor({
         className={cx('schema-text-editor w-full min-w-0 max-w-full', configuredClassName, sizeClassName)}
         disableToolbar={disableToolbar}
         readOnly={isReadonly}
-        value={{ markup: markupValue }}
+        value={{ markup: shownMarkup }}
         onSelectionChange={(range, oldRange) => {
           if (range && !oldRange) onFocus(id, markupValue);
           if (!range && oldRange) onBlur(id, markupValue);

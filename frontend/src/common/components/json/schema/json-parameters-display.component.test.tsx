@@ -13,6 +13,12 @@ vi.mock('@common/components/json/utils/schema-utils', () => ({
   getUiSchemaForSchema: vi.fn(),
 }));
 vi.mock('../fields/facility-search-field.componant', () => ({ FacilitySearchField: () => null }));
+// The real editor is Quill behind next/dynamic; what it is handed is what this display decides.
+vi.mock('@common/components/dynamic-text-editor', () => ({
+  default: ({ name, value }: { name: string; value: { markup: string } }) => (
+    <div data-testid={`editor-${name}`}>{value.markup}</div>
+  ),
+}));
 
 beforeEach(() => {
   vi.mocked(getRjsfSchema).mockReset();
@@ -61,4 +67,38 @@ test('displays the saved data read-only when the optional UI schema is unavailab
   expect(input.hasAttribute('disabled')).toBe(true);
   expect(screen.queryByRole('button', { name: 'Lägg till' })).toBeNull();
   expect(screen.queryByText(/kunde inte visas/)).toBeNull();
+});
+
+test('shows a plain-text answer with the line breaks it was written with', async () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      event: { type: 'string', title: 'Beskriv händelsen' },
+      oneLine: { type: 'string', title: 'Förslag' },
+      markup: { type: 'string', title: 'Utredningstext', contentMediaType: 'text/html' },
+      editorText: { type: 'string', title: 'Skriven i redigeraren' },
+    },
+  };
+  vi.mocked(getRjsfSchema).mockResolvedValue(schema);
+  vi.mocked(getUiSchemaForSchema).mockResolvedValue({
+    event: { 'ui:widget': 'textarea' },
+    oneLine: { 'ui:widget': 'textarea' },
+    markup: { 'ui:widget': 'textarea' },
+    editorText: { 'ui:widget': 'textarea' },
+  });
+  const value = {
+    event: 'Brukaren föll.\n\nPersonalen var inte på plats < 5 minuter.',
+    oneLine: 'En rad',
+    // Declared as HTML, so it is markup whatever it looks like.
+    markup: 'rad ett\nrad två',
+    editorText: '<p>Redan\nmarkup</p>',
+  } as unknown as JsonNode;
+  render(<JsonParametersDisplay municipalityId="2281" jsonParameters={[{ key: 'report', schemaId: 'id', value }]} />);
+
+  expect((await screen.findByTestId('editor-report_event')).textContent).toBe(
+    '<p>Brukaren föll.</p><p><br></p><p>Personalen var inte på plats &lt; 5 minuter.</p>'
+  );
+  expect(screen.getByTestId('editor-report_oneLine').textContent).toBe('En rad');
+  expect(screen.getByTestId('editor-report_markup').textContent).toBe('rad ett\nrad två');
+  expect(screen.getByTestId('editor-report_editorText').textContent).toBe('<p>Redan\nmarkup</p>');
 });
