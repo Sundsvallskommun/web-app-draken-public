@@ -26,6 +26,7 @@ import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { SupportProcessLog } from './ui-phase/support-process-log.component';
 import { SupportUiPhaseWrapper } from './ui-phase/support-ui-phase-wrapper';
+import { useSupportProcessPoller } from './ui-phase/use-support-process-poller';
 
 let formSchema = yup
   .object({
@@ -54,12 +55,17 @@ export const SupportErrandComponent: FC = () => {
   const { theme } = useGui();
 
   const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
+  const processIsWorking = useSupportProcessPoller();
 
   const showUiPhases =
     appConfig.features.useUiPhases &&
     (pathName === '/registrera' || pathName.includes('arende')) &&
     (!followsProcess || hasSupportErrandProcess(supportErrand));
-  const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
+  const uiPhaseRow = appConfig.isSupportManagement ? (
+    <SupportUiPhaseWrapper working={processIsWorking} />
+  ) : (
+    <UiPhaseWrapper />
+  );
   const uiPhaseSection = (
     <div className="flex items-center justify-between">
       {uiPhaseRow}

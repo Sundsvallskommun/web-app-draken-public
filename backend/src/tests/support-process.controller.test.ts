@@ -113,7 +113,7 @@ describe('startProcess', () => {
 
     await controller.startProcess(mockReq(), mockSupportErrandId, mockMunicipalityId, {}, mockRes());
 
-    expect(api.post.mock.calls[0][0].data).toEqual({});
+    expect(api.post.mock.calls[0][0]).toMatchObject({ data: {} });
   });
 
   it('rejects a municipality id other than the configured one and starts nothing', async () => {
