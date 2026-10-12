@@ -1,3 +1,4 @@
+import { countWithNoun } from '@common/utils/count-with-noun';
 import dayjs from 'dayjs';
 import type { CErrandAction } from 'src/data-contracts/backend/data-contracts';
 
@@ -19,8 +20,6 @@ export const findLexTransferAction = (actions: readonly CErrandAction[] | undefi
       Number.isFinite(Date.parse(action.executeAfter))
   );
 
-const plural = (count: number, one: string, many: string): string => `${count} ${count === 1 ? one : many}`;
-
 /** When the errand is sent to a LEX manager, counted from `now` and given as a local date and time. */
 export const describeLexTransfer = (executeAfter: string, now: Date = new Date()): string => {
   const at = dayjs(executeAfter);
@@ -28,13 +27,13 @@ export const describeLexTransfer = (executeAfter: string, now: Date = new Date()
   const remaining = at.valueOf() - now.getTime();
   if (remaining <= 0) return `Ärendet skulle skickas till en LEX-ansvarig ${when} och skickas inom kort.`;
   if (remaining >= DAY_MS) {
-    return `Ärendet skickas till en LEX-ansvarig om ${plural(
+    return `Ärendet skickas till en LEX-ansvarig om ${countWithNoun(
       Math.floor(remaining / DAY_MS),
       'dag',
       'dagar'
     )}, ${when}.`;
   }
-  return `Ärendet skickas till en LEX-ansvarig om ${plural(
+  return `Ärendet skickas till en LEX-ansvarig om ${countWithNoun(
     Math.ceil(remaining / HOUR_MS),
     'timme',
     'timmar'

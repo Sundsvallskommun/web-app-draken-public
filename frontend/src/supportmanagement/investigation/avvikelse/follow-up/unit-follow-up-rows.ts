@@ -3,6 +3,7 @@ import { normalizeSupportManagementResourcePath } from '@supportmanagement/servi
 import dayjs from 'dayjs';
 
 import { resolveErrandPlace } from '../assignment/errand-location';
+import { isPlaceLabel } from '../place-label';
 import {
   type FollowUpKeyFigureContext,
   type FollowUpKeyFigureKey,
@@ -120,7 +121,7 @@ const unitOf = (
 ): FollowUpOption | undefined => {
   const place = resolveErrandPlace(labels as Label[], labelStructure);
   if (place?.node.label.id) return { value: place.node.label.id, label: place.presentation.place };
-  const location = labels.filter((label) => label.classification?.toUpperCase() === 'LOCATION').at(-1);
+  const location = labels.filter(isPlaceLabel).at(-1);
   return location?.id ? { value: location.id, label: location.displayName || location.id } : undefined;
 };
 

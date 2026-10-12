@@ -1,6 +1,7 @@
 'use client';
 
 import { getNameFromADUsername } from '@common/services/user-service';
+import { countWithNoun } from '@common/utils/count-with-noun';
 import { Alert, Spinner, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
 import { newStatuses } from '@supportmanagement/services/support-errand-service';
@@ -49,8 +50,6 @@ const readErrorMessage = (cause: unknown): string =>
   isAxiosError(cause) && [401, 403].includes(cause.response?.status ?? 0)
     ? 'Du saknar behörighet att läsa uppföljningen.'
     : 'Uppföljningen kunde inte hämtas. Försök igen om en stund.';
-
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /**
  * Verksamhetsuppföljning - Enheter: the errands registered in a period on the units the user reaches, and
@@ -163,8 +162,8 @@ export const UnitFollowUp: FC = () => {
         )}
         <p className="m-0" role="status" data-cy="follow-up-summary">
           {tab === 'errands'
-            ? `Visar ${plural(shown, 'ärende', 'ärenden')}`
-            : `Visar ${plural(shown, 'åtgärd', 'åtgärder')}`}
+            ? `Visar ${countWithNoun(shown, 'ärende', 'ärenden')}`
+            : `Visar ${countWithNoun(shown, 'åtgärd', 'åtgärder')}`}
         </p>
         {tab === 'errands' ? (
           <UnitFollowUpErrandsTable rows={shownErrands} />

@@ -4,6 +4,7 @@ import { getActiveSupportPhaseId, getSupportPhases } from '@supportmanagement/se
 
 import type { InvestigationReportDocument } from '../../investigation-profile';
 import type { InvestigationFormData } from '../investigation-document';
+import { isPlaceLabel } from '../place-label';
 
 /**
  * Whether the report of an errand may be filled in: only on an errand registered in Draken, and only
@@ -86,15 +87,13 @@ export const withPlainTextAreas = (uiSchema: UiSchema, schema: RJSFSchema): UiSc
   );
 };
 
-const LOCATION_CLASSIFICATION = 'LOCATION';
-
 /**
  * The name of the place registration put the errand at: the deepest of its labels classified as a
  * location. An errand carries every level of its place, so the deepest is the unit itself.
  */
 export const registeredPlaceName = (labels: readonly Label[] | undefined): string | undefined =>
   (labels ?? [])
-    .filter((label) => label.classification?.trim().toUpperCase() === LOCATION_CLASSIFICATION && label.displayName)
+    .filter((label) => isPlaceLabel(label) && label.displayName)
     .reduce<Label | undefined>(
       (deepest, label) =>
         !deepest || (label.resourcePath ?? '').split('/').length > (deepest.resourcePath ?? '').split('/').length
