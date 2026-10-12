@@ -90,6 +90,10 @@ orden som passar både avvikelse och missförhållande (se samma avsnitt). Schem
 båda och var identiska med artefakterna, och `versions/latest` pekar på 1.7 respektive 2.3. Inget har publicerats i
 produktionsmiljön.
 
+Samma dag publicerades `2281_utredning-enhetschef_1.8` i testmiljön: enhetschefen riskbedömer inte ett
+missförhållande (se Utredning enhetschef 1.8). Schema och UI Schema lästes tillbaka och var identiska med
+artefakterna, och `versions/latest` pekar på 1.8. Inget har publicerats i produktionsmiljön.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -178,7 +182,7 @@ Två regler läser det:
 
 Riskbedömningen är inte förbjuden för ett missförhållande: en som redan finns ligger kvar när ärendet blir ett
 missförhållande, och dokumentet kan fortfarande låsas upp och få nya rapporter. Frågan om misstänkt missförhållande
-och utredningsmallen följer lagrummen som förut. Version 1.8 är inte publicerad.
+och utredningsmallen följer lagrummen som förut.
 
 ## Utredning Lex Sarah 2.0–2.3
 
