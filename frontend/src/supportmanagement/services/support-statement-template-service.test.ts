@@ -99,7 +99,7 @@ test('the errand decides which of the tax agency forms is on offer', () => {
     );
 
   expect(identifiers('alcohol-serving')).toEqual(['tax-agency-request-serving', 'referral-general']);
-  expect(identifiers('supervision')).toEqual(['tax-agency-request-serving-inspection', 'referral-general']);
+  expect(identifiers('internal-inspection')).toEqual(['tax-agency-request-serving-inspection', 'referral-general']);
   expect(identifiers('tobacco-sales')).toEqual([
     'tax-agency-request-tobacco-company',
     'tax-agency-request-tobacco-pbi',

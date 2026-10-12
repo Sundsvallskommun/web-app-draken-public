@@ -198,5 +198,5 @@ describe('hasServingPremises', () => {
     expect(hasServingPremises(undefined)).toBe(true);
   });
 
-  test.todo('tobacco, folköl and supervision errands have none once the condition is known');
+  test.todo('tobacco, folköl and inspection errands have none once the condition is known');
 });

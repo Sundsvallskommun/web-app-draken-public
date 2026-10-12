@@ -1,11 +1,16 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Response } from 'express';
 import { Body, Controller, Get, HttpCode, Param, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { ErrandProcessOverview, PageProcessActivity, ProcessSignalRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  ErrandProcessOverview,
+  PageProcessActivity,
+  ProcessSignalRequest,
+  ProcessStartRequest,
+} from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -21,6 +26,14 @@ export class SendProcessSignalDto {
   @MinLength(1)
   @MaxLength(255)
   signal!: string;
+}
+
+/** Which process to start; optional when the labels point at exactly one. */
+export class StartProcessDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  processKey?: string;
 }
 
 const resolvePageSize = (size?: number): number => {
@@ -106,5 +119,33 @@ export class SupportProcessController {
     );
 
     return response.status(202).send({ signal: data.signal });
+  }
+
+  @Post('/supportprocess/:municipalityId/:id/start')
+  @HttpCode(202)
+  @OpenAPI({ summary: 'Start the process of an errand whose labels do not start it by themselves' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(StartProcessDto, 'body'))
+  async startProcess(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Body() data: StartProcessDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    // SM judges the start (400 ambiguous key, 409 already started); its answer is passed on.
+    await this.apiService.post<void, ProcessStartRequest>(
+      {
+        url: `${this.processesUrl(municipalityId, id)}/start`,
+        data: data.processKey ? { processKey: data.processKey } : {},
+        propagateClientError: true,
+      },
+      req.user,
+    );
+
+    return response.status(202).send({ processKey: data.processKey });
   }
 }

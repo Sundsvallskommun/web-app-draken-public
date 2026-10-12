@@ -14,9 +14,9 @@ export type SupportReferralPersonsName = (typeof SupportReferralPersons)[keyof t
 
 const PermitKind = {
   SERVING: 'SERVING',
-  SUPERVISION: 'SUPERVISION',
   TOBACCO: 'TOBACCO',
   LOW_ALCOHOL_BEER: 'LOW_ALCOHOL_BEER',
+  INSPECTION: 'INSPECTION',
 } as const;
 
 type PermitKindName = (typeof PermitKind)[keyof typeof PermitKind];
@@ -29,7 +29,8 @@ const PERMIT_KIND_OF_PROCESS: Record<string, PermitKindName> = {
   'low-alcohol-beer-serving': PermitKind.LOW_ALCOHOL_BEER,
   'low-alcohol-beer-sales': PermitKind.LOW_ALCOHOL_BEER,
   'low-alcohol-beer-sales-and-serving': PermitKind.LOW_ALCOHOL_BEER,
-  supervision: PermitKind.SUPERVISION,
+  'external-inspection': PermitKind.INSPECTION,
+  'internal-inspection': PermitKind.INSPECTION,
   'tobacco-sales': PermitKind.TOBACCO,
   'tobacco-sales-change': PermitKind.TOBACCO,
   'tobacco-sales-closure': PermitKind.TOBACCO,
@@ -85,7 +86,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     identifier: 'tax-agency-request-serving-inspection',
     name: 'Begäran Skatteverket, inre tillsyn',
     counterpartyKey: 'TAX_AGENCY',
-    permitKinds: [PermitKind.SUPERVISION],
+    permitKinds: [PermitKind.INSPECTION],
     persons: SupportReferralPersons.LISTED,
   },
   {
