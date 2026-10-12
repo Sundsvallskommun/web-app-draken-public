@@ -565,7 +565,7 @@ test('filters the list by status, decision, role, type and text', async ({ page,
   await page.getByRole('button', { name: 'Lägg till åtgärd', exact: true }).click();
   const cards = page.getByRole('list', { name: 'Registrerade åtgärder' }).getByRole('listitem');
   await expect(cards).toHaveCount(2);
-  const filters = page.getByRole('group', { name: 'Filtrera åtgärder' });
+  const filters = page.getByRole('group', { name: 'Filtrera och sortera åtgärder' });
   const summary = page.locator('[data-cy="measure-filter-summary"]');
   await expect(summary).toHaveText('2 åtgärder.');
 

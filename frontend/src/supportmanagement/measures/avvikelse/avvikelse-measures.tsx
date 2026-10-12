@@ -16,6 +16,7 @@ import {
   measureHoldsFollowUp,
 } from '../measure-follow-up';
 import { MeasureList } from '../measure-list';
+import type { MeasureSort } from '../measure-sort';
 import { measureTypeLabel } from '../measure-types';
 import {
   changeSupportMeasurePlannedComplete,
@@ -53,6 +54,7 @@ export function AvvikelseMeasures({
   const snackbar = useSnackbar();
   const confirm = useConfirm();
   const [filters, setFilters] = useState(emptyMeasureFilters);
+  const [sort, setSort] = useState<MeasureSort>('created');
   const [dialog, setDialog] = useState<
     | { kind: 'edit' | 'decide'; measure: Measure }
     | { kind: 'follow-up' | 'end-date'; measure: Measure; unavailable?: boolean }
@@ -302,6 +304,8 @@ export function AvvikelseMeasures({
           <MeasureFilterBar
             filters={filters}
             onChange={setFilters}
+            sort={sort}
+            onSortChange={setSort}
             {...measureFilterOptions(measures, metadata.measureTypes ?? [], metadata.roles ?? [])}
             shown={shownMeasures.length}
             total={measures.length}
@@ -309,6 +313,7 @@ export function AvvikelseMeasures({
         )}
         <MeasureList
           measures={shownMeasures}
+          sort={sort}
           emptyMessage={
             isMeasureFilterActive(filters)
               ? 'Inga åtgärder matchar filtret.'

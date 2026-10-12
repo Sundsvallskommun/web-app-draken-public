@@ -2,6 +2,7 @@ import { Button, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react
 import { useId } from 'react';
 
 import { emptyMeasureFilters, isMeasureFilterActive, type MeasureFilters } from './measure-filters';
+import { type MeasureSort, measureSortOptions } from './measure-sort';
 
 const statusOptions: { value: MeasureFilters['status']; label: string }[] = [
   { value: '', label: 'Alla' },
@@ -19,6 +20,8 @@ const decisionOptions: { value: MeasureFilters['decision']; label: string }[] = 
 export function MeasureFilterBar({
   filters,
   onChange,
+  sort,
+  onSortChange,
   roles,
   types,
   shown,
@@ -26,6 +29,9 @@ export function MeasureFilterBar({
 }: {
   filters: MeasureFilters;
   onChange: (filters: MeasureFilters) => void;
+  /** The order is not a filter: clearing the filters leaves it as chosen. */
+  sort: MeasureSort;
+  onSortChange: (sort: MeasureSort) => void;
   roles: readonly { value: string; label: string }[];
   types: readonly { value: string; label: string }[];
   shown: number;
@@ -59,7 +65,12 @@ export function MeasureFilterBar({
   );
 
   return (
-    <div role="group" aria-label="Filtrera åtgärder" className="flex flex-col gap-12" data-cy="measure-filters">
+    <div
+      role="group"
+      aria-label="Filtrera och sortera åtgärder"
+      className="flex flex-col gap-12"
+      data-cy="measure-filters"
+    >
       <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-5">
         {select('status', 'Status', statusOptions)}
         {select('decision', 'Beslut', decisionOptions)}
@@ -78,7 +89,7 @@ export function MeasureFilterBar({
           />
         </FormControl>
       </div>
-      <div className="flex flex-wrap items-center gap-12">
+      <div className="flex flex-wrap items-end gap-12">
         <p role="status" className="text-small" data-cy="measure-filter-summary">
           {active ? `Visar ${shown} av ${total} åtgärder.` : `${total} åtgärder.`}
         </p>
@@ -87,6 +98,23 @@ export function MeasureFilterBar({
             Rensa filter
           </Button>
         )}
+        <FormControl id={`${id}-sort`} size="sm" className="w-full sm:w-auto sm:min-w-[20rem] sm:ml-auto">
+          <FormLabel>Sortera efter</FormLabel>
+          <Select
+            id={`${id}-sort`}
+            size="sm"
+            value={sort}
+            onChange={(event) => onSortChange(event.target.value as MeasureSort)}
+            className="w-full"
+            data-cy="measure-sort"
+          >
+            {measureSortOptions.map((option) => (
+              <Select.Option key={option.value} value={option.value}>
+                {option.label}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
       </div>
     </div>
   );

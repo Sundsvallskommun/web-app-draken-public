@@ -305,6 +305,39 @@ test('editing an approved measure leaves both dates alone, and the measures view
   expect(screen.getByText('Slutdatumet ändras med Ändra slutdatum, av den som följer upp åtgärden.')).toBeTruthy();
 });
 
+test('lists the measures as they were registered, and gathers them per person when asked to', async () => {
+  mocks.read.mockResolvedValue({
+    ...snapshot,
+    measures: [
+      { ...measure, id: 'late', created: '2026-09-12T09:00:00+02:00', description: 'Senast' },
+      { ...measure, id: 'early', created: '2026-09-10T09:00:00+02:00', addedByUser: 'other', description: 'Först' },
+      { ...measure, id: 'middle', created: '2026-09-11T09:00:00+02:00', addedByUser: 'CREATOR', description: 'Sedan' },
+    ],
+  });
+  render(<Harness followUp={false} />);
+  const descriptions = (list: HTMLElement) =>
+    within(list)
+      .getAllByRole('listitem')
+      .map((card) => within(card).getByText(/^(Först|Sedan|Senast)$/).textContent);
+
+  expect(descriptions(await screen.findByRole('list', { name: 'Registrerade åtgärder' }))).toEqual([
+    'Först',
+    'Sedan',
+    'Senast',
+  ]);
+
+  fireEvent.change(screen.getByRole('combobox', { name: 'Sortera efter' }), { target: { value: 'person' } });
+  // One account whatever its case, and each person's own measures still in the order they were registered.
+  expect(descriptions(screen.getByRole('list', { name: /^creator \(2\)$/i }))).toEqual(['Sedan', 'Senast']);
+  expect(descriptions(screen.getByRole('list', { name: 'other (1)' }))).toEqual(['Först']);
+  expect(screen.queryByRole('list', { name: 'Registrerade åtgärder' })).toBeNull();
+
+  // The order is not a filter, so clearing the filters leaves it as chosen.
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Sök' }), { target: { value: 'Först' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Rensa filter' }));
+  expect(screen.getByRole('list', { name: /^creator \(2\)$/i })).toBeTruthy();
+});
+
 test('returning to a tab reloads measures changed in the other view', async () => {
   const view = render(<Harness active={false} />);
   expect(mocks.read).not.toHaveBeenCalled();

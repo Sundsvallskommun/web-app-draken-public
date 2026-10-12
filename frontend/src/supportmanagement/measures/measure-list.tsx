@@ -1,32 +1,14 @@
 import type { Measure, MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getNameFromADUsername } from '@common/services/user-service';
-import { Button, Checkbox, Icon, Label } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
-import dayjs from 'dayjs';
-import { CalendarClock, ClipboardCheck, FileText, Pencil } from 'lucide-react';
+import { useId } from 'react';
 
-import { measureCanBeDecided, measureDecisionPresentation } from './measure-decision';
-import { measureCanBeFollowedUp, measureFollowUp, measureHasFollowUp } from './measure-follow-up';
+import { MeasureCard } from './measure-card';
+import { measureCanBeDecided } from './measure-decision';
+import { measureCanBeFollowedUp } from './measure-follow-up';
 import { isOwnMeasure, mayFollowUpMeasure } from './measure-ownership';
+import { groupMeasuresByPerson, type MeasureSort, sortMeasuresByCreated } from './measure-sort';
 import { measureTypeLabel } from './measure-types';
-
-const date = (value?: string) => (value ? dayjs(value).format('YYYY-MM-DD') : undefined);
-
-function timing(measure: Measure): { label: string; color: string; dateLine?: string } {
-  if (measure.executed)
-    return {
-      label: measureHasFollowUp(measure) ? 'Utförd' : 'Genomförd',
-      color: 'gronsta',
-      dateLine: `Genomfört datum: ${date(measure.executed)}`,
-    };
-  const start = date(measure.plannedStart);
-  const complete = date(measure.plannedComplete);
-  if (start || complete) {
-    const range = start && complete && start !== complete ? `${start} – ${complete}` : start ?? complete;
-    return { label: 'Planerad', color: 'vattjom', dateLine: `Planerat datum: ${range}` };
-  }
-  return { label: 'Ej tidsatt', color: 'bjornstigen' };
-}
 
 export function MeasureList({
   measures,
@@ -34,6 +16,7 @@ export function MeasureList({
   roles,
   currentUser,
   mayFollowUp,
+  sort = 'created',
   onEdit,
   onDecide,
   onFollowUp,
@@ -47,6 +30,8 @@ export function MeasureList({
   currentUser?: string;
   /** The BFF's answer on whether the user's role follows up measures; absent, the registrar does. */
   mayFollowUp?: boolean;
+  /** Chronologically as registered, or gathered by who registered them. */
+  sort?: MeasureSort;
   onEdit?: (measure: Measure) => void;
   onDecide?: (measure: Measure) => void;
   onFollowUp?: (measure: Measure) => void;
@@ -54,6 +39,7 @@ export function MeasureList({
   onChangeEndDate?: (measure: Measure) => void;
   emptyMessage?: string;
 }) {
+  const groupId = useId();
   const administrators = useUserStore((state) => state.administrators);
   // Free text today; measures saved by the earlier picker hold an AD username, so resolve those.
   const userLabel = (username?: string) =>
@@ -61,137 +47,48 @@ export function MeasureList({
   const roleLabel = (name?: string) => roles.find((role) => role.name === name)?.displayName || name;
   if (measures.length === 0) return <p>{emptyMessage}</p>;
 
+  const card = (measure: Measure, index: number) => {
+    const followsUp = measureCanBeFollowedUp(measure) && mayFollowUpMeasure(measure, currentUser, mayFollowUp);
+    return (
+      <MeasureCard
+        key={measure.id ?? index}
+        measure={measure}
+        title={measureTypeLabel(types, measure)}
+        creator={userLabel(measure.addedByUser)}
+        role={roleLabel(measure.addedByRole)}
+        responsible={userLabel(measure.responsibleUser)}
+        onEdit={onEdit && measure.id && isOwnMeasure(measure, currentUser) ? () => onEdit(measure) : undefined}
+        onDecide={onDecide && measureCanBeDecided(measure) ? () => onDecide(measure) : undefined}
+        onFollowUp={onFollowUp && followsUp ? () => onFollowUp(measure) : undefined}
+        onChangeEndDate={onChangeEndDate && followsUp ? () => onChangeEndDate(measure) : undefined}
+      />
+    );
+  };
+
+  if (sort === 'person') {
+    return (
+      <div className="flex flex-col gap-24" data-cy="measure-groups">
+        {groupMeasuresByPerson(measures, userLabel).map((group, groupIndex) => {
+          const headingId = `${groupId}-${groupIndex}`;
+          return (
+            // The person names the list itself, so the name is read once and each card keeps its heading level.
+            <div key={group.key} className="flex flex-col gap-12">
+              <p id={headingId} className="text-label-medium" data-cy="measure-group-person">
+                {group.person ?? 'Ingen angiven'} ({group.measures.length})
+              </p>
+              <ul className="flex flex-col gap-16" aria-labelledby={headingId}>
+                {group.measures.map(card)}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <ul className="flex flex-col gap-16" aria-label="Registrerade åtgärder">
-      {measures.map((measure, index) => {
-        const title = measureTypeLabel(types, measure);
-        const status = timing(measure);
-        const decision = measureDecisionPresentation(measure);
-        const decidable = Boolean(onDecide && measureCanBeDecided(measure));
-        const creator = userLabel(measure.addedByUser);
-        const role = roleLabel(measure.addedByRole);
-        const created = measure.created ? dayjs(measure.created).format('YYYY-MM-DD HH:mm:ss') : undefined;
-        const editable = Boolean(onEdit && measure.id && isOwnMeasure(measure, currentUser));
-        const followsUp = measureCanBeFollowedUp(measure) && mayFollowUpMeasure(measure, currentUser, mayFollowUp);
-        const canFollowUp = Boolean(onFollowUp && followsUp);
-        const canChangeEndDate = Boolean(onChangeEndDate && followsUp);
-        const responsible = userLabel(measure.responsibleUser);
-        const followUp = measureFollowUp(measure);
-        return (
-          <li
-            key={measure.id ?? index}
-            className="border-1 rounded-12 bg-background-content p-16 sm:p-24 grid grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_auto] gap-16 min-w-0"
-          >
-            <div
-              aria-hidden="true"
-              className={`shrink-0 w-40 h-40 rounded-8 flex items-center justify-center ${decision.iconClassName}`}
-            >
-              <Icon icon={<FileText />} size={20} />
-            </div>
-            <div className="min-w-0 grow flex flex-col gap-8">
-              <div className="flex flex-wrap items-center gap-12">
-                <h4 className="font-bold">{title}</h4>
-                {measureHasFollowUp(measure) && (measure.plannedStart || measure.plannedComplete) && (
-                  <Label rounded color="vattjom">
-                    Planerad
-                  </Label>
-                )}
-                <Label rounded color={status.color}>
-                  {status.label}
-                </Label>
-                <Label rounded inverted color={decision.color}>
-                  {decision.label}
-                </Label>
-              </div>
-              {measure.description && <p className="whitespace-pre-wrap break-words">{measure.description}</p>}
-              {measure.goal && (
-                <p className="whitespace-pre-wrap break-words">
-                  <strong>Mål:</strong> <span>{measure.goal}</span>
-                </p>
-              )}
-              {status.dateLine && <p className="text-small">{status.dateLine}</p>}
-              {measure.executed && (measure.plannedStart || measure.plannedComplete) && (
-                <p className="text-small">
-                  {measure.plannedStart && `Påbörjas: ${date(measure.plannedStart)}`}
-                  {measure.plannedStart && measure.plannedComplete && ' • '}
-                  {measure.plannedComplete && `Klar senast: ${date(measure.plannedComplete)}`}
-                </p>
-              )}
-              {responsible && (
-                <p className="text-small whitespace-pre-wrap break-words">
-                  <strong>Ansvarig:</strong> <span>{responsible}</span>
-                </p>
-              )}
-              {measure.acceptMotivation && (
-                <div className={`min-w-0 rounded-8 border-l-4 p-12 ${decision.motivationClassName}`}>
-                  <h5 className="text-label-medium">{decision.motivationLabel}</h5>
-                  <p className="whitespace-pre-wrap break-words">{measure.acceptMotivation}</p>
-                </div>
-              )}
-              {followUp && (
-                <div className="rounded-8 border-1 border-gronsta-surface-primary bg-gronsta-background-100 p-12 flex flex-col gap-8">
-                  <p>
-                    <strong>Önskad effekt uppnådd:</strong> {followUp.desiredEffectAchieved ? 'Ja' : 'Nej'}
-                  </p>
-                  <p className="whitespace-pre-wrap break-words">
-                    <strong>Åtgärdens effekt:</strong> {followUp.followUpDescription}
-                  </p>
-                </div>
-              )}
-              <p className="text-small text-dark-secondary">
-                {creator ? `Skapad av ${creator}` : 'Skapad'}
-                {role ? ` (${role})` : ''}
-                {created ? ` • ${created}` : ''}
-              </p>
-            </div>
-            {(editable || decidable || canFollowUp || canChangeEndDate) && (
-              <div className="col-start-2 sm:col-start-3 flex flex-wrap sm:flex-col items-start gap-8">
-                {canFollowUp && (
-                  <Checkbox checked={false} aria-label={`Utförd: ${title}`} onChange={() => onFollowUp?.(measure)}>
-                    Utförd
-                  </Checkbox>
-                )}
-                {canChangeEndDate && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    leftIcon={<CalendarClock />}
-                    aria-label={`Ändra slutdatum ${title}`}
-                    onClick={() => onChangeEndDate?.(measure)}
-                  >
-                    Ändra slutdatum
-                  </Button>
-                )}
-                {decidable && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    leftIcon={<ClipboardCheck />}
-                    aria-label={`Bedöm förslag ${title}`}
-                    onClick={() => onDecide?.(measure)}
-                  >
-                    Bedöm förslag
-                  </Button>
-                )}
-                {editable && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    leftIcon={<Pencil />}
-                    aria-label={`Redigera åtgärd ${title}`}
-                    onClick={() => onEdit?.(measure)}
-                  >
-                    Redigera
-                  </Button>
-                )}
-              </div>
-            )}
-          </li>
-        );
-      })}
+      {sortMeasuresByCreated(measures).map(card)}
     </ul>
   );
 }
