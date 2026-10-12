@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, Button, Spinner, Tabs } from '@sk-web-gui/react';
+import { Alert, Button, cx, Spinner, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   isSupportErrandLocked,
@@ -98,6 +98,12 @@ export function SupportErrandInvestigationTab(props: Readonly<SupportErrandInves
   // Drafts live only in this user's currently opened errand, never across navigation or logout.
   return <InvestigationDocuments key={JSON.stringify([municipalityId, errandId, username])} {...props} />;
 }
+
+/** The document menu's bar: set apart from the form, and with a marker thick enough to be seen at a glance. */
+const INVESTIGATION_DOCUMENT_TABLIST_CLASS = [
+  'flex-wrap gap-x-32 gap-y-8 bg-vattjom-background-100 px-24 pt-16',
+  '[&_.sk-tabs-list-item-divider]:h-[0.4rem] [&_.sk-tabs-list-item-divider]:min-h-[0.4rem]',
+].join(' ');
 
 function InvestigationDocuments({
   onDirtyChange,
@@ -223,21 +229,29 @@ function InvestigationDocuments({
       {documents.length > 0 ? (
         <Tabs
           hidden={tabState !== 'ready'}
-          className="w-full min-w-0 max-w-full rounded-12 border-1 bg-background-content"
-          tabslistClassName="flex-wrap px-16 pt-16"
-          panelsClassName="min-w-0 max-w-full border-t-1"
+          className="w-full min-w-0 max-w-full overflow-hidden rounded-12 border-1 bg-background-content"
+          // The documents are a menu of their own inside the tab, and have to read as one: a tinted bar with a line
+          // beneath it, and the open document over a marker in the brand colour. As plain text over the form they
+          // passed for its heading.
+          tabslistClassName={INVESTIGATION_DOCUMENT_TABLIST_CLASS}
+          panelsClassName="min-w-0 max-w-full"
+          underline
+          color="vattjom"
           current={activeTab}
           onTabChange={(index) => {
             if (visibleDocuments.some((document) => document.key === documents[index]?.key))
               setActiveDocumentKey(documents[index].key);
           }}
-          size="sm"
+          size="md"
         >
           {documents.map((definition) => (
             <Tabs.Item key={`${supportErrand?.id}:${definition.key}`}>
               <Tabs.Button
                 hidden={!visibleDocuments.some((document) => document.key === definition.key)}
-                className={visibleDocuments.some((document) => document.key === definition.key) ? undefined : 'hidden'}
+                className={cx(
+                  'px-4 text-base',
+                  !visibleDocuments.some((document) => document.key === definition.key) && 'hidden'
+                )}
                 data-cy={`${definition.key}-tab`}
                 onKeyDown={(event) => {
                   const index = visibleDocuments.findIndex((document) => document.key === definition.key);

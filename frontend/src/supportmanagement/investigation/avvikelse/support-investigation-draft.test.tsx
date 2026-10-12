@@ -53,6 +53,7 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => {
     Tabs: gui.Tabs,
     Button: gui.Button,
     Alert: gui.Alert,
+    cx: gui.cx,
     Spinner: gui.Spinner,
     Label: gui.Label,
     // No template is chosen here, so nothing ever asks before replacing the investigation text.
