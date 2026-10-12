@@ -103,7 +103,13 @@ test('the report is reviewed in Ärendeuppgifter before the investigation starts
 test('an errand waiting on the handler, on a pause or on a completion says so first', () => {
   assert.match(step(errand({ status: 'ASSIGNED' }))?.text ?? '', /Återuppta ärende/u);
   assert.match(step(errand({ status: 'SUSPENDED' }))?.text ?? '', /parkerat/u);
-  assert.equal(step(errand({ status: 'AWAITING_RESPONSE' }))?.tab?.key, 'messages');
+  // Ä5. The answer arrives under Meddelanden, and it is the handler who then resumes the errand.
+  const awaiting = step(errand({ status: 'AWAITING_RESPONSE' }));
+  assert.equal(awaiting?.tab?.key, 'messages');
+  assert.equal(
+    awaiting?.text,
+    'Ärendet väntar på komplettering. När svaret har kommit under Meddelanden trycker du på Återuppta ärende, så att statusen visar att ärendet hanteras igen.'
+  );
 });
 
 test('the unit manager writes their investigation, and sends it on once it is completed', () => {

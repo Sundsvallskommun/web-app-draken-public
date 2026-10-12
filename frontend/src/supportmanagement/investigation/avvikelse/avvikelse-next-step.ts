@@ -120,7 +120,12 @@ export const resolveAvvikelseNextStep = (context: InvestigationNextStepContext):
     case Status.SUSPENDED:
       return { text: 'Ärendet är parkerat. Återuppta det nedan när du kan fortsätta.' };
     case Status.AWAITING_RESPONSE:
-      return { text: 'Ärendet väntar på komplettering. Svaret kommer under Meddelanden.', tab: STEP_TABS.messages };
+      // Nothing takes the errand out of waiting when the answer comes: the handler resumes it, and the status then
+      // says it is being handled again.
+      return {
+        text: 'Ärendet väntar på komplettering. När svaret har kommit under Meddelanden trycker du på Återuppta ärende, så att statusen visar att ärendet hanteras igen.',
+        tab: STEP_TABS.messages,
+      };
   }
 
   if (getInitialSupportPhaseToLeave(phases)) {
