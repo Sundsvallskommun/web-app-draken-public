@@ -67,6 +67,8 @@ type SchemaFormProps = {
   onError?: FormProps['onError'];
   /** What marks a required field's label; the asterisk unless the form says otherwise. */
   requiredIndicator?: string;
+  /** Leaves the fields' descriptions and help texts out, for a form that displays saved answers. */
+  withoutFieldHelp?: boolean;
 };
 
 export default function SchemaForm({
@@ -89,6 +91,7 @@ export default function SchemaForm({
   validationErrors,
   onError,
   requiredIndicator,
+  withoutFieldHelp,
 }: SchemaFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [errorNavigation, setErrorNavigation] = useState<NumberedErrorNavigation>();
@@ -154,8 +157,18 @@ export default function SchemaForm({
       externalFields,
       errorNavigation,
       requiredIndicator,
+      withoutFieldHelp,
     }),
-    [externalFields, idPrefix, schema, submitButtonOptions, submitButtonActions, errorNavigation, requiredIndicator]
+    [
+      externalFields,
+      idPrefix,
+      schema,
+      submitButtonOptions,
+      submitButtonActions,
+      errorNavigation,
+      requiredIndicator,
+      withoutFieldHelp,
+    ]
   );
 
   const templates: NonNullable<FormProps['templates']> = {

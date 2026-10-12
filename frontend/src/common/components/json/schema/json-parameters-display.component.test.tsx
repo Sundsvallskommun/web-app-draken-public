@@ -102,3 +102,27 @@ test('shows a plain-text answer with the line breaks it was written with', async
   expect(screen.getByTestId('editor-report_markup').textContent).toBe('rad ett\nrad två');
   expect(screen.getByTestId('editor-report_editorText').textContent).toBe('<p>Redan\nmarkup</p>');
 });
+
+// Ä4. The schema's instructions are written for whoever fills the form in - Katla's reporter, for one.
+test('shows the saved answers without the descriptions and help texts that told how to give them', async () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      place: { type: 'string', title: 'Plats', description: 'Beskrivning från schemat' },
+      other: { type: 'string', title: 'Övrigt' },
+    },
+  };
+  vi.mocked(getRjsfSchema).mockResolvedValue(schema);
+  vi.mocked(getUiSchemaForSchema).mockResolvedValue({
+    place: { 'ui:help': 'Ange vilken enhet eller avdelning händelsen inträffade' },
+    other: { 'ui:description': 'Beskrivning från UI-schemat' },
+  });
+  const value = { place: 'Hemtjänst Norr', other: 'Inget' } as unknown as JsonNode;
+  render(<JsonParametersDisplay municipalityId="2281" jsonParameters={[{ key: 'report', schemaId: 'id', value }]} />);
+
+  expect(await screen.findByDisplayValue('Hemtjänst Norr')).toBeTruthy();
+  expect(screen.getByText('Plats')).toBeTruthy();
+  expect(screen.queryByText('Ange vilken enhet eller avdelning händelsen inträffade')).toBeNull();
+  expect(screen.queryByText('Beskrivning från schemat')).toBeNull();
+  expect(screen.queryByText('Beskrivning från UI-schemat')).toBeNull();
+});

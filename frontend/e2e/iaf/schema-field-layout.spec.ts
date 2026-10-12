@@ -62,7 +62,7 @@ async function expectAligned(first: Locator, second: Locator) {
   expect(secondBox!.x).toBeGreaterThanOrEqual(firstBox!.x + firstBox!.width);
 }
 
-test('schemafält linjerar med olika hjälptexter och radbrutna rubriker samt staplas på mobil', async ({
+test('schemafält linjerar med radbrutna rubriker och staplas på mobil, utan hjälptexter i den skrivskyddade visningen', async ({
   page,
   dismissCookieConsent,
   waitForFonts,
@@ -82,10 +82,10 @@ test('schemafält linjerar med olika hjälptexter och radbrutna rubriker samt st
   await expect(date).toBeDisabled();
   await expectAligned(date, time);
   await expectAligned(reference, explanation);
-  await expect(time).toHaveAccessibleDescription('Ange ungefärlig tid då händelsen upptäcktes.');
-  await expect(explanation).toHaveAccessibleDescription(
-    'Den här hjälptexten ska visas under inmatningsfältet och få radbrytas vid behov.'
-  );
+  // Ä4. Ärendeuppgifter shows what was answered. How to answer was said to the one who filled the form in, so the
+  // schema's descriptions and help texts are left out here.
+  await expect(form).not.toContainText('Ange ungefärlig tid då händelsen upptäcktes.');
+  await expect(form).not.toContainText('Den här hjälptexten ska visas under inmatningsfältet');
   await form.screenshot({ path: testInfo.outputPath('schema-fields-desktop.png') });
 
   await page.setViewportSize({ width: 390, height: 1000 });
@@ -118,6 +118,13 @@ test('schemafält behåller linjeringen när endast ena fältet har ett valideri
   const document = page.locator(`[data-cy="investigation-document-${key}"]`);
   const date = document.locator(`#${key}_eventDate`);
   const time = document.locator(`#${key}_eventTime`);
+  // A form that is filled in carries the help texts, and its fields line up whatever help each of them has.
+  await expectAligned(date, time);
+  await expectAligned(document.locator(`#${key}_reference`), document.locator(`#${key}_explanation`));
+  await expect(time).toHaveAccessibleDescription('Ange ungefärlig tid då händelsen upptäcktes.');
+  await expect(document.locator(`#${key}_explanation`)).toHaveAccessibleDescription(
+    'Den här hjälptexten ska visas under inmatningsfältet och få radbrytas vid behov.'
+  );
   await time.fill('12:30');
   await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
   await expect(date).toHaveAttribute('aria-invalid', 'true');

@@ -88,9 +88,30 @@ test('finds the place by the field the UI schema renders it with', () => {
 
 test('shows the place without letting it be chosen, since the labels decide it', () => {
   assert.deepEqual(withReadonlyPlace({ facilityInfo: { 'ui:field': 'FacilitySearchWidget' } }, 'facilityInfo'), {
-    facilityInfo: { 'ui:field': 'FacilitySearchWidget', 'ui:readonly': true },
+    facilityInfo: { 'ui:field': 'FacilitySearchWidget', 'ui:readonly': true, 'ui:options': { hideDescription: true } },
   });
   assert.deepEqual(withReadonlyPlace({ eventDate: {} }, undefined), { eventDate: {} });
+  // Ä4. The place is already chosen, so Katla's instruction on how to choose it is not repeated.
+  assert.deepEqual(
+    withReadonlyPlace(
+      {
+        facilityInfo: {
+          'ui:field': 'FacilitySearchWidget',
+          'ui:help': 'Ange vilken enhet eller avdelning händelsen inträffade',
+          'ui:description': 'Välj plats',
+          'ui:options': { className: 'w-full' },
+        },
+      },
+      'facilityInfo'
+    ),
+    {
+      facilityInfo: {
+        'ui:field': 'FacilitySearchWidget',
+        'ui:readonly': true,
+        'ui:options': { className: 'w-full', hideDescription: true },
+      },
+    }
+  );
 });
 
 test('starts a new report at the registered place, and leaves a written one alone', () => {

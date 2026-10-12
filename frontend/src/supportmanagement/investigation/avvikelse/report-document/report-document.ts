@@ -54,10 +54,19 @@ export const findReportPlaceProperty = (uiSchema: UiSchema | undefined): string 
  * The UI schema with the place shown but not chosen here: the errand's labels decide its place, which
  * is set at registration and moved from Ärendets plats, so the report only records it.
  */
-export const withReadonlyPlace = (uiSchema: UiSchema, placeProperty: string | undefined): UiSchema =>
-  placeProperty
-    ? { ...uiSchema, [placeProperty]: { ...(uiSchema[placeProperty] ?? {}), 'ui:readonly': true } }
-    : uiSchema;
+export const withReadonlyPlace = (uiSchema: UiSchema, placeProperty: string | undefined): UiSchema => {
+  if (!placeProperty) return uiSchema;
+  // How to choose the place is said for Katla's reporter. Here it is already chosen, so the instruction goes.
+  const { 'ui:help': _help, 'ui:description': _description, ...place } = (uiSchema[placeProperty] ?? {}) as UiSchema;
+  return {
+    ...uiSchema,
+    [placeProperty]: {
+      ...place,
+      'ui:readonly': true,
+      'ui:options': { ...(place['ui:options'] ?? {}), hideDescription: true },
+    },
+  };
+};
 
 /**
  * The UI schema with the report's plain strings written as plain text. Draken's `textarea` is the
