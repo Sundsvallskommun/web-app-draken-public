@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 
 import { getDefaultFormState, type RJSFSchema } from '@rjsf/utils';
-import validator from '@rjsf/validator-ajv8';
+import validator, { customizeValidator } from '@rjsf/validator-ajv8';
+import Ajv2020 from 'ajv/dist/2020';
 import { test } from 'vitest';
 
 import {
@@ -12,9 +13,11 @@ import {
   investigationDefaultFormStateBehavior,
   isInvestigationCompleted,
   normalizeInvestigationFormData,
+  withReportedMisconductMark,
 } from './investigation-form-data';
 import hslDecisionSchemaRequest from './schemas/beslut-hsl.schema-request.json';
 import solLssDecisionSchemaRequest from './schemas/beslut-sol-lss.schema-request.json';
+import unitManagerSchemaRequest from './schemas/utredning-enhetschef.schema-request.json';
 
 const choiceSchema: RJSFSchema = {
   type: 'object',
@@ -311,4 +314,63 @@ test('normalization drops empty root arrays and keeps answered ones', () => {
       note: '',
     }
   );
+});
+
+const unitManagerSchema = unitManagerSchemaRequest.value as unknown as RJSFSchema;
+// The published schemas are draft 2020-12, which is what the form validates them as. A validator keeps what it
+// compiled under a schema's $id, and the rendering schemas share theirs, so each is validated by a validator of
+// its own.
+const formErrors = (schema: RJSFSchema, formData: unknown) =>
+  customizeValidator({ AjvClass: Ajv2020 }).validateFormData(formData, schema).errors;
+const unitManagerMisconduct = { legalBases: ['SOL', 'LSS'], investigationTemplate: 'sol_lss' };
+const socialRisk = { probability: 2, severity: 3, calculatedRiskValue: 6 };
+
+test('the unit manager investigation carries the errand’s own answer to whether it is a misconduct', () => {
+  const marked = withReportedMisconductMark('utredning-enhetschef', unitManagerSchema, unitManagerMisconduct, true);
+  assert.deepEqual(marked, { ...unitManagerMisconduct, reportedMisconduct: true });
+  // The BFF owns the stored value, so normalization drops it and the errand's answer is put back after it.
+  assert.deepEqual(normalizeInvestigationFormData('utredning-enhetschef', unitManagerSchema, marked), {
+    ...unitManagerMisconduct,
+  });
+  assert.equal(
+    withReportedMisconductMark('utredning-enhetschef', unitManagerSchema, marked, false).reportedMisconduct,
+    false
+  );
+
+  // Another document is not the unit manager's, and a document bound to an earlier version keeps its rules.
+  assert.equal(
+    withReportedMisconductMark('utredning-sol-lss', unitManagerSchema, unitManagerMisconduct, true),
+    unitManagerMisconduct
+  );
+  const { reportedMisconduct: _mark, ...earlierProperties } = unitManagerSchema.properties ?? {};
+  const earlierSchema = { ...unitManagerSchema, properties: earlierProperties };
+  assert.equal(
+    withReportedMisconductMark('utredning-enhetschef', earlierSchema, unitManagerMisconduct, true),
+    unitManagerMisconduct
+  );
+});
+
+test('a misconduct is not risk-assessed by the unit manager, and the investigation is complete without it', () => {
+  const misconduct = { ...unitManagerMisconduct, reportedMisconduct: true };
+  const rendered = getInvestigationRenderingSchema('utredning-enhetschef', unitManagerSchema, misconduct);
+  assert.equal(rendered.properties?.riskAssessmentSolLss, undefined);
+  assert.notEqual(rendered.properties?.suspectedMisconduct, undefined);
+  assert.deepEqual(formErrors(rendered, { ...misconduct, completed: 'yes' }), []);
+
+  // A deviation under the same legal bases is risk-assessed, and is not complete until it is.
+  const deviation = { ...unitManagerMisconduct, reportedMisconduct: false };
+  const renderedDeviation = getInvestigationRenderingSchema('utredning-enhetschef', unitManagerSchema, deviation);
+  assert.notEqual(renderedDeviation.properties?.riskAssessmentSolLss, undefined);
+  assert.notDeepEqual(formErrors(renderedDeviation, { ...deviation, completed: 'yes' }), []);
+});
+
+test('a risk assessment made while the errand was a deviation stays in a misconduct’s investigation', () => {
+  const escalated = { ...unitManagerMisconduct, reportedMisconduct: true, riskAssessmentSolLss: socialRisk };
+  const rendered = getInvestigationRenderingSchema('utredning-enhetschef', unitManagerSchema, escalated);
+  assert.notEqual(rendered.properties?.riskAssessmentSolLss, undefined);
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-enhetschef', unitManagerSchema, escalated).riskAssessmentSolLss,
+    socialRisk
+  );
+  assert.deepEqual(formErrors(rendered, { ...escalated, completed: 'yes' }), []);
 });

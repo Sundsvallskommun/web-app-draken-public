@@ -1,8 +1,8 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.7",
+  "version": "1.8",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.7",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.8",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
@@ -174,6 +174,13 @@
         "title": "Är utredningen klar?",
         "description": "Ja låser utredningen för ändringar och gör det möjligt att skapa en rapport. Lås upp utredningen för att ändra den igen.",
         "$ref": "#/$defs/yesNo"
+      },
+      "reportedMisconduct": {
+        "title": "Ärendet är ett missförhållande",
+        "description": "Sätts av Draken efter ärendets rapporttyp varje gång utredningen sparas, aldrig av den som utreder. Enhetschefen riskbedömer avvikelser: för ett missförhållande varken visas eller krävs riskbedömningen SOL/LSS.",
+        "type": "boolean",
+        "readOnly": true,
+        "x-draken-server-owned": true
       },
       "reports": {
         "title": "Rapporter",
@@ -627,7 +634,6 @@
         },
         "then": {
           "properties": {
-            "riskAssessmentSolLss": true,
             "suspectedMisconduct": true
           }
         },
@@ -644,6 +650,39 @@
               }
             }
           ]
+        }
+      },
+      {
+        "$comment": "Enhetschefen riskbedömer avvikelser. För ett missförhållande visas riskbedömningen SOL/LSS inte, om den inte redan är gjord: en bedömning från tiden ärendet var en avvikelse finns kvar och syns.",
+        "if": {
+          "properties": {
+            "legalBases": {
+              "contains": {
+                "enum": ["SOL", "LSS"]
+              }
+            }
+          },
+          "required": ["legalBases"],
+          "anyOf": [
+            {
+              "not": {
+                "properties": {
+                  "reportedMisconduct": {
+                    "const": true
+                  }
+                },
+                "required": ["reportedMisconduct"]
+              }
+            },
+            {
+              "required": ["riskAssessmentSolLss"]
+            }
+          ]
+        },
+        "then": {
+          "properties": {
+            "riskAssessmentSolLss": true
+          }
         }
       },
       {
@@ -780,6 +819,7 @@
               }
             },
             {
+              "$comment": "Riskbedömningen SOL/LSS krävs för en avvikelse, inte för ett missförhållande.",
               "if": {
                 "properties": {
                   "legalBases": {
@@ -788,7 +828,15 @@
                     }
                   }
                 },
-                "required": ["legalBases"]
+                "required": ["legalBases"],
+                "not": {
+                  "properties": {
+                    "reportedMisconduct": {
+                      "const": true
+                    }
+                  },
+                  "required": ["reportedMisconduct"]
+                }
               },
               "then": {
                 "required": ["riskAssessmentSolLss"]
@@ -799,5 +847,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.7 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.8 of the unit manager investigation schema"
 }

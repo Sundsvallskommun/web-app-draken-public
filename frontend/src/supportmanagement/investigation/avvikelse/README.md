@@ -92,9 +92,18 @@ SupportManagement-labels. De lagras inte i utredningsdokumentets RJSF-formulärd
 En vanlig avvikelse kategoriseras i enhetschefsutredningen. När ärendets `eventType` är `MISSFORHALLANDE` ägs
 redigeringen i stället av SOL/LSS-utredningen, där LEX-utredaren väljer lagrum: SoL, LSS eller båda. HSL är inget
 lex Sarah-lagrum, och schemat (2.1) erbjuder det inte. Enhetschefens utredning av ett missförhållande visar inget
-lagrumsfält. Dokumentet får ändå SOL och LSS (`reportedMisconductLegalBases`), eftersom de bär utredningsmallen och
-riskbedömningen SOL/LSS som enhetschefen fortfarande fyller i. Regeln ger ett enda redigeringsställe, även om
-samma externa fält kan deklareras av båda schematyperna.
+lagrumsfält. Dokumentet får ändå SOL och LSS (`reportedMisconductLegalBases`), eftersom de bär utredningsmallen.
+Regeln ger ett enda redigeringsställe, även om samma externa fält kan deklareras av båda schematyperna.
+
+Enhetschefen riskbedömer avvikelser, inte missförhållanden: ett missförhållande skickas vidare till LEX. Från
+`utredning-enhetschef` 1.8 visas därför inte riskbedömningen SOL/LSS för ett missförhållande, och utredningen kan
+markeras klar utan den. Schemat avgör det på fältet `reportedMisconduct`, som är serverägt: BFF:en skriver det från
+ärendets rapporttyp vid varje sparning (`resolveIafVofUnitManagerErrandFacts`), så det följer med ett ärende som LEX
+skickar tillbaka som avvikelse, och då krävs riskbedömningen igen. Formuläret bär ärendets eget svar
+(`withReportedMisconductMark`) för att schemats regler ska gälla redan innan något sparas; det webbläsaren skickar
+ersätts alltid av BFF:ens. En riskbedömning som redan är gjord, från tiden ärendet var en avvikelse, finns kvar och
+visas. Dokument bundna till 1.7 eller äldre behåller sina regler. Rapporten skriver inte ut en fältgrupp som
+dokumentet saknar, så en riskbedömning som aldrig gjordes listas inte som obesvarade frågor.
 
 Kategoriseringen görs en gång per lagrumsgrupp (`classificationGroups` i `avvikelse-classification-policy.ts`): HSL
 har en egen väljare, och SoL och LSS delar en. En väljare visas bara när något av gruppens lagrum är valt, erbjuder

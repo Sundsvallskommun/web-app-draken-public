@@ -166,6 +166,20 @@ egen rubrik (Riskbedömning HSL) får sin markering av RJSF och saknar den i ett
 Besluten (`beslut-hsl`, `beslut-sol-lss`) har ingen klarmarkering och är oförändrat strikta: ett beslut fattas eller
 fattas inte.
 
+## Utredning enhetschef 1.8
+
+Version 1.8 lägger till det serverägda fältet `reportedMisconduct` (`x-draken-server-owned`): om ärendet är ett
+missförhållande. Draken skriver det från ärendets rapporttyp varje gång utredningen sparas; UI-schemat döljer det.
+Två regler läser det:
+
+- **Synlighet.** Riskbedömningen SOL/LSS visas för en avvikelse under SoL eller LSS. För ett missförhållande visas den
+  bara om dokumentet redan har en, alltså en bedömning som gjordes medan ärendet var en avvikelse.
+- **Klarmarkering.** Riskbedömningen SOL/LSS krävs när utredningen markeras klar, utom för ett missförhållande.
+
+Riskbedömningen är inte förbjuden för ett missförhållande: en som redan finns ligger kvar när ärendet blir ett
+missförhållande, och dokumentet kan fortfarande låsas upp och få nya rapporter. Frågan om misstänkt missförhållande
+och utredningsmallen följer lagrummen som förut. Version 1.8 är inte publicerad.
+
 ## Utredning Lex Sarah 2.0–2.3
 
 Version 2.3 ändrar bara beskrivningen av händelsebeskrivningen i Bakgrund, som sa "den inrapporterade avvikelsen":

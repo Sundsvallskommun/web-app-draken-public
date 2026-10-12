@@ -647,6 +647,31 @@ describe('server-owned values and completion locks', () => {
     expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'a', completed: 'yes', reports: [{ fileName: 'new' }] } } });
   });
 
+  it('writes what the BFF says a server-owned value is, also when that is false and the stored one was true', async () => {
+    const factSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      additionalProperties: false,
+      properties: { assessment: { type: 'string' }, reportedMisconduct: { type: 'boolean', 'x-draken-server-owned': true } },
+    });
+    const { api, service } = makeSubject(
+      [
+        writableParentResponse(),
+        response({ ...document(7), value: { assessment: 'a', reportedMisconduct: true } }, 200, '"7"'),
+        response(factSchema, 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(8), 200, '"8"')],
+    );
+
+    await service.writeJsonParameter({
+      ...writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'b', reportedMisconduct: true }),
+      internal: { serverOwnedOverrides: { reportedMisconduct: false } },
+    });
+
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'b', reportedMisconduct: false } } });
+  });
+
   it('refuses every client write to a completed document except the unlock that changes nothing else', async () => {
     const locked = { assessment: 'a', completed: 'yes', reports: [] };
 

@@ -6,7 +6,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { assessesHighHslRisk } from '@/config/iaf-vof-high-hsl-risk';
-import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
+import { resolveIafVofInvestigationDocumentApplicability, resolveIafVofUnitManagerErrandFacts } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
 import {
@@ -155,6 +155,7 @@ export class SupportErrandJsonParameterController {
     await this.accessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
     const snapshot = await this.assertDocumentAppliesToErrand(req, definition, municipalityId, errandId);
     await this.assertPrerequisiteDocumentSaved(req, definition, municipalityId, errandId, snapshot);
+    const serverOwnedOverrides = await this.resolveErrandFacts(req, definition, municipalityId, errandId, snapshot);
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,
@@ -162,6 +163,7 @@ export class SupportErrandJsonParameterController {
       user: req.user,
       data,
       preconditions: { ifMatch, ifNoneMatch, parentErrandVersion },
+      ...(serverOwnedOverrides ? { internal: { serverOwnedOverrides } } : {}),
     });
 
     // The risk label is a second write on the errand. The client is told how many of the version steps are
@@ -171,6 +173,24 @@ export class SupportErrandJsonParameterController {
     response.setHeader('X-Errand-Version', String(riskLabelVersion ?? result.parentErrandVersion));
     response.setHeader('X-Errand-Writes', riskLabelVersion === undefined ? '1' : '2');
     return response.status(result.status).send(result.document);
+  }
+
+  /**
+   * What the errand itself says about the document being saved, for the properties its schema leaves to the server.
+   * Only the unit manager's investigation records any: whether its errand is a misconduct. A schema that declares
+   * no such property ignores the answer, so a document bound to an earlier version is written as before.
+   */
+  private async resolveErrandFacts(
+    req: RequestWithUser,
+    definition: SupportInvestigationDocumentProfileDto,
+    municipalityId: string,
+    errandId: string,
+    snapshot: Errand | undefined,
+  ): Promise<JsonObject | undefined> {
+    const policy = this.policyService.iafVofClassificationPolicy;
+    if (!policy || definition.key !== policy.defaultOwnerDocumentKey) return undefined;
+    const errand = snapshot ?? (await this.documentService.readParentErrandSnapshot({ definition, municipalityId, errandId, user: req.user }));
+    return resolveIafVofUnitManagerErrandFacts(errand);
   }
 
   /**

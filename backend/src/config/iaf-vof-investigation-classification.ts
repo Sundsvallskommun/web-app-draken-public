@@ -197,6 +197,18 @@ export const resolveIafVofInvestigationDocumentApplicability = (
   return hasHslLegalBase(errand) ? 'hsl-deviation' : undefined;
 };
 
+/**
+ * What the unit manager's investigation records about its errand, from schema 1.8: whether it is a misconduct. The
+ * unit manager risk-assesses deviations, so the schema neither shows nor requires the SoL/LSS risk assessment for a
+ * misconduct - and which of the two the errand is, is not the browser's to say. The field is server-owned: the
+ * answer is read from the errand on every save, so it follows an errand LEX hands back as a deviation.
+ */
+const UNIT_MANAGER_REPORTED_MISCONDUCT_FIELD = 'reportedMisconduct';
+
+export const resolveIafVofUnitManagerErrandFacts = (errand: ClassificationOwnerErrand): Readonly<Record<string, boolean>> => ({
+  [UNIT_MANAGER_REPORTED_MISCONDUCT_FIELD]: isReportedMisconduct(errand),
+});
+
 export const resolveIafVofInvestigationClassificationOwner = (
   policy: IafVofInvestigationClassificationPolicy,
   errand: ClassificationOwnerErrand,

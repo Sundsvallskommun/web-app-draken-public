@@ -117,6 +117,9 @@ const buildField = (name: string, property: Record<string, unknown>, value: unkn
   return { label, kind: 'text', text: scalarText(resolved, value) };
 };
 
+const isAbsentGroup = (property: Record<string, unknown>, value: unknown): boolean =>
+  property.type === 'object' && isRecord(property.properties) && value === undefined;
+
 const hiddenWidget = (uiSchema: JsonObject, name: string): boolean => {
   const field = uiSchema[name];
   return isRecord(field) && field['ui:widget'] === 'hidden';
@@ -138,6 +141,10 @@ export const buildInvestigationReportModel = (input: BuildInvestigationReportMod
     const property = properties[name];
     if (!isRecord(property) || serverControlled(property)) return undefined;
     placed.add(name);
+    // A group the document does not hold was never part of the investigation - a risk assessment under a legal
+    // base that does not apply, or one the unit manager does not make for a misconduct. Printing it as a list of
+    // unanswered questions would say it was asked.
+    if (isAbsentGroup(resolveReference(property, root), input.value[name])) return undefined;
     return buildField(name, property, input.value[name], root);
   };
 

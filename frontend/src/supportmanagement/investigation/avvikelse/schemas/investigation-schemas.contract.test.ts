@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.7',
+    version: '1.8',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -459,6 +459,43 @@ test('unit manager rejects fields and templates that do not match the selected l
   assert.equal(validate({ ...allLegalBases, riskAssessmentSolLss: undefined }), true);
   assert.equal(validate({ ...allLegalBases, completed: 'yes', riskAssessmentSolLss: undefined }), false);
   assert.equal(validate({ ...allLegalBases, legalBases: ['HSL', 'SOL', 'SOL'] }), false);
+});
+
+// The unit manager risk-assesses deviations. A misconduct is passed on to LEX, so its investigation is complete
+// without the SoL/LSS risk assessment - and Draken, not the unit manager, says which of the two the errand is.
+test('the unit manager investigation of a misconduct neither shows nor requires the SoL/LSS risk assessment', () => {
+  const schema = readJson('utredning-enhetschef.schema-request.json').value;
+  const uiSchema = readJson('utredning-enhetschef.ui-schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+  const socialRisk = { probability: 1, severity: 1, calculatedRiskValue: 1 };
+  const social = { legalBases: ['SOL', 'LSS'], investigationTemplate: 'sol_lss', completed: 'yes' };
+
+  assert.equal(schema.properties.reportedMisconduct['x-draken-server-owned'], true);
+  assert.equal(uiSchema.reportedMisconduct['ui:widget'], 'hidden');
+
+  assert.equal(validate({ ...social, reportedMisconduct: true }), true, ajv.errorsText(validate.errors));
+  for (const deviation of [social, { ...social, reportedMisconduct: false }]) {
+    assert.equal(validate(deviation), false, 'a deviation was completed without its SoL/LSS risk assessment');
+    assert.equal(validate({ ...deviation, riskAssessmentSolLss: socialRisk }), true, ajv.errorsText(validate.errors));
+  }
+  // An assessment made while the errand was a deviation is kept when the errand becomes a misconduct.
+  assert.equal(
+    validate({ ...social, reportedMisconduct: true, riskAssessmentSolLss: socialRisk }),
+    true,
+    ajv.errorsText(validate.errors)
+  );
+
+  // The form shows the assessment for a deviation, and for a misconduct only where one is already made.
+  const shown = schema.allOf.filter((rule: any) => rule.then?.properties?.riskAssessmentSolLss === true);
+  assert.equal(shown.length, 1);
+  const showsAssessment = createValidator(shown[0].if).validate;
+  assert.equal(showsAssessment({ legalBases: ['SOL'] }), true);
+  assert.equal(showsAssessment({ legalBases: ['SOL'], reportedMisconduct: true }), false);
+  assert.equal(
+    showsAssessment({ legalBases: ['SOL'], reportedMisconduct: true, riskAssessmentSolLss: socialRisk }),
+    true
+  );
+  assert.equal(showsAssessment({ legalBases: ['HSL'] }), false);
 });
 
 // LEX states the legal bases a misconduct falls under: SoL, LSS or both. HSL is not a lex Sarah legal base.

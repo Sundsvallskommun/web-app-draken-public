@@ -30,7 +30,8 @@ const makeController = (
   const documentService: DocumentServiceStub = {
     readJsonParameter: vi.fn(),
     writeJsonParameter: vi.fn(),
-    readParentErrandSnapshot: vi.fn(),
+    // An errand that says nothing about itself: an ordinary deviation.
+    readParentErrandSnapshot: vi.fn(async () => ({ id: mockSupportErrandId })),
   };
   const profile = getSupportInvestigationProfile(application);
   const policyService = {
@@ -152,6 +153,37 @@ describe('SupportErrandJsonParameterController', () => {
       parentErrandVersion: '3',
     });
     expect(res.statusCode).toBe(201);
+  });
+
+  it.each([
+    ['a reported misconduct', { parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }] }, true],
+    ['a deviation', { labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }] }, false],
+  ])('records on the unit manager investigation that its errand is %s', async (_kind, errand, reportedMisconduct) => {
+    const update = { schemaId: '2281_utredning-enhetschef_1.8', value: { reportedMisconduct: !reportedMisconduct } };
+    const { controller, documentService } = makeController();
+    documentService.readParentErrandSnapshot.mockResolvedValue({ id: mockSupportErrandId, ...errand });
+    documentService.writeJsonParameter.mockResolvedValue({
+      document: { key: 'utredning-enhetschef', ...update, version: 8 },
+      etag: '"8"',
+      status: 200,
+      parentErrandVersion: 13,
+    });
+
+    await controller.updateJsonParameter(
+      mockReq(),
+      mockMunicipalityId,
+      mockSupportErrandId,
+      'utredning-enhetschef',
+      '"7"',
+      ABSENT_HEADER,
+      '12',
+      update,
+      resDouble(),
+    );
+
+    // The errand answers, whatever the browser sent: the document service writes server-owned values from here.
+    expect(documentService.writeJsonParameter.mock.calls[0][0].internal).toEqual({ serverOwnedOverrides: { reportedMisconduct } });
+    expect(documentService.readParentErrandSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it.each([

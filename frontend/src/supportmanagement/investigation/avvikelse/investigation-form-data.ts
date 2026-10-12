@@ -103,6 +103,37 @@ function getManagerLegalBaseFlags(formData: InvestigationFormData) {
   };
 }
 
+/**
+ * Whether the errand is a misconduct, as the unit manager's investigation records it from schema 1.8. The BFF
+ * writes the stored value, from the errand's report type, on every save.
+ */
+const REPORTED_MISCONDUCT_FIELD = 'reportedMisconduct';
+
+/**
+ * The unit manager risk-assesses deviations, not misconducts. An assessment already made, while the errand was
+ * a deviation, stays and is shown: nothing the unit manager answered is hidden from the people who read it.
+ */
+function showsSolLssRiskAssessment(formData: InvestigationFormData): boolean {
+  if (!getManagerLegalBaseFlags(formData).hasSolOrLss) return false;
+  return formData[REPORTED_MISCONDUCT_FIELD] !== true || hasOwn(formData, 'riskAssessmentSolLss');
+}
+
+/**
+ * The form carries the errand's own answer to whether it is a misconduct, so the schema's rules - what is shown,
+ * and what a completed investigation requires - hold before anything is saved. Only where the bound schema
+ * declares the field: a document bound to an earlier version keeps that version's rules.
+ */
+export function withReportedMisconductMark(
+  schemaName: string,
+  schema: RJSFSchema,
+  formData: InvestigationFormData,
+  reportedMisconduct: boolean
+): InvestigationFormData {
+  if (schemaName !== UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) return formData;
+  if (!isRecord(schema.properties?.[REPORTED_MISCONDUCT_FIELD])) return formData;
+  return { ...formData, [REPORTED_MISCONDUCT_FIELD]: reportedMisconduct };
+}
+
 function getAllowedManagerTemplates(formData: InvestigationFormData): ManagerInvestigationTemplate[] {
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);
 
@@ -342,10 +373,8 @@ export function getInvestigationRenderingSchema(
   const properties = { ...schema.properties };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);
   if (!hasHsl) delete properties.riskAssessmentHsl;
-  if (!hasSolOrLss) {
-    delete properties.riskAssessmentSolLss;
-    delete properties.suspectedMisconduct;
-  }
+  if (!showsSolLssRiskAssessment(formData)) delete properties.riskAssessmentSolLss;
+  if (!hasSolOrLss) delete properties.suspectedMisconduct;
 
   const templateSchema = properties.investigationTemplate;
   if (!isRecord(templateSchema) || !Array.isArray(templateSchema.oneOf)) {

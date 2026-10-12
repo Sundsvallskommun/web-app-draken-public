@@ -129,6 +129,19 @@ describe('investigation report model', () => {
     expect(model.sections[2].fields).toEqual([{ label: 'Oplacerat fält', kind: 'text', text: 'kvar' }]);
   });
 
+  it('leaves a group the document does not hold out of the report, and reports one that is begun', () => {
+    // A risk assessment that was never part of the investigation is not listed as unanswered questions.
+    expect(build({ eventDescription: '<p>x</p>' }).sections[1].fields.map(field => field.label)).toEqual(['Händelsebeskrivning', 'Deltagare']);
+    expect(build({ risk: { probability: 2 } }).sections[1].fields.at(-1)).toEqual({
+      label: 'Riskbedömning',
+      kind: 'group',
+      fields: [
+        { label: 'Sannolikhet', kind: 'text', text: '2' },
+        { label: 'Riskvärde', kind: 'text', text: EMPTY_VALUE },
+      ],
+    });
+  });
+
   it('reports missing answers as not given rather than dropping the field', () => {
     const model = build({});
     expect(model.sections[0].fields[0]).toEqual({ label: 'Lagrum', kind: 'list', items: [] });

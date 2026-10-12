@@ -335,8 +335,16 @@ export function SupportInvestigationDocument({
             ? await startingInvestigationTemplateText(preselectedTemplate)
             : undefined;
         if (cancelled) return;
+        // Normalized again with the text in it: the start has to be in the same canonical shape as every later
+        // change, or the form's first report of its own data reads as an edit.
         const loadedFormData = templateText
-          ? withInvestigationText(normalizedStartingData, templateText)
+          ? normalizeContextualInvestigationFormData(
+              definition.key,
+              definition.schemaName,
+              loadedSchema.schema,
+              withInvestigationText(normalizedStartingData, templateText),
+              reportedMisconduct
+            )
           : normalizedStartingData;
         setDocumentState({
           schema: loadedSchema.schema,

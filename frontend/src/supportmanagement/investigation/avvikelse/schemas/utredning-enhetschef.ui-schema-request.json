@@ -11,6 +11,7 @@
       "riskAssessmentHsl",
       "riskAssessmentSolLss",
       "suspectedMisconduct",
+      "reportedMisconduct",
       "completed",
       "reports"
     ],
@@ -28,7 +29,8 @@
           "causeAreas",
           "riskAssessmentHsl",
           "riskAssessmentSolLss",
-          "suspectedMisconduct"
+          "suspectedMisconduct",
+          "reportedMisconduct"
         ]
       },
       {
@@ -131,7 +133,8 @@
       "ui:widget": "RadiobuttonWidget"
     },
     "completed": { "ui:widget": "RadiobuttonWidget" },
+    "reportedMisconduct": { "ui:widget": "hidden" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.7 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.8 of Utredning enhetschef in Draken"
 }

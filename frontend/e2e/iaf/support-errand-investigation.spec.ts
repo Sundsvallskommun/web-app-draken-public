@@ -2027,8 +2027,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    // The legal bases of a misconduct are LEX's to state: the unit manager does not see them, but still assesses the
-    // SoL/LSS risk they bring.
+    // The legal bases of a misconduct are LEX's to state: the unit manager does not see them. The SoL/LSS risk
+    // assessment is here because it is already made - it is kept, and shown to whoever reads the investigation.
     await expect(managerDocument.locator(`#${managerKey}_legalBases-group`)).toHaveCount(0);
     await expect(managerDocument.getByText(/^HSL –/u)).toHaveCount(0);
     await expect(page.locator(`#${managerKey}_riskAssessmentSolLss_probability`)).toBeVisible();
@@ -2076,6 +2076,34 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       documentKey: solLssKey,
       documentETag: documents[solLssKey].etag,
     });
+  });
+
+  test('enhetschefen riskbedömer inte ett missförhållande och kan ändå markera utredningen klar', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'MISSFORHALLANDE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    await expect(managerDocument.locator(`#${managerKey}_completed`)).toBeVisible();
+    // The unit manager passes a misconduct on: the matrix that assesses a deviation is not part of it.
+    await expect(managerDocument.locator(`[id^="${managerKey}_riskAssessmentSolLss"]`)).toHaveCount(0);
+    await expect(managerDocument.getByText(/Riskbedömning SOL\/LSS/u)).toHaveCount(0);
+    await expect(managerDocument.locator(`[id^="${managerKey}_reportedMisconduct"]`)).toHaveCount(0);
+
+    await managerDocument.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+
+    await expect(page.locator('[data-cy="schema-form-error-summary"]')).toHaveCount(0);
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].key).toBe(managerKey);
+    expect(trace.puts[0].body).toMatchObject({
+      value: { legalBases: ['SOL', 'LSS'], completed: 'yes', reportedMisconduct: true },
+    });
+    expect(trace.puts[0].body).not.toHaveProperty(['value', 'riskAssessmentSolLss']);
   });
 
   test('skapar SOL/LSS-dokumentet före klassificeringen när missförhållandet saknar ett dokument', async ({

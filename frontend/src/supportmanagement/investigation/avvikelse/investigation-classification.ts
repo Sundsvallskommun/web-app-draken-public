@@ -11,7 +11,7 @@ import {
   resolveAvvikelseDocumentApplicability,
 } from './avvikelse-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
-import { normalizeInvestigationFormData } from './investigation-form-data';
+import { normalizeInvestigationFormData, withReportedMisconductMark } from './investigation-form-data';
 
 export const INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD = 'errandClassification';
 const INVESTIGATION_CLASSIFICATION_SLOT = `$external:${INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD}`;
@@ -154,7 +154,7 @@ const setJsonPointer = (value: InvestigationFormData, pointer: string, nextValue
   return setAtPath(value, jsonPointerSegments(pointer)) as InvestigationFormData;
 };
 
-export const normalizeContextualInvestigationFormData = (
+const normalizeLegalBasesInContext = (
   documentKey: InvestigationDocumentKey,
   schemaName: string,
   schema: RJSFSchema,
@@ -182,6 +182,21 @@ export const normalizeContextualInvestigationFormData = (
       )
     : normalized;
 };
+
+/** One investigation document as the errand it belongs to shapes it: its legal bases, and what kind of errand it is. */
+export const normalizeContextualInvestigationFormData = (
+  documentKey: InvestigationDocumentKey,
+  schemaName: string,
+  schema: RJSFSchema,
+  formData: InvestigationFormData,
+  reportedMisconduct: boolean
+): InvestigationFormData =>
+  withReportedMisconductMark(
+    schemaName,
+    schema,
+    normalizeLegalBasesInContext(documentKey, schemaName, schema, formData, reportedMisconduct),
+    reportedMisconduct
+  );
 
 const insertAfter = (values: readonly string[], after: string, value: string): string[] => {
   if (values.includes(value)) return [...values];

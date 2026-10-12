@@ -9,6 +9,7 @@ import {
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
   resolveIafVofInvestigationDocumentApplicability,
+  resolveIafVofUnitManagerErrandFacts,
 } from '@/config/iaf-vof-investigation-classification';
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 
@@ -92,6 +93,17 @@ describe('fixed IAF/VOF investigation classification policy', () => {
       }).mode,
     ).toBe('reported-misconduct');
     expect(resolveIafVofInvestigationClassificationOwner(policy, { parameters: reportedAsMisconduct, labels: [] }).mode).toBe('reported-misconduct');
+  });
+
+  it('tells the unit manager investigation whether its errand is a misconduct, as the errand stands now', () => {
+    const reportedAsMisconduct = [{ key: 'eventType', values: ['MISSFORHALLANDE'] }];
+    expect(resolveIafVofUnitManagerErrandFacts({ parameters: reportedAsMisconduct, labels: [] })).toEqual({ reportedMisconduct: true });
+    expect(resolveIafVofUnitManagerErrandFacts({ labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }] })).toEqual({ reportedMisconduct: false });
+    // LEX declined it and it went back as a deviation: the unit manager risk-assesses it again.
+    expect(resolveIafVofUnitManagerErrandFacts({ parameters: reportedAsMisconduct, labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }] })).toEqual({
+      reportedMisconduct: false,
+    });
+    expect(resolveIafVofUnitManagerErrandFacts({})).toEqual({ reportedMisconduct: false });
   });
 
   it('resolves at most one decision applicability per errand, reported misconduct first', () => {
