@@ -66,7 +66,12 @@ export const getUnresolvedReporterAccounts = (
     .filter((account) => !getAdminName(findAdminByAccount(administrators, account)!));
 
 export const useSupportErrandTable = (statuses: Status[]) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // A deployment that names the report type column gets it, named per application like the other headers: the
+  // report type (Avvikelse or Missförhållande) with the errand number beneath. The number then leaves the category
+  // column and the report type leaves the type column, so each is shown once.
+  const reportTypeHeaderKey = `common:overview.reportType.${process.env.NEXT_PUBLIC_APPLICATION}`;
+  const showsReportTypeColumn = i18n.exists(reportTypeHeaderKey);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
   const employeeNames = useEmployeeNameStore((s) => s.names);
@@ -121,6 +126,24 @@ export const useSupportErrandTable = (statuses: Status[]) => {
         );
       },
     },
+    ...(showsReportTypeColumn
+      ? [
+          {
+            label: t(reportTypeHeaderKey),
+            screenReaderOnly: false,
+            // Support Management sorts on the errand's own fields, and the report type is a label.
+            sortable: false,
+            sortKey: 'reportType',
+            shownForStatus: All.ALL,
+            render: (errand: SupportErrand) => (
+              <div data-cy="overview-report-type">
+                <div className="font-bold">{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+                <div className="font-normal">{errand.errandNumber}</div>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       label: t(
         `common:overview.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`,
@@ -143,7 +166,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
               {supportMetadata?.categories?.find((t) => t.name === errand.category)?.displayName || errand.category}
             </div>
           ) : null}
-          <div className="font-normal">{errand.errandNumber}</div>
+          {showsReportTypeColumn ? null : <div className="font-normal">{errand.errandNumber}</div>}
         </div>
       ),
     },
@@ -167,7 +190,9 @@ export const useSupportErrandTable = (statuses: Status[]) => {
           */}
           {getLabelReportType(errand) ? (
             <div>
-              <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+              {showsReportTypeColumn ? null : (
+                <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+              )}
               <div>{getLabelDisplayName(getMappedLabelSubType(errand), supportMetadata)}</div>
             </div>
           ) : appConfig.features.useLabelCategorization ? (

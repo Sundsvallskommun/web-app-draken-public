@@ -29,15 +29,22 @@
   "overview": {
     "status": "Status",
     "lastActivity": "Senaste aktivitet",
+    "reportType": {
+      "IAF": "Rapporttyp",
+      "VOF": "Rapporttyp"
+    },
     "orderType": {
       "ROB": "Beställningstyp",
-      "IAF": "Ärendenummer",
+      "IAF": "Avvikelsetyp",
+      "VOF": "Avvikelsetyp",
       "default": "Verksamhet"
     },
     "errandType": {
       "MSVA": "Ärendekategori",
       "LOP": "Ärendekategori",
       "LOK": "Ärendekategori",
+      "IAF": "Underkategori",
+      "VOF": "Underkategori",
       "default": "Ärendetyp"
     },
     "incomingVia": "Inkom via",
