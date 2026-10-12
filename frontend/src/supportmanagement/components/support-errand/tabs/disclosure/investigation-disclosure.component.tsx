@@ -8,8 +8,7 @@ import type {
 } from '../../../../../common/data-contracts/supportmanagement/data-contracts';
 import type { Sections } from '../../../../../supportmanagement/services/support-investigation-service';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
-import { SupportKnowledgeTestSection } from '../../knowledge-test/support-knowledge-test-section.component';
-import { SupportPersonalSuitabilitySection } from '../../personal-suitability/support-personal-suitability-section.component';
+import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
 
 export const SectionDisclosure: React.FC<{
@@ -35,7 +34,7 @@ export const SectionDisclosure: React.FC<{
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
-    personal_suitability: <SupportPersonalSuitabilitySection writable={writable} />,
+    personal_suitability: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: (
       <SupportFinancialSuitabilitySection
         section={section}
@@ -46,7 +45,6 @@ export const SectionDisclosure: React.FC<{
         saveRef={saveFinancial}
       />
     ),
-    knowledge_test: <SupportKnowledgeTestSection writable={writable} />,
   };
 
   return (

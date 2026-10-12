@@ -125,9 +125,8 @@
     "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade - försök igen.",
     "sections": {
       "statements": "Remisser och yttranden",
-      "personal_suitability": "Personlig lämplighet",
+      "personal_suitability": "Personlig lämplighet och kunskapsprov",
       "financial_suitability": "Ekonomisk lämplighet",
-      "knowledge_test": "Kunskapsprov",
       "premises": "Lokal och serveringsställe"
     },
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
@@ -368,6 +367,7 @@
     "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen."
   },
   "personal_suitability": {
+    "label": "Personlig lämplighet",
     "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig.",
     "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
     "comment": "Kommentar",
@@ -395,8 +395,8 @@
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
   },
   "knowledge_test": {
+    "label": "Kunskapsprov",
     "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Sätt status, provdatum och kommentar per person.",
-    "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
     "comment": "Kommentar",
     "comment_placeholder": "Kommentar om {{person}}s kunskapsprov…",
     "comment_too_long": "Kommentaren får vara högst 3000 tecken.",

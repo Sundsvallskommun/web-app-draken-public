@@ -6,6 +6,7 @@ import {
   getSupportInvestigation,
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
+  RETIRED_INVESTIGATION_SECTION_KEYS,
   saveSupportInvestigation,
   startSupportInvestigation,
   SUPPORT_INVESTIGATION_SECTIONS,
@@ -18,7 +19,9 @@ import { InvestigationConclusionDisclosure } from './disclosure/investigation-co
 import { SectionDisclosure } from './disclosure/investigation-disclosure.component';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
-  [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  (investigation?.sections ?? [])
+    .filter((section) => !RETIRED_INVESTIGATION_SECTION_KEYS.includes(section.sectionKey ?? ''))
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 const asDate = (value: string | undefined): string =>
   value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
