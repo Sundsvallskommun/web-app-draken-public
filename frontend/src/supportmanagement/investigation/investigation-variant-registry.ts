@@ -40,6 +40,10 @@ export const getInvestigationAdministration = (
 ): InvestigationVariantModule['administration'] =>
   resolveInvestigationAdministration(appConfig.features, getInvestigationVariant(), viewer);
 
+/** What the running variant says the messages are for, where it has its own word on it. */
+export const getInvestigationMessagesIntroduction = (): InvestigationVariantModule['messagesIntroduction'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.messagesIntroduction : undefined;
+
 /** The channels the running variant lets a user choose to be notified on, if it offers a choice. */
 export const getInvestigationNotificationChannels = (): InvestigationVariantModule['notificationChannels'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.notificationChannels : undefined;

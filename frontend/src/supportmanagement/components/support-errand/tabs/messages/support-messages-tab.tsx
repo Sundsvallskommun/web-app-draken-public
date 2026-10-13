@@ -1,6 +1,7 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { Alert, Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { getInvestigationMessagesIntroduction } from '@supportmanagement/investigation/investigation-variant-registry';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
 import {
@@ -128,9 +129,9 @@ export const SupportMessagesTab: FC<{
         </div>
 
         <div className="py-8 w-full gap-24">
-          <p className="w-4/5 pr-16 pb-16">
-            På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med
-            ärendets olika intressenter.
+          <p className="w-4/5 pr-16 pb-16" data-cy="messages-introduction">
+            {getInvestigationMessagesIntroduction() ??
+              'På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med ärendets olika intressenter.'}
           </p>
           {messagingPhase && (
             <Alert type="info" className="mb-16">

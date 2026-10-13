@@ -232,6 +232,11 @@ export interface InvestigationVariantModule {
   /** What the variant's administrators set from the overview, for a variant with something to administer. */
   readonly administration?: InvestigationAdministrationSlot;
   /**
+   * What the Meddelanden tab says the messages are for, where the variant uses them for one thing rather than
+   * for any dialogue with the errand's parties. A variant without the slot keeps the tab's own text.
+   */
+  readonly messagesIntroduction?: string;
+  /**
    * The channels a user may choose to be notified on beside the notifications in Draken, from Notiser in the user
    * menu. The choice is the user's own, stored on their Support Management subscriber. A variant without the slot
    * offers no choice, and the user menu has no such entry.

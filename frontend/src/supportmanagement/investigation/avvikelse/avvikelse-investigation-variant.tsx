@@ -245,6 +245,9 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     isOfferedTo: (viewer: InvestigationViewer) => viewer.superadmin === true,
     render: () => <PlaceManagers />,
   },
+  /** The messages are how the handler asks the errand's parties for what the report left out. */
+  messagesIntroduction:
+    'Använd denna meddelandefunktion för att inhämta kompletterande uppgifter om ärendet med berörda parter',
   /** A manager or LEX handler may want to hear of an errand away from Draken: by e-mail, by SMS, or both. */
   notificationChannels: Object.freeze(['EMAIL', 'SMS'] as const),
   /**

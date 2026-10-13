@@ -105,4 +105,16 @@ test.describe('AOT:s ärendesida', () => {
     await expect(page.getByRole('tab', { name: /^Meddelanden/ })).toHaveCount(1);
     await expect(page.getByRole('tab', { name: /^Bilagor/ })).toHaveCount(1);
   });
+
+  // Vad meddelandena är till för säger avvikelsen med egna ord. AOT har inga sådana och behåller flikens text.
+  test('behåller meddelandeflikens egen text', async ({ page, dismissCookieConsent }) => {
+    await installAotApiMock(page);
+    await visitErrand(page, dismissCookieConsent);
+
+    await page.getByRole('tab', { name: /^Meddelanden/ }).click();
+
+    await expect(page.locator('[data-cy="messages-introduction"]')).toContainText(
+      'På denna sida har du möjlighet att föra dialoger'
+    );
+  });
 });

@@ -57,6 +57,9 @@ delad kod erbjuder:
   Knappen byter ut ärendetabellen mot `render()`. Regeln ligger i `resolveInvestigationAdministration` och
   registret lämnar ut den via `getInvestigationAdministration`; `useInvestigation` släcker den med resten. För
   avvikelse: Chefer per plats, för medlemmar i `SUPERADMIN_GROUP`. Utan slot, ingen sektion i sidomenyn.
+- `messagesIntroduction` — valfri text som säger vad meddelandena är till för, överst i fliken Meddelanden. Registret
+  lämnar ut den via `getInvestigationMessagesIntroduction`. För avvikelse: att inhämta kompletterande uppgifter om
+  ärendet med berörda parter. Utan slot behåller fliken sin egen text.
 - `notificationChannels` — valfri lista över de kanaler (`EMAIL`, `SMS`) en användare själv får välja att bli
   notifierad på utöver notiserna i Draken. Med sloten får användarmenyn valet Notiser (`useUserMenu` i
   `common/components/layout/userMenuGroups.tsx`), som öppnar `NotificationSettingsDialog`. Registret lämnar ut

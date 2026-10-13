@@ -79,6 +79,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.administration, undefined);
   // A variant offering no choice of notification channels adds no entry to the user menu.
   assert.equal(minimalVariant.notificationChannels, undefined);
+  // Nor does one with no word of its own on what the messages are for change the Meddelanden tab.
+  assert.equal(minimalVariant.messagesIntroduction, undefined);
   // A variant with nothing to say about an errand the user may only know of leaves the errand page alone.
   assert.equal(minimalVariant.limitedAccessNotice, undefined);
   // A variant that does not keep errands from closing early leaves the early close where it is.

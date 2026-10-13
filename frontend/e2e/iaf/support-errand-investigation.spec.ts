@@ -2342,6 +2342,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.getByRole('tab', { name: /Meddelanden/ }).click();
 
     await expect(page.locator('[data-cy="new-message-button"]')).toBeEnabled();
+    // Avvikelse says what the messages are for: asking the errand's parties for what is missing.
+    await expect(page.locator('[data-cy="messages-introduction"]')).toHaveText(
+      'Använd denna meddelandefunktion för att inhämta kompletterande uppgifter om ärendet med berörda parter'
+    );
   });
 
   /**
