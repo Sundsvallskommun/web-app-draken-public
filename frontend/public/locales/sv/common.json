@@ -540,5 +540,30 @@
       "retake": "Omprov",
       "not_applicable": "Ej aktuellt"
     }
+  },
+  "premises": {
+    "inspected_at": "Lokalinspektion genomförd",
+    "fire_safety": "Brandsäkerhet",
+    "fire_safety_pending": "Inget yttrande ännu",
+    "right_of_disposal": {
+      "label": "Dispositionsrätt styrkt",
+      "placeholder": "Välj",
+      "proven": "Ja",
+      "pending": "Under utredning",
+      "not_proven": "Nej",
+      "note": "Underlag för dispositionsrätten",
+      "note_placeholder": "Underlag, t.ex. hyresavtal t.o.m. 2029"
+    },
+    "max_persons": "Högsta antal personer",
+    "seats": "Antal sittplatser",
+    "seats_indoor": "{{number}} inne",
+    "seats_outdoor": "{{number}} uteservering",
+    "not_answered": "Ansökan saknar uppgift.",
+    "notes": "Anmärkningar",
+    "notes_placeholder": "Notera eventuella anmärkningar om lokal och serveringsställe",
+    "requirement_note": "Obs: Kraven på matservering, eget kök och sittplatser slopades den 1 juni 2026. Krav på brandsäker lokal och avgränsad serveringsyta kvarstår.",
+    "toast": {
+      "save_failed": "Anmärkningarna kunde inte sparas"
+    }
   }
 }

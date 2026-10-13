@@ -51,6 +51,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   const saveStatements = useRef<() => Promise<boolean>>(undefined);
   const [financialEdited, setFinancialEdited] = useState(false);
   const saveFinancial = useRef<() => Promise<boolean>>(undefined);
+  const [premisesEdited, setPremisesEdited] = useState(false);
+  const savePremises = useRef<() => Promise<boolean>>(undefined);
   const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,8 +119,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || financialEdited);
-  }, [edited, statementsEdited, financialEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || financialEdited || premisesEdited);
+  }, [edited, statementsEdited, financialEdited, premisesEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -190,7 +192,8 @@ export const SupportErrandInvestigationTab: React.FC<{
     savedInvestigation.current = investigation;
     const statementsSaved = (await saveStatements.current?.()) ?? true;
     const financialSaved = (await saveFinancial.current?.()) ?? true;
-    if (!statementsSaved || !financialSaved) return false;
+    const premisesSaved = (await savePremises.current?.()) ?? true;
+    if (!statementsSaved || !financialSaved || !premisesSaved) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -282,6 +285,9 @@ export const SupportErrandInvestigationTab: React.FC<{
                 onFinancialEdited={setFinancialEdited}
                 onFinancialSaved={receiveFromSection}
                 saveFinancial={saveFinancial}
+                onPremisesEdited={setPremisesEdited}
+                onPremisesSaved={receiveFromSection}
+                savePremises={savePremises}
                 investigationId={investigation.id}
               />
             ))}
