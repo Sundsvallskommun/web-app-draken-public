@@ -77,12 +77,11 @@ export const SupportTabsWrapper: FC<{
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const { dirtyFields } = useFormState({ control: methods.control });
-  const stakeholdersAreUnsaved = !!dirtyFields.contacts || !!dirtyFields.customer;
+  const errandFieldsAreUnsaved = !!dirtyFields.contacts || !!dirtyFields.customer || !!dirtyFields.parameters;
 
-  // The stakeholders are saved by Spara ärende, so a changed one holds the process step the way an unsaved tab does.
   useEffect(() => {
-    setUnsavedTab('basics', stakeholdersAreUnsaved);
-  }, [stakeholdersAreUnsaved, setUnsavedTab]);
+    setUnsavedTab('basics', errandFieldsAreUnsaved);
+  }, [errandFieldsAreUnsaved, setUnsavedTab]);
 
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
