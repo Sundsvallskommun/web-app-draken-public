@@ -1,6 +1,7 @@
 import {
   ErrandProcess,
   Label,
+  Measure,
   Stakeholder as SupportStakeholder,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
@@ -63,6 +64,7 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  measures?: Measure[];
   process?: ErrandProcess;
   created?: string;
   modified?: string;

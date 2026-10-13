@@ -546,5 +546,16 @@
       "save_failed": "Bedömningen kunde inte sparas"
     },
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
+  },
+  "measures": {
+    "heading": "Tillsynsprotokoll",
+    "description": "Välj protokollmall utifrån vad tillsynen gäller. Mallen fylls med standardkontrollpunkter som du kan anpassa inför besöket. Själva protokollet fylls sedan i på plats under Utredning.",
+    "template": "Välj protokollmall",
+    "template_placeholder": "Välj mall…",
+    "count": "Kontrollpunkter ({{count}})",
+    "row": "Kontrollpunkt {{number}}",
+    "remove": "Ta bort kontrollpunkt {{number}}",
+    "add": "Lägg till kontrollpunkt",
+    "save_error": "Kontrollpunkterna kunde inte sparas"
   }
 }
