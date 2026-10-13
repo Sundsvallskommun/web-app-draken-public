@@ -9,6 +9,7 @@ import {
   misconductDecisionKey,
   solDeviationScenario,
   defaultInvestigationProfile,
+  deviationWithoutReportedLegalBase,
   errandNumber,
   existingManagerDocument,
   iafLabelFixture,
@@ -19,6 +20,7 @@ import {
   katlaSchemaId,
   latestSchemaIds,
   type MockLabel,
+  withHighHslRisk,
 } from './fixtures/investigation-flow.mock';
 
 const managerKey = 'utredning-enhetschef';
@@ -691,6 +693,73 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(decisionTab.getByRole('tab')).toHaveCount(0);
     expect(trace.documentGets).not.toContain(hslDecisionKey);
     expect(trace.documentGets).not.toContain(misconductDecisionKey);
+  });
+
+  // Reports rarely name a legal base: the unit manager's investigation does, and the BFF marks the errand when it
+  // assesses a high HSL risk. That mark is what brings MAS/MAR to the errand, so it offers them their decision too.
+  test('MAS/MAR erbjuds Beslut HSL på en avvikelse med hög HSL-risk som inte rapporterats under något lagrum', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, {
+      roleKeys: ['mas-mar'],
+      documents: {},
+      eventType: 'AVVIKELSE',
+      ...withHighHslRisk({ reportedUnderHsl: false }),
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    const decisionTab = page.locator('[data-cy="support-decision-tab"]');
+    await expect(decisionTab.locator('[data-cy="decision-tab-nothing-to-do"]')).toHaveCount(0);
+    await expect(decisionTab.getByRole('tab')).toHaveCount(1);
+    const document = page.locator(`[data-cy="investigation-document-${hslDecisionKey}"]`);
+    await expect(document).toBeVisible();
+    await expect(document).toContainText('Ansvarig roll: MAS/MAR');
+    await expect.poll(() => trace.latestSchemaNames).toContain(hslDecisionKey);
+    expect(trace.documentGets).not.toContain(misconductDecisionKey);
+  });
+
+  test('chefen får veta att MAS/MAR fattar beslutet på en avvikelse med hög HSL-risk', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const profile = defaultInvestigationProfile();
+    await installIafApiMock(page, {
+      roleKeys: ['enhetschef'],
+      documents: {},
+      eventType: 'AVVIKELSE',
+      investigationProfile: profile,
+      documentAccess: Object.fromEntries(
+        profile.documents.map(({ key }) => [key, key === hslDecisionKey ? 'hidden' : 'edit'])
+      ),
+      ...withHighHslRisk({ reportedUnderHsl: false }),
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    await expect(
+      page.locator('[data-cy="support-decision-tab"]').locator('[data-cy="decision-tab-nothing-to-do"]')
+    ).toHaveText('Beslutet fattas av MAS/MAR.');
+  });
+
+  test('utan rapporterat lagrum och utan hög HSL-risk finns inget att besluta om', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, {
+      roleKeys: ['mas-mar'],
+      documents: {},
+      eventType: 'AVVIKELSE',
+      ...deviationWithoutReportedLegalBase(),
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    await expect(
+      page.locator('[data-cy="support-decision-tab"]').locator('[data-cy="decision-tab-nothing-to-do"]')
+    ).toHaveText('Det finns inget att besluta om. Gå vidare till uppföljning.');
+    expect(trace.documentGets).not.toContain(hslDecisionKey);
   });
 
   test('sparar IVO-beslutet för en vanlig HSL-avvikelse och kräver Public 360 vid anmälan', async ({

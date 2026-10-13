@@ -138,6 +138,29 @@ describe('fixed IAF/VOF investigation classification policy', () => {
     ).toBeUndefined();
   });
 
+  it('gives a deviation marked with a high HSL risk the HSL decision, reported under HSL or not', () => {
+    const highHslRisk = { classification: 'risk', resourcePath: 'RISK/HIGH_HSL', resourceName: 'HIGH_HSL' };
+    const deviation = { resourcePath: 'REPORT_TYPE/DEVIATION' };
+    const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+
+    // No legal base was reported: the unit manager's investigation named HSL and assessed the risk.
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [deviation, highHslRisk] })).toBe('hsl-deviation');
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [deviation, solLabel, highHslRisk] })).toBe('hsl-deviation');
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'Risk', resourceName: ' high_hsl ' }] })).toBe(
+      'hsl-deviation',
+    );
+    // A misconduct takes the lex Sarah decision whatever the HSL risk: one decision per errand.
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ resourcePath: 'REPORT_TYPE/ABUSE' }, highHslRisk] })).toBe(
+      'reported-misconduct',
+    );
+    // Another risk, and the same name outside the risks, are not the mark.
+    expect(
+      resolveIafVofInvestigationDocumentApplicability({ labels: [deviation, { classification: 'risk', resourcePath: 'RISK/HIGH_SOL_LSS' }] }),
+    ).toBeUndefined();
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'CATEGORY', resourceName: 'HIGH_HSL' }] })).toBeUndefined();
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [deviation] })).toBeUndefined();
+  });
+
   it('protects only the fixed eventType selector from generic parameter writes', () => {
     const current = [{ key: 'eventType', values: ['AVVIKELSE'] }];
     expect(preservesIafVofInvestigationClassificationOwnerParameter(current, current)).toBe(true);

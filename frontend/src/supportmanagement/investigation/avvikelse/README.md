@@ -5,17 +5,23 @@ Den här katalogen innehåller den lokala utvecklingsytan för fem separata JSON
 - `utredning-enhetschef`
 - `utredning-sol-lss`
 - `utredning-hsl`
-- `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse med lagrum HSL (`placement: 'decision'`,
-  `appliesTo: 'hsl-deviation'` i runtimeprofilen).
+- `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse som rapporterats under HSL eller bär Hög
+  risk HSL (`placement: 'decision'`, `appliesTo: 'hsl-deviation'` i runtimeprofilen).
 - `beslut-sol-lss` — beslutet enligt lex Sarah för ett rapporterat missförhållande, oavsett lagrum
   (`placement: 'decision'`, `appliesTo: 'reported-misconduct'`).
 
 Besluten visas på den egna ärendefliken Beslut i stället för under Utredning, efter Åtgärder, eftersom beslutet
 avslutar ärendet. Den fasta IAF/VOF-regeln avgör
 vilket av dem ett ärende tar: missförhållande ger alltid lex Sarah-beslutet, en vanlig avvikelse ger HSL-beslutet
-bara när HSL är ett av lagrummen, och ett ärende tar aldrig båda. Regeln finns i både backend och frontend
+när den rapporterats under HSL (`PROVISION/HSL`) eller bär Hög risk HSL (`RISK/HIGH_HSL`), och ett ärende tar aldrig
+båda. Regeln finns i både backend och frontend
 (`resolveIafVofInvestigationDocumentApplicability` respektive `resolveAvvikelseDocumentApplicability`), och BFF:en
 avvisar ett beslutsdokument på ett ärende det inte gäller.
+
+Rapporten anger sällan något lagrum: det gör enhetschefens utredning, och ärendet får då ingen `PROVISION`-etikett.
+Därför räcker inte det rapporterade lagrummet. `RISK/HIGH_HSL` är det som för MAS/MAR till ärendet, så samma
+etikett ger dem deras beslut. Regeln läser etiketter och inte utredningen, så den ger samma svar för alla som når
+ärendet, oavsett vilka av dess dokument de får läsa. En HSL-avvikelse med lägre riskvärde tar inget beslut.
 
 Ett dokument kan i profilen peka ut ett `prerequisiteDocumentKey`: ett annat dokument som måste vara sparat i
 ärendet innan det får skrivas. `beslut-sol-lss` kräver `utredning-sol-lss`. BFF:en avvisar skrivningen med 409

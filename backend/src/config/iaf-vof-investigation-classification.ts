@@ -1,6 +1,7 @@
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 
+import { IAF_VOF_HIGH_HSL_RISK_LABEL_SELECTOR } from './iaf-vof-high-hsl-risk';
 import { normalizeSupportManagementResourcePath } from './supportmanagement-path';
 
 export interface IafVofInvestigationClassificationLegalBaseRule {
@@ -52,8 +53,8 @@ type ClassificationOwnerErrand = Pick<Errand, 'parameters' | 'labels'>;
 
 /**
  * Which restricted investigation document an errand takes, if any: the lex Sarah decision for a
- * reported misconduct whatever its legal bases, the HSL decision for an ordinary deviation with HSL
- * among its legal bases, nothing otherwise. One kind per errand, never two.
+ * reported misconduct whatever its legal bases, the HSL decision for an ordinary deviation reported
+ * under HSL or assessed a high HSL risk, nothing otherwise. One kind per errand, never two.
  */
 export type IafVofInvestigationDocumentApplicability = 'reported-misconduct' | 'hsl-deviation';
 
@@ -166,18 +167,32 @@ const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {
   );
 };
 
-const isLegalBaseLabel = (label: ClassificationOwnerLabel, legalBase: string): boolean => {
+/** One label of the metadata: where it is, and what names it on an errand that carries it without its path. */
+interface LabelSelector {
+  readonly resourcePath: string;
+  readonly classification: string;
+  readonly resourceName: string;
+}
+
+const matchesLabelSelector = (label: ClassificationOwnerLabel, selector: LabelSelector): boolean => {
   const resourcePath = label.resourcePath?.trim();
-  if (resourcePath) return normalizeResourcePath(resourcePath) === normalizeResourcePath(`${LEGAL_BASE_LABEL_CLASSIFICATION}/${legalBase}`);
+  if (resourcePath) return normalizeResourcePath(resourcePath) === normalizeResourcePath(selector.resourcePath);
   // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
-  // fallback also requires the label to be a legal base.
+  // fallback also requires the label's classification.
   return (
     typeof label.classification === 'string' &&
-    normalizeCode(label.classification) === LEGAL_BASE_LABEL_CLASSIFICATION &&
+    normalizeCode(label.classification) === normalizeCode(selector.classification) &&
     typeof label.resourceName === 'string' &&
-    normalizeCode(label.resourceName) === normalizeCode(legalBase)
+    normalizeCode(label.resourceName) === normalizeCode(selector.resourceName)
   );
 };
+
+const isLegalBaseLabel = (label: ClassificationOwnerLabel, legalBase: string): boolean =>
+  matchesLabelSelector(label, {
+    resourcePath: `${LEGAL_BASE_LABEL_CLASSIFICATION}/${legalBase}`,
+    classification: LEGAL_BASE_LABEL_CLASSIFICATION,
+    resourceName: legalBase,
+  });
 
 /**
  * The legal bases the errand was reported under: its `PROVISION` labels, as the policy's legal bases. What the report
@@ -190,11 +205,24 @@ export const resolveIafVofReportedLegalBases = (errand: Pick<Errand, 'labels'>):
 
 const hasHslLegalBase = (errand: ClassificationOwnerErrand): boolean => resolveIafVofReportedLegalBases(errand).includes(HSL_LEGAL_BASE);
 
+/**
+ * Whether the errand is marked with a high HSL risk: the unit manager's investigation assessed one. The label is
+ * read rather than the investigation, so the answer is the same for everybody who reaches the errand, whichever
+ * of its documents they may read.
+ */
+const carriesHighHslRisk = (errand: ClassificationOwnerErrand): boolean =>
+  errand.labels?.some(label => matchesLabelSelector(label, IAF_VOF_HIGH_HSL_RISK_LABEL_SELECTOR)) ?? false;
+
+/**
+ * An ordinary deviation is MAS/MAR's to decide when it was reported under HSL, or when its investigation assessed
+ * a high HSL risk. The report rarely names a legal base - the unit manager's investigation does - and the high
+ * risk is what brings MAS/MAR to the errand, so without it the decision would be offered on no errand they reach.
+ */
 export const resolveIafVofInvestigationDocumentApplicability = (
   errand: ClassificationOwnerErrand,
 ): IafVofInvestigationDocumentApplicability | undefined => {
   if (isReportedMisconduct(errand)) return 'reported-misconduct';
-  return hasHslLegalBase(errand) ? 'hsl-deviation' : undefined;
+  return hasHslLegalBase(errand) || carriesHighHslRisk(errand) ? 'hsl-deviation' : undefined;
 };
 
 /**

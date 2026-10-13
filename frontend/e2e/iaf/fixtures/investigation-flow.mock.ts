@@ -730,10 +730,29 @@ export const withPlaceStructure = ({ withLex = false } = {}): Pick<IafApiScenari
 const highHslRisk = label('risk-high-hsl-id', 'RISK', 'Hög risk HSL', 'HIGH_HSL', 'RISK/HIGH_HSL');
 const riskRoot = label('risk-root-id', 'RISK_ROOT', 'Risk', 'RISK', 'RISK', [highHslRisk]);
 
-/** An ordinary deviation the BFF has marked with a high HSL risk, the label in the metadata too. */
-export const withHighHslRisk = (): Pick<IafApiScenario, 'labels' | 'labelStructure'> => ({
+/**
+ * The default deviation without the legal base it was reported under. Reports rarely name one - the unit manager's
+ * investigation does - so this is the errand as it usually is.
+ */
+const deviationLabelsWithoutLegalBase = deviationLabelsSource.filter((reported) => reported !== provisionHsl);
+
+/**
+ * An ordinary deviation the BFF has marked with a high HSL risk, the label in the metadata too. It was reported
+ * under HSL unless the scenario says otherwise.
+ */
+export const withHighHslRisk = ({ reportedUnderHsl = true } = {}): Pick<
+  IafApiScenario,
+  'labels' | 'labelStructure'
+> => ({
   labelStructure: [...labelStructure, riskRoot],
-  labels: [...deviationLabelsSource, highHslRisk].map(withoutChildren),
+  labels: [...(reportedUnderHsl ? deviationLabelsSource : deviationLabelsWithoutLegalBase), highHslRisk].map(
+    withoutChildren
+  ),
+});
+
+/** An ordinary deviation nobody reported a legal base for, and no investigation has assessed a high HSL risk on. */
+export const deviationWithoutReportedLegalBase = (): Pick<IafApiScenario, 'labels'> => ({
+  labels: deviationLabelsWithoutLegalBase.map(withoutChildren),
 });
 
 const withoutResourcePaths = (labels: readonly MockLabel[]): MockLabel[] =>

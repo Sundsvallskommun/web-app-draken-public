@@ -420,11 +420,19 @@ describe('SupportErrandJsonParameterController', () => {
     const hslDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [hslLabel] };
     const solDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [solLabel] };
     const hslMisconduct = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }], labels: [hslLabel] };
+    // What Support Management serves once the unit manager's investigation has assessed a high HSL risk: no legal
+    // base was reported, and the errand is marked with the risk.
+    const highHslRiskLabel = { classification: 'risk', resourcePath: 'RISK/HIGH_HSL', resourceName: 'HIGH_HSL' };
+    const highHslRiskDeviation = { id: mockSupportErrandId, labels: [{ resourcePath: 'REPORT_TYPE/DEVIATION' }, highHslRiskLabel] };
+    const highHslRiskMisconduct = { id: mockSupportErrandId, labels: [{ resourcePath: 'REPORT_TYPE/ABUSE' }, highHslRiskLabel] };
     const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document applies to HSL deviation errands only' };
 
-    it('is served and written on an ordinary deviation under HSL', async () => {
+    it.each([
+      ['reported under HSL', hslDeviation],
+      ['marked with a high HSL risk, with no reported legal base', highHslRiskDeviation],
+    ])('is served and written on an ordinary deviation %s', async (_case, errand) => {
       const { controller, documentService } = makeController();
-      documentService.readParentErrandSnapshot.mockResolvedValue(hslDeviation);
+      documentService.readParentErrandSnapshot.mockResolvedValue(errand);
       documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
       documentService.writeJsonParameter.mockResolvedValue({
         document: { key: decisionKey, ...update, version: 2 },
@@ -447,6 +455,7 @@ describe('SupportErrandJsonParameterController', () => {
     it.each([
       ['a deviation without HSL', solDeviation],
       ['a reported misconduct, even under HSL', hslMisconduct],
+      ['a reported misconduct, even with a high HSL risk', highHslRiskMisconduct],
     ])('is refused on %s before the document is touched', async (_case, errand) => {
       const { controller, documentService } = makeController();
       documentService.readParentErrandSnapshot.mockResolvedValue(errand);

@@ -153,6 +153,34 @@ test('recognises the HSL legal base by path, and by name only for a pathless leg
   }
 });
 
+// The report rarely names a legal base: the unit manager's investigation does, and marks the errand when it assesses
+// a high HSL risk. That mark is what brings MAS/MAR to the errand, so it has to offer them their decision too.
+test('gives a deviation marked with a high HSL risk the HSL decision, reported under HSL or not', () => {
+  const highHslRisk = { classification: 'risk', resourcePath: 'RISK/HIGH_HSL', resourceName: 'HIGH_HSL' };
+  const deviation = { resourcePath: 'REPORT_TYPE/DEVIATION' };
+  const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+
+  assert.equal(resolveAvvikelseDocumentApplicability({ labels: [deviation, highHslRisk] }), 'hsl-deviation');
+  assert.equal(resolveAvvikelseDocumentApplicability({ labels: [deviation, solLabel, highHslRisk] }), 'hsl-deviation');
+  assert.equal(
+    resolveAvvikelseDocumentApplicability({ labels: [{ classification: 'Risk', resourceName: ' high_hsl ' }] }),
+    'hsl-deviation'
+  );
+  // A misconduct takes the lex Sarah decision whatever the HSL risk: one decision per errand.
+  assert.equal(
+    resolveAvvikelseDocumentApplicability({ labels: [{ resourcePath: 'REPORT_TYPE/ABUSE' }, highHslRisk] }),
+    'reported-misconduct'
+  );
+  for (const errand of [
+    // Another risk, and the same name outside the risks, are not the mark.
+    { labels: [deviation, { classification: 'risk', resourcePath: 'RISK/HIGH_SOL_LSS' }] },
+    { labels: [{ classification: 'CATEGORY', resourceName: 'HIGH_HSL' }] },
+    { labels: [deviation] },
+  ]) {
+    assert.equal(resolveAvvikelseDocumentApplicability(errand), undefined);
+  }
+});
+
 test('lets the report type label decide, and the reported event type only stand in for an errand without one', () => {
   const reportedAsMisconduct = [{ key: 'eventType', values: ['MISSFORHALLANDE'] }];
   // LEX declined the misconduct and it went back as a deviation: the label moved, the report never does.

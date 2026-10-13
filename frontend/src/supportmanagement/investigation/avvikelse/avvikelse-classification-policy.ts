@@ -1,6 +1,7 @@
 import type { SupportLabelTreeProfile } from '../../services/support-label-classification-projector';
 import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path';
 import type { SupportErrandClassificationPlacement } from '../classification-placement';
+import { HIGH_HSL_RISK_LABEL_PATH } from './assignment/avvikelse-access-labels';
 import { LEX_INVESTIGATION_SCHEMA_NAME, UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME } from './avvikelse-schema-names';
 import type { AvvikelseClassificationGroup } from './label-classification/avvikelse-supportmanagement-label-classification';
 
@@ -33,6 +34,18 @@ export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
       classification: 'PROVISION',
       resourcePaths: Object.freeze(['PROVISION/HSL']),
       resourceNames: Object.freeze(['HSL']),
+    }),
+  }),
+  /**
+   * The mark of a high HSL risk, set once the unit manager's investigation has assessed one. It marks the errand
+   * for the HSL decision as well: the report rarely names a legal base - the investigation does - and the high risk
+   * is what brings MAS/MAR to the errand.
+   */
+  highHslRiskSelector: Object.freeze({
+    labels: Object.freeze({
+      classification: 'RISK',
+      resourcePaths: Object.freeze([HIGH_HSL_RISK_LABEL_PATH]),
+      resourceNames: Object.freeze(['HIGH_HSL']),
     }),
   }),
   labelTree: Object.freeze({
@@ -114,8 +127,8 @@ interface ClassificationOwnerErrand {
 
 /**
  * Which decision an errand takes, if any. Reported misconduct always takes the lex Sarah decision,
- * whatever its legal bases; an ordinary deviation takes the HSL decision when HSL is one of its
- * legal bases; every other errand takes none. One decision per errand, never two.
+ * whatever its legal bases; an ordinary deviation takes the HSL decision when it was reported under HSL
+ * or is marked with a high HSL risk; every other errand takes none. One decision per errand, never two.
  */
 export type AvvikelseDocumentApplicability = 'reported-misconduct' | 'hsl-deviation';
 
@@ -221,8 +234,14 @@ export const isAvvikelseReportedMisconductErrand = (errand: ClassificationOwnerE
   );
 };
 
-const hasAvvikelseHslLegalBase = (errand: ClassificationOwnerErrand): boolean => {
-  const selector = AVVIKELSE_CLASSIFICATION_POLICY.hslLegalBaseSelector.labels;
+/** Labels of one classification: where they are, and what names them on an errand that carries them without a path. */
+interface ClassifiedLabelSelector {
+  readonly classification: string;
+  readonly resourcePaths: readonly string[];
+  readonly resourceNames: readonly string[];
+}
+
+const carriesSelectedLabel = (errand: ClassificationOwnerErrand, selector: ClassifiedLabelSelector): boolean => {
   const selectedPaths = new Set<string>(selector.resourcePaths);
   const selectedNames = new Set<string>(selector.resourceNames);
   return (
@@ -230,7 +249,7 @@ const hasAvvikelseHslLegalBase = (errand: ClassificationOwnerErrand): boolean =>
       const resourcePath = label.resourcePath?.trim();
       if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
       // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
-      // fallback also requires the label to be a legal base.
+      // fallback also requires the label's classification.
       return (
         typeof label.classification === 'string' &&
         normalizeCode(label.classification) === selector.classification &&
@@ -241,12 +260,22 @@ const hasAvvikelseHslLegalBase = (errand: ClassificationOwnerErrand): boolean =>
   );
 };
 
+/**
+ * An ordinary deviation is MAS/MAR's to decide when it was reported under HSL, or when its investigation assessed a
+ * high HSL risk. The labels are read rather than the investigation, so the answer is the same for everybody who
+ * reaches the errand, whichever of its documents they may read. The BFF applies the same rule
+ * (`resolveIafVofInvestigationDocumentApplicability`).
+ */
 export const resolveAvvikelseDocumentApplicability = (
   errand: ClassificationOwnerErrand | undefined
 ): AvvikelseDocumentApplicability | undefined => {
   if (!errand) return undefined;
   if (isAvvikelseReportedMisconductErrand(errand)) return 'reported-misconduct';
-  return hasAvvikelseHslLegalBase(errand) ? 'hsl-deviation' : undefined;
+  const { hslLegalBaseSelector, highHslRiskSelector } = AVVIKELSE_CLASSIFICATION_POLICY;
+  return carriesSelectedLabel(errand, hslLegalBaseSelector.labels) ||
+    carriesSelectedLabel(errand, highHslRiskSelector.labels)
+    ? 'hsl-deviation'
+    : undefined;
 };
 
 export const resolveAvvikelseClassificationOwnerDocumentKey = (

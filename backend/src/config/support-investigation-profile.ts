@@ -202,9 +202,9 @@ const iafVofInvestigationProfileBase = {
     },
     // The decisions. Rendered on the Beslut tab rather than under Utredning, and each offered only
     // on the errands the IAF/VOF classification policy resolves for it: the IVO decision on an
-    // ordinary deviation under HSL, the lex Sarah decision on a reported misconduct. The policy
-    // resolves one kind per errand, so an errand never gets both. The lex Sarah decision answers
-    // the SoL/LSS investigation, so that investigation has to be saved first.
+    // ordinary deviation reported under HSL or marked with a high HSL risk, the lex Sarah decision on a
+    // reported misconduct. The policy resolves one kind per errand, so an errand never gets both. The
+    // lex Sarah decision answers the SoL/LSS investigation, so that investigation has to be saved first.
     {
       key: 'beslut-hsl',
       schemaName: 'beslut-hsl',

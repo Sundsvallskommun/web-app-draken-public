@@ -1,6 +1,13 @@
 /** The label an IAF/VOF errand carries once its saved investigation has assessed a high HSL risk. */
 export const IAF_VOF_HIGH_HSL_RISK_LABEL = 'RISK/HIGH_HSL';
 
+/** The same label as an errand carries it: by its path, or by classification and name where the path is left out. */
+export const IAF_VOF_HIGH_HSL_RISK_LABEL_SELECTOR = Object.freeze({
+  resourcePath: IAF_VOF_HIGH_HSL_RISK_LABEL,
+  classification: 'RISK',
+  resourceName: 'HIGH_HSL',
+});
+
 /** The HSL risk value from which the risk is high - the investigation's own analysis threshold. */
 const IAF_VOF_HIGH_HSL_RISK_THRESHOLD = 4;
 
