@@ -15,15 +15,10 @@ import {
   saveSupportInvestigationSection,
   SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH,
 } from '@supportmanagement/services/support-investigation-service';
-import { FC, MutableRefObject, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const Fact: FC<{ label: string; children: ReactNode }> = ({ label, children }) => (
-  <div className="flex flex-col gap-4 min-w-0">
-    <span className="text-small font-bold text-dark-secondary">{label}</span>
-    {children}
-  </div>
-);
+import { InvestigationFact } from '../investigation-fact.component';
 
 export const SupportFinancialSuitabilitySection: FC<{
   section: InvestigationSection;
@@ -84,7 +79,7 @@ export const SupportFinancialSuitabilitySection: FC<{
   return (
     <div className="flex flex-col gap-24" data-cy="financial-suitability-section">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
-        <Fact label={t('common:financial_suitability.financing')}>
+        <InvestigationFact label={t('common:financial_suitability.financing')}>
           {sources.length === 0 ? (
             <span className="text-dark-secondary" data-cy="financing-none">
               {t('common:financial_suitability.financing_none')}
@@ -96,12 +91,12 @@ export const SupportFinancialSuitabilitySection: FC<{
               ))}
             </ul>
           )}
-        </Fact>
+        </InvestigationFact>
 
         {notes ? (
-          <Fact label={t('common:financial_suitability.financing_notes')}>
+          <InvestigationFact label={t('common:financial_suitability.financing_notes')}>
             <span data-cy="financing-notes">{notes}</span>
-          </Fact>
+          </InvestigationFact>
         ) : null}
       </div>
 
