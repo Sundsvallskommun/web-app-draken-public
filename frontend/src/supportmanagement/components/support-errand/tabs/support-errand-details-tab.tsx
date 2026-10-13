@@ -4,8 +4,10 @@ import { Alert, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
+import { supportMeasureTypeForErrand } from '@supportmanagement/services/support-measure-service';
 import { useMemo } from 'react';
 
+import { SupportErrandMeasures } from './support-errand-measures.component';
 import { SupportErrandTypeForm } from './support-errand-type-form.component';
 
 export const SupportErrandDetailsTab: React.FC = () => {
@@ -25,6 +27,7 @@ export const SupportErrandDetailsTab: React.FC = () => {
   const showsJsonParameters = !loadsTypeForm && otherJsonParameters.length > 0 && !!municipalityId;
   // Nothing to show under either heading: the type form needs a saved errand type, other documents need a filed parameter.
   const showsNoJsonParameters = !loadsTypeForm && !showsTypeForm && !showsJsonParameters;
+  const measureType = supportMeasureTypeForErrand(supportErrand, supportMetadata);
 
   const simpleParams = useMemo(
     () =>
@@ -117,6 +120,11 @@ export const SupportErrandDetailsTab: React.FC = () => {
             </Table>
           </div>
         ))}
+        {measureType ? (
+          <div className="p-16">
+            <SupportErrandMeasures measureType={measureType} />
+          </div>
+        ) : null}
         {loadsTypeForm ? (
           <div className="flex items-center gap-md p-16">
             <Spinner size={2} />
