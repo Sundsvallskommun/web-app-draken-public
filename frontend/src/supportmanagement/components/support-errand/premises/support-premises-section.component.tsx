@@ -1,20 +1,9 @@
 'use client';
 
-import DynamicTextEditor from '@common/components/dynamic-text-editor';
-import { useTextEditorPlaceholder } from '@common/components/use-text-editor-placeholder';
-import type {
-  Investigation,
-  InvestigationSection,
-  Statement,
-} from '@common/data-contracts/supportmanagement/data-contracts';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { FormControl, FormLabel, Input, Select, useSnackbar } from '@sk-web-gui/react';
+import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
+import { FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import {
-  saveSupportInvestigationSection,
-  SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH,
-} from '@supportmanagement/services/support-investigation-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
   supportPremisesCapacity,
@@ -24,34 +13,22 @@ import {
   withSupportPremisesExamination,
 } from '@supportmanagement/services/support-premises-examination-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
-import { FC, MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { InvestigationFact } from '../investigation-fact.component';
+import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
 
-export const SupportPremisesSection: FC<{
-  section: InvestigationSection;
-  investigationId: string | undefined;
-  writable: boolean;
-  onEdited: (edited: boolean) => void;
-  onSaved: (investigation: Investigation) => void;
-  saveRef: MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ section, investigationId, writable, onEdited, onSaved, saveRef }) => {
+export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => {
+  const { writable } = props;
   const { t } = useTranslation();
-  const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { getValues, setValue, watch } = useFormContext<SupportErrand>();
 
   const [statements, setStatements] = useState<Statement[]>([]);
-  const [text, setText] = useState(section.text ?? '');
-  const [loaded, setLoaded] = useState(section.text ?? '');
-  const [busy, setBusy] = useState(false);
-
-  const editorHost = useRef<HTMLDivElement>(null);
-  useTextEditorPlaceholder(editorHost, t('common:premises.notes_placeholder'));
 
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
@@ -63,9 +40,6 @@ export const SupportPremisesSection: FC<{
     [statements, supportMetadata]
   );
   const examination = supportPremisesExamination(watch('parameters'));
-
-  const written = section.text ?? '';
-  const edited = text !== loaded;
 
   useEffect(() => {
     if (!errandId || !municipalityId) return undefined;
@@ -83,36 +57,6 @@ export const SupportPremisesSection: FC<{
       reading = false;
     };
   }, [errandId, municipalityId, modified]);
-
-  useEffect(() => {
-    if (written === loaded) return;
-    if (!edited) setText(written);
-    setLoaded(written);
-  }, [written, loaded, edited]);
-
-  useEffect(() => {
-    onEdited(edited);
-  }, [edited, onEdited]);
-
-  const save = useCallback(async (): Promise<boolean> => {
-    if (!edited || !errandId || !investigationId || !section.id) return true;
-
-    setBusy(true);
-    try {
-      onSaved(await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, { text }));
-      setLoaded(text);
-      return true;
-    } catch {
-      toastMessage(getToastOptions({ message: t('common:premises.toast.save_failed'), status: 'error' }));
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }, [edited, errandId, investigationId, municipalityId, onSaved, section.id, t, text, toastMessage]);
-
-  useEffect(() => {
-    saveRef.current = save;
-  }, [save, saveRef]);
 
   const write = (field: keyof SupportPremisesExamination, value: string) =>
     setValue('parameters', withSupportPremisesExamination(getValues('parameters'), field, value), {
@@ -191,20 +135,13 @@ export const SupportPremisesSection: FC<{
         </InvestigationFact>
       </div>
 
-      <FormControl className="w-full">
-        <FormLabel>{t('common:premises.notes')}</FormLabel>
-        <div ref={editorHost} data-cy="premises-text">
-          <DynamicTextEditor
-            name="premises-notes"
-            className="investigation-text-editor w-full min-w-0 max-w-full"
-            readOnly={!writable || busy}
-            value={{ markup: text }}
-            onChange={(event: { target: { value: { markup?: string } } }) =>
-              setText((event.target.value.markup ?? '').slice(0, SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH))
-            }
-          />
-        </div>
-      </FormControl>
+      <InvestigationSectionText
+        {...props}
+        name="premises"
+        labelKey="common:premises.notes"
+        placeholderKey="common:premises.notes_placeholder"
+        saveFailedKey="common:premises.toast.save_failed"
+      />
 
       <p className="text-small text-dark-secondary italic m-0">{t('common:premises.requirement_note')}</p>
     </div>
