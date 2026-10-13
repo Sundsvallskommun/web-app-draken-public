@@ -152,7 +152,7 @@ export const AvvikelseGroupedLabelCategorization: FC<{
     >
       <div className="mb-lg">
         <h3 id="avvikelse-label-categorization-heading" className="text-h4-md">
-          Kategorisering
+          {content.heading}
         </h3>
         <p className="mt-xs">{fields.length === 0 ? content.noLegalBases : content.everyLegalBase}</p>
       </div>

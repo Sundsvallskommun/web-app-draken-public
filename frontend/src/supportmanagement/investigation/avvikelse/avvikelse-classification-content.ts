@@ -37,6 +37,7 @@ export const avvikelseClassificationContent = (kind: AvvikelseReportKind): Label
 
 /** What the categorization says about the legal bases its selectors follow, wherever it is shown. */
 export const avvikelseGroupedClassificationContent = (kind: AvvikelseReportKind) => ({
+  heading: `Ange ${REPORT_WORDS[kind].type}`,
   noLegalBases: 'Välj lagrum för att kunna kategorisera ärendet.',
   everyLegalBase: `Välj ${REPORT_WORDS[kind].type} och underkategori för varje valt lagrum.`,
   missing: 'Kategoriseringen är inte ifylld. Den krävs innan utredningen kan markeras som klar.',

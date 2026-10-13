@@ -583,7 +583,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     }
     const classificationField = managerDocument.locator(classificationFieldSelector);
     await expect(classificationField).toBeVisible();
-    await expect(classificationField.getByRole('heading', { name: 'Kategorisering', exact: true })).toBeVisible();
+    await expect(classificationField.getByRole('heading', { name: 'Ange avvikelsetyp', exact: true })).toBeVisible();
     const hslClassification = classificationField.locator(hslClassificationSelector);
     await expect(hslClassification.getByRole('combobox', { name: 'Avvikelsetyp (obligatoriskt)' })).toHaveValue(
       iafLabelFixture.classification.rehab.resourcePath
@@ -1034,7 +1034,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(managerDocument.locator('[data-cy="investigation-classification-schema-warning"]')).toContainText(
       'Draken använder den centrala utredningsplaceringen'
     );
-    await expect(page.getByRole('heading', { name: 'Kategorisering', exact: true })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Ange avvikelsetyp', exact: true })).toHaveCount(1);
   });
 
   test('normaliserar en felplacerad klassificeringsslot till den kanoniska sektionen', async ({

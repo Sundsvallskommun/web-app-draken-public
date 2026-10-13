@@ -545,7 +545,8 @@ visar ingenting för en variant utan slot. AOT-sviten håller fast att inget kor
 
 Ett ärende som rapporterats som missförhållande ska inte tala om en avvikelse. Kategoriseringens väljare namnger
 det ärendet rapporterar (`avvikelseReportKind` i `avvikelse-classification-content.ts`): Avvikelsetyp för en
-avvikelse, Typ av missförhållande för ett missförhållande. Felmeddelandena om kategoriseringen säger typ och
+avvikelse, Typ av missförhållande för ett missförhållande. Rubriken över väljarna i utredningen följer samma ord:
+Ange avvikelsetyp respektive Ange typ av missförhållande. Felmeddelandena om kategoriseringen säger typ och
 underkategori, och platsfältet i rapporten säger händelsen, så att de passar båda. Schematexter kan inte följa
 ärendet, eftersom samma schema gäller båda och rapportens PDF läser dem. Därför säger enhetschefens utredning
 (1.7) det inträffade och händelsen där ett missförhållande visar dem, liksom SOL/LSS-mallens text och
