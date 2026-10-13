@@ -557,5 +557,29 @@
     "remove": "Ta bort kontrollpunkt {{number}}",
     "add": "Lägg till kontrollpunkt",
     "save_error": "Kontrollpunkterna kunde inte sparas"
+  },
+  "inspection_protocol": {
+    "heading": "Tillsynsprotokoll",
+    "intro": "Fyll i kontrollpunkterna under besöket: sätt resultat, skriv noteringar och lägg till foton. Resultat och noteringar sparas med Spara ärende, foton sparas direkt.",
+    "loading": "Hämtar kontrollpunkter",
+    "read_error": "Kontrollpunkterna kunde inte hämtas.",
+    "empty": "Ärendet har inga kontrollpunkter. Lägg till dem under Ärendeuppgifter och spara ärendet.",
+    "assessed": "{{assessed}} av {{total}} bedömda",
+    "deficient_one": "{{count}} brist",
+    "deficient_other": "{{count}} brister",
+    "result": {
+      "approved": "Godkänt",
+      "not_completed": "Brist",
+      "not_applicable": "Ej aktuellt"
+    },
+    "note": "Notering",
+    "note_placeholder": "Notering om {{title}}…",
+    "attachments": "Foton och bilagor",
+    "add_photo": "Lägg till foto",
+    "remove_attachment": "Ta bort {{fileName}}",
+    "save_error": "Protokollet kunde inte sparas.",
+    "upload_failed": "Bilagan kunde inte laddas upp.",
+    "unlink_failed": "Bilagan kunde inte tas bort.",
+    "open_failed": "Bilagan kunde inte öppnas."
   }
 }

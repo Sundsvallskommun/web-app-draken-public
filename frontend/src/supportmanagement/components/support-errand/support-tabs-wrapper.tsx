@@ -2,7 +2,7 @@ import type { ProcessActivity } from '@common/data-contracts/supportmanagement/d
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
@@ -14,6 +14,7 @@ import {
   getSupportConversations,
 } from '@supportmanagement/services/support-conversation-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { supportMeasureTypeForErrand } from '@supportmanagement/services/support-measure-service';
 import {
   buildTree,
   countUnreadMessages,
@@ -40,6 +41,7 @@ import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDecisionTab } from './tabs/support-errand-decision-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
+import { SupportErrandInspectionProtocol } from './tabs/support-errand-inspection-protocol.component';
 import { SupportErrandInvestigationTab } from './tabs/support-errand-investigation-tab';
 
 export const SupportTabsWrapper: FC<{
@@ -53,6 +55,9 @@ export const SupportTabsWrapper: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  // An inspection errand carries a protocol on the Utredning tab instead of an investigation.
+  const isInspection = !!supportMeasureTypeForErrand(supportErrand, supportMetadata);
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
@@ -243,14 +248,21 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'investigation',
         label: t('common:tabs.investigation'),
-        content: supportErrand && (
-          <SupportErrandInvestigationTab
-            setUnsaved={setUnsavedInvestigation}
-            setHasContent={setInvestigationContent}
-            inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
-            writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
-          />
-        ),
+        content:
+          supportErrand &&
+          (isInspection ? (
+            <SupportErrandInspectionProtocol
+              setHasContent={setInvestigationContent}
+              writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
+            />
+          ) : (
+            <SupportErrandInvestigationTab
+              setUnsaved={setUnsavedInvestigation}
+              setHasContent={setInvestigationContent}
+              inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
+              writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
+            />
+          )),
         disabled: tabIsClosed(SupportProcessStep.INVESTIGATION, 'investigation'),
         visibleFor: appConfig.features.useInvestigationTab,
       },
@@ -306,6 +318,7 @@ export const SupportTabsWrapper: FC<{
     [
       attachmentTabLabel,
       conversationMessageTree,
+      isInspection,
       messageTabLabel,
       messageTree,
       messages,

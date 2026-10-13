@@ -4,6 +4,9 @@ import type { SupportErrand } from './support-errand-service';
 import {
   hasSupportMeasureChanges,
   supportMeasureChanges,
+  supportMeasureProtocolEdited,
+  supportMeasureProtocolFields,
+  supportMeasureProtocolPatch,
   supportMeasureRows,
   supportMeasureTypeForErrand,
 } from './support-measure-service';
@@ -77,5 +80,30 @@ test('surrounding whitespace is neither saved nor counted as a change', () => {
     create: ['Prislista'],
     update: [],
     remove: ['m2'],
+  });
+});
+
+test('protocol fields read the result and note, and treat a result Draken does not know as none', () => {
+  expect(supportMeasureProtocolFields({ id: 'm1', result: 'COMPLETED', description: 'ok' })).toEqual({
+    result: 'COMPLETED',
+    description: 'ok',
+  });
+  expect(supportMeasureProtocolFields({ id: 'm1', result: 'COMPLETED' })).toEqual({ result: '', description: '' });
+  expect(supportMeasureProtocolFields({ id: 'm1', result: null })).toEqual({ result: '', description: '' });
+});
+
+test('protocol fields are edited when the result or the note differs from the measure', () => {
+  const measure = { id: 'm1', result: 'COMPLETED', description: 'ok' };
+
+  expect(supportMeasureProtocolEdited({ result: 'COMPLETED', description: 'ok' }, measure)).toBe(false);
+  expect(supportMeasureProtocolEdited({ result: 'NOT_COMPLETED', description: 'ok' }, measure)).toBe(true);
+  expect(supportMeasureProtocolEdited({ result: 'COMPLETED', description: 'ok!' }, measure)).toBe(true);
+});
+
+test('no result is written as null so the service clears it', () => {
+  expect(supportMeasureProtocolPatch({ result: '', description: 'x' })).toEqual({ result: null, description: 'x' });
+  expect(supportMeasureProtocolPatch({ result: 'NOT_APPLICABLE', description: '' })).toEqual({
+    result: 'NOT_APPLICABLE',
+    description: '',
   });
 });
