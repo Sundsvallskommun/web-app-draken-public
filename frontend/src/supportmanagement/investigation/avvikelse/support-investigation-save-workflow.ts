@@ -233,6 +233,14 @@ interface SaveClassificationStepInput {
   readonly documentETag: string | undefined;
 }
 
+/**
+ * Whether the save wrote more on the errand than the document it sent. The BFF marks the errand with what follows
+ * from the document - a high HSL risk - in the same call, and says so in how many of the errand's version steps
+ * were the call's own. The labels the page holds are then behind the errand's.
+ */
+export const savedBeyondTheDocument = (saved: { readonly ownErrandWrites?: number } | undefined): boolean =>
+  (saved?.ownErrandWrites ?? 1) > 1;
+
 export async function saveInvestigationClassificationStep({
   municipalityId,
   errandId,

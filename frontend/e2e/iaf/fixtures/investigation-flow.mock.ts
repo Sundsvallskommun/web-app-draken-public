@@ -1624,11 +1624,26 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         };
         documents[key] = updated;
         errandVersion += 1;
+        // The BFF marks the errand with a high HSL risk in the same call, when the unit manager's investigation
+        // assesses one, the namespace has the label and the errand does not carry it yet. It is a second write on
+        // the errand, and the answer says so.
+        const hslRisk = updated.value.riskAssessmentHsl as { calculatedRiskValue?: unknown } | undefined;
+        const marksHighHslRisk =
+          key === 'utredning-enhetschef' &&
+          typeof hslRisk?.calculatedRiskValue === 'number' &&
+          hslRisk.calculatedRiskValue >= 4 &&
+          JSON.stringify(scenario.labelStructure ?? []).includes(`"${highHslRisk.id}"`) &&
+          !errandLabels.some(({ id }) => id === highHslRisk.id);
+        if (marksHighHslRisk) {
+          errandLabels = [...errandLabels, withoutChildren(highHslRisk)];
+          errandVersion += 1;
+        }
         const { etag, ...responseDocument } = updated;
         await fulfillJson(route, responseDocument, existingDocument ? 200 : 201, {
           etag,
           'x-errand-version': String(errandVersion),
-          'access-control-expose-headers': 'ETag, X-Errand-Version',
+          ...(marksHighHslRisk ? { 'x-errand-writes': '2' } : {}),
+          'access-control-expose-headers': 'ETag, X-Errand-Version, X-Errand-Writes',
         });
         return;
       }

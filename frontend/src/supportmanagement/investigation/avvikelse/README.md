@@ -364,6 +364,13 @@ Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Erran
 klienten kan flytta fram ärendets version förbi båda (`isSoleSupportErrandVersionChange`) i stället för
 att tro att någon annan har skrivit.
 
+Två steg betyder också att ärendet har fått en label som sidan inte känner till (`savedBeyondTheDocument`).
+Sidan läser då om ärendet och tar över dess labels, och inget annat av det (`refreshErrandLabels` i
+`support-investigation-document.component.tsx`). Sparas klassificeringen i samma sparning kommer labels i stället
+med dess svar. Det som visas efter ärendets labels följer då sparningen utan att sidan laddas om: Händelseanalys
+HSL visas för enhetschefen direkt när utredningen sparats med riskvärde 4 eller högre. Går omläsningen inte
+igenom är utredningen sparad ändå, och fliken visas nästa gång ärendet laddas.
+
 ### Händelseanalys HSL för chefer
 
 MAS/MAR:s utredning, Händelseanalys HSL (`utredning-hsl`), visas inte för enhetschef och verksamhetschef så

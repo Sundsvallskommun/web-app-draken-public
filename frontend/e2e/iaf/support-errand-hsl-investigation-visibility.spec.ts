@@ -71,6 +71,43 @@ for (const roleKey of ['enhetschef', 'verksamhetschef']) {
   });
 }
 
+// The BFF marks the errand with the high HSL risk in the save itself. The page has to learn of it then, not at the
+// next load: the unit manager who has just assessed the risk is the one who is shown the analysis.
+test('enhetschef is shown Händelseanalys HSL as soon as the investigation is saved with a high HSL risk', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const documents = allExistingInvestigationDocuments();
+  documents['utredning-enhetschef'].value.riskAssessmentHsl = {
+    assessedWith: 'Anna Andersson',
+    probability: 1,
+    severity: 3,
+    calculatedRiskValue: 3,
+  };
+  const trace = await installIafApiMock(page, {
+    roleKeys: ['enhetschef'],
+    documents,
+    // The namespace has the label; the errand does not carry it yet.
+    labelStructure: withHighHslRisk().labelStructure,
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await openInvestigation(page);
+  const hslTab = investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true });
+  await expect(hslTab).toHaveCount(0);
+
+  // 2 x 3 is 6: over the limit of 4.
+  await page.locator('#utredning-enhetschef_riskAssessmentHsl_probability').getByLabel(/^2 –/u).check();
+  await expect(page.locator('#utredning-enhetschef_riskAssessmentHsl_calculatedRiskValue')).toHaveValue('6');
+  await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+
+  await expect.poll(() => trace.puts.length).toBe(1);
+  await expect(hslTab).toBeVisible();
+  // Shown on the page that saved: the errand was opened once, and not again.
+  expect(page.url()).toContain(`arende/${errandNumber}`);
+  await hslTab.click();
+  await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toBeVisible();
+});
+
 test('MAS/MAR is shown Händelseanalys HSL whatever the risk', async ({ page, dismissCookieConsent }) => {
   await installErrand(page, { roleKeys: ['mas-mar'], highHslRisk: false });
   await visitErrand(page, dismissCookieConsent);

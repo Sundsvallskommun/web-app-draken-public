@@ -17,7 +17,11 @@ import {
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { useErrandMeasureSummary } from '@supportmanagement/measures/measure-summary';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandById,
+  readSupportErrandWriteSnapshot,
+  type SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { latestKnownSupportErrandVersion } from '@supportmanagement/services/support-errand-write-version';
 import { useAdvanceErrandVersion } from '@supportmanagement/services/use-advance-errand-version';
 import { isAxiosError } from 'axios';
@@ -90,6 +94,7 @@ import {
   investigationSaveErrorMessage,
   type PreparedInvestigationClassification,
   prepareInvestigationClassification,
+  savedBeyondTheDocument,
   saveInvestigationClassificationStep,
   saveInvestigationDocumentStep,
 } from './support-investigation-save-workflow';
@@ -672,6 +677,24 @@ export function SupportInvestigationDocument({
   };
 
   /**
+   * Takes over the labels the errand has now, and nothing else of it. What is shown by the errand's labels - the HSL
+   * investigation for a manager, once the risk is high - then follows the save without the page being loaded again.
+   * The version is not read here: the save has already advanced it by its own steps.
+   */
+  const refreshErrandLabels = async () => {
+    if (!municipalityId || !errandId) return;
+    const { errand: reread } = await getSupportErrandById(errandId, municipalityId);
+    // The document is saved either way. Labels that could not be read show when the errand is next loaded.
+    if (!reread?.labels) return;
+    useSupportStore.setState((state) =>
+      state.supportErrand?.id === errandId
+        ? { supportErrand: { ...state.supportErrand, labels: reread.labels } }
+        : state
+    );
+    resetErrandField('labels', { defaultValue: reread.labels });
+  };
+
+  /**
    * A saved unit manager investigation that assesses a suspected misconduct has to be handed to a
    * LEX manager, and the dialog that does it opens here rather than during the save itself - the
    * investigation is already stored, and the handover is a separate write against its new version.
@@ -911,6 +934,9 @@ export function SupportInvestigationDocument({
       });
       if (savedClassification && preparedClassification) {
         applySavedClassification(savedClassification, preparedClassification, classificationVersion);
+      } else if (savedBeyondTheDocument(savedDocument)) {
+        // A saved classification answers with the errand's labels; without one they are read again.
+        await refreshErrandLabels();
       }
 
       setDocumentSavedPendingClassification(false);
