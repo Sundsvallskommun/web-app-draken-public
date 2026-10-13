@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.8',
+    version: '1.9',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -636,6 +636,15 @@ test('the lex Sarah decision classifies the report with the same degrees the inv
     validate({ decidedMisconductDegree: 'other', decisionMotivation: '<p>-</p>', ivoNotification: 'no' }),
     false
   );
+});
+
+// The legal bases question says what to do; the template needs no explanation of how Draken stores it.
+test('the unit manager investigation explains the legal bases and leaves the template unexplained', () => {
+  const schema = readJson('utredning-enhetschef.schema-request.json').value;
+
+  assert.equal(schema.properties.legalBases.description, 'Ange vilket eller vilka lagrum som gäller för avvikelsen');
+  assert.equal(schema.properties.investigationTemplate.title, 'Utredningsmall');
+  assert.equal('description' in schema.properties.investigationTemplate, false);
 });
 
 test('the HSL decision is the IVO decision alone', () => {

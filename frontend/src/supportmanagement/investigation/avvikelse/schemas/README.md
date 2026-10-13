@@ -4,8 +4,8 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.6           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 2.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-enhetschef`      | 1.9           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
@@ -93,6 +93,10 @@ produktionsmiljön.
 Samma dag publicerades `2281_utredning-enhetschef_1.8` i testmiljön: enhetschefen riskbedömer inte ett
 missförhållande (se Utredning enhetschef 1.8). Schema och UI Schema lästes tillbaka och var identiska med
 artefakterna, och `versions/latest` pekar på 1.8. Inget har publicerats i produktionsmiljön.
+
+Den 13 oktober 2026 publicerades `2281_utredning-enhetschef_1.9` i testmiljön, med nya hjälptexter (se Utredning
+enhetschef 1.9). Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar
+på 1.9. Inget har publicerats i produktionsmiljön.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
@@ -183,6 +187,12 @@ Två regler läser det:
 Riskbedömningen är inte förbjuden för ett missförhållande: en som redan finns ligger kvar när ärendet blir ett
 missförhållande, och dokumentet kan fortfarande låsas upp och få nya rapporter. Frågan om misstänkt missförhållande
 och utredningsmallen följer lagrummen som förut.
+
+## Utredning enhetschef 1.9
+
+Version 1.9 ändrar två texter efter verksamhetens önskemål och inget annat. Lagrumsfrågans hjälptext är "Ange vilket
+eller vilka lagrum som gäller för avvikelsen", och Utredningsmall har ingen hjälptext längre. UI-schemat är
+oförändrat. Utredningar som redan är sparade är bundna till en äldre version och visar dess texter.
 
 ## Utredning Lex Sarah 2.0–2.3
 

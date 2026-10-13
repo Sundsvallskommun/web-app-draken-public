@@ -136,5 +136,5 @@
     "reportedMisconduct": { "ui:widget": "hidden" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.8 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.9 of Utredning enhetschef in Draken"
 }
