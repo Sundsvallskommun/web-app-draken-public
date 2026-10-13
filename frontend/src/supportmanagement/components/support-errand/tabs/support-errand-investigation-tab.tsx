@@ -6,6 +6,7 @@ import {
   getSupportInvestigation,
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
+  RETIRED_INVESTIGATION_SECTION_KEYS,
   saveSupportInvestigation,
   startSupportInvestigation,
   SUPPORT_INVESTIGATION_SECTIONS,
@@ -18,7 +19,9 @@ import { InvestigationConclusionDisclosure } from './disclosure/investigation-co
 import { SectionDisclosure } from './disclosure/investigation-disclosure.component';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
-  [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  (investigation?.sections ?? [])
+    .filter((section) => !RETIRED_INVESTIGATION_SECTION_KEYS.includes(section.sectionKey ?? ''))
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 const asDate = (value: string | undefined): string =>
   value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
@@ -46,8 +49,6 @@ export const SupportErrandInvestigationTab: React.FC<{
   const [investigation, setInvestigation] = useState<Investigation>();
   const [statementsEdited, setStatementsEdited] = useState(false);
   const saveStatements = useRef<() => Promise<boolean>>(undefined);
-  const [suitabilityEdited, setSuitabilityEdited] = useState(false);
-  const saveSuitability = useRef<() => Promise<boolean>>(undefined);
   const [financialEdited, setFinancialEdited] = useState(false);
   const saveFinancial = useRef<() => Promise<boolean>>(undefined);
   const savedInvestigation = useRef<Investigation>(undefined);
@@ -116,8 +117,8 @@ export const SupportErrandInvestigationTab: React.FC<{
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || suitabilityEdited || financialEdited);
-  }, [edited, statementsEdited, suitabilityEdited, financialEdited, setUnsaved]);
+    setUnsaved(edited || statementsEdited || financialEdited);
+  }, [edited, statementsEdited, financialEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -188,9 +189,8 @@ export const SupportErrandInvestigationTab: React.FC<{
 
     savedInvestigation.current = investigation;
     const statementsSaved = (await saveStatements.current?.()) ?? true;
-    const suitabilitySaved = (await saveSuitability.current?.()) ?? true;
     const financialSaved = (await saveFinancial.current?.()) ?? true;
-    if (!statementsSaved || !suitabilitySaved || !financialSaved) return false;
+    if (!statementsSaved || !financialSaved) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -279,8 +279,6 @@ export const SupportErrandInvestigationTab: React.FC<{
                 writable={!readOnly}
                 onStatementsEdited={setStatementsEdited}
                 saveStatements={saveStatements}
-                onSuitabilityEdited={setSuitabilityEdited}
-                saveSuitability={saveSuitability}
                 onFinancialEdited={setFinancialEdited}
                 onFinancialSaved={receiveFromSection}
                 saveFinancial={saveFinancial}

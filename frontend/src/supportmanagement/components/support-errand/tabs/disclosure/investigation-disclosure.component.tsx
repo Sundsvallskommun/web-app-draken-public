@@ -8,7 +8,7 @@ import type {
 } from '../../../../../common/data-contracts/supportmanagement/data-contracts';
 import type { Sections } from '../../../../../supportmanagement/services/support-investigation-service';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
-import { SupportPersonalSuitabilitySection } from '../../personal-suitability/support-personal-suitability-section.component';
+import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
 
 export const SectionDisclosure: React.FC<{
@@ -17,8 +17,6 @@ export const SectionDisclosure: React.FC<{
   writable: boolean;
   onStatementsEdited: (edited: boolean) => void;
   saveStatements: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-  onSuitabilityEdited: (edited: boolean) => void;
-  saveSuitability: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
   onFinancialEdited: (edited: boolean) => void;
   onFinancialSaved: (investigation: Investigation) => void;
   saveFinancial: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
@@ -28,8 +26,6 @@ export const SectionDisclosure: React.FC<{
   writable,
   onStatementsEdited,
   saveStatements,
-  onSuitabilityEdited,
-  saveSuitability,
   onFinancialEdited,
   onFinancialSaved,
   saveFinancial,
@@ -38,9 +34,7 @@ export const SectionDisclosure: React.FC<{
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
-    personal_suitability: (
-      <SupportPersonalSuitabilitySection writable={writable} onEdited={onSuitabilityEdited} saveRef={saveSuitability} />
-    ),
+    personal_suitability: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: (
       <SupportFinancialSuitabilitySection
         section={section}

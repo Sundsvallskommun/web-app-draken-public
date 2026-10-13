@@ -1,134 +1,171 @@
+import { searchPerson } from '@common/services/adress-service';
+import { engagementRoles, getLegalEntityEngagements } from '@common/services/legal-entity-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { useSupportStore, useUserStore } from '@stores/index';
 import {
-  getSupportPbi,
-  isSupportPbiConflict,
-  markSupportPbi,
-  removeSupportPbi,
-  SupportPbiByHand,
+  isSupportErrandLocked,
+  SupportErrand,
+  SupportStakeholderFormModel,
+} from '@supportmanagement/services/support-errand-service';
+import {
+  existsOnlyAsPbi,
+  newPbiContact,
+  pbiCandidates,
+  pbiPeople,
+  PbiPersonToAdd,
+  PbiSource,
+  sameIdentity,
   SupportPbiCandidate,
-  SupportPbiPerson,
+  withoutPbi,
+  withPbi,
 } from '@supportmanagement/services/support-pbi-service';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
-import { useAddSupportPbiByHand } from '../pbi/use-add-support-pbi-by-hand';
-
-type PbiWrite = (errandId: string, municipalityId: string, partyId: string) => Promise<void>;
-
-const withMarking = (candidates: SupportPbiCandidate[], partyId: string, marked: boolean): SupportPbiCandidate[] =>
-  candidates.map((candidate) => (candidate.partyId === partyId ? { ...candidate, marked } : candidate));
-
-export const useSupportPbi = (enabled: boolean) => {
+/**
+ * The people of significant influence are stakeholders in the form. This hook reads them off the form, lays the
+ * company engagements beside them, and writes every marking back into the form, so Spara ärende saves it like any
+ * other change. Nothing here talks to the errand directly.
+ */
+export const useSupportPbi = (organizationPartyId: string | undefined) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
-  const setPbiSignal = useSupportStore((s) => s.setPbiSignal);
-  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setStakeholderContacts = useSupportStore((s) => s.setStakeholderContacts);
+  const setStakeholderCustomers = useSupportStore((s) => s.setStakeholderCustomers);
   const canEditErrand = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
-  const { formState, reset } = useFormContext<SupportErrand>();
-  const add = useAddSupportPbiByHand();
-  const [candidates, setCandidates] = useState<SupportPbiCandidate[]>([]);
-  const [people, setPeople] = useState<SupportPbiPerson[]>([]);
-  const [busyPartyId, setBusyPartyId] = useState<string>();
+  const { watch, setValue } = useFormContext<SupportErrand>();
+  const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
+  const [busyIdentity, setBusyIdentity] = useState<string>();
 
-  const errandId = supportErrand?.id;
-  const hasUnsavedStakeholders = !!formState.dirtyFields.contacts || !!formState.dirtyFields.customer;
-  const pbiSignal = useSupportStore((s) => s.pbiSignal);
-  const pbiSignalAt = pbiSignal?.errandId === errandId ? pbiSignal?.at : undefined;
+  const watchedCustomer = watch('customer');
+  const watchedContacts = watch('contacts');
+  const customer: SupportStakeholderFormModel[] = useMemo(() => watchedCustomer ?? [], [watchedCustomer]);
+  const contacts: SupportStakeholderFormModel[] = useMemo(() => watchedContacts ?? [], [watchedContacts]);
 
-  /**
-   * The marking is changed in the investigation as well. Reading follows the signal and never raises it,
-   * so a write here and a write there both land in one reading and neither can chase the other.
-   */
   useEffect(() => {
-    if (!enabled || !errandId || !municipalityId) return undefined;
+    if (!organizationPartyId) {
+      setEngagements([]);
+      return undefined;
+    }
     let active = true;
-    getSupportPbi(errandId, municipalityId)
+    getLegalEntityEngagements(organizationPartyId)
       .then((read) => {
-        if (!active) return;
-        setCandidates(read.candidates);
-        setPeople(read.people);
+        if (active) setEngagements(read);
       })
       .catch(() => {
-        if (!active) return;
-        setCandidates([]);
-        setPeople([]);
+        if (active) setEngagements([]);
       });
     return () => {
       active = false;
     };
-  }, [enabled, errandId, municipalityId, pbiSignalAt]);
+  }, [organizationPartyId]);
 
-  const reloadErrand = useCallback(async () => {
-    if (!errandId || !municipalityId) return;
-    const { errand } = await getSupportErrandById(errandId, municipalityId);
-    setSupportErrand(errand);
-    reset(errand, { keepDirtyValues: true });
-  }, [errandId, municipalityId, reset, setSupportErrand]);
+  /** Both the form and the store's copy, which the contact cards render from and the contact form appends to. */
+  const write = useCallback(
+    (nextCustomer: SupportStakeholderFormModel[], nextContacts: SupportStakeholderFormModel[]) => {
+      setValue('customer', nextCustomer, { shouldDirty: true, shouldValidate: true });
+      setValue('contacts', nextContacts, { shouldDirty: true, shouldValidate: true });
+      setStakeholderCustomers(nextCustomer);
+      setStakeholderContacts(nextContacts);
+    },
+    [setStakeholderContacts, setStakeholderCustomers, setValue]
+  );
 
-  const announceAndReloadErrand = useCallback(async () => {
-    if (!errandId || !municipalityId) return;
-    await reloadErrand().catch(() => undefined);
-    setPbiSignal({ errandId, at: Date.now() });
-  }, [errandId, municipalityId, reloadErrand, setPbiSignal]);
+  const replace = useCallback(
+    (updated: SupportStakeholderFormModel) =>
+      write(
+        customer.map((s) => (s.internalId === updated.internalId ? updated : s)),
+        contacts.map((s) => (s.internalId === updated.internalId ? updated : s))
+      ),
+    [contacts, customer, write]
+  );
 
-  const complain = useCallback(
-    (error: unknown) =>
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: isSupportPbiConflict(error) ? t('common:company.pbi.conflict') : t('common:company.pbi.error'),
-        status: 'error',
-      }),
+  const remove = useCallback(
+    (gone: SupportStakeholderFormModel) =>
+      write(
+        customer.filter((s) => s.internalId !== gone.internalId),
+        contacts.filter((s) => s.internalId !== gone.internalId)
+      ),
+    [contacts, customer, write]
+  );
+
+  const complainNotFound = useCallback(
+    () => toastMessage(getToastOptions({ message: t('common:company.pbi.add.not_found'), status: 'error' })),
     [t, toastMessage]
   );
 
-  const change = useCallback(
-    (write: PbiWrite, marked: boolean) => async (partyId: string) => {
-      if (!errandId || !municipalityId) return;
-      setBusyPartyId(partyId);
+  /** A person from the company data: already a stakeholder, or looked up in Citizen and added as one. */
+  const mark = useCallback(
+    async (candidate: SupportPbiCandidate): Promise<boolean> => {
+      const role = engagementRoles(candidate.engagement);
+      if (candidate.stakeholder) {
+        replace(withPbi(candidate.stakeholder, { role }));
+        return true;
+      }
+      const code = candidate.engagement.identity?.code ?? '';
+      setBusyIdentity(code);
       try {
-        await write(errandId, municipalityId, partyId);
-        setCandidates((current) => withMarking(current, partyId, marked));
-        await announceAndReloadErrand();
-      } catch (error) {
-        complain(error);
-        if (isSupportPbiConflict(error)) await announceAndReloadErrand();
+        const person = await searchPerson(code);
+        if (!person?.personId) {
+          complainNotFound();
+          return false;
+        }
+        write(customer, [
+          ...contacts,
+          newPbiContact(
+            {
+              partyId: person.personId,
+              firstName: person.firstName ?? '',
+              lastName: person.lastName ?? '',
+              personNumber: code,
+              role,
+            },
+            PbiSource.COMPANY
+          ),
+        ]);
+        return true;
+      } catch {
+        complainNotFound();
+        return false;
       } finally {
-        setBusyPartyId(undefined);
+        setBusyIdentity(undefined);
       }
     },
-    [announceAndReloadErrand, complain, errandId, municipalityId]
+    [complainNotFound, contacts, customer, replace, write]
+  );
+
+  /** A stakeholder that was there before the marking keeps their place; one that was not leaves with it. */
+  const unmark = useCallback(
+    (stakeholder: SupportStakeholderFormModel) => {
+      if (existsOnlyAsPbi(stakeholder)) remove(stakeholder);
+      else replace(withoutPbi(stakeholder));
+    },
+    [remove, replace]
   );
 
   const addByHand = useCallback(
-    async (person: SupportPbiByHand): Promise<boolean> => {
-      setBusyPartyId(person.partyId);
-      try {
-        return await add(person);
-      } finally {
-        setBusyPartyId(undefined);
-      }
+    async (person: PbiPersonToAdd): Promise<boolean> => {
+      const existing = [...customer, ...contacts].find((s) => sameIdentity(s.personNumber, person.personNumber));
+      if (existing) replace(withPbi(existing, { role: person.role }));
+      else write(customer, [...contacts, newPbiContact(person, PbiSource.MANUAL)]);
+      return true;
     },
-    [add]
+    [contacts, customer, replace, write]
   );
 
-  if (!enabled) return { candidates: undefined, people: [], marking: undefined, notice: undefined, addByHand };
-
   return {
-    candidates,
-    people,
-    marking: {
-      canEdit: !!canEditErrand && !hasUnsavedStakeholders,
-      busyPartyId,
-      onMark: change(markSupportPbi, true),
-      onUnmark: change(removeSupportPbi, false),
-    },
-    notice: canEditErrand && hasUnsavedStakeholders ? t('common:company.pbi.unsaved') : undefined,
+    engagements,
+    candidates: pbiCandidates(engagements, [...customer, ...contacts]),
+    people: pbiPeople(customer, contacts),
+    canEdit: !!canEditErrand && !!supportErrand && !isSupportErrandLocked(supportErrand),
+    busyIdentity,
+    mark,
+    unmark,
     addByHand,
+    replace,
   };
 };

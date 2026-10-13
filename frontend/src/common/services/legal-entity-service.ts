@@ -3,6 +3,7 @@
 import { apiService } from '@common/services/api-service';
 import {
   LegalEntityEngagement,
+  LegalEntityEngagementsApiResponse,
   LegalEntityProfile,
   LegalEntityProfileApiResponse,
 } from 'src/data-contracts/backend/data-contracts';
@@ -32,3 +33,9 @@ export const engagementRoles = (engagement: LegalEntityEngagement): string =>
     .map((relation) => relation.description)
     .filter((description): description is string => !!description)
     .join(', ');
+
+/** The people engaged in the company a party id belongs to. An empty list when the id is not a company. */
+export const getLegalEntityEngagements = async (partyId: string): Promise<LegalEntityEngagement[]> => {
+  const res = await apiService.get<LegalEntityEngagementsApiResponse>(`legalentity/${partyId}/engagements`);
+  return res.data.data?.engagements ?? [];
+};

@@ -19,7 +19,6 @@ interface SupportState {
   unsavedTabs: Record<string, boolean>;
   tabsWithContent: Record<string, boolean>;
   processSignal: { errandId: string; at: number } | undefined;
-  pbiSignal: { errandId: string; at: number } | undefined;
   tabSavers: Record<string, () => Promise<boolean>>;
 }
 
@@ -34,7 +33,6 @@ interface SupportActions {
   setUnsavedTab: (key: string, unsaved: boolean) => void;
   setTabHasContent: (key: string, hasContent: boolean) => void;
   setProcessSignal: (processSignal: { errandId: string; at: number } | undefined) => void;
-  setPbiSignal: (pbiSignal: { errandId: string; at: number } | undefined) => void;
   setTabSaver: (key: string, saver: (() => Promise<boolean>) | undefined) => void;
   reset: () => void;
 }
@@ -52,7 +50,6 @@ const initialState: SupportState = {
   unsavedTabs: {},
   tabsWithContent: {},
   processSignal: undefined,
-  pbiSignal: undefined,
   tabSavers: {},
 };
 
@@ -72,7 +69,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   setProcessSignal: (processSignal) => set({ processSignal }),
-  setPbiSignal: (pbiSignal) => set({ pbiSignal }),
   setTabSaver: (key, saver) =>
     set((state) => {
       if (state.tabSavers[key] === saver) return state;

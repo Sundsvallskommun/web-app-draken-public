@@ -33,9 +33,14 @@ export const SUPPORT_INVESTIGATION_SECTIONS: { sectionKey: string; headingKey: s
     headingKey: 'common:investigation.sections.financial_suitability',
     sortOrder: 3,
   },
-  { sectionKey: 'knowledge_test', headingKey: 'common:investigation.sections.knowledge_test', sortOrder: 4 },
-  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 5 },
+  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 4 },
 ];
+
+/**
+ * Sections that used to be written when an investigation started. The knowledge test is examined on the same card
+ * as the personal suitability, so investigations started before the merge still carry an empty section of its own.
+ */
+export const RETIRED_INVESTIGATION_SECTION_KEYS = ['knowledge_test'];
 
 export const isSupportInvestigationCompleted = (investigation: Investigation | undefined): boolean =>
   investigation?.status === 'COMPLETED' || investigation?.status === 'CANCELLED';

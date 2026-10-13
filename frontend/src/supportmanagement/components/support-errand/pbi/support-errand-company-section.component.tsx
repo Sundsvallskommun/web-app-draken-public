@@ -3,48 +3,53 @@
 import { useCompanyProfile } from '@common/hooks/use-company-profile';
 import { useSupportStore } from '@stores/index';
 import { FC, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { SupportErrandBusinessDescriptionDrawer } from '../tabs/support-errand-business-description-drawer.component';
 import { SupportErrandCompanyEngagements } from '../tabs/support-errand-company-engagements.component';
 import { useSupportPbi } from '../tabs/use-support-pbi';
-import { SupportPbiDisclosure } from './support-pbi-disclosure.component';
+import { AddPbiButton } from './support-add-pbi-button.component';
+import { SupportPbiAddDialog } from './support-pbi-add-dialog.component';
 
 /**
- * The company data and the people named from it belong together: unchecking a person in the table and
- * removing them from the list are the same act, so both read from one marking. An errand whose applicant
- * is a private person has no table and still has its list.
+ * The company data is a picker: ticking a person adds them to the errand's stakeholders with the PBI marking,
+ * unticking takes the marking away again. The people themselves are shown among the stakeholders below, so an
+ * errand whose applicant is a private person has no table but can still have people added by hand.
  */
 export const SupportErrandCompanySection: FC<{ organizationPartyId?: string }> = ({ organizationPartyId }) => {
+  const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const pbi = useSupportPbi(true);
+  const pbi = useSupportPbi(organizationPartyId);
   const companyProfile = useCompanyProfile(organizationPartyId);
   const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const organizationStakeholder = supportErrand?.stakeholders?.find(
     (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
   );
-  const engagements = pbi.candidates ?? [];
 
   return (
     <div className="flex flex-col gap-8">
-      {engagements.length > 0 ? (
+      {pbi.candidates.length > 0 ? (
         <SupportErrandCompanyEngagements
-          engagements={engagements}
+          candidates={pbi.candidates}
           companyName={companyProfile?.name ?? organizationStakeholder?.organizationName}
           onShowBusinessDescription={companyProfile ? () => setShowsBusinessDescription(true) : undefined}
-          pbiMarking={pbi.marking}
-          pbiNotice={pbi.notice}
+          pbiMarking={{
+            canEdit: pbi.canEdit,
+            busyIdentity: pbi.busyIdentity,
+            onMark: (candidate) => void pbi.mark(candidate),
+            onUnmark: pbi.unmark,
+          }}
         />
       ) : null}
 
-      <SupportPbiDisclosure
-        people={pbi.people}
-        canEdit={!!pbi.marking?.canEdit}
-        busyPartyId={pbi.marking?.busyPartyId}
-        notice={pbi.notice}
-        onRemove={(partyId) => pbi.marking?.onUnmark(partyId)}
-        onAdd={pbi.addByHand}
+      <AddPbiButton
+        disabled={!pbi.canEdit || !!pbi.busyIdentity}
+        onClick={() => setAdding(true)}
+        label={t('common:company.pbi.add.open')}
       />
+      <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={pbi.addByHand} />
 
       {companyProfile ? (
         <SupportErrandBusinessDescriptionDrawer
