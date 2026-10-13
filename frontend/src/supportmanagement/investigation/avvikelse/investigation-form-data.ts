@@ -272,14 +272,15 @@ function applyDeclaredCalculations(schema: RJSFSchema, formData: InvestigationFo
 }
 
 /**
- * The root properties the server writes: timestamps, revision logs and server-owned values such as
- * the report log. They are read from the stored document, never carried in the form, so the form
- * neither sends them nor treats the server's copy of them as an unsaved change.
+ * The root properties the server writes: timestamps, revision logs, who the document is by and
+ * server-owned values such as the report log. They are read from the stored document, never carried in
+ * the form, so the form neither sends them nor treats the server's copy of them as an unsaved change.
  */
 const isServerControlledProperty = (property: unknown): boolean =>
   isRecord(property) &&
   (property['x-draken-server-timestamp'] !== undefined ||
     property['x-draken-server-revisions'] === true ||
+    property['x-draken-server-author'] !== undefined ||
     property['x-draken-server-owned'] === true);
 
 /**

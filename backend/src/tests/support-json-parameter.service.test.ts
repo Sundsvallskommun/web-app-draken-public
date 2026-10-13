@@ -430,6 +430,78 @@ describe('SupportJsonParameterService', () => {
     });
   });
 
+  const authoredSchema = () =>
+    schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        assessment: { type: 'string' },
+        decisionMaker: {
+          type: 'object',
+          'x-draken-server-author': 'created',
+          additionalProperties: false,
+          required: ['name'],
+          properties: { name: { type: 'string' }, role: { type: 'string' } },
+        },
+      },
+    });
+
+  it('records who first writes a document, by name and in the role that answers for it, whatever the client sent', async () => {
+    const { api, service } = makeSubject(
+      [
+        writableParentResponse(),
+        new HttpException(404, 'Not found'),
+        response(authoredSchema(), 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(1), 201, '"1"')],
+    );
+
+    await service.writeJsonParameter({
+      ...writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { assessment: 'saved', decisionMaker: { name: 'Forged', role: 'Anybody' } }),
+      definition: { ...DEFINITION, ownerLabel: 'LEX-ansvarig' },
+    });
+
+    expect(api.putCalls[0]).toMatchObject({
+      data: { value: { assessment: 'saved', decisionMaker: { name: USER.name, role: 'LEX-ansvarig' } } },
+    });
+  });
+
+  it('keeps who first wrote the document when somebody else saves it later', async () => {
+    const stored = { ...document(7), value: { assessment: 'version-7', decisionMaker: { name: 'First Decider', role: 'LEX-ansvarig' } } };
+    const { api, service } = makeSubject(
+      [writableParentResponse(), response(stored, 200, '"7"'), response(authoredSchema(), 200), writableParentResponse(), writableParentResponse(11)],
+      [response(document(8), 200, '"8"')],
+    );
+
+    await service.writeJsonParameter({
+      ...writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'changed' }),
+      definition: { ...DEFINITION, ownerLabel: 'LEX-ansvarig' },
+    });
+
+    expect(api.putCalls[0]).toMatchObject({
+      data: { value: { assessment: 'changed', decisionMaker: { name: 'First Decider', role: 'LEX-ansvarig' } } },
+    });
+  });
+
+  it('records the writer without a role where the profile names none', async () => {
+    const { api, service } = makeSubject(
+      [
+        writableParentResponse(),
+        new HttpException(404, 'Not found'),
+        response(authoredSchema(), 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(1), 201, '"1"')],
+    );
+
+    await service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { assessment: 'saved' }));
+
+    expect((api.putCalls[0].data as { value: JsonObject }).value.decisionMaker).toEqual({ name: USER.name });
+  });
+
   it('leaves documents whose schema declares no server stamps exactly as sent', async () => {
     const plainSchema = schema(DEFINITION.schemaName, SCHEMA_ID, { type: 'object', properties: { decidedAt: { type: 'string' } } });
     const { api, service } = makeSubject(

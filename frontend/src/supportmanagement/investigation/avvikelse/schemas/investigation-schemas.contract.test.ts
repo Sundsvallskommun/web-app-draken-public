@@ -44,9 +44,10 @@ const artifacts = [
   },
   {
     name: 'beslut-sol-lss',
-    version: '1.3',
+    version: '1.4',
     hasErrandClassification: false,
     hasReport: false,
+    authorField: 'decisionMaker',
     schemaFile: 'beslut-sol-lss.schema-request.json',
     uiSchemaFile: 'beslut-sol-lss.ui-schema-request.json',
   },
@@ -204,6 +205,8 @@ test('schemas declare errand classification externally only where it is edited',
 
     // The report controls are an external field too, on every investigation but never on a decision.
     const reportFields = artifact.hasReport ? ['$external:investigationReport'] : [];
+    // So is who the document is by, where the schema leaves that to the server: Draken shows it, nobody types it.
+    const authorFields = 'authorField' in artifact ? [`$external:${artifact.authorField}`] : [];
     if (artifact.hasErrandClassification) {
       assert.deepEqual(schema['x-draken-external-fields'], {
         errandClassification: expectedDeclaration,
@@ -211,7 +214,7 @@ test('schemas declare errand classification externally only where it is edited',
       assert.deepEqual(externalFields, ['$external:errandClassification', ...reportFields]);
     } else {
       assert.equal(schema['x-draken-external-fields'], undefined);
-      assert.deepEqual(externalFields, reportFields);
+      assert.deepEqual(externalFields, [...reportFields, ...authorFields]);
     }
   }
 });
@@ -638,6 +641,69 @@ test('the lex Sarah decision classifies the report with the same degrees the inv
   );
 });
 
+// The decision is taken under lex Sarah's own provisions, which are not the legal bases the errand is
+// classified by: a field of its own, so nothing that reads an investigation's legal bases reads these.
+test('the lex Sarah decision names the provisions it is taken under', () => {
+  const schema = readJson('beslut-sol-lss.schema-request.json').value;
+  const uiSchema = readJson('beslut-sol-lss.ui-schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+  const decision = { decidedMisconductDegree: 'misconduct', decisionMotivation: '<p>Ja.</p>', ivoNotification: 'no' };
+
+  assert.equal(schema.properties.decisionLegalBases.title, 'Ange lagrum');
+  assert.deepEqual(schema.properties.decisionLegalBases.items.oneOf, [
+    { const: 'sol_27_5', title: '27 kap 5 § SoL' },
+    { const: 'lss_24e', title: '24 e § LSS' },
+  ]);
+  assert.equal('legalBases' in schema.properties, false);
+  assert.equal(schema.required.includes('decisionLegalBases'), false);
+  assert.equal(uiSchema.decisionLegalBases['ui:options'].multiple, true);
+  const decisionFields: string[] = uiSchema['ui:sections'][0].fields;
+  assert.ok(decisionFields.indexOf('decidedMisconductDegree') < decisionFields.indexOf('decisionLegalBases'));
+  assert.ok(decisionFields.indexOf('decisionLegalBases') < decisionFields.indexOf('decisionMotivation'));
+
+  assert.equal(validate(decision), true, ajv.errorsText(validate.errors));
+  assert.equal(validate({ ...decision, decisionLegalBases: ['sol_27_5'] }), true, ajv.errorsText(validate.errors));
+  assert.equal(validate({ ...decision, decisionLegalBases: ['sol_27_5', 'lss_24e'] }), true);
+  assert.equal(validate({ ...decision, decisionLegalBases: ['sol_27_5', 'sol_27_5'] }), false);
+  assert.equal(validate({ ...decision, decisionLegalBases: ['HSL'] }), false);
+});
+
+// Who took the decision is the server's to record, like when it was taken: the schema marks the property for
+// the BFF to stamp at the first save, the form hides it, and Draken shows it where the UI schema places it.
+test('the lex Sarah decision leaves who decided to the server and shows it last in the decision', () => {
+  const schema = readJson('beslut-sol-lss.schema-request.json').value;
+  const uiSchema = readJson('beslut-sol-lss.ui-schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+  const decision = { decidedMisconductDegree: 'misconduct', decisionMotivation: '<p>Ja.</p>', ivoNotification: 'no' };
+  const decisionMaker = schema.properties.decisionMaker;
+
+  assert.equal(decisionMaker.title, 'Beslutsfattare');
+  assert.equal(decisionMaker['x-draken-server-author'], 'created');
+  assert.equal(decisionMaker.readOnly, true);
+  assert.equal(decisionMaker.additionalProperties, false);
+  assert.deepEqual(decisionMaker.required, ['name']);
+  assert.deepEqual(
+    Object.entries(decisionMaker.properties).map(([name, property]: [string, any]) => [name, property.title]),
+    [
+      ['name', 'Namn'],
+      ['role', 'Roll'],
+    ]
+  );
+  assert.equal(schema.required.includes('decisionMaker'), false);
+  assert.equal(uiSchema.decisionMaker['ui:widget'], 'hidden');
+  assert.equal(uiSchema['ui:sections'][0].fields.at(-1), '$external:decisionMaker');
+
+  assert.equal(validate({ ...decision, decisionMaker: { name: 'Iaf Testare', role: 'LEX-ansvarig' } }), true);
+  assert.equal(
+    validate({ ...decision, decisionMaker: { name: 'Iaf Testare' } }),
+    true,
+    ajv.errorsText(validate.errors)
+  );
+  assert.equal(validate({ ...decision, decisionMaker: { role: 'LEX-ansvarig' } }), false);
+  assert.equal(validate({ ...decision, decisionMaker: { name: '', role: 'LEX-ansvarig' } }), false);
+  assert.equal(validate({ ...decision, decisionMaker: { name: 'Iaf Testare', account: 'iaf.test' } }), false);
+});
+
 // The legal bases question says what to do; the template needs no explanation of how Draken stores it.
 test('the unit manager investigation explains the legal bases and leaves the template unexplained', () => {
   const schema = readJson('utredning-enhetschef.schema-request.json').value;
@@ -667,7 +733,7 @@ test('all sketch multiselects are represented as unique arrays', () => {
     'utredning-sol-lss': ['causeAreas'],
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
     'beslut-hsl': [],
-    'beslut-sol-lss': [],
+    'beslut-sol-lss': ['decisionLegalBases'],
     'bedomning-sol-lss': [],
   };
 
@@ -686,6 +752,7 @@ test('short multiselects use checkboxes while longer cause lists remain searchab
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
     'utredning-sol-lss': ['causeAreas'],
     'utredning-hsl': ['identifiedCauses'],
+    'beslut-sol-lss': ['decisionLegalBases'],
   };
   const expectedComboboxes: Partial<Record<string, string[]>> = {
     'utredning-hsl': ['underlyingCauses'],

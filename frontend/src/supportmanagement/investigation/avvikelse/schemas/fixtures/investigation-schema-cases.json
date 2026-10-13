@@ -262,7 +262,12 @@
           "savedBy": "iaf.test"
         }
       ],
+      "decisionMaker": {
+        "name": "Lena Lexberg",
+        "role": "LEX-ansvarig"
+      },
       "decidedMisconductDegree": "serious_misconduct",
+      "decisionLegalBases": ["sol_27_5", "lss_24e"],
       "decisionMotivation": "<p>Rapporten utgjorde ett allvarligt missförhållande.</p>",
       "ivoNotification": "yes",
       "ivoCaseNumber": "IVO-2026-4321",
@@ -305,6 +310,15 @@
         "value": {
           "decidedMisconductDegree": "unknown",
           "decisionMotivation": "<p>-</p>",
+          "ivoNotification": "no"
+        }
+      },
+      {
+        "description": "Okänt lagrum avvisas",
+        "value": {
+          "decidedMisconductDegree": "misconduct",
+          "decisionLegalBases": ["hsl"],
+          "decisionMotivation": "<p>Missförhållande.</p>",
           "ivoNotification": "no"
         }
       }

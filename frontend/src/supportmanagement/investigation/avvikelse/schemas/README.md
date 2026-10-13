@@ -8,7 +8,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
-| `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
+| `beslut-sol-lss`            | 1.4           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 | `bedomning-sol-lss`         | 1.0           | `bedomning-sol-lss.schema-request.json`    | `bedomning-sol-lss.ui-schema-request.json`    |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
@@ -97,6 +97,12 @@ artefakterna, och `versions/latest` pekar på 1.8. Inget har publicerats i produ
 Den 13 oktober 2026 publicerades `2281_utredning-enhetschef_1.9` i testmiljön, med nya hjälptexter (se Utredning
 enhetschef 1.9). Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar
 på 1.9. Inget har publicerats i produktionsmiljön.
+
+Samma dag publicerades `2281_beslut-sol-lss_1.4` i testmiljön, med lagrum och beslutsfattare (se Besluten). Schema
+och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 1.4. Inget har
+publicerats i produktionsmiljön. Schemat publicerades innan BFF:en med stämpeln `x-draken-server-author` var
+driftsatt i test. Ett beslut som sparas mot 1.4 genom en äldre BFF får ingen beslutsfattare; den som sparar det
+första gången efter driftsättningen bokförs då som beslutsfattare, även om någon annan fattade beslutet.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
@@ -290,6 +296,20 @@ sparas om i efterhand, till exempel när IVO:s ärendenummer kommer:
 BFF:en sätter alla tre oavsett vad klienten skickar; formuläret döljer fälten och visar Beslutat och Senast ändrat i
 dokumentets huvud. Från `utredning-hsl` 1.1 ligger IVO- och Public 360-fälten inte längre i utredningen; dokument
 som redan är bundna till 1.0 behåller sina fält och sin regel.
+
+`beslut-sol-lss` 1.4 lägger till två saker. Beslut som redan är sparade är bundna till 1.3 och har varken lagrum
+eller beslutsfattare.
+
+- **Ange lagrum** (`decisionLegalBases`): lagrummen beslutet fattas enligt, 27 kap 5 § SoL och 24 e § LSS, ett eller
+  båda. Fältet är frivilligt. Det heter inte `legalBases`, eftersom det inte är lagrummen ärendet kategoriseras
+  efter: inget som läser en utrednings lagrum ska läsa dem.
+- **Beslutsfattare** (`decisionMaker`, `x-draken-server-author: "created"`): `{ name, role }` för den som sparade
+  beslutet första gången. BFF:en sätter namnet ur sessionen och rollen ur dokumentets `ownerLabel` i runtimeprofilen
+  (LEX-ansvarig), och behåller värdet vid senare sparningar, vem som än sparar. Formuläret bär aldrig fältet.
+  UI-schemat döljer det och placerar `$external:decisionMaker` sist i Beslut om missförhållande, där Draken visar
+  det lagrade värdet (`resolveInvestigationDocumentAuthor`). Innan beslutet är sparat ser den som får skriva det sitt
+  eget namn och rollen, alltså det som sparningen kommer att bokföra. Dokument bundna till 1.3 har ingen
+  beslutsfattare.
 
 I version 1.1 deklarerar enhetschefs- och SOL/LSS-schemana det externa fältet
 `x-draken-external-fields.errandClassification`. Respektive UI Schema placerar

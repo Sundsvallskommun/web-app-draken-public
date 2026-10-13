@@ -53,6 +53,8 @@ import {
 } from './investigation-decision-proposal';
 import { InvestigationDecisionProposal } from './investigation-decision-proposal.component';
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
+import { resolveInvestigationDocumentAuthor } from './investigation-document-author';
+import { InvestigationDocumentAuthor } from './investigation-document-author.component';
 import {
   getHslRiskValue,
   getInvestigationCompletion,
@@ -193,6 +195,7 @@ export function SupportInvestigationDocument({
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const setActiveTabKey = useSupportStore((state) => state.setActiveTabKey);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
+  const userName = useUserStore((state) => state.user.name);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const profile = useInvestigationProfileStore((state) => state.profile);
@@ -480,6 +483,15 @@ export function SupportInvestigationDocument({
   const reports =
     documentState && completion ? getInvestigationReports(documentState.schema, documentState.persistedFormData) : [];
   const formReadonly = readonly || Boolean(classificationWriteBlock) || prerequisiteMissing || locked;
+  // Who the document is by is the server's to record. Until it is saved, somebody who may write it sees what
+  // saving will record: their own name, in the role that answers for the document.
+  const documentAuthor = documentState
+    ? resolveInvestigationDocumentAuthor(
+        documentState.schema,
+        documentState.persistedFormData,
+        !documentState.persisted && !readonly && userName ? { name: userName, role: definition.ownerLabel } : undefined
+      )
+    : undefined;
   const classificationUiSchema = useMemo(
     () =>
       documentState
@@ -1096,6 +1108,9 @@ export function SupportInvestigationDocument({
         // Saved with Spara ärende in the sidebar, together with the rest of the errand.
         withoutSubmitButton
         externalFields={{
+          ...(documentAuthor
+            ? { [documentAuthor.field]: <InvestigationDocumentAuthor author={documentAuthor} /> }
+            : {}),
           ...(completion
             ? {
                 investigationReport: (

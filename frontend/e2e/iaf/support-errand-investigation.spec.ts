@@ -803,6 +803,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect.poll(() => trace.latestSchemaNames).toContain(misconductDecisionKey);
     expect(trace.documentGets).not.toContain(hslDecisionKey);
 
+    // Until the decision is saved, the one about to take it is shown as it will be recorded: by name, as LEX-ansvarig.
+    const decisionMaker = document.locator('[data-cy="investigation-document-author"]');
+    await expect(decisionMaker.getByRole('heading', { name: 'Beslutsfattare', exact: true })).toBeVisible();
+    await expect(decisionMaker).toContainText('Iaf Testare');
+    await expect(decisionMaker).toContainText('LEX-ansvarig');
+
     // The investigator's proposal from the SoL/LSS investigation is shown read-only, never copied.
     const proposal = document.locator('[data-cy="investigation-decision-proposal"]');
     await expect(proposal).toContainText('Förslag till beslut från utredning SoL/LSS');
@@ -820,6 +826,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(classification).toHaveClass(/\bw-full\b/u);
     await expect(classification).not.toHaveClass(/max-w-\[48rem\]/u);
     await classification.selectOption('tangible_risk_of_serious_misconduct');
+    // The provisions the decision is taken under: lex Sarah's own, one or both.
+    const decisionLegalBases = document.locator(`#${misconductDecisionKey}_decisionLegalBases-group`);
+    await expect(document.getByRole('group', { name: 'Ange lagrum', exact: true })).toBeVisible();
+    await expect(decisionLegalBases.getByLabel('24 e § LSS', { exact: true })).not.toBeChecked();
+    await decisionLegalBases.getByText('27 kap 5 § SoL', { exact: true }).click();
     await document.locator(`#${misconductDecisionKey}_decisionMotivation`).fill('Risken var påtaglig.');
     await document
       .locator(`#${misconductDecisionKey}_ivoNotification`)
@@ -832,10 +843,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect.poll(() => trace.puts.length).toBe(1);
     expect(trace.puts[0].key).toBe(misconductDecisionKey);
     expect(trace.puts[0].headers['if-none-match']).toBe('*');
+    // Who decided is not in what the browser sends: the BFF records it.
     expect(trace.puts[0].body).toEqual({
-      schemaId: `2281_${misconductDecisionKey}_1.3`,
+      schemaId: `2281_${misconductDecisionKey}_1.4`,
       value: {
         decidedMisconductDegree: 'tangible_risk_of_serious_misconduct',
+        decisionLegalBases: ['sol_27_5'],
         decisionMotivation: '<p>Risken var påtaglig.</p>',
         ivoNotification: 'yes',
         public360CaseNumber: 'P360-2026-8765',
@@ -885,6 +898,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(document.locator(`#${misconductDecisionKey}_decisionMotivation`)).toBeVisible();
     await expect(document.locator('[data-cy="investigation-document-prerequisite"]')).toHaveCount(0);
     await expect(document).not.toContainText('kan fattas först när');
+    // The decision is by whoever took it, as the document records - not by whoever reads it.
+    const decisionMaker = document.locator('[data-cy="investigation-document-author"]');
+    await expect(decisionMaker).toContainText('Lena Lexberg');
+    await expect(decisionMaker).toContainText('LEX-ansvarig');
+    await expect(decisionMaker).not.toContainText('Iaf Testare');
   });
 
   test('markerar HSL-utredningen klar, låser den, skapar numrerade rapporter och låser upp igen', async ({

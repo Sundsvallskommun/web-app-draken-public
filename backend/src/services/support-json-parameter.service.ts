@@ -26,6 +26,8 @@ import { assertSupportErrandWritable, getErrandVersion } from './support-errand.
 interface JsonParameterDefinition<TKey extends string = string, TSchemaName extends string = string> {
   readonly key: TKey;
   readonly schemaName: TSchemaName;
+  /** The role that answers for the document, where the profile names one. Recorded with whoever writes it first. */
+  readonly ownerLabel?: string;
 }
 
 export interface SupportJsonParameter<TKey extends string = string> {
@@ -275,6 +277,8 @@ interface ServerStampContext {
   readonly existingValue: JsonObject | undefined;
   readonly now: Date;
   readonly savedBy: string;
+  /** Who is writing, by name and in which role, for a document that records who it is by. */
+  readonly author: JsonObject;
   /** Values the BFF itself supplies for `x-draken-server-owned` properties. */
   readonly serverOwnedOverrides?: JsonObject;
 }
@@ -314,6 +318,7 @@ const serverControlledProperties = (schema: JsonSchema): Set<string> => {
     if (
       property['x-draken-server-timestamp'] !== undefined ||
       property['x-draken-server-revisions'] === true ||
+      property['x-draken-server-author'] !== undefined ||
       property['x-draken-server-owned'] === true
     ) {
       controlled.add(name);
@@ -360,6 +365,8 @@ const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject
  * - `x-draken-server-timestamp: 'updated'` is stamped on every write.
  * - `x-draken-server-revisions: true` names an array the BFF extends with `{ savedAt, savedBy }` on
  *   every write, starting from the stored array rather than the client's copy.
+ * - `x-draken-server-author: 'created'` is stamped on the first write with `{ name, role }` - who wrote the
+ *   document, and in the role that answers for it - and then kept from the stored document, whoever saves later.
  * - `x-draken-server-owned: true` names a value only the BFF writes, kept from the stored document
  *   unless the BFF's own caller overrides it.
  */
@@ -400,6 +407,11 @@ const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: Serve
     if (property['x-draken-server-revisions'] === true) {
       const existing = context.existingValue?.[name];
       stamped[name] = [...(Array.isArray(existing) ? existing : []), { savedAt: timestamp, savedBy: context.savedBy }];
+      changed = true;
+    }
+    if (property['x-draken-server-author'] === 'created') {
+      const existing = context.existingValue?.[name];
+      stamped[name] = isRecord(existing) ? existing : context.author;
       changed = true;
     }
     // A server-owned value is whatever the BFF says it is, else whatever is stored; a client's copy
@@ -542,6 +554,10 @@ export class SupportJsonParameterService {
       existingValue: existing?.document.value,
       now: this.clock(),
       savedBy: request.user.username,
+      author: {
+        name: request.user.name || request.user.username,
+        ...(request.definition.ownerLabel ? { role: request.definition.ownerLabel } : {}),
+      },
       serverOwnedOverrides: request.internal?.serverOwnedOverrides,
     });
     this.schemaService.assertValueMatchesSchema(schema, value);

@@ -1,8 +1,8 @@
 {
   "name": "beslut-sol-lss",
-  "version": "1.3",
+  "version": "1.4",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/beslut-sol-lss/1.3",
+    "$id": "https://schemas.sundsvall.se/2281/beslut-sol-lss/1.4",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Beslut SoL/LSS",
     "description": "Beslut enligt lex Sarah för IAF- och VOF-ärenden med rapporttyp missförhållande. Utredarens förslag till beslut ligger i SoL/LSS-utredningen och kopieras inte hit.",
@@ -50,6 +50,27 @@
           }
         }
       },
+      "decisionMaker": {
+        "title": "Beslutsfattare",
+        "description": "Den som fattade beslutet, det vill säga sparade det första gången, och i vilken roll. Sätts av servern och kan inte anges eller ändras av användaren.",
+        "type": "object",
+        "readOnly": true,
+        "x-draken-server-author": "created",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "title": "Namn",
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "title": "Roll",
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
       "decidedMisconductDegree": {
         "title": "LEX-ansvarig beslutar att rapporten utgjorde",
         "type": "string",
@@ -63,6 +84,18 @@
           },
           { "const": "serious_misconduct", "title": "Allvarligt missförhållande – anmäls till IVO" }
         ]
+      },
+      "decisionLegalBases": {
+        "title": "Ange lagrum",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            { "const": "sol_27_5", "title": "27 kap 5 § SoL" },
+            { "const": "lss_24e", "title": "24 e § LSS" }
+          ]
+        }
       },
       "decisionMotivation": {
         "title": "Motivering",
@@ -113,5 +146,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.3 of the SoL/LSS (lex Sarah) decision schema"
+  "description": "WSO2 request body for version 1.4 of the SoL/LSS (lex Sarah) decision schema"
 }
