@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
   errandNumber,
+  iafLabelFixture,
   installIafApiMock,
   withHighHslRisk,
 } from './fixtures/investigation-flow.mock';
@@ -106,6 +107,46 @@ test('enhetschef is shown Händelseanalys HSL as soon as the investigation is sa
   expect(page.url()).toContain(`arende/${errandNumber}`);
   await hslTab.click();
   await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toBeVisible();
+});
+
+// The label write is the save's own, however many of the errand's version steps it takes. The classification saved
+// with the investigation is conditioned on the version after all of them, or it is refused as somebody else's change.
+test('enhetschef saves the classification together with a high HSL risk', async ({ page, dismissCookieConsent }) => {
+  const documents = allExistingInvestigationDocuments();
+  documents['utredning-enhetschef'].value.riskAssessmentHsl = {
+    assessedWith: 'Anna Andersson',
+    probability: 1,
+    severity: 3,
+    calculatedRiskValue: 3,
+  };
+  const trace = await installIafApiMock(page, {
+    roleKeys: ['enhetschef'],
+    documents,
+    labelStructure: withHighHslRisk().labelStructure,
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await openInvestigation(page);
+
+  const investigation = page.locator('[data-cy="investigation-document-utredning-enhetschef"]');
+  const classification = investigation.locator('[data-cy="avvikelse-label-categorization-HSL"]');
+  await classification
+    .locator('[data-cy="label-classification-type"]')
+    .selectOption(iafLabelFixture.classification.medication.resourcePath);
+  await classification
+    .locator('[data-cy="label-classification-subtype"]')
+    .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+  await page.locator('#utredning-enhetschef_riskAssessmentHsl_probability').getByLabel(/^2 –/u).check();
+  const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
+  await saveButton.click();
+
+  await expect.poll(() => trace.puts.length).toBe(1);
+  await expect.poll(() => trace.classificationPatches.length).toBe(1);
+  // Both were saved: nothing is left to save, and nobody is told that somebody else changed the errand.
+  await expect(saveButton).toBeDisabled();
+  await expect(investigation).not.toContainText('ändrats');
+  await expect(classification.locator('[data-cy="label-classification-type"]')).toHaveValue(
+    iafLabelFixture.classification.medication.resourcePath
+  );
 });
 
 test('MAS/MAR is shown Händelseanalys HSL whatever the risk', async ({ page, dismissCookieConsent }) => {

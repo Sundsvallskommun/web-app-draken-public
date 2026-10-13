@@ -167,11 +167,13 @@ export class SupportErrandJsonParameterController {
     });
 
     // The risk label is a second write on the errand. The client is told how many of the version steps are
-    // this request's own, so it can tell them from somebody else's.
+    // this request's own, so it can tell them from somebody else's: the document write is one, read back right
+    // after it, and the label write is the steps from there - as many as Support Management took for it.
     const riskLabelVersion = await this.applyHighHslRiskLabel(req, definition, municipalityId, errandId, result);
+    const errandVersion = riskLabelVersion ?? result.parentErrandVersion;
     setETagHeader(response, result.etag, result.document.version);
-    response.setHeader('X-Errand-Version', String(riskLabelVersion ?? result.parentErrandVersion));
-    response.setHeader('X-Errand-Writes', riskLabelVersion === undefined ? '1' : '2');
+    response.setHeader('X-Errand-Version', String(errandVersion));
+    response.setHeader('X-Errand-Writes', String(1 + (errandVersion - result.parentErrandVersion)));
     return response.status(result.status).send(result.document);
   }
 

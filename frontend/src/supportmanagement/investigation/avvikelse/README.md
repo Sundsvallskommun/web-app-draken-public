@@ -366,11 +366,14 @@ lämnade; har någon annan hunnit skriva däremellan, eller saknar namespacet la
 ingenting. Den görs om det går: utredningen är sparad oavsett, och en label som inte kunde skrivas loggas
 i stället för att bli ett misslyckat sparande.
 
-Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Errand-Writes`, 1 eller 2), så att
-klienten kan flytta fram ärendets version förbi båda (`isSoleSupportErrandVersionChange`) i stället för
-att tro att någon annan har skrivit.
+Svaret säger hur många av ärendets versionssteg anropet självt tog (`X-Errand-Writes`), så att klienten kan
+flytta fram ärendets version förbi dem (`isSoleSupportErrandVersionChange`) i stället för att tro att någon
+annan har skrivit. Dokumentskrivningen är ett steg. Labelskrivningen är stegen därifrån, och de **läses**, de
+räknas inte: hur många steg Support Management tar för en labelskrivning är dess egen sak. En version som
+antas ligga ett steg fram blir för låg, och då avvisas klassificeringen som sparas i samma sparning som någon
+annans ändring.
 
-Två steg betyder också att ärendet har fått en label som sidan inte känner till (`savedBeyondTheDocument`).
+Fler än ett steg betyder också att ärendet har fått en label som sidan inte känner till (`savedBeyondTheDocument`).
 Sidan läser då om ärendet och tar över dess labels, och inget annat av det (`refreshErrandLabels` i
 `support-investigation-document.component.tsx`). Sparas klassificeringen i samma sparning kommer labels i stället
 med dess svar. Det som visas efter ärendets labels följer då sparningen utan att sidan laddas om: Händelseanalys

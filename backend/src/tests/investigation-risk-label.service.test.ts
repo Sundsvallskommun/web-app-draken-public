@@ -14,14 +14,18 @@ const labelStructure: Label[] = [
   },
 ];
 
-const setup = (errandVersion: number, labels: { id: string }[] = []) => {
+const setup = (errandVersion: number, labels: { id: string }[] = [], versionStepsOfLabelWrite = 1) => {
+  let currentVersion = errandVersion;
   const api = {
     get: vi.fn(async (config: { url: string }) =>
       config.url.endsWith('/metadata/labels')
         ? { data: { labelStructure } }
-        : { data: { id: mockSupportErrandId, labels }, headers: { etag: `"${errandVersion}"` } },
+        : { data: { id: mockSupportErrandId, labels }, headers: { etag: `"${currentVersion}"` } },
     ),
-    patch: vi.fn(async () => ({ data: {} })),
+    patch: vi.fn(async () => {
+      currentVersion += versionStepsOfLabelWrite;
+      return { data: {} };
+    }),
   };
   const service = new InvestigationRiskLabelService(api as never, 'NAMESPACE');
   const apply = (present: boolean, expectedVersion: number) =>
@@ -38,6 +42,15 @@ describe('InvestigationRiskLabelService', () => {
       expect.objectContaining({ data: { labels: [{ id: 'risk-root' }, { id: 'high-hsl' }] }, headers: { 'If-Match': '"8"' } }),
       expect.anything(),
     );
+  });
+
+  // Support Management decides how many version steps a label write takes. A version counted one step on would be
+  // short of it, and the classification saved with the investigation would then be refused as somebody else's change.
+  it('answers the version the errand is read back at, however many steps the label write took', async () => {
+    const { api, apply } = setup(8, [], 2);
+
+    await expect(apply(true, 8)).resolves.toBe(10);
+    expect(api.patch).toHaveBeenCalledTimes(1);
   });
 
   // Somebody else wrote between the investigation and the label: the label waits for the next completed save.

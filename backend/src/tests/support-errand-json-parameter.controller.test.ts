@@ -746,6 +746,19 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
     expect(res.headers['X-Errand-Writes']).toBe('2');
   });
 
+  // The document write left the errand at 13. The label write is every step from there, as Support Management took
+  // them: the client is told all of them are this request's own, or it could not follow the errand past them.
+  it('counts every version step the label write took as its own', async () => {
+    const { controller, documentService } = makeRiskController(15);
+
+    const { res } = await save(controller, documentService, 'utredning-enhetschef', {
+      riskAssessmentHsl: { calculatedRiskValue: 6 },
+    });
+
+    expect(res.headers['X-Errand-Version']).toBe('15');
+    expect(res.headers['X-Errand-Writes']).toBe('3');
+  });
+
   it('sets the label as soon as a draft assesses an HSL risk of 4 or more, so MAS/MAR reach the errand at once', async () => {
     const { controller, documentService, riskLabelService } = makeRiskController(14);
 

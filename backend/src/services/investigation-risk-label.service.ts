@@ -32,7 +32,13 @@ export class InvestigationRiskLabelService {
     private readonly namespace: string = SUPPORTMANAGEMENT_NAMESPACE ?? '',
   ) {}
 
-  /** Answers the errand version after its own write, or `undefined` when it wrote nothing. */
+  /**
+   * Answers the errand version after its own write, or `undefined` when it wrote nothing.
+   *
+   * The version is read back, never counted: how many steps Support Management takes for a label write is its
+   * own business, and a version one step short makes the caller's next errand write - the classification saved
+   * with the investigation - somebody else's change.
+   */
   async applyHighHslRiskLabel({
     municipalityId,
     errandId,
@@ -42,18 +48,24 @@ export class InvestigationRiskLabelService {
   }: ApplyHighHslRiskLabelRequest): Promise<number | undefined> {
     const baseURL = apiURL(apiServiceName('supportmanagement'));
     const url = `${municipalityId}/${this.namespace}/errands/${errandId}`;
+    const readErrandVersion = async (): Promise<{ version: number; labels: Errand['labels'] }> => {
+      const errand = await this.apiService.get<Errand>(
+        { url, baseURL, includeResponseHeaders: true, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      );
+      return { version: getErrandVersion(errand.data, errand.headers?.etag), labels: errand.data.labels };
+    };
     const [errand, labels] = await Promise.all([
-      this.apiService.get<Errand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true, mapUnauthorizedToForbidden: true }, user),
+      readErrandVersion(),
       this.apiService.get<Labels | null>(
         { url: `${municipalityId}/${this.namespace}/metadata/labels`, baseURL, propagateClientError: true, mapUnauthorizedToForbidden: true },
         user,
       ),
     ]);
-    const version = getErrandVersion(errand.data, errand.headers?.etag);
-    if (version !== expectedVersion) return undefined;
+    if (errand.version !== expectedVersion) return undefined;
 
     const update = buildLabelPresenceUpdate({
-      currentLabels: errand.data.labels,
+      currentLabels: errand.labels,
       labelStructure: labels.data?.labelStructure,
       resourcePath: IAF_VOF_HIGH_HSL_RISK_LABEL,
       present,
@@ -65,7 +77,7 @@ export class InvestigationRiskLabelService {
         url,
         baseURL,
         data: { labels: update },
-        headers: { 'If-Match': `"${version}"` },
+        headers: { 'If-Match': `"${errand.version}"` },
         followLocation: false,
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,
@@ -74,6 +86,6 @@ export class InvestigationRiskLabelService {
       },
       user,
     );
-    return version + 1;
+    return (await readErrandVersion()).version;
   }
 }

@@ -728,6 +728,8 @@ export const withPlaceStructure = ({ withLex = false } = {}): Pick<IafApiScenari
 });
 
 const highHslRisk = label('risk-high-hsl-id', 'RISK', 'Hög risk HSL', 'HIGH_HSL', 'RISK/HIGH_HSL');
+/** How many of the errand's version steps the label write takes: not one, so nothing may count it as one. */
+const HIGH_HSL_RISK_LABEL_WRITE_STEPS = 2;
 const riskRoot = label('risk-root-id', 'RISK_ROOT', 'Risk', 'RISK', 'RISK', [highHslRisk]);
 
 /**
@@ -1645,7 +1647,8 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         errandVersion += 1;
         // The BFF marks the errand with a high HSL risk in the same call, when the unit manager's investigation
         // assesses one, the namespace has the label and the errand does not carry it yet. It is a second write on
-        // the errand, and the answer says so.
+        // the errand, which Support Management takes more than one version step for, and the answer says how many
+        // of the steps were the request's own.
         const hslRisk = updated.value.riskAssessmentHsl as { calculatedRiskValue?: unknown } | undefined;
         const marksHighHslRisk =
           key === 'utredning-enhetschef' &&
@@ -1655,13 +1658,13 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           !errandLabels.some(({ id }) => id === highHslRisk.id);
         if (marksHighHslRisk) {
           errandLabels = [...errandLabels, withoutChildren(highHslRisk)];
-          errandVersion += 1;
+          errandVersion += HIGH_HSL_RISK_LABEL_WRITE_STEPS;
         }
         const { etag, ...responseDocument } = updated;
         await fulfillJson(route, responseDocument, existingDocument ? 200 : 201, {
           etag,
           'x-errand-version': String(errandVersion),
-          ...(marksHighHslRisk ? { 'x-errand-writes': '2' } : {}),
+          ...(marksHighHslRisk ? { 'x-errand-writes': String(1 + HIGH_HSL_RISK_LABEL_WRITE_STEPS) } : {}),
           'access-control-expose-headers': 'ETag, X-Errand-Version, X-Errand-Writes',
         });
         return;
