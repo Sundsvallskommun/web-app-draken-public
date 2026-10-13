@@ -39,6 +39,25 @@ test('conceals the HSL investigation by its key in the profile, and only while t
     concealedAvvikelseDocumentKeys({ errand: errand([]), profile, labelStructure: [], viewer: unitManager }),
     ['hsl-document']
   );
+  // The comment on the analysis has nothing to comment on where the analysis is not shown: it follows it.
+  const withComment = {
+    documents: [...profile.documents, { key: 'comment-document', schemaName: 'vc-kommentar-hsl' }],
+  } as unknown as InvestigationProfile;
+  for (const viewer of [unitManager, { roleKeys: ['verksamhetschef'] }]) {
+    assert.deepEqual(
+      concealedAvvikelseDocumentKeys({ errand: errand([]), profile: withComment, labelStructure: [], viewer }),
+      ['hsl-document', 'comment-document']
+    );
+    assert.deepEqual(
+      concealedAvvikelseDocumentKeys({
+        errand: errand([highHslRisk]),
+        profile: withComment,
+        labelStructure: [],
+        viewer,
+      }),
+      []
+    );
+  }
   assert.deepEqual(
     concealedAvvikelseDocumentKeys({ errand: errand([highHslRisk]), profile, labelStructure: [], viewer: unitManager }),
     []

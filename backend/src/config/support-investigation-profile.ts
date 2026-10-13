@@ -191,6 +191,14 @@ const iafVofInvestigationProfileBase = {
       tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
     },
+    // The comment on MAS/MAR's event analysis by the one who commissioned it. A document of its own, so
+    // that the head of operations writes it without being given the analysis itself to change.
+    {
+      key: 'vc-kommentar-hsl',
+      schemaName: 'vc-kommentar-hsl',
+      tabLabel: 'VC kommentar HSL',
+      ownerLabel: 'Verksamhetschef',
+    },
     // LEX-ansvarig's first assessment once the errand has been handed to LEX: whether it is reported to
     // IVO, and whether it is lex-investigated at all. In Ärendeuppgifter, ahead of any investigation.
     {

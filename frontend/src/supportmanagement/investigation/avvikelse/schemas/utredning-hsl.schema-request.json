@@ -1,11 +1,11 @@
 {
   "name": "utredning-hsl",
-  "version": "1.3",
+  "version": "1.4",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.3",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.4",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning HSL",
-    "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, åtgärder och handlingsplan lagras inte i detta dokument.",
+    "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, uppdragsgivarens kommentar, åtgärder och handlingsplan lagras inte i detta dokument.",
     "type": "object",
     "additionalProperties": false,
     "x-draken-completion": { "field": "completed", "reportsField": "reports" },
@@ -91,12 +91,6 @@
         "type": "string",
         "contentMediaType": "text/html"
       },
-      "commissionerComment": {
-        "title": "Uppdragsgivarens kommentar",
-        "description": "Uppdragsgivarens kommentar på händelseanalysen.",
-        "type": "string",
-        "contentMediaType": "text/html"
-      },
       "completed": {
         "title": "Är utredningen klar?",
         "description": "Ja låser utredningen för ändringar och gör det möjligt att skapa en rapport. Lås upp utredningen för att ändra den igen.",
@@ -179,5 +173,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.3 of the HSL investigation schema"
+  "description": "WSO2 request body for version 1.4 of the HSL investigation schema"
 }

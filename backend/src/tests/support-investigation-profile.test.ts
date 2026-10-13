@@ -10,6 +10,8 @@ const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] =
   { key: 'utredning-enhetschef', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef', ownerLabel: 'Enhetschef' },
   { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning Lex Sarah', ownerLabel: 'Lex Sarah' },
   { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR' },
+  // The commissioner's comment on the event analysis: beside it under Utredning, and the head of operations'.
+  { key: 'vc-kommentar-hsl', schemaName: 'vc-kommentar-hsl', tabLabel: 'VC kommentar HSL', ownerLabel: 'Verksamhetschef' },
   {
     key: 'bedomning-sol-lss',
     schemaName: 'bedomning-sol-lss',

@@ -1,10 +1,12 @@
 # Utredningsscheman för IAF/VOF
 
-Den här katalogen innehåller den lokala utvecklingsytan för fem separata JSON Parameters:
+Den här katalogen innehåller den lokala utvecklingsytan för sex separata JSON Parameters:
 
 - `utredning-enhetschef`
 - `utredning-sol-lss`
 - `utredning-hsl`
+- `vc-kommentar-hsl` — uppdragsgivarens kommentar på händelseanalysen, VC kommentar HSL. Ett eget dokument bredvid
+  Händelseanalys HSL under Utredning, så att verksamhetschefen skriver kommentaren utan att få ändra MAS/MAR:s analys.
 - `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse som rapporterats under HSL eller bär Hög
   risk HSL (`placement: 'decision'`, `appliesTo: 'hsl-deviation'` i runtimeprofilen).
 - `beslut-sol-lss` — beslutet enligt lex Sarah för ett rapporterat missförhållande, oavsett lagrum
@@ -385,6 +387,9 @@ igenom är utredningen sparad ändå, och fliken visas nästa gång ärendet lad
 MAS/MAR:s utredning, Händelseanalys HSL (`utredning-hsl`), visas inte för enhetschef och verksamhetschef så
 länge ärendet saknar `RISK/HIGH_HSL`. När ärendet har labeln visas fliken som deras åtkomst säger. MAS/MAR,
 administratörer och övriga roller ser den som vanligt (`concealsHslInvestigation`).
+
+Uppdragsgivarens kommentar på analysen, VC kommentar HSL (`vc-kommentar-hsl`), följer analysen: den döljs och visas
+av samma regel, eftersom det inte finns något att kommentera där analysen inte visas.
 
 Det är bara visuellt: varianten döljer dokumentet genom kontraktets `concealedDocumentKeys`, och Draken hämtar
 då inte heller dokumentet. Vad cheferna får läsa avgör fortfarande AccessMapper.

@@ -3,7 +3,9 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
+  defaultInvestigationProfile,
   errandNumber,
+  hslCommentKey,
   iafLabelFixture,
   installIafApiMock,
   withHighHslRisk,
@@ -51,6 +53,8 @@ for (const roleKey of ['enhetschef', 'verksamhetschef']) {
     await openInvestigation(page);
 
     await expect(investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toHaveCount(0);
+    // The comment on the analysis has nothing to comment on yet: it stays out of sight with it.
+    await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toHaveCount(0);
     // Nor does Ärendeuppgifter show the document's own JSON in its place.
     await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
     const details = page.getByRole('heading', { name: 'Ärendeuppgifter', exact: true }).locator('..');
@@ -58,6 +62,7 @@ for (const roleKey of ['enhetschef', 'verksamhetschef']) {
     await expect(details).not.toContainText(hslText);
     // A concealed document is not even read.
     expect(trace.documentGets).not.toContain(hslKey);
+    expect(trace.documentGets).not.toContain(hslCommentKey);
   });
 
   test(`${roleKey} is shown Händelseanalys HSL once the errand carries a high HSL risk`, async ({
@@ -69,8 +74,47 @@ for (const roleKey of ['enhetschef', 'verksamhetschef']) {
     await openInvestigation(page);
 
     await expect(investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toBeVisible();
+    await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toBeVisible();
   });
 }
+
+// The one who commissioned the analysis comments on it in a document of their own, beside the analysis: they write
+// the comment without being given MAS/MAR's analysis to change.
+test('verksamhetschef writes the commissioner comment in VC kommentar HSL, not in Händelseanalys HSL', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const profile = defaultInvestigationProfile();
+  const trace = await installIafApiMock(page, {
+    roleKeys: ['verksamhetschef'],
+    documents: {},
+    investigationProfile: profile,
+    documentAccess: Object.fromEntries(
+      profile.documents.map(({ key }) => [key, key === hslCommentKey ? 'edit' : 'read'])
+    ),
+    ...withHighHslRisk(),
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await openInvestigation(page);
+
+  await investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
+  const analysis = page.locator(`[data-cy="investigation-document-${hslKey}"]`);
+  await expect(analysis.getByRole('textbox', { name: 'Uppdrag', exact: true })).toBeVisible();
+  await expect(analysis.getByRole('textbox', { name: 'Uppdragsgivarens kommentar', exact: true })).toHaveCount(0);
+
+  await investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true }).click();
+  const comment = page.locator(`[data-cy="investigation-document-${hslCommentKey}"]`);
+  await expect(comment).toContainText('Ansvarig roll: Verksamhetschef');
+  // A comment is not an investigation: nothing to mark completed, and no report to create.
+  await expect(comment.locator(`[data-cy="investigation-report-${hslCommentKey}"]`)).toHaveCount(0);
+  const text = comment.getByRole('textbox', { name: 'Uppdragsgivarens kommentar', exact: true });
+  await text.click();
+  await page.keyboard.type('Analysen är mottagen.');
+  await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+
+  await expect.poll(() => trace.puts.map(({ key }) => key)).toEqual([hslCommentKey]);
+  expect(JSON.stringify(trace.puts[0].body)).toContain('Analysen är mottagen.');
+});
 
 // The BFF marks the errand with the high HSL risk in the save itself. The page has to learn of it then, not at the
 // next load: the unit manager who has just assessed the risk is the one who is shown the analysis.

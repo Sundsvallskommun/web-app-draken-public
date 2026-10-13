@@ -6,10 +6,11 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
 | `utredning-enhetschef`      | 1.9           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
 | `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `utredning-hsl`             | 1.4           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.4           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 | `bedomning-sol-lss`         | 1.0           | `bedomning-sol-lss.schema-request.json`    | `bedomning-sol-lss.ui-schema-request.json`    |
+| `vc-kommentar-hsl`          | 1.0           | `vc-kommentar-hsl.schema-request.json`     | `vc-kommentar-hsl.ui-schema-request.json`     |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
 
@@ -103,6 +104,12 @@ och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions
 publicerats i produktionsmiljön. Schemat publicerades innan BFF:en med stämpeln `x-draken-server-author` var
 driftsatt i test. Ett beslut som sparas mot 1.4 genom en äldre BFF får ingen beslutsfattare; den som sparar det
 första gången efter driftsättningen bokförs då som beslutsfattare, även om någon annan fattade beslutet.
+
+Samma dag publicerades `2281_utredning-hsl_1.4` och `2281_vc-kommentar-hsl_1.0` i testmiljön: uppdragsgivarens
+kommentar i ett eget dokument (se Händelseanalys HSL 1.4 och VC kommentar HSL). Schema och UI Schema lästes
+tillbaka för båda och var identiska med artefakterna, och `versions/latest` pekar på 1.4 respektive 1.0. Inget har
+publicerats i produktionsmiljön. Nyckeln `vc-kommentar-hsl` stod vid publiceringen inte i någon rolls
+`JSON_PARAMETERS` i namespace-konfigurationen, så dokumentet nås ännu inte av den som har en roll.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
@@ -199,6 +206,24 @@ och utredningsmallen följer lagrummen som förut.
 Version 1.9 ändrar två texter efter verksamhetens önskemål och inget annat. Lagrumsfrågans hjälptext är "Ange vilket
 eller vilka lagrum som gäller för avvikelsen", och Utredningsmall har ingen hjälptext längre. UI-schemat är
 oförändrat. Utredningar som redan är sparade är bundna till en äldre version och visar dess texter.
+
+## Händelseanalys HSL 1.4 och VC kommentar HSL
+
+Uppdragsgivarens kommentar (`commissionerComment`) låg till och med `utredning-hsl` 1.3 i händelseanalysen, som
+MAS/MAR skriver. Från 1.4 finns fältet inte där. Det ligger i ett eget dokument, `vc-kommentar-hsl` 1.0, med samma
+fält, titel och hjälptext, så att uppdragsgivaren skriver kommentaren utan att få ändra analysen.
+
+`vc-kommentar-hsl` har bara det fältet. Inget krävs, dokumentet klarmarkeras inte och det ger ingen rapport: en
+kommentar som inte är skriven är ett tomt dokument. Rapporten från Händelseanalys HSL innehåller därmed inte
+kommentaren.
+
+Händelseanalyser som redan är sparade är bundna till 1.3 och behåller fältet där. Ingen kommentar flyttas mellan
+dokumenten.
+
+Vem som får läsa och skriva dokumentet avgör Support Managements namespace-konfiguration, där varje roll har sina
+nycklar under `JSON_PARAMETERS` (`roleFieldRestrictions`). En nyckel som inte står där når rollen inte alls, så
+`vc-kommentar-hsl` måste läggas till för rollerna i både IAF:s och VOF:s namespace innan någon med en roll ser
+fliken.
 
 ## Utredning Lex Sarah 2.0–2.3
 

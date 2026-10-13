@@ -151,7 +151,6 @@
       "underlyingCauses": ["communication_failure", "technical_fault"],
       "contributingFactorsAndRisks": "<p>Bidragande faktorer, bifynd och kostnader.</p>",
       "analysisEvaluation": "<p>Analysteamets utvärdering.</p>",
-      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>",
       "completed": "no",
       "reports": [
         {
@@ -171,6 +170,12 @@
         }
       },
       {
+        "description": "Uppdragsgivarens kommentar hör till sitt eget dokument, inte utredningen",
+        "value": {
+          "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>"
+        }
+      },
+      {
         "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
         "value": {
           "reports": [
@@ -178,6 +183,26 @@
               "generatedAt": "2026-09-11T12:30:00.000Z"
             }
           ]
+        }
+      }
+    ]
+  },
+  "vc-kommentar-hsl": {
+    "valid": {
+      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>"
+    },
+    "invalid": [
+      {
+        "description": "Kommentaren är text",
+        "value": {
+          "commissionerComment": ["Uppdragsgivaren har tagit del av analysen."]
+        }
+      },
+      {
+        "description": "Händelseanalysen hör till HSL-utredningen, inte kommentaren",
+        "value": {
+          "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>",
+          "eventDescription": "<p>Händelsebeskrivning och händelseförlopp.</p>"
         }
       }
     ]

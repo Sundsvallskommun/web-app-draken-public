@@ -28,7 +28,7 @@ const artifacts = [
   },
   {
     name: 'utredning-hsl',
-    version: '1.3',
+    version: '1.4',
     hasErrandClassification: false,
     hasReport: true,
     schemaFile: 'utredning-hsl.schema-request.json',
@@ -58,6 +58,14 @@ const artifacts = [
     hasReport: false,
     schemaFile: 'bedomning-sol-lss.schema-request.json',
     uiSchemaFile: 'bedomning-sol-lss.ui-schema-request.json',
+  },
+  {
+    name: 'vc-kommentar-hsl',
+    version: '1.0',
+    hasErrandClassification: false,
+    hasReport: false,
+    schemaFile: 'vc-kommentar-hsl.schema-request.json',
+    uiSchemaFile: 'vc-kommentar-hsl.ui-schema-request.json',
   },
 ];
 
@@ -271,7 +279,6 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'analysis-team-participants', title: 'Deltagare i analysteam' },
       { id: 'methodology', title: 'Metodik' },
       { id: 'result', title: 'Resultat' },
-      { id: 'commissioner-comment', title: 'Uppdragsgivarens kommentar' },
       { id: 'report', title: 'Utredningen klar och rapport' },
     ],
     'beslut-hsl': [{ id: 'decision', title: 'Beslut' }],
@@ -283,6 +290,7 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'ivo-report', title: 'Anmälan till IVO' },
       { id: 'lex-investigation', title: 'Lex-utredning' },
     ],
+    'vc-kommentar-hsl': [{ id: 'commissioner-comment', title: 'Uppdragsgivarens kommentar' }],
   };
 
   for (const artifact of artifacts) {
@@ -540,6 +548,26 @@ test('the HSL investigation no longer carries the IVO decision', () => {
   );
 });
 
+// MAS/MAR write the event analysis and the one who commissioned it comments on it. The comment is a document of
+// its own, so that it can be written by somebody who is not given the analysis to change.
+test('the commissioner comments on the HSL investigation in a document of its own', () => {
+  const investigation = readJson('utredning-hsl.schema-request.json').value;
+  const investigationUiSchema = readJson('utredning-hsl.ui-schema-request.json').value;
+  const comment = readJson('vc-kommentar-hsl.schema-request.json').value;
+  const commentUiSchema = readJson('vc-kommentar-hsl.ui-schema-request.json').value;
+
+  assert.equal('commissionerComment' in investigation.properties, false);
+  assert.equal('commissionerComment' in investigationUiSchema, false);
+
+  assert.equal(comment.title, 'VC kommentar HSL');
+  assert.deepEqual(Object.keys(comment.properties), ['commissionerComment']);
+  assert.equal(comment.properties.commissionerComment.title, 'Uppdragsgivarens kommentar');
+  // Nothing is required: a comment not yet written is an empty document, and it is never marked completed.
+  assert.equal(comment.required, undefined);
+  assert.equal(comment.allOf, undefined);
+  assert.equal(commentUiSchema.commissionerComment['ui:widget'], 'TextareaWidget');
+});
+
 // Both decisions share the IVO part: the Ja/Nej answer is required, the IVO case number is always
 // optional, and the Public 360 number exists exactly when the errand is reported to IVO - required
 // then, refused otherwise, since the field is disabled for a Nej.
@@ -735,6 +763,7 @@ test('all sketch multiselects are represented as unique arrays', () => {
     'beslut-hsl': [],
     'beslut-sol-lss': ['decisionLegalBases'],
     'bedomning-sol-lss': [],
+    'vc-kommentar-hsl': [],
   };
 
   for (const artifact of artifacts) {

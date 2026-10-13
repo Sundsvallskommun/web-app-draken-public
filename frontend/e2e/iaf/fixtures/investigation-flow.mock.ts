@@ -13,6 +13,8 @@ import hslSchemaRequest from '../../../src/supportmanagement/investigation/avvik
 import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.ui-schema-request.json';
 import solLssSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.schema-request.json';
 import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.ui-schema-request.json';
+import hslCommentSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/vc-kommentar-hsl.schema-request.json';
+import hslCommentUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/vc-kommentar-hsl.ui-schema-request.json';
 
 const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 const municipalityId = '2281';
@@ -33,10 +35,13 @@ export const investigationKeys = [
   'beslut-hsl',
   'beslut-sol-lss',
   'bedomning-sol-lss',
+  'vc-kommentar-hsl',
 ] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
 /** LEX-ansvarig's initial assessment, in Ärendeuppgifter. Only a scenario that configures it has it. */
 export const lexAssessmentKey = 'bedomning-sol-lss' satisfies InvestigationKey;
+/** The comment on MAS/MAR's event analysis by the one who commissioned it, beside the analysis under Utredning. */
+export const hslCommentKey = 'vc-kommentar-hsl' satisfies InvestigationKey;
 /** The IVO decision on an ordinary deviation under HSL. */
 export const hslDecisionKey = 'beslut-hsl' satisfies InvestigationKey;
 /** The lex Sarah decision on a reported misconduct. */
@@ -85,6 +90,12 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       schemaName: 'utredning-hsl',
       tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
+    },
+    {
+      key: hslCommentKey,
+      schemaName: hslCommentKey,
+      tabLabel: 'VC kommentar HSL',
+      ownerLabel: 'Verksamhetschef',
     },
     {
       key: hslDecisionKey,
@@ -341,6 +352,7 @@ const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
   'beslut-hsl': hslDecisionSchemaRequest,
   'beslut-sol-lss': solLssDecisionSchemaRequest,
   'bedomning-sol-lss': lexAssessmentSchemaRequest,
+  'vc-kommentar-hsl': hslCommentSchemaRequest,
 };
 
 const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
@@ -350,6 +362,7 @@ const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
   'beslut-hsl': hslDecisionUiSchemaRequest,
   'beslut-sol-lss': solLssDecisionUiSchemaRequest,
   'bedomning-sol-lss': lexAssessmentUiSchemaRequest,
+  'vc-kommentar-hsl': hslCommentUiSchemaRequest,
 };
 
 const validValues: Record<InvestigationKey, JsonObject> = {
@@ -359,6 +372,7 @@ const validValues: Record<InvestigationKey, JsonObject> = {
   'beslut-hsl': investigationCases['beslut-hsl'].valid,
   'beslut-sol-lss': investigationCases['beslut-sol-lss'].valid,
   'bedomning-sol-lss': investigationCases['bedomning-sol-lss'].valid,
+  'vc-kommentar-hsl': investigationCases['vc-kommentar-hsl'].valid,
 };
 
 /** Derived from the artifacts the mock serves, so a published version never drifts from its id. */
