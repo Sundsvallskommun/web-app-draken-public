@@ -30,6 +30,11 @@ interface InvestigationReportControlsProps {
   readonly proposesMeasures?: boolean;
   /** The errand is known to have no measures, which the one finishing the investigation is told - not stopped by. */
   readonly withoutMeasures?: boolean;
+  /**
+   * The errand goes to LEX-ansvarig once the investigation is finished, which the one finishing it is told.
+   * MAS/MAR's HSL investigation is not handed on: it leaves the errand with its handler.
+   */
+  readonly handsOverToLexManager?: boolean;
 }
 
 /**
@@ -52,13 +57,14 @@ export function InvestigationReportControls({
   onGoToMeasures,
   proposesMeasures = false,
   withoutMeasures = false,
+  handsOverToLexManager = true,
 }: Readonly<InvestigationReportControlsProps>) {
   const pending = reports.some(isPendingInvestigationReport);
   const canGenerate = completedInDraft && canEdit && !busy;
 
   return (
     <div className="flex flex-col gap-16" data-cy={`investigation-report-${documentKey}`}>
-      {completedInDraft && (
+      {completedInDraft && handsOverToLexManager && (
         <Alert type="info" data-cy="investigation-report-completed-notice">
           <Alert.Icon />
           <Alert.Content>

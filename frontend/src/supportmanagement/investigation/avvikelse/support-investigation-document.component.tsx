@@ -36,6 +36,7 @@ import { LexAssignmentPrompt } from './assignment/lex-assignment-prompt.componen
 import { ReturnToManagerButton } from './assignment/return-to-manager-button.component';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
+  HSL_INVESTIGATION_SCHEMA_NAME,
   LEX_ASSESSMENT_SCHEMA_NAME,
   LEX_DECISION_SCHEMA_NAME,
   LEX_INVESTIGATION_SCHEMA_NAME,
@@ -1154,6 +1155,7 @@ export function SupportInvestigationDocument({
                     onGoToMeasures={appConfig.features.useMeasures ? () => setActiveTabKey('measures') : undefined}
                     proposesMeasures={definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME}
                     withoutMeasures={measureCount === 0}
+                    handsOverToLexManager={definition.schemaName !== HSL_INVESTIGATION_SCHEMA_NAME}
                   />
                 ),
               }

@@ -996,12 +996,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-unlock"]')).toHaveCount(0);
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
 
-    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveCount(0);
     await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
-    // Answering Ja explains the next step at once, before the save that enables the report.
-    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toContainText(
-      'skapa en rapport och tilldela ärendet till LEX-ansvarig'
-    );
+    // MAS/MAR's investigation is not handed on to LEX-ansvarig, so finishing it does not say that it is.
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
+    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveCount(0);
     // Only the lex Sarah investigator proposes measures, so only their investigation reminds of them.
     await expect(controls.locator('[data-cy="investigation-measures-reminder"]')).toHaveCount(0);
     // Nor is a finished HSL investigation told that the errand has no measures: that is said to the unit manager.
@@ -1274,12 +1272,16 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const document = page.locator('[data-cy="investigation-document-utredning-sol-lss"]');
     const reminder = document.locator('[data-cy="investigation-measures-reminder"]');
     const measuresLink = document.locator('[data-cy="investigation-measures-link"]');
+    const completedNotice = document.locator('[data-cy="investigation-report-completed-notice"]');
     await expect(document).toBeVisible();
     await expect(reminder).toHaveCount(0);
+    await expect(completedNotice).toHaveCount(0);
     // Ä9. Where measures are registered is said from the start, with the way there.
     await expect(measuresLink).toContainText('Åtgärder registreras under fliken Åtgärder.');
 
     await document.locator('#utredning-sol-lss_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+    // Answering Ja explains the next step at once, before the save that enables the report.
+    await expect(completedNotice).toContainText('skapa en rapport och tilldela ärendet till LEX-ansvarig');
     await expect(reminder).toContainText('Registrera dem i fliken Åtgärder');
     await measuresLink.getByRole('button', { name: 'Gå till Åtgärder', exact: true }).click();
     await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
