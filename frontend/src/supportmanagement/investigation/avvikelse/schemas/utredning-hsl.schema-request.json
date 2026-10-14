@@ -1,8 +1,8 @@
 {
   "name": "utredning-hsl",
-  "version": "1.4",
+  "version": "1.5",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.4",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.5",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning HSL",
     "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, uppdragsgivarens kommentar, åtgärder och handlingsplan lagras inte i detta dokument.",
@@ -24,13 +24,20 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "role": {
-              "title": "Roll",
+            "name": {
+              "title": "Namn",
               "type": "string"
             },
-            "unit": {
-              "title": "Enhet",
-              "type": "string"
+            "role": {
+              "title": "Roll",
+              "description": "Specialistundersköterskor och liknande anges som omvårdnadspersonal.",
+              "type": "string",
+              "oneOf": [
+                { "const": "nurse", "title": "Sjuksköterska" },
+                { "const": "physiotherapist", "title": "Fysioterapeut" },
+                { "const": "occupational_therapist", "title": "Arbetsterapeut" },
+                { "const": "care_staff", "title": "Omvårdnadspersonal" }
+              ]
             }
           }
         }
@@ -158,9 +165,9 @@
               "properties": {
                 "analysisTeamParticipants": {
                   "items": {
-                    "required": ["role"],
+                    "required": ["name", "role"],
                     "properties": {
-                      "role": {
+                      "name": {
                         "minLength": 1
                       }
                     }
@@ -173,5 +180,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.4 of the HSL investigation schema"
+  "description": "WSO2 request body for version 1.5 of the HSL investigation schema"
 }

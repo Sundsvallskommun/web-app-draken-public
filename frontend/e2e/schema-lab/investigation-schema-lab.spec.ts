@@ -490,7 +490,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
   await expect(page.locator('[data-cy="investigation-lab-notice"]')).toContainText(
     'annan schemaversion eller är ogiltigt'
   );
-  await expect(page.locator(`#${hslIdPrefix}_analysisTeamParticipants_0_role`)).toHaveValue('Analysledare');
+  await expect(page.locator(`#${hslIdPrefix}_analysisTeamParticipants_0_name`)).toHaveValue('Anna Andersson');
 });
 
 test('the HSL investigation no longer asks about IVO; the HSL decision does', async ({ page }) => {

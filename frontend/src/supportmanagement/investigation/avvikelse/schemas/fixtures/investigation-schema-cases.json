@@ -141,8 +141,8 @@
       "assignment": "<p>Uppdrag, uppdragsgivare och startdatum.</p>",
       "analysisTeamParticipants": [
         {
-          "role": "Analysledare",
-          "unit": "MAS/MAR"
+          "name": "Anna Andersson",
+          "role": "nurse"
         }
       ],
       "methodology": "<p>Händelseanalys med journalgranskning och intervjuer.</p>",
@@ -167,6 +167,18 @@
         "value": {
           "ivoNotification": "yes",
           "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "En deltagares roll är en av de fyra i listan",
+        "value": {
+          "analysisTeamParticipants": [{ "name": "Anna Andersson", "role": "Analysledare" }]
+        }
+      },
+      {
+        "description": "En deltagare har ingen enhet längre",
+        "value": {
+          "analysisTeamParticipants": [{ "name": "Anna Andersson", "role": "nurse", "unit": "Hemtjänst Norr" }]
         }
       },
       {

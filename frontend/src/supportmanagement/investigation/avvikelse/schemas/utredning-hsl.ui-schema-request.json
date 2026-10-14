@@ -73,14 +73,22 @@
         "addButtonLabel": "Lägg till deltagare"
       },
       "items": {
-        "ui:order": ["role", "unit"],
+        "ui:order": ["name", "role"],
         "ui:rows": [
           {
-            "fields": ["role", "unit"],
+            "fields": ["name", "role"],
             "gap": "gap-24"
           }
         ],
+        "name": {
+          "ui:placeholder": "Skriv namn",
+          "ui:options": {
+            "showRequiredIndicator": true
+          }
+        },
         "role": {
+          "ui:widget": "select",
+          "ui:placeholder": "Välj roll",
           "ui:options": {
             "showRequiredIndicator": true
           }
@@ -134,5 +142,5 @@
     "completed": { "ui:widget": "RadiobuttonWidget" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.4 of Utredning HSL in Draken"
+  "description": "UI schema for version 1.5 of Utredning HSL in Draken"
 }

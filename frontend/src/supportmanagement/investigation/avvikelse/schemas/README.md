@@ -6,7 +6,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
 | `utredning-enhetschef`      | 1.9           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
 | `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.4           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `utredning-hsl`             | 1.5           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.4           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 | `bedomning-sol-lss`         | 1.0           | `bedomning-sol-lss.schema-request.json`    | `bedomning-sol-lss.ui-schema-request.json`    |
@@ -164,7 +164,7 @@ Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, va
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
 | `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej har sin motivering. 2.1: dessutom minst ett lagrum. 2.2: lagrum och sammanfattning av rapporten, motiveringarna är frivilliga |
-| `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`                                                                                                                    |
+| `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`. 1.5: `name` och `role` på varje rad                                                                               |
 
 Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
 `then`-grenen och ingen annanstans.
@@ -206,6 +206,16 @@ och utredningsmallen följer lagrummen som förut.
 Version 1.9 ändrar två texter efter verksamhetens önskemål och inget annat. Lagrumsfrågans hjälptext är "Ange vilket
 eller vilka lagrum som gäller för avvikelsen", och Utredningsmall har ingen hjälptext längre. UI-schemat är
 oförändrat. Utredningar som redan är sparade är bundna till en äldre version och visar dess texter.
+
+## Händelseanalys HSL 1.5
+
+Deltagarna i analysteamet (`analysisTeamParticipants`) har Namn (`name`, fritext) och Roll (`role`), där rollen väljs
+ur en lista: Sjuksköterska (`nurse`), Fysioterapeut (`physiotherapist`), Arbetsterapeut (`occupational_therapist`)
+och Omvårdnadspersonal (`care_staff`). Specialistundersköterskor och liknande anges som omvårdnadspersonal. Enhet
+(`unit`) finns inte längre. Namn och roll krävs först när analysen markeras som klar, som rollen gjorde förut.
+
+Händelseanalyser som redan är sparade är bundna till sin version och behåller rollen som fritext och sin enhet.
+Ingen deltagare flyttas mellan versionerna. 1.5 är inte publicerad.
 
 ## Händelseanalys HSL 1.4 och VC kommentar HSL
 

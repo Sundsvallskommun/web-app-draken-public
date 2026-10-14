@@ -28,7 +28,7 @@ const artifacts = [
   },
   {
     name: 'utredning-hsl',
-    version: '1.4',
+    version: '1.5',
     hasErrandClassification: false,
     hasReport: true,
     schemaFile: 'utredning-hsl.schema-request.json',
@@ -345,7 +345,8 @@ const incompleteInvestigations: Record<string, Record<string, unknown>> = {
   'utredning-enhetschef (tomt)': {},
   // The report not yet summarized: the summary is asked for when the investigation is completed.
   'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], individualNotified: 'no' },
-  'utredning-hsl': { analysisTeamParticipants: [{ unit: 'Hemtjänst Norr' }] },
+  // A participant named, their role not yet chosen.
+  'utredning-hsl': { analysisTeamParticipants: [{ name: 'Anna Andersson' }] },
 };
 
 // The sections template reads `then.properties` and `then.required` of a root `allOf` rule as the
@@ -545,6 +546,39 @@ test('the HSL investigation no longer carries the IVO decision', () => {
   assert.deepEqual(
     schema.allOf.map((entry: any) => Object.keys(entry.if.properties)),
     [['completed']]
+  );
+});
+
+// Ä3. Each participant in the analysis team is named, and their role is one of the professions that take part.
+test('the HSL investigation names each participant and chooses their role from the professions', () => {
+  const schema = readJson('utredning-hsl.schema-request.json').value;
+  const uiSchema = readJson('utredning-hsl.ui-schema-request.json').value;
+  const participant = schema.properties.analysisTeamParticipants.items;
+
+  assert.deepEqual(Object.keys(participant.properties), ['name', 'role']);
+  assert.deepEqual(
+    participant.properties.role.oneOf.map(({ const: value, title }: { const: string; title: string }) => [
+      value,
+      title,
+    ]),
+    [
+      ['nurse', 'Sjuksköterska'],
+      ['physiotherapist', 'Fysioterapeut'],
+      ['occupational_therapist', 'Arbetsterapeut'],
+      ['care_staff', 'Omvårdnadspersonal'],
+    ]
+  );
+  assert.deepEqual(uiSchema.analysisTeamParticipants.items['ui:order'], ['name', 'role']);
+  assert.equal(uiSchema.analysisTeamParticipants.items.role['ui:widget'], 'select');
+
+  // Name and role are asked for when the analysis is marked complete, not before.
+  const { validate } = createValidator(schema);
+  assert.equal(validate({ analysisTeamParticipants: [{ name: 'Anna Andersson' }] }), true);
+  assert.equal(validate({ analysisTeamParticipants: [{ role: 'nurse' }], completed: 'yes' }), false);
+  assert.equal(validate({ analysisTeamParticipants: [{ name: '', role: 'nurse' }], completed: 'yes' }), false);
+  assert.equal(
+    validate({ analysisTeamParticipants: [{ name: 'Anna Andersson', role: 'nurse' }], completed: 'yes' }),
+    true
   );
 });
 
