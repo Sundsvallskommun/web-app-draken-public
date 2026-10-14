@@ -25,6 +25,7 @@ import {
 } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  choosesResolutionAfterForward,
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
@@ -105,6 +106,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setShowCloseModalAfterHandover = useSupportStore((s) => s.setShowCloseModalAfterHandover);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const confirm = useConfirm();
@@ -136,7 +138,6 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
 
   const { recipient, message, messageBodyPlaintext, emails, department } = watch();
 
-  // Routing: the casedata namespaces (MEX, PT) use the casedata forward flow, every other namespace uses the handover.
   const handoverTarget =
     appConfig.features.useHandover && recipient === 'DEPARTMENT' && !isCasedataForwardTarget(department)
       ? handover.handoverTargets.find((target) => target.namespace === department)
@@ -144,8 +145,6 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const isHandover = !!handoverTarget;
   const isCasedataForward = recipient === 'DEPARTMENT' && isCasedataForwardTarget(department);
 
-  // Selecting a target namespace immediately fetches the preview and advances to step 2 – no extra
-  // "Nästa" click. Cached previews are reused, so switching back and forth keeps earlier choices.
   useEffect(() => {
     if (handoverTarget) {
       handover.runPreview(handoverTarget);
@@ -173,12 +172,9 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
             status: 'success',
           })
         );
-        setTimeout(() => {
-          window.close();
-        }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        afterForward();
       })
       .catch((e: Error) => {
         toastMessage({
@@ -201,15 +197,23 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       });
   };
 
-  // Mirrors the MEX forward success: toast, close the modal, refresh the (now closed) source errand
-  // and close the tab. No in-modal confirmation view.
+  const afterForward = () => {
+    void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => {
+      setSupportErrand(res.errand);
+      if (choosesResolutionAfterForward()) {
+        setShowCloseModalAfterHandover(true);
+      } else {
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      }
+    });
+  };
+
   const handleHandoverSuccess = () => {
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
-    void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-    setTimeout(() => {
-      window.close();
-    }, 2000);
+    afterForward();
   };
 
   useEffect(() => {
@@ -326,7 +330,6 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
               ) : recipient === 'DEPARTMENT' ? (
                 <>
                   <Divider />
-                  {/* Mottagare – no namespace is preselected; the user must actively choose one. */}
                   <div className="flex flex-col gap-8 py-12" data-cy="handover-recipient-section">
                     <h4 className="text-h4-md">Mottagare</h4>
                     <span>Välj vilken verksamhet som ska ta emot ärendet.</span>
@@ -357,8 +360,6 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                     </div>
                   </div>
 
-                  {/* Categorization at the receiver. The MEX (casedata) forward has no such choice, so the
-                      section is only shown for handover targets and before a target is chosen. */}
                   {!isCasedataForward && (
                     <div className="flex flex-col gap-8 py-12" data-cy="handover-classification-section">
                       <h4 className="text-h4-md">Så ska ärendet registreras hos mottagaren</h4>

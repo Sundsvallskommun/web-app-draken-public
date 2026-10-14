@@ -331,6 +331,13 @@ export const ResolutionDescriptionKS: Record<keyof typeof ResolutionLabelKS, str
     'Jag har skickat vidare ett specifikt ärende för formell handläggning eller politisk styrning då det kräver specialistkompetens.',
 };
 
+/** Code the source errand is closed with when forwarded or handed over. */
+export const forwardResolution = (): Resolution =>
+  isKC() ? Resolution.HANDED_OVER : Resolution.REGISTERED_EXTERNAL_SYSTEM;
+
+/** KC's handler confirms or changes that code in the close modal right after (DRAKEN-5139). */
+export const choosesResolutionAfterForward = (): boolean => isKC();
+
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
@@ -1085,7 +1092,7 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     await assignSelfIfUnassigned();
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+    return closeSupportErrand(errand.id, municipalityId, forwardResolution());
   } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
@@ -1098,7 +1105,7 @@ export const forwardSupportErrand: (
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
       .then(async () => {
         await assignSelfIfUnassigned();
-        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+        return closeSupportErrand(errand.id!, municipalityId, forwardResolution());
       })
       .catch((e: AxiosError) => {
         throw new Error(e.response?.data as string);

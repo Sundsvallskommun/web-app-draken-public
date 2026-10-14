@@ -224,6 +224,10 @@ test.describe('errand page', () => {
 
   test('Can manage forwarding, suspending and solving errand', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+    // Dismissing the post-handover close modal closes the tab; keep the page alive for the rest of the test.
+    await page.addInitScript(() => {
+      window.close = () => undefined;
+    });
 
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -253,6 +257,12 @@ test.describe('errand page', () => {
       page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
 
+    // The forward opens the close modal to confirm or change the code; dismiss it to go on.
+    const closeModalAfterForward = page.locator(MODAL_DIALOG).filter({ hasText: 'Avsluta ärendet' });
+    await expect(closeModalAfterForward).toBeVisible();
+    await closeModalAfterForward.locator('.sk-modal-dialog-close').click();
+    await expect(closeModalAfterForward).toBeHidden();
+
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
     const suspendModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Parkera ärendet' });
@@ -273,6 +283,15 @@ test.describe('errand page', () => {
     const solveModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Välj en lösning' });
     await expect(solveModal).toBeVisible();
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLables.length);
+
+    // The explanation is hidden until its info button is clicked, and hidden again on a second click.
+    const description = solveModal.locator('[data-cy="resolution-description-INFORMED"]');
+    await expect(description).toBeHidden();
+    await solveModal.locator('[data-cy="resolution-info-INFORMED"]').click();
+    await expect(description).toContainText('Jag har gett kunden den allmänna fakta');
+    await solveModal.locator('[data-cy="resolution-info-INFORMED"]').click();
+    await expect(description).toBeHidden();
+
     await expect(page.locator('[data-cy="solve-radiolist"] label input').nth(1)).toHaveValue(solveLables[1].id);
     await page.locator('[data-cy="solve-radiolist"] label input').nth(1).check();
     await solveModal
@@ -364,6 +383,25 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await expect(page.locator(MODAL_DIALOG)).toBeVisible();
     await expect(page.locator(MODAL_DIALOG)).toContainText('Nuvarande lösningskod');
+  });
+
+  test('Shows the resolution code as label on a solved errand', async ({ page, mockRoute, dismissCookieConsent }) => {
+    const mockSolvedSupportErrand = {
+      ...mockSupportErrand,
+      status: 'SOLVED',
+      resolution: 'HANDED_OVER',
+    };
+
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSolvedSupportErrand, {
+      method: 'GET',
+    });
+
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await expect(page.locator('[data-cy="resolution-label"]')).toHaveText(/Överlämnat/);
+    await expect(page.getByText('överlämnade ärendet.')).toBeVisible();
   });
 
   test('Can manage Kommentarer', async ({ page, mockRoute, dismissCookieConsent }) => {

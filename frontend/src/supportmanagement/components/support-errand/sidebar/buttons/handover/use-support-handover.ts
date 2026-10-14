@@ -8,7 +8,7 @@ import {
   NamespaceConfig,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
-import { Resolution, Status } from '@supportmanagement/services/support-errand-service';
+import { forwardResolution, Status } from '@supportmanagement/services/support-errand-service';
 import {
   executeHandover,
   getHandoverPreview,
@@ -248,7 +248,7 @@ export const useSupportHandover = ({
         sourceHandling: {
           action: HandoverSourceAction.CLOSE,
           status: Status.SOLVED,
-          resolution: Resolution.REGISTERED_EXTERNAL_SYSTEM,
+          resolution: forwardResolution(),
           closingComment: 'Överlämnad till annan drake',
         },
       };
