@@ -154,7 +154,8 @@ export const SupportErrandComponent: FC = () => {
         setNotesCount(res);
       });
       if (appConfig.features.useServiceNotes) {
-        getSupportServiceNotesCount(supportErrand.id!, municipalityId!).then(setServiceNotesCount);
+        // Answers 0 on failure; it never rejects.
+        void getSupportServiceNotesCount(supportErrand.id!, municipalityId!).then(setServiceNotesCount);
       }
     }
   }, [supportErrand, municipalityId, setNotesCount, setServiceNotesCount]);

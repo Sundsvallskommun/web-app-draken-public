@@ -82,7 +82,8 @@ export const UnitFollowUp: FC = () => {
   useEffect(() => {
     if (!municipalityId) return;
     let current = true;
-    loadUnitFollowUpVocabulary(municipalityId).then((loaded) => current && setVocabulary(loaded));
+    // The vocabulary falls back to its own words on a schema that cannot be read; it never rejects.
+    void loadUnitFollowUpVocabulary(municipalityId).then((loaded) => current && setVocabulary(loaded));
     return () => {
       current = false;
     };

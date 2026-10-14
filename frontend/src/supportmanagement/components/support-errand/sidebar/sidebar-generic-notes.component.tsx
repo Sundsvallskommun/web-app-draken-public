@@ -123,7 +123,8 @@ export const SidebarGenericNotes: FC<{
   };
 
   useEffect(() => {
-    (serviceNote ? getSupportServiceNotes : getSupportNotes)(supportErrand!.id!, municipalityId).then((res) =>
+    // Both readers answer an empty list on failure; they never reject.
+    void (serviceNote ? getSupportServiceNotes : getSupportNotes)(supportErrand!.id!, municipalityId).then((res) =>
       setNotes(res.notes)
     );
     if (selectedNote) {

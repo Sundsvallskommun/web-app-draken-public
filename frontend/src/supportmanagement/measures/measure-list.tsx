@@ -77,7 +77,7 @@ export function MeasureList({
                 {group.person ?? 'Ingen angiven'} ({group.measures.length})
               </p>
               <ul className="flex flex-col gap-16" aria-labelledby={headingId}>
-                {group.measures.map(card)}
+                {group.measures.map((measure, index) => card(measure, index))}
               </ul>
             </div>
           );
@@ -88,7 +88,7 @@ export function MeasureList({
 
   return (
     <ul className="flex flex-col gap-16" aria-label="Registrerade åtgärder">
-      {sortMeasuresByCreated(measures).map(card)}
+      {sortMeasuresByCreated(measures).map((measure, index) => card(measure, index))}
     </ul>
   );
 }

@@ -60,7 +60,9 @@ export const AvvikelseGroupedLabelCategorization: FC<{
   } = useFormContext<InvestigationClassificationDraft>();
   const labelStructure = supportMetadata?.labels?.labelStructure;
   // A stable key, so a new array holding the same legal bases neither rebuilds the model nor reads as a change.
-  const legalBasesKey = [...new Set(legalBases.map(normalizeLegalBase))].sort().join('|');
+  const legalBasesKey = [...new Set(legalBases.map(normalizeLegalBase))]
+    .sort((first, second) => first.localeCompare(second))
+    .join('|');
   const model = useMemo(
     () =>
       createAvvikelseGroupedClassificationModel(
