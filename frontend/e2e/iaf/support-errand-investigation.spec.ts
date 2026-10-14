@@ -2221,6 +2221,50 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.writes).toEqual(['document', 'classification', 'classification']);
   });
 
+  // Completing the investigation locks it as soon as it is saved. A classification that did not follow is still the
+  // investigator's to retry, and the retry writes the classification alone: no unlock, no second document write.
+  test('återförsöker klassificeringen även när utredningen sparades som klar', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const existing = existingManagerDocument();
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existing },
+      classificationPatchResult: 'server-error-once',
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    await managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-type"]')
+      .selectOption(iafLabelFixture.classification.medication.resourcePath);
+    await managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]')
+      .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+    await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    await managerDocument.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+
+    const saveButton = page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]');
+    await saveButton.click();
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
+      'Utredningen har sparats, men ärendets klassificering kunde inte synkroniseras'
+    );
+    expect(trace.puts).toHaveLength(1);
+    expect(trace.puts[0].body).toMatchObject({ value: { completed: 'yes' } });
+    expect(trace.classificationPatches).toHaveLength(1);
+
+    await expect(saveButton).toBeEnabled();
+    await saveButton.click();
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
+    expect(trace.puts).toHaveLength(1);
+    expect(trace.classificationPatches).toHaveLength(2);
+    expect(trace.writes).toEqual(['document', 'classification', 'classification']);
+  });
+
   test('stoppar en klassificeringsuppdatering som bygger på en äldre ärendeversion', async ({
     page,
     dismissCookieConsent,

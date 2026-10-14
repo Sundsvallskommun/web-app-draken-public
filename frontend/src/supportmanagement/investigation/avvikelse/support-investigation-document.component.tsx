@@ -546,9 +546,20 @@ export function SupportInvestigationDocument({
     registerErrandField('classificationHasSubTypes');
   }, [classificationOwner, registerErrandField]);
 
+  // A document saved as completed whose classification did not follow: the document is stored and locked, and
+  // only the classification it was saved with is left to write. That retry writes nothing of the document, so the
+  // lock does not stand in its way - for whoever could have edited the document.
+  const retriesClassificationOnly =
+    locked &&
+    documentSavedPendingClassification &&
+    classificationDirty &&
+    !readonly &&
+    !prerequisiteMissing &&
+    !classificationWriteBlock;
   // The document is saved with Spara ärende in the sidebar. A draft that cannot be shown or written -
   // a document out of reach, read-only or locked - is no draft the sidebar could save.
-  const savableDraft = readable && loadState === 'ready' && !formReadonly && (isDirty || classificationDirty);
+  const savableDraft =
+    readable && loadState === 'ready' && (formReadonly ? retriesClassificationOnly : isDirty || classificationDirty);
   useErrandSaveParticipant(`investigation-document:${definition.key}`, savableDraft, {
     label: definition.tabLabel,
     // Submitted through the form, so it is validated exactly as it always was before it is saved.
@@ -880,7 +891,9 @@ export function SupportInvestigationDocument({
   const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []): Promise<boolean> => {
     const reportRequested = reportAfterSave.current;
     reportAfterSave.current = false;
-    if (!municipalityId || !errandId || !readable || formReadonly || isSaving) return false;
+    if (!municipalityId || !errandId || !readable || (formReadonly && !retriesClassificationOnly) || isSaving) {
+      return false;
+    }
 
     const normalizedData = normalizeContextualInvestigationFormData(
       definition.key,
