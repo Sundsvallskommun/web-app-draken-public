@@ -162,6 +162,38 @@ test.describe('Avvikelsens översikt, långsamma svar', () => {
     await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr')).toHaveCount(ongoingErrands.content.length);
   });
 
+  // The label metadata may answer after the overview has begun filtering. A stored label filter stays: in what is
+  // stored, in the controls once the metadata is there, and in the request.
+  test('behåller sparade lagrumsfilter när metadata svarar långsamt', async ({ page, dismissCookieConsent }) => {
+    const storageKey = `${process.env.NEXT_PUBLIC_APPLICATION}-ui-settings`;
+    const storedSelection = JSON.stringify([
+      { groupKey: 'lagrum', fieldKey: 'provision', resourcePath: 'PROVISION_ROOT/HSL' },
+    ]);
+    await page.addInitScript(
+      ({ key, labelFilter }) =>
+        window.localStorage.setItem(key, JSON.stringify({ state: { filter: { labelFilter } }, version: 0 })),
+      { key: storageKey, labelFilter: storedSelection }
+    );
+    // Well past the 200 ms in which the overview stores its filter.
+    await page.route('**/supportmetadata/2281', async (route) => {
+      await delay(1500);
+      await route.fallback();
+    });
+    const labelFilters: string[] = [];
+    await page.route(LIST_URL, async (route) => {
+      labelFilters.push(new URL(route.request().url()).searchParams.get('labelFilter') ?? '');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(newErrands) });
+    });
+
+    await page.goto('oversikt/');
+    await dismissCookieConsent();
+
+    await expect(page.locator('[aria-label="Rensa Lagrum"]')).toContainText('Lagrum: HSL');
+    const stored = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? '{}'), storageKey);
+    expect(stored.state.filter.labelFilter).toBe(storedSelection);
+    await expect.poll(() => labelFilters.at(-1)).toBe(storedSelection);
+  });
+
   test('första laddningen frågar bara efter den valda statusen', async ({ page, dismissCookieConsent }) => {
     const listQueries: string[] = [];
     await page.route(LIST_URL, async (route) => {

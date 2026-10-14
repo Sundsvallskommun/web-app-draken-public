@@ -54,6 +54,19 @@ export interface TableForm {
 
 type SupportMetadataValue = NonNullable<Parameters<typeof getSelectableCategories>[0]>;
 
+/** The stored filters only the label metadata can read back into their controls. */
+const LEGACY_LABEL_FILTER_KEYS: readonly string[] = ['labelCategory', 'labelType', 'labelSubType'];
+const STORED_LABEL_FILTER_KEYS: readonly string[] = [
+  ...LEGACY_LABEL_FILTER_KEYS,
+  SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER,
+];
+
+const pickStoredEntries = (
+  storedFilter: Readonly<Record<string, string | boolean>>,
+  keys: readonly string[]
+): Record<string, string | boolean> =>
+  Object.fromEntries(Object.entries(storedFilter).filter(([key]) => keys.includes(key)));
+
 const readStoredList = <T extends string>(value: string | boolean | undefined, fallback: readonly T[]): T[] => {
   if (typeof value !== 'string' || value.length === 0) return [...fallback];
   return value.split(',') as T[];
@@ -76,7 +89,8 @@ const readLegacyDisplayNames = (
 
 interface RestoreStoredFilterInput {
   readonly storedFilter: Readonly<Record<string, string | boolean>>;
-  readonly supportMetadata: SupportMetadataValue;
+  /** Undefined while it is on its way: the label filters are then left out, and restored once it is there. */
+  readonly supportMetadata: SupportMetadataValue | undefined;
   readonly labelFilterState: SupportManagementLabelFilterState;
   readonly username: string;
 }
@@ -116,17 +130,19 @@ const restoreStoredFilter = ({
     category: readStoredList(storedFilter.category, SupportManagementValues.category),
     labelCategory,
     type: readStoredList(storedFilter.type, SupportManagementValues.type),
-    labelType: legacyLabels
-      ? readLegacyDisplayNames(storedFilter.labelType, supportMetadata, selectableTypeNames, getLabelTypeFromName)
-      : [],
-    labelSubType: legacyLabels
-      ? readLegacyDisplayNames(
-          storedFilter.labelSubType,
-          supportMetadata,
-          selectableSubTypeNames,
-          getLabelSubTypeFromName
-        )
-      : [],
+    labelType:
+      legacyLabels && supportMetadata
+        ? readLegacyDisplayNames(storedFilter.labelType, supportMetadata, selectableTypeNames, getLabelTypeFromName)
+        : [],
+    labelSubType:
+      legacyLabels && supportMetadata
+        ? readLegacyDisplayNames(
+            storedFilter.labelSubType,
+            supportMetadata,
+            selectableSubTypeNames,
+            getLabelSubTypeFromName
+          )
+        : [],
     labelFilter: [...projectedSelections],
     priority: readStoredList(storedFilter.priority, SupportManagementValues.priority),
     channel: readStoredList(storedFilter.channel, SupportManagementValues.channel),
@@ -219,7 +235,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     const safeEntries = Object.entries(storedFilter).filter(
       ([key]) =>
         key !== SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER &&
-        (!labelFilterProfile || !['labelCategory', 'labelType', 'labelSubType'].includes(key))
+        (!labelFilterProfile || !LEGACY_LABEL_FILTER_KEYS.includes(key))
     );
     return safeEntries.length > 0 ? Object.fromEntries(safeEntries) : undefined;
   });
@@ -239,10 +255,10 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
-    // Restoring a stored filter needs the metadata to resolve its labels, but the rest of the
-    // filtering must not depend on it: bailing out before filterInitialized below would leave
-    // every filter silently inert whenever the metadata request fails.
-    if (supportMetadata && storedFilter && Object.keys(storedFilter).length > 0) {
+    // The stored filter is restored at once, so filtering neither waits on the metadata nor stops working when
+    // it cannot be read. Its label filters need the metadata to be read back into their controls: they follow
+    // once it is there, and until then the debounce below keeps them as they are stored.
+    if (storedFilter && Object.keys(storedFilter).length > 0) {
       let storedFilters: SupportManagementFilter;
       try {
         // Deprecated labels are dropped because their controls are no longer rendered and could not be cleared.
@@ -278,7 +294,8 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       if (storedFilter?.stakeholders === user.username) {
         setOwnerFilter(true);
       }
-      resetFilter(storedFilters);
+      // The search is never stored; one typed while the metadata was on its way stays.
+      resetFilter({ ...storedFilters, query: getValues('query') ?? storedFilters.query });
       triggerFilter();
     }
     filterInitialized.current = true;
@@ -387,11 +404,20 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
         const date = enddate.trim();
         fObj['end'] = date;
       }
-      if (JSON.stringify(fObj) !== JSON.stringify(filterObject)) {
-        setFilterObject(fObj);
+      // Until the metadata is there the label filters have not been read back into their controls, so what is
+      // stored for them stands: in what is stored, and in the request as far as it applied when the page opened.
+      const requestFilter =
+        supportMetadata || labelFilterProfile
+          ? fObj
+          : { ...fObj, ...pickStoredEntries(storedFilter, LEGACY_LABEL_FILTER_KEYS) };
+      const persistedFilter = supportMetadata
+        ? fObj
+        : { ...fObj, ...pickStoredEntries(storedFilter, STORED_LABEL_FILTER_KEYS) };
+      if (JSON.stringify(requestFilter) !== JSON.stringify(filterObject)) {
+        setFilterObject(requestFilter);
       }
       setSelectedErrandStatuses(statusFilter);
-      setStoredFilter(fObj);
+      setStoredFilter(persistedFilter);
     },
     200,
     [
