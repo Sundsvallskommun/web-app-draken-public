@@ -9,6 +9,7 @@ import type {
 import type { Sections } from '../../../../../supportmanagement/services/support-investigation-service';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
 import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
+import { SupportPremisesSection } from '../../premises/support-premises-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
 
 export const SectionDisclosure: React.FC<{
@@ -20,6 +21,9 @@ export const SectionDisclosure: React.FC<{
   onFinancialEdited: (edited: boolean) => void;
   onFinancialSaved: (investigation: Investigation) => void;
   saveFinancial: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
+  onPremisesEdited: (edited: boolean) => void;
+  onPremisesSaved: (investigation: Investigation) => void;
+  savePremises: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 }> = ({
   section,
   investigationId,
@@ -29,6 +33,9 @@ export const SectionDisclosure: React.FC<{
   onFinancialEdited,
   onFinancialSaved,
   saveFinancial,
+  onPremisesEdited,
+  onPremisesSaved,
+  savePremises,
 }) => {
   const { t } = useTranslation();
 
@@ -43,6 +50,16 @@ export const SectionDisclosure: React.FC<{
         onEdited={onFinancialEdited}
         onSaved={onFinancialSaved}
         saveRef={saveFinancial}
+      />
+    ),
+    premises: (
+      <SupportPremisesSection
+        section={section}
+        investigationId={investigationId}
+        writable={writable}
+        onEdited={onPremisesEdited}
+        onSaved={onPremisesSaved}
+        saveRef={savePremises}
       />
     ),
   };
