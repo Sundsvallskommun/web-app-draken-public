@@ -1,6 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
 import type { Errand, Labels } from '@/data-contracts/supportmanagement/data-contracts';
 import { User } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
@@ -9,24 +8,34 @@ import { apiURL } from '@/utils/util';
 import { buildLabelPresenceUpdate } from './errand-label-presence';
 import { getErrandVersion } from './support-errand.service';
 
-interface ApplyHighHslRiskLabelRequest {
+/** One label a saved investigation document decides: whether the errand should carry it, and whether writing it notifies. */
+export interface DerivedLabelChange {
+  readonly resourcePath: string;
+  readonly present: boolean;
+  /**
+   * Whether the write tells the errand's subscribers. A label the system derives on its own is written silently; one
+   * that records a handler's own decision notifies, since a subscription profile may be what passes it on.
+   */
+  readonly notifySubscribers: boolean;
+}
+
+interface ApplyDerivedLabelRequest extends DerivedLabelChange {
   readonly municipalityId: string;
   readonly errandId: string;
   readonly user: User;
-  /** Whether the errand should carry the label. */
-  readonly present: boolean;
-  /** The errand version the investigation write left; the label write follows it directly or not at all. */
+  /** The errand version the document write left; the label write follows it directly or not at all. */
   readonly expectedVersion: number;
 }
 
 /**
- * Writes the high HSL risk label onto an errand, right after the investigation write that decided it.
+ * Writes a label onto an errand, right after the investigation write that decided it - the high HSL risk the unit
+ * manager's investigation assesses, or the HSL event analysis MAS/MAR decides to make.
  *
- * The write is conditioned on the version that investigation write left, so it lands directly on top of it
- * or not at all: anybody else having written in between leaves the label for the next completed save rather
- * than racing them. A namespace without the label in its metadata is left alone.
+ * The write is conditioned on the version that document write left, so it lands directly on top of it or not at
+ * all: anybody else having written in between leaves the label for the next save rather than racing them. A
+ * namespace without the label in its metadata is left alone.
  */
-export class InvestigationRiskLabelService {
+export class InvestigationDerivedLabelService {
   constructor(
     private readonly apiService: Pick<ApiService, 'get' | 'patch'> = new ApiService(),
     private readonly namespace: string = SUPPORTMANAGEMENT_NAMESPACE ?? '',
@@ -39,13 +48,15 @@ export class InvestigationRiskLabelService {
    * own business, and a version one step short makes the caller's next errand write - the classification saved
    * with the investigation - somebody else's change.
    */
-  async applyHighHslRiskLabel({
+  async applyDerivedLabel({
     municipalityId,
     errandId,
     user,
+    resourcePath,
     present,
+    notifySubscribers,
     expectedVersion,
-  }: ApplyHighHslRiskLabelRequest): Promise<number | undefined> {
+  }: ApplyDerivedLabelRequest): Promise<number | undefined> {
     const baseURL = apiURL(apiServiceName('supportmanagement'));
     const url = `${municipalityId}/${this.namespace}/errands/${errandId}`;
     const readErrandVersion = async (): Promise<{ version: number; labels: Errand['labels'] }> => {
@@ -67,7 +78,7 @@ export class InvestigationRiskLabelService {
     const update = buildLabelPresenceUpdate({
       currentLabels: errand.labels,
       labelStructure: labels.data?.labelStructure,
-      resourcePath: IAF_VOF_HIGH_HSL_RISK_LABEL,
+      resourcePath,
       present,
     });
     if (!update) return undefined;
@@ -81,8 +92,8 @@ export class InvestigationRiskLabelService {
         followLocation: false,
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,
-        // Derived from the investigation the user just saved, which already notified.
-        notifySubscribers: false,
+        // Silenced only for a label the system derives on its own; a handler's decision notifies as usual.
+        ...(notifySubscribers ? {} : { notifySubscribers: false }),
       },
       user,
     );

@@ -369,7 +369,7 @@ senare sparning med lägre värde, eller utan HSL-bedömning, tar inte bort den,
 
 BFF:en sätter den i samma anrop som sparar dokumentet (`PUT .../json-parameters/:key`), efter
 dokumentskrivningen: regeln finns i `config/iaf-vof-high-hsl-risk.ts` och skrivningen i
-`InvestigationRiskLabelService`. Labeln läggs till med sin rot (`RISK`). Skrivningen villkoras på exakt den version dokumentskrivningen
+`InvestigationDerivedLabelService`. Labeln läggs till med sin rot (`RISK`). Skrivningen villkoras på exakt den version dokumentskrivningen
 lämnade; har någon annan hunnit skriva däremellan, eller saknar namespacet labeln i sin metadata, görs
 ingenting. Den görs om det går: utredningen är sparad oavsett, och en label som inte kunde skrivas loggas
 i stället för att bli ett misslyckat sparande.
@@ -387,6 +387,32 @@ Sidan läser då om ärendet och tar över dess labels, och inget annat av det (
 med dess svar. Det som visas efter ärendets labels följer då sparningen utan att sidan laddas om: Händelseanalys
 HSL visas för enhetschefen direkt när utredningen sparats med riskvärde 4 eller högre. Går omläsningen inte
 igenom är utredningen sparad ändå, och fliken visas nästa gång ärendet laddas.
+
+### Händelseanalys inledd (`ANALYSIS/HSL_STARTED`)
+
+Verksamhetschefen ska få ett mejl när MAS/MAR beslutar att inleda en händelseanalys. Beslutet är den initiala
+bedömningen i Händelseanalys HSL (`analysisDecision`, från `utredning-hsl` 1.5), och mejlet skickar Support Management
+från en label, eftersom prenumerationsprofilerna bara kan filtrera på labels.
+
+BFF:en sätter labeln `ANALYSIS/HSL_STARTED` i samma anrop som sparar analysen, på samma sätt som `RISK/HIGH_HSL`
+(regeln i `config/iaf-vof-hsl-analysis.ts`, skrivningen i `InvestigationDerivedLabelService`). Labeln sätts när analysen
+sparas med Ska händelseanalyseras, tas bort när den sparas med Inte ska händelseanalyseras, och lämnas som den är så
+länge MAS/MAR inte har bestämt sig. Till skillnad från `RISK/HIGH_HSL` är skrivningen inte tyst: den är MAS/MAR:s eget
+beslut, och den är det som ska nå verksamhetschefen. Versionen följer med som för riskvärdet.
+
+Det här måste finnas i Support Management, i både IAF:s och VOF:s namespace:
+
+| Vad | Var | Innehåll |
+| --- | --- | --- |
+| Labeln | Namespacets labelmetadata | En rot `ANALYSIS` med `ANALYSIS/HSL_STARTED`, visningsnamn till exempel "Händelseanalys HSL inledd". Saknas den skriver BFF:en ingenting |
+| Åtkomst | AccessMapper, varje rolls labelmönster | `ANALYSIS/HSL_STARTED=RW` för alla roller, som `RISK/HIGH_HSL` har |
+| Mejlet | Prenumerationsprofilen `HEAD_OF_OPERATIONS` | Ett `eventFilter` med labelns id. Profilen har redan kanalen `EMAIL` |
+
+Labelns namn är ett förslag och ligger i Draken på ett ställe (`IAF_VOF_HSL_ANALYSIS_STARTED_LABEL`).
+
+Ett filter med `labelId` i en prenumerationsprofil, som `MAR_MAS` har för `RISK/HIGH_HSL`, ser ut att gälla händelser
+på ärenden som *bär* labeln. Stämmer det får verksamhetschefen mejl vid varje senare ändring av ärendet, inte bara när
+analysen inleds. Om Support Management kan avisera bara när en label läggs till behöver API-teamet svara på.
 
 ### Händelseanalys HSL för chefer
 

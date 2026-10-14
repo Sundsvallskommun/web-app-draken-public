@@ -678,14 +678,14 @@ describe('SupportErrandJsonParameterController report', () => {
   });
 });
 
-describe('the high HSL risk label on a saved unit manager investigation', () => {
+describe('the labels a saved investigation document decides', () => {
   const managerSchemaId = '2281_utredning-enhetschef_1.6';
 
-  const makeRiskController = (applied: number | undefined | Error = 14) => {
+  const makeLabelController = (applied: number | undefined | Error = 14) => {
     const made = makeController();
     const documentService = made.documentService as DocumentServiceStub;
-    const riskLabelService = {
-      applyHighHslRiskLabel: vi.fn(async (): Promise<number | undefined> => {
+    const labelService = {
+      applyDerivedLabel: vi.fn(async (): Promise<number | undefined> => {
         if (applied instanceof Error) throw applied;
         return applied;
       }),
@@ -702,9 +702,9 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
       made.policyService as unknown as SupportInvestigationPolicyService,
       new SupportInvestigationAccessService({ apiService: accessApi }),
       new ApiService(),
-      riskLabelService,
+      labelService,
     );
-    return { controller, documentService, riskLabelService };
+    return { controller, documentService, labelService };
   };
 
   const save = async (
@@ -727,18 +727,21 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
   };
 
   it('sets the label when the investigation is saved as completed with an HSL risk of 4 or more', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController(14);
+    const { controller, documentService, labelService } = makeLabelController(14);
 
     const { req, res } = await save(controller, documentService, 'utredning-enhetschef', {
       completed: 'yes',
       riskAssessmentHsl: { calculatedRiskValue: 6 },
     });
 
-    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith({
+    expect(labelService.applyDerivedLabel).toHaveBeenCalledWith({
       municipalityId: mockMunicipalityId,
       errandId: mockSupportErrandId,
       user: req.user,
+      resourcePath: 'RISK/HIGH_HSL',
       present: true,
+      // Derived by the system from the investigation, which already notified.
+      notifySubscribers: false,
       expectedVersion: 13,
     });
     // Two writes of this request's own: the client advances past both.
@@ -749,7 +752,7 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
   // The document write left the errand at 13. The label write is every step from there, as Support Management took
   // them: the client is told all of them are this request's own, or it could not follow the errand past them.
   it('counts every version step the label write took as its own', async () => {
-    const { controller, documentService } = makeRiskController(15);
+    const { controller, documentService } = makeLabelController(15);
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', {
       riskAssessmentHsl: { calculatedRiskValue: 6 },
@@ -760,14 +763,14 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
   });
 
   it('sets the label as soon as a draft assesses an HSL risk of 4 or more, so MAS/MAR reach the errand at once', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController(14);
+    const { controller, documentService, labelService } = makeLabelController(14);
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', {
       completed: 'no',
       riskAssessmentHsl: { calculatedRiskValue: 16 },
     });
 
-    expect(riskLabelService.applyHighHslRiskLabel).toHaveBeenCalledWith(expect.objectContaining({ present: true, expectedVersion: 13 }));
+    expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(expect.objectContaining({ present: true, expectedVersion: 13 }));
     expect(res.headers['X-Errand-Version']).toBe('14');
     expect(res.headers['X-Errand-Writes']).toBe('2');
   });
@@ -776,19 +779,19 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
     ['a lower HSL risk', { completed: 'yes', riskAssessmentHsl: { calculatedRiskValue: 3 } }],
     ['no HSL assessment', { completed: 'no' }],
   ])('never clears the label once set: a save assessing %s writes no label', async (_situation, value) => {
-    const { controller, documentService, riskLabelService } = makeRiskController(14);
+    const { controller, documentService, labelService } = makeLabelController(14);
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', value);
 
-    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+    expect(labelService.applyDerivedLabel).not.toHaveBeenCalled();
     expect(res.headers['X-Errand-Version']).toBe('13');
     expect(res.headers['X-Errand-Writes']).toBe('1');
   });
 
   it('counts one write when the errand already carries the label', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController();
+    const { controller, documentService, labelService } = makeLabelController();
     // No label write was needed.
-    riskLabelService.applyHighHslRiskLabel.mockResolvedValue(undefined);
+    labelService.applyDerivedLabel.mockResolvedValue(undefined);
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', {
       riskAssessmentHsl: { calculatedRiskValue: 6 },
@@ -799,15 +802,15 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
   });
 
   it('only reads the unit manager investigation for it', async () => {
-    const { controller, documentService, riskLabelService } = makeRiskController();
+    const { controller, documentService, labelService } = makeLabelController();
 
     await save(controller, documentService, 'utredning-hsl', { completed: 'yes' });
 
-    expect(riskLabelService.applyHighHslRiskLabel).not.toHaveBeenCalled();
+    expect(labelService.applyDerivedLabel).not.toHaveBeenCalled();
   });
 
   it('still saves the investigation when the label cannot be written', async () => {
-    const { controller, documentService } = makeRiskController(new Error('upstream down'));
+    const { controller, documentService } = makeLabelController(new Error('upstream down'));
 
     const { res } = await save(controller, documentService, 'utredning-enhetschef', {
       completed: 'yes',
@@ -817,5 +820,40 @@ describe('the high HSL risk label on a saved unit manager investigation', () => 
     expect(res.statusCode).toBe(200);
     expect(res.headers['X-Errand-Version']).toBe('13');
     expect(res.headers['X-Errand-Writes']).toBe('1');
+  });
+
+  // D2. The head of operations is e-mailed when MAS/MAR decides to make an HSL event analysis. Support Management's
+  // subscription profile does it from a label, which the saved initial assessment decides: on when the event is to be
+  // analysed, off when it is not, and left alone while MAS/MAR has not decided.
+  describe('the HSL analysis label on a saved HSL event analysis', () => {
+    const analysisLabelCall = (present: boolean) =>
+      expect.objectContaining({ resourcePath: 'ANALYSIS/HSL_STARTED', present, notifySubscribers: true, expectedVersion: 13 });
+
+    it('marks the errand when MAS/MAR decides that the event is analysed, and notifies', async () => {
+      const { controller, documentService, labelService } = makeLabelController(14);
+
+      const { res } = await save(controller, documentService, 'utredning-hsl', { analysisDecision: 'analyze' });
+
+      expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(analysisLabelCall(true));
+      expect(res.headers['X-Errand-Version']).toBe('14');
+      expect(res.headers['X-Errand-Writes']).toBe('2');
+    });
+
+    it('takes the mark off when MAS/MAR decides that it is not', async () => {
+      const { controller, documentService, labelService } = makeLabelController(14);
+
+      await save(controller, documentService, 'utredning-hsl', { analysisDecision: 'not_analyze', notAnalyzedMotivation: 'Text' });
+
+      expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(analysisLabelCall(false));
+    });
+
+    it('leaves the errand alone while MAS/MAR has not decided, and for every other document', async () => {
+      const { controller, documentService, labelService } = makeLabelController(14);
+
+      await save(controller, documentService, 'utredning-hsl', { methodology: '<p>Utkast</p>' });
+      await save(controller, documentService, 'utredning-sol-lss', { analysisDecision: 'analyze' });
+
+      expect(labelService.applyDerivedLabel).not.toHaveBeenCalled();
+    });
   });
 });

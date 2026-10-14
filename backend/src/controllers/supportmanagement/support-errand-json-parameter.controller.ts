@@ -5,7 +5,8 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { assessesHighHslRisk } from '@/config/iaf-vof-high-hsl-risk';
+import { assessesHighHslRisk, IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
+import { decidesHslAnalysis, IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME, IAF_VOF_HSL_ANALYSIS_STARTED_LABEL } from '@/config/iaf-vof-hsl-analysis';
 import { resolveIafVofInvestigationDocumentApplicability, resolveIafVofUnitManagerErrandFacts } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
@@ -20,7 +21,7 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { InvestigationRiskLabelService } from '@/services/investigation-risk-label.service';
+import { DerivedLabelChange, InvestigationDerivedLabelService } from '@/services/investigation-derived-label.service';
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
@@ -76,7 +77,7 @@ export class SupportErrandJsonParameterController {
   private readonly policyService: SupportInvestigationPolicyService;
   private readonly accessService: SupportInvestigationAccessService;
   private readonly apiService: Pick<ApiService, 'get'>;
-  private readonly riskLabelService: Pick<InvestigationRiskLabelService, 'applyHighHslRiskLabel'>;
+  private readonly derivedLabelService: Pick<InvestigationDerivedLabelService, 'applyDerivedLabel'>;
 
   constructor(
     investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
@@ -84,14 +85,14 @@ export class SupportErrandJsonParameterController {
     policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
     accessService = new SupportInvestigationAccessService(),
     apiService: Pick<ApiService, 'get'> = new ApiService(),
-    riskLabelService: Pick<InvestigationRiskLabelService, 'applyHighHslRiskLabel'> = new InvestigationRiskLabelService(),
+    derivedLabelService: Pick<InvestigationDerivedLabelService, 'applyDerivedLabel'> = new InvestigationDerivedLabelService(),
   ) {
     this.investigationProfile = investigationProfile;
     this.documentService = documentService;
     this.policyService = policyService;
     this.accessService = accessService;
     this.apiService = apiService;
-    this.riskLabelService = riskLabelService;
+    this.derivedLabelService = derivedLabelService;
   }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
@@ -166,11 +167,11 @@ export class SupportErrandJsonParameterController {
       ...(serverOwnedOverrides ? { internal: { serverOwnedOverrides } } : {}),
     });
 
-    // The risk label is a second write on the errand. The client is told how many of the version steps are
-    // this request's own, so it can tell them from somebody else's: the document write is one, read back right
+    // A label the document decides is a second write on the errand. The client is told how many of the version steps
+    // are this request's own, so it can tell them from somebody else's: the document write is one, read back right
     // after it, and the label write is the steps from there - as many as Support Management took for it.
-    const riskLabelVersion = await this.applyHighHslRiskLabel(req, definition, municipalityId, errandId, result);
-    const errandVersion = riskLabelVersion ?? result.parentErrandVersion;
+    const labelVersion = await this.applyDerivedLabel(req, definition, municipalityId, errandId, result);
+    const errandVersion = labelVersion ?? result.parentErrandVersion;
     setETagHeader(response, result.etag, result.document.version);
     response.setHeader('X-Errand-Version', String(errandVersion));
     response.setHeader('X-Errand-Writes', String(1 + (errandVersion - result.parentErrandVersion)));
@@ -196,32 +197,53 @@ export class SupportErrandJsonParameterController {
   }
 
   /**
-   * Sets the high HSL risk label when the unit manager's investigation is saved assessing a high risk, completed
-   * or not, and never clears it: once MAS/MAR reach the errand they keep it. It is done if it can be: the
-   * investigation is saved either way, and a label that could not be written is logged rather than turned into a
-   * failed save. Answers the errand version after the label write, or `undefined` when none was made - as when
-   * the risk is not high, or the errand already carries the label.
+   * The label a saved IAF/VOF document decides, if any.
+   *
+   * The unit manager's investigation sets the high HSL risk label once a save assesses a high risk, completed or
+   * not, and never clears it: once MAS/MAR reach the errand they keep it. It is derived, so it is written silently.
+   *
+   * MAS/MAR's HSL event analysis sets the label of an analysis started when their initial assessment is to analyse
+   * the event, and takes it off when they decide against it; an undecided analysis leaves it alone. It records
+   * MAS/MAR's own decision, so it notifies: the head of operations is e-mailed from it.
    */
-  private async applyHighHslRiskLabel(
+  private derivedLabelChange(definition: SupportInvestigationDocumentProfileDto, value: JsonObject): DerivedLabelChange | undefined {
+    const policy = this.policyService.iafVofClassificationPolicy;
+    if (!policy) return undefined;
+    if (definition.key === policy.defaultOwnerDocumentKey) {
+      return assessesHighHslRisk(value) ? { resourcePath: IAF_VOF_HIGH_HSL_RISK_LABEL, present: true, notifySubscribers: false } : undefined;
+    }
+    if (definition.schemaName === IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME) {
+      const analysed = decidesHslAnalysis(value);
+      return analysed === undefined ? undefined : { resourcePath: IAF_VOF_HSL_ANALYSIS_STARTED_LABEL, present: analysed, notifySubscribers: true };
+    }
+    return undefined;
+  }
+
+  /**
+   * Writes the label the saved document decides. It is done if it can be: the document is saved either way, and a
+   * label that could not be written is logged rather than turned into a failed save. Answers the errand version
+   * after the label write, or `undefined` when none was made - as when the document decides none, or the errand
+   * already looks the way it decides.
+   */
+  private async applyDerivedLabel(
     req: RequestWithUser,
     definition: SupportInvestigationDocumentProfileDto,
     municipalityId: string,
     errandId: string,
     written: { document: { schemaId: string; value: JsonObject }; parentErrandVersion: number },
   ): Promise<number | undefined> {
-    const policy = this.policyService.iafVofClassificationPolicy;
-    if (!policy || definition.key !== policy.defaultOwnerDocumentKey) return undefined;
-    if (!assessesHighHslRisk(written.document.value)) return undefined;
+    const change = this.derivedLabelChange(definition, written.document.value);
+    if (!change) return undefined;
     try {
-      return await this.riskLabelService.applyHighHslRiskLabel({
+      return await this.derivedLabelService.applyDerivedLabel({
         municipalityId,
         errandId,
         user: req.user,
-        present: true,
+        ...change,
         expectedVersion: written.parentErrandVersion,
       });
     } catch (error) {
-      logger.warn(`Could not update the high HSL risk label on errand ${errandId}`, error);
+      logger.warn(`Could not update the ${change.resourcePath} label on errand ${errandId}`, error);
       return undefined;
     }
   }
