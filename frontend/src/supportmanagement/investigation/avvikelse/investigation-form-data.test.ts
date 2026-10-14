@@ -322,7 +322,7 @@ const unitManagerSchema = unitManagerSchemaRequest.value as unknown as RJSFSchem
 // its own.
 const formErrors = (schema: RJSFSchema, formData: unknown) =>
   customizeValidator({ AjvClass: Ajv2020 }).validateFormData(formData, schema).errors;
-const unitManagerMisconduct = { legalBases: ['SOL', 'LSS'], investigationTemplate: 'sol_lss' };
+const unitManagerMisconduct = { legalBases: ['SOL', 'LSS'] };
 const socialRisk = { probability: 2, severity: 3, calculatedRiskValue: 6 };
 
 test('the unit manager investigation carries the errand’s own answer to whether it is a misconduct', () => {
@@ -373,4 +373,30 @@ test('a risk assessment made while the errand was a deviation stays in a miscond
     socialRisk
   );
   assert.deepEqual(formErrors(rendered, { ...escalated, completed: 'yes' }), []);
+});
+
+// From 1.10 the legal bases choose the template that fills the investigation text. A document bound to an earlier
+// version still has a template choice, which normalization keeps among the templates its legal bases allow.
+test('only a unit manager investigation bound to a version with a template choice keeps the choice in step', () => {
+  const templateChoice: RJSFSchema = {
+    type: 'string',
+    oneOf: [
+      { const: 'sol_lss', title: 'SOL/LSS utredning' },
+      { const: 'hsl', title: 'HSL utredning' },
+      { const: 'sol_lss_hsl', title: 'SOL/LSS/HSL utredning' },
+    ],
+  };
+  const earlierSchema: RJSFSchema = {
+    ...unitManagerSchema,
+    properties: { ...unitManagerSchema.properties, investigationTemplate: templateChoice },
+  };
+  const normalizedTemplate = (schema: RJSFSchema, formData: Record<string, unknown>) =>
+    normalizeInvestigationFormData('utredning-enhetschef', schema, formData).investigationTemplate;
+
+  assert.equal(normalizedTemplate(earlierSchema, { legalBases: ['SOL'] }), 'sol_lss');
+  assert.equal(normalizedTemplate(earlierSchema, { legalBases: ['SOL'], investigationTemplate: 'hsl' }), 'sol_lss');
+  assert.equal(normalizedTemplate(earlierSchema, { legalBases: ['SOL', 'HSL'], investigationTemplate: 'hsl' }), 'hsl');
+  assert.equal(normalizedTemplate(earlierSchema, { legalBases: ['SOL', 'HSL'] }), undefined);
+
+  assert.equal(normalizedTemplate(unitManagerSchema, { legalBases: ['SOL'] }), undefined);
 });

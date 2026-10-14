@@ -79,9 +79,10 @@ import {
 } from './investigation-schema-debug-panel.component';
 import {
   changedInvestigationTemplate,
+  chosenInvestigationTemplate,
+  followsLegalBasesTemplate,
   investigationTextIsReplaceable,
   offersInvestigationTextTemplates,
-  readInvestigationTemplate,
   readInvestigationText,
   withInvestigationText,
 } from './investigation-text-template';
@@ -133,6 +134,15 @@ const openPdfInNewTab = (pdfBase64: string): void => {
   window.open(url, '_blank', 'noopener');
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
+
+/** The draft as it was before a change, so that undoing the change puts all of it back. */
+interface InvestigationDraftBeforeChange {
+  readonly formData: InvestigationFormData;
+  readonly dirty: boolean;
+  // A change of the legal bases also clears the categorization they no longer reach.
+  readonly classification: InvestigationClassificationDraft;
+  readonly classificationDirty: boolean;
+}
 
 const getClassificationDraft = (errand: SupportErrand | undefined): InvestigationClassificationDraft => ({
   labels: errand?.labels ?? [],
@@ -262,7 +272,7 @@ export function SupportInvestigationDocument({
   const applyInvestigationTemplateText = useCallback(
     (template: string, text: string) => {
       setDocumentState((current) =>
-        current && readInvestigationTemplate(current.formData) === template
+        current && chosenInvestigationTemplate(current.schema, current.formData) === template
           ? { ...current, formData: withInvestigationText(current.formData, text) }
           : current
       );
@@ -270,9 +280,16 @@ export function SupportInvestigationDocument({
     },
     [setDocumentDirty]
   );
-  const investigationTextTemplate = useInvestigationTextTemplate(
-    documentState?.formData,
-    applyInvestigationTemplateText
+  const investigationTextTemplate = useInvestigationTextTemplate(documentState, applyInvestigationTemplateText);
+  /** Puts the draft back as it was before a change the investigator undid. */
+  const restoreDraft = useCallback(
+    (before: InvestigationDraftBeforeChange) => {
+      setDocumentState((current) => (current ? { ...current, formData: before.formData } : current));
+      setDocumentDirty(before.dirty);
+      resetClassification(before.classification, { keepDefaultValues: true });
+      setClassificationDirty(before.classificationDirty);
+    },
+    [resetClassification, setDocumentDirty]
   );
   const startingInvestigationTemplateText = investigationTextTemplate.startingText;
 
@@ -335,15 +352,13 @@ export function SupportInvestigationDocument({
           startingData,
           reportedMisconduct
         );
-        // A misconduct's lagrum leaves the new document a single template, chosen before anyone opens
-        // it, so the choice that fills the text never happens. Its text is part of the start instead.
-        const preselectedTemplate =
-          !storedDocument && offersInvestigationTextTemplates(loadedSchema.schema)
-            ? changedInvestigationTemplate(startingData, normalizedStartingData)
-            : undefined;
+        // A misconduct's lagrum are set before anyone opens the new document, so they call for its template
+        // before anything happens that would fill the text. Its text is part of the start instead.
+        const preselectedTemplate = storedDocument
+          ? undefined
+          : chosenInvestigationTemplate(loadedSchema.schema, normalizedStartingData);
         const templateText =
-          preselectedTemplate &&
-          investigationTextIsReplaceable(readInvestigationText(normalizedStartingData), undefined)
+          preselectedTemplate && investigationTextIsReplaceable(readInvestigationText(normalizedStartingData), [])
             ? await startingInvestigationTemplateText(preselectedTemplate)
             : undefined;
         if (cancelled) return;
@@ -991,6 +1006,7 @@ export function SupportInvestigationDocument({
       aria-labelledby={`${definition.key}-heading`}
       data-cy={`investigation-document-${definition.key}`}
     >
+      {investigationTextTemplate.dialog}
       <div className="mb-24 flex min-w-0 max-w-full flex-wrap items-start justify-between gap-16">
         <div className="min-w-0 max-w-[76rem]">
           <div className="mb-8 flex flex-wrap items-center gap-8">
@@ -1134,8 +1150,21 @@ export function SupportInvestigationDocument({
           setDocumentDirty(true);
           setValidationErrors([]);
           setNotice(undefined);
-          const chosenTemplate = changedInvestigationTemplate(documentState.formData, normalizedData);
-          if (chosenTemplate && offersInvestigationTextTemplates(documentState.schema)) {
+          const chosenTemplate = changedInvestigationTemplate(
+            documentState.schema,
+            documentState.formData,
+            normalizedData
+          );
+          if (chosenTemplate && followsLegalBasesTemplate(documentState.schema)) {
+            // The legal bases chose it. Undoing puts the draft back as it was, the legal bases with it.
+            const before: InvestigationDraftBeforeChange = {
+              formData: documentState.formData,
+              dirty: isDirty,
+              classification: getClassificationValues(),
+              classificationDirty,
+            };
+            void investigationTextTemplate.follow(chosenTemplate, () => restoreDraft(before));
+          } else if (chosenTemplate && offersInvestigationTextTemplates(documentState.schema)) {
             void investigationTextTemplate.offer(chosenTemplate);
           }
         }}

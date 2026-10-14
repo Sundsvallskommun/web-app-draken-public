@@ -2,7 +2,6 @@
   "utredning-enhetschef": {
     "valid": {
       "legalBases": ["HSL", "SOL"],
-      "investigationTemplate": "sol_lss_hsl",
       "investigationText": "<p>Enhetschefens samlade utredning.</p>",
       "causeAreas": ["communication_information", "procedures_routines_guidelines"],
       "riskAssessmentHsl": {

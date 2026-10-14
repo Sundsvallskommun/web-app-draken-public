@@ -1,39 +1,44 @@
 # Utredningsmallar för enhetschefens utredningstext
 
-Den här katalogen är den kanoniska källan för texterna som fyller i Utredningstext när enhetschefen väljer en
-Utredningsmall i `utredning-enhetschef`. Texterna läses från Templating-API:t vid körning; filerna här är vad som
-publiceras dit, så att innehållet kan granskas och versioneras i repot.
+Den här katalogen är den kanoniska källan för texterna som fyller i Utredningstext i `utredning-enhetschef`. Texterna
+läses från Templating-API:t vid körning; filerna här är vad som publiceras dit, så att innehållet kan granskas och
+versioneras i repot.
 
-| Mallval (`investigationTemplate`) | Identifierare i Templating-API:t      | Innehåll                                  |
-| --------------------------------- | ------------------------------------- | ----------------------------------------- |
-| `sol_lss`                         | `avvikelse.investigation.sol-lss`     | `avvikelse.investigation.sol-lss.html`     |
-| `sol_lss_hsl`                     | `avvikelse.investigation.sol-lss-hsl` | `avvikelse.investigation.sol-lss-hsl.html` |
-| `hsl`                             | -                                     | Ingen mall ännu; valet fyller inte i något |
+| Lagrum                        | Mall (`investigationTemplate`) | Identifierare i Templating-API:t      | Innehåll                                   |
+| ----------------------------- | ------------------------------ | ------------------------------------- | ------------------------------------------ |
+| SoL, LSS eller båda           | `sol_lss`                      | `avvikelse.investigation.sol-lss`     | `avvikelse.investigation.sol-lss.html`     |
+| HSL, ensamt eller med SoL/LSS | `sol_lss_hsl`                  | `avvikelse.investigation.sol-lss-hsl` | `avvikelse.investigation.sol-lss-hsl.html` |
 
 `investigation-text-templates.json` håller namn, beskrivning och metadata för varje mall. Innehållet är HTML-filen
-utan omgivande blanktecken, Base64-kodad i `content`.
+utan omgivande blanktecken, Base64-kodad i `content` när mallen publiceras.
 
-## Hur mallen används
+## Hur mallen väljs
 
-Identifieraren härleds ur mallvalet enligt repots konvention `{app}.{typ}.{variant}`, med bindestreck i stället för
-understreck eftersom identifierare inte får innehålla understreck. Formuläret hämtar alla mallar med prefixet
-`avvikelse.investigation.` en gång per dokument, första gången ett mallval görs. Ett val utan lagrad mall fyller
-inte i något, så en mall för `hsl` kan läggas till i Templating-API:t utan kodändring.
+Från `utredning-enhetschef` 1.10 väljer lagrummen mallen: SOL/LSS/HSL så snart HSL är ett av dem, annars SOL/LSS när
+SoL eller LSS är valt, och ingen innan något lagrum är valt (`investigationTemplateForLegalBases`). Handläggaren väljer
+ingen mall själv. Identifieraren härleds ur mallen enligt repots konvention `{app}.{typ}.{variant}`, med bindestreck i
+stället för understreck eftersom identifierare inte får innehålla understreck. Formuläret hämtar alla mallar med
+prefixet `avvikelse.investigation.` en gång per dokument, första gången en mall behövs.
 
-När mallvalet ändras, av handläggaren eller automatiskt när lagrummen bara tillåter en mall, fylls Utredningstext i:
+När en ändring av lagrummen byter mall fylls Utredningstext i:
 
-- direkt, om texten är tom eller fortfarande är exakt vad en tidigare mall lade dit;
-- efter en fråga, om någon har skrivit i texten. Svarar handläggaren nej står texten kvar och bara mallvalet ändras.
+- direkt, om texten är tom eller fortfarande är exakt någon av mallarnas text;
+- annars efter en fråga: "Du har uppdaterat lagrummet och mallen kommer att skrivas över." **Ja, skriv över mallen**
+  fyller i den nya mallen. **Nej** behåller texten och de nya lagrummen. **Avbryt** ångrar ändringen, så att lagrummen
+  och resten av utkastet blir som före den.
 
-Ett befintligt dokument fylls aldrig i när det öppnas, bara när valet ändras. Ett nytt dokument vars mall redan är
-vald när det öppnas startar med mallens text: för ett missförhållande låser Draken lagrummet till SoL och LSS, så
-SOL/LSS-mallen är den enda och väljs innan handläggaren hunnit göra valet som fyller texten. Texten är då en del av
-dokumentets start, som förifyllningen, och räknas inte som en osparad ändring.
+En ändring som inte byter mall, till exempel att LSS läggs till SoL, rör inte texten. Ett befintligt dokument fylls
+aldrig i när det öppnas, bara när lagrummen ändras. Ett nytt dokument vars lagrum redan är satta när det öppnas
+startar med mallens text: för ett missförhållande låser Draken lagrummet till SoL och LSS innan handläggaren hunnit
+göra något. Texten är då en del av dokumentets start, som förifyllningen, och räknas inte som en osparad ändring.
+
+Dokument som är bundna till 1.9 eller äldre har kvar sitt mallval Utredningsmall. Där fylls texten i när
+handläggaren väljer mall, med frågan "Använda mallens text?" om någon har skrivit i texten.
 
 Texten läses rå och renderas aldrig, så den får inte innehålla Pebble-syntax. Den får bara använda den markup som
 editorn behåller: `h2`, `p`, `br`, `strong` och `em`. Rubrikerna är `h2` eftersom `h1` är rapportens titel i PDF:en.
-Kontraktstestet `investigation-text-templates.contract.test.ts` håller fast båda reglerna och att varje mall svarar
-mot ett mallval i schemat.
+Kontraktstestet `investigation-text-templates.contract.test.ts` håller fast båda reglerna och att det finns precis en
+mall för varje mall lagrummen kan välja.
 
 ## Metadata
 
@@ -58,3 +63,7 @@ Den 12 oktober 2026 publicerades version 1.1 av `avvikelse.investigation.sol-lss
 inträffade händelsen?" i stället för "Varför uppstod avvikelsen?", eftersom ett missförhållande också får mallen.
 Innehåll, namn och metadata lästes tillbaka och var identiska med filerna. `avvikelse.investigation.sol-lss-hsl` är
 oförändrad på 1.0. Inget har publicerats i produktionsmiljön.
+
+Den 14 oktober 2026 publicerades version 1.1 av `avvikelse.investigation.sol-lss-hsl` i testmiljön. Den frågar också
+"Varför inträffade händelsen?". Innehåll, namn och metadata lästes tillbaka och var identiska med filerna. Inget har
+publicerats i produktionsmiljön.

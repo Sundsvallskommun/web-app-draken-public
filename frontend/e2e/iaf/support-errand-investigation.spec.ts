@@ -1253,7 +1253,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(typeOption(socialClassificationSelector, legalCertainty)).toHaveCount(1);
   });
 
-  test('fyller utredningstexten från den valda utredningsmallen och frågar innan egen text ersätts', async ({
+  // From utredning-enhetschef 1.10 the legal bases choose the template: SOL/LSS/HSL wherever HSL is one of them,
+  // SOL/LSS otherwise. Text that is still a template's is replaced at once; written text only after asking.
+  test('fyller utredningstexten från mallen som lagrummen väljer och frågar innan egen text skrivs över', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -1270,33 +1272,62 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     const legalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
-    const template = managerDocument.locator(`#${managerKey}_investigationTemplate`);
+    const hsl = legalBases.getByLabel(/^HSL –/u);
+    const lss = legalBases.getByLabel(/^LSS –/u);
     const text = managerDocument.getByRole('textbox', { name: 'Utredningstext', exact: true });
-    const confirmDialog = page.locator(CONFIRM_DIALOG);
+    const overwriteDialog = page.locator('[data-cy="investigation-template-overwrite"]');
+    const answer = (name: string) => overwriteDialog.getByRole('button', { name, exact: true }).click();
 
-    // SoL alone allows only the SOL/LSS template, which is chosen and fills the empty text.
+    // There is no template to choose; the legal bases choose it.
+    await expect(managerDocument.locator(`#${managerKey}_investigationTemplate`)).toHaveCount(0);
+
+    // SoL alone calls for SOL/LSS, which fills the empty text.
     await legalBases.getByText(/^SoL –/u).click();
     await expect(text).toContainText('Mall SOL/LSS');
     await expect(text).toContainText('[Vägledning SOL/LSS]');
 
-    // The text is still the template's own, so another template replaces it without asking.
+    // HSL calls for SOL/LSS/HSL. The text is still the template's own, so it is replaced without asking.
     await legalBases.getByText(/^HSL –/u).click();
-    await template.selectOption({ label: 'SOL/LSS/HSL utredning' });
     await expect(text).toContainText('Mall SOL/LSS/HSL');
-    await expect(confirmDialog).toHaveCount(0);
+    await expect(overwriteDialog).toHaveCount(0);
 
-    // Once the investigator has written in it, the text is only replaced after asking.
+    // Once the investigator has written in it, a change that keeps the template leaves the text alone.
     await text.click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' Egen text');
-    await template.selectOption({ label: 'SOL/LSS utredning' });
-    await expect(confirmDialog).toBeVisible();
-    await confirmDialog.getByRole('button', { name: 'Nej, behåll texten', exact: true }).click();
+    await legalBases.getByText(/^LSS –/u).click();
+    await expect(lss).toBeChecked();
+    await expect(overwriteDialog).toHaveCount(0);
+    await expect(text).toContainText('Egen text');
+
+    const hslType = managerDocument.locator(hslClassificationSelector).locator('[data-cy="label-classification-type"]');
+    await hslType.selectOption(iafLabelFixture.classification.medication.resourcePath);
+
+    // A change that calls for another template asks first. Avbryt undoes it: the legal bases are as they were, and
+    // so are the text and the HSL categorization that unticking HSL cleared.
+    await legalBases.getByText(/^HSL –/u).click();
+    await expect(overwriteDialog).toContainText('Du har uppdaterat lagrummet och mallen kommer att skrivas över.');
+    await answer('Avbryt');
+    await expect(overwriteDialog).toHaveCount(0);
+    await expect(hsl).toBeChecked();
+    await expect(lss).toBeChecked();
+    await expect(hslType).toHaveValue(iafLabelFixture.classification.medication.resourcePath);
+    await expect(text).toContainText('Egen text');
+
+    // Nej keeps the text and the new legal bases.
+    await legalBases.getByText(/^HSL –/u).click();
+    await expect(overwriteDialog).toBeVisible();
+    await answer('Nej');
+    await expect(overwriteDialog).toHaveCount(0);
+    await expect(hsl).not.toBeChecked();
+    await expect(managerDocument.locator(hslClassificationSelector)).toHaveCount(0);
     await expect(text).toContainText('Egen text');
     await expect(text).toContainText('Mall SOL/LSS/HSL');
 
-    await template.selectOption({ label: 'SOL/LSS/HSL utredning' });
-    await confirmDialog.getByRole('button', { name: 'Ja, ersätt', exact: true }).click();
+    // Ja overwrites the text with the template the new legal bases call for.
+    await legalBases.getByText(/^HSL –/u).click();
+    await answer('Ja, skriv över mallen');
+    await expect(hsl).toBeChecked();
     await expect(text).not.toContainText('Egen text');
     await expect(text).toContainText('Mall SOL/LSS/HSL');
   });
@@ -1415,8 +1446,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(warning).toHaveCount(0);
   });
 
-  // A misconduct's lagrum is SoL and LSS from the start, so its only template is chosen before the
-  // investigator could choose it - and the choice that fills the text never happened.
+  // A misconduct's lagrum is SoL and LSS from the start, so they call for the SOL/LSS template before the
+  // investigator does anything that would fill the text.
   test('ger ett nytt missförhållande SOL/LSS-mallens text från början, utan att dokumentet räknas som ändrat', async ({
     page,
     dismissCookieConsent,
@@ -1828,7 +1859,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   }) => {
     const existing = existingManagerDocument();
     existing.value.legalBases = ['SOL'];
-    existing.value.investigationTemplate = 'sol_lss';
     delete existing.value.riskAssessmentHsl;
     const trace = await installIafApiMock(page, { documents: { [managerKey]: existing } });
 

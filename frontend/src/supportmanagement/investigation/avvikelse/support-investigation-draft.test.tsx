@@ -59,6 +59,8 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => {
     cx: gui.cx,
     Spinner: gui.Spinner,
     Label: gui.Label,
+    // The question before a template overwrites written text; no template is chosen here, so it is never shown.
+    Modal: gui.Modal,
     // No template is chosen here, so nothing ever asks before replacing the investigation text.
     useConfirm: () => ({ showConfirmation: async () => false }),
     useSnackbar: () => mocks.snackbar,

@@ -4,7 +4,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.9           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-enhetschef`      | 1.10          | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
 | `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.5           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
@@ -117,6 +117,10 @@ UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/lat
 i produktionsmiljön. Labels `ANALYSIS/VC_COMMENT_HSL` och `ANALYSIS/HSL_STARTED`, som knappen och den initiala
 bedömningen skriver, fanns vid publiceringen inte i namespacens metadata. De lades till samma dag.
 
+Samma dag publicerades `2281_utredning-enhetschef_1.10` i testmiljön: Utredningsmall är borttagen och lagrummen väljer
+mallen (se Utredning enhetschef 1.10). Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och
+`versions/latest` pekar på 1.10; API:t ordnar versionerna som tal. Inget har publicerats i produktionsmiljön.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -176,8 +180,8 @@ Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är et
 `then`-grenen och ingen annanstans.
 
 Ovillkorade står reglerna om dokumentets _form_, inte dess ifyllnadsgrad: att ett fält som inte gäller för valt
-lagrum inte får finnas, att utredningsmallen följer lagrummen, och att ett uträknat riskvärde stämmer med sina
-indata. Lagrummen krävs också först vid klarmarkering: de är formulärets första fråga, men ett utkast där
+lagrum inte får finnas, att utredningsmallen följer lagrummen (till och med enhetschefens 1.9), och att ett
+uträknat riskvärde stämmer med sina indata. Lagrummen krävs också först vid klarmarkering: de är formulärets första fråga, men ett utkast där
 enhetschefen ännu inte tagit ställning ska gå att lägga ifrån sig.
 
 Ärendets kategorisering följer samma regel, fast utanför schemat: den skrivs genom en egen PATCH och krävs av
@@ -212,6 +216,16 @@ och utredningsmallen följer lagrummen som förut.
 Version 1.9 ändrar två texter efter verksamhetens önskemål och inget annat. Lagrumsfrågans hjälptext är "Ange vilket
 eller vilka lagrum som gäller för avvikelsen", och Utredningsmall har ingen hjälptext längre. UI-schemat är
 oförändrat. Utredningar som redan är sparade är bundna till en äldre version och visar dess texter.
+
+## Utredning enhetschef 1.10
+
+Version 1.10 tar bort Utredningsmall (`investigationTemplate`), både fältet och de tre reglerna som höll valet i takt
+med lagrummen. Lagrummen väljer mallen själva: SOL/LSS/HSL när HSL är ett av dem, annars SOL/LSS när SoL eller LSS
+är valt, och ingen innan något lagrum är valt. Mallen fyller Utredningstext (se `../templates/README.md`). Ett
+dokument med ett lagrat mallval godtas inte av 1.10.
+
+Utredningar som redan är sparade är bundna till en äldre version och behåller sitt mallval, med frågan som förut när
+valet ändras.
 
 ## Händelseanalys HSL 1.5
 

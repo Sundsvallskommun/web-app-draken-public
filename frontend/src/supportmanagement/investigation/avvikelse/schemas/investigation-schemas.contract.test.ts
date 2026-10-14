@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.9',
+    version: '1.10',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -420,7 +420,7 @@ test('unit manager risk objects expose the agreed formula metadata and readonly 
   assert.equal(validate(inconsistentRiskFixture), false, 'schema accepted an inconsistent calculated HSL risk value');
 });
 
-test('unit manager rejects fields and templates that do not match the selected legal bases', () => {
+test('unit manager rejects fields that do not match the selected legal bases', () => {
   const schema = readJson('utredning-enhetschef.schema-request.json').value;
   const { ajv, validate } = createValidator(schema);
   const hslRisk = {
@@ -436,38 +436,30 @@ test('unit manager rejects fields and templates that do not match the selected l
   };
   const hslOnly = {
     legalBases: ['HSL'],
-    investigationTemplate: 'hsl',
     riskAssessmentHsl: hslRisk,
   };
   const socialOnly = {
     legalBases: ['SOL'],
-    investigationTemplate: 'sol_lss',
     riskAssessmentSolLss: socialRisk,
   };
 
   assert.equal(validate(hslOnly), true, ajv.errorsText(validate.errors));
   assert.equal(validate({ ...hslOnly, riskAssessmentSolLss: socialRisk }), false);
   assert.equal(validate({ ...hslOnly, suspectedMisconduct: 'yes' }), false);
-  assert.equal(validate({ ...hslOnly, investigationTemplate: 'sol_lss' }), false);
 
   assert.equal(validate(socialOnly), true, ajv.errorsText(validate.errors));
   assert.equal(validate({ ...socialOnly, riskAssessmentHsl: hslRisk }), false);
-  assert.equal(validate({ ...socialOnly, investigationTemplate: 'hsl' }), false);
 
-  for (const investigationTemplate of ['sol_lss', 'hsl', 'sol_lss_hsl']) {
-    const combined = {
-      legalBases: ['HSL', 'SOL'],
-      investigationTemplate,
-      riskAssessmentHsl: hslRisk,
-      riskAssessmentSolLss: socialRisk,
-    };
-    assert.equal(validate(combined), true, ajv.errorsText(validate.errors));
-  }
+  const combined = {
+    legalBases: ['HSL', 'SOL'],
+    riskAssessmentHsl: hslRisk,
+    riskAssessmentSolLss: socialRisk,
+  };
+  assert.equal(validate(combined), true, ajv.errorsText(validate.errors));
 
   // From 1.3 all three legal bases can apply to one deviation; HSL and SoL/LSS are then both assessed.
   const allLegalBases = {
     legalBases: ['HSL', 'LSS', 'SOL'],
-    investigationTemplate: 'sol_lss_hsl',
     riskAssessmentHsl: hslRisk,
     riskAssessmentSolLss: socialRisk,
   };
@@ -487,7 +479,7 @@ test('the unit manager investigation of a misconduct neither shows nor requires 
   const uiSchema = readJson('utredning-enhetschef.ui-schema-request.json').value;
   const { ajv, validate } = createValidator(schema);
   const socialRisk = { probability: 1, severity: 1, calculatedRiskValue: 1 };
-  const social = { legalBases: ['SOL', 'LSS'], investigationTemplate: 'sol_lss', completed: 'yes' };
+  const social = { legalBases: ['SOL', 'LSS'], completed: 'yes' };
 
   assert.equal(schema.properties.reportedMisconduct['x-draken-server-owned'], true);
   assert.equal(uiSchema.reportedMisconduct['ui:widget'], 'hidden');
@@ -807,13 +799,17 @@ test('the lex Sarah decision leaves who decided to the server and shows it last 
   assert.equal(validate({ ...decision, decisionMaker: { name: 'Iaf Testare', account: 'iaf.test' } }), false);
 });
 
-// The legal bases question says what to do; the template needs no explanation of how Draken stores it.
-test('the unit manager investigation explains the legal bases and leaves the template unexplained', () => {
+// The legal bases question says what to do. From 1.10 it also chooses the template that fills the investigation
+// text, so the investigator no longer chooses one, and a stored choice is refused.
+test('the unit manager investigation explains the legal bases and has no template choice of its own', () => {
   const schema = readJson('utredning-enhetschef.schema-request.json').value;
+  const uiSchema = readJson('utredning-enhetschef.ui-schema-request.json').value;
+  const { validate } = createValidator(schema);
 
   assert.equal(schema.properties.legalBases.description, 'Ange vilket eller vilka lagrum som gäller för avvikelsen');
-  assert.equal(schema.properties.investigationTemplate.title, 'Utredningsmall');
-  assert.equal('description' in schema.properties.investigationTemplate, false);
+  assert.equal('investigationTemplate' in schema.properties, false);
+  assert.equal(JSON.stringify(uiSchema).includes('investigationTemplate'), false);
+  assert.equal(validate({ legalBases: ['SOL'], investigationTemplate: 'sol_lss' }), false);
 });
 
 test('the HSL decision is the IVO decision alone', () => {

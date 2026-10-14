@@ -1,8 +1,8 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.9",
+  "version": "1.10",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.9",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.10",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
@@ -40,24 +40,6 @@
             }
           ]
         }
-      },
-      "investigationTemplate": {
-        "title": "Utredningsmall",
-        "type": "string",
-        "oneOf": [
-          {
-            "const": "sol_lss",
-            "title": "SOL/LSS utredning"
-          },
-          {
-            "const": "hsl",
-            "title": "HSL Utredning"
-          },
-          {
-            "const": "sol_lss_hsl",
-            "title": "SOL/LSS/HSL utredning"
-          }
-        ]
       },
       "investigationText": {
         "title": "Utredningstext",
@@ -685,92 +667,6 @@
         }
       },
       {
-        "if": {
-          "properties": {
-            "legalBases": {
-              "allOf": [
-                {
-                  "contains": {
-                    "const": "HSL"
-                  }
-                },
-                {
-                  "not": {
-                    "contains": {
-                      "enum": ["SOL", "LSS"]
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          "required": ["legalBases"]
-        },
-        "then": {
-          "properties": {
-            "investigationTemplate": {
-              "const": "hsl"
-            }
-          }
-        }
-      },
-      {
-        "if": {
-          "properties": {
-            "legalBases": {
-              "allOf": [
-                {
-                  "contains": {
-                    "enum": ["SOL", "LSS"]
-                  }
-                },
-                {
-                  "not": {
-                    "contains": {
-                      "const": "HSL"
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          "required": ["legalBases"]
-        },
-        "then": {
-          "properties": {
-            "investigationTemplate": {
-              "const": "sol_lss"
-            }
-          }
-        }
-      },
-      {
-        "if": {
-          "properties": {
-            "legalBases": {
-              "allOf": [
-                {
-                  "contains": {
-                    "const": "HSL"
-                  }
-                },
-                {
-                  "contains": {
-                    "enum": ["SOL", "LSS"]
-                  }
-                }
-              ]
-            }
-          },
-          "required": ["legalBases"]
-        },
-        "then": {
-          "properties": {
-            "investigationTemplate": true
-          }
-        }
-      },
-      {
         "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar. Lagrummen väljs först av allt och krävs därför även i ett utkast: de styr både dokumentets form och ärendets kategorisering.",
         "if": {
           "properties": {
@@ -846,5 +742,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.9 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.10 of the unit manager investigation schema"
 }

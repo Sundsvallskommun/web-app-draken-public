@@ -5,7 +5,6 @@
     },
     "ui:order": [
       "legalBases",
-      "investigationTemplate",
       "investigationText",
       "causeAreas",
       "riskAssessmentHsl",
@@ -24,7 +23,6 @@
         "fields": [
           "legalBases",
           "$external:errandClassification",
-          "investigationTemplate",
           "investigationText",
           "causeAreas",
           "riskAssessmentHsl",
@@ -48,13 +46,6 @@
         "placeholder": "Välj lagrum",
         "className": "w-full max-w-[48rem]",
         "showRequiredIndicator": true
-      }
-    },
-    "investigationTemplate": {
-      "ui:widget": "select",
-      "ui:placeholder": "Välj utredningsmall",
-      "ui:options": {
-        "className": "w-full max-w-[40rem]"
       }
     },
     "investigationText": {
@@ -136,5 +127,5 @@
     "reportedMisconduct": { "ui:widget": "hidden" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.9 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.10 of Utredning enhetschef in Draken"
 }

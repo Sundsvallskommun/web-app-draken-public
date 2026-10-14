@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 import { test } from 'vitest';
 
-import { investigationTextTemplateIdentifier } from '../investigation-text-template';
+import {
+  investigationTemplateForLegalBases,
+  investigationTextTemplateIdentifier,
+} from '../investigation-text-template';
 import managerSchemaRequest from '../schemas/utredning-enhetschef.schema-request.json';
 import templateRequests from './investigation-text-templates.json';
 
@@ -17,15 +20,27 @@ const EDITOR_TAGS = new Set(['h2', 'p', 'br', 'strong', 'em']);
 const metadataValues = (request: (typeof templateRequests)[number], key: string): string[] =>
   request.metadata.filter((entry) => entry.key === key).map((entry) => entry.value);
 
-const managerTemplateChoices = managerSchemaRequest.value.properties.investigationTemplate.oneOf.map(
-  (option) => option.const
+const managerLegalBases = managerSchemaRequest.value.properties.legalBases.items.oneOf.map((option) => option.const);
+
+/** Every choice of legal bases the manager investigation allows, the empty one included. */
+const legalBasesChoices = managerLegalBases.reduce<string[][]>(
+  (choices, legalBase) => [...choices, ...choices.map((choice) => [...choice, legalBase])],
+  [[]]
 );
 
-test('every template answers a template choice of the manager investigation, under its derived identifier', () => {
+const templatesCalledFor = new Set(
+  legalBasesChoices.map(investigationTemplateForLegalBases).filter((template) => template !== undefined)
+);
+
+test('every template the legal bases can call for has a text, and every text answers one of them', () => {
+  const templates = templateRequests.map((request) => metadataValues(request, 'investigationTemplate')[0]);
+  assert.deepEqual([...templates].sort(), [...templatesCalledFor].sort());
+});
+
+test('every template is stored under the identifier derived from it, for the manager investigation', () => {
   for (const request of templateRequests) {
-    const [choice] = metadataValues(request, 'investigationTemplate');
-    assert.ok(managerTemplateChoices.includes(choice), `${request.identifier} answers no template choice`);
-    assert.equal(request.identifier, investigationTextTemplateIdentifier(choice));
+    const [template] = metadataValues(request, 'investigationTemplate');
+    assert.equal(request.identifier, investigationTextTemplateIdentifier(template));
     assert.deepEqual(metadataValues(request, 'schemaName'), [managerSchemaRequest.name]);
     assert.equal(request.contentFile, `${request.identifier}.html`);
   }

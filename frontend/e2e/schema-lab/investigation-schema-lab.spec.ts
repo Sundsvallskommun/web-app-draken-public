@@ -206,11 +206,9 @@ test('updates risks and label choices when the manager changes legal bases', asy
   const hslGroup = activePanel.locator('[data-cy="avvikelse-label-categorization-HSL"]');
   const socialGroup = activePanel.locator('[data-cy="avvikelse-label-categorization-SOL_LSS"]');
   const socialTypeSelect = socialGroup.locator('[data-cy="label-classification-type"]');
-  const templateSelect = page.locator(`#${managerIdPrefix}_investigationTemplate`);
 
   // From schema 1.3 all three legal bases can apply at once, so the third stays selectable.
   await expect(lss).toBeEnabled();
-  await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(3);
   await expect(hslGroup.locator('legend')).toHaveText('HSL');
   await expect(hslGroup.locator('[data-cy="label-classification-type"]')).toHaveValue('hsl_fall');
   await expect(socialGroup.locator('legend')).toHaveText('SoL');
@@ -218,8 +216,6 @@ test('updates risks and label choices when the manager changes legal bases', asy
   await hslLabel.click();
   await expect(hsl).not.toBeChecked();
 
-  await expect(templateSelect).toHaveValue('sol_lss');
-  await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(1);
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentHsl_probability`)).toHaveCount(0);
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentSolLss_probability`)).toBeVisible();
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toBeVisible();
@@ -243,7 +239,6 @@ test('updates risks and label choices when the manager changes legal bases', asy
   await expect(sol).not.toBeChecked();
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentSolLss_probability`)).toHaveCount(0);
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toHaveCount(0);
-  await expect(templateSelect).toHaveCount(0);
   await expect(categorizationGroups).toHaveCount(0);
   await expect(activePanel.getByText('Välj lagrum för att kunna kategorisera ärendet.')).toBeVisible();
 
@@ -252,7 +247,6 @@ test('updates risks and label choices when the manager changes legal bases', asy
   await expect(preview).not.toContainText('riskAssessmentHsl');
   await expect(preview).not.toContainText('riskAssessmentSolLss');
   await expect(preview).not.toContainText('suspectedMisconduct');
-  await expect(preview).not.toContainText('investigationTemplate');
 });
 
 test('mock roles make only the owned investigation editable', async ({ page }) => {

@@ -143,7 +143,7 @@ function getAllowedManagerTemplates(formData: InvestigationFormData): ManagerInv
   return [];
 }
 
-function normalizeManagerConditions(formData: InvestigationFormData): InvestigationFormData {
+function normalizeManagerConditions(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
   const normalizedData = { ...formData };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(normalizedData);
 
@@ -152,6 +152,10 @@ function normalizeManagerConditions(formData: InvestigationFormData): Investigat
     delete normalizedData.riskAssessmentSolLss;
     delete normalizedData.suspectedMisconduct;
   }
+
+  // The template choice is gone from 1.10, where the legal bases choose the template themselves. Only a document
+  // bound to an earlier version has a choice to keep in step with its legal bases.
+  if (!isRecord(schema.properties) || !isRecord(schema.properties.investigationTemplate)) return normalizedData;
 
   const allowedTemplates = getAllowedManagerTemplates(normalizedData);
   const selectedTemplate = normalizedData.investigationTemplate;
@@ -346,7 +350,7 @@ export function normalizeInvestigationFormData(
   );
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME) {
-    conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
+    conditionallyNormalizedData = normalizeManagerConditions(schema, schemaOwnedData);
   }
   if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {
     conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber']);
