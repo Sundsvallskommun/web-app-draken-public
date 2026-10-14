@@ -6,7 +6,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { assessesHighHslRisk, IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
-import { decidesHslAnalysis, IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME, IAF_VOF_HSL_ANALYSIS_STARTED_LABEL } from '@/config/iaf-vof-hsl-analysis';
+import { IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME, IAF_VOF_HSL_ANALYSIS_STARTED_LABEL, startsHslAnalysis } from '@/config/iaf-vof-hsl-analysis';
 import { resolveIafVofInvestigationDocumentApplicability, resolveIafVofUnitManagerErrandFacts } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
@@ -21,7 +21,7 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { DerivedLabelChange, InvestigationDerivedLabelService } from '@/services/investigation-derived-label.service';
+import { InvestigationDerivedLabelService } from '@/services/investigation-derived-label.service';
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
@@ -197,33 +197,30 @@ export class SupportErrandJsonParameterController {
   }
 
   /**
-   * The label a saved IAF/VOF document decides, if any.
+   * The label a saved IAF/VOF document adds to the errand, if any. Both are permanent (`IAF_VOF_PERMANENT_LABELS`):
+   * a later save that decides otherwise leaves the label where it is.
    *
-   * The unit manager's investigation sets the high HSL risk label once a save assesses a high risk, completed or
-   * not, and never clears it: once MAS/MAR reach the errand they keep it. It is derived, so it is written silently.
-   *
-   * MAS/MAR's HSL event analysis sets the label of an analysis started when their initial assessment is to analyse
-   * the event, and takes it off when they decide against it; an undecided analysis leaves it alone. It records
-   * MAS/MAR's own decision, so it notifies: the head of operations is e-mailed from it.
+   * The unit manager's investigation adds the high HSL risk label once a save assesses a high risk, completed or
+   * not: once MAS/MAR reach the errand they keep it. MAS/MAR's HSL event analysis adds the label of an analysis
+   * started once their initial assessment is to analyse the event; the head of operations is e-mailed from it.
    */
-  private derivedLabelChange(definition: SupportInvestigationDocumentProfileDto, value: JsonObject): DerivedLabelChange | undefined {
+  private derivedLabel(definition: SupportInvestigationDocumentProfileDto, value: JsonObject): string | undefined {
     const policy = this.policyService.iafVofClassificationPolicy;
     if (!policy) return undefined;
     if (definition.key === policy.defaultOwnerDocumentKey) {
-      return assessesHighHslRisk(value) ? { resourcePath: IAF_VOF_HIGH_HSL_RISK_LABEL, present: true, notifySubscribers: false } : undefined;
+      return assessesHighHslRisk(value) ? IAF_VOF_HIGH_HSL_RISK_LABEL : undefined;
     }
     if (definition.schemaName === IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME) {
-      const analysed = decidesHslAnalysis(value);
-      return analysed === undefined ? undefined : { resourcePath: IAF_VOF_HSL_ANALYSIS_STARTED_LABEL, present: analysed, notifySubscribers: true };
+      return startsHslAnalysis(value) ? IAF_VOF_HSL_ANALYSIS_STARTED_LABEL : undefined;
     }
     return undefined;
   }
 
   /**
-   * Writes the label the saved document decides. It is done if it can be: the document is saved either way, and a
+   * Adds the label the saved document decides. It is done if it can be: the document is saved either way, and a
    * label that could not be written is logged rather than turned into a failed save. Answers the errand version
    * after the label write, or `undefined` when none was made - as when the document decides none, or the errand
-   * already looks the way it decides.
+   * already carries it.
    */
   private async applyDerivedLabel(
     req: RequestWithUser,
@@ -232,18 +229,18 @@ export class SupportErrandJsonParameterController {
     errandId: string,
     written: { document: { schemaId: string; value: JsonObject }; parentErrandVersion: number },
   ): Promise<number | undefined> {
-    const change = this.derivedLabelChange(definition, written.document.value);
-    if (!change) return undefined;
+    const resourcePath = this.derivedLabel(definition, written.document.value);
+    if (!resourcePath) return undefined;
     try {
       return await this.derivedLabelService.applyDerivedLabel({
         municipalityId,
         errandId,
         user: req.user,
-        ...change,
+        resourcePath,
         expectedVersion: written.parentErrandVersion,
       });
     } catch (error) {
-      logger.warn(`Could not update the ${change.resourcePath} label on errand ${errandId}`, error);
+      logger.warn(`Could not add the ${resourcePath} label to errand ${errandId}`, error);
       return undefined;
     }
   }

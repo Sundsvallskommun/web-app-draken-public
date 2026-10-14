@@ -1,14 +1,17 @@
 import type { Errand, Label } from '@/data-contracts/supportmanagement/data-contracts';
-import { buildLabelPresenceUpdate } from '@/services/errand-label-presence';
+import { buildLabelAdditionUpdate, withPermanentLabelsKept } from '@/services/errand-label-presence';
 
+const highHslRisk: Label = { id: 'high-hsl', classification: 'risk', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL', labels: [] };
+const hslStarted: Label = {
+  id: 'hsl-started',
+  classification: 'analysis',
+  resourceName: 'HSL_STARTED',
+  resourcePath: 'ANALYSIS/HSL_STARTED',
+  labels: [],
+};
 const labelStructure: Label[] = [
-  {
-    id: 'risk-root',
-    classification: 'risk-root',
-    resourceName: 'RISK',
-    resourcePath: 'RISK',
-    labels: [{ id: 'high-hsl', classification: 'risk', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL', labels: [] }],
-  },
+  { id: 'risk-root', classification: 'risk-root', resourceName: 'RISK', resourcePath: 'RISK', labels: [highHslRisk] },
+  { id: 'analysis-root', classification: 'analysis-root', resourceName: 'ANALYSIS', resourcePath: 'ANALYSIS', labels: [hslStarted] },
   {
     id: 'report-root',
     classification: 'report-type-root',
@@ -18,30 +21,70 @@ const labelStructure: Label[] = [
   },
 ];
 
-const carried = (...ids: string[]): Errand['labels'] => ids.map(id => ({ id }));
-const update = (currentLabels: Errand['labels'], present: boolean, structure: Label[] = labelStructure) =>
-  buildLabelPresenceUpdate({ currentLabels, labelStructure: structure, resourcePath: 'RISK/HIGH_HSL', present });
+const carried = (...ids: string[]): Errand['labels'] => ids.map(id => ({ id }) as Label);
 
-describe('buildLabelPresenceUpdate', () => {
+describe('buildLabelAdditionUpdate', () => {
+  const add = (currentLabels: Errand['labels'], structure: Label[] = labelStructure) =>
+    buildLabelAdditionUpdate({ currentLabels, labelStructure: structure, resourcePath: 'RISK/HIGH_HSL' });
+
   it('adds the label with its root and keeps every other label', () => {
-    expect(update(carried('report-root', 'deviation'), true)).toEqual([
-      { id: 'report-root' },
-      { id: 'deviation' },
-      { id: 'risk-root' },
-      { id: 'high-hsl' },
-    ]);
+    expect(add(carried('report-root', 'deviation'))).toEqual([{ id: 'report-root' }, { id: 'deviation' }, { id: 'risk-root' }, { id: 'high-hsl' }]);
   });
 
-  it('takes the label away, and its root with it once nothing is left beneath', () => {
-    expect(update(carried('report-root', 'deviation', 'risk-root', 'high-hsl'), false)).toEqual([{ id: 'report-root' }, { id: 'deviation' }]);
+  it('adds the root of a label the errand carries without it', () => {
+    expect(add(carried('deviation', 'high-hsl'))).toEqual([{ id: 'deviation' }, { id: 'high-hsl' }, { id: 'risk-root' }]);
   });
 
-  it('writes nothing when the errand already looks that way', () => {
-    expect(update(carried('deviation', 'risk-root', 'high-hsl'), true)).toBeUndefined();
-    expect(update(carried('report-root', 'deviation'), false)).toBeUndefined();
+  it('writes nothing when the errand already carries the label', () => {
+    expect(add(carried('deviation', 'risk-root', 'high-hsl'))).toBeUndefined();
   });
 
   it('leaves the errand alone when the namespace has not configured the label', () => {
-    expect(update(carried('deviation'), true, labelStructure.slice(1))).toBeUndefined();
+    expect(add(carried('deviation'), labelStructure.slice(2))).toBeUndefined();
+  });
+});
+
+describe('withPermanentLabelsKept', () => {
+  const keep = (labels: Label[], currentLabels: Errand['labels']) =>
+    withPermanentLabelsKept({
+      labels,
+      currentLabels,
+      labelStructure,
+      permanentResourcePaths: ['RISK/HIGH_HSL', 'ANALYSIS/HSL_STARTED', 'ANALYSIS/VC_COMMENT_HSL'],
+    });
+
+  it('puts back a permanent label the write leaves out, with its root, as the metadata describes them', () => {
+    const sent = carried('deviation') as Label[];
+
+    expect(keep(sent, carried('deviation', 'risk-root', 'high-hsl', 'analysis-root', 'hsl-started'))).toEqual([
+      { id: 'deviation' },
+      { ...labelStructure[0], labels: undefined },
+      { ...highHslRisk, labels: undefined },
+      { ...labelStructure[1], labels: undefined },
+      { ...hslStarted, labels: undefined },
+    ]);
+  });
+
+  it('puts back only what the write leaves out', () => {
+    const sent = carried('deviation', 'risk-root') as Label[];
+
+    expect(keep(sent, carried('deviation', 'risk-root', 'high-hsl'))).toEqual([
+      { id: 'deviation' },
+      { id: 'risk-root' },
+      { ...highHslRisk, labels: undefined },
+    ]);
+  });
+
+  it('lets a write take off any label that is not permanent', () => {
+    const sent = carried('risk-root', 'high-hsl') as Label[];
+
+    expect(keep(sent, carried('report-root', 'deviation', 'risk-root', 'high-hsl'))).toEqual(sent);
+  });
+
+  // A permanent label is kept, never added: the write decides nothing about one the errand has not been given.
+  it('adds no permanent label the errand does not carry, nor one the namespace has not configured', () => {
+    const sent = carried('deviation') as Label[];
+
+    expect(keep(sent, carried('deviation'))).toEqual(sent);
   });
 });

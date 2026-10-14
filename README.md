@@ -258,9 +258,10 @@ mellan dem.
   kompletteringsbegäran. BFF:en skickar id:t vidare till Support Management, eller ger requesten ett
   eget id om webbläsaren inte skickade något (`utils/request-group.ts`).
 - **Tysta skrivningar.** Det systemet skriver på egen hand notifierar ingen. Det gäller läsmarkeringar,
-  kvittenser, prenumeranten som skapas vid första besöket, RISK/HIGH_HSL-etiketten som härleds ur
-  utredningen, rapportens bokföring runt bilagan, faserna ett ärende passerar när det stängs från en
-  tidigare fas och det tomma ärende en drake öppnar utan registreringsformulär. BFF:en skickar då
+  kvittenser, prenumeranten som skapas vid första besöket, rapportens bokföring runt bilagan, faserna
+  ett ärende passerar när det stängs från en tidigare fas och det tomma ärende en drake öppnar utan
+  registreringsformulär. Avvikelsens labels `RISK/HIGH_HSL`, `ANALYSIS/HSL_STARTED` och
+  `ANALYSIS/VC_COMMENT_HSL` är aldrig tysta, eftersom prenumerationsprofilerna aviserar från dem. BFF:en skickar då
   `X-notify: false` (`notifySubscribers: false` i `ApiService`). Support Management läser headern från
   17.0, alltså i dag bara för drakar med `SUPPORTMANAGEMENT_API_TARGET=sprint`; äldre versioner
   ignorerar den. Ändringar användaren själv gör ska aldrig vara tysta.

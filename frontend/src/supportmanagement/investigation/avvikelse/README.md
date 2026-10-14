@@ -365,7 +365,9 @@ schemats `analysisThreshold`) märks med labeln `RISK/HIGH_HSL`, Hög risk HSL. 
 åtkomst, och de ska nå ärendet så snart risken är bedömd, så labeln sätts vid **varje** sparning av
 utredningen som bedömer 4 eller mer, klarmarkerad eller inte. Den **ligger kvar** när den väl är satt: en
 senare sparning med lägre värde, eller utan HSL-bedömning, tar inte bort den, så MAS/MAR tappar inte ett
-ärende de redan har. Bär ärendet redan labeln görs ingen skrivning.
+ärende de redan har (se [Labels som ligger kvar](#labels-som-ligger-kvar)). Bär ärendet redan labeln görs ingen
+skrivning. Skrivningen notifierar som en vanlig ändring, inte med `X-notify: false`: profilen `MAR_MAS` aviserar från
+labeln.
 
 BFF:en sätter den i samma anrop som sparar dokumentet (`PUT .../json-parameters/:key`), efter
 dokumentskrivningen: regeln finns i `config/iaf-vof-high-hsl-risk.ts` och skrivningen i
@@ -396,9 +398,9 @@ från en label, eftersom prenumerationsprofilerna bara kan filtrera på labels.
 
 BFF:en sätter labeln `ANALYSIS/HSL_STARTED` i samma anrop som sparar analysen, på samma sätt som `RISK/HIGH_HSL`
 (regeln i `config/iaf-vof-hsl-analysis.ts`, skrivningen i `InvestigationDerivedLabelService`). Labeln sätts när analysen
-sparas med Ska händelseanalyseras, tas bort när den sparas med Inte ska händelseanalyseras, och lämnas som den är så
-länge MAS/MAR inte har bestämt sig. Till skillnad från `RISK/HIGH_HSL` är skrivningen inte tyst: den är MAS/MAR:s eget
-beslut, och den är det som ska nå verksamhetschefen. Versionen följer med som för riskvärdet.
+sparas med Ska händelseanalyseras och ligger sedan kvar: en senare sparning med Inte ska händelseanalyseras tar inte
+bort den, så verksamhetschefen aviseras inte två gånger. Skrivningen notifierar som vanligt, eftersom den är det som
+ska nå verksamhetschefen. Versionen följer med som för riskvärdet.
 
 Det här måste finnas i Support Management, i både IAF:s och VOF:s namespace:
 
@@ -455,6 +457,21 @@ Det här måste finnas i Support Management innan knappen fungerar, i både IAF:
 Labeln, åtkomsten och aviseringen fanns i både IAF:s och VOF:s namespace i testmiljön den 14 oktober 2026. Labeln
 ligger i Draken på ett ställe per sida (`INVESTIGATION_VC_COMMENT_REQUESTED_LABEL` i BFF:en,
 `VC_COMMENT_REQUESTED_LABEL_PATH` i frontend).
+
+### Labels som ligger kvar
+
+`RISK/HIGH_HSL`, `ANALYSIS/HSL_STARTED` och `ANALYSIS/VC_COMMENT_HSL` tas aldrig bort från ett ärende som har fått
+dem. De avgör vem som når ärendet och vem som aviseras om det, och ett ärende ska inte försvinna från MAS/MAR eller
+verksamhetschefen för att någon sparar igen. Listan finns i BFF:en (`IAF_VOF_PERMANENT_LABELS`):
+
+- Utredningarna lägger bara till sina labels (`InvestigationDerivedLabelService`).
+- Inget överlämningssteg tar bort någon av dem. Ett test går igenom varje steg.
+- Klassificeringen, flytten till en annan enhet och överlämningarna skriver bara om sina egna labels.
+- Spara ärende skickar ärendets labels när utredningen inte äger klassificeringen. Saknas någon av de tre lägger
+  BFF:en tillbaka den, med roten, innan ärendet skrivs.
+
+Ingen av dem skrivs med `X-notify: false`: prenumerationsprofilerna aviserar från dem. Support Management hindrar inte
+att de tas bort, så en roll med skrivrätt kan fortfarande göra det direkt mot API:t.
 
 ### MAS/MAR vid sidan av Ansvarig
 

@@ -35,14 +35,12 @@ const setup = (errandVersion: number, labels: { id: string }[] = [], versionStep
     }),
   };
   const service = new InvestigationDerivedLabelService(api as never, 'NAMESPACE');
-  const apply = (present: boolean, expectedVersion: number, resourcePath = 'RISK/HIGH_HSL', notifySubscribers = false) =>
+  const apply = (expectedVersion: number, resourcePath = 'RISK/HIGH_HSL') =>
     service.applyDerivedLabel({
       municipalityId: mockMunicipalityId,
       errandId: mockSupportErrandId,
       user: mockUser(),
       resourcePath,
-      present,
-      notifySubscribers,
       expectedVersion,
     });
   return { api, apply };
@@ -52,34 +50,24 @@ describe('InvestigationDerivedLabelService', () => {
   it('writes the label on top of the investigation write and answers the version it left', async () => {
     const { api, apply } = setup(8);
 
-    await expect(apply(true, 8)).resolves.toBe(9);
+    await expect(apply(8)).resolves.toBe(9);
     expect(api.patch).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { labels: [{ id: 'risk-root' }, { id: 'high-hsl' }] },
         headers: { 'If-Match': '"8"' },
-        notifySubscribers: false,
       }),
       expect.anything(),
     );
   });
 
-  // A label that records a handler's own decision tells the errand's subscribers: a subscription profile may be what
-  // passes it on - the head of operations is e-mailed when MAS/MAR starts an HSL event analysis.
-  it('notifies as usual where the label records a decision of the handler', async () => {
+  // The subscription profiles on these labels are how MAS/MAR and the head of operations hear of the errand, so no
+  // label write is silent.
+  it.each(['RISK/HIGH_HSL', 'ANALYSIS/HSL_STARTED'])('notifies as usual when it adds %s', async resourcePath => {
     const { api, apply } = setup(8);
 
-    await expect(apply(true, 8, 'ANALYSIS/HSL_STARTED', true)).resolves.toBe(9);
+    await expect(apply(8, resourcePath)).resolves.toBe(9);
     const [config] = api.patch.mock.calls[0] as unknown as [Record<string, unknown>];
-    expect(config.data).toEqual({ labels: [{ id: 'analysis-root' }, { id: 'hsl-started' }] });
     expect(config).not.toHaveProperty('notifySubscribers');
-  });
-
-  it('takes a label off when the decision is undone', async () => {
-    const { api, apply } = setup(8, [{ id: 'analysis-root' }, { id: 'hsl-started' }]);
-
-    await expect(apply(false, 8, 'ANALYSIS/HSL_STARTED', true)).resolves.toBe(9);
-    const [config] = api.patch.mock.calls[0] as unknown as [{ data: { labels: { id: string }[] } }];
-    expect(config.data.labels).toEqual([]);
   });
 
   // Support Management decides how many version steps a label write takes. A version counted one step on would be
@@ -87,7 +75,7 @@ describe('InvestigationDerivedLabelService', () => {
   it('answers the version the errand is read back at, however many steps the label write took', async () => {
     const { api, apply } = setup(8, [], 2);
 
-    await expect(apply(true, 8)).resolves.toBe(10);
+    await expect(apply(8)).resolves.toBe(10);
     expect(api.patch).toHaveBeenCalledTimes(1);
   });
 
@@ -95,21 +83,21 @@ describe('InvestigationDerivedLabelService', () => {
   it('writes nothing when the errand has moved on since the investigation write', async () => {
     const { api, apply } = setup(9);
 
-    await expect(apply(true, 8)).resolves.toBeUndefined();
+    await expect(apply(8)).resolves.toBeUndefined();
     expect(api.patch).not.toHaveBeenCalled();
   });
 
-  it('writes nothing when the errand already carries what the document asks for', async () => {
+  it('writes nothing when the errand already carries the label', async () => {
     const { api, apply } = setup(8, [{ id: 'risk-root' }, { id: 'high-hsl' }]);
 
-    await expect(apply(true, 8)).resolves.toBeUndefined();
+    await expect(apply(8)).resolves.toBeUndefined();
     expect(api.patch).not.toHaveBeenCalled();
   });
 
   it('writes nothing for a label the namespace has not configured', async () => {
     const { api, apply } = setup(8);
 
-    await expect(apply(true, 8, 'ANALYSIS/NOT_CONFIGURED', true)).resolves.toBeUndefined();
+    await expect(apply(8, 'ANALYSIS/NOT_CONFIGURED')).resolves.toBeUndefined();
     expect(api.patch).not.toHaveBeenCalled();
   });
 });

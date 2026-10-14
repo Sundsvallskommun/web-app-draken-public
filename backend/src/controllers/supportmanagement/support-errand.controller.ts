@@ -28,6 +28,7 @@ import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
 } from '@/config/iaf-vof-investigation-classification';
+import { IAF_VOF_PERMANENT_LABELS } from '@/config/iaf-vof-permanent-labels';
 import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
@@ -62,6 +63,7 @@ import { AccessMapperService } from '@/services/access-mapper.service';
 import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
 import { EmploymentService } from '@/services/employment.service';
+import { withPermanentLabelsKept } from '@/services/errand-label-presence';
 import { getCasedataForwardTarget, isAllowedHandoverTarget } from '@/services/handover-targets.service';
 import { resolveInvestigationLocationTarget } from '@/services/investigation-handover-label.service';
 import {
@@ -1007,6 +1009,30 @@ export class SupportErrandController {
     throw new HttpException(409, 'The channel of this errand decides whether its report may be changed and cannot itself be changed');
   }
 
+  /**
+   * The labels a generic errand write sends, with every permanent label the errand carries kept on it
+   * (`IAF_VOF_PERMANENT_LABELS`). Only a write that leaves out a label the errand carries reads the label metadata.
+   */
+  private async keepPermanentLabels(
+    req: RequestWithUser,
+    municipalityId: string,
+    currentLabels: SupportErrand['labels'],
+    labels: NonNullable<SupportErrandDto['labels']>,
+  ): Promise<NonNullable<SupportErrandDto['labels']>> {
+    const sentIds = new Set(labels.map(label => label.id));
+    if ((currentLabels ?? []).every(label => sentIds.has(label.id))) return labels;
+    const labelMetadata = await this.apiService.get<SupportLabels | null>(
+      { url: `${municipalityId}/${this.namespace}/metadata/labels`, baseURL: apiURL(this.SERVICE), propagateClientError: true },
+      req.user,
+    );
+    return withPermanentLabelsKept({
+      labels,
+      currentLabels,
+      labelStructure: labelMetadata.data?.labelStructure,
+      permanentResourcePaths: IAF_VOF_PERMANENT_LABELS,
+    });
+  }
+
   @Patch('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportErrandDto, 'body'))
@@ -1038,6 +1064,7 @@ export class SupportErrandController {
 
     await this.assertGenericClassificationUpdateAllowed(req, currentErrand.data, data);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
+    if (body.labels) body.labels = await this.keepPermanentLabels(req, municipalityId, currentErrand.data.labels, body.labels);
     const res = await this.apiService
       .patch<any, Partial<SupportErrandDto>>(
         {

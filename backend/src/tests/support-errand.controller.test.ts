@@ -1059,6 +1059,47 @@ describe('SupportErrandController', () => {
       expect(api.patch).not.toHaveBeenCalled();
     });
 
+    // RISK/HIGH_HSL and the ANALYSIS labels decide who reaches the errand and who is told about it, so they stay once
+    // set. Where the investigation does not own the classification, Spara ärende sends the labels the page loaded.
+    describe('the permanent labels', () => {
+      const deviation: Label = { id: 'deviation', classification: 'report-type', resourceName: 'DEVIATION', resourcePath: 'REPORT_TYPE/DEVIATION' };
+      const riskRoot: Label = { id: 'risk-root', classification: 'risk-root', resourceName: 'RISK', resourcePath: 'RISK' };
+      const highHslRisk: Label = { id: 'high-hsl', classification: 'risk', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL' };
+      const labelStructure: Label[] = [{ ...riskRoot, labels: [highHslRisk] }, deviation];
+
+      const patchLabels = (errandLabels: Label[], sentLabels: Label[]) => {
+        const { controller, api } = makeController('generic-errand');
+        api.get.mockImplementation(async (config: { url: string }) =>
+          config.url.endsWith('/metadata/labels')
+            ? { data: { labelStructure }, message: 'success' }
+            : { data: { version: 7, status: 'ONGOING', labels: errandLabels }, headers: { etag: '"7"' }, message: 'success' },
+        );
+        const patched = controller
+          .updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, '"7"', { labels: sentLabels }, mockRes())
+          .then(() => api.patch.mock.calls[0][0].data.labels);
+        return { api, patched };
+      };
+
+      it('puts back a permanent label the write leaves out, with its root', async () => {
+        const { patched } = patchLabels([deviation, riskRoot, highHslRisk], [deviation]);
+
+        await expect(patched).resolves.toEqual([deviation, riskRoot, highHslRisk]);
+      });
+
+      it('reads no label metadata when the write keeps every label the errand carries', async () => {
+        const { api, patched } = patchLabels([deviation, riskRoot, highHslRisk], [riskRoot, highHslRisk, deviation]);
+
+        await expect(patched).resolves.toEqual([riskRoot, highHslRisk, deviation]);
+        expect(api.get).toHaveBeenCalledTimes(1);
+      });
+
+      it('lets the write take off a label that is not permanent', async () => {
+        const { patched } = patchLabels([deviation, riskRoot, highHslRisk], [riskRoot, highHslRisk]);
+
+        await expect(patched).resolves.toEqual([riskRoot, highHslRisk]);
+      });
+    });
+
     it('rejects a malformed upstream ETag instead of falling back to the body version', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValue({ data: { version: 7, status: 'ONGOING' }, headers: { etag: 'W/"7"' }, message: 'success' });

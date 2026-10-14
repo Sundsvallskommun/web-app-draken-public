@@ -739,9 +739,6 @@ describe('the labels a saved investigation document decides', () => {
       errandId: mockSupportErrandId,
       user: req.user,
       resourcePath: 'RISK/HIGH_HSL',
-      present: true,
-      // Derived by the system from the investigation, which already notified.
-      notifySubscribers: false,
       expectedVersion: 13,
     });
     // Two writes of this request's own: the client advances past both.
@@ -770,7 +767,7 @@ describe('the labels a saved investigation document decides', () => {
       riskAssessmentHsl: { calculatedRiskValue: 16 },
     });
 
-    expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(expect.objectContaining({ present: true, expectedVersion: 13 }));
+    expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(expect.objectContaining({ resourcePath: 'RISK/HIGH_HSL', expectedVersion: 13 }));
     expect(res.headers['X-Errand-Version']).toBe('14');
     expect(res.headers['X-Errand-Writes']).toBe('2');
   });
@@ -823,34 +820,33 @@ describe('the labels a saved investigation document decides', () => {
   });
 
   // D2. The head of operations is e-mailed when MAS/MAR decides to make an HSL event analysis. Support Management's
-  // subscription profile does it from a label, which the saved initial assessment decides: on when the event is to be
-  // analysed, off when it is not, and left alone while MAS/MAR has not decided.
+  // subscription profile does it from a label, which the saved initial assessment adds once the event is to be
+  // analysed. It is permanent: a later decision against the analysis leaves it.
   describe('the HSL analysis label on a saved HSL event analysis', () => {
-    const analysisLabelCall = (present: boolean) =>
-      expect.objectContaining({ resourcePath: 'ANALYSIS/HSL_STARTED', present, notifySubscribers: true, expectedVersion: 13 });
-
-    it('marks the errand when MAS/MAR decides that the event is analysed, and notifies', async () => {
+    it('marks the errand when MAS/MAR decides that the event is analysed', async () => {
       const { controller, documentService, labelService } = makeLabelController(14);
 
       const { res } = await save(controller, documentService, 'utredning-hsl', { analysisDecision: 'analyze' });
 
-      expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(analysisLabelCall(true));
+      expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ resourcePath: 'ANALYSIS/HSL_STARTED', expectedVersion: 13 }),
+      );
       expect(res.headers['X-Errand-Version']).toBe('14');
       expect(res.headers['X-Errand-Writes']).toBe('2');
     });
 
-    it('takes the mark off when MAS/MAR decides that it is not', async () => {
+    it('never takes the mark off: a decision against the analysis, or none yet, writes no label', async () => {
       const { controller, documentService, labelService } = makeLabelController(14);
 
       await save(controller, documentService, 'utredning-hsl', { analysisDecision: 'not_analyze', notAnalyzedMotivation: 'Text' });
+      await save(controller, documentService, 'utredning-hsl', { methodology: '<p>Utkast</p>' });
 
-      expect(labelService.applyDerivedLabel).toHaveBeenCalledWith(analysisLabelCall(false));
+      expect(labelService.applyDerivedLabel).not.toHaveBeenCalled();
     });
 
-    it('leaves the errand alone while MAS/MAR has not decided, and for every other document', async () => {
+    it('reads the decision from the HSL event analysis alone', async () => {
       const { controller, documentService, labelService } = makeLabelController(14);
 
-      await save(controller, documentService, 'utredning-hsl', { methodology: '<p>Utkast</p>' });
       await save(controller, documentService, 'utredning-sol-lss', { analysisDecision: 'analyze' });
 
       expect(labelService.applyDerivedLabel).not.toHaveBeenCalled();

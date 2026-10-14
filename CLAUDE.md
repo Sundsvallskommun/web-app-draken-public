@@ -326,8 +326,10 @@ upstream model, so no conflict detection is available for them.
   make one request per item (`saveChangedErrandParameters`, `saveSupportAttachments`) group their own
   requests, and a group started inside another joins it; an action that makes several requests of its own
   still has to be wrapped where it starts. A write the
-  system makes on its own (read markers, acknowledgements, derived labels, bookkeeping) passes
+  system makes on its own (read markers, acknowledgements, bookkeeping) passes
   `notifySubscribers: false` to `ApiService`, which sends `X-notify: false`; never use it for what a user
-  did. CaseData keeps its own notification API. A user chooses e-mail and SMS beside the notifications in
+  did. The avvikelse labels subscription profiles notify from (`RISK/HIGH_HSL`, `ANALYSIS/HSL_STARTED`,
+  `ANALYSIS/VC_COMMENT_HSL`) are never written silently, and never taken off an errand once it carries them
+  (`IAF_VOF_PERMANENT_LABELS`). CaseData keeps its own notification API. A user chooses e-mail and SMS beside the notifications in
   Draken from Notiser in the user menu, where the variant offers it (`notificationChannels`, avvikelse
   only). The BFF stores the kind of channel and nothing else: never a destination, and always `INTERNAL`.
