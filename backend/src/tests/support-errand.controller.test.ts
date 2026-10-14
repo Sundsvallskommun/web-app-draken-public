@@ -2060,6 +2060,44 @@ describe('updateSupportErrandStatus', () => {
       );
     });
 
+    // A close from an earlier phase writes each phase on the way and reads the errand back after each. Somebody may
+    // propose a measure in between - the phases on the way are open - and that read would carry their write along.
+    it('stops writing as soon as a measure is proposed while the close steps through the phases', async () => {
+      const { controller, api } = makeController();
+      (controller as unknown as { requiresHandledMeasuresBeforeClose: boolean }).requiresHandledMeasuresBeforeClose = true;
+      const phases = [
+        { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW'], transitions: [{ id: 't1', targetPhaseId: 'investigation' }] },
+        { id: 'investigation', name: 'INVESTIGATION', allowedStatuses: ['INQUIRY'], transitions: [{ id: 't2', targetPhaseId: 'decision' }] },
+        { id: 'decision', name: 'DECISION', allowedStatuses: ['DECISION'], transitions: [{ id: 't3', targetPhaseId: 'follow-up' }] },
+        { id: 'follow-up', name: 'FOLLOW_UP', allowedStatuses: ['FOLLOW_UP', 'SOLVED'] },
+      ];
+      let errandRead = 0;
+      api.get.mockImplementation(async (config: { url?: string }) => {
+        if (config.url === metadataUrl) return { data: { statuses: [{ name: 'REVIEW' }, { name: 'SOLVED' }], phases }, message: 'success' };
+        // The proposal lands right after the first phase step.
+        if (config.url === `${errandUrl}/measures`) return { data: api.patch.mock.calls.length > 0 ? [{ id: 'proposed' }] : [], message: 'success' };
+        errandRead += 1;
+        const version = 6 + errandRead;
+        return {
+          data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], version },
+          message: 'success',
+          headers: { etag: `"${version}"` },
+        };
+      });
+
+      await expect(
+        controller.updateSupportErrandStatus(
+          mockReq(),
+          mockSupportErrandId,
+          MUNICIPALITY_ID,
+          { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED' },
+          mockRes(),
+        ),
+      ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('väntar på beslut') });
+      // The first step was written before the proposal; neither the next step nor the close is.
+      expect(api.patch.mock.calls.map(([config]) => config.data)).toEqual([{ activePhaseId: 'investigation', status: 'INQUIRY' }]);
+    });
+
     // Any other status is not a close, so the measures are nobody's business here.
     it('does not read the measures for a transition that is not a close', async () => {
       const { controller, api } = makeClosingController([{ id: 'a' }]);

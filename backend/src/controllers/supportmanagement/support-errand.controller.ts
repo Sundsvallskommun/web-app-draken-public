@@ -1112,14 +1112,16 @@ export class SupportErrandController {
     if (currentVersion !== data.expectedVersion) {
       throw new HttpException(409, 'Support errand status has changed since it was loaded');
     }
-    await assertMeasuresHandledBeforeClose({
-      apiService: this.apiService,
-      user: req.user,
-      errandUrl: url,
-      baseURL,
-      status: data.status,
-      required: this.requiresHandledMeasuresBeforeClose,
-    });
+    const assertMeasuresHandled = () =>
+      assertMeasuresHandledBeforeClose({
+        apiService: this.apiService,
+        user: req.user,
+        errandUrl: url,
+        baseURL,
+        status: data.status,
+        required: this.requiresHandledMeasuresBeforeClose,
+      });
+    await assertMeasuresHandled();
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
     // A close that has to move the errand into another phase first is one made before its workflow has ended.
@@ -1158,6 +1160,10 @@ export class SupportErrandController {
       );
       const stepped = await this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user);
       version = getErrandVersion(stepped.data, stepped.headers?.etag);
+      // The version read back may hold somebody else's write besides the step - a measure proposed while the
+      // errand passed through an open phase. The measures are read again after it, so the next write either
+      // follows them or, carrying this version, is refused for whatever comes after.
+      await assertMeasuresHandled();
     }
     await this.apiService.patch<SupportErrand, typeof body>(
       {
