@@ -104,6 +104,10 @@ const outcomeDisplayName = (outcome: string, metadata: SupportMetadata | undefin
 const latestFirst = (statements: Statement[]): Statement[] =>
   [...statements].sort((a, b) => (b.respondedAt ?? b.created ?? '').localeCompare(a.respondedAt ?? a.created ?? ''));
 
+/** `dayjs(undefined)` is now, so a statement without a date must not borrow today's. */
+const formatResponseDate = (respondedAt: string | undefined): string | undefined =>
+  respondedAt && dayjs(respondedAt).isValid() ? dayjs(respondedAt).format('YYYY-MM-DD') : undefined;
+
 /**
  * The fire safety of the premises is what the rescue service answered; it is their referral, so it is read
  * back from the statement rather than written a second time here.
@@ -123,6 +127,6 @@ export const supportPremisesFireSafety = (
   return {
     counterparty: answered.counterpartyName ?? '',
     outcome: outcomeDisplayName(answered.outcome, metadata),
-    respondedAt: dayjs(answered.respondedAt).isValid() ? dayjs(answered.respondedAt).format('YYYY-MM-DD') : undefined,
+    respondedAt: formatResponseDate(answered.respondedAt),
   };
 };

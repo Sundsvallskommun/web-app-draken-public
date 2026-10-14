@@ -82,6 +82,14 @@ describe('fire safety read from the rescue service referral', () => {
     });
   });
 
+  test('an answer without a date has no date, rather than today', () => {
+    expect(supportPremisesFireSafety([rescueService({ outcome: 'APPROVED' })], metadata)?.respondedAt).toBeUndefined();
+    expect(
+      supportPremisesFireSafety([rescueService({ outcome: 'APPROVED', respondedAt: 'not a date' })], metadata)
+        ?.respondedAt
+    ).toBeUndefined();
+  });
+
   test('an outcome the metadata does not name is shown as it is stored', () => {
     const statements = [rescueService({ outcome: 'SOMETHING_NEW' })];
 
