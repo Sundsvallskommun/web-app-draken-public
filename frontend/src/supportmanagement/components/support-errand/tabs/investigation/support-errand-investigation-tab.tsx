@@ -15,8 +15,8 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { InvestigationConclusionDisclosure } from './disclosure/investigation-conclusion-disclosure.component';
-import { SectionDisclosure } from './disclosure/investigation-disclosure.component';
+import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
+import { SectionDisclosure } from './investigation-disclosure.component';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
   (investigation?.sections ?? [])
