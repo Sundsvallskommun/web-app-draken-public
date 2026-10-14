@@ -199,7 +199,10 @@ Den globala utredningsprofilen beskriver dokument och scheman; den innehåller i
 Draken tolkar endast den nycklade samlingen `jsonParameters` och resursen `errand/json-parameter`
 i detta flöde. Explicit skrivrätt ger redigering, läsrätt ger ett skrivskyddat formulär och en
 utelämnad nyckel döljer dokumentet. `allKeys` gäller även dokument som ännu inte skapats.
-Ärendets nivå är överordnad: `R` och `LR` blockerar skrivning även om en resurs eller nyckel har `RW`.
+Ärendets nivå gäller ärendet själv, inte dokumenten: `jsonParameters` skrivs genom en egen endpoint,
+så en nyckel - eller hela fältet med `allKeys` - och resursen `errand/json-parameter` får ge `RW` även
+där ärendets nivå är `R` eller `LR`. Ett dokument kan redigeras när både nyckeln och resursen ger `RW`.
+Ärendets egna fält (`PATCH` av ärendet) följer fortfarande ärendets nivå.
 Access hämtas när ärendet öppnas, dess version eller etiketter ändras, fönstret återfår fokus,
 anslutningen återkommer och efter nekade dokumentanrop. Backend kontrollerar på nytt vid varje
 dokumentläsning och skrivning. Felaktiga eller otillgängliga svar ger ingen åtkomst.

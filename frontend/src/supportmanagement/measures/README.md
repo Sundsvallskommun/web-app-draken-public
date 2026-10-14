@@ -290,9 +290,11 @@ om ett omarbetat förslag. Kommentaren sparas i `acceptMotivation`, visas på ko
 vid redigering och ingår i fritextsökningen.
 
 Drakens `PATCH /supporterrands/:municipalityId/:errandId/measures/:measureId/decision`
-tar endast `accept` och `acceptMotivation`. Den använder åtgärdens `If-Match`
-och skickar bara dessa två fält till den befintliga skyddade measure-resursen i
-Support Management. Skapare, registreringsroll, typ, beskrivning och mål bevaras.
+tar `accept` och `acceptMotivation`, och vid `TRUE` och `REWORK` även `plannedStart` och
+`plannedComplete`: den som godkänner anger när åtgärden ska genomföras, och saknas datumen
+svarar Draken 400. Vid `FALSE` skickas inga datum. Den använder åtgärdens `If-Match` och
+skickar bara dessa fält till den befintliga skyddade measure-resursen i Support Management.
+Skapare, registreringsroll, typ, beskrivning och mål bevaras.
 
 Ett beslut eller en redan genomförd åtgärd kan inte bedömas igen i detta flöde.
 Efter beslut låses typ, beskrivning och mål även i backend. Skaparen kan fortsatt
