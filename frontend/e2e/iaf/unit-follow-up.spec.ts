@@ -235,6 +235,34 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await expect(errandRows(page).nth(1)).toContainText('2026-05-17');
   });
 
+  // The row opens its errand on Enter, and so does the open button inside it - once per press, not once for each.
+  test('öppnar ärendet en gång per Enter, från raden och från dess öppna-knapp', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await page.addInitScript(() => {
+      const opened: string[] = [];
+      Object.assign(window, { openedErrands: opened });
+      window.open = (url?: string | URL) => {
+        opened.push(String(url));
+        return null;
+      };
+    });
+    await installFollowUp(page);
+    await openFollowUp(page, dismissCookieConsent);
+    const openedErrands = () =>
+      page.evaluate(() => (window as unknown as { openedErrands: string[] }).openedErrands.length);
+    const first = errandRows(page).first();
+
+    await first.getByRole('button', { name: /^Öppna ärende/u }).focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(openedErrands).toBe(1);
+
+    await first.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(openedErrands).toBe(2);
+  });
+
   test('filtrerar på rapporttyp, riskvärde och enhet, och Rensa alla visar allt igen', async ({
     page,
     dismissCookieConsent,

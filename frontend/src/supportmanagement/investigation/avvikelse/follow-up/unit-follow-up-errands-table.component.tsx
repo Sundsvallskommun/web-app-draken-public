@@ -93,7 +93,10 @@ export const UnitFollowUpErrandsTable: FC<{ rows: readonly FollowUpErrandRow[] }
             tabIndex={0}
             className="cursor-pointer"
             onClick={() => openErrand(row.errandNumber)}
-            onKeyDown={(event) => (event.key === 'Enter' ? openErrand(row.errandNumber) : undefined)}
+            // Only Enter on the row itself: the open button inside it handles its own Enter, as a click.
+            onKeyDown={(event) =>
+              event.key === 'Enter' && event.target === event.currentTarget ? openErrand(row.errandNumber) : undefined
+            }
             data-cy={`follow-up-errand-${row.errandNumber}`}
           >
             {columns.map((column) => (
