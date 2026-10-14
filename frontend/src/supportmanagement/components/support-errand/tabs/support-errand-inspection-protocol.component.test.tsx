@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
+import { renderTemplatePdfDirect } from '@common/services/template-render-service';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { getSupportAttachments, saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportMeasures,
   unlinkSupportMeasureAttachment,
@@ -33,6 +35,12 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useSnackbar: () => vi.fn(),
 }));
+vi.mock('@common/services/template-render-service', () => ({ renderTemplatePdfDirect: vi.fn() }));
+vi.mock('@supportmanagement/services/support-attachment-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getSupportAttachments: vi.fn(),
+  saveSupportAttachments: vi.fn(),
+}));
 vi.mock('@supportmanagement/services/support-measure-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getSupportMeasures: vi.fn(),
@@ -43,8 +51,16 @@ vi.mock('@supportmanagement/services/support-measure-service', async (importOrig
 
 const ERRAND_ID = 'errand-1';
 const measures = [
-  { id: 'm1', title: 'Ålderskontroll', attachments: [] },
-  { id: 'm2', title: 'Serveringstider följs', result: 'COMPLETED', description: 'Stängde 01:00', attachments: [] },
+  { id: 'm1', type: 'INTERNAL', title: 'Ålderskontroll', attachments: [] },
+  {
+    id: 'm2',
+    type: 'INTERNAL',
+    title: 'Serveringstider följs',
+    result: 'COMPLETED',
+    description: 'Stängde 01:00',
+    attachments: [],
+  },
+  { id: 'x1', type: 'EXTERNAL', title: 'Sätt upp skylt om åldersgräns', attachments: [] },
 ];
 
 const mount = () => render(<SupportErrandInspectionProtocol writable={true} setHasContent={vi.fn()} />);
@@ -54,12 +70,22 @@ const saver = () => state().tabSavers.inspection_protocol;
 beforeEach(() => {
   vi.clearAllMocks();
   useSupportStore.setState({
-    supportErrand: { id: ERRAND_ID, status: 'ONGOING', modified: '2026-10-13T08:00:00Z' } as never,
+    supportErrand: {
+      id: ERRAND_ID,
+      errandNumber: 'AOT-26100063',
+      status: 'ONGOING',
+      modified: '2026-10-13T08:00:00Z',
+      customer: [{ organizationName: 'Exempel AB', organizationNumber: '556000-0000' }],
+      measures,
+    } as never,
     tabSavers: {},
     unsavedTabs: {},
   });
   useConfigStore.setState({ municipalityId: '2281' } as never);
-  useUserStore.setState({ user: { permissions: { canEditSupportManagement: true } } } as never);
+  useUserStore.setState({ user: { name: 'Anna Andersson', permissions: { canEditSupportManagement: true } } } as never);
+  vi.mocked(renderTemplatePdfDirect).mockResolvedValue(window.btoa('%PDF-1.7'));
+  vi.mocked(saveSupportAttachments).mockResolvedValue([]);
+  vi.mocked(getSupportAttachments).mockResolvedValue([]);
   vi.mocked(getSupportMeasures).mockResolvedValue(measures);
   vi.mocked(updateSupportMeasure).mockImplementation(async (_e, _m, id, patch) => ({
     ...measures.find((measure) => measure.id === id),
@@ -70,15 +96,24 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test('shows a card per saved measure with its result and note, and counts the assessed ones', async () => {
+test('shows a card per control point with its result and note, and counts the assessed ones', async () => {
   mount();
 
   expect(await screen.findByText('Ålderskontroll')).toBeTruthy();
+  expect(screen.queryByText('Sätt upp skylt om åldersgräns')).toBeNull();
   expect(screen.getByDisplayValue('Stängde 01:00')).toBeTruthy();
-  expect(screen.getByText('1 av 2 bedömda - 0 bristfälliga')).toBeTruthy();
-  const [completed] = screen.getAllByRole('button', { name: 'Avslutad', pressed: true });
+  expect(screen.getByText('1 av 2 bedömda - 0 brister')).toBeTruthy();
+  const [completed] = screen.getAllByRole('button', { name: 'Godkänt', pressed: true });
   expect(completed).toBeTruthy();
   expect(state().unsavedTabs.inspection_protocol).toBeFalsy();
+});
+
+test('the action points are listed in their own accordion, as EXTERNAL measures', async () => {
+  mount();
+
+  expect(await screen.findByText('Skapa åtgärdspunkter')).toBeTruthy();
+  expect(screen.getByDisplayValue('Sätt upp skylt om åldersgräns')).toBeTruthy();
+  await waitFor(() => expect(state().tabSavers.action_points).toBeTypeOf('function'));
 });
 
 test('offers its save to whoever saves the errand, and takes it back when it closes', async () => {
@@ -98,7 +133,7 @@ test('a result marks the tab unsaved, and the save writes only the measures that
     target: { value: 'Ingen legitimation begärdes' },
   });
   expect(state().unsavedTabs.inspection_protocol).toBe(true);
-  expect(screen.getByText('2 av 2 bedömda - 1 bristfällig')).toBeTruthy();
+  expect(screen.getByText('2 av 2 bedömda - 1 brist')).toBeTruthy();
 
   await act(async () => {
     expect(await saver()()).toBe(true);
@@ -116,7 +151,7 @@ test('clicking the chosen result again clears it, which is written as null', asy
   await screen.findByText('Ålderskontroll');
 
   fireEvent.click(screen.getByRole('button', { name: 'Godkänt', pressed: true }));
-  expect(screen.getByText('0 av 2 bedömda - 0 bristfälliga')).toBeTruthy();
+  expect(screen.getByText('0 av 2 bedömda - 0 brister')).toBeTruthy();
 
   await act(async () => {
     await saver()();
@@ -181,4 +216,49 @@ test('is read only when the tab is not writable', async () => {
 
   expect((screen.getAllByRole('button', { name: 'Brist' })[0] as HTMLButtonElement).disabled).toBe(true);
   expect((screen.getAllByPlaceholderText('Notering om Ålderskontroll…')[0] as HTMLTextAreaElement).disabled).toBe(true);
+});
+
+test('the protocol is rendered from the page fields and the control points, and filed on the errand', async () => {
+  mount();
+  await screen.findByText('Ålderskontroll');
+
+  expect(screen.getByDisplayValue('Exempel AB')).toBeTruthy();
+  expect(screen.getByDisplayValue('Anna Andersson, handläggare')).toBeTruthy();
+  fireEvent.click(screen.getByLabelText('Stängt'));
+  fireEvent.click(screen.getByLabelText('Polis'));
+  fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Skapa tillsynsprotokoll' }));
+  });
+
+  expect(renderTemplatePdfDirect).toHaveBeenCalledTimes(1);
+  const [template, parameters] = vi.mocked(renderTemplatePdfDirect).mock.calls[0];
+  expect(template).toContain('{% for m in measures %}');
+  expect(parameters).toMatchObject({
+    caseNumber: 'AOT-26100063',
+    permitHolderName: 'Exempel AB',
+    visitClosed: 'true',
+    visitInPremises: '',
+    coordinatedPolice: 'true',
+    guestCount: '120',
+    measures: [
+      { title: 'Ålderskontroll', noRemark: '', remark: '' },
+      { title: 'Serveringstider följs', noRemark: 'X', remark: '', comment: 'Stängde 01:00' },
+    ],
+  });
+  const [, , attachments] = vi.mocked(saveSupportAttachments).mock.calls[0];
+  expect((attachments[0].file as unknown as File[])[0].name).toMatch(
+    /^Tillsynsprotokoll AOT-26100063 \d{4}-\d{2}-\d{2}\.pdf$/
+  );
+  expect(getSupportAttachments).toHaveBeenCalled();
+});
+
+test('the protocol cannot be generated while a result or note is unsaved', async () => {
+  mount();
+  await screen.findByText('Ålderskontroll');
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Brist' })[0]);
+
+  expect((screen.getByRole('button', { name: 'Skapa tillsynsprotokoll' }) as HTMLButtonElement).disabled).toBe(true);
 });

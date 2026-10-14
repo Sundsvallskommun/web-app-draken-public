@@ -1,0 +1,831 @@
+{% macro box(checked) %}<span class="box"
+  >{% if (checked | lower) == "true" %}X{% endif %}</span
+>{% endmacro %}
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tillsynsprotokoll</title>
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 14mm 16mm 58mm 16mm;
+        @bottom-center {
+          content: element(footer);
+          vertical-align: top;
+        }
+        @top-right {
+          content: element(pageHeader);
+          vertical-align: bottom;
+        }
+      }
+      @page :first {
+        @top-right {
+          content: element(firstPageHeader);
+          vertical-align: bottom;
+        }
+      }
+      body {
+        font-family: "Liberation Sans";
+        font-size: 9pt;
+        margin: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+      }
+      td,
+      th {
+        padding: 0;
+        vertical-align: top;
+        text-align: left;
+        font-weight: normal;
+      }
+      tr {
+        page-break-inside: avoid;
+      }
+
+      .header td {
+        vertical-align: top;
+      }
+      .doc-title {
+        font-size: 11pt;
+        font-weight: bold;
+        margin-bottom: 3pt;
+      }
+
+      .protocol-title {
+        text-align: center;
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 8pt 0 6pt 0;
+      }
+
+      .grid {
+        border: 1.5pt solid #000;
+      }
+      .c {
+        border: 1pt solid #000;
+      }
+      .section {
+        font-family: serif;
+        font-size: 10pt;
+        font-weight: bold;
+        vertical-align: middle;
+        padding: 3pt;
+      }
+      .label {
+        font-size: 8pt;
+        padding: 1pt 2pt 0 2pt;
+      }
+      .value {
+        font-family: serif;
+        font-size: 11.5pt;
+        line-height: 1.15;
+        padding: 0 3pt;
+        min-height: 13.5pt;
+      }
+      .inline {
+        font-family: serif;
+        font-size: 10pt;
+        padding: 0 2pt;
+        border-bottom: 0.5pt solid #000;
+        display: inline-block;
+        min-width: 18pt;
+      }
+      .tall {
+        min-height: 34pt;
+        padding-top: 6pt;
+      }
+      .xtall {
+        min-height: 400px;
+        padding-top: 6pt;
+      }
+
+      .opts td {
+        border: none;
+        padding: 1pt 2pt;
+        vertical-align: middle;
+        font-size: 9pt;
+      }
+      .box {
+        display: inline-block;
+        width: 9pt;
+        height: 9pt;
+        border: 1pt solid #000;
+        text-align: center;
+        line-height: 9pt;
+        font-family: serif;
+        font-size: 10pt;
+        vertical-align: middle;
+        margin-right: 3pt;
+      }
+
+      .block-title {
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 6pt 0 2pt 0;
+      }
+      .block-title .ref {
+        font-size: 8pt;
+        font-weight: normal;
+      }
+      .plain {
+        border: 1.5pt solid #000;
+      }
+      .colhead {
+        font-size: 8pt;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+        padding: 2pt;
+      }
+      .colhead-left {
+        text-align: left;
+      }
+      .rowlabel {
+        font-size: 8.5pt;
+        font-weight: bold;
+        padding: 1pt 3pt;
+        vertical-align: middle;
+      }
+      .mark {
+        font-family: serif;
+        font-size: 10.5pt;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .legend {
+        font-size: 7.5pt;
+        margin-top: 2pt;
+      }
+      .summary-row td {
+        padding: 3pt 3pt 0 3pt;
+      }
+
+      .footer {
+        position: running(footer);
+        font-size: 8.5pt;
+      }
+      .footer b {
+        font-weight: bold;
+      }
+      .footer a {
+        color: #005595;
+        text-decoration: underline;
+      }
+      .minasidor {
+        border: 1pt solid #005595;
+        border-left: 4pt solid #005595;
+        margin-bottom: 6pt;
+      }
+      .minasidor td {
+        vertical-align: middle;
+      }
+      .minasidor-text {
+        padding: 6pt 8pt;
+        line-height: 1.4;
+      }
+      .minasidor-title {
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 3pt;
+      }
+      .minasidor-link {
+        font-weight: bold;
+        font-size: 9.5pt;
+      }
+      .minasidor-qr {
+        width: 26mm;
+        padding: 4pt 6pt;
+        text-align: center;
+        font-size: 7.5pt;
+      }
+      .qr {
+        display: block;
+        width: 20mm;
+        height: 20mm;
+        margin: 0 auto 2pt auto;
+      }
+      .footer-contacts {
+        border-top: 1pt solid #000;
+      }
+      .footer-contacts td {
+        padding-top: 2pt;
+      }
+      .last-block {
+        page-break-inside: avoid;
+      }
+
+      /* A titled block stays on one page; a table that is longer than a page repeats its header. */
+      /* Line breaks in what the handler wrote are kept as written. */
+      .prewrap {
+        white-space: pre-wrap;
+      }
+
+      .keep {
+        page-break-inside: avoid;
+      }
+
+      .paginate {
+        -fs-table-paginate: paginate;
+      }
+
+      .page-header {
+        font-size: 8pt;
+        text-align: right;
+      }
+      .page-header-first {
+        position: running(firstPageHeader);
+      }
+      .page-header-next {
+        position: running(pageHeader);
+      }
+      .page-number::before {
+        content: counter(page);
+      }
+      .page-count::before {
+        content: counter(pages);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header page-header-first">
+      Sida <span class="page-number"></span> (<span class="page-count"></span>)
+    </div>
+    <div class="page-header page-header-next">
+      Dnr {{ caseNumber | escape }} &#183; Sida
+      <span class="page-number"></span> (<span class="page-count"></span>)
+    </div>
+
+    <table class="header">
+      <tr>
+        <td style="width: 48%; padding-top: 6pt">
+          {% include "sundsvall.logo" %}
+        </td>
+        <td>
+          <div class="doc-title">Tillsynsprotokoll</div>
+          <table>
+            <tr>
+              <td>
+                <div class="label" style="padding-left: 0">Tillsynsdatum</div>
+                <div class="value" style="padding-left: 0; font-size: 10.5pt">
+                  {{ inspectionDate | escape }}
+                </div>
+              </td>
+              <td>
+                <div class="label" style="padding-left: 0">Dnr</div>
+                <div class="value" style="padding-left: 0; font-size: 10.5pt">
+                  {{ caseNumber | default("") | escape }}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div class="protocol-title">
+      Tillsyn enligt alkohollagen (2010:1622) av serveringsställe med
+      serveringstillstånd
+    </div>
+
+    <table class="grid">
+      <colgroup>
+        <col style="width: 19%" />
+        <col style="width: 27%" />
+        <col style="width: 27%" />
+        <col style="width: 27%" />
+      </colgroup>
+
+      <tr>
+        <th class="c section" rowspan="2">
+          Serverings-<br />ställe och<br />tillstånds-<br />havare
+        </th>
+        <td class="c">
+          <div class="label">Restaurang</div>
+          <div class="value">{{ premisesName | escape }}</div>
+        </td>
+        <td class="c" colspan="2">
+          <div class="label">Adress</div>
+          <div class="value">{{ premisesAddress | escape }}</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="c">
+          <div class="label">Tillståndshavare</div>
+          <div class="value">{{ permitHolderName | escape }}</div>
+        </td>
+        <td class="c" colspan="2">
+          <div class="label">Organisationsnummer</div>
+          <div class="value">{{ permitHolderOrgNumber | escape }}</div>
+        </td>
+      </tr>
+
+      <tr>
+        <th class="c section" rowspan="3">Tillsyns-<br />besöket</th>
+        <td class="c">
+          <div class="label">Inleds kl.</div>
+          <div class="value">{{ visitStartTime | default("") | escape }}</div>
+        </td>
+        <td class="c">
+          <div class="label">Avslutades kl.</div>
+          <div class="value">{{ visitEndTime | default("") | escape }}</div>
+        </td>
+        <td class="c">
+          <div class="label">Antal gäster</div>
+          <div class="value">{{ guestCount | default("") | escape }}</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="c" colspan="3">
+          <div class="label">Besök i lokalen</div>
+          <table class="opts">
+            <tr>
+              <td style="width: 20%">
+                {{ box(visitInPremises | default("")) }}Ja
+              </td>
+              <td style="width: 80%">
+                {{ box(visitClosed | default("")) }}Stängt
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td class="c" colspan="3">
+          <div class="label">Samordnad tillsyn tillsammans med</div>
+          <table class="opts">
+            <tr>
+              <td style="width: 12%">
+                {{ box(coordinatedNone | default("")) }}Nej
+              </td>
+              <td style="width: 13%">
+                {{ box(coordinatedPolice | default("")) }}Polis
+              </td>
+              <td style="width: 21%">
+                {{ box(coordinatedTaxAgency | default("")) }}Skatteverket
+              </td>
+              <td style="width: 26%">
+                {{ box(coordinatedRescueService | default("")) }}Räddningstjänst
+              </td>
+              <td style="width: 28%">
+                {{ box(coordinatedEnvironmentHealth | default("")) }}Miljö-
+                &amp; Hälsa
+              </td>
+            </tr>
+            <tr>
+              <td colspan="5">
+                {{ box(coordinatedOther | default("")) }}Annan
+                <span class="value" style="font-size: 10pt"
+                  >{{ coordinatedOtherText | default("") | escape }}</span
+                >
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <th class="c section">
+          Bemanning<br /><span style="font-size: 8pt; font-weight: normal"
+            >(8:18)</span
+          >
+        </th>
+        <td class="c">
+          <div class="label">Förordnad ordningsvakt i tjänst</div>
+          <table class="opts">
+            <tr>
+              <td>
+                {{ box(securityGuardYes | default("")) }}Ja, antal
+                <span class="inline"
+                  >{{ securityGuardCount | default("") | escape }}</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>{{ box(securityGuardNo | default("")) }}Nej</td>
+            </tr>
+          </table>
+        </td>
+        <td class="c">
+          <div class="label">
+            Entrévärd enl. tillstånd vid tillsynstillfället
+          </div>
+          <table class="opts">
+            <tr>
+              <td>
+                {{ box(entranceHostYes | default("")) }}Ja, antal
+                <span class="inline"
+                  >{{ entranceHostCount | default("") | escape }}</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>{{ box(entranceHostNo | default("")) }}Nej</td>
+            </tr>
+          </table>
+        </td>
+        <td class="c">
+          <div class="label">Ägare eller serveringsansvarig på plats</div>
+          <table class="opts">
+            <tr>
+              <td>{{ box(responsiblePersonPresent | default("")) }}Ja</td>
+            </tr>
+            <tr>
+              <td>
+                {{ box(responsiblePersonAbsent | default("")) }}Ingen
+                serveringsansvarig på plats
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div class="keep">
+    <div class="block-title">Ordning <span class="ref">(3:5, 8:20)</span></div>
+    <table class="plain">
+      <colgroup>
+        <col style="width: 32%" />
+        <col style="width: 17%" />
+        <col style="width: 17%" />
+        <col style="width: 17%" />
+        <col style="width: 17%" />
+      </colgroup>
+      <tr>
+        <td class="c" colspan="5">
+          <table class="opts">
+            <tr>
+              <td>
+                {{ box(orderWithoutRemarks | default("")) }}Ordningen utan
+                anmärkning
+              </td>
+            </tr>
+            <tr>
+              <td>
+                {{ box(orderWithRemarks | default("")) }}Ordningen har brister
+                enligt nedanstående anmärkningar
+              </td>
+            </tr>
+          </table>
+    </div>
+        </td>
+      </tr>
+      <tr>
+        <th class="c colhead colhead-left">Observation</th>
+        <th class="c colhead">Serveringsyta inomhus</th>
+        <th class="c colhead">Uteservering</th>
+        <th class="c colhead">Utanför (entré)</th>
+        <th class="c colhead">Toaletter</th>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Glaskross</th>
+        <td class="c mark">
+          {{ observationGlassBreakageIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationGlassBreakageOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationGlassBreakageEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationGlassBreakageToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Överbelamrade bord</th>
+        <td class="c mark">
+          {{ observationCrowdedTablesIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationCrowdedTablesOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationCrowdedTablesEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationCrowdedTablesToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Skräpigt</th>
+        <td class="c mark">
+          {{ observationLitteringIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationLitteringOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationLitteringEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationLitteringToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Spyor</th>
+        <td class="c mark">
+          {{ observationVomitIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationVomitOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationVomitEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationVomitToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Klibbigt på golvet</th>
+        <td class="c mark">
+          {{ observationStickyFloorIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationStickyFloorOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationStickyFloorEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationStickyFloorToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Bråk/slagsmål/stökigt</th>
+        <td class="c mark">
+          {{ observationDisorderIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDisorderOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDisorderEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDisorderToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">För många gäster</th>
+        <td class="c mark">
+          {{ observationTooManyGuestsIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationTooManyGuestsOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationTooManyGuestsEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationTooManyGuestsToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Dans på möbler</th>
+        <td class="c mark">
+          {{ observationDancingOnFurnitureIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDancingOnFurnitureOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDancingOnFurnitureEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationDancingOnFurnitureToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Bristfällig avgränsning</th>
+        <td class="c mark">
+          {{ observationInadequateBoundaryIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationInadequateBoundaryOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationInadequateBoundaryEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationInadequateBoundaryToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Sittplatser saknas</th>
+        <td class="c mark">
+          {{ observationMissingSeatingIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationMissingSeatingOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationMissingSeatingEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationMissingSeatingToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Alkohol utanför serveringsytan</th>
+        <td class="c mark">
+          {{ observationAlcoholOutsideServingAreaIndoor | default("") | escape
+          }}
+        </td>
+        <td class="c mark">
+          {{ observationAlcoholOutsideServingAreaOutdoor | default("") | escape
+          }}
+        </td>
+        <td class="c mark">
+          {{ observationAlcoholOutsideServingAreaEntrance | default("") | escape
+          }}
+        </td>
+        <td class="c mark">
+          {{ observationAlcoholOutsideServingAreaToilets | default("") | escape
+          }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Rökning</th>
+        <td class="c mark">
+          {{ observationSmokingIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationSmokingOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationSmokingEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationSmokingToilets | default("") | escape }}
+        </td>
+      </tr>
+      <tr>
+        <th class="c rowlabel">Hög ljudnivå</th>
+        <td class="c mark">
+          {{ observationHighNoiseLevelIndoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationHighNoiseLevelOutdoor | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationHighNoiseLevelEntrance | default("") | escape }}
+        </td>
+        <td class="c mark">
+          {{ observationHighNoiseLevelToilets | default("") | escape }}
+        </td>
+      </tr>
+    </table>
+
+    <div class="keep">
+    <div class="block-title">Kontrollpunkter</div>
+    <table class="plain paginate">
+      <colgroup>
+        <col style="width: 32%" />
+        <col style="width: 8%" />
+        <col style="width: 8%" />
+        <col style="width: 52%" />
+      </colgroup>
+      <thead>
+      <tr>
+        <th class="c colhead colhead-left">Kontrollpunkt</th>
+        <th class="c colhead">U.A</th>
+        <th class="c colhead">A</th>
+        <th class="c colhead colhead-left">Anmärkning</th>
+      </tr>
+      </thead>
+      {% for m in measures %}
+      <tr>
+        <th class="c rowlabel">{{ m.title | escape }}</th>
+        <td class="c mark">{{ m.noRemark | default("") | escape }}</td>
+        <td class="c mark">{{ m.remark | default("") | escape }}</td>
+        <td class="c">
+          <div class="value">{{ m.comment | default("") | escape }}</div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    <div class="legend">
+      U.A = utan anmärkning, A = anmärkning. En punkt som inte var aktuell
+      lämnas omarkerad. Hänvisningar avser kapitel och paragraf i alkohollagen
+      (2010:1622).
+    </div>
+
+    <div class="keep">
+    <div class="block-title">Ytterligare beskrivning/anmärkning</div>
+    <table class="plain">
+      <tr>
+        <td class="c">
+          <div class="value xtall prewrap">
+            {{- additionalRemarks | default("") | escape -}}
+          </div>
+        </td>
+      </tr>
+    </table>
+    </div>
+
+    <div class="last-block">
+      <div class="footer">
+        <table class="minasidor">
+          <tr>
+            <td class="minasidor-text">
+              <div class="minasidor-title">Följ ditt ärende i Mina sidor</div>
+              I Mina sidor kan du kommunicera med din handläggare och se dina
+              beslut.<br />
+              Logga in med e-legitimation på
+              <a class="minasidor-link" href="https://minasidor.sundsvall.se"
+                >minasidor.sundsvall.se</a
+              >
+            </td>
+            <td class="minasidor-qr">
+              {% include "sundsvall.minasidor.qr" %}Skanna med<br />mobilen
+            </td>
+          </tr>
+        </table>
+        <table class="footer-contacts">
+          <colgroup>
+            <col style="width: 40%" />
+            <col style="width: 25%" />
+            <col style="width: 35%" />
+          </colgroup>
+          <tr>
+            <td>
+              <b>Postadress</b><br />Sundsvalls kommun<br />Individ- och
+              arbetsmarknadsförvaltningen<br />Alkohol- och tobaksenheten<br />851
+              85 SUNDSVALL
+            </td>
+            <td><b>Besöksadress</b><br />Kyrkogatan 26</td>
+            <td>
+              <b>E-post</b><br /><a
+                href="mailto:alkohol%26tobaksenheten@sundsvall.se"
+                >alkohol&amp;tobaksenheten@sundsvall.se</a
+              >
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="block-title">Summering av tillsynsbesök</div>
+      <table class="plain">
+        <tr class="summary-row">
+          <td class="c" style="border-bottom: none">
+            {{ box(summaryApproved | default("")) }}Godkänd
+          </td>
+        </tr>
+        <tr class="summary-row">
+          <td class="c" style="border-top: none; border-bottom: none">
+            {{ box(summaryApprovedActionRequired | default("")) }}Godkänd, men
+            åtgärd krävs
+            <div class="value prewrap" style="padding: 2pt 0 0 14pt">
+              {{- summaryActionRequiredText | default("") | escape -}}
+            </div>
+            <div style="padding: 4pt 0 0 14pt">
+              Uppföljning av åtgärd senast:
+              <span class="inline"
+                >{{ followUpDate | default("") | escape }}</span
+              >
+            </div>
+          </td>
+        </tr>
+        <tr class="summary-row">
+          <td class="c" style="border-top: none; border-bottom: none">
+            {{ box(summaryNotApprovedRevisit | default("")) }}Inte fullt godkänd
+            med återbesök (åtgärder, förbättringspunkter)
+            <div class="value prewrap" style="padding: 2pt 0 0 14pt">
+              {{- summaryRevisitText | default("") | escape -}}
+            </div>
+          </td>
+        </tr>
+        <tr class="summary-row">
+          <td class="c" style="border-top: none; padding-bottom: 4pt">
+            {{ box(summaryInvestigationOpened | default("")) }}Tillsynsutredning
+            inleds, datum
+            <span class="inline"
+              >{{ investigationDate | default("") | escape }}</span
+            >
+          </td>
+        </tr>
+      </table>
+
+      <div class="block-title">Kontroll utförd av</div>
+      <table class="plain">
+        <tr>
+          <td class="c" style="width: 50%">
+            <div class="label">Namn, befattning</div>
+            <div class="value">{{ inspector1NameAndTitle | escape }}</div>
+          </td>
+          <td class="c">
+            <div class="label">Namn, befattning</div>
+            <div class="value">
+              {{ inspector2NameAndTitle | default("") | escape }}
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

@@ -4,7 +4,7 @@ import { Alert, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { supportMeasureTypeForErrand } from '@supportmanagement/services/support-measure-service';
+import { isSupportInspectionErrand, SupportMeasureType } from '@supportmanagement/services/support-measure-service';
 import { useMemo } from 'react';
 
 import { SupportErrandMeasures } from './support-errand-measures.component';
@@ -27,7 +27,7 @@ export const SupportErrandDetailsTab: React.FC = () => {
   const showsJsonParameters = !loadsTypeForm && otherJsonParameters.length > 0 && !!municipalityId;
   // Nothing to show under either heading: the type form needs a saved errand type, other documents need a filed parameter.
   const showsNoJsonParameters = !loadsTypeForm && !showsTypeForm && !showsJsonParameters;
-  const measureType = supportMeasureTypeForErrand(supportErrand, supportMetadata);
+  const measureType = isSupportInspectionErrand(supportErrand) ? SupportMeasureType.INTERNAL : undefined;
 
   const simpleParams = useMemo(
     () =>

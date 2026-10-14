@@ -9,13 +9,24 @@ import {
   supportMeasureChanges,
   type SupportMeasureRow,
   supportMeasureRows,
+  supportMeasuresOfType,
+  SupportMeasureType,
 } from '@supportmanagement/services/support-measure-service';
-import { SUPPORT_MEASURE_TEMPLATES } from '@supportmanagement/services/support-measure-templates';
+import {
+  SUPPORT_MEASURE_TEMPLATES,
+  type SupportMeasureTemplate,
+} from '@supportmanagement/services/support-measure-templates';
 import { Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const TAB_KEY = 'measures';
+type ListType = typeof SupportMeasureType.INTERNAL | typeof SupportMeasureType.EXTERNAL;
+
+/** Each type is its own list with its own texts and tab saver; only control points start from a template. */
+const LISTS: Record<ListType, { tabKey: string; texts: string; templates: SupportMeasureTemplate[] }> = {
+  [SupportMeasureType.INTERNAL]: { tabKey: 'measures', texts: 'common:measures', templates: SUPPORT_MEASURE_TEMPLATES },
+  [SupportMeasureType.EXTERNAL]: { tabKey: 'action_points', texts: 'common:action_points', templates: [] },
+};
 
 interface MeasureList {
   /** The errand's list this was loaded from, to notice when the errand has been read again. */
@@ -32,8 +43,9 @@ const listOf = (measures: Measure[] | undefined): MeasureList => ({
 
 const isEdited = (list: MeasureList): boolean => hasSupportMeasureChanges(supportMeasureChanges(list.rows, list.saved));
 
-export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measureType }) => {
+export const SupportErrandMeasures: React.FC<{ measureType: ListType }> = ({ measureType }) => {
   const { t } = useTranslation();
+  const { tabKey, texts, templates } = LISTS[measureType];
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
@@ -42,7 +54,8 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
   const toastMessage = useSnackbar();
 
   const errandId = supportErrand?.id;
-  const measures = supportErrand?.measures;
+  const allMeasures = supportErrand?.measures;
+  const measures = useMemo(() => supportMeasuresOfType(allMeasures, measureType), [allMeasures, measureType]);
   const readOnly = !canEdit || !supportErrand || isSupportErrandLocked(supportErrand);
 
   const [list, setList] = useState<MeasureList>(() => listOf(measures));
@@ -55,15 +68,15 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
   }
 
   useEffect(() => {
-    setUnsavedTab(TAB_KEY, edited);
-    return () => setUnsavedTab(TAB_KEY, false);
-  }, [edited, setUnsavedTab]);
+    setUnsavedTab(tabKey, edited);
+    return () => setUnsavedTab(tabKey, false);
+  }, [edited, setUnsavedTab, tabKey]);
 
   const save = async (): Promise<boolean> => {
     if (!errandId || !municipalityId) return true;
     try {
       await saveSupportMeasures(errandId, municipalityId, measureType, changes);
-      const latest = await getSupportMeasures(errandId, municipalityId);
+      const latest = supportMeasuresOfType(await getSupportMeasures(errandId, municipalityId), measureType);
       setList((current) => ({ ...listOf(latest), source: current.source }));
       return true;
     } catch (e) {
@@ -71,7 +84,7 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: t('common:measures.save_error'),
+        message: t(`${texts}.save_error`),
         status: 'error',
       });
       return false;
@@ -85,15 +98,15 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
   const saver = useCallback(() => saveLatest.current(), []);
 
   useEffect(() => {
-    setTabSaver(TAB_KEY, saver);
-    return () => setTabSaver(TAB_KEY, undefined);
-  }, [saver, setTabSaver]);
+    setTabSaver(tabKey, saver);
+    return () => setTabSaver(tabKey, undefined);
+  }, [saver, setTabSaver, tabKey]);
 
   const setRows = (rows: SupportMeasureRow[]) => setList((current) => ({ ...current, rows }));
 
   const applyTemplate = (key: string) => {
     setTemplateKey(key);
-    const template = SUPPORT_MEASURE_TEMPLATES.find((candidate) => candidate.key === key);
+    const template = templates.find((candidate) => candidate.key === key);
     if (template) setRows(template.titles.map((title) => ({ title })));
   };
 
@@ -103,26 +116,28 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
   const addRow = () => setRows([...list.rows, { title: '' }]);
 
   return (
-    <section className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12" data-cy="inspection-measures">
-      <h3 className="text-h3-md">{t('common:measures.heading')}</h3>
-      <p className="text-small text-dark-secondary m-0">{t('common:measures.description')}</p>
-      <FormControl id="measure-template" className="w-full max-w-[32rem]">
-        <FormLabel>{t('common:measures.template')}</FormLabel>
-        <Select
-          value={templateKey}
-          onChange={(event) => applyTemplate(event.target.value)}
-          disabled={readOnly}
-          data-cy="measure-template"
-        >
-          <Select.Option value="">{t('common:measures.template_placeholder')}</Select.Option>
-          {SUPPORT_MEASURE_TEMPLATES.map((template) => (
-            <Select.Option key={template.key} value={template.key}>
-              {template.label}
-            </Select.Option>
-          ))}
-        </Select>
-      </FormControl>
-      <span className="font-bold">{t('common:measures.count', { count: list.rows.length })}</span>
+    <section className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12" data-cy={`measures-${measureType}`}>
+      <h3 className="text-h3-md">{t(`${texts}.heading`)}</h3>
+      <p className="text-small text-dark-secondary m-0">{t(`${texts}.description`)}</p>
+      {templates.length > 0 ? (
+        <FormControl id="measure-template" className="w-full max-w-[32rem]">
+          <FormLabel>{t(`${texts}.template`)}</FormLabel>
+          <Select
+            value={templateKey}
+            onChange={(event) => applyTemplate(event.target.value)}
+            disabled={readOnly}
+            data-cy="measure-template"
+          >
+            <Select.Option value="">{t(`${texts}.template_placeholder`)}</Select.Option>
+            {templates.map((template) => (
+              <Select.Option key={template.key} value={template.key}>
+                {template.label}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+      ) : null}
+      <span className="font-bold">{t(`${texts}.count`, { count: list.rows.length })}</span>
       <ol className="flex flex-col gap-8 m-0 p-0 list-none">
         {list.rows.map((row, index) => (
           <li key={row.id ?? `new-${index}`} className="flex items-center gap-8">
@@ -132,7 +147,7 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
               value={row.title}
               onChange={(event) => setTitle(index, event.target.value)}
               disabled={readOnly}
-              aria-label={t('common:measures.row', { number: index + 1 })}
+              aria-label={t(`${texts}.row`, { number: index + 1 })}
             />
             <Button
               iconButton
@@ -140,7 +155,7 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
               showBackground={false}
               onClick={() => removeRow(index)}
               disabled={readOnly}
-              aria-label={t('common:measures.remove', { number: index + 1 })}
+              aria-label={t(`${texts}.remove`, { number: index + 1 })}
             >
               <X size={16} className="text-error" />
             </Button>
@@ -158,7 +173,7 @@ export const SupportErrandMeasures: React.FC<{ measureType: string }> = ({ measu
           disabled={readOnly}
           data-cy="measure-add"
         >
-          {t('common:measures.add')}
+          {t(`${texts}.add`)}
         </Button>
       </div>
     </section>

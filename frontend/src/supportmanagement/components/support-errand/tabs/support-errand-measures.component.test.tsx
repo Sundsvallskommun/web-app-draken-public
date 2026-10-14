@@ -32,9 +32,13 @@ vi.mock('@supportmanagement/services/support-measure-service', async (importOrig
 }));
 
 const ERRAND_ID = 'errand-1';
-const saved = [{ id: 'm1', title: 'Ålderskontroll' }];
+const saved = [
+  { id: 'm1', type: 'INTERNAL', title: 'Ålderskontroll' },
+  { id: 'x1', type: 'EXTERNAL', title: 'Sätt upp skylt om åldersgräns' },
+];
 
-const mount = () => render(<SupportErrandMeasures measureType="EXTERNAL_INSPECTION" />);
+const mount = (measureType: 'INTERNAL' | 'EXTERNAL' = 'INTERNAL') =>
+  render(<SupportErrandMeasures measureType={measureType} />);
 const savedState = () => useSupportStore.getState();
 
 beforeEach(() => {
@@ -52,10 +56,11 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test('shows the saved measures as rows and offers its save to whoever saves the errand', async () => {
+test('shows the saved measures of its type as rows and offers its save to whoever saves the errand', async () => {
   const { unmount } = mount();
 
   expect(screen.getByDisplayValue('Ålderskontroll')).toBeTruthy();
+  expect(screen.queryByDisplayValue('Sätt upp skylt om åldersgräns')).toBeNull();
   await waitFor(() => expect(savedState().tabSavers.measures).toBeTypeOf('function'));
   expect(savedState().unsavedTabs.measures).toBeFalsy();
 
@@ -86,7 +91,7 @@ test('the save writes the difference: new rows created, edited rows updated, rem
     expect(await savedState().tabSavers.measures()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'EXTERNAL_INSPECTION', {
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
     create: ['Prislista'],
     update: [{ id: 'm1', title: 'Ålderskontroll (18 år)' }],
     remove: [],
@@ -94,7 +99,7 @@ test('the save writes the difference: new rows created, edited rows updated, rem
 });
 
 test('after a save the list is what the service holds, so saving again writes nothing', async () => {
-  vi.mocked(getSupportMeasures).mockResolvedValue([{ id: 'm2', title: 'Prislista' }]);
+  vi.mocked(getSupportMeasures).mockResolvedValue([{ id: 'm2', type: 'INTERNAL', title: 'Prislista' }]);
   mount();
   await waitFor(() => expect(savedState().tabSavers.measures).toBeTypeOf('function'));
 
@@ -128,6 +133,30 @@ test('a failed save keeps the edits and answers false', async () => {
 
   expect(screen.getByDisplayValue('Prislista')).toBeTruthy();
   expect(savedState().unsavedTabs.measures).toBe(true);
+});
+
+test('the action points are their own list: EXTERNAL rows, own texts, own tab saver, no template', async () => {
+  mount('EXTERNAL');
+
+  expect(screen.getByDisplayValue('Sätt upp skylt om åldersgräns')).toBeTruthy();
+  expect(screen.queryByDisplayValue('Ålderskontroll')).toBeNull();
+  expect(screen.queryByLabelText('Välj protokollmall')).toBeNull();
+  expect(screen.getByText('Åtgärdspunkter (1)')).toBeTruthy();
+  await waitFor(() => expect(savedState().tabSavers.action_points).toBeTypeOf('function'));
+
+  fireEvent.click(screen.getByText('Lägg till åtgärdspunkt'));
+  fireEvent.change(screen.getByLabelText('Åtgärdspunkt 2'), { target: { value: 'Ta ner affischen' } });
+  expect(savedState().unsavedTabs.action_points).toBe(true);
+  expect(savedState().unsavedTabs.measures).toBeFalsy();
+
+  await act(async () => {
+    await savedState().tabSavers.action_points();
+  });
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'EXTERNAL', {
+    create: ['Ta ner affischen'],
+    update: [],
+    remove: [],
+  });
 });
 
 test('without edit permission the list is read only', () => {

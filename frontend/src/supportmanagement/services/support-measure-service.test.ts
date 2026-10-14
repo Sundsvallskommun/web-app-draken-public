@@ -3,38 +3,38 @@ import { expect, test } from 'vitest';
 import type { SupportErrand } from './support-errand-service';
 import {
   hasSupportMeasureChanges,
+  isSupportInspectionErrand,
   supportMeasureChanges,
   supportMeasureProtocolEdited,
   supportMeasureProtocolFields,
   supportMeasureProtocolPatch,
   supportMeasureRows,
-  supportMeasureTypeForErrand,
+  supportMeasuresOfType,
 } from './support-measure-service';
-import type { SupportMetadata } from './support-metadata-service';
 
-const metadata = {
-  measureTypes: [
-    { name: 'INTERNAL_INSPECTION', displayName: 'Inre tillsyn', measureGroups: ['INSPECTION'] },
-    { name: 'EXTERNAL_INSPECTION', displayName: 'Yttre tillsyn', measureGroups: ['INSPECTION'] },
-  ],
-} as SupportMetadata;
-
-const errandOfType = (resourceName: string) =>
+const errandInCategory = (resourceName: string) =>
   ({
     labels: [
-      { classification: 'CATEGORY', resourceName: 'INSPECTION' },
-      { classification: 'TYPE', resourceName },
+      { classification: 'CATEGORY', resourceName },
+      { classification: 'TYPE', resourceName: 'EXTERNAL_INSPECTION' },
     ],
   } as unknown as SupportErrand);
 
-test('the measure type is the TYPE label when the namespace has a measure type by that name', () => {
-  expect(supportMeasureTypeForErrand(errandOfType('EXTERNAL_INSPECTION'), metadata)).toBe('EXTERNAL_INSPECTION');
+test('an errand is an inspection when it is filed under the INSPECTION category', () => {
+  expect(isSupportInspectionErrand(errandInCategory('INSPECTION'))).toBe(true);
+  expect(isSupportInspectionErrand(errandInCategory('SERVING_PERMIT'))).toBe(false);
+  expect(isSupportInspectionErrand({ labels: [] } as unknown as SupportErrand)).toBe(false);
+  expect(isSupportInspectionErrand(undefined)).toBe(false);
 });
 
-test('an errand whose type has no measure type gets none', () => {
-  expect(supportMeasureTypeForErrand(errandOfType('PERMANENT_SERVING'), metadata)).toBeUndefined();
-  expect(supportMeasureTypeForErrand({ labels: [] } as unknown as SupportErrand, metadata)).toBeUndefined();
-  expect(supportMeasureTypeForErrand(errandOfType('EXTERNAL_INSPECTION'), undefined)).toBeUndefined();
+test('control points and action points are told apart by type', () => {
+  const measures = [
+    { id: 'm1', type: 'INTERNAL', title: 'Nykterhet' },
+    { id: 'm2', type: 'EXTERNAL', title: 'Sätt upp skylt' },
+  ];
+  expect(supportMeasuresOfType(measures, 'INTERNAL')).toEqual([measures[0]]);
+  expect(supportMeasuresOfType(measures, 'EXTERNAL')).toEqual([measures[1]]);
+  expect(supportMeasuresOfType(undefined, 'EXTERNAL')).toEqual([]);
 });
 
 const saved = [
@@ -88,7 +88,7 @@ test('protocol fields read the result and note, and treat a result Draken does n
     result: 'COMPLETED',
     description: 'ok',
   });
-  expect(supportMeasureProtocolFields({ id: 'm1', result: 'COMPLETED' })).toEqual({ result: '', description: '' });
+  expect(supportMeasureProtocolFields({ id: 'm1', result: 'DONE' })).toEqual({ result: '', description: '' });
   expect(supportMeasureProtocolFields({ id: 'm1', result: null })).toEqual({ result: '', description: '' });
 });
 
