@@ -71,11 +71,11 @@ test('shows the saved measures of its type as rows and offers its save to whoeve
 test('a template replaces the list, which marks the tab unsaved', () => {
   mount();
 
-  fireEvent.change(screen.getByLabelText('Välj protokollmall'), { target: { value: 'tobacco_sales' } });
+  fireEvent.change(screen.getByLabelText('Välj protokollmall'), { target: { value: 'internal_inspection' } });
 
   expect(screen.queryByDisplayValue('Ålderskontroll')).toBeNull();
-  expect(screen.getByDisplayValue('Egenkontrollprogram finns och följs')).toBeTruthy();
-  expect(screen.getByText('Kontrollpunkter (6)')).toBeTruthy();
+  expect(screen.getByDisplayValue('Belastningsregistret')).toBeTruthy();
+  expect(screen.getByText('Kontrollpunkter (5)')).toBeTruthy();
   expect(savedState().unsavedTabs.measures).toBe(true);
 });
 
@@ -92,7 +92,7 @@ test('the save writes the difference: new rows created, edited rows updated, rem
   });
 
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
-    create: ['Prislista'],
+    create: [{ title: 'Prislista' }],
     update: [{ id: 'm1', title: 'Ålderskontroll (18 år)' }],
     remove: [],
   });
@@ -110,7 +110,10 @@ test('after a save the list is what the service holds, so saving again writes no
   await act(async () => {
     await savedState().tabSavers.measures();
   });
-  expect(vi.mocked(saveSupportMeasures).mock.calls[0][3]).toMatchObject({ create: ['Prislista'], remove: ['m1'] });
+  expect(vi.mocked(saveSupportMeasures).mock.calls[0][3]).toMatchObject({
+    create: [{ title: 'Prislista' }],
+    remove: ['m1'],
+  });
   expect(savedState().unsavedTabs.measures).toBe(false);
 
   await act(async () => {
@@ -153,7 +156,7 @@ test('the action points are their own list: EXTERNAL rows, own texts, own tab sa
     await savedState().tabSavers.action_points();
   });
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'EXTERNAL', {
-    create: ['Ta ner affischen'],
+    create: [{ title: 'Ta ner affischen' }],
     update: [],
     remove: [],
   });

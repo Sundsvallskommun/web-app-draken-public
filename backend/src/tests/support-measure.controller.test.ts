@@ -50,6 +50,22 @@ describe('measures of a support errand', () => {
     expect(res.body).toMatchObject({ id: measureId, title: 'Serveringstider följs' });
   });
 
+  it('creates a measure with the result and note the protocol already holds for it', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.createMeasure(
+      mockReq(),
+      errandId,
+      mockMunicipalityId,
+      { type: 'INTERNAL', title: 'Belastningsregistret', result: 'COMPLETED', description: 'Inget att anmärka på' },
+      res,
+    );
+
+    expect(api.post.mock.calls[0][0].data).toMatchObject({ title: 'Belastningsregistret', result: 'COMPLETED', description: 'Inget att anmärka på' });
+    expect(res.statusCode).toBe(201);
+  });
+
   it('updates only the title of a measure', async () => {
     const { controller, api } = makeController();
     const res = mockRes();

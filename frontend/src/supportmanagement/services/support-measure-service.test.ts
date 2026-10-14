@@ -27,12 +27,13 @@ test('an errand is an inspection when it is filed under the INSPECTION category'
   expect(isSupportInspectionErrand(undefined)).toBe(false);
 });
 
-test('control points and action points are told apart by type', () => {
+test('control points and action points are told apart by type, and listed in the order they were written', () => {
   const measures = [
-    { id: 'm1', type: 'INTERNAL', title: 'Nykterhet' },
+    { id: 'm1', type: 'INTERNAL', title: 'Nykterhet', created: '2026-10-14T08:00:02Z' },
     { id: 'm2', type: 'EXTERNAL', title: 'Sätt upp skylt' },
+    { id: 'm3', type: 'INTERNAL', title: 'Ålderskontroll', created: '2026-10-14T08:00:01Z' },
   ];
-  expect(supportMeasuresOfType(measures, 'INTERNAL')).toEqual([measures[0]]);
+  expect(supportMeasuresOfType(measures, 'INTERNAL')).toEqual([measures[2], measures[0]]);
   expect(supportMeasuresOfType(measures, 'EXTERNAL')).toEqual([measures[1]]);
   expect(supportMeasuresOfType(undefined, 'EXTERNAL')).toEqual([]);
 });
@@ -61,10 +62,25 @@ test('a row without id is created, a changed row updated, a missing row removed'
   const changes = supportMeasureChanges([{ id: 'm1', title: 'Ålderskontroll (18 år)' }, { title: 'Prislista' }], saved);
 
   expect(changes).toEqual({
-    create: ['Prislista'],
+    create: [{ title: 'Prislista' }],
     update: [{ id: 'm1', title: 'Ålderskontroll (18 år)' }],
     remove: ['m2'],
   });
+});
+
+test('a new row brings its result and note along, but only when it has them', () => {
+  const changes = supportMeasureChanges(
+    [
+      { title: 'Nykterhet', result: 'COMPLETED', description: 'Lugnt' },
+      { title: 'Brandskydd', result: '', description: '' },
+    ],
+    []
+  );
+
+  expect(changes.create).toEqual([
+    { title: 'Nykterhet', result: 'COMPLETED', description: 'Lugnt' },
+    { title: 'Brandskydd' },
+  ]);
 });
 
 test('blank rows are dropped, and a saved row that was blanked is removed', () => {
@@ -77,7 +93,7 @@ test('blank rows are dropped, and a saved row that was blanked is removed', () =
 
 test('surrounding whitespace is neither saved nor counted as a change', () => {
   expect(supportMeasureChanges([{ id: 'm1', title: ' Ålderskontroll ' }, { title: ' Prislista ' }], saved)).toEqual({
-    create: ['Prislista'],
+    create: [{ title: 'Prislista' }],
     update: [],
     remove: ['m2'],
   });

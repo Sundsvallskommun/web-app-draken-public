@@ -34,6 +34,25 @@ export class CreateSupportInvestigationSectionDto {
   sortOrder!: number;
 }
 
+// A protocol answer: Support Management takes any non-blank value up to 3000 characters.
+export class SupportInvestigationParameterDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  key!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  displayName?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(3000, { each: true })
+  values!: string[];
+}
+
 export class CreateSupportInvestigationDto {
   @IsOptional()
   @IsString()
@@ -49,11 +68,33 @@ export class CreateSupportInvestigationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSupportInvestigationSectionDto)
   sections!: CreateSupportInvestigationSectionDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationParameterDto)
+  parameters?: SupportInvestigationParameterDto[];
 }
 
 export class UpdateSupportInvestigationDto {
   @IsInt()
   version!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationParameterDto)
+  parameters?: SupportInvestigationParameterDto[];
 
   @IsOptional()
   @IsString()
@@ -167,6 +208,7 @@ export class SupportInvestigationController {
           investigatorUserId: req.user.username,
           ...(data.type && { type: data.type }),
           ...(data.title && { title: data.title }),
+          ...(data.parameters && { parameters: data.parameters }),
         },
         propagateClientError: true,
       },

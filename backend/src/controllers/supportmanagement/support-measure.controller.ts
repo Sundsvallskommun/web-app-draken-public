@@ -34,6 +34,15 @@ export class CreateSupportMeasureDto {
   @MinLength(1)
   @MaxLength(255)
   title!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  description?: string;
+
+  @IsOptional()
+  @IsIn(MEASURE_RESULTS)
+  result?: string;
 }
 
 export class UpdateSupportMeasureDto {

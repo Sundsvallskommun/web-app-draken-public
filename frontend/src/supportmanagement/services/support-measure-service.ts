@@ -6,6 +6,8 @@ import type { SupportErrand } from './support-errand-service';
 interface SupportMeasureInput {
   type: string;
   title: string;
+  description?: string;
+  result?: string;
 }
 
 /** The fields a measure can be updated with; whatever is left out stays as it is. */
@@ -15,14 +17,16 @@ export interface SupportMeasurePatch {
   result?: string | null;
 }
 
-/** A row in the list. `id` is missing until the row has been saved. */
+/** A row in the list. `id` is missing until the row has been saved; the protocol also carries its result and note. */
 export interface SupportMeasureRow {
   id?: string;
   title: string;
+  result?: string;
+  description?: string;
 }
 
 export interface SupportMeasureChanges {
-  create: string[];
+  create: Omit<SupportMeasureRow, 'id'>[];
   update: { id: string; title: string }[];
   remove: string[];
 }
@@ -111,8 +115,11 @@ const INSPECTION_CATEGORY = 'INSPECTION';
 export const isSupportInspectionErrand = (errand: Pick<SupportErrand, 'labels'> | undefined): boolean =>
   !!errand?.labels?.some((label) => label.classification === 'CATEGORY' && label.resourceName === INSPECTION_CATEGORY);
 
+/** The service lists measures by id; the handler wrote them in order, so they are shown by creation time. */
 export const supportMeasuresOfType = (measures: Measure[] | undefined, type: SupportMeasureTypeName): Measure[] =>
-  (measures ?? []).filter((measure) => measure.type === type);
+  (measures ?? [])
+    .filter((measure) => measure.type === type)
+    .sort((a, b) => (a.created ?? '').localeCompare(b.created ?? ''));
 
 export const supportMeasureRows = (measures: Measure[] | undefined): SupportMeasureRow[] =>
   (measures ?? []).map((measure) => ({ id: measure.id, title: measure.title ?? '' }));
@@ -123,7 +130,13 @@ export const supportMeasureChanges = (rows: SupportMeasureRow[], saved: Measure[
   const savedById = new Map(saved.map((measure) => [measure.id, measure]));
   const keptIds = new Set(kept.map((row) => row.id));
   return {
-    create: kept.filter((row) => !row.id).map((row) => row.title),
+    create: kept
+      .filter((row) => !row.id)
+      .map(({ title, result, description }) => ({
+        title,
+        ...(result && { result }),
+        ...(description && { description }),
+      })),
     update: kept
       .filter((row): row is { id: string; title: string } => !!row.id && savedById.get(row.id)?.title !== row.title)
       .map(({ id, title }) => ({ id, title })),
@@ -141,8 +154,8 @@ export const saveSupportMeasures = async (
   type: string,
   changes: SupportMeasureChanges
 ): Promise<void> => {
-  for (const title of changes.create) {
-    await createSupportMeasure(errandId, municipalityId, { type, title });
+  for (const row of changes.create) {
+    await createSupportMeasure(errandId, municipalityId, { type, ...row });
   }
   for (const { id, title } of changes.update) {
     await updateSupportMeasure(errandId, municipalityId, id, { title });
