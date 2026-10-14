@@ -4,6 +4,8 @@
       "showSectionCompletion": false
     },
     "ui:order": [
+      "analysisDecision",
+      "notAnalyzedMotivation",
       "assignment",
       "analysisTeamParticipants",
       "methodology",
@@ -16,6 +18,13 @@
       "reports"
     ],
     "ui:sections": [
+      {
+        "id": "initial-assessment",
+        "title": "Initial bedömning",
+        "icon": "gavel",
+        "defaultOpen": true,
+        "fields": ["analysisDecision", "notAnalyzedMotivation"]
+      },
       {
         "id": "assignment",
         "title": "Uppdrag",
@@ -59,6 +68,16 @@
         "fields": ["completed", "$external:investigationReport", "reports"]
       }
     ],
+    "analysisDecision": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "notAnalyzedMotivation": {
+      "ui:widget": "PlainTextareaWidget",
+      "ui:placeholder": "Motivera varför ärendet inte ska händelseanalyseras",
+      "ui:options": {
+        "className": "w-full min-h-[10rem]"
+      }
+    },
     "assignment": {
       "ui:widget": "TexteditorWidget",
       "ui:options": {

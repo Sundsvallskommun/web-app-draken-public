@@ -10,6 +10,20 @@
     "additionalProperties": false,
     "x-draken-completion": { "field": "completed", "reportsField": "reports" },
     "properties": {
+      "analysisDecision": {
+        "title": "Jag beslutar att ärendet",
+        "description": "MAS/MAR:s initiala bedömning. Ett ärende som inte ska händelseanalyseras kan markeras som klart med enbart motiveringen.",
+        "type": "string",
+        "oneOf": [
+          { "const": "analyze", "title": "Ska händelseanalyseras" },
+          { "const": "not_analyze", "title": "Inte ska händelseanalyseras" }
+        ]
+      },
+      "notAnalyzedMotivation": {
+        "title": "Motivera beslut om att inte händelseanalysera",
+        "type": "string",
+        "minLength": 1
+      },
       "assignment": {
         "title": "Uppdrag",
         "description": "Beskriv syftet med analysen, uppdragsgivaren, uppdragsdatum och startdatum.",
@@ -149,6 +163,19 @@
     },
     "allOf": [
       {
+        "$comment": "Motiveringen hör bara till beslutet att inte händelseanalysera, och visas bara med det.",
+        "if": {
+          "properties": { "analysisDecision": { "const": "not_analyze" } },
+          "required": ["analysisDecision"]
+        },
+        "then": {
+          "properties": { "notAnalyzedMotivation": true }
+        },
+        "else": {
+          "not": { "required": ["notAnalyzedMotivation"] }
+        }
+      },
+      {
         "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar.",
         "if": {
           "properties": {
@@ -162,13 +189,26 @@
           "$comment": "Kraven ligger under then.allOf: sektionsmallen läser then.properties och then.required i rot-allOf som en synlighetsregel, och ett fält får inte försvinna ur formuläret före klarmarkeringen.",
           "allOf": [
             {
-              "properties": {
-                "analysisTeamParticipants": {
-                  "items": {
-                    "required": ["name", "role"],
-                    "properties": {
-                      "name": {
-                        "minLength": 1
+              "required": ["analysisDecision"]
+            },
+            {
+              "$comment": "En analys som inte ska göras är klar med motiveringen. Annars gäller analysens egna krav.",
+              "if": {
+                "properties": { "analysisDecision": { "const": "not_analyze" } },
+                "required": ["analysisDecision"]
+              },
+              "then": {
+                "required": ["notAnalyzedMotivation"]
+              },
+              "else": {
+                "properties": {
+                  "analysisTeamParticipants": {
+                    "items": {
+                      "required": ["name", "role"],
+                      "properties": {
+                        "name": {
+                          "minLength": 1
+                        }
                       }
                     }
                   }

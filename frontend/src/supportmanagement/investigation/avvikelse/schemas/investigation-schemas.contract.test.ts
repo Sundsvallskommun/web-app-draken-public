@@ -281,6 +281,7 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'report', title: 'Avsluta utredning och skapa rapport' },
     ],
     'utredning-hsl': [
+      { id: 'initial-assessment', title: 'Initial bedömning' },
       { id: 'assignment', title: 'Uppdrag' },
       { id: 'analysis-team-participants', title: 'Deltagare i analysteam' },
       { id: 'methodology', title: 'Metodik' },
@@ -548,10 +549,10 @@ test('the HSL investigation no longer carries the IVO decision', () => {
     assert.equal(field in uiSchema, false, `utredning-hsl UI schema still configures ${field}`);
   }
   assert.equal(schema.required, undefined);
-  // The only root condition left is the completion gate below; the IVO rules moved to the decisions.
+  // The IVO rules moved to the decisions. What is left is MAS/MAR's own initial assessment and the completion gate.
   assert.deepEqual(
     schema.allOf.map((entry: any) => Object.keys(entry.if.properties)),
-    [['completed']]
+    [['analysisDecision'], ['completed']]
   );
 });
 
@@ -582,13 +583,44 @@ test('the HSL investigation names each participant and chooses their role from t
 
   // Name and role are asked for when the analysis is marked complete, not before.
   const { validate } = createValidator(schema);
+  const completedAnalysis = (participant: Record<string, string>) => ({
+    analysisDecision: 'analyze',
+    analysisTeamParticipants: [participant],
+    completed: 'yes',
+  });
   assert.equal(validate({ analysisTeamParticipants: [{ name: 'Anna Andersson' }] }), true);
-  assert.equal(validate({ analysisTeamParticipants: [{ role: 'nurse' }], completed: 'yes' }), false);
-  assert.equal(validate({ analysisTeamParticipants: [{ name: '', role: 'nurse' }], completed: 'yes' }), false);
+  assert.equal(validate(completedAnalysis({ role: 'nurse' })), false);
+  assert.equal(validate(completedAnalysis({ name: '', role: 'nurse' })), false);
+  assert.equal(validate(completedAnalysis({ name: 'Anna Andersson', role: 'nurse' })), true);
+});
+
+// Ä5. MAS/MAR assesses first whether the event is to be analysed at all. An analysis that is not to be made is
+// complete with the reason why; one that is to be made asks for what it always did.
+test('the HSL investigation starts with MAS/MAR deciding whether the event is analysed at all', () => {
+  const schema = readJson('utredning-hsl.schema-request.json').value;
+  const uiSchema = readJson('utredning-hsl.ui-schema-request.json').value;
+  const { validate } = createValidator(schema);
+
+  assert.deepEqual(Object.keys(schema.properties).slice(0, 2), ['analysisDecision', 'notAnalyzedMotivation']);
+  assert.deepEqual(uiSchema['ui:sections'][0].fields, ['analysisDecision', 'notAnalyzedMotivation']);
+
+  // A draft may hold the decision without its reason, but no reason without the decision it belongs to.
+  assert.equal(validate({ analysisDecision: 'not_analyze' }), true);
+  assert.equal(validate({ analysisDecision: 'analyze', notAnalyzedMotivation: 'Text' }), false);
+  // Not analysed: complete with the reason alone, and not without it.
   assert.equal(
-    validate({ analysisTeamParticipants: [{ name: 'Anna Andersson', role: 'nurse' }], completed: 'yes' }),
+    validate({ analysisDecision: 'not_analyze', notAnalyzedMotivation: 'Ingen vårdskada.', completed: 'yes' }),
     true
   );
+  assert.equal(validate({ analysisDecision: 'not_analyze', completed: 'yes' }), false);
+  // Analysed: the requirements of the analysis hold as before.
+  assert.equal(validate({ analysisDecision: 'analyze', completed: 'yes' }), true);
+  assert.equal(
+    validate({ analysisDecision: 'analyze', analysisTeamParticipants: [{ name: 'Anna Andersson' }], completed: 'yes' }),
+    false
+  );
+  // Undecided is not complete.
+  assert.equal(validate({ completed: 'yes' }), false);
 });
 
 // MAS/MAR write the event analysis and the one who commissioned it comments on it. The comment is a document of

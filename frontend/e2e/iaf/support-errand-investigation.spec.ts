@@ -976,6 +976,48 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(decisionMaker).not.toContainText('Iaf Testare');
   });
 
+  // Ä5. MAS/MAR may decide that the event is not to be analysed. The reason is all such an analysis needs to be
+  // complete, and the reason belongs to that decision alone.
+  test('MAS/MAR markerar händelseanalysen klar med beslutet att inte händelseanalysera', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE' });
+    const reason = 'Händelsen har inte lett till någon vårdskada.';
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await page
+      .locator('[data-cy="support-investigation-tab"]')
+      .getByRole('tab', { name: 'Händelseanalys HSL', exact: true })
+      .click();
+    const document = page.locator('[data-cy="investigation-document-utredning-hsl"]');
+    const motivation = document.getByRole('textbox', {
+      name: 'Motivera beslut om att inte händelseanalysera',
+      exact: true,
+    });
+    await expect(motivation).toHaveCount(0);
+
+    await document
+      .locator('#utredning-hsl_analysisDecision')
+      .getByRole('radio', { name: 'Inte ska händelseanalyseras', exact: true })
+      .check();
+    await motivation.fill(reason);
+    await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].body).toEqual({
+      schemaId: latestSchemaIds['utredning-hsl'],
+      value: expect.objectContaining({
+        analysisDecision: 'not_analyze',
+        notAnalyzedMotivation: reason,
+        completed: 'yes',
+      }),
+    });
+    await expect(document.locator('[data-cy="investigation-document-locked"]')).toBeVisible();
+  });
+
   test('markerar HSL-utredningen klar, låser den, skapar numrerade rapporter och låser upp igen', async ({
     page,
     dismissCookieConsent,
@@ -998,6 +1040,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-unlock"]')).toHaveCount(0);
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
 
+    // Ä5. The analysis is complete once MAS/MAR has decided it is made, and made as the analysis asks.
+    await document
+      .locator('#utredning-hsl_analysisDecision')
+      .getByRole('radio', { name: 'Ska händelseanalyseras', exact: true })
+      .check();
     await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
     // MAS/MAR's investigation is not handed on to LEX-ansvarig: finishing it is told to save, and nothing more.
     await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveText(

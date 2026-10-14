@@ -164,7 +164,7 @@ Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, va
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
 | `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej har sin motivering. 2.1: dessutom minst ett lagrum. 2.2: lagrum och sammanfattning av rapporten, motiveringarna är frivilliga |
-| `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`. 1.5: `name` och `role` på varje rad                                                                               |
+| `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`. 1.5: beslutet `analysisDecision`; med `not_analyze` motiveringen, annars `name` och `role` på varje rad          |
 
 Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
 `then`-grenen och ingen annanstans.
@@ -216,6 +216,15 @@ och Omvårdnadspersonal (`care_staff`). Specialistundersköterskor och liknande 
 
 Händelseanalyser som redan är sparade är bundna till sin version och behåller rollen som fritext och sin enhet.
 Ingen deltagare flyttas mellan versionerna. 1.5 är inte publicerad.
+
+1.5 börjar också med MAS/MAR:s initiala bedömning, sektionen Initial bedömning: Jag beslutar att ärendet
+(`analysisDecision`) Ska händelseanalyseras (`analyze`) eller Inte ska händelseanalyseras (`not_analyze`), och en
+motivering (`notAnalyzedMotivation`) som bara får finnas, och bara visas, med det senare. Vid klarmarkering krävs
+beslutet. Ska ärendet inte händelseanalyseras krävs motiveringen och inget annat, så analysen kan markeras som klar
+utan övriga fält. Ska det händelseanalyseras gäller analysens krav som förut. Övriga fält döljs inte av beslutet.
+
+Det finns ingen spärr mot att avsluta ärendet innan analysen är klar, och beslutet att inte händelseanalysera
+ändrar inte det.
 
 ## Händelseanalys HSL 1.4 och VC kommentar HSL
 

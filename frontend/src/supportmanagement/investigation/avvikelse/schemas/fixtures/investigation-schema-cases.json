@@ -138,6 +138,7 @@
   },
   "utredning-hsl": {
     "valid": {
+      "analysisDecision": "analyze",
       "assignment": "<p>Uppdrag, uppdragsgivare och startdatum.</p>",
       "analysisTeamParticipants": [
         {
@@ -167,6 +168,19 @@
         "value": {
           "ivoNotification": "yes",
           "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "Motivering hör inte till ett ärende som ska händelseanalyseras",
+        "value": {
+          "analysisDecision": "analyze",
+          "notAnalyzedMotivation": "Text"
+        }
+      },
+      {
+        "description": "Okänt beslut avvisas",
+        "value": {
+          "analysisDecision": "later"
         }
       },
       {
