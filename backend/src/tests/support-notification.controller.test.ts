@@ -48,6 +48,16 @@ const makeController = (content: SubscriberNotification[] = [notification()]) =>
   return { controller, api };
 };
 
+/** A controller whose upstream answers the user's notifications in pages, as Support Management pages them. */
+const makePagedController = (pages: SubscriberNotification[][]) => {
+  const { controller, api } = makeController();
+  api.get.mockImplementation(async (config: { url: string }) => {
+    const page = Number(new URL(config.url, 'http://upstream').searchParams.get('page'));
+    return { data: { content: pages[page] ?? [], totalPages: pages.length, number: page }, message: 'success' };
+  });
+  return { controller, api };
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -61,6 +71,29 @@ describe('SupportNotificationController', () => {
       await controller.getSupportNotifications(mockReq(), MUNICIPALITY_ID, undefined as any, undefined as any, res);
 
       expect(api.get.mock.calls[0][0].url).toBe(`${LIST_URL}?page=0&size=100&sort=created%2Cdesc`);
+    });
+
+    // Acknowledged notifications stay until they expire, so a user's list outgrows one page.
+    it('reads every page when no page is asked for', async () => {
+      const { controller, api } = makePagedController([
+        [notification({ id: 'newest' })],
+        [notification({ id: 'older', errandId: 'another-errand' })],
+      ]);
+      const res = mockRes<SupportNotificationDto[]>();
+
+      await controller.getSupportNotifications(mockReq(), MUNICIPALITY_ID, undefined as any, undefined as any, res);
+
+      expect(api.get.mock.calls.map(([config]) => new URL(config.url, 'http://upstream').searchParams.get('page'))).toEqual(['0', '1']);
+      expect(res.body?.map(item => item.id)).toEqual(['newest', 'older']);
+    });
+
+    it('keeps a notification once that moves to the next page while the pages are read', async () => {
+      const { controller } = makePagedController([[notification({ id: 'a' }), notification({ id: 'b' })], [notification({ id: 'b' })]]);
+      const res = mockRes<SupportNotificationDto[]>();
+
+      await controller.getSupportNotifications(mockReq(), MUNICIPALITY_ID, undefined as any, undefined as any, res);
+
+      expect(res.body?.map(item => item.id)).toEqual(['a', 'b']);
     });
 
     it('passes paging through to upstream', async () => {
@@ -176,6 +209,21 @@ describe('SupportNotificationController', () => {
       expect(api.put).toHaveBeenCalledTimes(1);
       expect(api.put.mock.calls[0][0].url).toBe(`${NOTIFICATIONS_URL}/a/acknowledge`);
       expect(res.body).toEqual({ acknowledged: ['a'], failed: [] });
+    });
+
+    it("acknowledges the errand's notification on a later page", async () => {
+      const { controller, api } = makePagedController([
+        [notification({ id: 'other', errandId: 'another-errand' })],
+        [notification({ id: 'target', errandId: mockSupportErrandId })],
+      ]);
+      const res = mockRes<AcknowledgeResultDto>();
+
+      await controller.acknowledgeAllForErrand(mockReq(), MUNICIPALITY_ID, mockSupportErrandId, res);
+
+      expect(api.put.mock.calls.map(([config]) => config.url)).toEqual([`${NOTIFICATIONS_URL}/target/acknowledge`]);
+      expect(res.body).toEqual({ acknowledged: ['target'], failed: [] });
+      // Every page is read before anything is acknowledged, so an acknowledgement cannot shift the pages being read.
+      expect(api.get.mock.invocationCallOrder.at(-1)).toBeLessThan(api.put.mock.invocationCallOrder[0]);
     });
 
     it('does not call upstream when the errand has nothing to acknowledge', async () => {

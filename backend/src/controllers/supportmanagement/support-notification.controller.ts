@@ -85,6 +85,9 @@ export class AcknowledgeResultDto {
 const byCreatedDesc = (a: SubscriberNotificationEvent, b: SubscriberNotificationEvent): number =>
   new Date(b.created ?? 0).getTime() - new Date(a.created ?? 0).getTime();
 
+/** How many notifications each upstream page carries, unless the caller asks for a page of its own. */
+const NOTIFICATION_PAGE_SIZE = 100;
+
 const toNotificationDto = (notification: SubscriberNotification): SupportNotificationDto => ({
   id: notification.id!,
   created: notification.created!,
@@ -109,10 +112,30 @@ export class SupportNotificationController {
     return `${this.SERVICE}/${municipalityId}/${this.namespace}/notifications/${IdentifierTypeEnum.AdAccount}/${user.username}`;
   }
 
-  private async fetchNotifications(municipalityId: string, user: User, page: number, size: number): Promise<SubscriberNotification[]> {
+  private async fetchNotificationPage(municipalityId: string, user: User, page: number, size: number): Promise<PageSubscriberNotification> {
     const query = new URLSearchParams({ page: String(page), size: String(size), sort: 'created,desc' }).toString();
     const res = await this.apiService.get<PageSubscriberNotification>({ url: `${this.notificationsUrl(municipalityId, user)}?${query}` }, user);
-    return res.data?.content ?? [];
+    return res.data ?? {};
+  }
+
+  /**
+   * Every notification the user has. Upstream answers a page at a time and keeps an acknowledged notification
+   * until it expires, so the first page is not the whole list: an errand's notification can sit on any page.
+   * The pages are read until upstream has no more; a notification that moves to the next page while they are
+   * read is kept once.
+   */
+  private async fetchAllNotifications(municipalityId: string, user: User): Promise<SubscriberNotification[]> {
+    const notifications: SubscriberNotification[] = [];
+    const seenIds = new Set<string>();
+    for (let page = 0; ; page += 1) {
+      const { content = [], totalPages = 1 } = await this.fetchNotificationPage(municipalityId, user, page, NOTIFICATION_PAGE_SIZE);
+      for (const notification of content) {
+        if (notification.id !== undefined && seenIds.has(notification.id)) continue;
+        if (notification.id !== undefined) seenIds.add(notification.id);
+        notifications.push(notification);
+      }
+      if (content.length === 0 || page + 1 >= totalPages) return notifications;
+    }
   }
 
   /**
@@ -159,7 +182,11 @@ export class SupportNotificationController {
     @QueryParam('size') size: number,
     @Res() response: any,
   ): Promise<SupportNotificationDto[]> {
-    const notifications = await this.fetchNotifications(municipalityId, req.user, page ?? 0, size ?? 100);
+    // The panel asks for no page and gets them all; a caller that names a page or size gets that page.
+    const notifications =
+      page === undefined && size === undefined
+        ? await this.fetchAllNotifications(municipalityId, req.user)
+        : ((await this.fetchNotificationPage(municipalityId, req.user, page ?? 0, size ?? NOTIFICATION_PAGE_SIZE)).content ?? []);
     return response.status(200).send(notifications.map(toNotificationDto));
   }
 
@@ -178,8 +205,8 @@ export class SupportNotificationController {
 
   /**
    * Acknowledge every notification the logged in user has for one errand, used when the errand is
-   * opened from the overview. Upstream cannot filter notifications by errand, so the user's list is
-   * read and filtered here.
+   * opened from the overview. Upstream cannot filter notifications by errand, so the user's whole list is
+   * read and filtered here, every page of it, before anything is acknowledged.
    */
   @Put('/supportnotifications/:municipalityId/:errandId/acknowledge-all')
   @OpenAPI({ summary: 'Acknowledge all notifications the logged in user has for an errand' })
@@ -190,7 +217,7 @@ export class SupportNotificationController {
     @Param('errandId') errandId: string,
     @Res() response: any,
   ): Promise<AcknowledgeResultDto> {
-    const notifications = await this.fetchNotifications(municipalityId, req.user, 0, 100);
+    const notifications = await this.fetchAllNotifications(municipalityId, req.user);
     const ids = notifications.filter(n => n.errandId === errandId && !n.acknowledged).map(n => n.id!);
     if (!ids.length) {
       return response.status(200).send({ acknowledged: [], failed: [] });
