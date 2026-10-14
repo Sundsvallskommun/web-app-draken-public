@@ -1,5 +1,5 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { apiService } from '@common/services/api-service';
+import { apiService, withRequestGroup } from '@common/services/api-service';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 import { toStrongSupportErrandETag } from './support-errand-write-version';
@@ -207,26 +207,30 @@ const sameValues = (left: string[] | undefined, right: string[] | undefined): bo
  * rewrite would move their version and could overwrite an edit somebody else made while this form
  * was open. Parameters missing from `next` are left untouched - this saves what the form holds and
  * is not a replacement of the collection.
+ *
+ * However many parameters changed, the requests are one action: they share a request group, so the
+ * people following the errand get one notification rather than one for each parameter.
  */
-export const saveChangedErrandParameters = async (
+export const saveChangedErrandParameters = (
   municipalityId: string,
   errandId: string,
   currentParameters: Parameter[] | undefined,
   nextParameters: Parameter[] | undefined
-): Promise<void> => {
-  const current = new Map((currentParameters ?? []).map((parameter) => [parameter.key, parameter]));
+): Promise<void> =>
+  withRequestGroup(async () => {
+    const current = new Map((currentParameters ?? []).map((parameter) => [parameter.key, parameter]));
 
-  for (const next of nextParameters ?? []) {
-    if (!next.key) continue;
-    const existing = current.get(next.key);
-    if (existing && sameValues(existing.values, next.values)) continue;
+    for (const next of nextParameters ?? []) {
+      if (!next.key) continue;
+      const existing = current.get(next.key);
+      if (existing && sameValues(existing.values, next.values)) continue;
 
-    await saveErrandParameter(municipalityId, errandId, {
-      key: next.key,
-      values: next.values ?? [],
-      displayName: next.displayName,
-      group: next.group,
-      ...(existing ? { version: existing.version } : {}),
-    });
-  }
-};
+      await saveErrandParameter(municipalityId, errandId, {
+        key: next.key,
+        values: next.values ?? [],
+        displayName: next.displayName,
+        group: next.group,
+        ...(existing ? { version: existing.version } : {}),
+      });
+    }
+  });

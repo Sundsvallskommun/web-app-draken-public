@@ -1009,6 +1009,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-no-measures-notice"]')).toHaveCount(0);
     // One click saves the form as completed and creates the report.
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
+    const writesBeforeReport = trace.writeRequestGroupIds.length;
     await controls.locator('[data-cy="investigation-report-generate"]').click();
     await expect.poll(() => trace.puts.length).toBe(1);
     // The form never sends the server-owned report log, whatever RJSF defaulted it to.
@@ -1027,6 +1028,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.reports[0]).toEqual({ key: 'utredning-hsl', preview: false });
     await expect(toast(page, 'Rapporten Rapport_1.pdf har skapats')).toBeVisible();
     await expect(controls.locator('[data-cy="investigation-report-list"]')).toContainText('Rapport_1.pdf');
+    // The save and the report are one action for Support Management: one notification, not one for each write.
+    const reportGroupIds = trace.writeRequestGroupIds.slice(writesBeforeReport);
+    expect(reportGroupIds).toHaveLength(2);
+    expect(reportGroupIds[0]).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(new Set(reportGroupIds).size).toBe(1);
 
     // A second report gets the next number; the document stays locked in between.
     await controls.locator('[data-cy="investigation-report-generate"]').click();

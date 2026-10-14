@@ -4,6 +4,7 @@ import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-o
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { withRequestGroup } from '@common/services/api-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
@@ -966,9 +967,14 @@ export function SupportInvestigationDocument({
     }
   };
 
-  /** Submits through the form - from the sidebar or Skapa rapport - and tells the sidebar how it went. */
+  /**
+   * Submits through the form - from the sidebar or Skapa rapport - and tells the sidebar how it went.
+   *
+   * The document, its classification and the report that may follow are one action for Support Management: one
+   * notification, not one for each write. From the sidebar the save joins the group Spara ärende already runs in.
+   */
   const submitDocument = (formData: InvestigationFormData, schemaErrors?: RJSFValidationError[]) => {
-    void save(formData, schemaErrors).then((saved) => {
+    void withRequestGroup(() => save(formData, schemaErrors)).then((saved) => {
       const settle = pendingSidebarSave.current;
       pendingSidebarSave.current = undefined;
       settle?.(saved);

@@ -31,7 +31,10 @@ const mocks = vi.hoisted(() => ({
   snackbar: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router }));
-vi.mock('@common/services/api-service', () => ({ apiService: { get: vi.fn(), put: vi.fn(), patch: vi.fn() } }));
+vi.mock('@common/services/api-service', () => ({
+  apiService: { get: vi.fn(), put: vi.fn(), patch: vi.fn() },
+  withRequestGroup: <T,>(action: () => Promise<T>) => action(),
+}));
 vi.mock('@stores/index', async () => ({
   ...(await import('../../../stores/config-store')),
   ...(await import('../../../stores/support-store')),

@@ -2,7 +2,12 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
 import { toast } from '../utils/toast';
-import { errandId, errandNumber, installIafApiMock } from './fixtures/investigation-flow.mock';
+import {
+  allExistingInvestigationDocuments,
+  errandId,
+  errandNumber,
+  installIafApiMock,
+} from './fixtures/investigation-flow.mock';
 
 test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), 'Körs med IAF/VOF-profilen.');
 
@@ -40,7 +45,10 @@ test.describe('Notiser på ärendesidan', () => {
     const writesBeforeSave = trace.writeRequestGroupIds.length;
 
     await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
-    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click();
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
     await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
 
     const saveGroupIds = trace.writeRequestGroupIds.slice(writesBeforeSave);
@@ -48,5 +56,41 @@ test.describe('Notiser på ärendesidan', () => {
     expect(saveGroupIds[0]).toMatch(/^[0-9a-f-]{36}$/u);
     expect(new Set(saveGroupIds).size).toBe(1);
     expect(trace.subscriptionsCreated).toEqual([]);
+  });
+
+  // The errand's own fields and an investigation written in the same go are saved by one Spara ärende, and are one
+  // action whatever it writes: the errand, the document and its classification share one request group.
+  test('sparar ärendets fält och utredningen i samma sparning som en handling', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const documents = allExistingInvestigationDocuments();
+    documents['utredning-enhetschef'].value.riskAssessmentHsl = {
+      assessedWith: 'Anna Andersson',
+      probability: 1,
+      severity: 2,
+      calculatedRiskValue: 2,
+    };
+    const trace = await installIafApiMock(page, { assignedUserId: 'iaf.test', documents });
+    await visitErrand(page, dismissCookieConsent);
+    await expect.poll(() => trace.notificationAcknowledgements).toHaveLength(1);
+    const writesBeforeSave = trace.writeRequestGroupIds.length;
+
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+    await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+    await page.locator('#utredning-enhetschef_riskAssessmentHsl_probability').getByLabel(/^2 –/u).check();
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
+    await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
+
+    // Both were written: the errand's priority and the investigation.
+    expect(trace.errandPatches.length).toBeGreaterThan(0);
+    expect(trace.puts.map(({ key }) => key)).toEqual(['utredning-enhetschef']);
+    const saveGroupIds = trace.writeRequestGroupIds.slice(writesBeforeSave);
+    expect(saveGroupIds.length).toBeGreaterThanOrEqual(2);
+    expect(saveGroupIds[0]).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(new Set(saveGroupIds).size).toBe(1);
   });
 });

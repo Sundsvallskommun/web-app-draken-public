@@ -321,7 +321,10 @@ upstream model, so no conflict detection is available for them.
 - Support Management notifications come from SM's subscriber model: SM subscribes the assignee, users
   follow anything else with the follow button, and Draken never subscribes anyone implicitly. An errand's
   notifications are acknowledged when the errand page opens. A user action that makes several writes runs
-  in `withRequestGroup` (`common/services/api-service.ts`) so it becomes one notification. A write the
+  in `withRequestGroup` (`common/services/api-service.ts`) so it becomes one notification. The helpers that
+  make one request per item (`saveChangedErrandParameters`, `saveSupportAttachments`) group their own
+  requests, and a group started inside another joins it; an action that makes several requests of its own
+  still has to be wrapped where it starts. A write the
   system makes on its own (read markers, acknowledgements, derived labels, bookkeeping) passes
   `notifySubscribers: false` to `ApiService`, which sends `X-notify: false`; never use it for what a user
   did. CaseData keeps its own notification API. A user chooses e-mail and SMS beside the notifications in
