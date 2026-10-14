@@ -3,6 +3,8 @@ import { MetadataResponse, Role } from '@/data-contracts/supportmanagement/data-
 import { HttpException } from '@/exceptions/HttpException';
 import { logger } from '@/utils/logger';
 
+import { readRoleGroups } from './ad-role.service';
+
 export interface MeasureRegistrationPolicy {
   status: 'ready' | 'unconfigured' | 'invalid';
   /** The measure types each role registers, by the metadata name a measure's `type` carries. */
@@ -17,13 +19,14 @@ export interface ResolvedMeasureRegistration {
 /**
  * Draken owns who registers in which role; metadata owns type group membership, identities and display
  * names. The registration roles are the handler roles carrying `measures`: a user holds one through the
- * role's AD group, or through the superadmin group, which holds every one of them.
+ * role's AD group, or through a superadmin group, which holds every one of them. `superadminSetting` is the
+ * SUPERADMIN_GROUP setting: one group or a comma-separated list, read as every other role setting is.
  */
 export function resolveSupportMeasureRegistration(
   metadata: Pick<MetadataResponse, 'roles' | 'measureTypes'>,
   userGroups: readonly string[],
   handlerRoles: readonly HandlerGroupRole[] | undefined,
-  superadminGroup: string | undefined,
+  superadminSetting: string | undefined,
 ): ResolvedMeasureRegistration {
   const registrationRoles = (handlerRoles ?? []).filter(
     (role): role is HandlerGroupRole & { measures: HandlerRoleMeasureRegistration } => role.measures !== undefined,
@@ -31,8 +34,7 @@ export function resolveSupportMeasureRegistration(
   if (registrationRoles.length === 0) return { creationRoles: [], registration: { status: 'unconfigured', roleTypes: [] } };
   try {
     const groups = new Set(userGroups.map(group => group.trim().toLowerCase()));
-    const superadmin = superadminGroup?.trim().toLowerCase();
-    const holdsEveryRole = superadmin ? groups.has(superadmin) : false;
+    const holdsEveryRole = readRoleGroups(superadminSetting).some(superadminGroup => groups.has(superadminGroup));
     const creationRoles: Role[] = [];
     const roleTypes: MeasureRegistrationPolicy['roleTypes'] = [];
     // Several handler roles can register as one namespace role - a LEX manager exactly as a LEX investigator.

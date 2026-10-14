@@ -65,6 +65,14 @@ test('the superadmin group holds every registration role that is still active', 
   expect(resolveSupportMeasureRegistration(metadata, ['', 'AD-SUPERADMINS'], roles, '   ').creationRoles).toEqual([]);
 });
 
+// SUPERADMIN_GROUP may list several groups, as every role setting may: membership in any one of them is enough.
+test('a member of any one of several listed superadmin groups registers in every role', () => {
+  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-SECOND-SUPERADMINS'], roles, 'AD-SUPERADMINS, AD-SECOND-SUPERADMINS');
+  expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER', 'NURSE']);
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'EDUCATION')).not.toThrow();
+  expect(resolveSupportMeasureRegistration(metadata, ['AD-OTHER'], roles, 'AD-SUPERADMINS, AD-SECOND-SUPERADMINS').creationRoles).toEqual([]);
+});
+
 test('is unconfigured when no handler role registers measures', () => {
   expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], undefined, SUPERADMINS).registration.status).toBe('unconfigured');
   expect(resolveSupportMeasureRegistration(metadata, ['AD-LEX'], [lexManager], SUPERADMINS)).toEqual({
