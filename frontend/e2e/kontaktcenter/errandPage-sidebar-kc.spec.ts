@@ -260,13 +260,12 @@ test.describe('errand page', () => {
     await suspendModal.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
 
     const solveLables = [
-      { label: 'Hänvisat att återkomma', id: 'REFERRED_TO_RETURN' },
-      { label: 'Hänvisat till intern service', id: 'INTERNAL_SERVICE' },
-      { label: 'Hänvisat till självservice', id: 'SELF_SERVICE' },
-      { label: 'Kopplat samtal', id: 'CONNECTED' },
-      { label: 'Löst av Kontakt Sundsvall', id: 'SOLVED' },
-      { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
-      { label: 'SecureAppbox', id: 'SECURE_APPBOX' },
+      { label: 'Informerat', id: 'INFORMED' },
+      { label: 'Guidat', id: 'GUIDED' },
+      { label: 'Åtgärdat', id: 'ACTIONED' },
+      { label: 'Förberett', id: 'PREPARED' },
+      { label: 'Hänvisat', id: 'REFERRED' },
+      { label: 'Överlämnat', id: 'HANDED_OVER' },
     ];
 
     //can change supportErrand to solved

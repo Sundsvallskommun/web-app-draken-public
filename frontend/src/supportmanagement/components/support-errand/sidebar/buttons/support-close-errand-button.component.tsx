@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isBOU, isIK, isKA, isKC, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -12,6 +12,7 @@ import {
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelKSLegacy,
   ResolutionLabelLOK,
   ResolutionLabelLOP,
   ResolutionLabelROB,
@@ -39,11 +40,19 @@ const getResolutionLabels = (): Record<string, string> => {
   return ResolutionLabelKS;
 };
 
+/** Labels for an already saved code, including codes no longer in the picker. */
+const getResolutionDisplayLabels = (): Record<string, string> => ({
+  ...ResolutionLabelKSLegacy,
+  ...getResolutionLabels(),
+});
+
 const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
   if (!!errand?.resolution) return errand?.resolution as Resolution;
 
   return isROB()
     ? Resolution.NEED_MET
+    : isKC()
+    ? Resolution.INFORMED
     : appConfig.features.useClosedAsDefaultResolution
     ? Resolution.CLOSED
     : Resolution.SOLVED;
@@ -190,7 +199,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
                 <div className="flex flex-col gap-8">
                   <span>Nuvarande lösningskod</span>
                   <span className="font-bold">
-                    {getResolutionLabels()[supportErrand?.resolution] || supportErrand?.resolution}
+                    {getResolutionDisplayLabels()[supportErrand?.resolution] || supportErrand?.resolution}
                   </span>
                 </div>
                 <Button variant="secondary" onClick={() => setChangeResolution(true)}>
@@ -227,8 +236,8 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
                   {Object.entries(getResolutionLabels())
-                    .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
-                    .sort((a, b) => a[1].localeCompare(b[1]))
+                    // KS codes are listed in their defined order, the others alphabetically.
+                    .sort((a, b) => (isKC() ? 0 : a[1].localeCompare(b[1])))
                     .map(([_key, _label], idx, arr) => (
                       <React.Fragment key={_key}>
                         <RadioButton

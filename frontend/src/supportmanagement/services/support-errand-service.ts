@@ -270,6 +270,12 @@ export enum Resolution {
   FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
   FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
   FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
+  INFORMED = 'INFORMED',
+  GUIDED = 'GUIDED',
+  ACTIONED = 'ACTIONED',
+  PREPARED = 'PREPARED',
+  REFERRED = 'REFERRED',
+  HANDED_OVER = 'HANDED_OVER',
 }
 
 export enum ResolutionLabelLOP {
@@ -289,7 +295,18 @@ export enum ResolutionLabelIK {
   SENT_MESSAGE = 'Skickat ett meddelande',
 }
 
+/** KS codes selectable since 2026-10-21 (DRAKEN-5029), in picker order. */
 export enum ResolutionLabelKS {
+  INFORMED = 'Informerat',
+  GUIDED = 'Guidat',
+  ACTIONED = 'Åtgärdat',
+  PREPARED = 'Förberett',
+  REFERRED = 'Hänvisat',
+  HANDED_OVER = 'Överlämnat',
+}
+
+/** KS codes retired 2026-10-21. Display only, for errands closed before that. */
+export enum ResolutionLabelKSLegacy {
   SOLVED = 'Löst av Kontakt Sundsvall',
   REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
   CONNECTED = 'Kopplat samtal',
@@ -299,6 +316,20 @@ export enum ResolutionLabelKS {
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
   SECURE_APPBOX = 'SecureAppbox',
 }
+
+/** When to use each KS code; shown on demand in the close modal. */
+export const ResolutionDescriptionKS: Record<keyof typeof ResolutionLabelKS, string> = {
+  INFORMED:
+    'Jag har gett kunden den allmänna fakta som behövdes för att ärendet ska anses avslutat direkt vid första kontakt.',
+  GUIDED:
+    'Jag har hjälpt kunden att förstå sina alternativ eller navigera i en process så att de själva kan gå vidare.',
+  ACTIONED: 'Jag har använt det verksamhetsspecifika system som krävs och utfört ärendet enligt överenskommelsen.',
+  PREPARED: 'Jag har lagt grunden och samlat in underlag för att ärendet ska hanteras med enkelhet hos handläggaren.',
+  REFERRED:
+    'Ärendet ska inte hanteras av Kontakt Sundsvall. Jag har kopplat samtal eller hänvisat till telefontider där ärendet fortsätter.',
+  HANDED_OVER:
+    'Jag har skickat vidare ett specifikt ärende för formell handläggning eller politisk styrning då det kräver specialistkompetens.',
+};
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
