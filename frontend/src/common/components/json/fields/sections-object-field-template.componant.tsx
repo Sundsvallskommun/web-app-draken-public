@@ -38,6 +38,8 @@ interface FormContext {
   externalFields?: Readonly<Record<string, ReactNode>>;
   errorNavigation?: SchemaErrorNavigation;
   requiredIndicator?: string;
+  /** The form only displays saved answers, so how to give them is left out. */
+  withoutFieldHelp?: boolean;
 }
 
 const externalFieldPrefix = '$external:';
@@ -445,7 +447,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             {required ? ctx?.requiredIndicator ?? ' *' : ''}
           </legend>
         )}
-        {description && <p className="mb-16 text-small text-dark-secondary">{description}</p>}
+        {description && !ctx?.withoutFieldHelp && <p className="mb-16 text-small text-dark-secondary">{description}</p>}
         {renderedFields}
       </fieldset>
     );

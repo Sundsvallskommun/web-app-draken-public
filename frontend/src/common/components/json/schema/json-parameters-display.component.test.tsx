@@ -126,3 +126,37 @@ test('shows the saved answers without the descriptions and help texts that told 
   expect(screen.queryByText('Beskrivning från schemat')).toBeNull();
   expect(screen.queryByText('Beskrivning från UI-schemat')).toBeNull();
 });
+
+// The instructions of a collection and of a grouped answer are as much for whoever fills the form in.
+test('leaves out the instructions of collections and grouped answers as well', async () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      participants: {
+        type: 'array',
+        title: 'Deltagare',
+        items: { type: 'object', title: 'Person', properties: { name: { type: 'string', title: 'Namn' } } },
+      },
+      details: {
+        type: 'object',
+        title: 'Detaljer',
+        description: 'Beskriv detaljerna i händelsen',
+        properties: { where: { type: 'string', title: 'Var' } },
+      },
+    },
+  };
+  vi.mocked(getRjsfSchema).mockResolvedValue(schema);
+  vi.mocked(getUiSchemaForSchema).mockResolvedValue({
+    participants: { 'ui:options': { description: 'Lägg till alla som deltog' } },
+    details: { 'ui:options': { showObjectFieldset: true } },
+  });
+  const value = { participants: [{ name: 'Anna Andersson' }], details: { where: 'Korridoren' } } as unknown as JsonNode;
+  render(<JsonParametersDisplay municipalityId="2281" jsonParameters={[{ key: 'report', schemaId: 'id', value }]} />);
+
+  expect(await screen.findByDisplayValue('Anna Andersson')).toBeTruthy();
+  expect(screen.getByDisplayValue('Korridoren')).toBeTruthy();
+  expect(screen.getByText('Deltagare')).toBeTruthy();
+  expect(screen.getByText('Detaljer')).toBeTruthy();
+  expect(screen.queryByText('Lägg till alla som deltog')).toBeNull();
+  expect(screen.queryByText('Beskriv detaljerna i händelsen')).toBeNull();
+});
