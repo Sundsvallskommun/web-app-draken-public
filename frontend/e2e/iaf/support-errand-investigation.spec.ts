@@ -1374,6 +1374,30 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
   });
 
+  // Only a suspected misconduct goes on to LEX-ansvarig; an ordinary deviation stays with the unit manager.
+  test('ber enhetschefen tilldela LEX-ansvarig bara när utredningen bedömer ett misstänkt missförhållande', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, { documents: { [managerKey]: existingManagerDocument() } });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const notice = document.locator('[data-cy="investigation-report-completed-notice"]');
+    const suspectedMisconduct = document.locator(`#${managerKey}_suspectedMisconduct`);
+
+    await document.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(suspectedMisconduct.getByRole('radio', { name: 'Nej', exact: true })).toBeChecked();
+    await expect(notice).toHaveText('När du är klar med din utredning, ska du skapa en rapport.');
+
+    await suspectedMisconduct.getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(notice).toHaveText(
+      'När du är klar med din utredning, ska du skapa en rapport och tilldela ärendet till LEX-ansvarig.'
+    );
+  });
+
   // Ä7 and Ä9. The unit's measures are registered in Åtgärder: every investigation leads there, and the unit
   // manager who finishes theirs with none is told so - as information, not as something that stops them.
   test('leder till Åtgärder från utredningen och säger när enhetschefen markerar klart utan åtgärder', async ({

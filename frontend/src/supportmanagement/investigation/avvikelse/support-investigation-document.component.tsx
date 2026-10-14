@@ -44,6 +44,7 @@ import {
   LEX_INVESTIGATION_SCHEMA_NAME,
   UNIT_MANAGER_INVESTIGATION_SCHEMA_NAME,
 } from './avvikelse-schema-names';
+import { investigationAfterCompletion } from './investigation-after-completion';
 import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
@@ -1197,9 +1198,16 @@ export function SupportInvestigationDocument({
                     onGoToMeasures={appConfig.features.useMeasures ? () => setActiveTabKey('measures') : undefined}
                     proposesMeasures={definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME}
                     withoutMeasures={measureCount === 0}
-                    afterCompletion={
-                      definition.schemaName === HSL_INVESTIGATION_SCHEMA_NAME ? 'save' : 'hand-over-to-lex-manager'
-                    }
+                    afterCompletion={investigationAfterCompletion({
+                      schemaName: definition.schemaName,
+                      // As the draft now stands: the notice says what finishing it this way leads to.
+                      needsLexAssignment: shouldPromptLexAssignment({
+                        formData: documentState.formData,
+                        labels: supportErrand?.labels,
+                        labelStructure: supportMetadata?.labels?.labelStructure,
+                        lexDeclined: hasLexDeclinedInvestigation(supportErrand, profile),
+                      }),
+                    })}
                   />
                 ),
               }

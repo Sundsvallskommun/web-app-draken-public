@@ -4,6 +4,7 @@ import { Alert, Button } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Eye, FileText } from 'lucide-react';
 
+import type { InvestigationAfterCompletion } from './investigation-after-completion';
 import { type InvestigationReport, isPendingInvestigationReport } from './investigation-form-data';
 
 interface InvestigationReportControlsProps {
@@ -30,18 +31,14 @@ interface InvestigationReportControlsProps {
   readonly proposesMeasures?: boolean;
   /** The errand is known to have no measures, which the one finishing the investigation is told - not stopped by. */
   readonly withoutMeasures?: boolean;
-  /**
-   * What follows once the investigation is finished, which the one finishing it is told: the errand goes on to
-   * LEX-ansvarig, or - MAS/MAR's HSL investigation - it is only saved, since it leaves the errand with its handler.
-   */
+  /** What follows once the investigation is finished, which the one finishing it is told (`investigationAfterCompletion`). */
   readonly afterCompletion?: InvestigationAfterCompletion;
 }
-
-type InvestigationAfterCompletion = 'hand-over-to-lex-manager' | 'save';
 
 const COMPLETED_NOTICES: Readonly<Record<InvestigationAfterCompletion, string>> = {
   'hand-over-to-lex-manager':
     'När du är klar med din utredning, ska du skapa en rapport och tilldela ärendet till LEX-ansvarig.',
+  'create-report': 'När du är klar med din utredning, ska du skapa en rapport.',
   save: 'Din del av utredningen är klar. Tryck på Spara ärende. Ärendet behöver inte tilldelas någon.',
 };
 
