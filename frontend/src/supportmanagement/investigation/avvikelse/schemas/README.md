@@ -114,8 +114,8 @@ publicerats i produktionsmiljön. Nyckeln `vc-kommentar-hsl` stod vid publicerin
 Den 14 oktober 2026 publicerades `2281_utredning-hsl_1.5` i testmiljön: namn och roll på deltagarna i analysteamet,
 MAS/MAR:s initiala bedömning och platsen för knappen Aktivera VC kommentar HSL (se Händelseanalys HSL 1.5). Schema och
 UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 1.5. Inget har publicerats
-i produktionsmiljön. Labels `REQUEST/VC_COMMENT_HSL` och `ANALYSIS/HSL_STARTED`, som knappen och den initiala
-bedömningen skriver, fanns vid publiceringen inte i namespacens metadata.
+i produktionsmiljön. Labels `ANALYSIS/VC_COMMENT_HSL` och `ANALYSIS/HSL_STARTED`, som knappen och den initiala
+bedömningen skriver, fanns vid publiceringen inte i namespacens metadata. De lades till samma dag.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 

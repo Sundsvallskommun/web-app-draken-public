@@ -38,7 +38,7 @@ export const INVESTIGATION_MISCONDUCT_REPORT_LABEL = 'REPORT_TYPE/ABUSE';
  * the errand stays with its handler, and the head of operations already reaches it through its place. It opens VC
  * kommentar HSL, and Support Management's subscription profile for the head of operations notifies them from it.
  */
-export const INVESTIGATION_VC_COMMENT_REQUESTED_LABEL = 'REQUEST/VC_COMMENT_HSL';
+export const INVESTIGATION_VC_COMMENT_REQUESTED_LABEL = 'ANALYSIS/VC_COMMENT_HSL';
 
 const ACCESS_LABEL_ROOT_PREFIX = `${normalizeSupportManagementResourcePath(INVESTIGATION_ACCESS_LABEL_ROOT)}/`;
 

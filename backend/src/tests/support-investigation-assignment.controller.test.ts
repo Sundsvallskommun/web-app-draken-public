@@ -331,15 +331,15 @@ describe('decline-lex', () => {
 // written - nobody is assigned and the status stays - and only somebody who may write the analysis may ask.
 describe('request-vc-comment', () => {
   const analysisKey = 'utredning-hsl';
-  const requestStructure = label('request-root', 'REQUEST_ROOT', 'REQUEST', 'Begäran', [
-    label('vc-comment', 'REQUEST', 'REQUEST/VC_COMMENT_HSL', 'VC kommentar HSL'),
+  const analysisStructure = label('analysis-root', 'analysis-root', 'ANALYSIS', 'Analys', [
+    label('vc-comment', 'analysis', 'ANALYSIS/VC_COMMENT_HSL', 'Yttrande verksamhetschef HSL'),
   ]);
 
   const setup = ({ errandLabels = [{ id: 'category-hsl' }, { id: 'north' }, { id: 'north-unit' }] }: { errandLabels?: ErrandLabel[] } = {}) => {
     const { controller, stubs } = makeController({ errandLabels });
     const get = vi.fn(async (config: { url?: string }) =>
       config.url === metadataUrl
-        ? { data: { labels: { labelStructure: [...labelStructure, requestStructure] }, statuses: [] }, message: 'success' }
+        ? { data: { labels: { labelStructure: [...labelStructure, analysisStructure] }, statuses: [] }, message: 'success' }
         : (stubs.get as (request: { url?: string }) => Promise<unknown>)(config),
     );
     const internals = controller as unknown as Record<string, unknown>;

@@ -402,13 +402,14 @@ beslut, och den är det som ska nå verksamhetschefen. Versionen följer med som
 
 Det här måste finnas i Support Management, i både IAF:s och VOF:s namespace:
 
-| Vad | Var | Innehåll |
-| --- | --- | --- |
-| Labeln | Namespacets labelmetadata | En rot `ANALYSIS` med `ANALYSIS/HSL_STARTED`, visningsnamn till exempel "Händelseanalys HSL inledd". Saknas den skriver BFF:en ingenting |
-| Åtkomst | AccessMapper, varje rolls labelmönster | `ANALYSIS/HSL_STARTED=RW` för alla roller, som `RISK/HIGH_HSL` har |
-| Mejlet | Prenumerationsprofilen `HEAD_OF_OPERATIONS` | Ett `eventFilter` med labelns id. Profilen har redan kanalen `EMAIL` |
+| Vad     | Var                                         | Innehåll                                                                                                            |
+| ------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Labeln  | Namespacets labelmetadata                   | Roten `ANALYSIS` ("Analys") med `ANALYSIS/HSL_STARTED` ("Analys HSL påbörjad"). Saknas den skriver BFF:en ingenting |
+| Åtkomst | AccessMapper, varje rolls labelmönster      | `ANALYSIS/HSL_STARTED=RW` för alla roller, som `RISK/HIGH_HSL` har                                                  |
+| Mejlet  | Prenumerationsprofilen `HEAD_OF_OPERATIONS` | Ett `eventFilter` med labelns id, `subtype: ERRAND` och `type: UPDATE`. Profilen har kanalen `EMAIL`                |
 
-Labelns namn är ett förslag och ligger i Draken på ett ställe (`IAF_VOF_HSL_ANALYSIS_STARTED_LABEL`).
+Allt detta fanns i både IAF:s och VOF:s namespace i testmiljön den 14 oktober 2026. Labeln ligger i Draken på ett
+ställe (`IAF_VOF_HSL_ANALYSIS_STARTED_LABEL`).
 
 Ett filter med `labelId` i en prenumerationsprofil, som `MAR_MAS` har för `RISK/HIGH_HSL`, ser ut att gälla händelser
 på ärenden som *bär* labeln. Stämmer det får verksamhetschefen mejl vid varje senare ändring av ärendet, inte bara när
@@ -434,7 +435,7 @@ i UI-schemat från 1.5) och visas bara för den som agerar som MAS/MAR (`actsAsM
 administratör).
 
 Knappen är överlämningssteget `request-vc-comment` (`POST .../investigation-handover/request-vc-comment`). Steget
-skriver labeln `REQUEST/VC_COMMENT_HSL` och inget annat: ingen tilldelas, och status ändras inte. Det får bara den
+skriver labeln `ANALYSIS/VC_COMMENT_HSL` och inget annat: ingen tilldelas, och status ändras inte. Det får bara den
 som får skriva i Händelseanalys HSL, så BFF:en avvisar det för alla andra. Skrivningen villkoras på ärendets version,
 och sidan läser ärendet direkt efter den och tar över dess labels och version, så att nästa sparning inte avvisas som
 någon annans ändring. Skrivningen är användarens egen handling och notifierar som vanligt (inte `X-notify: false`).
@@ -444,15 +445,16 @@ Labeln öppnar fliken VC kommentar HSL. Verksamhetschefen skriver kommentaren d�
 
 Det här måste finnas i Support Management innan knappen fungerar, i både IAF:s och VOF:s namespace:
 
-| Vad        | Var                                                | Innehåll                                                                                                                                                      |
-| ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Labeln     | Namespacets labelmetadata                          | En rot `REQUEST` med `REQUEST/VC_COMMENT_HSL`, visningsnamn till exempel "VC kommentar HSL". Saknas den avvisar BFF:en steget                                 |
-| Åtkomst    | AccessMapper, varje rolls labelmönster             | `REQUEST/VC_COMMENT_HSL=RW` för alla roller, som `RISK/HIGH_HSL` har. Läggs labeln på ett ärende innan mönstren finns kan rollerna förlora åtkomsten till det |
-| Avisering  | Prenumerationsprofilen `HEAD_OF_OPERATIONS`        | Ett `eventFilter` med labelns id, `subtype: ERRAND` och `type: UPDATE`, som profilen `MAR_MAS` har för `RISK/HIGH_HSL`                                        |
-| Dokumentet | Namespace-konfigurationen, `roleFieldRestrictions` | `JSON_PARAMETERS[vc-kommentar-hsl]`: `RW` för `HEAD_OF_OPERATIONS`, `R` för övriga roller (finns sedan 2026-10-13)                                            |
+| Vad        | Var                                                | Innehåll                                                                                                                                                       |
+| ---------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Labeln     | Namespacets labelmetadata                          | Roten `ANALYSIS` ("Analys") med `ANALYSIS/VC_COMMENT_HSL` ("Yttrande verksamhetschef HSL"). Saknas den avvisar BFF:en steget                                   |
+| Åtkomst    | AccessMapper, varje rolls labelmönster             | `ANALYSIS/VC_COMMENT_HSL=RW` för alla roller, som `RISK/HIGH_HSL` har. Läggs labeln på ett ärende innan mönstren finns kan rollerna förlora åtkomsten till det |
+| Avisering  | Prenumerationsprofilen `HEAD_OF_OPERATIONS`        | Ett `eventFilter` med labelns id, `subtype: ERRAND` och `type: UPDATE`, som profilen `MAR_MAS` har för `RISK/HIGH_HSL`                                         |
+| Dokumentet | Namespace-konfigurationen, `roleFieldRestrictions` | `JSON_PARAMETERS[vc-kommentar-hsl]`: `RW` för `HEAD_OF_OPERATIONS`, `R` för övriga roller (finns sedan 2026-10-13)                                             |
 
-Labelns namn och plats är ett förslag. Den ligger i Draken på ett ställe per sida
-(`INVESTIGATION_VC_COMMENT_REQUESTED_LABEL` i BFF:en, `VC_COMMENT_REQUESTED_LABEL_PATH` i frontend).
+Labeln, åtkomsten och aviseringen fanns i både IAF:s och VOF:s namespace i testmiljön den 14 oktober 2026. Labeln
+ligger i Draken på ett ställe per sida (`INVESTIGATION_VC_COMMENT_REQUESTED_LABEL` i BFF:en,
+`VC_COMMENT_REQUESTED_LABEL_PATH` i frontend).
 
 ### MAS/MAR vid sidan av Ansvarig
 

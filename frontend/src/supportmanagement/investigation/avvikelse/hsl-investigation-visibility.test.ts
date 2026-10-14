@@ -58,7 +58,7 @@ test('conceals the HSL investigation by its key in the profile, and only while t
 // Ä4. VC kommentar HSL opens when MAS/MAR asks the head of operations for their comment, and not before - for
 // everybody, MAS/MAR and the head of operations alike. The high HSL risk alone does not open it.
 test('keeps VC kommentar HSL out of sight until MAS/MAR has asked for the comment', () => {
-  const vcCommentRequested = { id: 'vc-comment', resourcePath: 'REQUEST/VC_COMMENT_HSL' } as Label;
+  const vcCommentRequested = { id: 'vc-comment', resourcePath: 'ANALYSIS/VC_COMMENT_HSL' } as Label;
   const withComment = {
     documents: [...profile.documents, { key: 'comment-document', schemaName: 'vc-kommentar-hsl' }],
   } as unknown as InvestigationProfile;

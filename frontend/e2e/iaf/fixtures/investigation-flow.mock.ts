@@ -750,13 +750,13 @@ const LABEL_WRITE_VERSION_STEPS = 2;
 const riskRoot = label('risk-root-id', 'RISK_ROOT', 'Risk', 'RISK', 'RISK', [highHslRisk]);
 /** Set when MAS/MAR asks the head of operations for their comment on the HSL analysis. It opens VC kommentar HSL. */
 const vcCommentRequested = label(
-  'request-vc-comment-id',
-  'REQUEST',
-  'VC kommentar HSL',
+  'analysis-vc-comment-id',
+  'analysis',
+  'Yttrande verksamhetschef HSL',
   'VC_COMMENT_HSL',
-  'REQUEST/VC_COMMENT_HSL'
+  'ANALYSIS/VC_COMMENT_HSL'
 );
-const requestRoot = label('request-root-id', 'REQUEST_ROOT', 'Begäran', 'REQUEST', 'REQUEST', [vcCommentRequested]);
+const analysisRoot = label('analysis-root-id', 'analysis-root', 'Analys', 'ANALYSIS', 'ANALYSIS', [vcCommentRequested]);
 
 /**
  * The default deviation without the legal base it was reported under. Reports rarely name one - the unit manager's
@@ -773,7 +773,7 @@ export const withHighHslRisk = ({ reportedUnderHsl = true, commentRequested = fa
   IafApiScenario,
   'labels' | 'labelStructure'
 > => ({
-  labelStructure: [...labelStructure, riskRoot, requestRoot],
+  labelStructure: [...labelStructure, riskRoot, analysisRoot],
   labels: [
     ...(reportedUnderHsl ? deviationLabelsSource : deviationLabelsWithoutLegalBase),
     highHslRisk,
@@ -822,7 +822,7 @@ const collectLabels = (labels: readonly MockLabel[]) => {
   });
 };
 collectLabels(labelStructure);
-collectLabels([placeRoot, accessRoot, riskRoot, requestRoot]);
+collectLabels([placeRoot, accessRoot, riskRoot, analysisRoot]);
 
 /** The avvikelse report as the profile names it: Katla's record, written in Draken on errands registered there. */
 export const reportDocumentProfile = {
