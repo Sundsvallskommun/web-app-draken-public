@@ -18,6 +18,9 @@ export default defineConfig({
     baseURL,
     viewport: { width: 1440, height: 1024 },
     bypassCSP: true,
+    // Draken shows dates and times in the user's own time, and its users are in Sweden. The specs are written in
+    // Swedish time, so the browser runs in it wherever the suite runs - a CI runner is in UTC.
+    timezoneId: 'Europe/Stockholm',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

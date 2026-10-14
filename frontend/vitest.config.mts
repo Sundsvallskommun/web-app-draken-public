@@ -13,6 +13,9 @@ export default defineConfig({
     // Assertions use node:assert/strict and `test` is imported explicitly, so no globals
     // are injected.
     globals: false,
+    // Draken shows dates in the user's own time, and its users are in Sweden. The suites are written in
+    // Swedish time, so they run in it wherever they run - a CI runner is in UTC.
+    env: { TZ: 'Europe/Stockholm' },
     maxWorkers: 1,
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
