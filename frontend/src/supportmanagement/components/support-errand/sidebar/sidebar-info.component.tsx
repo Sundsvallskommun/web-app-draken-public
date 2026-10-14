@@ -174,6 +174,7 @@ export const SidebarInfo: FC<{
     reset,
     setValue,
     getValues,
+    getFieldState,
     formState,
     formState: { errors },
   }: UseFormReturn<
@@ -187,6 +188,9 @@ export const SidebarInfo: FC<{
   const { admin, status, priority } = watch();
 
   const errandId = supportErrand?.id;
+  // Who may be given the errand follows its saved state - a completed investigation that suspects a misconduct
+  // makes LEX-ansvarig one - so the directory is read again whenever the saved errand moves on.
+  const errandVersion = supportErrand?.version;
   useEffect(() => {
     if (!errandId || !municipalityId) {
       setAssignable(undefined);
@@ -206,13 +210,27 @@ export const SidebarInfo: FC<{
     return () => {
       cancelled = true;
     };
-  }, [errandId, municipalityId]);
+  }, [errandId, errandVersion, municipalityId]);
 
   // Resolved from the list the selector actually offered: a manager reached through AccessMapper
   // need not be in any configured handler group, so looking only in the full directory would
   // silently find nobody and skip the assignment.
   const findChosenAdmin = () =>
     [...assignableHandlers, ...administrators].find((a) => a.displayName === getValues().admin);
+
+  /** The handler the errand is given to, from the list the selector offers and, failing that, the full directory. */
+  const findAssignedAdmin = (adAccount: string) =>
+    [...assignableHandlers, ...administrators].find((a) => a.adAccount === adAccount);
+
+  // The errand's own directory arrives after the errand. A handler only it knows - a manager reached through
+  // AccessMapper - is shown as the assignee once it is there, unless somebody else has been chosen meanwhile.
+  useEffect(() => {
+    const assignedUserId = supportErrand?.assignedUserId;
+    if (!assignable || !assignedUserId || getFieldState('admin').isDirty) return;
+    const assigned = findAssignedAdmin(assignedUserId);
+    if (assigned) setValue('admin', assigned.displayName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignable]);
 
   /** The person the selector gives the errand to, when that is a named handover - to LEX - and not an assignment. */
   const findChosenHandover = () => {
@@ -386,11 +404,7 @@ export const SidebarInfo: FC<{
 
   useEffect(() => {
     if (administrators && supportErrand?.assignedUserId) {
-      const match =
-        administrators.filter((a) => {
-          return a.adAccount === supportErrand.assignedUserId;
-        })?.[0]?.displayName || '';
-      setValue('admin', match);
+      setValue('admin', findAssignedAdmin(supportErrand.assignedUserId)?.displayName || '');
     } else {
       setValue('admin', 'Välj handläggare');
     }

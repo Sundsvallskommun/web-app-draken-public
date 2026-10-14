@@ -291,9 +291,9 @@ export interface IafApiScenario {
    * Who `assignable-handlers` offers for this errand, as the BFF answers it. Left out, the route is not
    * served and the sidebar keeps the full directory, as it does when the route fails.
    */
-  assignableHandlers?: {
-    handlers: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[]; handoverStep?: string }>;
-    roles?: Array<{ key: string; label: string }>;
+  assignableHandlers?: AssignableHandlersAnswer & {
+    /** What the BFF answers once a document has been saved, as it does when the saved errand changes who may have it. */
+    afterDocumentSave?: AssignableHandlersAnswer;
   };
   /** When the errand's handler took it up after it was given to them, as the history answers it. */
   assigneeResumedAt?: string;
@@ -379,6 +379,12 @@ const validValues: Record<InvestigationKey, JsonObject> = {
 };
 
 /** Derived from the artifacts the mock serves, so a published version never drifts from its id. */
+/** Who `assignable-handlers` offers for the errand, and under which roles. */
+interface AssignableHandlersAnswer {
+  handlers: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[]; handoverStep?: string }>;
+  roles?: Array<{ key: string; label: string }>;
+}
+
 export const latestSchemaIds = Object.fromEntries(
   investigationKeys.map((key) => [key, `${municipalityId}_${key}_${schemaRequests[key].version}`])
 ) as Record<InvestigationKey, string>;
@@ -1374,10 +1380,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       scenario.assignableHandlers &&
       path.endsWith(`/supporterrands/${municipalityId}/${errandId}/assignable-handlers`)
     ) {
-      await fulfillJson(route, {
-        ...apiResponse(scenario.assignableHandlers.handlers),
-        ...(scenario.assignableHandlers.roles ? { roles: scenario.assignableHandlers.roles } : {}),
-      });
+      const answer =
+        scenario.assignableHandlers.afterDocumentSave && trace.puts.length > 0
+          ? scenario.assignableHandlers.afterDocumentSave
+          : scenario.assignableHandlers;
+      await fulfillJson(route, { ...apiResponse(answer.handlers), ...(answer.roles ? { roles: answer.roles } : {}) });
       return;
     }
 

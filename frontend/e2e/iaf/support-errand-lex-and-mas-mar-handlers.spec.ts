@@ -22,11 +22,20 @@ async function installErrand(
     signedInAs = 'mas-mar',
     managerValue = {},
     offersLex = false,
+    offersLexAfterDocumentSave = false,
+    placeManagerInDirectory = true,
+    alsoAssignable = [],
     parameters,
   }: {
     signedInAs?: 'mas-mar' | 'enhetschef';
     managerValue?: Record<string, unknown>;
     offersLex?: boolean;
+    /** The BFF offers LEX-ansvarig only once the investigation has been saved. */
+    offersLexAfterDocumentSave?: boolean;
+    /** Whether the place's manager is in the full directory, or reached through AccessMapper alone. */
+    placeManagerInDirectory?: boolean;
+    /** Others the errand's own directory offers, ahead of its assignee. */
+    alsoAssignable?: Array<{ name: string; displayName: string; guid: string; roleKeys?: string[] }>;
     parameters?: Array<{ key: string; values: string[]; version?: number }>;
   } = {}
 ) {
@@ -35,20 +44,30 @@ async function installErrand(
   manager.value = { ...manager.value, ...managerValue };
   // The unit manager holds the errand; MAS/MAR answers for its HSL side without being its handler.
   const assignee = signedInAs === 'enhetschef' ? viewer : placeManager;
+  const assignableAnswer = (withLex: boolean) => ({
+    handlers: [
+      ...alsoAssignable,
+      { ...assignee, roleKeys: ['UNIT_MANAGER'] },
+      ...(withLex ? [{ ...lexManager, handoverStep: 'assign-lex' }] : []),
+    ],
+    roles: [
+      { key: 'UNIT_MANAGER', label: 'Enhetschef' },
+      ...(withLex ? [{ key: 'lex-ansvarig', label: 'LEX-ansvarig' }] : []),
+    ],
+  });
   return installIafApiMock(page, {
     activePhaseName: 'INVESTIGATION',
     assignedUserId: assignee.name,
     roleKeys: [signedInAs],
-    administrators: [{ ...viewer, roleKeys: [signedInAs] }, placeManager, lexManager, masMar],
+    administrators: [
+      { ...viewer, roleKeys: [signedInAs] },
+      ...(placeManagerInDirectory ? [placeManager] : []),
+      lexManager,
+      masMar,
+    ],
     assignableHandlers: {
-      handlers: [
-        { ...assignee, roleKeys: ['UNIT_MANAGER'] },
-        ...(offersLex ? [{ ...lexManager, handoverStep: 'assign-lex' }] : []),
-      ],
-      roles: [
-        { key: 'UNIT_MANAGER', label: 'Enhetschef' },
-        ...(offersLex ? [{ key: 'lex-ansvarig', label: 'LEX-ansvarig' }] : []),
-      ],
+      ...assignableAnswer(offersLex),
+      ...(offersLexAfterDocumentSave ? { afterDocumentSave: assignableAnswer(true) } : {}),
     },
     parameters,
     featureFlags: [
@@ -157,4 +176,53 @@ test('giving the errand to LEX-ansvarig is the handover to LEX', async ({ page, 
     { step: 'assign-lex', expectedVersion: expect.any(Number), assignedUserId: 'lena.lex' },
   ]);
   expect(trace.parameterPuts).toEqual([]);
+});
+
+// A place's manager may be reached through AccessMapper alone, in no handler group: only the errand's own
+// directory knows them, and the errand's assignee is shown from it.
+test('shows an assignee whom only the errand’s own directory knows', async ({ page, dismissCookieConsent }) => {
+  // Another manager comes first, so the select does not show the assignee merely as its first option.
+  await installErrand(page, {
+    placeManagerInDirectory: false,
+    alsoAssignable: [{ name: 'alma.chef', displayName: 'Alma Chef', guid: 'alma-guid', roleKeys: ['UNIT_MANAGER'] }],
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await expect(handlerSelect(page)).toHaveValue('Nora Chef');
+});
+
+// Saving the investigation as completed with a suspected misconduct makes LEX-ansvarig one who may have the errand.
+// The sidebar offers them at once, without a reload, and choosing one is still the handover.
+test('offers LEX-ansvarig as soon as the investigation is saved with a suspected misconduct', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installErrand(page, {
+    signedInAs: 'enhetschef',
+    offersLexAfterDocumentSave: true,
+    managerValue: { suspectedMisconduct: 'yes' },
+  });
+  await visitErrand(page, dismissCookieConsent);
+  const lexOptions = handlerSelect(page).locator('optgroup[label="LEX-ansvarig"] option');
+  await expect(handlerSelect(page)).toHaveValue('Iaf Testare');
+  await expect(lexOptions).toHaveCount(0);
+
+  await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+  await page.locator('#utredning-enhetschef_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+  await saveButton(page).click();
+  await expect.poll(() => trace.puts.length).toBe(1);
+  // The save asks for the handover at once; it can be made from Ansvarig as well.
+  const prompt = page.locator('[data-cy="handler-assignment-modal"]');
+  await expect(prompt).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(prompt).toBeHidden();
+
+  await expect(lexOptions).toHaveText(['Lena LEX']);
+  await handlerSelect(page).selectOption({ label: 'Lena LEX' });
+  await saveButton(page).click();
+
+  await expect(page).toHaveURL(/\/oversikt/u);
+  expect(trace.handovers).toEqual([
+    { step: 'assign-lex', expectedVersion: expect.any(Number), assignedUserId: 'lena.lex' },
+  ]);
 });
