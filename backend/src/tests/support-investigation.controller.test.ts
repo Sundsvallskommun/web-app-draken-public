@@ -4,6 +4,7 @@ import { validate } from 'class-validator';
 import {
   CreateSupportInvestigationDto,
   SupportInvestigationController,
+  UpdateSupportInvestigationDto,
   UpdateSupportInvestigationSectionDto,
 } from '@/controllers/supportmanagement/support-investigation.controller';
 
@@ -50,6 +51,20 @@ describe('the investigation payloads', () => {
     expect(JSON.stringify(await validate(invalid))).toMatch(/heading|sortOrder/);
   });
 
+  it('takes protocol answers as parameters with a key and non-blank values', async () => {
+    const valid = plainToInstance(UpdateSupportInvestigationDto, {
+      version: 1,
+      type: 'serving_permit',
+      parameters: [{ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] }],
+    });
+    const blank = plainToInstance(UpdateSupportInvestigationDto, { version: 1, parameters: [{ key: 'visit', values: [''] }] });
+    const noKey = plainToInstance(UpdateSupportInvestigationDto, { version: 1, parameters: [{ values: ['x'] }] });
+
+    await expect(validate(valid)).resolves.toEqual([]);
+    expect(JSON.stringify(await validate(blank))).toMatch(/values/);
+    expect(JSON.stringify(await validate(noKey))).toMatch(/key/);
+  });
+
   it('refuses an assessment the service does not know', async () => {
     const valid = plainToInstance(UpdateSupportInvestigationSectionDto, { assessment: 'DEFICIENCY' });
     const invalid = plainToInstance(UpdateSupportInvestigationSectionDto, { assessment: 'BRIST' });
@@ -90,6 +105,22 @@ describe('createInvestigation', () => {
     expect(api.post.mock.calls[2][0].data).toMatchObject({ sectionKey: 'knowledge_test', assessment: 'PENDING' });
   });
 
+  it('starts an inspection protocol with its template as type and its answers, and no sections', async () => {
+    const { controller, api } = makeController();
+    const parameters = [{ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] }];
+
+    await controller.createInvestigation(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { title: 'Serveringstillstånd – tillsyn', type: 'serving_permit', sections: [], parameters },
+      mockRes(),
+    );
+
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post.mock.calls[0][0].data).toMatchObject({ status: 'ACTIVE', type: 'serving_permit', parameters });
+  });
+
   it('answers with the investigation the errand already has, and writes no second one', async () => {
     const { controller, api } = makeController([{ id: INVESTIGATION_ID, status: 'ACTIVE' }]);
     const res = mockRes();
@@ -119,6 +150,22 @@ describe('updateInvestigation', () => {
     expect(config.url).toBe(`${investigationsUrl}/${INVESTIGATION_ID}`);
     expect(config.headers).toEqual({ 'If-Match': '"4"' });
     expect(config.data).toEqual({ summary: 'Prövningarna är klara', recommendation: 'APPROVAL' });
+  });
+
+  it('writes a changed protocol template and its answers as they are', async () => {
+    const { controller, api } = makeController();
+    const parameters = [{ key: 'summary', displayName: 'Summering', values: ['approved'] }];
+
+    await controller.updateInvestigation(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      INVESTIGATION_ID,
+      { version: 4, type: 'internal_inspection', title: 'Inre tillsyn', parameters },
+      mockRes(),
+    );
+
+    expect(api.patch.mock.calls[0][0].data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn', parameters });
   });
 });
 

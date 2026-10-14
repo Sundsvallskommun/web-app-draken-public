@@ -1,6 +1,6 @@
-// The protocol template rendered directly until it is uploaded to Templating as serving-inspection-protocol.
-// Source of truth: docs/templates/Tillsynsprotokoll/Alkohollagen/tillsynsprotokoll alkohollagen.html - keep in step.
-export const SERVING_INSPECTION_PROTOCOL_TEMPLATE = `{% macro box(checked) %}<span class="box"
+// Tillsynsprotokoll Alkohollagen, rendered directly until uploaded to Templating as serving-inspection-protocol.
+// Word original and sample PDF: docs/templates/Tillsynsprotokoll/Alkohollagen/.
+export const SERVING_PERMIT_HTML = `{% macro box(checked) %}<span class="box"
   >{% if (checked | lower) == "true" %}X{% endif %}</span
 >{% endmacro %}
 <!doctype html>

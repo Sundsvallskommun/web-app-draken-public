@@ -1,6 +1,7 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, FormControl, FormLabel, Input, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { INSPECTION_PROTOCOL_TEMPLATES } from '@supportmanagement/inspection-protocols';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportMeasures,
@@ -12,19 +13,28 @@ import {
   supportMeasuresOfType,
   SupportMeasureType,
 } from '@supportmanagement/services/support-measure-service';
-import {
-  SUPPORT_MEASURE_TEMPLATES,
-  type SupportMeasureTemplate,
-} from '@supportmanagement/services/support-measure-templates';
 import { Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type ListType = typeof SupportMeasureType.INTERNAL | typeof SupportMeasureType.EXTERNAL;
 
+interface MeasureTemplate {
+  key: string;
+  label: string;
+  titles: string[];
+}
+
+/** The protocol templates' standard control points; the protocol itself is picked and filled in under Utredning. */
+const CONTROL_POINT_TEMPLATES: MeasureTemplate[] = INSPECTION_PROTOCOL_TEMPLATES.map((template) => ({
+  key: template.key,
+  label: template.label,
+  titles: template.controlPoints,
+}));
+
 /** Each type is its own list with its own texts and tab saver; only control points start from a template. */
-const LISTS: Record<ListType, { tabKey: string; texts: string; templates: SupportMeasureTemplate[] }> = {
-  [SupportMeasureType.INTERNAL]: { tabKey: 'measures', texts: 'common:measures', templates: SUPPORT_MEASURE_TEMPLATES },
+const LISTS: Record<ListType, { tabKey: string; texts: string; templates: MeasureTemplate[] }> = {
+  [SupportMeasureType.INTERNAL]: { tabKey: 'measures', texts: 'common:measures', templates: CONTROL_POINT_TEMPLATES },
   [SupportMeasureType.EXTERNAL]: { tabKey: 'action_points', texts: 'common:action_points', templates: [] },
 };
 
