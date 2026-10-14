@@ -1,7 +1,14 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
-import { aotLabelFixture, application, errandNumber, installAotApiMock } from './fixtures/aot-app.mock';
+import {
+  aotLabelFixture,
+  application,
+  errandId,
+  errandNumber,
+  installAotApiMock,
+  municipalityId,
+} from './fixtures/aot-app.mock';
 
 /**
  * Ärendesidan är där utredningssömmen faktiskt syns. Varje test här beskriver en gräns som
@@ -80,6 +87,21 @@ test.describe('AOT:s ärendesida', () => {
     expect(trace.investigationDocumentRequests).toEqual([]);
     expect(trace.schemaRequests).toEqual([]);
     expect(trace.classificationPatches).toBe(0);
+  });
+
+  // Testet ovan är bara så bra som spåret: en läsning av ett utredningsdokument måste hamna i det.
+  test('spårar en läsning av ett utredningsdokument', async ({ page, dismissCookieConsent }) => {
+    const trace = await installAotApiMock(page);
+    await visitErrand(page, dismissCookieConsent);
+
+    const documentUrl = `${process.env.NEXT_PUBLIC_API_URL}/supporterrands/${municipalityId}/${errandId}/json-parameters/utredning-hsl`;
+    const status = await page.evaluate(
+      async (url) => (await fetch(url, { credentials: 'include' })).status,
+      documentUrl
+    );
+
+    expect(status).toBe(404);
+    expect(trace.investigationDocumentRequests).toEqual(['utredning-hsl']);
   });
 
   test('behåller statusvalet i Handläggning', async ({ page, dismissCookieConsent }) => {

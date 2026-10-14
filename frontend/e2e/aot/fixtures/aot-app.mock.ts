@@ -26,7 +26,7 @@ import { statusGroupCountsFor } from '../../utils/status-group-counts';
  */
 
 const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
-const municipalityId = '2281';
+export const municipalityId = '2281';
 export const errandId = 'f0a1d4c6-9b23-4f18-9c40-2b6e0a7c51de';
 export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'AOT').trim().toUpperCase();
 export const errandNumber = `${application}-2026-0001`;
@@ -257,18 +257,19 @@ export async function installAotApiMock(page: Page, scenario: AotApiScenario = {
       return;
     }
 
-    if (method === 'GET' && path.includes('/supporterrands/')) {
-      const page1 = new URL(request.url()).searchParams.get('page') === '1';
-      await fulfillJson(route, page1 ? { ...errandList(), content: [], numberOfElements: 0, number: 1 } : errandList());
-      return;
-    }
-
     // Avvikelse-only surface. Answered so a leak fails on the assertion rather than on a hung
-    // request, but recorded so the assertion can be about the leak itself.
+    // request, but recorded so the assertion can be about the leak itself. A document lies under
+    // /supporterrands/, so this comes before the errand list answers everything there.
     const documentMatch = path.match(/\/json-parameters\/([^/]+)$/u);
     if (documentMatch) {
       trace.investigationDocumentRequests.push(decodeURIComponent(documentMatch[1]));
       await fulfillJson(route, { message: 'JSON parameter not found' }, 404);
+      return;
+    }
+
+    if (method === 'GET' && path.includes('/supporterrands/')) {
+      const page1 = new URL(request.url()).searchParams.get('page') === '1';
+      await fulfillJson(route, page1 ? { ...errandList(), content: [], numberOfElements: 0, number: 1 } : errandList());
       return;
     }
 
