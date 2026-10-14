@@ -47,7 +47,8 @@
           "identifiedCauses",
           "underlyingCauses",
           "contributingFactorsAndRisks",
-          "analysisEvaluation"
+          "analysisEvaluation",
+          "$external:vcCommentRequest"
         ]
       },
       {

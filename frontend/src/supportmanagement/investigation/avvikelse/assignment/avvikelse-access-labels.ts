@@ -16,6 +16,12 @@ export const ACCESS_LEX_LABEL_PATH = 'ACCESS/LEX';
 export const HIGH_HSL_RISK_LABEL_PATH = 'RISK/HIGH_HSL';
 
 /**
+ * The label the BFF marks the errand with when MAS/MAR asks the head of operations for their comment on the HSL
+ * event analysis. It opens VC kommentar HSL, and Support Management notifies the head of operations from it.
+ */
+export const VC_COMMENT_REQUESTED_LABEL_PATH = 'REQUEST/VC_COMMENT_HSL';
+
+/**
  * The HSL risk value at which the errand is escalated: the warning shown to the unit manager. The BFF marks the
  * errand `RISK/HIGH_HSL` from the same value whenever the investigation is saved, which is how MAS/MAR reach it.
  */

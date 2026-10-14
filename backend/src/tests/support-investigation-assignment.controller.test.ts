@@ -327,6 +327,64 @@ describe('decline-lex', () => {
   });
 });
 
+// Ä4. MAS/MAR asks the head of operations for their comment on the HSL analysis: the request label is all that is
+// written - nobody is assigned and the status stays - and only somebody who may write the analysis may ask.
+describe('request-vc-comment', () => {
+  const analysisKey = 'utredning-hsl';
+  const requestStructure = label('request-root', 'REQUEST_ROOT', 'REQUEST', 'Begäran', [
+    label('vc-comment', 'REQUEST', 'REQUEST/VC_COMMENT_HSL', 'VC kommentar HSL'),
+  ]);
+
+  const setup = ({ errandLabels = [{ id: 'category-hsl' }, { id: 'north' }, { id: 'north-unit' }] }: { errandLabels?: ErrandLabel[] } = {}) => {
+    const { controller, stubs } = makeController({ errandLabels });
+    const get = vi.fn(async (config: { url?: string }) =>
+      config.url === metadataUrl
+        ? { data: { labels: { labelStructure: [...labelStructure, requestStructure] }, statuses: [] }, message: 'success' }
+        : (stubs.get as (request: { url?: string }) => Promise<unknown>)(config),
+    );
+    const internals = controller as unknown as Record<string, unknown>;
+    internals.apiService = { get, patch: stubs.patch };
+    internals.investigationPolicyService = {
+      iafVofClassificationPolicy: {},
+      profile: { documents: [{ key: analysisKey, schemaName: 'utredning-hsl' }] },
+      getClassificationOwner: vi.fn(async () => 'investigation'),
+    };
+    const request = () =>
+      controller.applyHandover(mockReq(), MUNICIPALITY_ID, mockSupportErrandId, 'request-vc-comment', { expectedVersion: 7 }, mockRes());
+    return { request, stubs };
+  };
+
+  it('writes the request label alone, conditioned on the errand version, and assigns nobody', async () => {
+    const { request, stubs } = setup();
+
+    await request();
+
+    expect(stubs.assertCanWriteDocument).toHaveBeenCalledWith(expect.anything(), MUNICIPALITY_ID, mockSupportErrandId, analysisKey);
+    expect(stubs.patch).toHaveBeenCalledTimes(1);
+    const [config] = stubs.patch.mock.calls[0] as [{ data: Record<string, unknown>; headers: Record<string, string> }];
+    expect(config.headers).toEqual({ 'If-Match': '"7"' });
+    expect(config.data).toEqual({ labels: [{ id: 'category-hsl' }, { id: 'north' }, { id: 'north-unit' }, { id: 'vc-comment' }] });
+    // The head of operations is told by Support Management: the write is the user's own, and is not silenced.
+    expect(config).not.toHaveProperty('notifySubscribers');
+  });
+
+  it('is refused for somebody who may not write the HSL analysis, before anything is written', async () => {
+    const { request, stubs } = setup();
+    stubs.assertCanWriteDocument.mockRejectedValue(Object.assign(new Error('forbidden'), { status: 403 }));
+
+    await expect(request()).rejects.toMatchObject({ status: 403 });
+    expect(stubs.patch).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing when the head of operations has already been asked', async () => {
+    const { request, stubs } = setup({ errandLabels: [{ id: 'category-hsl' }, { id: 'vc-comment' }] });
+
+    await request();
+
+    expect(stubs.patch).not.toHaveBeenCalled();
+  });
+});
+
 describe('assignable handlers', () => {
   const policy = resolveIafVofInvestigationClassificationPolicy(VOF_SUPPORT_INVESTIGATION_PROFILE)!;
   const lexManager = { displayName: 'Lena LEX', name: 'lena.lex', guid: 'lena-guid', roleKeys: ['lex-ansvarig'] };

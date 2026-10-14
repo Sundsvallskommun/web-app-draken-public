@@ -47,9 +47,12 @@ export const hslDecisionKey = 'beslut-hsl' satisfies InvestigationKey;
 /** The lex Sarah decision on a reported misconduct. */
 export const misconductDecisionKey = 'beslut-sol-lss' satisfies InvestigationKey;
 const decisionKeys: readonly InvestigationKey[] = [hslDecisionKey, misconductDecisionKey];
-/** The documents the Utredning tab offers; the decisions live on their own tab, the assessment in Ärendeuppgifter. */
+/**
+ * The documents the Utredning tab offers; the decisions live on their own tab, the assessment in Ärendeuppgifter, and
+ * VC kommentar HSL opens only once MAS/MAR has asked for the comment.
+ */
 export const investigationTabKeys = investigationKeys.filter(
-  (key) => !decisionKeys.includes(key) && key !== lexAssessmentKey
+  (key) => !decisionKeys.includes(key) && key !== lexAssessmentKey && key !== hslCommentKey
 );
 
 export interface MockInvestigationProfile {
@@ -742,9 +745,18 @@ export const withPlaceStructure = ({ withLex = false } = {}): Pick<IafApiScenari
 });
 
 const highHslRisk = label('risk-high-hsl-id', 'RISK', 'Hög risk HSL', 'HIGH_HSL', 'RISK/HIGH_HSL');
-/** How many of the errand's version steps the label write takes: not one, so nothing may count it as one. */
-const HIGH_HSL_RISK_LABEL_WRITE_STEPS = 2;
+/** How many of the errand's version steps a label write takes: not one, so nothing may count it as one. */
+const LABEL_WRITE_VERSION_STEPS = 2;
 const riskRoot = label('risk-root-id', 'RISK_ROOT', 'Risk', 'RISK', 'RISK', [highHslRisk]);
+/** Set when MAS/MAR asks the head of operations for their comment on the HSL analysis. It opens VC kommentar HSL. */
+const vcCommentRequested = label(
+  'request-vc-comment-id',
+  'REQUEST',
+  'VC kommentar HSL',
+  'VC_COMMENT_HSL',
+  'REQUEST/VC_COMMENT_HSL'
+);
+const requestRoot = label('request-root-id', 'REQUEST_ROOT', 'Begäran', 'REQUEST', 'REQUEST', [vcCommentRequested]);
 
 /**
  * The default deviation without the legal base it was reported under. Reports rarely name one - the unit manager's
@@ -754,16 +766,19 @@ const deviationLabelsWithoutLegalBase = deviationLabelsSource.filter((reported) 
 
 /**
  * An ordinary deviation the BFF has marked with a high HSL risk, the label in the metadata too. It was reported
- * under HSL unless the scenario says otherwise.
+ * under HSL unless the scenario says otherwise, and MAS/MAR has asked the head of operations for their comment only
+ * where it says so.
  */
-export const withHighHslRisk = ({ reportedUnderHsl = true } = {}): Pick<
+export const withHighHslRisk = ({ reportedUnderHsl = true, commentRequested = false } = {}): Pick<
   IafApiScenario,
   'labels' | 'labelStructure'
 > => ({
-  labelStructure: [...labelStructure, riskRoot],
-  labels: [...(reportedUnderHsl ? deviationLabelsSource : deviationLabelsWithoutLegalBase), highHslRisk].map(
-    withoutChildren
-  ),
+  labelStructure: [...labelStructure, riskRoot, requestRoot],
+  labels: [
+    ...(reportedUnderHsl ? deviationLabelsSource : deviationLabelsWithoutLegalBase),
+    highHslRisk,
+    ...(commentRequested ? [vcCommentRequested] : []),
+  ].map(withoutChildren),
 });
 
 /** An ordinary deviation nobody reported a legal base for, and no investigation has assessed a high HSL risk on. */
@@ -807,7 +822,7 @@ const collectLabels = (labels: readonly MockLabel[]) => {
   });
 };
 collectLabels(labelStructure);
-collectLabels([placeRoot, accessRoot]);
+collectLabels([placeRoot, accessRoot, riskRoot, requestRoot]);
 
 /** The avvikelse report as the profile names it: Katla's record, written in Draken on errands registered there. */
 export const reportDocumentProfile = {
@@ -1506,6 +1521,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         findChain(placeRoot.labels ?? [], []);
         errandLabels = [...errandLabels.filter(({ id }) => !placeIds.has(id)), ...chain.map(withoutChildren)];
       }
+      if (step === 'request-vc-comment' && !errandLabels.some(({ id }) => id === vcCommentRequested.id)) {
+        // Like the BFF: the request label is all the step writes. Nobody is assigned.
+        errandLabels = [...errandLabels, withoutChildren(vcCommentRequested)];
+        errandVersion += LABEL_WRITE_VERSION_STEPS - 1;
+      }
       if (body.assignedUserId) errandAssignedUserId = body.assignedUserId;
       errandVersion += 1;
       await route.fulfill({ status: 204 });
@@ -1672,13 +1692,13 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           !errandLabels.some(({ id }) => id === highHslRisk.id);
         if (marksHighHslRisk) {
           errandLabels = [...errandLabels, withoutChildren(highHslRisk)];
-          errandVersion += HIGH_HSL_RISK_LABEL_WRITE_STEPS;
+          errandVersion += LABEL_WRITE_VERSION_STEPS;
         }
         const { etag, ...responseDocument } = updated;
         await fulfillJson(route, responseDocument, existingDocument ? 200 : 201, {
           etag,
           'x-errand-version': String(errandVersion),
-          ...(marksHighHslRisk ? { 'x-errand-writes': String(1 + HIGH_HSL_RISK_LABEL_WRITE_STEPS) } : {}),
+          ...(marksHighHslRisk ? { 'x-errand-writes': String(1 + LABEL_WRITE_VERSION_STEPS) } : {}),
           'access-control-expose-headers': 'ETag, X-Errand-Version, X-Errand-Writes',
         });
         return;

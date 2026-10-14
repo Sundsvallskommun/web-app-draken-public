@@ -34,6 +34,7 @@ import { useInvestigationProfileStore } from '../investigation-profile-store';
 import { HSL_RISK_ESCALATION_THRESHOLD } from './assignment/avvikelse-access-labels';
 import { isWithLexInvestigation, shouldPromptLexAssignment } from './assignment/avvikelse-assignment-policy';
 import { LexAssignmentPrompt } from './assignment/lex-assignment-prompt.component';
+import { actsAsMasMar } from './assignment/mas-mar-handler';
 import { ReturnToManagerButton } from './assignment/return-to-manager-button.component';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
@@ -110,6 +111,7 @@ import {
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
 import { useInvestigationTextTemplate } from './use-investigation-text-template';
+import { VcCommentRequest } from './vc-comment-request.component';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -203,6 +205,7 @@ export function SupportInvestigationDocument({
   const setActiveTabKey = useSupportStore((state) => state.setActiveTabKey);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const userName = useUserStore((state) => state.user.name);
+  const user = useUserStore((state) => state.user);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const profile = useInvestigationProfileStore((state) => state.profile);
@@ -1141,6 +1144,10 @@ export function SupportInvestigationDocument({
         // Saved with Spara ärende in the sidebar, together with the rest of the errand.
         withoutSubmitButton
         externalFields={{
+          // Ä4. Where the analysis has got far enough, MAS/MAR asks the head of operations for their comment.
+          ...(definition.schemaName === HSL_INVESTIGATION_SCHEMA_NAME && actsAsMasMar(user)
+            ? { vcCommentRequest: <VcCommentRequest /> }
+            : {}),
           ...(documentAuthor
             ? { [documentAuthor.field]: <InvestigationDocumentAuthor author={documentAuthor} /> }
             : {}),

@@ -31,6 +31,8 @@ const artifacts = [
     version: '1.5',
     hasErrandClassification: false,
     hasReport: true,
+    // Ä4. MAS/MAR asks the head of operations for their comment from within the analysis.
+    controlFields: ['vcCommentRequest'],
     schemaFile: 'utredning-hsl.schema-request.json',
     uiSchemaFile: 'utredning-hsl.ui-schema-request.json',
   },
@@ -215,6 +217,10 @@ test('schemas declare errand classification externally only where it is edited',
     const reportFields = artifact.hasReport ? ['$external:investigationReport'] : [];
     // So is who the document is by, where the schema leaves that to the server: Draken shows it, nobody types it.
     const authorFields = 'authorField' in artifact ? [`$external:${artifact.authorField}`] : [];
+    // And a control of Draken's own, placed where it belongs in the form.
+    const controlFields = ('controlFields' in artifact ? artifact.controlFields ?? [] : []).map(
+      (field) => `$external:${field}`
+    );
     if (artifact.hasErrandClassification) {
       assert.deepEqual(schema['x-draken-external-fields'], {
         errandClassification: expectedDeclaration,
@@ -222,7 +228,7 @@ test('schemas declare errand classification externally only where it is edited',
       assert.deepEqual(externalFields, ['$external:errandClassification', ...reportFields]);
     } else {
       assert.equal(schema['x-draken-external-fields'], undefined);
-      assert.deepEqual(externalFields, [...reportFields, ...authorFields]);
+      assert.deepEqual(externalFields, [...controlFields, ...reportFields, ...authorFields]);
     }
   }
 });
@@ -569,6 +575,9 @@ test('the HSL investigation names each participant and chooses their role from t
     ]
   );
   assert.deepEqual(uiSchema.analysisTeamParticipants.items['ui:order'], ['name', 'role']);
+  // Ä4. The analysis's result ends where MAS/MAR asks the head of operations for their comment.
+  const result = uiSchema['ui:sections'].find(({ id }: { id: string }) => id === 'result');
+  assert.equal(result.fields.at(-1), '$external:vcCommentRequest');
   assert.equal(uiSchema.analysisTeamParticipants.items.role['ui:widget'], 'select');
 
   // Name and role are asked for when the analysis is marked complete, not before.

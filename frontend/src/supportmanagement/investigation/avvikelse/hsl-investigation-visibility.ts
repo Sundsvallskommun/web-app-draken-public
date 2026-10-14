@@ -1,5 +1,9 @@
 import type { InvestigationErrandContext, InvestigationViewer } from '../investigation-variant';
-import { hasErrandLabel, HIGH_HSL_RISK_LABEL_PATH } from './assignment/avvikelse-access-labels';
+import {
+  hasErrandLabel,
+  HIGH_HSL_RISK_LABEL_PATH,
+  VC_COMMENT_REQUESTED_LABEL_PATH,
+} from './assignment/avvikelse-access-labels';
 import {
   HEAD_OF_OPERATIONS_ROLE_KEY,
   MAS_MAR_ROLE_KEY,
@@ -9,16 +13,6 @@ import { HSL_COMMISSIONER_COMMENT_SCHEMA_NAME, HSL_INVESTIGATION_SCHEMA_NAME } f
 import { findInvestigationDocumentBySchemaName } from './saved-investigation-document';
 
 const MANAGER_ROLE_KEYS: readonly string[] = [UNIT_MANAGER_ROLE_KEY, HEAD_OF_OPERATIONS_ROLE_KEY];
-
-/**
- * The documents of the HSL investigation: MAS/MAR's event analysis, and the comment on it by the one who
- * commissioned it. The comment has nothing to comment on where the analysis is not shown, so the two are kept out of
- * sight together.
- */
-const HSL_INVESTIGATION_SCHEMA_NAMES: readonly string[] = [
-  HSL_INVESTIGATION_SCHEMA_NAME,
-  HSL_COMMISSIONER_COMMENT_SCHEMA_NAME,
-];
 
 /**
  * Whether the HSL investigation is kept out of the viewer's sight: a unit manager or head of operations does not
@@ -35,8 +29,11 @@ export const concealsHslInvestigation = (
   roleKeys.some((roleKey) => MANAGER_ROLE_KEYS.includes(roleKey));
 
 /**
- * The documents avvikelse keeps out of the viewer's sight on the errand: the HSL investigation and the comment on
- * it, while concealed.
+ * The documents avvikelse keeps out of the viewer's sight on the errand.
+ *
+ * The HSL investigation, from a manager until the errand carries a high HSL risk. And VC kommentar HSL, from
+ * everybody until MAS/MAR has asked the head of operations for their comment: there is nothing to comment on before
+ * the analysis has got that far, and asking is what opens it.
  */
 export const concealedAvvikelseDocumentKeys = ({
   errand,
@@ -44,10 +41,12 @@ export const concealedAvvikelseDocumentKeys = ({
   labelStructure,
   viewer,
 }: InvestigationErrandContext): readonly string[] => {
-  const hslInvestigationKeys = HSL_INVESTIGATION_SCHEMA_NAMES.map(
-    (schemaName) => findInvestigationDocumentBySchemaName(profile, schemaName)?.key
-  ).filter((key): key is string => typeof key === 'string');
-  if (hslInvestigationKeys.length === 0) return [];
+  const hslInvestigationKey = findInvestigationDocumentBySchemaName(profile, HSL_INVESTIGATION_SCHEMA_NAME)?.key;
+  const commentKey = findInvestigationDocumentBySchemaName(profile, HSL_COMMISSIONER_COMMENT_SCHEMA_NAME)?.key;
   const carriesHighHslRisk = hasErrandLabel(errand?.labels, labelStructure, HIGH_HSL_RISK_LABEL_PATH);
-  return concealsHslInvestigation(viewer, carriesHighHslRisk) ? hslInvestigationKeys : [];
+  const commentRequested = hasErrandLabel(errand?.labels, labelStructure, VC_COMMENT_REQUESTED_LABEL_PATH);
+  return [
+    ...(hslInvestigationKey && concealsHslInvestigation(viewer, carriesHighHslRisk) ? [hslInvestigationKey] : []),
+    ...(commentKey && !commentRequested ? [commentKey] : []),
+  ];
 };

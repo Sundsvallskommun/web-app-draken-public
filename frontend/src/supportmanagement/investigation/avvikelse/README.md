@@ -388,11 +388,39 @@ MAS/MAR:s utredning, Händelseanalys HSL (`utredning-hsl`), visas inte för enhe
 länge ärendet saknar `RISK/HIGH_HSL`. När ärendet har labeln visas fliken som deras åtkomst säger. MAS/MAR,
 administratörer och övriga roller ser den som vanligt (`concealsHslInvestigation`).
 
-Uppdragsgivarens kommentar på analysen, VC kommentar HSL (`vc-kommentar-hsl`), följer analysen: den döljs och visas
-av samma regel, eftersom det inte finns något att kommentera där analysen inte visas.
+Uppdragsgivarens kommentar på analysen, VC kommentar HSL (`vc-kommentar-hsl`), visas för ingen förrän MAS/MAR
+har bett verksamhetschefen kommentera den (se nedan). Hög HSL-risk räcker inte.
 
 Det är bara visuellt: varianten döljer dokumentet genom kontraktets `concealedDocumentKeys`, och Draken hämtar
 då inte heller dokumentet. Vad cheferna får läsa avgör fortfarande AccessMapper.
+
+### VC kommentar HSL aktiveras av MAS/MAR
+
+När händelseanalysen har kommit så långt att verksamhetschefen, som är uppdragsgivare, ska kommentera den trycker
+MAS/MAR på Aktivera VC kommentar HSL. Knappen ligger sist under Resultat i Händelseanalys HSL (`$external:vcCommentRequest`
+i UI-schemat från 1.5) och visas bara för den som agerar som MAS/MAR (`actsAsMasMar`: rollen `mas-mar` eller
+administratör).
+
+Knappen är överlämningssteget `request-vc-comment` (`POST .../investigation-handover/request-vc-comment`). Steget
+skriver labeln `REQUEST/VC_COMMENT_HSL` och inget annat: ingen tilldelas, och status ändras inte. Det får bara den
+som får skriva i Händelseanalys HSL, så BFF:en avvisar det för alla andra. Skrivningen villkoras på ärendets version,
+och sidan läser ärendet direkt efter den och tar över dess labels och version, så att nästa sparning inte avvisas som
+någon annans ändring. Skrivningen är användarens egen handling och notifierar som vanligt (inte `X-notify: false`).
+
+Labeln öppnar fliken VC kommentar HSL. Verksamhetschefen skriver kommentaren där och läser analysen utan att kunna
+ändra den.
+
+Det här måste finnas i Support Management innan knappen fungerar, i både IAF:s och VOF:s namespace:
+
+| Vad        | Var                                                | Innehåll                                                                                                                                                      |
+| ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Labeln     | Namespacets labelmetadata                          | En rot `REQUEST` med `REQUEST/VC_COMMENT_HSL`, visningsnamn till exempel "VC kommentar HSL". Saknas den avvisar BFF:en steget                                 |
+| Åtkomst    | AccessMapper, varje rolls labelmönster             | `REQUEST/VC_COMMENT_HSL=RW` för alla roller, som `RISK/HIGH_HSL` har. Läggs labeln på ett ärende innan mönstren finns kan rollerna förlora åtkomsten till det |
+| Avisering  | Prenumerationsprofilen `HEAD_OF_OPERATIONS`        | Ett `eventFilter` med labelns id, `subtype: ERRAND` och `type: UPDATE`, som profilen `MAR_MAS` har för `RISK/HIGH_HSL`                                        |
+| Dokumentet | Namespace-konfigurationen, `roleFieldRestrictions` | `JSON_PARAMETERS[vc-kommentar-hsl]`: `RW` för `HEAD_OF_OPERATIONS`, `R` för övriga roller (finns sedan 2026-10-13)                                            |
+
+Labelns namn och plats är ett förslag. Den ligger i Draken på ett ställe per sida
+(`INVESTIGATION_VC_COMMENT_REQUESTED_LABEL` i BFF:en, `VC_COMMENT_REQUESTED_LABEL_PATH` i frontend).
 
 ### MAS/MAR vid sidan av Ansvarig
 

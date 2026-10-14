@@ -5,7 +5,6 @@ import { CONFIRM_DIALOG } from '../utils/modal';
 import { toast } from '../utils/toast';
 import {
   allExistingInvestigationDocuments,
-  hslCommentKey,
   hslDecisionKey,
   misconductDecisionKey,
   solDeviationScenario,
@@ -562,7 +561,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
   }
 
-  test('visar fyra dokumentflikar och låser ett befintligt dokument till dess exakta schemaversion', async ({
+  test('visar tre dokumentflikar och låser ett befintligt dokument till dess exakta schemaversion', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -573,11 +572,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     const investigation = page.locator('[data-cy="support-investigation-tab"]');
+    // VC kommentar HSL opens only once MAS/MAR has asked the head of operations for their comment.
     await expect(investigation.getByRole('tab')).toHaveText([
       'Utredning enhetschef',
       'Utredning Lex Sarah',
       'Händelseanalys HSL',
-      'VC kommentar HSL',
     ]);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
@@ -622,7 +621,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .toEqual([...investigationTabKeys, hslDecisionKey].sort());
     await expect
       .poll(() => [...new Set(trace.latestSchemaNames)].sort())
-      .toEqual(['utredning-hsl', 'utredning-sol-lss', hslCommentKey, hslDecisionKey].sort());
+      .toEqual(['utredning-hsl', 'utredning-sol-lss', hslDecisionKey].sort());
     expect(trace.latestSchemaNames).not.toContain(managerKey);
     expect(trace.exactSchemaIds).toContain(existing.schemaId);
   });

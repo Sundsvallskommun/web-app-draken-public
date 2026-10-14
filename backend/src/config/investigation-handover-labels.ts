@@ -33,23 +33,33 @@ export const INVESTIGATION_ACCESS_LEX_LABEL = 'ACCESS/LEX';
 export const INVESTIGATION_DEVIATION_REPORT_LABEL = 'REPORT_TYPE/DEVIATION';
 export const INVESTIGATION_MISCONDUCT_REPORT_LABEL = 'REPORT_TYPE/ABUSE';
 
+/**
+ * Set when MAS/MAR asks the head of operations for their comment on the HSL event analysis. It moves no access:
+ * the errand stays with its handler, and the head of operations already reaches it through its place. It opens VC
+ * kommentar HSL, and Support Management's subscription profile for the head of operations notifies them from it.
+ */
+export const INVESTIGATION_VC_COMMENT_REQUESTED_LABEL = 'REQUEST/VC_COMMENT_HSL';
+
 const ACCESS_LABEL_ROOT_PREFIX = `${normalizeSupportManagementResourcePath(INVESTIGATION_ACCESS_LABEL_ROOT)}/`;
 
 const HANDOVER_REPORT_LABELS: ReadonlySet<string> = new Set(
   [INVESTIGATION_DEVIATION_REPORT_LABEL, INVESTIGATION_MISCONDUCT_REPORT_LABEL].map(normalizeSupportManagementResourcePath),
 );
 
+const HANDOVER_REQUEST_LABELS: ReadonlySet<string> = new Set([normalizeSupportManagementResourcePath(INVESTIGATION_VC_COMMENT_REQUESTED_LABEL)]);
+
 /**
  * Whether a resource path is one a handover step may write.
  *
  * The paths come from the step table rather than from the request, so this is a backstop rather than
  * input validation: it keeps an added step from turning the handover route into a second, unguarded
- * way to reclassify an errand. Exactly two label families qualify - the access labels that move the
- * errand between roles, and the report type the misconduct assessment changes.
+ * way to reclassify an errand. Three label families qualify - the access labels that move the errand
+ * between roles, the report type the misconduct assessment changes, and the request that brings the head
+ * of operations in to comment on the HSL analysis.
  */
 export const isInvestigationHandoverLabelPath = (resourcePath: string): boolean => {
   const normalized = normalizeSupportManagementResourcePath(resourcePath);
-  return normalized.startsWith(ACCESS_LABEL_ROOT_PREFIX) || HANDOVER_REPORT_LABELS.has(normalized);
+  return normalized.startsWith(ACCESS_LABEL_ROOT_PREFIX) || HANDOVER_REPORT_LABELS.has(normalized) || HANDOVER_REQUEST_LABELS.has(normalized);
 };
 
 /**

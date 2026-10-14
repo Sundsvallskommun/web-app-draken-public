@@ -2,6 +2,7 @@ import {
   INVESTIGATION_ACCESS_LEX_LABEL,
   INVESTIGATION_DEVIATION_REPORT_LABEL,
   INVESTIGATION_MISCONDUCT_REPORT_LABEL,
+  INVESTIGATION_VC_COMMENT_REQUESTED_LABEL,
 } from './investigation-handover-labels';
 
 /**
@@ -12,7 +13,7 @@ import {
  * combination the business process does not have - such as taking the LEX label off without giving
  * the errand back to somebody who can still see it.
  */
-export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'decline-lex' | 'move-location';
+export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'decline-lex' | 'move-location' | 'request-vc-comment';
 
 /** The handler role a caller-picked assignee must hold, from HEALTHCAREDEVIATION_HANDLER_ROLES. */
 export const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
@@ -37,9 +38,10 @@ export interface InvestigationHandoverStepDefinition {
   /**
    * How the assignee is decided: picked by the caller, resolved from the errand's current location,
    * or picked from the managers of a target place the caller names (`locationLabelId`). The last
-   * also rewrites the errand's location labels to that place's path.
+   * also rewrites the errand's location labels to that place's path. `none` leaves the assignee alone:
+   * the step brings another role in without taking the errand from its handler.
    */
-  readonly assigneeSource: 'request' | 'location' | 'target-location';
+  readonly assigneeSource: 'request' | 'location' | 'target-location' | 'none';
   readonly addLabelResourcePaths: readonly string[];
   readonly removeLabelResourcePaths: readonly string[];
   /**
@@ -127,6 +129,16 @@ const definitions: Readonly<Record<InvestigationHandoverStep, InvestigationHando
     authorizingSchemaName: 'utredning-enhetschef',
     assigneeSource: 'target-location',
     addLabelResourcePaths: Object.freeze([]),
+    removeLabelResourcePaths: Object.freeze([]),
+  }),
+  // MAS/MAR has got far enough in the HSL event analysis to ask the head of operations, who commissioned it, for
+  // their comment. The label opens VC kommentar HSL, and the head of operations is notified from it. Nobody is
+  // assigned: the unit manager keeps the errand. Write access to the analysis authorizes it, so only MAS/MAR may.
+  'request-vc-comment': Object.freeze({
+    step: 'request-vc-comment',
+    authorizingSchemaName: 'utredning-hsl',
+    assigneeSource: 'none',
+    addLabelResourcePaths: Object.freeze([INVESTIGATION_VC_COMMENT_REQUESTED_LABEL]),
     removeLabelResourcePaths: Object.freeze([]),
   }),
 });

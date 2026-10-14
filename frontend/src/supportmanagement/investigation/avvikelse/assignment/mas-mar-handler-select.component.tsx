@@ -10,7 +10,7 @@ import { FC, useState } from 'react';
 
 import type { InvestigationHandlerFieldsProps } from '../../investigation-variant';
 import { MAS_MAR_ROLE_KEY } from './avvikelse-handler-roles';
-import { choosesMasMarHandler, MAS_MAR_HANDLER_PARAMETER, readMasMarHandler } from './mas-mar-handler';
+import { actsAsMasMar, MAS_MAR_HANDLER_PARAMETER, readMasMarHandler } from './mas-mar-handler';
 
 /**
  * The MAS/MAR handler, beside Ansvarig. It is recorded in an errand parameter rather than as the assignee: the
@@ -57,7 +57,7 @@ export const MasMarHandlerSelect: FC<InvestigationHandlerFieldsProps> = ({ locke
     },
   });
 
-  if (!choosesMasMarHandler(user)) return null;
+  if (!actsAsMasMar(user)) return null;
 
   const selected = chosen ?? recorded ?? '';
   // A recorded handler who no longer holds the role is still shown, rather than silently dropped.

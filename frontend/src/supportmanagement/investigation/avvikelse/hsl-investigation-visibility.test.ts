@@ -39,25 +39,6 @@ test('conceals the HSL investigation by its key in the profile, and only while t
     concealedAvvikelseDocumentKeys({ errand: errand([]), profile, labelStructure: [], viewer: unitManager }),
     ['hsl-document']
   );
-  // The comment on the analysis has nothing to comment on where the analysis is not shown: it follows it.
-  const withComment = {
-    documents: [...profile.documents, { key: 'comment-document', schemaName: 'vc-kommentar-hsl' }],
-  } as unknown as InvestigationProfile;
-  for (const viewer of [unitManager, { roleKeys: ['verksamhetschef'] }]) {
-    assert.deepEqual(
-      concealedAvvikelseDocumentKeys({ errand: errand([]), profile: withComment, labelStructure: [], viewer }),
-      ['hsl-document', 'comment-document']
-    );
-    assert.deepEqual(
-      concealedAvvikelseDocumentKeys({
-        errand: errand([highHslRisk]),
-        profile: withComment,
-        labelStructure: [],
-        viewer,
-      }),
-      []
-    );
-  }
   assert.deepEqual(
     concealedAvvikelseDocumentKeys({ errand: errand([highHslRisk]), profile, labelStructure: [], viewer: unitManager }),
     []
@@ -72,4 +53,26 @@ test('conceals the HSL investigation by its key in the profile, and only while t
     }),
     []
   );
+});
+
+// Ä4. VC kommentar HSL opens when MAS/MAR asks the head of operations for their comment, and not before - for
+// everybody, MAS/MAR and the head of operations alike. The high HSL risk alone does not open it.
+test('keeps VC kommentar HSL out of sight until MAS/MAR has asked for the comment', () => {
+  const vcCommentRequested = { id: 'vc-comment', resourcePath: 'REQUEST/VC_COMMENT_HSL' } as Label;
+  const withComment = {
+    documents: [...profile.documents, { key: 'comment-document', schemaName: 'vc-kommentar-hsl' }],
+  } as unknown as InvestigationProfile;
+  const concealed = (labels: Label[], roleKeys: string[]) =>
+    concealedAvvikelseDocumentKeys({
+      errand: errand(labels),
+      profile: withComment,
+      labelStructure: [],
+      viewer: { roleKeys },
+    });
+
+  assert.deepEqual(concealed([], ['verksamhetschef']), ['hsl-document', 'comment-document']);
+  assert.deepEqual(concealed([highHslRisk], ['verksamhetschef']), ['comment-document']);
+  assert.deepEqual(concealed([highHslRisk], ['mas-mar']), ['comment-document']);
+  assert.deepEqual(concealed([highHslRisk, vcCommentRequested], ['verksamhetschef']), []);
+  assert.deepEqual(concealed([highHslRisk, vcCommentRequested], ['mas-mar']), []);
 });

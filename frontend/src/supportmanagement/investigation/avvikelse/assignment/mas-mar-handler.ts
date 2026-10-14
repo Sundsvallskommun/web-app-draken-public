@@ -7,10 +7,11 @@ import { MAS_MAR_ROLE_KEY } from './avvikelse-handler-roles';
 export const MAS_MAR_HANDLER_PARAMETER = 'masMarHandler';
 
 /**
- * Whether the viewer chooses the errand's MAS/MAR handler: MAS/MAR themselves, on every errand they reach. An
- * administrator is held back by no role; everybody else sees no MAS/MAR select at all.
+ * Whether the viewer acts as MAS/MAR on the errands they reach: choosing the errand's MAS/MAR handler, and asking
+ * the head of operations for their comment on the HSL analysis. An administrator is held back by no role; everybody
+ * else is offered neither.
  */
-export const choosesMasMarHandler = ({ roleKeys = [], superadmin }: InvestigationViewer): boolean =>
+export const actsAsMasMar = ({ roleKeys = [], superadmin }: InvestigationViewer): boolean =>
   Boolean(superadmin) || roleKeys.includes(MAS_MAR_ROLE_KEY);
 
 /** The MAS/MAR handler recorded on the errand, by AD account. */

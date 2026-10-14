@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
+import { toast } from '../utils/toast';
 import {
   allExistingInvestigationDocuments,
   defaultInvestigationProfile,
@@ -74,9 +75,64 @@ for (const roleKey of ['enhetschef', 'verksamhetschef']) {
     await openInvestigation(page);
 
     await expect(investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toBeVisible();
-    await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toBeVisible();
+    // The high risk alone does not open the comment, and only MAS/MAR is offered to ask for it.
+    await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toHaveCount(0);
+    await investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
+    await expect(page.locator(`[data-cy="investigation-document-${hslKey}"]`)).toBeVisible();
+    await expect(page.locator('[data-cy="vc-comment-request-button"]')).toHaveCount(0);
   });
 }
+
+// Ä4. MAS/MAR asks the head of operations for their comment from the analysis. The request is one handover step,
+// conditioned on the errand's version; it opens VC kommentar HSL, and the page follows the version it left - here two
+// steps on, as Support Management may take for a label - so the next save is not refused as somebody else's change.
+test('MAS/MAR opens VC kommentar HSL from the analysis, and the errand version follows', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installIafApiMock(page, {
+    roleKeys: ['mas-mar'],
+    assignedUserId: 'iaf.test',
+    documents: allExistingInvestigationDocuments(),
+    ...withHighHslRisk(),
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await openInvestigation(page);
+  const commentTab = investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true });
+  await expect(commentTab).toHaveCount(0);
+
+  await investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
+  const analysis = page.locator(`[data-cy="investigation-document-${hslKey}"]`);
+  await analysis.getByRole('button', { name: 'Aktivera VC kommentar HSL', exact: true }).click();
+
+  await expect(commentTab).toBeVisible();
+  await expect(analysis.locator('[data-cy="vc-comment-requested"]')).toContainText('Verksamhetschefen har aviserats');
+  expect(trace.handovers).toEqual([{ step: 'request-vc-comment', expectedVersion: 7 }]);
+
+  // The errand's own next save is conditioned on the version the request left.
+  const errandWrite = page.waitForRequest(
+    (request) => request.method() === 'PATCH' && /\/supporterrands\/2281\/[^/]+$/u.test(new URL(request.url()).pathname)
+  );
+  await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+  await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click();
+  expect((await errandWrite).headers()['if-match']).toBe('"9"');
+  await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
+});
+
+test('verksamhetschef is shown VC kommentar HSL once MAS/MAR has asked for the comment', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installIafApiMock(page, {
+    roleKeys: ['verksamhetschef'],
+    documents: allExistingInvestigationDocuments(),
+    ...withHighHslRisk({ commentRequested: true }),
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await openInvestigation(page);
+
+  await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toBeVisible();
+});
 
 // The one who commissioned the analysis comments on it in a document of their own, beside the analysis: they write
 // the comment without being given MAS/MAR's analysis to change.
@@ -92,7 +148,7 @@ test('verksamhetschef writes the commissioner comment in VC kommentar HSL, not i
     documentAccess: Object.fromEntries(
       profile.documents.map(({ key }) => [key, key === hslCommentKey ? 'edit' : 'read'])
     ),
-    ...withHighHslRisk(),
+    ...withHighHslRisk({ commentRequested: true }),
   });
   await visitErrand(page, dismissCookieConsent);
   await openInvestigation(page);

@@ -264,7 +264,7 @@ export class SupportInvestigationAssignmentController {
       ({ errand, metadata, currentVersion } = await this.readErrandAfterOwnWrite(req, municipalityId, id, currentVersion));
     }
 
-    let assignedUserId: string;
+    let assignedUserId: string | undefined;
     let labels: { id: string }[] | undefined;
     if (step.assigneeSource === 'target-location') {
       // The place is the input here, not the labels: the caller names where the errand goes, and
@@ -276,7 +276,7 @@ export class SupportInvestigationAssignmentController {
       assignedUserId = this.pickManager(step, data, managers, target.location);
       labels = buildInvestigationLocationLabelUpdate({ currentLabels: errand.labels, labelStructure: metadata.labels?.labelStructure, target });
     } else {
-      assignedUserId = await this.resolveAssignee(req, municipalityId, step, data, errand, metadata);
+      assignedUserId = step.assigneeSource === 'none' ? undefined : await this.resolveAssignee(req, municipalityId, step, data, errand, metadata);
       labels = buildInvestigationHandoverLabelUpdate({
         currentLabels: errand.labels,
         labelStructure: metadata.labels?.labelStructure,

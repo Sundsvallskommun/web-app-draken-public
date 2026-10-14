@@ -2,7 +2,12 @@ import { apiService } from '@common/services/api-service';
 import type { AxiosError } from 'axios';
 
 /** The named handovers the backend implements. The client names the step and never composes it. */
-export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'decline-lex' | 'move-location';
+export type InvestigationHandoverStep =
+  | 'assign-lex'
+  | 'return-to-manager'
+  | 'decline-lex'
+  | 'move-location'
+  | 'request-vc-comment';
 
 export interface UnitManagerCandidate {
   adAccount: string;
