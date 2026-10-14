@@ -300,6 +300,7 @@ and — worse — sending a whole collection rewrites entries another user just 
 | Errand-level fields (`title`, `stakeholders`, `labels`, `externalTags`, …) | `PATCH /supporterrands/:m/:id` | the errand's version |
 | Assignee / status / classification / handover | their own command routes | the errand's version |
 | Phase | `PATCH /supporterrands/:m/:id/phase` | the active phase the client saw; the BFF conditions the upstream write on the version it just read |
+| One measure (its fields, decision, end date, follow-up) | `PATCH /supporterrands/:m/:id/measures/:measureId[/…]` | that measure's version (`requireMeasureVersion`, `readWritableMeasure`) |
 
 Two consequences worth keeping:
 
@@ -310,8 +311,8 @@ Two consequences worth keeping:
   unchanged: rewriting one with the value it already has moves its version and can clobber a
   concurrent edit.
 
-`notes`, `attachments`, `measures` and `notifications` have their own routes but no version in the
-upstream model, so no conflict detection is available for them.
+`notes`, `attachments` and `notifications` have their own routes but no version in the upstream model,
+so no conflict detection is available for them.
 
 ## Notes
 
