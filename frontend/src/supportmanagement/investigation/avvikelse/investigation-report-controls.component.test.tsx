@@ -75,3 +75,22 @@ test('says nothing about missing measures while the investigation is still being
   controls({ onGoToMeasures: vi.fn(), completedInDraft: false, withoutMeasures: true });
   expect(screen.queryByText(NO_MEASURES)).toBeNull();
 });
+
+// B1. What the one finishing the investigation does next depends on whose it is: LEX-ansvarig takes the errand on
+// from the unit manager and the lex Sarah investigator, while MAS/MAR's HSL investigation is only saved.
+test('tells the one finishing the investigation what comes next, once it is marked complete', () => {
+  const view = controls({ completedInDraft: true });
+  expect(screen.getByText(/skapa en rapport och tilldela ärendet till LEX-ansvarig/u)).toBeTruthy();
+
+  view.unmount();
+  controls({ documentKey: 'utredning-hsl', completedInDraft: true, afterCompletion: 'save' });
+  expect(
+    screen.getByText('Din del av utredningen är klar. Tryck på Spara ärende. Ärendet behöver inte tilldelas någon.')
+  ).toBeTruthy();
+  expect(screen.queryByText(/LEX-ansvarig/u)).toBeNull();
+});
+
+test('says nothing about the next step while the investigation is still being written', () => {
+  controls({ documentKey: 'utredning-hsl', completedInDraft: false, afterCompletion: 'save' });
+  expect(screen.queryByText(/Din del av utredningen är klar/u)).toBeNull();
+});

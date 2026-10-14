@@ -31,11 +31,19 @@ interface InvestigationReportControlsProps {
   /** The errand is known to have no measures, which the one finishing the investigation is told - not stopped by. */
   readonly withoutMeasures?: boolean;
   /**
-   * The errand goes to LEX-ansvarig once the investigation is finished, which the one finishing it is told.
-   * MAS/MAR's HSL investigation is not handed on: it leaves the errand with its handler.
+   * What follows once the investigation is finished, which the one finishing it is told: the errand goes on to
+   * LEX-ansvarig, or - MAS/MAR's HSL investigation - it is only saved, since it leaves the errand with its handler.
    */
-  readonly handsOverToLexManager?: boolean;
+  readonly afterCompletion?: InvestigationAfterCompletion;
 }
+
+type InvestigationAfterCompletion = 'hand-over-to-lex-manager' | 'save';
+
+const COMPLETED_NOTICES: Readonly<Record<InvestigationAfterCompletion, string>> = {
+  'hand-over-to-lex-manager':
+    'När du är klar med din utredning, ska du skapa en rapport och tilldela ärendet till LEX-ansvarig.',
+  save: 'Din del av utredningen är klar. Tryck på Spara ärende. Ärendet behöver inte tilldelas någon.',
+};
 
 /**
  * The report controls at the end of an investigation document. Answering Ja enables Skapa rapport,
@@ -57,20 +65,18 @@ export function InvestigationReportControls({
   onGoToMeasures,
   proposesMeasures = false,
   withoutMeasures = false,
-  handsOverToLexManager = true,
+  afterCompletion = 'hand-over-to-lex-manager',
 }: Readonly<InvestigationReportControlsProps>) {
   const pending = reports.some(isPendingInvestigationReport);
   const canGenerate = completedInDraft && canEdit && !busy;
 
   return (
     <div className="flex flex-col gap-16" data-cy={`investigation-report-${documentKey}`}>
-      {completedInDraft && handsOverToLexManager && (
+      {completedInDraft && (
         <Alert type="info" data-cy="investigation-report-completed-notice">
           <Alert.Icon />
           <Alert.Content>
-            <Alert.Content.Description>
-              När du är klar med din utredning, ska du skapa en rapport och tilldela ärendet till LEX-ansvarig.
-            </Alert.Content.Description>
+            <Alert.Content.Description>{COMPLETED_NOTICES[afterCompletion]}</Alert.Content.Description>
           </Alert.Content>
         </Alert>
       )}

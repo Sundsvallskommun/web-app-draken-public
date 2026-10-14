@@ -1161,7 +1161,9 @@ export function SupportInvestigationDocument({
                     onGoToMeasures={appConfig.features.useMeasures ? () => setActiveTabKey('measures') : undefined}
                     proposesMeasures={definition.schemaName === LEX_INVESTIGATION_SCHEMA_NAME}
                     withoutMeasures={measureCount === 0}
-                    handsOverToLexManager={definition.schemaName !== HSL_INVESTIGATION_SCHEMA_NAME}
+                    afterCompletion={
+                      definition.schemaName === HSL_INVESTIGATION_SCHEMA_NAME ? 'save' : 'hand-over-to-lex-manager'
+                    }
                   />
                 ),
               }

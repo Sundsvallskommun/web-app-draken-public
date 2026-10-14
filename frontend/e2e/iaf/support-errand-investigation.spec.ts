@@ -1000,9 +1000,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
 
     await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
-    // MAS/MAR's investigation is not handed on to LEX-ansvarig, so finishing it does not say that it is.
-    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
-    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveCount(0);
+    // MAS/MAR's investigation is not handed on to LEX-ansvarig: finishing it is told to save, and nothing more.
+    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveText(
+      'Din del av utredningen är klar. Tryck på Spara ärende. Ärendet behöver inte tilldelas någon.'
+    );
     // Only the lex Sarah investigator proposes measures, so only their investigation reminds of them.
     await expect(controls.locator('[data-cy="investigation-measures-reminder"]')).toHaveCount(0);
     // Nor is a finished HSL investigation told that the errand has no measures: that is said to the unit manager.
