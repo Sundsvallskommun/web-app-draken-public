@@ -97,7 +97,8 @@ describe('SchemaBoundJsonService', () => {
     });
 
     it('accepts metadata that omits the id rather than inventing a mismatch', async () => {
-      const { service } = makeSubject([response(schema(SCHEMA_NAME, undefined), 200)]);
+      const { id: _id, ...withoutId } = schema();
+      const { service } = makeSubject([response(withoutId, 200)]);
 
       await expect(service.requireSchema(schemaRequest())).resolves.toMatchObject({ name: SCHEMA_NAME });
     });
