@@ -63,9 +63,24 @@ describe('SupportInvestigationAccessService', () => {
     expect((await read()).documents.map(document => document.access)).toEqual(['edit', 'read', 'hidden']);
   });
 
-  it.each(['R', 'LR'])('applies errand level %s to every key when allKeys carries the grant', async level => {
-    const { read } = setup({ ...mockErrandAccess(), level });
+  it.each(['R', 'LR'])("applies the field's level %s to every key when allKeys carries the grant", async level => {
+    const { read } = setup({ ...mockErrandAccess(), fields: [{ field: 'jsonParameters', level, allKeys: true, keys: [] }] });
     expect((await read()).documents.map(document => document.access)).toEqual(['read', 'read', 'read']);
+  });
+
+  // jsonParameters has a write endpoint of its own, so its level may be wider than the errand's: a role may write
+  // every investigation document without being allowed to change the errand.
+  it.each(['R', 'LR'])('writes every document under errand level %s when the unrestricted field and the resource are RW', async level => {
+    const { service, read } = setup({ ...mockErrandAccess(), level });
+
+    await expect(service.assertCanWriteDocument(mockUser(), '2281', 'errand-1', documentKeys[0])).resolves.toBeUndefined();
+    expect((await read()).documents.map(document => document.access)).toEqual(['edit', 'edit', 'edit']);
+  });
+
+  it('refuses a document write where the unrestricted field is read-only, whatever the errand level', async () => {
+    const { service } = setup({ ...mockErrandAccess(), fields: [{ field: 'jsonParameters', level: 'R', allKeys: true, keys: [] }] });
+
+    await expect(service.assertCanWriteDocument(mockUser(), '2281', 'errand-1', documentKeys[0])).rejects.toMatchObject({ status: 403 });
   });
 
   it('treats the field subset under errand level LR as the documents that exist for the user', async () => {
@@ -119,6 +134,9 @@ describe('SupportInvestigationAccessService', () => {
     { ...mockErrandAccess(), level: 'ADMIN' },
     { ...mockErrandAccess(), resources: [{ resource: 'errand/json-parameter' }] },
     { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', keys: [] }] },
+    // Every key follows the level of an unrestricted field, so it has to have one.
+    { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', allKeys: true, keys: [] }] },
+    { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', level: 'ADMIN', allKeys: true, keys: [] }] },
     { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', allKeys: true, keys: [{ key: 'x', level: 'RW' }] }] },
     { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', allKeys: false, keys: [{ key: 'x', level: 'ADMIN' }] }] },
     { ...mockErrandAccess(), fields: [...mockErrandAccess().fields, ...mockErrandAccess().fields] },

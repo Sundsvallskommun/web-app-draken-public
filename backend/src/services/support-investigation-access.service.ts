@@ -14,7 +14,14 @@ export const MEASURE_ACCESS_RESOURCE = 'errand/measure';
 interface JsonParameterAccess {
   readonly errandLevel: SupportErrandAccessLevel;
   readonly resourceLevel: SupportErrandAccessLevel | undefined;
-  readonly field: { readonly allKeys: boolean; readonly keys: ReadonlyMap<string, SupportErrandAccessLevel> } | undefined;
+  readonly field:
+    | {
+        readonly allKeys: boolean;
+        /** The field's own level, which every key follows when `allKeys` is set. */
+        readonly level: SupportErrandAccessLevel | undefined;
+        readonly keys: ReadonlyMap<string, SupportErrandAccessLevel>;
+      }
+    | undefined;
 }
 
 const invalidAccess = (): never => {
@@ -62,15 +69,18 @@ const parseJsonParameterAccess = (value: unknown): JsonParameterAccess => {
   const keys = new Map<string, SupportErrandAccessLevel>();
   for (const [key, grant] of indexedRecords(field.keys, 'key')) keys.set(key, level(grant.level));
   if (field.allKeys && keys.size > 0) return invalidAccess();
-  return { errandLevel, resourceLevel, field: { allKeys: field.allKeys, keys } };
+  // Every key follows the field's level when it is unrestricted, so that level has to be there.
+  const fieldLevel = field.allKeys ? level(field.level) : undefined;
+  return { errandLevel, resourceLevel, field: { allKeys: field.allKeys, level: fieldLevel, keys } };
 };
 
 const documentAccess = (access: JsonParameterAccess, key: string): SupportInvestigationDocumentAccess => {
   if (!access.field || !access.resourceLevel) return 'hidden';
-  // The errand level is the default for keys that carry no grant of their own, never a ceiling over
-  // the ones that do: an explicit key refines it, the way a writable directory sits under a
-  // read-only parent. A role may own one utredning without being allowed to handle the errand.
-  const keyLevel = access.field.allKeys ? access.errandLevel : access.field.keys.get(key);
+  // Neither the errand level nor anything else is a ceiling over a key: jsonParameters has a write endpoint
+  // of its own, so the field and its keys may reach further than the errand, the way a writable directory
+  // sits under a read-only parent. An unrestricted field lends every key its own level; a restricted one
+  // grants each listed key on its own. A role may own one utredning without being allowed to handle the errand.
+  const keyLevel = access.field.allKeys ? access.field.level : access.field.keys.get(key);
   if (!keyLevel) return 'hidden';
   // The key describes PATCH of the errand field; the dedicated document PUT must also be reachable.
   return access.resourceLevel === 'RW' && keyLevel === 'RW' ? 'edit' : 'read';

@@ -76,6 +76,25 @@ describe('investigation access over HTTP', () => {
     expect(SupportJsonParameterService.prototype.writeJsonParameter).not.toHaveBeenCalled();
   });
 
+  // Every key of an unrestricted jsonParameters field follows the field's level, which may be wider than the errand's.
+  it('writes a document under errand level R when the unrestricted field and the document resource are RW', async () => {
+    vi.mocked(ApiService.prototype.get).mockResolvedValue({ status: 200, message: 'success', data: { ...mockErrandAccess(), level: 'R' } });
+    const response = await request(server()).put(url).send(body);
+    expect(response.status).toBe(201);
+    expect(SupportJsonParameterService.prototype.writeJsonParameter).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a document write where the unrestricted field is read-only, before writing anything', async () => {
+    vi.mocked(ApiService.prototype.get).mockResolvedValue({
+      status: 200,
+      message: 'success',
+      data: { ...mockErrandAccess(), fields: [{ field: 'jsonParameters', level: 'R', allKeys: true, keys: [] }] },
+    });
+    const response = await request(server()).put(url).send(body);
+    expect(response.status).toBe(403);
+    expect(SupportJsonParameterService.prototype.writeJsonParameter).not.toHaveBeenCalled();
+  });
+
   it('retains 401 for a missing BFF login and never asks upstream for access', async () => {
     authenticated = false;
     const response = await request(server()).put(url).send(body);
