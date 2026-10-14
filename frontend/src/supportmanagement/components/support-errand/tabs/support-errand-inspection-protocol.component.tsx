@@ -1,12 +1,21 @@
 import type { ErrandAttachment, Measure } from '@common/data-contracts/supportmanagement/data-contracts';
+import { renderTemplatePdfDirect } from '@common/services/template-render-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Button, FormControl, FormLabel, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Button, Disclosure, FormControl, FormLabel, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   getSupportAttachment,
+  getSupportAttachments,
+  saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  inspectionProtocolDetailsOf,
+  inspectionProtocolFileName,
+  toInspectionProtocolParameters,
+} from '@supportmanagement/services/support-inspection-protocol-service';
+import { SERVING_INSPECTION_PROTOCOL_TEMPLATE } from '@supportmanagement/services/support-inspection-protocol-template';
 import {
   getSupportMeasures,
   SUPPORT_MEASURE_RESULTS,
@@ -15,13 +24,19 @@ import {
   supportMeasureProtocolFields,
   supportMeasureProtocolPatch,
   SupportMeasureResult,
+  supportMeasuresOfType,
+  SupportMeasureType,
   unlinkSupportMeasureAttachment,
   updateSupportMeasure,
   uploadSupportMeasureAttachment,
 } from '@supportmanagement/services/support-measure-service';
-import { Paperclip, Trash2 } from 'lucide-react';
+import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
+import { FileDown, Paperclip, Trash2 } from 'lucide-react';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { SupportErrandInspectionProtocolDetails } from './support-errand-inspection-protocol-details.component';
+import { SupportErrandMeasures } from './support-errand-measures.component';
 
 const TAB_KEY = 'inspection_protocol';
 const ACCEPT = ACCEPTED_UPLOAD_FILETYPES.map((extension) => `.${extension}`).join(',');
@@ -37,8 +52,9 @@ const RESULT_COLOR: Record<string, 'gronsta' | 'error' | 'primary'> = {
   NOT_APPLICABLE: 'primary',
 };
 
-/** Loads the list again, keeping what the handler has written on a measure that is still there. */
-const withLatest = (current: Protocol, latest: Measure[]): Protocol => {
+/** Loads the control points again, keeping what the handler has written on one that is still there. */
+const withLatest = (current: Protocol, all: Measure[]): Protocol => {
+  const latest = supportMeasuresOfType(all, SupportMeasureType.INTERNAL);
   const previousById = new Map(current.measures.map((measure) => [measure.id, measure]));
   const fields = Object.fromEntries(
     latest
@@ -96,7 +112,8 @@ const MeasureCard: FC<{
           );
         })}
       </div>
-      <FormControl id={`measure-note-${measure.id}`} className="w-full">
+      {/* relative keeps the sr-only label (absolute) from stretching the page below the content scroller */}
+      <FormControl id={`measure-note-${measure.id}`} className="w-full relative">
         <FormLabel className="sr-only">{t('common:inspection_protocol.note')}</FormLabel>
         <Textarea
           className="w-full"
@@ -161,7 +178,7 @@ const MeasureCard: FC<{
   );
 };
 
-/** The inspection protocol: one card per control point saved under Ärendeuppgifter. */
+/** The inspection protocol: one card per control point saved under Ärendeuppgifter, then the action points. */
 export const SupportErrandInspectionProtocol: FC<{
   writable: boolean;
   setHasContent: (hasContent: boolean) => void;
@@ -172,7 +189,9 @@ export const SupportErrandInspectionProtocol: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
-  const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
+  const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
+  const user = useUserStore((s) => s.user);
+  const canEdit = user.permissions?.canEditSupportManagement;
 
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
@@ -182,6 +201,9 @@ export const SupportErrandInspectionProtocol: FC<{
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busyMeasureId, setBusyMeasureId] = useState<string>();
+  // The rest of the paper protocol; page state only until a json-schema exists to file it on the errand.
+  const [details, setDetails] = useState(() => inspectionProtocolDetailsOf(supportErrand, user));
+  const [generating, setGenerating] = useState(false);
 
   const receive = useCallback((latest: Measure[]) => setProtocol((current) => withLatest(current, latest)), []);
 
@@ -291,6 +313,29 @@ export const SupportErrandInspectionProtocol: FC<{
     }
   };
 
+  /** Renders the protocol from the page's fields and the saved control points, and files it on the errand. */
+  const generate = async () => {
+    if (!errandId || !municipalityId) return;
+    setGenerating(true);
+    try {
+      const parameters = toInspectionProtocolParameters(supportErrand.errandNumber, details, protocol.measures);
+      const pdf = await renderTemplatePdfDirect(SERVING_INSPECTION_PROTOCOL_TEMPLATE, parameters);
+      const file = pdfFileFromBase64(
+        pdf,
+        inspectionProtocolFileName(supportErrand.errandNumber, details.inspectionDate)
+      );
+      // saveSupportAttachments reads the file out of a FileList-shaped value.
+      await saveSupportAttachments(errandId, municipalityId, [{ file: [file] as unknown as File }]);
+      setSupportAttachments(await getSupportAttachments(errandId, municipalityId));
+      toast('success', 'common:inspection_protocol.generated');
+    } catch (e) {
+      console.error('Something went wrong when generating the inspection protocol', e);
+      toast('error', 'common:inspection_protocol.generate_failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const open = async (attachment: ErrandAttachment) => {
     if (!errandId || !municipalityId || !attachment.id) return;
     try {
@@ -325,6 +370,12 @@ export const SupportErrandInspectionProtocol: FC<{
 
       {protocol.measures.length > 0 ? (
         <div className="flex flex-col gap-16">
+          <SupportErrandInspectionProtocolDetails
+            details={details}
+            readOnly={readOnly}
+            onChange={setDetails}
+            part="before"
+          />
           <span className="text-small font-bold self-end" data-cy="measures-assessed">
             {t('common:inspection_protocol.assessed', { assessed, total: protocol.measures.length })}
             {' - '}
@@ -346,7 +397,39 @@ export const SupportErrandInspectionProtocol: FC<{
               />
             ) : null
           )}
+          <SupportErrandInspectionProtocolDetails
+            details={details}
+            readOnly={readOnly}
+            onChange={setDetails}
+            part="after"
+          />
+          <div>
+            <Button
+              variant="primary"
+              color="vattjom"
+              leftIcon={<FileDown size={18} />}
+              disabled={readOnly || generating || edited}
+              loading={generating}
+              loadingText={t('common:inspection_protocol.generating')}
+              onClick={() => void generate()}
+              data-cy="generate-inspection-protocol"
+            >
+              {t('common:inspection_protocol.generate')}
+            </Button>
+          </div>
         </div>
+      ) : null}
+
+      {!loading && !error ? (
+        <Disclosure variant="alt" className="w-full" data-cy="action-points">
+          <Disclosure.Header>
+            <Disclosure.Title>{t('common:inspection_protocol.action_points')}</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <SupportErrandMeasures measureType={SupportMeasureType.EXTERNAL} />
+          </Disclosure.Content>
+        </Disclosure>
       ) : null}
     </div>
   );

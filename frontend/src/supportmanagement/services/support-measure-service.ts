@@ -1,8 +1,7 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
-import { getLabelType, type SupportErrand } from './support-errand-service';
-import type { SupportMetadata } from './support-metadata-service';
+import type { SupportErrand } from './support-errand-service';
 
 interface SupportMeasureInput {
   type: string;
@@ -98,16 +97,22 @@ export const unlinkSupportMeasureAttachment = (
     .deleteRequest<void>(`${measuresUrl(errandId, municipalityId)}/${measureId}/attachments/${attachmentId}`)
     .then(() => undefined);
 
-/** The errand's TYPE label, when the namespace has a measure type of that name (INTERNAL_/EXTERNAL_INSPECTION). */
-export const supportMeasureTypeForErrand = (
-  errand: Pick<SupportErrand, 'labels'> | undefined,
-  metadata: SupportMetadata | undefined
-): string | undefined => {
-  const typeName: string | undefined = errand ? getLabelType(errand as SupportErrand)?.resourceName : undefined;
-  return typeName && metadata?.measureTypes?.some((measureType) => measureType.name === typeName)
-    ? typeName
-    : undefined;
-};
+/** Control points are INTERNAL measures; the action points the owner gets to address are EXTERNAL ones. */
+export const SupportMeasureType = {
+  INTERNAL: 'INTERNAL',
+  EXTERNAL: 'EXTERNAL',
+} as const;
+
+export type SupportMeasureTypeName = (typeof SupportMeasureType)[keyof typeof SupportMeasureType];
+
+const INSPECTION_CATEGORY = 'INSPECTION';
+
+/** An inspection errand is filed under the INSPECTION category and carries a protocol instead of an investigation. */
+export const isSupportInspectionErrand = (errand: Pick<SupportErrand, 'labels'> | undefined): boolean =>
+  !!errand?.labels?.some((label) => label.classification === 'CATEGORY' && label.resourceName === INSPECTION_CATEGORY);
+
+export const supportMeasuresOfType = (measures: Measure[] | undefined, type: SupportMeasureTypeName): Measure[] =>
+  (measures ?? []).filter((measure) => measure.type === type);
 
 export const supportMeasureRows = (measures: Measure[] | undefined): SupportMeasureRow[] =>
   (measures ?? []).map((measure) => ({ id: measure.id, title: measure.title ?? '' }));

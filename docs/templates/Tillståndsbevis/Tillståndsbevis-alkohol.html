@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"/>
+<title>Tillståndsbevis</title>
+<style>
+	@page {
+		size: A4 portrait;
+		margin: 14mm 16mm 58mm 16mm;
+		@bottom-center { content: element(footer); vertical-align: top; }
+		@top-right { content: element(pageHeader); vertical-align: bottom; }
+	}
+	@page :first {
+		@top-right { content: element(firstPageHeader); vertical-align: bottom; }
+	}
+	body { font-family: 'Liberation Sans'; font-size: 9pt; margin: 0; }
+	table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+	td, th { padding: 0; vertical-align: top; text-align: left; font-weight: normal; }
+	tr { page-break-inside: avoid; }
+
+	.header td { vertical-align: top; }
+	.doc-title { font-size: 11pt; font-weight: bold; margin-bottom: 3pt; }
+	.holder { margin: 22pt 0 0 12pt; }
+	.holder .lines { font-family: serif; font-size: 10.5pt; line-height: 1.6; }
+
+	.permit-title { text-align: center; font-size: 10pt; font-weight: bold; margin: 14pt 0 8pt 0; }
+
+	.grid { border: 1.5pt solid #000; }
+	.c { border: 1pt solid #000; }
+	.section { font-family: serif; font-size: 10pt; font-weight: bold; vertical-align: middle; padding: 3pt; }
+	.label { font-size: 8pt; padding: 1pt 2pt 0 2pt; }
+	.value { font-family: serif; font-size: 11.5pt; line-height: 1.15; padding: 0 3pt; min-height: 13.5pt; }
+	.tall { min-height: 34pt; padding-top: 6pt; }
+	.note { font-size: 9.5pt; padding: 10pt 3pt 3pt 3pt; }
+
+	.opts td { border: none; padding: 1pt 2pt; vertical-align: middle; font-size: 9pt; }
+	.box { display: inline-block; width: 9pt; height: 9pt; border: 1pt solid #000; text-align: center; line-height: 9pt; font-family: serif; font-size: 10pt; vertical-align: middle; margin-right: 3pt; }
+
+	.block-title { font-size: 10pt; font-weight: bold; margin: 3pt 0 1pt 0; }
+	.plain { border: 1.5pt solid #000; }
+
+	.footer { position: running(footer); font-size: 8.5pt; }
+	.footer b { font-weight: bold; }
+	.footer a { color: #005595; text-decoration: underline; }
+	.minasidor { border: 1pt solid #005595; border-left: 4pt solid #005595; margin-bottom: 6pt; }
+	.minasidor td { vertical-align: middle; }
+	.minasidor-text { padding: 6pt 8pt; line-height: 1.4; }
+	.minasidor-title { font-size: 10pt; font-weight: bold; margin-bottom: 3pt; }
+	.minasidor-link { font-weight: bold; font-size: 9.5pt; }
+	.minasidor-qr { width: 26mm; padding: 4pt 6pt; text-align: center; font-size: 7.5pt; }
+	.qr { display: block; width: 20mm; height: 20mm; margin: 0 auto 2pt auto; }
+	.footer-contacts { border-top: 1pt solid #000; }
+	.footer-contacts td { padding-top: 2pt; }
+	.last-block { page-break-inside: avoid; }
+
+	.page-header { font-size: 8pt; text-align: right; }
+	.page-header-first { position: running(firstPageHeader); }
+	.page-header-next { position: running(pageHeader); }
+	.page-number::before { content: counter(page); }
+	.page-count::before { content: counter(pages); }
+</style>
+</head>
+<body>
+
+<div class="page-header page-header-first">Sida <span class="page-number"></span> (<span class="page-count"></span>)</div>
+<div class="page-header page-header-next">Dnr {{ caseNumber | escape }} &#183; Sida <span class="page-number"></span> (<span class="page-count"></span>)</div>
+
+<table class="header">
+	<tr>
+		<td style="width: 48%; padding-top: 6pt;">{% include "sundsvall.logo" %}</td>
+		<td>
+			<div class="doc-title">Tillståndsbevis</div>
+			<table>
+				<tr>
+					<td><div class="label" style="padding-left: 0;">Beslutsdatum</div><div class="value" style="padding-left: 0; font-size: 10.5pt;">{{ decisionDate | escape }}</div></td>
+					<td><div class="label" style="padding-left: 0;">Dnr</div><div class="value" style="padding-left: 0; font-size: 10.5pt;">{{ caseNumber | escape }}</div></td>
+				</tr>
+			</table>
+			<div class="holder">
+				<div class="label" style="padding-left: 0;">Tillståndshavare</div>
+				<div class="lines">
+					{{ permitHolderName | escape }}<br/>
+					{{ permitHolderStreet | escape }}<br/>
+					{{ permitHolderPostalAddress | escape }}
+				</div>
+			</div>
+		</td>
+	</tr>
+</table>
+
+<div class="permit-title">Tillstånd enligt 8 kap. 2 § alkohollagen (2010:1622) för servering av alkoholdrycker</div>
+
+<table class="grid">
+	<colgroup>
+		<col style="width: 19%;"/>
+		<col style="width: 40.5%;"/>
+		<col style="width: 20.25%;"/>
+		<col style="width: 20.25%;"/>
+	</colgroup>
+
+	<tr>
+		<th class="c section">Giltighetstid</th>
+		<td class="c"><div class="label">fr.o.m.</div><div class="value">{{ validFrom | escape }}</div></td>
+		<td class="c"><div class="label">Organisationsnummer</div><div class="value">{{ permitHolderOrgNumber | escape }}</div></td>
+		<td class="c"><div class="label">Telefon (tillståndshavaren)</div><div class="value">{{ permitHolderPhone | escape }}</div></td>
+	</tr>
+
+	<tr>
+		<th class="c section" rowspan="3">Serveringsställe</th>
+		<td class="c" colspan="2"><div class="label">Namn</div><div class="value">{{ premisesName | escape }}</div></td>
+		<td class="c" rowspan="2"><div class="label">Restaurangnr</div><div class="value">{{ premisesRestaurantNumber | escape }}</div></td>
+	</tr>
+	<tr>
+		<td class="c" colspan="2"><div class="label">Gatuadress</div><div class="value">{{ premisesStreet | escape }}</div></td>
+	</tr>
+	<tr>
+		<td class="c" colspan="2"><div class="label">Postadress</div><div class="value">{{ premisesPostalAddress | escape }}</div></td>
+		<td class="c"><div class="label">Telefon (serveringsställets)</div><div class="value">{{ premisesPhone | escape }}</div></td>
+	</tr>
+
+	<tr>
+		<th class="c section" rowspan="2">Serveringslokaler</th>
+		<td class="c" colspan="3"><div class="label">Lokaler inom vilka servering får ske</div><div class="value tall">{{ servingAreaDescription | escape }}</div></td>
+	</tr>
+	<tr>
+		<td class="c"><div class="label">Jfr ritning beteckning/nr</div><div class="value">{{ servingAreaDrawingReference | escape }}</div></td>
+		<td class="c"><div class="label">Högst antal personer i serveringslokalen</div><div class="value">{{ servingAreaMaxPersons | escape }}</div></td>
+		<td class="c"><div class="label">Antal sittplatser i bordsavd./matsal</div><div class="value">{{ servingAreaSeats | escape }}</div></td>
+	</tr>
+
+	<tr>
+		<th class="c section" rowspan="3">Serveringens<br/>omfattning</th>
+		<td class="c" colspan="3">
+			<table class="opts">
+				<tr>
+					<td style="width: 17%;">{{ box(scopeAllYear | default("")) }}Året runt</td>
+					<td style="width: 13%;">{{ box(scopeAnnualPeriod | default("")) }}</td>
+					<td style="width: 45%;"><div class="label" style="padding: 0;">Fr.o.m. – t.o.m.</div>Årligen under tidsperioden <span class="value" style="font-size: 10pt;">{{ scopePeriodFromTo | default("") | escape }}</span></td>
+					<td style="width: 25%;">{{ box(scopeTasting | default("")) }}Provsmakning</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td class="c" colspan="3">
+			<div class="label">Alkoholdrycker som får serveras</div>
+			<table class="opts">
+				<tr>
+					<td style="width: 20%;">{{ box(beverageBeer | default("")) }}Starköl</td>
+					<td style="width: 20%;">{{ box(beverageWine | default("")) }}Vin</td>
+					<td style="width: 35%;">{{ box(beverageOtherFermented | default("")) }}Andra jästa alkoholdrycker</td>
+					<td style="width: 25%;">{{ box(beverageSpirits | default("")) }}Spritdrycker</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td class="c" colspan="3">
+			<div class="label">Servering till</div>
+			<table class="opts">
+				<tr>
+					<td style="width: 20%;">{{ box(servingToPublic | default("")) }}Allmänheten</td>
+					<td style="width: 80%;">{{ box(servingToClosedCompany | default("")) }}Slutet sällskap</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+
+	<tr>
+		<th class="c section">Serverings-<br/>tider</th>
+		<td class="c" colspan="3">
+			<div class="label">Klockslag då serveringen får påbörjas och senast skall avslutas.</div>
+			<div class="value" style="padding-top: 4pt;">{{ servingHours | escape | replace({'
+': '<br/>'}) | raw }}</div>
+			<div class="note">Serveringslokalerna skall vara utrymda <b>senast 30 min</b> efter serveringstidens utgång.</div>
+		</td>
+	</tr>
+
+	<tr>
+		<th class="c section">Villkor</th>
+		<td class="c" colspan="3"><div class="value tall" style="padding-top: 12pt;">{{ conditions | escape | replace({'
+': '<br/>'}) | raw }}</div></td>
+	</tr>
+</table>
+
+<div class="last-block">
+<div class="footer">
+	<table class="minasidor">
+		<tr>
+			<td class="minasidor-text">
+				<div class="minasidor-title">Följ ditt ärende i Mina sidor</div>
+				I Mina sidor kan du kommunicera med din handläggare och se dina beslut.<br/>
+				Logga in med e-legitimation på <a class="minasidor-link" href="https://minasidor.sundsvall.se">minasidor.sundsvall.se</a>
+			</td>
+			<td class="minasidor-qr">{% include "sundsvall.minasidor.qr" %}Skanna med<br/>mobilen</td>
+		</tr>
+	</table>
+	<table class="footer-contacts">
+		<colgroup>
+			<col style="width: 40%;"/>
+			<col style="width: 25%;"/>
+			<col style="width: 35%;"/>
+		</colgroup>
+		<tr>
+			<td><b>Postadress</b><br/>Sundsvalls kommun<br/>Individ- och arbetsmarknadsförvaltningen<br/>Alkohol- och tobaksenheten<br/>851 85 SUNDSVALL</td>
+			<td><b>Besöksadress</b><br/>Kyrkogatan 26</td>
+			<td><b>E-post</b><br/><a href="mailto:alkohol%26tobaksenheten@sundsvall.se">alkohol&amp;tobaksenheten@sundsvall.se</a></td>
+		</tr>
+	</table>
+</div>
+<div class="block-title">Tillståndsbeslut</div>
+<table class="plain">
+	<tr>
+		<td class="c" rowspan="2" style="width: 50%;">
+			<div class="label">Beslutsfattare (nämnd/befattningshavare) och diarienummer</div>
+			<div class="value">{{ decisionDateAndCaseNumber | escape }}</div>
+			<div class="value" style="padding-top: 8pt;">{{ decisionMaker | escape }}</div>
+		</td>
+		<td class="c"><div class="label">Ersätter tidigare beslut datum / diarienummer</div><div class="value">{{ replacesDecision | default("") | escape }}</div></td>
+	</tr>
+	<tr>
+		<td class="c"><div class="label">Beslut</div><div class="value">{{ decisionText | escape }}</div></td>
+	</tr>
+</table>
+
+<div class="block-title">Beslutsfattare/Utfärdat av</div>
+<table class="plain">
+	<tr>
+		<td class="c" style="width: 50%;">
+			<div class="label">Namn, befattning</div>
+			<div class="value">{{ issuedByNameAndTitle | escape }}</div>
+			<div class="value">{{ issuedByUnit | escape }}</div>
+		</td>
+		<td class="c"><div class="label">Utförandedatum</div><div class="value">{{ executionDate | escape }}</div></td>
+	</tr>
+</table>
+</div>
+
+</body>
+</html>

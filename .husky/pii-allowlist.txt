@@ -36,6 +36,8 @@
 357248-4270
 293241-3460
 234567-0000
+# Fiktivt orgnr för "Exempel AB" i tillsynsprotokollets tester och exempeldata
+556000-0000
 
 # --- Telefonnummer-träffar ---
 0701740605

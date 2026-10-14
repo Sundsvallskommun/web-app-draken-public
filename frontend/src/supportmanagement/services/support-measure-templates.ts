@@ -9,16 +9,16 @@ export const SUPPORT_MEASURE_TEMPLATES: SupportMeasureTemplate[] = [
   {
     key: 'serving_permit',
     label: 'Serveringstillstånd – tillsyn',
+    // The rows of the paper protocol "Tillsynsprotokoll Alkohollagen"; the PDF lists whatever the handler kept.
     titles: [
-      'Serveringsansvarig närvarande och anmäld',
-      'Ålderskontroll (18/20 år)',
-      'Serveringstider följs',
-      'Ingen överservering / märkbart berusade gäster',
-      'Matutbud (lagad mat vid stadigvarande)',
-      'Prislista och prissättning',
-      'Marknadsföring (ej otillbörlig/riktad mot unga)',
-      'Ordning och nykterhet',
-      'Kassaregister och bokföring',
+      'Nykterhet (3:5, 3:8, 8:20)',
+      'Ålderskontroll (3:7, 3:8)',
+      'Servering minderåriga',
+      'Marknadsföring (7:1)',
+      'Alkoholfria alternativ (8:22)',
+      'Personalliggare',
+      'Brandskydd (8:16)',
+      'För många gäster',
     ],
   },
   {

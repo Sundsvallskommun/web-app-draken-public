@@ -2,7 +2,7 @@ import type { ProcessActivity } from '@common/data-contracts/supportmanagement/d
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
@@ -14,7 +14,7 @@ import {
   getSupportConversations,
 } from '@supportmanagement/services/support-conversation-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { supportMeasureTypeForErrand } from '@supportmanagement/services/support-measure-service';
+import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import {
   buildTree,
   countUnreadMessages,
@@ -55,9 +55,8 @@ export const SupportTabsWrapper: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
-  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   // An inspection errand carries a protocol on the Utredning tab instead of an investigation.
-  const isInspection = !!supportMeasureTypeForErrand(supportErrand, supportMetadata);
+  const isInspection = isSupportInspectionErrand(supportErrand);
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
