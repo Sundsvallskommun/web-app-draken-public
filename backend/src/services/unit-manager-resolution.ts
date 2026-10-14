@@ -39,8 +39,8 @@ export const resolveLocationManagers = ({ locationAccounts, rolesByAccount, disp
 
   for (const adAccount of locationAccounts) {
     const account = adAccount.trim().toLowerCase();
-    for (const groupId of rolesByAccount.get(account) ?? []) {
-      const role = findInvestigationManagerRole(groupId);
+    for (const roleName of rolesByAccount.get(account) ?? []) {
+      const role = findInvestigationManagerRole(roleName);
       if (!role) continue;
 
       const identity = `${account}:${role.key}`;
