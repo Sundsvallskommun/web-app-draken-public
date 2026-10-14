@@ -111,6 +111,12 @@ tillbaka för båda och var identiska med artefakterna, och `versions/latest` pe
 publicerats i produktionsmiljön. Nyckeln `vc-kommentar-hsl` stod vid publiceringen inte i någon rolls
 `JSON_PARAMETERS` i namespace-konfigurationen, så dokumentet nås ännu inte av den som har en roll.
 
+Den 14 oktober 2026 publicerades `2281_utredning-hsl_1.5` i testmiljön: namn och roll på deltagarna i analysteamet,
+MAS/MAR:s initiala bedömning och platsen för knappen Aktivera VC kommentar HSL (se Händelseanalys HSL 1.5). Schema och
+UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 1.5. Inget har publicerats
+i produktionsmiljön. Labels `REQUEST/VC_COMMENT_HSL` och `ANALYSIS/HSL_STARTED`, som knappen och den initiala
+bedömningen skriver, fanns vid publiceringen inte i namespacens metadata.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -215,7 +221,7 @@ och Omvårdnadspersonal (`care_staff`). Specialistundersköterskor och liknande 
 (`unit`) finns inte längre. Namn och roll krävs först när analysen markeras som klar, som rollen gjorde förut.
 
 Händelseanalyser som redan är sparade är bundna till sin version och behåller rollen som fritext och sin enhet.
-Ingen deltagare flyttas mellan versionerna. 1.5 är inte publicerad.
+Ingen deltagare flyttas mellan versionerna.
 
 1.5 börjar också med MAS/MAR:s initiala bedömning, sektionen Initial bedömning: Jag beslutar att ärendet
 (`analysisDecision`) Ska händelseanalyseras (`analyze`) eller Inte ska händelseanalyseras (`not_analyze`), och en
