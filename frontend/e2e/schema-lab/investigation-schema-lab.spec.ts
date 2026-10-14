@@ -256,10 +256,11 @@ test('mock roles make only the owned investigation editable', async ({ page }) =
     .locator(`#${solLssIdPrefix}_individualNotified`)
     .getByRole('radio', { name: 'Ja', exact: true });
   await expect(individualNotified).toBeDisabled();
-  // LEX chooses the legal bases of a misconduct, SoL or LSS: nothing is chosen for them, and only LEX may choose.
+  // LEX chooses the legal bases of a misconduct, SoL or LSS, and only LEX may choose. The lab starts from the
+  // schema's valid example, which names both; that nothing is chosen for LEX on an errand is the errand suite's.
   const lexLegalBases = page.locator(`#${solLssIdPrefix}_legalBases-group`);
   await expect(lexLegalBases.locator('input')).toHaveCount(2);
-  await expect(lexLegalBases.locator('input:checked')).toHaveCount(0);
+  await expect(lexLegalBases.locator('input:checked')).toHaveCount(2);
   await expect(lexLegalBases.getByLabel(/^SoL –/u)).toBeDisabled();
   await expect(activePanel.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
 
@@ -359,9 +360,12 @@ test('marks an empty required field as an error only after a save attempt', asyn
   const assessedWith = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith`);
   const assessedWithError = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith__error`);
   // An unfinished draft may have empty fields. Marking the investigation finished is what makes
-  // the schema require them, so the field is only required once that answer is Ja.
+  // the schema require them. The requirement is conditional, so the form does not mark the field
+  // required itself; the UI schema's indicator says so from the start.
+  await expect(page.locator(`label[for="${managerIdPrefix}_riskAssessmentHsl_assessedWith"]`)).toContainText(
+    '(Obligatorisk)'
+  );
   await page.locator(`#${managerIdPrefix}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
-  await expect(assessedWith).toHaveAttribute('aria-required', 'true');
   await assessedWith.fill('');
 
   // The theme styles :invalid as an error, so an untouched empty field must not match it before saving.
