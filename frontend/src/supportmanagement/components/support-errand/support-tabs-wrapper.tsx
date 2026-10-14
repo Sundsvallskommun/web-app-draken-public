@@ -295,7 +295,8 @@ export const SupportTabsWrapper: FC<{
             supportErrand,
             investigationProfile,
             errandPhases,
-            investigationAccess
+            investigationAccess,
+            { labelStructure: supportMetadata?.labels?.labelStructure, viewer }
           ) ||
           investigationProfile?.documents.some(
             (document) => document.placement === 'decision' && investigationDirty[document.key]
@@ -365,8 +366,10 @@ export const SupportTabsWrapper: FC<{
       supportAttachments,
       supportConversations,
       supportErrand,
+      supportMetadata,
       setInvestigationDocumentDirty,
       unsavedChanges,
+      viewer,
     ]
   );
 

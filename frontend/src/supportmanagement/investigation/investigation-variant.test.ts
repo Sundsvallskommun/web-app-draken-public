@@ -112,6 +112,47 @@ test('a tab waiting for a phase stays away until the errand reaches it', () => {
 
   assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('investigation')), false);
   assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('decision')), true);
+
+  // Ä6. A slot may let one reader past the phase: somebody who decides on their own, outside the phases the
+  // handler moves the errand through. Everybody else still waits for the phase, and the flag still decides first.
+  const decidesOutsidePhase: InvestigationVariantModule = {
+    ...variant,
+    decisionTab: {
+      ...variant.decisionTab!,
+      isOfferedBeforePhase: ({ viewer }) => viewer.roleKeys?.includes('decides-alone') === true,
+    },
+  };
+  const reader = (roleKeys: string[]) => ({ labelStructure: undefined, viewer: { roleKeys } });
+  const off = { ...features({}), useInvestigation: false } as AppConfigFeatures;
+  assert.equal(
+    isDecisionTabVisible(
+      on,
+      decidesOutsidePhase,
+      errand,
+      null,
+      inPhase('investigation'),
+      undefined,
+      reader(['decides-alone'])
+    ),
+    true
+  );
+  assert.equal(
+    isDecisionTabVisible(on, decidesOutsidePhase, errand, null, inPhase('investigation'), undefined, reader(['other'])),
+    false
+  );
+  assert.equal(isDecisionTabVisible(on, decidesOutsidePhase, errand, null, inPhase('investigation')), false);
+  assert.equal(
+    isDecisionTabVisible(
+      off,
+      decidesOutsidePhase,
+      errand,
+      null,
+      inPhase('investigation'),
+      undefined,
+      reader(['decides-alone'])
+    ),
+    false
+  );
 });
 
 test('the first unmet requirement for the target phase holds the move, in the order the variant lists them', () => {

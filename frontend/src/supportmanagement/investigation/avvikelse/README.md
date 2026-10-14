@@ -20,6 +20,12 @@ båda. Regeln finns i både backend och frontend
 (`resolveIafVofInvestigationDocumentApplicability` respektive `resolveAvvikelseDocumentApplicability`), och BFF:en
 avvisar ett beslutsdokument på ett ärende det inte gäller.
 
+Fliken Beslut visas när ärendet har nått beslutsfasen. MAS/MAR fattar beslutet om IVO-anmälan enligt
+delegationsordningen och äger inte ärendet, så den som agerar som MAS/MAR (`actsAsMasMar`) får fliken redan innan,
+på varje ärende där Beslut HSL gäller (`isOfferedBeforePhase` i kontraktets `decisionTab`). Alla andra väntar på
+beslutsfasen. BFF:en håller inte ett beslutsdokument till någon fas, och vem som får skriva Beslut HSL avgör
+namespace-konfigurationen: `beslut-hsl` är `RW` för MAR_MAS och `R` för övriga roller.
+
 Rapporten anger sällan något lagrum: det gör enhetschefens utredning, och ärendet får då ingen `PROVISION`-etikett.
 Därför räcker inte det rapporterade lagrummet. `RISK/HIGH_HSL` är det som för MAS/MAR till ärendet, så samma
 etikett ger dem deras beslut. Regeln läser etiketter och inte utredningen, så den ger samma svar för alla som når

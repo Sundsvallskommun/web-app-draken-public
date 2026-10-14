@@ -1,7 +1,14 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
-import { errandNumber, installIafApiMock, investigationPhases } from './fixtures/investigation-flow.mock';
+import {
+  allExistingInvestigationDocuments,
+  defaultInvestigationProfile,
+  errandNumber,
+  hslDecisionKey,
+  installIafApiMock,
+  investigationPhases,
+} from './fixtures/investigation-flow.mock';
 
 test.skip(
   !['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''),
@@ -115,6 +122,71 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
   });
 
   // A namespace that runs no workflow has no phase to wait for, and keeps the tabs it always had.
+  // Ä6. MAS/MAR decides on reporting an HSL deviation to IVO under the delegation, and does not hold the errand: they
+  // are offered Beslut HSL while the errand is still being investigated. Everybody else waits for the decision phase.
+  test('MAS/MAR fattar Beslut HSL redan i utredningsfasen', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, {
+      roleKeys: ['mas-mar'],
+      documents: {},
+      featureFlags: measuresEnabled,
+      metadataPhases: investigationPhases,
+      activePhaseId: 'phase-investigation',
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await decisionTab(page).click();
+    const decision = page.locator(`[data-cy="investigation-document-${hslDecisionKey}"]`);
+    await expect(decision).toBeVisible();
+    await decision
+      .locator(`#${hslDecisionKey}_ivoNotification`)
+      .getByRole('radio', { name: 'Nej', exact: true })
+      .check();
+    await page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').click();
+    await expect.poll(() => trace.puts.map(({ key }) => key)).toEqual([hslDecisionKey]);
+  });
+
+  for (const roleKey of ['enhetschef', 'verksamhetschef']) {
+    // The managers read the HSL decision, as Support Management's namespace configuration grants them, and never write it.
+    const installManagerErrand = (page: Page, activePhaseId: string) => {
+      const profile = defaultInvestigationProfile();
+      return installIafApiMock(page, {
+        roleKeys: [roleKey],
+        documents: allExistingInvestigationDocuments(),
+        investigationProfile: profile,
+        documentAccess: Object.fromEntries(
+          profile.documents.map(({ key }) => [key, key === hslDecisionKey ? 'read' : 'edit'] as const)
+        ),
+        featureFlags: measuresEnabled,
+        metadataPhases: investigationPhases,
+        activePhaseId,
+      });
+    };
+
+    test(`${roleKey} får inte Beslut HSL i utredningsfasen`, async ({ page, dismissCookieConsent }) => {
+      await installManagerErrand(page, 'phase-investigation');
+      await visitErrand(page, dismissCookieConsent);
+
+      await expect(investigationTab(page)).toHaveCount(1);
+      await expect(decisionTab(page)).toHaveCount(0);
+    });
+
+    test(`${roleKey} läser Beslut HSL i beslutsfasen men kan inte ändra det`, async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      await installManagerErrand(page, 'phase-decision');
+      await visitErrand(page, dismissCookieConsent);
+
+      await decisionTab(page).click();
+      const decision = page.locator(`[data-cy="investigation-document-${hslDecisionKey}"]`);
+      await expect(decision).toBeVisible();
+      await expect(
+        decision.locator(`#${hslDecisionKey}_ivoNotification`).getByRole('radio', { name: 'Ja', exact: true })
+      ).toBeDisabled();
+    });
+  }
+
   test('utan fasmodell är flikarna kvar som förut', async ({ page, dismissCookieConsent }) => {
     await installIafApiMock(page, { documents: {}, featureFlags: measuresEnabled });
 

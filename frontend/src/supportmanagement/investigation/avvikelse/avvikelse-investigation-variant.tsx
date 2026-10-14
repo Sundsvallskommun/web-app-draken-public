@@ -22,8 +22,12 @@ import {
   lexOverviewAssignee,
   requiresLexAssignment,
 } from './assignment/avvikelse-assignment-policy';
+import { actsAsMasMar } from './assignment/mas-mar-handler';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
-import { isAvvikelseReportedMisconductErrand } from './avvikelse-classification-policy';
+import {
+  isAvvikelseReportedMisconductErrand,
+  resolveAvvikelseDocumentApplicability,
+} from './avvikelse-classification-policy';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 import { resolveAvvikelseNextStep } from './avvikelse-next-step';
@@ -168,6 +172,10 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   decisionTab: {
     label: 'Beslut',
     requiredPhaseName: DECISION_PHASE_NAME,
+    // Ä6. MAS/MAR decides on reporting an HSL deviation to IVO under the delegation, and does not hold the errand:
+    // they are offered Beslut HSL from the moment it applies, whatever phase the handler has moved the errand to.
+    isOfferedBeforePhase: ({ errand, viewer }: InvestigationErrandContext) =>
+      actsAsMasMar(viewer) && resolveAvvikelseDocumentApplicability(errand) === 'hsl-deviation',
     isVisible: () => true,
     render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
   },

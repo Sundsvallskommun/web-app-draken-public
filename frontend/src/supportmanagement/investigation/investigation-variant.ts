@@ -140,6 +140,12 @@ interface InvestigationDecisionTabSlot {
    * no phase is offered whenever `isVisible` says so, as it always was.
    */
   readonly requiredPhaseName?: string;
+  /**
+   * Whether this viewer is offered the decision before the errand reaches `requiredPhaseName`: somebody who
+   * decides on their own, outside the phases the errand's handler moves it through. Left out, the phase holds
+   * for everybody.
+   */
+  readonly isOfferedBeforePhase?: (context: InvestigationErrandContext) => boolean;
   readonly isVisible: (
     errand: SupportErrand | undefined,
     profile: InvestigationProfile | null | undefined,
@@ -357,7 +363,8 @@ export const resolveInvestigationAdministration = (
 /**
  * The master switch and the phase gate apply to the decision tab exactly as they apply to the
  * investigation tab; beyond them the variant's own slot decides, per errand and profile. No slot,
- * no tab.
+ * no tab. The slot may let a viewer past the phase gate (`isOfferedBeforePhase`); who is reading is
+ * then what it is asked about.
  */
 export const isDecisionTabVisible = (
   features: AppConfigFeatures,
@@ -365,8 +372,10 @@ export const isDecisionTabVisible = (
   errand: SupportErrand | undefined,
   profile: InvestigationProfile | null | undefined,
   phases: SupportPhaseContext,
-  access: InvestigationAccessState = { status: 'loading' }
+  access: InvestigationAccessState = { status: 'loading' },
+  reader: Pick<InvestigationErrandContext, 'labelStructure' | 'viewer'> = { labelStructure: undefined, viewer: {} }
 ): boolean =>
   features.useInvestigation &&
   variant?.decisionTab?.isVisible(errand, profile, access) === true &&
-  hasReachedSupportPhase(variant.decisionTab.requiredPhaseName, phases);
+  (hasReachedSupportPhase(variant.decisionTab.requiredPhaseName, phases) ||
+    variant.decisionTab.isOfferedBeforePhase?.({ errand, profile, ...reader }) === true);

@@ -41,7 +41,8 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   label categorization exactly as every other drake sees it, and one without `renderDetailsHeader`
   leaves Ärendeuppgifter untouched. AOT is precisely that case. The same
   holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, always offered once the errand
-  is in the decision phase. It shows the decision document that applies to the errand (the lex Sarah
+  is in the decision phase, and to MAS/MAR on an HSL deviation from the start (`isOfferedBeforePhase`,
+  which only a slot that sets it uses). It shows the decision document that applies to the errand (the lex Sarah
   decision on a reported misconduct, the IVO decision on an HSL deviation, never both). It says only
   that there is nothing to decide when neither applies, and only which role decides when the user does
   not reach the decision; a variant without the slot gets no tab.
