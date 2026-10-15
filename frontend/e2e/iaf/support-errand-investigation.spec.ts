@@ -2697,6 +2697,34 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="suspend-button"]')).toHaveCount(0);
   });
 
+  // Until the investigation has classified it, an errand has no type; its heading names what was reported instead.
+  for (const [eventType, reportType, resourceName, heading] of [
+    ['AVVIKELSE', 'deviation', 'DEVIATION', 'Avvikelse'],
+    ['MISSFORHALLANDE', 'misconduct', 'ABUSE', 'Missförhållande'],
+  ] as const) {
+    test(`rubricerar ett oklassificerat ärende med rapporttypen ${heading}`, async ({ page, dismissCookieConsent }) => {
+      const reported = iafLabelFixture.reportType[reportType];
+      await installIafApiMock(page, {
+        eventType,
+        classification: { category: 'NONE', type: 'NONE' },
+        labels: [
+          {
+            id: reported.id,
+            classification: 'REPORT_TYPE',
+            displayName: heading,
+            resourceName,
+            resourcePath: reported.resourcePath,
+          },
+        ],
+      });
+
+      await visitErrand(page, dismissCookieConsent);
+
+      await expect(page.getByRole('heading', { level: 1, name: heading, exact: true })).toBeVisible();
+      await expect(page.getByText('(Ärendetyp saknas)')).toHaveCount(0);
+    });
+  }
+
   for (const state of ['active', 'unavailable'] as const) {
     test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
       page,
