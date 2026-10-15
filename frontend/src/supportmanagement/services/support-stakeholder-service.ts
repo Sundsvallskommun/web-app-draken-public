@@ -14,6 +14,16 @@ export const getAdminName = (a: Admin) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
 };
 
+/**
+ * Looks up the Admin behind one of an errand's user ids (`reporterUserId`, `assignedUserId`).
+ *
+ * Matching is case-insensitive: `adAccount` comes from Active Directory while the user ids are
+ * written from the session username, and the module already compares them that way elsewhere
+ * (see `validateAction`).
+ */
+export const findAdminByAccount = (administrators: Admin[] | undefined, account: string | undefined) =>
+  account ? administrators?.find((a: Admin) => a?.adAccount?.toLowerCase() === account.toLowerCase()) : undefined;
+
 export const getApplicantName = (r: SupportErrand) => {
   const applicant = r.stakeholders?.find((s) => s.role === 'PRIMARY');
   return applicant ? `${applicant.firstName} ${applicant.lastName}` : '(saknas)';

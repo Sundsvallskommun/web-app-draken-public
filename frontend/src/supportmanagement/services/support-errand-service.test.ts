@@ -8,13 +8,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   ApiSupportErrand,
   forwardSupportErrand,
+  isSupportErrandOpenToHandover,
   mapApiSupportErrandToSupportErrand,
+  Status,
   SupportErrand,
   supportErrandIsEmpty,
   updateSupportErrand,
 } from './support-errand-service';
 
-vi.mock('@common/services/api-service', () => ({ apiService: { post: vi.fn(), patch: vi.fn() } }));
+vi.mock('@common/services/api-service', () => ({
+  apiService: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+  withRequestGroup: <T>(action: () => Promise<T>) => action(),
+}));
 vi.mock('@config/appconfig', () => ({ appConfig: { features: {} } }));
 vi.mock('@sk-web-gui/react', () => ({ useSnackbar: vi.fn() }));
 vi.mock('@stores/index', () => ({ useConfigStore: vi.fn(), useSupportStore: vi.fn() }));
@@ -39,7 +44,13 @@ const forwardForm = (overrides: Partial<ForwardFormProps>): ForwardFormProps => 
   ...overrides,
 });
 
+// What the errand looks like when it is read back after the forward, just before it is closed.
+const errandAfterForward = { status: 'ONGOING', version: 4 };
+
 beforeEach(() => {
+  vi.mocked(apiService.get)
+    .mockReset()
+    .mockResolvedValue({ data: errandAfterForward } as never);
   vi.mocked(apiService.post)
     .mockReset()
     .mockResolvedValue({ data: {} } as never);
@@ -58,7 +69,15 @@ describe('forwardSupportErrand', () => {
         'supporterrands/2281/errand-1/forward',
         expect.objectContaining({ recipient: 'DEPARTMENT', department, message: '' })
       );
-      expect(apiService.patch).toHaveBeenCalledWith('supporterrands/2281/errand-1', expect.anything());
+      // Closed through the status command, conditioned on the version the forward left behind.
+      expect(apiService.patch).toHaveBeenCalledWith(
+        'supporterrands/2281/errand-1/status',
+        expect.objectContaining({
+          status: 'SOLVED',
+          expectedStatus: errandAfterForward.status,
+          expectedVersion: errandAfterForward.version,
+        })
+      );
     }
   );
 
@@ -81,6 +100,8 @@ const label = (classification: string, resourcePath: string, labels?: Label[]): 
 });
 const apiErrand = (overrides: Partial<ApiSupportErrand>): ApiSupportErrand =>
   ({ id: 'errand-1', stakeholders: [], ...overrides } as ApiSupportErrand);
+// The version of the errand the form was loaded from; every errand write is conditioned on it.
+const loadedErrandVersion = 3;
 const patchedBody = () => vi.mocked(apiService.patch).mock.calls[0][1] as Partial<ApiSupportErrand>;
 
 describe('with label categorization', () => {
@@ -149,14 +170,22 @@ describe('with label categorization', () => {
 
   describe('updateSupportErrand', () => {
     test('sends the labels without their children and no classification', async () => {
-      await updateSupportErrand('2281', {
-        id: 'errand-1',
-        category: 'SALARY',
-        type: 'SALARY/PAYSLIP',
-        labels: [label('ROOT', 'ROOT'), label('CATEGORY', 'SALARY', [label('TYPE', 'SALARY/PAYSLIP')])],
-      });
+      await updateSupportErrand(
+        '2281',
+        {
+          id: 'errand-1',
+          category: 'SALARY',
+          type: 'SALARY/PAYSLIP',
+          labels: [label('ROOT', 'ROOT'), label('CATEGORY', 'SALARY', [label('TYPE', 'SALARY/PAYSLIP')])],
+        },
+        loadedErrandVersion
+      );
 
-      expect(apiService.patch).toHaveBeenCalledWith('supporterrands/2281/errand-1', expect.anything());
+      expect(apiService.patch).toHaveBeenCalledWith(
+        'supporterrands/2281/errand-1',
+        expect.anything(),
+        expect.objectContaining({ headers: expect.objectContaining({ 'If-Match': expect.any(String) }) })
+      );
       expect(patchedBody().classification).toBeUndefined();
       expect(patchedBody().labels).toEqual([label('ROOT', 'ROOT'), label('CATEGORY', 'SALARY')]);
     });
@@ -173,9 +202,26 @@ describe('without label categorization', () => {
   });
 
   test('sends the classification from category and type', async () => {
-    await updateSupportErrand('2281', { id: 'errand-1', category: 'BOU', type: 'OTHER' });
+    await updateSupportErrand('2281', { id: 'errand-1', category: 'BOU', type: 'OTHER' }, loadedErrandVersion);
 
     expect(patchedBody().classification).toEqual({ category: 'BOU', type: 'OTHER' });
     expect(patchedBody().labels).toEqual([]);
+  });
+});
+
+describe('isSupportErrandOpenToHandover', () => {
+  const errandIn = (status: Status, limitedAccess = false) =>
+    ({ ...supportErrand, status, limitedAccess } as SupportErrand);
+
+  test('hands on an errand that only waits to be resumed, as well as one being handled', () => {
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ASSIGNED))).toBe(true);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ONGOING))).toBe(true);
+  });
+
+  test('never hands on a closed, parked or reopened errand, or one read only in part', () => {
+    expect(isSupportErrandOpenToHandover(errandIn(Status.SOLVED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.SUSPENDED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.REOPENED))).toBe(false);
+    expect(isSupportErrandOpenToHandover(errandIn(Status.ASSIGNED, true))).toBe(false);
   });
 });

@@ -1,3 +1,6 @@
+// DTO decorators may run while importing startup configuration.
+import 'reflect-metadata';
+
 import { createSessionStore } from '@utils/session-store';
 import validateEnv from '@utils/validateEnv';
 

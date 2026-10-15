@@ -9,6 +9,11 @@ import { appConfig } from '@config/appconfig';
 import { useConfigStore, useUserStore } from '@stores/index';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
+import {
+  getInvestigationAdministration,
+  getInvestigationFollowUp,
+} from '@supportmanagement/investigation/investigation-variant-registry';
+import { PlannedMeasuresOverview } from '@supportmanagement/measures/planned-measures-overview';
 import { useState } from 'react';
 
 export function OversiktPageClient() {
@@ -16,6 +21,11 @@ export function OversiktPageClient() {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
   const [showContractTable, setShowContractTable] = useState<boolean>(false);
+  const [showPlannedMeasures, setShowPlannedMeasures] = useState<boolean>(false);
+  const [showFollowUp, setShowFollowUp] = useState<boolean>(false);
+  const [showAdministration, setShowAdministration] = useState<boolean>(false);
+  const followUp = getInvestigationFollowUp();
+  const administration = getInvestigationAdministration(user);
 
   return (
     <>
@@ -26,10 +36,25 @@ export function OversiktPageClient() {
           showAttestationTable={showAttestationTable}
           setShowContractTable={setShowContractTable}
           showContractTable={showContractTable}
+          setShowPlannedMeasures={setShowPlannedMeasures}
+          showPlannedMeasures={showPlannedMeasures}
+          setShowFollowUp={setShowFollowUp}
+          showFollowUp={showFollowUp}
+          setShowAdministration={setShowAdministration}
+          showAdministration={showAdministration}
         >
           {(() => {
             if (appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations) {
               return <AttestationTab />;
+            }
+            if (followUp && showFollowUp && municipalityId) {
+              return followUp.render();
+            }
+            if (administration && showAdministration && municipalityId) {
+              return administration.render();
+            }
+            if (appConfig.features.useMeasures && showPlannedMeasures && municipalityId) {
+              return <PlannedMeasuresOverview />;
             }
             if (municipalityId) {
               return <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />;

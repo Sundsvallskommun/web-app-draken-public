@@ -3,7 +3,7 @@ import { isIK, isKC, isLOP, isSE } from '@common/services/application-service';
 import { maybe } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import {
-  Channels,
+  getChannelLabel,
   SupportErrand,
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
@@ -89,7 +89,7 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   const cfg = TENANTS[tenant];
 
   const department = cfg.departmentName(e);
-  const channel = maybe(e?.channel && (Channels as Record<string, string>)[e?.channel]);
+  const channel = maybe(getChannelLabel(e?.channel));
   const description = maybe(e?.description);
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];

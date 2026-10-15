@@ -1,7 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
-    "e2e/**/*.spec.ts"
+    "e2e/**/*.spec.ts",
+    "src/app/**/page.dev.{ts,tsx}"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

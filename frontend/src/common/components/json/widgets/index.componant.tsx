@@ -4,6 +4,7 @@ import { CheckboxGroupWidget } from './checkbox-group-widget.componant';
 import { CheckboxWidget } from './checkbox-widget.componant';
 import { ComboboxWidget } from './combobox-widget.componant';
 import { DateWidget } from './date-widget.componant';
+import { PlainTextareaWidget } from './plain-textarea-widget.componant';
 import { RadiobuttonWidget } from './radio-widget.componant';
 import { TexteditorWidget } from './richtext-widget.componant';
 import { SelectWidget } from './select-widget.componant';
@@ -18,7 +19,7 @@ import { TimeWidget } from './time-widget.componant';
  * CAUTION: `TextareaWidget` does not render a `<textarea>`. It renders the Quill editor and
  * stores HTML markup, and it also occupies RJSF's reserved `textarea` name below, so any schema
  * that asks for `textarea` gets rich text rather than plain text. Use `TextWidget` for plain
- * single-line text; there is currently no plain multi-line widget.
+ * single-line text and `PlainTextareaWidget` for plain multi-line text.
  */
 const baseWidgets = {
   TextWidget,
@@ -31,6 +32,7 @@ const baseWidgets = {
   ComboboxWidget,
   TexteditorWidget,
   TextareaWidget,
+  PlainTextareaWidget,
 } satisfies RegistryWidgetsType;
 
 /**

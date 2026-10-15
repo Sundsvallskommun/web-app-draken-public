@@ -80,6 +80,34 @@ export const saveSupportNote: (
     });
 };
 
+/** Service notes (tjänsteanteckningar) are listed and written apart from the comments, and never changed once saved. */
+const serviceNotesUrl = (municipalityId: string, errandId: string) =>
+  `supportnotes/${encodeURIComponent(municipalityId)}/${encodeURIComponent(errandId)}/service-notes`;
+
+export const getSupportServiceNotes = (errandId: string, municipalityId: string): Promise<SupportNoteData> =>
+  apiService
+    .get<SupportNoteData>(serviceNotesUrl(municipalityId, errandId))
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching service notes', e);
+      return { notes: [] } as unknown as SupportNoteData;
+    });
+
+export const getSupportServiceNotesCount = (errandId: string, municipalityId: string): Promise<number> =>
+  getSupportServiceNotes(errandId, municipalityId).then((data) => data.notes?.length ?? 0);
+
+export const saveSupportServiceNote = async (
+  errandId: string,
+  municipalityId: string,
+  body: string,
+  partyId?: string
+): Promise<void> => {
+  await apiService.post<unknown, Pick<SupportNoteDto, 'body'> & Partial<Pick<SupportNoteDto, 'partyId'>>>(
+    serviceNotesUrl(municipalityId, errandId),
+    { body, ...(partyId ? { partyId } : {}) }
+  );
+};
+
 export const updateSupportNote: (
   errandId: string,
   municipalityId: string,

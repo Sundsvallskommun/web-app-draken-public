@@ -2,7 +2,7 @@ import { prettyTime } from '@common/services/helper-service';
 import { getReferredFromErrands, ReferredFromErrandResponse } from '@common/services/relations-service';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
-import { Channels, ExternalIdType } from '@supportmanagement/services/support-errand-service';
+import { ExternalIdType, getChannelLabel } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
@@ -73,7 +73,7 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-small">Inkom via</span>
-            <span className="text-small">{Channels[referredFromErrands[0]?.channel as keyof typeof Channels]}</span>
+            <span className="text-small">{getChannelLabel(referredFromErrands[0]?.channel)}</span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-small">Registrerat</span>

@@ -1,15 +1,21 @@
+import { appConfig } from '@config/appconfig';
+import { useSearchParams } from 'next/navigation';
 import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
 
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
+import { SidebarServiceNotes } from './sidebar-service-notes.component';
 import { SidebarSupportExport } from './sidebar-support-export.component';
 
 export const SidebarWrapper: FC<{
   setUnsavedFacility?: Dispatch<SetStateAction<boolean>>;
   unsavedFacility: boolean;
+  hasUnsavedChanges?: boolean;
 }> = (props) => {
+  const searchParams = useSearchParams();
+
   const buttons: {
     label: string;
     key: SidebarButtonKey;
@@ -20,8 +26,24 @@ export const SidebarWrapper: FC<{
       label: 'Handläggning',
       key: 'info',
       icon: 'user-cog',
-      component: <SidebarInfo unsavedFacility={props.unsavedFacility} setUnsavedFacility={props.setUnsavedFacility!} />,
+      component: (
+        <SidebarInfo
+          unsavedFacility={props.unsavedFacility}
+          setUnsavedFacility={props.setUnsavedFacility!}
+          hasUnsavedChanges={props.hasUnsavedChanges ?? false}
+        />
+      ),
     },
+    ...(appConfig.features.useServiceNotes
+      ? [
+          {
+            label: 'Tjänsteanteckningar',
+            key: 'notes' as const,
+            icon: 'pencil-line',
+            component: <SidebarServiceNotes />,
+          },
+        ]
+      : []),
     {
       label: 'Kommentarer',
       key: 'comments',
@@ -42,5 +64,10 @@ export const SidebarWrapper: FC<{
     },
   ];
 
-  return <Sidebar buttons={buttons} />;
+  // Notifications deep link into a specific panel, e.g. /arende/KC-1?tab=history. Only keys that
+  // actually exist here are honoured, so a stale or hand-edited link falls back to the default.
+  const requestedTab = searchParams?.get('tab');
+  const initialKey = buttons.find((button) => button.key === requestedTab)?.key;
+
+  return <Sidebar buttons={buttons} initialKey={initialKey} />;
 };

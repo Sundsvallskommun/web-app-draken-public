@@ -1,7 +1,7 @@
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { getChannelLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
 import { FC, useState } from 'react';
@@ -13,7 +13,7 @@ const getReciever = (msg: Message, supportErrand: SupportErrand): string | strin
   }
 
   if (msg.communicationType === SupportCommunicationType.WebMessage) {
-    return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
+    return msg.direction === 'INBOUND' ? 'Draken' : getChannelLabel('ESERVICE') ?? '';
   }
   if (msg.communicationType === SupportCommunicationType.MinaSidor && msg.direction === 'OUTBOUND') {
     return getApplicantName(supportErrand);

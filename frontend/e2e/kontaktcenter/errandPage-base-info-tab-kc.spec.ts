@@ -24,6 +24,7 @@ import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockEnv } from '../fixtures/mock-env';
 import type { Page } from '@playwright/test';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { CONFIRM_DIALOG } from '../utils/modal';
 
 // Local corrected helpers (the shared utils/stakeholder-search.ts variants assert
@@ -215,6 +216,7 @@ test.describe('Errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand, {
       method: 'GET',
     });
@@ -1016,17 +1018,6 @@ test.describe('Errand page', () => {
   });
 
   test('shows the correct estate information', async ({ page, mockRoute, dismissCookieConsent }) => {
-    const patchFacility = {
-      id: 123,
-      version: 1,
-      created: '2024-01-01',
-      updated: '2024-06-30',
-      description: 'beskrivning',
-      address: 'Adress1',
-      facilityCollectionName: 'name',
-      mainFacility: true,
-      facilityType: 'BOSTAD',
-    };
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'GET',
     });
@@ -1042,9 +1033,8 @@ test.describe('Errand page', () => {
       },
       { method: 'GET' }
     );
-    await mockRoute('**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', patchFacility, {
-      method: 'PATCH',
-    });
+    // The facility list is stored as three parameters, each written on its own route and only when it changed.
+    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/parameters/*', {}, { method: 'PUT' });
     await mockRoute('**/estateByPropertyDesignation/Balder%201', mockFacilitiesData, { method: 'GET' });
     await dismissCookieConsent();
 
@@ -1067,13 +1057,27 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testgatan 1');
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testdistrikt 1');
 
-    // Save — set the response waiter up before the click (waitForResponse only
-    // catches responses that arrive after it starts listening; the mocked
-    // saveFacilities response can land before a post-click await registers).
-    await Promise.all([
-      page.waitForResponse((resp) => resp.url().includes('saveFacilities') && resp.status() === 200),
+    // Save — set the request waiter up before the click: the mocked parameter writes can land before a
+    // post-click await registers. The street is the last of the three to be written.
+    const facilityParameterWrite = (key: string) => (request: { method(): string; url(): string }) =>
+      request.method() === 'PUT' && request.url().endsWith(`/parameters/${key}`);
+    const [errandWrite, propertyDesignationWrite, streetWrite] = await Promise.all([
+      page.waitForRequest(
+        (request) =>
+          request.method() === 'PATCH' &&
+          request.url().endsWith('/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490')
+      ),
+      page.waitForRequest(facilityParameterWrite('propertyDesignation')),
+      page.waitForRequest(facilityParameterWrite('street')),
       page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click(),
     ]);
+    expect(propertyDesignationWrite.postDataJSON().values).toHaveLength(1);
+    // One save is one action: Support Management groups its writes into one notification.
+    const saveGroupIds = [errandWrite, propertyDesignationWrite, streetWrite].map(
+      (write) => write.headers()['x-request-group-id']
+    );
+    expect(saveGroupIds[0]).toBeTruthy();
+    expect(new Set(saveGroupIds).size).toBe(1);
     await page.waitForResponse(
       (resp) => resp.url().includes('supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490') && resp.status() === 200
     );

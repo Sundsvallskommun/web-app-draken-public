@@ -7,6 +7,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { withRequestGroup } from '@common/services/api-service';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import {
@@ -37,7 +38,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportAttachment,
   SingleSupportAttachment,
@@ -52,9 +53,16 @@ import {
   ExternalIdType,
   getSupportErrandById,
   isSupportErrandLocked,
+  readSupportErrandWriteSnapshot,
+  resolveAwaitingResponseStatus,
   setSupportErrandStatus,
-  Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import { contactMeansCarriesAttachments } from '@supportmanagement/services/support-message-attachments';
+import {
+  defaultSupportContactMeans,
+  type SupportEserviceContactMeansOffer,
+} from '@supportmanagement/services/support-message-contact-means';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -192,15 +200,19 @@ export const SupportMessageForm: FC<{
     setIsAttachmentModalOpen(false);
   };
 
+  // Which e-service answers the form offers decides both the radio buttons and the one chosen from the start.
+  const channelName = (Channels as Record<string, string>)[supportErrand.channel!];
+  const eserviceOffer: SupportEserviceContactMeansOffer = {
+    internalWebmessage: channelName === Channels.ESERVICE_INTERNAL,
+    externalWebmessage: channelName === Channels.ESERVICE && isLOP(),
+    katla: channelName === Channels.ESERVICE,
+  };
+
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
       id: supportErrand.id,
       messageContact: true,
-      contactMeans:
-        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE ||
-        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL
-          ? 'webmessage'
-          : ('email' as MessageContactMeans),
+      contactMeans: defaultSupportContactMeans(eserviceOffer),
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -276,14 +288,14 @@ export const SupportMessageForm: FC<{
     });
   };
 
-  const onSubmit: () => void = async () => {
+  const sendMessageAndFollowUp = async () => {
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
 
     let sendPromise: Promise<any>;
 
-    if (contactMeans === 'draken' || contactMeans === 'minasidor') {
+    if (contactMeans === 'draken' || contactMeans === 'minasidor' || contactMeans === 'katla') {
       const conversationId = await getOrCreateSupportConversationId(
         municipalityId,
         supportErrand,
@@ -331,15 +343,23 @@ export const SupportMessageForm: FC<{
       });
     }
 
-    sendPromise
+    // Awaited so the status write after a completion request still belongs to this action's group.
+    await sendPromise
       .then(async () => {
         props.setShowMessageForm(false);
         setValue('messageBody', emailBody);
 
-        if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.PENDING);
-        } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+        if (typeOfMessage === 'infoCompletion' || typeOfMessage === 'internalCompletion') {
+          // The send above is ours, so the version this form was opened with may already be stale.
+          const afterMessage = await readSupportErrandWriteSnapshot(supportErrand.id!, municipalityId);
+          // A workflow namespace waits for any completion in its phase's AWAITING_RESPONSE; the others keep
+          // their customer and internal waiting statuses.
+          const nextStatus = resolveAwaitingResponseStatus(
+            typeOfMessage === 'infoCompletion' ? 'info' : 'internal',
+            supportErrand.phases,
+            useMetadataStore.getState().supportMetadata?.phases
+          );
+          await setSupportErrandStatus(supportErrand.id!, municipalityId, nextStatus, afterMessage);
         }
 
         const updated = await getSupportErrandById(supportErrand.id!, municipalityId);
@@ -362,7 +382,9 @@ export const SupportMessageForm: FC<{
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när meddelandet skulle skickas',
+          // The status change after a send is a conditional errand write, so this catch also
+          // sees 409/412 - reporting those as a send failure hides that someone else saved first.
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när meddelandet skulle skickas'),
           status: 'error',
         });
       })
@@ -373,6 +395,9 @@ export const SupportMessageForm: FC<{
         clearErrors();
       });
   };
+
+  // Opening the conversation, the message and the status it may move the errand to are one action.
+  const onSubmit = () => withRequestGroup(sendMessageAndFollowUp);
 
   // Reply setup and new-message defaults. Headers, recipients and the selected template are
   // synced unconditionally so the UI matches the current scenario; only the body is preserved
@@ -495,7 +520,7 @@ export const SupportMessageForm: FC<{
                 SMS
               </RadioButton>
             )}
-            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL ? (
+            {eserviceOffer.internalWebmessage ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
@@ -508,7 +533,7 @@ export const SupportMessageForm: FC<{
               </RadioButton>
             ) : null}
             {/* Only show webmessage option if errand is from e-service and LOP */}
-            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && isLOP() ? (
+            {eserviceOffer.externalWebmessage ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
@@ -530,6 +555,20 @@ export const SupportMessageForm: FC<{
                 {...register('contactMeans')}
               >
                 Draken
+              </RadioButton>
+            )}
+            {/* Katla answers on the errand's own internal conversation, the one no errand relation
+                points at, so it needs neither a linked errand nor the relations feature. */}
+            {eserviceOffer.katla && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useKatla-radiobutton-true"
+                className="mr-sm mt-4"
+                id="useKatla"
+                value="katla"
+                {...register('contactMeans')}
+              >
+                Katla
               </RadioButton>
             )}
             {appConfig.features.useMyPages &&
@@ -704,10 +743,7 @@ export const SupportMessageForm: FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {contactMeansCarriesAttachments(contactMeans) ? (
         <div className="w-full gap-xl mb-lg">
           {appConfig.features.useEmailContactChannel && contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -823,10 +859,7 @@ export const SupportMessageForm: FC<{
         </div>
       ) : null}
 
-      {(!props.locked && contactMeans === 'email') ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {(contactMeans === 'email' ? !props.locked : contactMeansCarriesAttachments(contactMeans)) ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"

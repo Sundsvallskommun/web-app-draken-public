@@ -3,6 +3,7 @@ import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { getInvestigationWithoutSuspension } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   assignedStatuses,
   closedStatuses,
@@ -25,8 +26,28 @@ export const SupportManagementStatusValues: SupportManagementStatusFilter = {
 export const SupportManagementFilterSidebarStatusSelector: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
+  /** The planned-measures overview also replaces the errand table; a status click leaves it. */
+  showPlannedMeasures?: boolean;
+  setShowPlannedMeasures?: (show: boolean) => void;
+  /** So does the follow-up across errands. */
+  showFollowUp?: boolean;
+  setShowFollowUp?: (show: boolean) => void;
+  /** And so does what the administrators set. */
+  showAdministration?: boolean;
+  setShowAdministration?: (show: boolean) => void;
   iconButton: boolean;
-}> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
+}> = ({
+  showAttestationTable,
+  setShowAttestationTable,
+  showPlannedMeasures = false,
+  setShowPlannedMeasures,
+  showFollowUp = false,
+  setShowFollowUp,
+  showAdministration = false,
+  setShowAdministration,
+  iconButton,
+}) => {
+  const otherViewShown = showAttestationTable || showPlannedMeasures || showFollowUp || showAdministration;
   const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
   const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
   const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
@@ -37,6 +58,8 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
+  // A deployment whose errands are never parked has no list of parked errands to offer.
+  const withoutSuspension = getInvestigationWithoutSuspension();
 
   const updateStatusFilter = (ss: Status[]) => {
     try {
@@ -64,13 +87,17 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
-      {
-        label: getStatusLabel(suspendedStatuses) ?? '',
-        key: suspendedStatuses[0],
-        statuses: suspendedStatuses,
-        icon: 'circle-pause',
-        totalStatusErrands: suspendedSupportErrands,
-      },
+      ...(withoutSuspension
+        ? []
+        : [
+            {
+              label: getStatusLabel(suspendedStatuses) ?? '',
+              key: suspendedStatuses[0],
+              statuses: suspendedStatuses,
+              icon: 'circle-pause',
+              totalStatusErrands: suspendedSupportErrands,
+            },
+          ]),
       {
         label: getStatusLabel(assignedStatuses) ?? '',
         key: assignedStatuses[0],
@@ -86,7 +113,14 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: solvedSupportErrands,
       },
     ],
-    [newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
+    [
+      newSupportErrands,
+      ongoingSupportErrands,
+      suspendedSupportErrands,
+      assignedSupportErrands,
+      solvedSupportErrands,
+      withoutSuspension,
+    ]
   );
 
   return (
@@ -99,9 +133,12 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
               updateStatusFilter(button.statuses as Status[]);
               setSidebarLabel(button.label);
               setShowAttestationTable(false);
+              setShowPlannedMeasures?.(false);
+              setShowFollowUp?.(false);
+              setShowAdministration?.(false);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
+            variant={buttonIsActive && !otherViewShown ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={(() => {
               const DynIcon = iconMap[button.icon as string];
@@ -118,8 +155,8 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
                 ) : (
                   <Badge
                     className="min-w-fit px-4"
-                    inverted={!buttonIsActive || showAttestationTable}
-                    color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
+                    inverted={!buttonIsActive || otherViewShown}
+                    color={buttonIsActive && !otherViewShown ? 'tertiary' : 'vattjom'}
                     counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
                   />
                 )}

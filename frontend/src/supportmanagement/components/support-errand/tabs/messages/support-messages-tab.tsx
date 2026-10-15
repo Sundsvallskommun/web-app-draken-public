@@ -1,9 +1,14 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
+import { Alert, Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { getInvestigationMessagesIntroduction } from '@supportmanagement/investigation/investigation-variant-registry';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
-import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
+import {
+  getChannelLabel,
+  isSupportErrandLocked,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
@@ -11,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
+import { useSupportMessagingPhase } from './use-support-messaging-phase';
 
 export const SupportMessagesTab: FC<{
   messages: Message[];
@@ -41,6 +47,8 @@ export const SupportMessagesTab: FC<{
   );
 
   const allowed = useMemo(() => (supportErrand ? validateAction(supportErrand, user) : false), [user, supportErrand]);
+  const messagingPhase = useSupportMessagingPhase();
+  const newMessageDisabled = isSupportErrandLocked(supportErrand!) || !allowed || !!messagingPhase;
 
   const onSelect = (message: Message) => {
     if (message.conversationId && message.messageId) {
@@ -102,11 +110,14 @@ export const SupportMessagesTab: FC<{
           <Button
             data-cy="new-message-button"
             type="button"
-            disabled={isSupportErrandLocked(supportErrand!) || !allowed || supportErrand?.status === Status.NEW}
+            // Ny does not disable writing: `allowed` already means the errand is assigned to this
+            // handler, and blocking there left an errand that is theirs with no way to answer it. A
+            // workflow does wait: messages are sent once the errand has left its first phase.
+            disabled={newMessageDisabled}
             size="sm"
             variant="primary"
             color="vattjom"
-            inverted={!(isSupportErrandLocked(supportErrand!) || !allowed)}
+            inverted={!newMessageDisabled}
             rightIcon={<Icon icon={<Mail />} size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
@@ -118,10 +129,21 @@ export const SupportMessagesTab: FC<{
         </div>
 
         <div className="py-8 w-full gap-24">
-          <p className="w-4/5 pr-16 pb-16">
-            På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med
-            ärendets olika intressenter.
+          <p className="w-4/5 pr-16 pb-16" data-cy="messages-introduction">
+            {getInvestigationMessagesIntroduction() ??
+              'På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med ärendets olika intressenter.'}
           </p>
+          {messagingPhase && (
+            <Alert type="info" className="mb-16">
+              <Alert.Icon />
+              <Alert.Content>
+                <Alert.Content.Description data-cy="messages-phase-notice">
+                  Meddelanden kan skickas när ärendet har lämnat fasen{' '}
+                  {messagingPhase.displayName || messagingPhase.name}.
+                </Alert.Content.Description>
+              </Alert.Content>
+            </Alert>
+          )}
         </div>
         <div className="flex gap-24">
           <FormControl id={`show-sending-type-messages`} size="sm">
@@ -141,7 +163,7 @@ export const SupportMessagesTab: FC<{
                 Alla kanaler
               </Select.Option>
               <Select.Option value={SupportCommunicationType.Draken}>Draken</Select.Option>
-              <Select.Option value={SupportCommunicationType.WebMessage}>E-tjänst</Select.Option>
+              <Select.Option value={SupportCommunicationType.WebMessage}>{getChannelLabel('ESERVICE')}</Select.Option>
               <Select.Option value={SupportCommunicationType.Email}>E-post</Select.Option>
               <Select.Option value={SupportCommunicationType.MinaSidor}>Mina sidor</Select.Option>
               <Select.Option value={SupportCommunicationType.Sms}>SMS</Select.Option>

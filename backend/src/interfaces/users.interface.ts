@@ -16,6 +16,8 @@ export interface Permissions {
   canViewAttestations: boolean;
   canEditAttestations: boolean;
   canViewOtherNamespaces: boolean;
+  /** Setting which places a manager has, in AccessMapper. Changes who reaches which errands, so it is superadmin's. */
+  canAdministerPlaceManagers: boolean;
 }
 
 /** Internal roles */

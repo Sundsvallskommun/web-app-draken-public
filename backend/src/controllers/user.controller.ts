@@ -2,12 +2,14 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { Controller, Get, Header, Param, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { MUNICIPALITY_ID } from '@/config';
+import { MUNICIPALITY_ID, SUPERADMIN_GROUP } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { type HandlerGroupRole, resolveHandlerGroupRoles, resolveHeldHandlerRoleKeys } from '@/config/handler-group-roles';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { Permissions } from '@/interfaces/users.interface';
+import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
 
 interface UserData {
@@ -17,18 +19,27 @@ interface UserData {
   username: string;
   userSettings: any;
   permissions: Permissions;
+  /**
+   * The handler roles the user holds through their AD groups. Absent when the deployment configured no
+   * roles, as on the handler list: an empty array would say the user holds none of the roles there are.
+   */
+  roleKeys?: string[];
+  /** Whether the user is in the superadmin group - in the avvikelse applications, the administrators. */
+  superadmin: boolean;
 }
 
 @Controller()
 export class UserController {
   private apiService = new ApiService();
+  private handlerRoles: readonly HandlerGroupRole[] | undefined = resolveHandlerGroupRoles();
+  private superadminGroups = readRoleGroups(SUPERADMIN_GROUP);
   EMPLOYEE_SERVICE = apiServiceName('employee');
 
   @Get('/me')
   @OpenAPI({ summary: 'Return current user' })
   @UseBefore(authMiddleware)
   async getUser(@Req() req: RequestWithUser, @Res() response: any): Promise<UserData> {
-    const { name, firstName, lastName, username, permissions } = req.user;
+    const { name, firstName, lastName, username, permissions, groups = [] } = req.user;
 
     if (!name) {
       throw new HttpException(400, 'Bad Request');
@@ -41,6 +52,8 @@ export class UserController {
       username,
       userSettings: { username },
       permissions,
+      ...(this.handlerRoles ? { roleKeys: resolveHeldHandlerRoleKeys(this.handlerRoles, groups) } : {}),
+      superadmin: groups.some(group => this.superadminGroups.includes(group.trim().toLowerCase())),
     };
 
     return response.send({ data: userData, message: 'success' });

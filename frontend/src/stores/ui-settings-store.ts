@@ -9,6 +9,8 @@ interface PersistedState {
   attestationFilter: Record<string, string | boolean>;
   selectedErrandStatuses: string[];
   sidebarLabel: string;
+  /** Whether the overview's filter checkbox, where the investigation offers one, is checked. Checked until unchecked. */
+  overviewFilterToggleChecked: boolean;
 }
 
 interface UiState extends PersistedState {
@@ -27,6 +29,7 @@ interface UiActions {
 
   setSelectedErrandStatuses: (statuses: string[]) => void;
   setSidebarLabel: (label: string) => void;
+  setOverviewFilterToggleChecked: (checked: boolean) => void;
   setNewErrands: (count: number | null) => void;
   setOngoingErrands: (count: number | null) => void;
   setSuspendedErrands: (count: number | null) => void;
@@ -44,6 +47,7 @@ const initialState: UiState = {
 
   selectedErrandStatuses: appConfig.isCaseData ? ['ArendeInkommit'] : ['NEW'],
   sidebarLabel: 'Nya ärenden',
+  overviewFilterToggleChecked: true,
   newErrands: 0,
   ongoingErrands: 0,
   suspendedErrands: 0,
@@ -63,6 +67,7 @@ export const useUiSettingsStore = create(
 
       setSelectedErrandStatuses: (selectedErrandStatuses) => set({ selectedErrandStatuses }),
       setSidebarLabel: (sidebarLabel) => set({ sidebarLabel }),
+      setOverviewFilterToggleChecked: (overviewFilterToggleChecked) => set({ overviewFilterToggleChecked }),
       setNewErrands: (newErrands) => set({ newErrands }),
       setOngoingErrands: (ongoingErrands) => set({ ongoingErrands }),
       setSuspendedErrands: (suspendedErrands) => set({ suspendedErrands }),
@@ -79,6 +84,7 @@ export const useUiSettingsStore = create(
           attestationFilter: state.attestationFilter,
           selectedErrandStatuses: state.selectedErrandStatuses,
           sidebarLabel: state.sidebarLabel,
+          overviewFilterToggleChecked: state.overviewFilterToggleChecked,
         } as UiSettingsStore),
     }
   )

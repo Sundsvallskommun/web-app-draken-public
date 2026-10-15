@@ -8,7 +8,7 @@ export interface AppConfig {
   features: AppConfigFeatures;
 }
 
-interface AppConfigFeatures {
+export interface AppConfigFeatures {
   useTwoLevelCategorization: boolean;
   /** Categorization in the label tree (KS: DEPARTMENT > CATEGORY > TYPE, LOP: CATEGORY > TYPE > SUBTYPE). */
   useLabelCategorization: boolean;
@@ -40,6 +40,19 @@ interface AppConfigFeatures {
   useServices: boolean;
   useAppeal: boolean;
   useHandover: boolean;
+  useInvestigation: boolean;
+  useMeasures: boolean;
+  /** Tjänsteanteckningar on a support errand: the handler's own record of it, kept apart from the comments. */
+  useServiceNotes: boolean;
+  useAvvikelseInvestigation: boolean;
+  useAotInvestigation: boolean;
+  /**
+   * Hides Grundinformation's "Om ärendet" section - ämnesrad, kategorisering, ärendebeskrivning and
+   * inkom via - for a deployment that collects all of it somewhere else. Phrased as "hide" rather
+   * than "use" on purpose: a flag list that does not mention it leaves the section in place, so a
+   * drake can never lose it by omission (Adminpanel resets every unknown flag to false).
+   */
+  hideAboutErrandSection: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -91,6 +104,12 @@ export const appConfig: AppConfig = {
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
+    useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
+    useMeasures: envBool(process.env.NEXT_PUBLIC_USE_MEASURES),
+    useServiceNotes: envBool(process.env.NEXT_PUBLIC_USE_SERVICE_NOTES),
+    useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
+    useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
+    hideAboutErrandSection: envBool(process.env.NEXT_PUBLIC_HIDE_ABOUT_ERRAND_SECTION),
   },
 };
 
@@ -104,6 +123,12 @@ function resetAllFlagsToFalse() {
   });
 }
 
+/** Flags Adminpanelen may still serve under a former name, by the name they have now. */
+const RENAMED_FEATURE_FLAGS: Readonly<Record<string, keyof AppConfigFeatures>> = {
+  // The label tree replaced the three-level categorization; the environment variable keeps the same alias.
+  useThreeLevelCategorization: 'useLabelCategorization',
+};
+
 export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
   if (!flags || flags.length === 0) {
     return;
@@ -111,7 +136,9 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
 
   resetAllFlagsToFalse();
 
-  flags.forEach((flag) => {
+  flags.forEach((servedFlag) => {
+    const renamedTo = RENAMED_FEATURE_FLAGS[servedFlag.name];
+    const flag = renamedTo ? { ...servedFlag, name: renamedTo } : servedFlag;
     if (
       !(flag.name in appConfig.features) &&
       flag.name !== 'isCaseData' &&

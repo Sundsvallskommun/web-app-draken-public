@@ -23,6 +23,8 @@ import {
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { mockNotificationsForErrandLog } from './fixtures/mockSupportNotifications';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand page', () => {
@@ -32,6 +34,9 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
+    // The errand log loads notifications to mark notified events.
+    await mockRoute('**/supportnotifications/2281', [], { method: 'GET' });
     await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget, mockParkingPermitTarget], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
@@ -64,6 +69,7 @@ test.describe('errand page', () => {
       method: 'GET',
     });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse, { method: 'PATCH' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/status`, mockSupportErrand, { method: 'PATCH' });
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
     await mockRoute('**/party-services*', { data: [] }, { method: 'GET' });
   });
@@ -98,12 +104,14 @@ test.describe('errand page', () => {
     // for it before clicking; set up the PATCH listener before the click to avoid a race.
     const selfAssignButton = page.locator('[data-cy="self-assign-errand-button"]');
     await expect(selfAssignButton).toBeVisible();
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       selfAssignButton.click(),
     ]);
     const responseBody = await response.json();
     expect(responseBody.assignedUserId).toBe('kctest');
+    expect(statusRequest.postDataJSON()?.status).toBe('ONGOING');
     expect(response.status()).toBe(200);
   });
 
@@ -119,16 +127,25 @@ test.describe('errand page', () => {
     );
     // Set up the response listener before the click — waitForResponse only catches responses that
     // arrive after it starts listening, so clicking first races the (mocked, near-instant) PATCH.
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody).toEqual({
       assignedUserId: mockSupportAdminsResponse.data[1].name,
-      status: 'ASSIGNED',
     });
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'ASSIGNED',
+      })
+    );
     expect(response.status()).toBe(200);
   });
 
@@ -147,18 +164,27 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="priority-input"]').selectOption('LOW');
     await expect(page.locator('[data-cy="priority-input"]')).toHaveValue('LOW');
 
-    const [request] = await Promise.all([
+    const [request, statusRequest] = await Promise.all([
       page.waitForRequest(
         (req) =>
           req.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
           req.method() === 'PATCH' &&
           (req.postData() ?? '').includes('priority')
       ),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
     const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody.priority).toBe('LOW');
-    expect(requestBody.status).toBe('NEW');
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'NEW',
+      })
+    );
   });
 
   test('Can forward department errand', async ({ page, dismissCookieConsent }) => {
@@ -421,9 +447,35 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator(`[aria-label="${mockSidebarButtons[2].label}"]`).click();
-    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(mockSupportHistory.totalElements);
+    // Events sharing a requestGroupId are one entry in the log, so there are fewer entries than
+    // events: three grouped operations plus two events that stand alone.
+    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(5);
     await page.locator('[data-cy="history-log"] div button').first().click();
+    await expect(page.locator('[data-cy="history-event-details"]')).toContainText(
+      'Noteringen togs bort av handläggaren.'
+    );
     await page.locator('[data-cy="history-table-details-close-button"]').filter({ hasText: 'Stäng' }).click();
+  });
+
+  test('opens the errand log from a notification and highlights the originating event', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/supportnotifications/2281', mockNotificationsForErrandLog, { method: 'GET' });
+
+    const notification = mockNotificationsForErrandLog[0];
+    await page.goto(`arende/KC-00000001?tab=history&notification=${notification.id}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // The deep link lands directly on the log, without the user having to find the tab.
+    await expect(page.locator('[data-cy="history-log"]')).toBeVisible();
+
+    // The event the notification came from is both marked as notified and highlighted.
+    const highlighted = page.locator('[data-cy="history-event-req-group-0"]');
+    await expect(highlighted).toHaveClass(/bg-vattjom-surface-accent/);
+    await expect(highlighted.locator('[data-cy="history-event-notified"]')).toBeVisible();
   });
 
   test('manages Exports', async ({ page, dismissCookieConsent }) => {

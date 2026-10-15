@@ -4,6 +4,7 @@ import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockEmptySupportErrand,
   mockSupportAttachments,
@@ -19,6 +20,7 @@ test.describe.skip('Errand page support attachments tab', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'GET',
     });

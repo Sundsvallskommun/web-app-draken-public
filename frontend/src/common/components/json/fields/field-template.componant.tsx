@@ -4,14 +4,19 @@ import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
 
 export function FieldTemplate(props: FieldTemplateProps) {
   const { id, label, required, displayLabel, help, children, uiSchema, rawErrors, schema, hidden } = props;
-  const formContext = props.registry?.formContext as { requiredIndicator?: string } | undefined;
+  const formContext = props.registry?.formContext as
+    | { requiredIndicator?: string; withoutFieldHelp?: boolean }
+    | undefined;
   const requiredIndicator = formContext?.requiredIndicator ?? ' *';
   // A field may read as required although the schema only requires it conditionally, so that a
   // disabled state does not look optional.
   const showRequiredIndicator = required || uiSchema?.['ui:options']?.showRequiredIndicator === true;
 
   const hideLabel = uiSchema?.['ui:options']?.hideLabel;
-  const hideDescription = uiSchema?.['ui:options']?.hideDescription;
+  // A form that only displays saved answers says what was answered. How to answer - a field's description, its
+  // help text - is written for the one filling the form in, often in another application altogether.
+  const withoutHelp = formContext?.withoutFieldHelp === true;
+  const hideDescription = withoutHelp || uiSchema?.['ui:options']?.hideDescription;
   const descriptionBelow = uiSchema?.['ui:options']?.descriptionBelow;
   const className = uiSchema?.['ui:options']?.className;
 
@@ -66,7 +71,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
           </FormErrorMessage>
         )}
 
-        {help}
+        {withoutHelp ? null : help}
       </div>
     </FormControl>
   );

@@ -1,37 +1,95 @@
+import {
+  getFilteredNotifications,
+  latestUnacknowledgedEvent,
+  notificationLabel,
+} from '@common/components/notifications/notification-utils';
 import { PriorityComponent } from '@common/components/priority/priority.component';
-import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
+import { isIAFOrVOF } from '@common/services/application-service';
+import { prettyTime, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useMetadataStore, useUserStore } from '@stores/index';
+import { useEmployeeNameStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
+import { getInvestigationOverviewAssignee } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
-  getClassificationCategoryDisplayName,
-  getClassificationTypeDisplayName,
-  showsLegacyClassification,
-} from '@supportmanagement/services/legacy-classification-service';
-import {
-  Channels,
-  getCategorizationLabels,
+  getChannelLabel,
+  getLabelReportType,
+  getMappedLabelSubType,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
-import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
+import {
+  findAdminByAccount,
+  getAdminName,
+  primaryStakeholderNameorEmail,
+} from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
+import { ErrandLabelCategoryCell, ErrandLabelTypeCell } from './support-errand-label-categorization-cells.component';
+
+/**
+ * What the "Registrerad av" cell shows, in falling order of precision: the registrar's name from
+ * the already-loaded admin list, their name from the Employee API, the raw `reporterUserId`, then
+ * `(saknas)`.
+ *
+ * The admin list is tried first because it costs nothing - it is fetched once at startup - and
+ * only accounts it cannot answer for reach the Employee lookup. The raw account is worth showing
+ * while that request is in flight, and if it comes back empty: every row then says something
+ * about who registered the errand rather than going silently blank.
+ */
+const getReporterDisplayName = (
+  administrators: Admin[] | undefined,
+  employeeNames: Record<string, string | null>,
+  reporterUserId: string | undefined
+): string => {
+  if (!reporterUserId) return '(saknas)';
+
+  return (
+    getAdminName(findAdminByAccount(administrators, reporterUserId)!) ||
+    employeeNames[reporterUserId.toLowerCase()] ||
+    reporterUserId
+  );
+};
+
+/** The accounts the admin list cannot name, so only those are asked of the Employee API. */
+export const getUnresolvedReporterAccounts = (
+  errands: readonly SupportErrand[],
+  administrators: Admin[] | undefined
+): string[] =>
+  errands
+    .map((errand) => errand?.reporterUserId)
+    .filter((account): account is string => !!account)
+    .filter((account) => !getAdminName(findAdminByAccount(administrators, account)!));
 
 export const useSupportErrandTable = (statuses: Status[]) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // A deployment that names the report type column gets it, named per application like the other headers: the
+  // report type (Avvikelse or Missförhållande) with the errand number beneath. The number then leaves the category
+  // column and the report type leaves the type column, so each is shown once.
+  const reportTypeHeaderKey = `common:overview.reportType.${process.env.NEXT_PUBLIC_APPLICATION}`;
+  const showsReportTypeColumn = i18n.exists(reportTypeHeaderKey);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
+  const employeeNames = useEmployeeNameStore((s) => s.names);
+  const investigationAssignee = getInvestigationOverviewAssignee();
+  const notifications = useSupportStore((s) => s.notifications);
+  const username = useUserStore((s) => s.user.username);
+  // The same notifications the panel shows, so the column never mentions something the bell leaves out.
+  const visibleNotifications = useMemo(
+    () => getFilteredNotifications(notifications, username),
+    [notifications, username]
+  );
 
   const labels = [
     {
       label: t('common:overview.status'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'status',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <SupportStatusLabelComponent
@@ -45,19 +103,21 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.lastActivity'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'touched',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => {
-        const notification = sortBy(errand?.activeNotifications ?? [], 'created').reverse()[0];
+        // What happened since the user last opened the errand; without that, when it last changed.
+        const unreadEvent = latestUnacknowledgedEvent(visibleNotifications, errand.id);
         return (
           <>
-            {!!notification ? (
+            {unreadEvent ? (
               <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
                 <div>
-                  <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
-                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                  <time dateTime={dayjs(unreadEvent.created).format('YYYY-MM-DD HH:mm')}>
+                    {dayjs(unreadEvent.created).format('YYYY-MM-DD HH:mm')}
                   </time>
                 </div>
-                <div className="italic">{truncate(notification?.description, 30)}</div>
+                <div className="italic">{truncate(notificationLabel(unreadEvent), 30)}</div>
               </div>
             ) : (
               dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
@@ -66,6 +126,24 @@ export const useSupportErrandTable = (statuses: Status[]) => {
         );
       },
     },
+    ...(showsReportTypeColumn
+      ? [
+          {
+            label: t(reportTypeHeaderKey),
+            screenReaderOnly: false,
+            // Support Management sorts on the errand's own fields, and the report type is a label.
+            sortable: false,
+            sortKey: 'reportType',
+            shownForStatus: All.ALL,
+            render: (errand: SupportErrand) => (
+              <div data-cy="overview-report-type">
+                <div className="font-bold">{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+                <div className="font-normal">{errand.errandNumber}</div>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       label: t(
         `common:overview.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`,
@@ -73,16 +151,14 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'category',
       shownForStatus: All.ALL,
 
       render: (errand: SupportErrand) => (
         <div>
           {appConfig.features.useLabelCategorization ? (
             <div className="font-bold">
-              {/* LEGACY_CLASSIFICATION */}
-              {showsLegacyClassification(errand)
-                ? getClassificationCategoryDisplayName(errand, supportMetadata)
-                : getLabelDisplayName(getCategorizationLabels(errand)[0], supportMetadata)}
+              <ErrandLabelCategoryCell errand={errand} metadata={supportMetadata} />
             </div>
           ) : null}
           {appConfig.features.useTwoLevelCategorization ? (
@@ -90,7 +166,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
               {supportMetadata?.categories?.find((t) => t.name === errand.category)?.displayName || errand.category}
             </div>
           ) : null}
-          <div className="font-normal">{errand.errandNumber}</div>
+          {showsReportTypeColumn ? null : <div className="font-normal">{errand.errandNumber}</div>}
         </div>
       ),
     },
@@ -101,22 +177,27 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'type',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
-          {appConfig.features.useLabelCategorization &&
-            // LEGACY_CLASSIFICATION
-            (showsLegacyClassification(errand) ? (
-              <div>{getClassificationTypeDisplayName(errand, supportMetadata)}</div>
-            ) : (
-              <div>
-                {getCategorizationLabels(errand)
-                  .slice(1)
-                  .map((label) => (
-                    <div key={label.id ?? label.resourcePath}>{getLabelDisplayName(label, supportMetadata)}</div>
-                  ))}
-              </div>
-            ))}
+          {/*
+            An errand carrying a REPORT_TYPE label comes from the avvikelse tree, where the type is
+            Avvikelse/Missforhallande and the level below it is the subcategory. That tree has no
+            SUBTYPE at all, so the label tree's own levels would leave the errand type unshown. Keyed
+            off the label the errand actually carries, so every other deployment falls through to the
+            label categorization rendering unchanged.
+          */}
+          {getLabelReportType(errand) ? (
+            <div>
+              {showsReportTypeColumn ? null : (
+                <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+              )}
+              <div>{getLabelDisplayName(getMappedLabelSubType(errand), supportMetadata)}</div>
+            </div>
+          ) : appConfig.features.useLabelCategorization ? (
+            <ErrandLabelTypeCell errand={errand} metadata={supportMetadata} />
+          ) : null}
           {appConfig.features.useTwoLevelCategorization ? (
             <>
               <span className="m-0">
@@ -133,10 +214,11 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.incomingVia'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'channel',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-          <div>{(Channels as Record<string, string>)[errand?.channel!]}</div>
+          <div>{getChannelLabel(errand?.channel)}</div>
           <div className="m-0 italic truncate">
             {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
           </div>
@@ -147,6 +229,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.registered'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'created',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -163,7 +246,16 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.priority'),
       screenReaderOnly: false,
       sortable: true,
-      shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
+      sortKey: 'priority',
+      shownForStatus: [
+        Status.NEW,
+        Status.ONGOING,
+        Status.INQUIRY,
+        Status.PENDING,
+        Status.SOLVED,
+        Status.SUSPENDED,
+        Status.ASSIGNED,
+      ],
       render: (errand: SupportErrand) => (
         <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
       ),
@@ -172,6 +264,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.reminder'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'suspendedTo',
       shownForStatus: [Status.SUSPENDED],
       render: (errand: SupportErrand) => (
         <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
@@ -181,18 +274,33 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.responsible'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'assignedUserId',
       shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
       render: (errand: SupportErrand) => {
-        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId)!)}</>;
+        return (
+          <>
+            {investigationAssignee?.(errand?.labels, supportMetadata?.labels?.labelStructure) ??
+              getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}
+          </>
+        );
       },
     },
     {
       label: t('common:overview.registeredBy'),
       screenReaderOnly: false,
       sortable: true,
+      // IAF and VOF register their errands in Draken, so there this column means the registrar.
+      // Every other drake reads it as the assigned handler and keeps exactly today's behaviour.
+      sortKey: isIAFOrVOF() ? 'reporterUserId' : 'assignedUserId',
       shownForStatus: [Status.NEW],
       render: (errand: SupportErrand) => {
-        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId)!)}</>;
+        return (
+          <>
+            {isIAFOrVOF()
+              ? getReporterDisplayName(administrators, employeeNames, errand?.reporterUserId)
+              : getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}
+          </>
+        );
       },
     },
   ];

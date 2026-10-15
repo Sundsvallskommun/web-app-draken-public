@@ -32,6 +32,7 @@ export class HealthController {
         canViewAttestations: false,
         canEditAttestations: false,
         canViewOtherNamespaces: false,
+        canAdministerPlaceManagers: false,
       },
     };
     const res = await this.apiService.post<{ status: string }, { status: string }>({ url, data }, dummyUser).catch(e => {

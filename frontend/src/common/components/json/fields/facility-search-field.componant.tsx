@@ -207,7 +207,7 @@ export function FacilitySearchField(props: FieldProps) {
       {!selectedPlacePresentation && isEditable && (
         <FormControl disabled={!isEditable} invalid={invalid} required={required} className="w-full">
           <FormLabel id={searchLabelId} htmlFor={id} className="font-bold">
-            Lägg till plats där avvikelsen inträffat
+            Lägg till plats där händelsen inträffade
           </FormLabel>
           <Combobox
             id={`${id}__combobox`}
@@ -267,7 +267,7 @@ export function FacilitySearchField(props: FieldProps) {
       {selectedPlacePresentation && (
         <div className="border-1 rounded-12 bg-background-content w-full mt-16" data-cy="facility-card">
           <div className="rounded-t-12 bg-vattjom-background-200 px-16 py-12">
-            <strong>Plats där avvikelsen inträffat</strong>
+            <strong>Plats där händelsen inträffade</strong>
           </div>
           <div className="p-16">
             <div className="flex flex-col gap-16">

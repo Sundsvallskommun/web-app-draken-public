@@ -50,6 +50,8 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
         formData={param.value}
         idPrefix={param.key.replace(/[^\w-]/g, '_')}
         disabled
+        // The answers are shown, not asked for: the schema's instructions belong to the form that collected them.
+        withoutFieldHelp
       />
     </div>
   );

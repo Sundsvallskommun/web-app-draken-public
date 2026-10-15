@@ -1,5 +1,5 @@
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { apiService } from '@common/services/api-service';
+import { apiService, withRequestGroup } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 
 export interface SupportAttachment {
@@ -140,6 +140,10 @@ export const deleteSupportAttachment = (errandId: string, municipalityId: string
     });
 };
 
+/**
+ * Uploads the files, one request each. However many files there are, the upload is one action: the requests
+ * share a request group, so the people following the errand get one notification rather than one for each file.
+ */
 export const saveSupportAttachments: (
   errandId: string,
   municipalityId: string,
@@ -148,44 +152,45 @@ export const saveSupportAttachments: (
   errandId,
   municipalityId,
   attachments
-) => {
-  const attachmentPromises = attachments.map(async (attachment, idx) => {
-    // await delay(idx * 500);
+) =>
+  withRequestGroup(() => {
+    const attachmentPromises = attachments.map(async (attachment, idx) => {
+      // await delay(idx * 500);
 
-    const fileItem = (attachment.file as unknown as FileList)[0];
-    if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
-      throw new Error('MAX_SIZE');
-    }
-    const fileData = await toBase64(fileItem);
-    const buf = Buffer.from(fileData, 'base64');
-    const blob = new Blob([buf], { type: fileItem.type });
-
-    // Building form data
-    const formData = new FormData();
-    formData.append(`files`, blob, fileItem.name);
-    formData.append(`name`, fileItem.name);
-    return apiService
-      .post<boolean, FormData>(`supportattachments/${municipalityId}/errands/${errandId}/attachments`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      .then((res) => {
-        return res;
-      })
-      .catch((e) => {
-        console.error('Something went wrong when saving attachment', e);
-        throw e;
-      });
-  });
-
-  return Promise.allSettled(attachmentPromises).then(
-    (res: ({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[]) => {
-      if (res.length === 1 && res[0].status === 'rejected') {
-        throw res[0].reason;
+      const fileItem = (attachment.file as unknown as FileList)[0];
+      if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
+        throw new Error('MAX_SIZE');
       }
-      return res;
-    }
-  );
-};
+      const fileData = await toBase64(fileItem);
+      const buf = Buffer.from(fileData, 'base64');
+      const blob = new Blob([buf], { type: fileItem.type });
+
+      // Building form data
+      const formData = new FormData();
+      formData.append(`files`, blob, fileItem.name);
+      formData.append(`name`, fileItem.name);
+      return apiService
+        .post<boolean, FormData>(`supportattachments/${municipalityId}/errands/${errandId}/attachments`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((res) => {
+          return res;
+        })
+        .catch((e) => {
+          console.error('Something went wrong when saving attachment', e);
+          throw e;
+        });
+    });
+
+    return Promise.allSettled(attachmentPromises).then(
+      (res: ({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[]) => {
+        if (res.length === 1 && res[0].status === 'rejected') {
+          throw res[0].reason;
+        }
+        return res;
+      }
+    );
+  });
 
 export const countAttachment = (attachment: SupportAttachment[]): number => {
   let numberOfAttachment = 0;

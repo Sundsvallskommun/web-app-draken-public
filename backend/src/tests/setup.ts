@@ -19,9 +19,9 @@ import {
 // Give it a default so the real logger can initialize when a test pulls it in.
 process.env.LOG_DIR = process.env.LOG_DIR ?? 'logs';
 
-// ad-role.service.ts dereferences these group vars at IMPORT time to build
-// `roleADMapping`; importing it (directly or via authorization.service) throws if
-// they are unset. APPLICATION selects which mapping branch is built — a non
+// ad-role.service.ts reads these group vars at IMPORT time (directly or via
+// authorization.service) to build `roleADMapping`; a group seeded after the module
+// loads is never mapped. APPLICATION selects which mapping branch is built — a non
 // PT/MEX value gives the support-management branch (developer/admin/superadmin),
 // which the authorization tests assert against.
 process.env.APPLICATION = process.env.APPLICATION ?? 'KC';

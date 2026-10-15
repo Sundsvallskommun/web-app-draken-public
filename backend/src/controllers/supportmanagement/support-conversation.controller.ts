@@ -155,7 +155,8 @@ export class SupportConversationController {
   ): Promise<void> {
     const url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages/mark-as-read`;
     const baseURL = apiURL(this.SERVICE);
-    await this.apiService.post<void, MarkAsReadRequest>({ url, baseURL, data: request }, req.user);
+    // Reading is not news to anyone following the errand.
+    await this.apiService.post<void, MarkAsReadRequest>({ url, baseURL, data: request, notifySubscribers: false }, req.user);
   }
 
   @Post('/supportmanagement/:municipalityId/namespace/errand/:errandId/communication/conversations')

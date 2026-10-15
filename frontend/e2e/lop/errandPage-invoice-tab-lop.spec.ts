@@ -8,6 +8,7 @@ import { mockMetaData } from './fixtures/mockMetadata';
 import { mockPortalPersonData_external, mockPortalPersonData_internal } from './fixtures/mockPortalPersonData';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockSupportAttachments,
   mockSupportErrand,
@@ -23,6 +24,7 @@ test.describe('Invoice tab', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/supportnotes/2281/*', mockSupportNotes, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });

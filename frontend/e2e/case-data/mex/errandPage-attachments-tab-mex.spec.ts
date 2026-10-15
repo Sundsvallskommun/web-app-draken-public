@@ -11,6 +11,7 @@ import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 import { MODAL_DIALOG } from '../../utils/modal';
+import { toast } from '../../utils/toast';
 
 const [imageAttachment, pdfAttachment] = mockAttachments.data;
 
@@ -302,11 +303,6 @@ test.describe('Errand page attachments tab', () => {
       await page.locator('[data-cy="crop-save-button"]').click();
       await page.locator('[data-cy="crop-confirm-save-button"]').click();
     };
-
-    // The snackbar renders its message twice, once visually and once for screen readers, so the
-    // assertion has to name the visible element.
-    const toast = (page: import('@playwright/test').Page, message: string) =>
-      page.locator('.sk-snackbar-text').filter({ hasText: message });
 
     test('offers cropping for image attachments', async ({ page }) => {
       const imageRow = page

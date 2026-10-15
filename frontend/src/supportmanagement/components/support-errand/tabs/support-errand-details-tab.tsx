@@ -1,13 +1,35 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import {
+  type InvestigationAccessState,
+  isInvestigationParameterReadable,
+} from '@supportmanagement/investigation/investigation-access';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 
-export const SupportErrandDetailsTab: React.FC<{}> = () => {
+export const SupportErrandDetailsTab = ({
+  access,
+  header,
+}: {
+  readonly access: InvestigationAccessState;
+  /** Rendered first, beneath the heading; an investigation variant may put errand-level controls here. */
+  readonly header?: ReactNode;
+}) => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const profile = useInvestigationProfileStore((state) => state.profile);
+  const handledJsonParameterKeys = useInvestigationProfileStore((state) => state.handledJsonParameterKeys);
   const supportErrand = _supportErrand!;
+  // Avoid both duplicate rendering and exposing a hidden document from an older errand snapshot.
+  const readonlyJsonParameters = useMemo(
+    () =>
+      (supportErrand.jsonParameters ?? []).filter(
+        ({ key }) => !handledJsonParameterKeys[key] && isInvestigationParameterReadable(profile, access, key)
+      ),
+    [access, profile, handledJsonParameterKeys, supportErrand.jsonParameters]
+  );
 
   const simpleParams = useMemo(
     () =>
@@ -55,6 +77,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
+        {header}
         {(isOpenEErrand(supportErrand) || simpleParams.length > 0) && (
           <div className="rounded-lg gap-md p-16">
             <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
@@ -100,12 +123,9 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
+        {readonlyJsonParameters.length > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay
-              jsonParameters={supportErrand.jsonParameters as any}
-              municipalityId={municipalityId}
-            />
+            <JsonParametersDisplay jsonParameters={readonlyJsonParameters} municipalityId={municipalityId} />
           </div>
         ) : null}
       </div>

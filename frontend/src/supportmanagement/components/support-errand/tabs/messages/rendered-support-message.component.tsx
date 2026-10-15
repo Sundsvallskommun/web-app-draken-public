@@ -8,7 +8,12 @@ import {
   SupportCommunicationType,
 } from '@supportmanagement/services/support-communication-types';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
-import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
+import {
+  getChannelLabel,
+  getChannelLabelInSentence,
+  isSupportErrandLocked,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
@@ -30,19 +35,27 @@ import {
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
+import { useSupportMessagingPhase } from './use-support-messaging-phase';
 
 type ChannelPresentation = {
   Icon: LucideIcon;
   label: string;
 };
 
-const communicationChannelPresentation: Partial<Record<SupportCommunicationType, ChannelPresentation>> = {
-  [SupportCommunicationType.Sms]: { Icon: Smartphone, label: 'Via SMS' },
-  [SupportCommunicationType.Email]: { Icon: Mail, label: 'Via e-post' },
-  [SupportCommunicationType.WebMessage]: { Icon: Monitor, label: 'Via e-tjänst' },
-  [SupportCommunicationType.Draken]: { Icon: Monitor, label: 'Via Draken' },
-  [SupportCommunicationType.MinaSidor]: { Icon: Monitor, label: 'Via Mina sidor' },
-};
+// Asked for when a message is drawn, not when the module loads: what the e-service is called is the running
+// investigation's to say, and that is known only once the feature flags have been served.
+const communicationChannelPresentation = (
+  communicationType: SupportCommunicationType
+): ChannelPresentation | undefined =>
+  ((
+    {
+      [SupportCommunicationType.Sms]: { Icon: Smartphone, label: 'Via SMS' },
+      [SupportCommunicationType.Email]: { Icon: Mail, label: 'Via e-post' },
+      [SupportCommunicationType.WebMessage]: { Icon: Monitor, label: `Via ${getChannelLabelInSentence('ESERVICE')}` },
+      [SupportCommunicationType.Draken]: { Icon: Monitor, label: 'Via Draken' },
+      [SupportCommunicationType.MinaSidor]: { Icon: Monitor, label: 'Via Mina sidor' },
+    } as Partial<Record<SupportCommunicationType, ChannelPresentation>>
+  )[communicationType]);
 
 export const RenderedSupportMessage: FC<{
   update: () => void;
@@ -61,10 +74,12 @@ export const RenderedSupportMessage: FC<{
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState(false);
-  const channelPresentation = communicationChannelPresentation[message.communicationType];
+  const channelPresentation = communicationChannelPresentation(message.communicationType);
   const ChannelIcon = channelPresentation?.Icon;
 
   const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
+  // A reply is a message sent like any other, so it waits for the same phase.
+  const messagingPhase = useSupportMessagingPhase();
 
   const toastMessage = useSnackbar();
 
@@ -81,7 +96,7 @@ export const RenderedSupportMessage: FC<{
       return '';
     }
     if (msg.communicationType === SupportCommunicationType.WebMessage) {
-      return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
+      return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || getChannelLabel('ESERVICE') || '';
     }
     return msg?.sender || '(okänd avsändare)';
   };
@@ -210,7 +225,7 @@ export const RenderedSupportMessage: FC<{
               type="button"
               className="self-start"
               color="vattjom"
-              disabled={isSupportErrandLocked(supportErrand) || !allowed}
+              disabled={isSupportErrandLocked(supportErrand) || !allowed || !!messagingPhase}
               size="sm"
               variant="primary"
               onClick={() => {
