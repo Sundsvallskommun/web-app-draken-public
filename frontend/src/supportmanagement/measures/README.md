@@ -133,8 +133,9 @@ och utredning och är inte åtgärdstyper.
    `responsibleUser`. API:t beskriver fältet som AD-användarnamn men validerar bara
    sträng; listan visar texten som den är och slår upp visningsnamn bara för äldre
    åtgärder vars värde matchar ett känt AD-konto.
-4. Rollbyte nollställer vald typ men bevarar resten av utkastet. Rensa formuläret
-   och Avbryt redigering frågar först om utkastet innehåller ändringar.
+4. Rollbyte nollställer vald typ men bevarar resten av utkastet. Formuläret för en
+   ny åtgärd har ingen rensa-knapp; Avbryt redigering frågar först om utkastet
+   innehåller ändringar.
    Validerings- och sparfel visas i en felruta (`Alert`) som får fokus och länkar
    till fälten.
 5. Vid POST hämtar backend metadata igen och kontrollerar grupp, roll och typ.

@@ -86,7 +86,7 @@ export function AvvikelseMeasures({
   };
   const closeEditing = () => setDialog(undefined);
   const requestCloseEditing = async () => {
-    if (dirty && !(await confirmDiscardMeasureDraft(confirm, true))) return;
+    if (dirty && !(await confirmDiscardMeasureDraft(confirm))) return;
     closeEditing();
   };
   /**
@@ -227,7 +227,6 @@ export function AvvikelseMeasures({
           roles={metadata.roles}
           registration={registration}
           onSave={save}
-          onCancel={resetNewForm}
           onDirtyChange={reportDirty}
         />
       )}

@@ -590,28 +590,14 @@ test('filters the list by status, decision, role, type and text', async ({ page,
   ]);
 });
 
-test('asks before clearing a draft and keeps it when the user declines', async ({ page, dismissCookieConsent }) => {
+// A new measure is added or left as it is: its form offers nothing that clears it.
+test('offers no clearing of a new measure', async ({ page, dismissCookieConsent }) => {
   await installMeasures(page, { singleCreationRole: true });
   await openMeasures(page, dismissCookieConsent);
-  const description = page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true });
-  await description.fill('Mitt utkast');
-  await page.getByRole('button', { name: 'Rensa formuläret', exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('Rensa formuläret?');
-  await dialog.getByRole('button', { name: 'Nej, behåll', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(description).toHaveValue('Mitt utkast');
-  await page.getByRole('button', { name: 'Rensa formuläret', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Ja, rensa', exact: true }).click();
-  await expect(page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true })).toHaveValue('');
-});
+  await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Mitt utkast');
 
-test('clears an untouched form without asking', async ({ page, dismissCookieConsent }) => {
-  await installMeasures(page, { singleCreationRole: true });
-  await openMeasures(page, dismissCookieConsent);
-  await page.getByRole('button', { name: 'Rensa formuläret', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Tillagda åtgärder/ })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Lägg till åtgärd', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rensa formuläret', exact: true })).toHaveCount(0);
 });
 
 test('shows each measure as a card with status, goal, date and creator with role', async ({

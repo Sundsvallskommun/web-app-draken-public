@@ -58,7 +58,8 @@ export function AvvikelseMeasureForm({
   roles: readonly Role[];
   registration: MeasuresSnapshot['registration'];
   onSave: (values: MeasureForm) => Promise<void>;
-  onCancel: () => void;
+  /** Abandons the edit of an existing measure; a new measure's form has nothing to abandon. */
+  onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const defaults = measureFormValues(measure, creationRoles);
@@ -149,8 +150,8 @@ export function AvvikelseMeasureForm({
     errors[key] ? <FormErrorMessage>{errors[key]}</FormErrorMessage> : null;
 
   const cancel = async () => {
-    if (isDirty && !(await confirmDiscardMeasureDraft(confirm, Boolean(measure)))) return;
-    onCancel();
+    if (isDirty && !(await confirmDiscardMeasureDraft(confirm))) return;
+    onCancel?.();
   };
 
   const submit = handleSubmit(async (values) => {
@@ -475,22 +476,22 @@ export function AvvikelseMeasureForm({
         >
           {measure ? 'Spara ändringar' : proposes ? 'Lägg till förslag till åtgärd' : 'Lägg till åtgärd'}
         </Button>
-        <Button type="button" variant="secondary" disabled={saving} onClick={() => void cancel()}>
-          {measure ? 'Avbryt redigering' : 'Rensa formuläret'}
-        </Button>
+        {measure && (
+          <Button type="button" variant="secondary" disabled={saving} onClick={() => void cancel()}>
+            Avbryt redigering
+          </Button>
+        )}
       </div>
     </form>
   );
 }
 
-/** Shared by the form's own cancel button and the edit modal's close control. */
-export function confirmDiscardMeasureDraft(confirm: ReturnType<typeof useConfirm>, editing: boolean): Promise<boolean> {
+/** Shared by the form's own Avbryt redigering and the edit modal's close control. */
+export function confirmDiscardMeasureDraft(confirm: ReturnType<typeof useConfirm>): Promise<boolean> {
   return confirm.showConfirmation(
-    editing ? 'Avbryt redigering?' : 'Rensa formuläret?',
-    editing
-      ? 'Dina ändringar av åtgärden sparas inte. Vill du fortsätta?'
-      : 'Det du har fyllt i tas bort. Vill du fortsätta?',
-    editing ? 'Ja, avbryt' : 'Ja, rensa',
+    'Avbryt redigering?',
+    'Dina ändringar av åtgärden sparas inte. Vill du fortsätta?',
+    'Ja, avbryt',
     'Nej, behåll',
     'warning',
     'question'
