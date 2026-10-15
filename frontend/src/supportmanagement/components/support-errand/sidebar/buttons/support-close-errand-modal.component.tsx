@@ -255,6 +255,11 @@ export const SupportCloseErrandModal: React.FC<{
     onClose();
   };
 
+  const closeModalAndTab = () => {
+    closeModal();
+    window.close();
+  };
+
   const ensureHandlerAssigned = async (errandId: string): Promise<string | undefined> => {
     if (supportErrand?.assignedUserId) return supportErrand.assignedUserId;
     const currentAdmin = administrators.find((a) => a.adAccount === user.username);
@@ -265,8 +270,8 @@ export const SupportCloseErrandModal: React.FC<{
     return undefined;
   };
 
-  const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
-    if (!supportErrand?.id) return;
+  const handleCloseErrand = async (resolution: Resolution, msg: boolean): Promise<boolean> => {
+    if (!supportErrand?.id) return false;
     const errandId = supportErrand.id;
     setIsLoading(true);
     let assignedUserId: string | undefined;
@@ -277,7 +282,7 @@ export const SupportCloseErrandModal: React.FC<{
       console.error('Failed to close support errand', e);
       showCloseErrorToast();
       setIsLoading(false);
-      return;
+      return false;
     }
 
     if (msg) {
@@ -292,7 +297,7 @@ export const SupportCloseErrandModal: React.FC<{
         getSupportErrandById(errandId, municipalityId)
           .then((res) => setSupportErrand(res.errand))
           .catch((e) => console.error('Failed to refetch errand after close', e));
-        return;
+        return false;
       }
     }
 
@@ -309,6 +314,7 @@ export const SupportCloseErrandModal: React.FC<{
     getSupportErrandById(errandId, municipalityId)
       .then((res) => setSupportErrand(res.errand))
       .catch((e) => console.error('Failed to refetch errand after close', e));
+    return true;
   };
 
   const handleCloseWithCurrentResolution = async () => {
@@ -349,7 +355,7 @@ export const SupportCloseErrandModal: React.FC<{
         description={description}
         confirmLabel={afterHandover ? 'Klart' : 'Avsluta'}
         onChangeResolution={() => setChangeResolution(true)}
-        onConfirm={afterHandover ? closeModal : handleCloseWithCurrentResolution}
+        onConfirm={afterHandover ? closeModalAndTab : handleCloseWithCurrentResolution}
       />
     );
   } else {
@@ -368,7 +374,7 @@ export const SupportCloseErrandModal: React.FC<{
         disabled={disabled}
         onConfirm={() => {
           handleCloseErrand(selectedResolution, closingMessage)
-            .then(closeModal)
+            .then((closed) => closed && closeModal())
             .catch(() => showCloseErrorToast());
         }}
       />

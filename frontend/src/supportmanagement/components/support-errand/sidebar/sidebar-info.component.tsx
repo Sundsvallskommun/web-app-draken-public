@@ -366,10 +366,7 @@ export const SidebarInfo: FC<{
       <SupportCloseErrandModal
         show={showCloseModalAfterHandover}
         afterHandover
-        onClose={() => {
-          setShowCloseModalAfterHandover(false);
-          window.close();
-        }}
+        onClose={() => setShowCloseModalAfterHandover(false)}
       />
 
       <div className="w-full mt-md flex flex-col gap-12">

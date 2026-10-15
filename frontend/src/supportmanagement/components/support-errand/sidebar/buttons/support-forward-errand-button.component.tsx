@@ -26,6 +26,8 @@ import {
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   choosesResolutionAfterForward,
+  closeSupportErrand,
+  forwardResolution,
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
@@ -210,9 +212,22 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     });
   };
 
-  const handleHandoverSuccess = () => {
+  const handleHandoverSuccess = async () => {
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
+    try {
+      await closeSupportErrand(supportErrand!.id!, municipalityId, forwardResolution());
+    } catch (e) {
+      console.error('Failed to close errand after handover', e);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Ärendet överlämnades men kunde inte avslutas',
+        status: 'error',
+      });
+      void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+      return;
+    }
     afterForward();
   };
 
