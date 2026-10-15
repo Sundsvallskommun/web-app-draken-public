@@ -257,7 +257,8 @@ describe('measure write handlers (over HTTP)', () => {
     const response = await request(server).get('/supportmeasures/2281/planned');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      measures: [{ ...planned, errand: { id: 'errand-1', errandNumber: 'VOF-2026-0001', title: 'Fallskada', status: 'ONGOING' } }],
+      // The errand's title is left out: the overview does not show it.
+      measures: [{ ...planned, errand: { id: 'errand-1', errandNumber: 'VOF-2026-0001', status: 'ONGOING' } }],
       metadata,
       truncated: false,
     });

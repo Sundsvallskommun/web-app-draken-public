@@ -291,7 +291,8 @@ test('reads open planned measures across the errands upstream grants, one page a
     ['soon', 'VOF-2026-0002'],
     ['later', 'VOF-2026-0001'],
   ]);
-  expect(snapshot.measures[0].errand).toEqual({ id: 'e2', errandNumber: 'VOF-2026-0002', title: 'Fallskada', status: 'ONGOING' });
+  // The errand's title is left out: the overview does not show it.
+  expect(snapshot.measures[0].errand).toEqual({ id: 'e2', errandNumber: 'VOF-2026-0002', status: 'ONGOING' });
   expect(snapshot.metadata).toEqual(metadata);
   expect(snapshot.truncated).toBe(false);
   expect(pageUrls).toHaveLength(2);
