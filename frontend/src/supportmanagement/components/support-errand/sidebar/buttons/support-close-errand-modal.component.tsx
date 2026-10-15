@@ -53,15 +53,11 @@ const getResolutionDisplayLabels = (): Record<string, string> => ({
 });
 
 const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
-  if (!!errand?.resolution) return errand?.resolution as Resolution;
-
-  return isROB()
-    ? Resolution.NEED_MET
-    : isKC()
-    ? Resolution.INFORMED
-    : appConfig.features.useClosedAsDefaultResolution
-    ? Resolution.CLOSED
-    : Resolution.SOLVED;
+  if (errand?.resolution) return errand.resolution as Resolution;
+  if (isROB()) return Resolution.NEED_MET;
+  if (isKC()) return Resolution.INFORMED;
+  if (appConfig.features.useClosedAsDefaultResolution) return Resolution.CLOSED;
+  return Resolution.SOLVED;
 };
 
 /**
@@ -172,7 +168,7 @@ export const SupportCloseErrandModal: React.FC<{
   };
 
   const hasResolution = !!supportErrand?.resolution && supportErrand?.resolution !== '';
-  const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v);
+  const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some(Boolean);
 
   return (
     <Modal
@@ -236,6 +232,7 @@ export const SupportCloseErrandModal: React.FC<{
                   await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
                   window.close();
                 } catch (e) {
+                  console.error('Failed to close support errand', e);
                   showCloseErrorToast();
                 }
               }}
