@@ -240,7 +240,8 @@ export function PlannedMeasuresOverview() {
           inverted
           color={group.bucket === 'overdue' ? 'error' : 'vattjom'}
           counter={group.measures.length}
-          className="min-w-fit px-4"
+          // Raleway's own figures are old style: 3, 4, 5, 7 and 9 drop below the line, and sit low in the badge.
+          className="min-w-fit px-4 lining-nums"
         />
         <span className="grow border-t-1 border-divider" aria-hidden="true" />
       </h2>
