@@ -22,7 +22,7 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
 }));
 const sectionStub = vi.hoisted(() => ({ handsBack: null as object | null }));
 
-vi.mock('./disclosure/investigation-disclosure.component', () => ({
+vi.mock('./investigation-disclosure.component', () => ({
   SectionDisclosure: ({
     onFinancialSaved,
     saveFinancial,
@@ -37,7 +37,7 @@ vi.mock('./disclosure/investigation-disclosure.component', () => ({
     return null;
   },
 }));
-vi.mock('./disclosure/investigation-conclusion-disclosure.component', () => ({
+vi.mock('./investigation-conclusion-disclosure.component', () => ({
   InvestigationConclusionDisclosure: ({
     values,
     set,

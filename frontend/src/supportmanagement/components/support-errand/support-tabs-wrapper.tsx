@@ -33,6 +33,7 @@ import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMem
 import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { SupportErrandInvestigationTab } from './tabs/investigation/support-errand-investigation-tab';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
@@ -40,7 +41,6 @@ import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDecisionTab } from './tabs/support-errand-decision-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
-import { SupportErrandInvestigationTab } from './tabs/support-errand-investigation-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;

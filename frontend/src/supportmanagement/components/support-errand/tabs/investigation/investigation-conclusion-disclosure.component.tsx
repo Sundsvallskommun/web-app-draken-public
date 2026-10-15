@@ -1,8 +1,8 @@
+import { DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Disclosure, FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DecisionOutcome } from '../../../../../common/data-contracts/supportmanagement/data-contracts';
 import { InvestigationTextEditor } from '../../investigation-text-editor.component';
 
 export const InvestigationConclusionDisclosure: FC<{
