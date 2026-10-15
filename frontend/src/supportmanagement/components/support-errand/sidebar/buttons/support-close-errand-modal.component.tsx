@@ -149,7 +149,9 @@ export const SupportCloseErrandModal: React.FC<{
         console.error('Failed to send closing message', e);
         showCloseErrorToast('Ärendet avslutades men avslutningsmeddelandet kunde inte skickas');
         setIsLoading(false);
-        getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(errandId, municipalityId)
+          .then((res) => setSupportErrand(res.errand))
+          .catch((e) => console.error('Failed to refetch errand after close', e));
         return;
       }
     }
@@ -164,7 +166,9 @@ export const SupportCloseErrandModal: React.FC<{
       window.close();
     }, 2000);
     setIsLoading(false);
-    getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
+    getSupportErrandById(errandId, municipalityId)
+      .then((res) => setSupportErrand(res.errand))
+      .catch((e) => console.error('Failed to refetch errand after close', e));
   };
 
   const hasResolution = !!supportErrand?.resolution && supportErrand?.resolution !== '';
@@ -318,7 +322,9 @@ export const SupportCloseErrandModal: React.FC<{
               loading={isLoading}
               loadingText="Avslutar ärende"
               onClick={() => {
-                handleCloseErrand(selectedResolution, closingMessage).then(closeModal);
+                handleCloseErrand(selectedResolution, closingMessage)
+                  .then(closeModal)
+                  .catch(() => showCloseErrorToast());
               }}
             >
               Avsluta
