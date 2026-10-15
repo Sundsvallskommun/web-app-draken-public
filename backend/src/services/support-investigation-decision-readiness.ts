@@ -2,6 +2,7 @@ import { type HandlerGroupRole, resolveHeldHandlerRoleKeys } from '@/config/hand
 import {
   IAF_VOF_DECISION_PHASE_NAME,
   IAF_VOF_FOLLOW_UP_PHASE_NAME,
+  IAF_VOF_REVIEW_PHASE_NAME,
   resolveIafVofDecisionInvestigationDocumentKey,
 } from '@/config/iaf-vof-decision-investigation';
 import { IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
@@ -15,11 +16,12 @@ import {
 import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { LEX_HANDLER_ROLE_KEYS, LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from '@/config/investigation-handover-steps';
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
-import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
+import type { Errand, Phase } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
 
 import { isJsonObject } from './schema-bound-json.service';
+import { getActiveErrandPhaseId } from './support-errand.service';
 import { SupportInvestigationPolicyService } from './support-investigation-policy.service';
 import { isDocumentCompleted, SupportJsonParameterService } from './support-json-parameter.service';
 
@@ -34,6 +36,13 @@ export const LEX_HANDLER_CANNOT_START_FOLLOW_UP =
   'Uppföljningen görs av enheten. Återlämna ärendet till chefen, som tar det vidare till uppföljning.';
 
 export const REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END = 'Ett missförhållande avslutas först när processen är klar, från uppföljningen.';
+
+const EARLY_CLOSE_BEFORE_REVIEW = 'Ärendet kan avslutas i förtid tidigast under granskning.';
+
+const EARLY_CLOSE_NEEDS_MOTIVATION = 'Beskriv orsak till avslut. Ärendet avslutas innan hela processen är klar.';
+
+/** How the service note that keeps the motivation begins. */
+const EARLY_CLOSE_NOTE_HEADING = 'Ärendet avslutades innan hela processen var klar. Orsak:';
 
 export const HSL_ASSESSMENT_PENDING =
   'Ärendet har hög risk HSL och kan inte avslutas förrän MAS/MAR har gjort sin initiala bedömning i Händelseanalys HSL.';
@@ -111,6 +120,49 @@ export const assertMayCloseReportedMisconduct = ({ policyService, errand, closes
   if (resolveIafVofInvestigationDocumentApplicability(errand) === 'reported-misconduct') {
     throw new HttpException(422, REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END);
   }
+};
+
+interface EarlyCloseRequest {
+  readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy'>;
+  readonly errand: Pick<Errand, 'phases'>;
+  readonly phases: readonly Phase[] | undefined;
+  /** The close has to move the errand through phases first: it is not yet in the phase its workflow closes from. */
+  readonly closesBeforeWorkflowEnds: boolean;
+  /** Why the closer ends the errand early, in their own words. */
+  readonly motivation: string | undefined;
+}
+
+/**
+ * Whether the errand has reached the named phase. A workflow without the phase does not gate on it; an errand
+ * outside the workflow is before every phase.
+ */
+const hasReachedPhase = (errand: Pick<Errand, 'phases'>, phases: readonly Phase[] | undefined, phaseName: string): boolean => {
+  const required = (phases ?? []).find(phase => phase.name === phaseName && !phase.deprecated);
+  if (!required) return true;
+  const activePhaseId = getActiveErrandPhaseId(errand);
+  const active = (phases ?? []).find(phase => phase.id === activePhaseId);
+  if (!active) return false;
+  return (active.phaseOrder ?? 0) >= (required.phaseOrder ?? 0);
+};
+
+/**
+ * What an IAF/VOF deviation closed before its workflow ends needs: the errand has to have reached the review, where
+ * its handling starts, and the closer says why. Answers the service note the motivation is kept in; undefined where
+ * no such close is asked for or the application has no IAF/VOF policy. A misconduct is never closed early at all,
+ * which `assertMayCloseReportedMisconduct` refuses before this is asked.
+ */
+export const resolveEarlyCloseServiceNote = ({
+  policyService,
+  errand,
+  phases,
+  closesBeforeWorkflowEnds,
+  motivation,
+}: EarlyCloseRequest): string | undefined => {
+  if (!closesBeforeWorkflowEnds || !policyService.iafVofClassificationPolicy) return undefined;
+  if (!hasReachedPhase(errand, phases, IAF_VOF_REVIEW_PHASE_NAME)) throw new HttpException(422, EARLY_CLOSE_BEFORE_REVIEW);
+  const reason = motivation?.trim();
+  if (!reason) throw new HttpException(422, EARLY_CLOSE_NEEDS_MOTIVATION);
+  return `${EARLY_CLOSE_NOTE_HEADING} ${reason}`;
 };
 
 interface AssertHslAnalysisFinishedRequest {

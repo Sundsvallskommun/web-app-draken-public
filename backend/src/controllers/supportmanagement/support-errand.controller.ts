@@ -12,6 +12,7 @@ import {
   IsString,
   Matches,
   Max,
+  MaxLength,
   Min,
   MinLength,
   ValidateNested,
@@ -110,10 +111,12 @@ import {
   assertHslAnalysisFinishedBeforeClose,
   assertMayCloseReportedMisconduct,
   assertMayStartFollowUp,
+  resolveEarlyCloseServiceNote,
 } from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
+import { assertCanWriteSupportServiceNote, buildSupportServiceNote } from '@/services/support-note.service';
 import { followErrandWithAssignee, SupportSubscriberApi } from '@/services/support-subscriber.service';
 import { selectCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
@@ -318,6 +321,12 @@ export class UpdateSupportErrandStatusDto {
   @TypeTransformer(() => CSuspension)
   @JSONSchema({ $ref: '#/components/schemas/CSuspension' })
   suspension?: CSuspension;
+
+  /** Why the errand is closed before its workflow ends, where that has to be said; kept as a service note. */
+  @IsString()
+  @IsOptional()
+  @MaxLength(4000)
+  closingMotivation?: string;
 }
 
 export class AssignSupportErrandDto {
@@ -1147,10 +1156,11 @@ export class SupportErrandController {
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
     // A close that has to move the errand into another phase first is one made before its workflow has ended.
+    const closesBeforeWorkflowEnds = data.status === CLOSED_SUPPORT_ERRAND_STATUS && Boolean(body.activePhaseId);
     assertMayCloseReportedMisconduct({
       policyService: this.investigationPolicyService,
       errand: currentErrand.data,
-      closesBeforeWorkflowEnds: data.status === CLOSED_SUPPORT_ERRAND_STATUS && Boolean(body.activePhaseId),
+      closesBeforeWorkflowEnds,
     });
     // Closing from an earlier phase enters each phase on the way and the one it closes in, and every one of
     // them answers to the same rule as the phase button that would have entered it.
@@ -1163,9 +1173,30 @@ export class SupportErrandController {
         targetPhaseName: metadata.data.phases?.find(phase => phase.id === enteredPhaseId)?.name,
       });
     }
+    // Who may close is asked above; why it closes before its workflow ends, here.
+    const earlyCloseNote = resolveEarlyCloseServiceNote({
+      policyService: this.investigationPolicyService,
+      errand: currentErrand.data,
+      phases: metadata.data.phases,
+      closesBeforeWorkflowEnds,
+      motivation: data.closingMotivation,
+    });
     // Closing from an earlier phase steps along the workflow first: Support Management refuses a jump
     // between phases. Each step is conditioned on the version the one before it left.
     let version = currentVersion;
+    if (earlyCloseNote) {
+      // The motivation is the handler's service note, written once every refusal is behind it, so a close is never
+      // without it. The note is this request's own write; a version moved further is somebody else's.
+      assertCanWriteSupportServiceNote(currentErrand.data, req.user);
+      await this.apiService.post(
+        { url: `${url}/notes`, baseURL, data: buildSupportServiceNote(earlyCloseNote, req.user), propagateClientError: true },
+        req.user,
+      );
+      const noted = await this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user);
+      const notedVersion = getErrandVersion(noted.data, noted.headers?.etag);
+      if (notedVersion > version + 1) throw new HttpException(409, 'Ärendet har ändrats av någon annan. Ladda om ärendet och försök igen.');
+      version = notedVersion;
+    }
     for (const step of phaseSteps) {
       await this.apiService.patch<SupportErrand, (typeof phaseSteps)[number]>(
         {

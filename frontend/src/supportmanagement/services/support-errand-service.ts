@@ -1093,10 +1093,12 @@ export const setSupportErrandStatus: (
   errandId: string,
   municipalityId: string,
   status: Status,
-  expected: SupportErrandStatusSnapshot
-) => Promise<boolean> = async (errandId, municipalityId, status, expected) => {
+  expected: SupportErrandStatusSnapshot,
+  closingMotivation?: string
+) => Promise<boolean> = async (errandId, municipalityId, status, expected, closingMotivation) => {
   return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
     suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+    ...(closingMotivation ? { closingMotivation } : {}),
   }).catch((e) => {
     console.error('Something went wrong when patching errand');
     throw e;

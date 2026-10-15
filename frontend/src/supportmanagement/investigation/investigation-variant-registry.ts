@@ -77,6 +77,10 @@ export const getInvestigationConcealedDocumentKeys = (): InvestigationVariantMod
 export const getInvestigationClosesOnlyAtWorkflowEnd = (): InvestigationVariantModule['closesOnlyAtWorkflowEnd'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.closesOnlyAtWorkflowEnd : undefined;
 
+/** How the running variant lets an errand close before its workflow ends, if it has a say in it. */
+export const getInvestigationEarlyClose = (): InvestigationVariantModule['earlyClose'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.earlyClose : undefined;
+
 /** Whether the running variant moves the errand's status by its own actions, leaving no status to choose. */
 export const getInvestigationStatusFollowsWorkflow = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.statusFollowsWorkflow) : false;

@@ -2,6 +2,8 @@ import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 
 import { IafVofInvestigationClassificationPolicy, resolveIafVofInvestigationClassificationOwner } from './iaf-vof-investigation-classification';
 
+/** The workflow phase an IAF/VOF errand is reviewed in: where its handling starts, and the earliest it may close. */
+export const IAF_VOF_REVIEW_PHASE_NAME = 'REVIEW';
 /** The workflow phase an IAF/VOF errand is decided in. Entering it is what leaves the investigation behind. */
 export const IAF_VOF_DECISION_PHASE_NAME = 'DECISION';
 /** The workflow phase in which the unit follows up the measures of a decided IAF/VOF errand. */

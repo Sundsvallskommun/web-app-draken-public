@@ -87,6 +87,9 @@ delad kod erbjuder:
   ur. Den erbjuds den som sloten säger, och bara när profilens `labelFilter` har gruppen; gruppen visas aldrig
   bland de vanliga etikettfiltren (`overviewLabelFilterGroups`, `resolveOverviewFilterToggle`). Utan slot ser
   översikten ut som för alla andra drakar.
+- `earlyClose` — valfri: från vilken fas (`fromPhaseName`) ett ärende får avslutas innan flödet är slut. Avsluta
+  ärendet visas först från den fasen och frågar då efter en orsak, som BFF:en sparar som tjänsteanteckning
+  (`getInvestigationEarlyClose`). För avvikelse: `REVIEW`. Utan slot avslutas ärendet i förtid som i dag.
 - `rolesWithoutEmployeeSearch` — valfri lista över intressentroller som aldrig är anställda, så att Grunduppgifter
   inte erbjuder Anställd för dem (`getInvestigationRolesWithoutEmployeeSearch`). För avvikelse: `PRIMARY`, brukaren.
   Övriga parter behåller sökningen. Utan slot gäller `useEmployeeSearch` för alla roller som i dag.

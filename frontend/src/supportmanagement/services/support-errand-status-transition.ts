@@ -5,6 +5,8 @@ export interface SupportErrandStatusSnapshot {
 
 export interface SupportErrandStatusTransitionChanges {
   resolution?: string;
+  /** Why the errand is closed before its workflow ends, where that has to be said; kept as a service note. */
+  closingMotivation?: string;
   suspension?: {
     suspendedFrom?: string;
     suspendedTo?: string;

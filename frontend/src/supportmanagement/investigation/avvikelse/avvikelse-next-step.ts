@@ -19,7 +19,7 @@ import {
 import { findInvestigationDocumentBySchemaName, readSavedInvestigationDocument } from './saved-investigation-document';
 
 /** The phases the avvikelse process runs through, as the namespace's phase metadata names them. */
-const REVIEW_PHASE_NAME = 'REVIEW';
+export const REVIEW_PHASE_NAME = 'REVIEW';
 const INVESTIGATION_PHASE_NAME = 'INVESTIGATION';
 const DECISION_PHASE_NAME = 'DECISION';
 const FOLLOW_UP_PHASE_NAME = 'FOLLOW_UP';

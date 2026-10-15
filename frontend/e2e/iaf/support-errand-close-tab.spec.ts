@@ -90,3 +90,46 @@ for (const [eventType, offered] of [
     await expect(page.locator('[data-cy="solved-button"]')).toHaveCount(offered ? 1 : 0);
   });
 }
+
+// A deviation's handling starts in the review: before it nothing is closed early, from it the close is offered.
+for (const [phase, offered] of [
+  ['ACTUALIZATION', false],
+  ['REVIEW', true],
+] as const) {
+  test(`${offered ? 'offers' : 'offers no'} early close on a deviation in ${phase.toLowerCase()}`, async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, { eventType: 'AVVIKELSE', activePhaseName: phase, assignedUserId: 'iaf.test' });
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="manage-sidebar"]')).toBeVisible();
+    await expect(page.locator('[data-cy="solved-button"]')).toHaveCount(offered ? 1 : 0);
+  });
+}
+
+// As in MEX, a close before the process is complete asks why, and the reason goes with the close as a service note.
+test('asks why a deviation is closed early and sends the reason with the close', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installIafApiMock(page, {
+    eventType: 'AVVIKELSE',
+    activePhaseName: 'INVESTIGATION',
+    assignedUserId: 'iaf.test',
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  await page.locator('[data-cy="solved-button"]').click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Avsluta ärendet?');
+  await expect(dialog).toContainText('Texten sparas som en tjänsteanteckning på ärendet.');
+  await dialog.locator('[data-cy="early-close-confirm"]').click();
+  await expect(dialog).toContainText('Orsak till avslut måste anges.');
+
+  await dialog.locator('[data-cy="early-close-motivation"]').fill('Dubblettanmälan.');
+  const written = statusWrite(page);
+  await dialog.locator('[data-cy="early-close-confirm"]').click();
+
+  expect((await written).postDataJSON()).toMatchObject({ status: 'SOLVED', closingMotivation: 'Dubblettanmälan.' });
+});

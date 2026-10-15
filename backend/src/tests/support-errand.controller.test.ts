@@ -2162,7 +2162,7 @@ describe('updateSupportErrandStatus', () => {
         errandRead += 1;
         const version = 6 + errandRead;
         return {
-          data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], version },
+          data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], assignedUserId: mockUser().username, version },
           message: 'success',
           headers: { etag: `"${version}"` },
         };
@@ -2173,7 +2173,7 @@ describe('updateSupportErrandStatus', () => {
           mockReq(),
           mockSupportErrandId,
           MUNICIPALITY_ID,
-          { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED' },
+          { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED', closingMotivation: 'Dubblettanmälan.' },
           mockRes(),
         ),
       ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('väntar på beslut') });
@@ -2261,7 +2261,7 @@ describe('updateSupportErrandStatus', () => {
   });
 
   // Support Management refuses a jump between phases, so closing from Granskning walks the chain.
-  it('steps an errand closed in an earlier phase through each transition before closing it', async () => {
+  it('steps an errand closed in an earlier phase through each transition before closing it, its motivation noted first', async () => {
     const { controller, api } = makeController();
     const phases = [
       { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW'], transitions: [{ id: 't1', targetPhaseId: 'investigation' }] },
@@ -2275,7 +2275,7 @@ describe('updateSupportErrandStatus', () => {
       errandRead += 1;
       const version = 6 + errandRead;
       return {
-        data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], version },
+        data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], assignedUserId: mockUser().username, version },
         message: 'success',
         headers: { etag: `"${version}"` },
       };
@@ -2286,17 +2286,71 @@ describe('updateSupportErrandStatus', () => {
       req,
       mockSupportErrandId,
       MUNICIPALITY_ID,
-      { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED' },
+      { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED', closingMotivation: ' Dubblettanmälan. ' },
       mockRes(),
     );
 
+    // The motivation is kept as the handler's service note, written before anything moves.
+    expect(api.post.mock.calls.map(([config]) => [config.url, config.data.context, config.data.body])).toEqual([
+      [`${errandUrl}/notes`, 'SERVICE_NOTE', 'Ärendet avslutades innan hela processen var klar. Orsak: Dubblettanmälan.'],
+    ]);
+    // The note moved the version by one, its own write; each step is conditioned on the version before it.
     expect(api.patch.mock.calls.map(([config]) => [config.data, config.headers])).toEqual([
-      [{ activePhaseId: 'investigation', status: 'INQUIRY' }, { 'If-Match': '"7"' }],
-      [{ activePhaseId: 'decision', status: 'DECISION' }, { 'If-Match': '"8"' }],
-      [{ status: 'SOLVED', activePhaseId: 'follow-up' }, { 'If-Match': '"9"' }],
+      [{ activePhaseId: 'investigation', status: 'INQUIRY' }, { 'If-Match': '"8"' }],
+      [{ activePhaseId: 'decision', status: 'DECISION' }, { 'If-Match': '"9"' }],
+      [{ status: 'SOLVED', activePhaseId: 'follow-up' }, { 'If-Match': '"10"' }],
     ]);
     // Only the close is news to the errand's subscribers; the steps on the way are silent.
     expect(api.patch.mock.calls.map(([config]) => config.notifySubscribers)).toEqual([false, false, undefined]);
+  });
+
+  /** An IAF/VOF deviation in the given phase of the workflow, assigned to the closer. */
+  const deviationIn = (activePhaseId: string) => {
+    const { controller, api } = makeController();
+    const phases = [
+      { id: 'actualization', name: 'ACTUALIZATION', phaseOrder: 1, allowedStatuses: ['NEW'], transitions: [{ id: 't0', targetPhaseId: 'review' }] },
+      { id: 'review', name: 'REVIEW', phaseOrder: 2, allowedStatuses: ['REVIEW'], transitions: [{ id: 't1', targetPhaseId: 'follow-up' }] },
+      { id: 'follow-up', name: 'FOLLOW_UP', phaseOrder: 5, allowedStatuses: ['FOLLOW_UP', 'SOLVED'] },
+    ];
+    const status = activePhaseId === 'actualization' ? 'NEW' : 'REVIEW';
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { statuses: [{ name: status }, { name: 'SOLVED' }], phases }, message: 'success' };
+      return {
+        data: { id: mockSupportErrandId, status, phases: [{ phaseId: activePhaseId }], assignedUserId: mockUser().username, version: 7 },
+        message: 'success',
+        headers: { etag: '"7"' },
+      };
+    });
+    const close = (closingMotivation?: string) =>
+      controller.updateSupportErrandStatus(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedVersion: 7, expectedStatus: status, status: 'SOLVED', ...(closingMotivation ? { closingMotivation } : {}) },
+        mockRes(),
+      );
+    return { api, close };
+  };
+
+  // Handling starts in the review: an errand still registered is not closed early.
+  it('refuses closing a deviation early before its handling has started', async () => {
+    const { api, close } = deviationIn('actualization');
+
+    await expect(close('Dubblettanmälan.')).rejects.toMatchObject({
+      status: 422,
+      message: 'Ärendet kan avslutas i förtid tidigast under granskning.',
+    });
+    expect(api.post).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('refuses closing a deviation early without saying why', async () => {
+    const { api, close } = deviationIn('review');
+
+    await expect(close('   ')).rejects.toMatchObject({ status: 422, message: expect.stringContaining('Beskriv orsak till avslut') });
+    await expect(close()).rejects.toMatchObject({ status: 422 });
+    expect(api.post).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
   });
 
   // Closing from the decision steps into the follow-up, which is the unit's to start, not LEX's.

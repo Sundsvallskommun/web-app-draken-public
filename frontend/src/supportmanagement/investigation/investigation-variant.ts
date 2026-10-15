@@ -310,6 +310,12 @@ export interface InvestigationVariantModule {
    */
   readonly closesOnlyAtWorkflowEnd?: (context: InvestigationErrandContext) => boolean;
   /**
+   * How an errand that may close before its workflow ends is closed early: not before it has reached
+   * `fromPhaseName`, where its handling starts, and only with a motivation the BFF keeps as a service note. A variant
+   * without the slot keeps the early close as it is.
+   */
+  readonly earlyClose?: { readonly fromPhaseName: string };
+  /**
    * The errand's status follows the workflow's own actions - resuming it, the handovers, the phases - so it is not
    * chosen by hand and the sidebar offers no status select. A variant without the slot keeps the select.
    */

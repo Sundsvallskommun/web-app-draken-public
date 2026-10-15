@@ -17,6 +17,7 @@ import { useInvestigationProfileStore } from '@supportmanagement/investigation/i
 import {
   getInvestigationAssigneeFollowsErrand,
   getInvestigationClosesOnlyAtWorkflowEnd,
+  getInvestigationEarlyClose,
   getInvestigationHandlerFields,
   getInvestigationStatusFollowsWorkflow,
   getInvestigationWithoutSuspension,
@@ -46,6 +47,7 @@ import {
   getActiveSupportPhaseId,
   getSelectableSupportStatuses,
   getSupportPhases,
+  hasReachedSupportPhase,
 } from '@supportmanagement/services/support-phase-service';
 import dayjs from 'dayjs';
 import { CirclePause, Mail } from 'lucide-react';
@@ -107,13 +109,23 @@ export const SidebarInfo: FC<{
       labelStructure: supportMetadata?.labels?.labelStructure,
       viewer: user,
     }) ?? false;
+  // Where the investigation holds the early close back to a phase, it is offered from that phase on.
+  const earlyClose = getInvestigationEarlyClose();
+  const earlyCloseReached =
+    !earlyClose ||
+    hasReachedSupportPhase(earlyClose.fromPhaseName, {
+      metadataPhases: supportMetadata?.phases,
+      errandPhases: supportErrand?.phases,
+    });
   // In the last phase of a workflow the phase button closes the errand, so it is not offered twice; and an errand the
   // investigation closes only at the end of its workflow is not closed early.
   const offersEarlyClose =
     !(
       appConfig.features.useUiPhases &&
       closesFromActivePhase(getActiveSupportPhaseId(supportErrand?.phases), getSupportPhases(supportMetadata?.phases))
-    ) && !closesOnlyAtWorkflowEnd;
+    ) &&
+    !closesOnlyAtWorkflowEnd &&
+    earlyCloseReached;
   // The divider above forwarding and the early close only separates something when either is offered.
   const offersForwardOrClose = appConfig.features.useEscalation || offersEarlyClose;
   // Only a namespace with a phase model narrows the list - today IAF/VOF - because there each phase

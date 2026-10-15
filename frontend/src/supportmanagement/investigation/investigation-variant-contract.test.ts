@@ -87,6 +87,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.limitedAccessNotice, undefined);
   // A variant that does not keep errands from closing early leaves the early close where it is.
   assert.equal(minimalVariant.closesOnlyAtWorkflowEnd, undefined);
+  // Nor does one with no word on closing early hold the early close back to a phase, or ask why.
+  assert.equal(minimalVariant.earlyClose, undefined);
   // Nor does one whose workflow does not move the status take the status select away.
   assert.equal(minimalVariant.statusFollowsWorkflow, undefined);
   assert.equal(minimalVariant.withoutSuspension, undefined);

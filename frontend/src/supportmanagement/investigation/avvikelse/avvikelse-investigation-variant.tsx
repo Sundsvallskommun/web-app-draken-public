@@ -31,7 +31,7 @@ import {
 } from './avvikelse-classification-policy';
 import { isDecisionInvestigationCompleted } from './avvikelse-decision-investigation';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
-import { resolveAvvikelseNextStep } from './avvikelse-next-step';
+import { resolveAvvikelseNextStep, REVIEW_PHASE_NAME } from './avvikelse-next-step';
 import { unitFollowUpMenuLabel } from './follow-up/unit-follow-up-scope';
 import { concealedAvvikelseDocumentKeys } from './hsl-investigation-visibility';
 
@@ -283,6 +283,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
    * close from the follow-up stays. The BFF refuses the early close as well.
    */
   closesOnlyAtWorkflowEnd: (context: InvestigationErrandContext) => isAvvikelseReportedMisconductErrand(context.errand),
+  /** A deviation closes early once its handling has started in the review, and the handler says why. */
+  earlyClose: { fromPhaseName: REVIEW_PHASE_NAME },
   /** The status moves when the handler resumes the errand, hands it over or changes phase; nobody sets it by hand. */
   statusFollowsWorkflow: true,
   /** The organisation has decided not to park errands: an errand waits in the status its phase gives it. */

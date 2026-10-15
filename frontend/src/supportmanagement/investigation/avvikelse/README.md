@@ -609,7 +609,13 @@ Ett missförhållande går till LEX, beslutas och följs upp innan det avslutas.
 stänger ärendet före den sista fasen, visas därför inte för ett missförhållande, oavsett roll
 (`closesOnlyAtWorkflowEnd` i varianten). Avslutet från uppföljningen, med fasknappen, finns kvar. BFF:en vägrar
 samma sak (`assertMayCloseReportedMisconduct`): ett avslut som först måste flytta ärendet till en annan fas besvaras
-med 422. En avvikelse kan avslutas i förtid som förut.
+med 422.
+
+En avvikelse kan avslutas i förtid, men tidigast i Granskning, där handläggningen börjar (variantens `earlyClose`).
+Före det visas ingen Avsluta ärendet. Ett förtida avslut frågar, som i MEX, efter orsaken till avslutet i en dialog,
+och orsaken skickas med avslutet (`closingMotivation`). BFF:en vägrar ett förtida avslut före Granskning och ett utan
+orsak (`resolveEarlyCloseServiceNote`, 422), och sparar orsaken som tjänsteanteckning innan ärendet stängs. Avslutet
+från uppföljningen, med fasknappen, frågar inget.
 
 ### Inget avslut innan MAS/MAR är klar
 

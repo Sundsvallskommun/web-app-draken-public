@@ -5,7 +5,8 @@ import { closeErrandTabSoon } from '@common/utils/close-errand-tab';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, Divider, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { getInvestigationEarlyClose } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   closeSupportErrand,
   getSupportErrandById,
@@ -26,10 +27,17 @@ import {
 import { SupportErrandStatusSnapshot } from '@supportmanagement/services/support-errand-status-transition';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
+import {
+  closesFromActivePhase,
+  getActiveSupportPhaseId,
+  getSupportPhases,
+} from '@supportmanagement/services/support-phase-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowLeft, Check } from 'lucide-react';
 import React, { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
+import { SupportEarlyCloseDialog } from './support-early-close-dialog.component';
 
 const RESOLUTION_DESCRIPTION =
   'Du kan avsluta ärendet med nuvarande lösningskod, eller ändra om något i ärendet har påverkat lösningen.';
@@ -65,6 +73,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution(supportErrand));
 
+  const [showEarlyCloseDialog, setShowEarlyCloseDialog] = useState(false);
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
 
@@ -73,6 +82,11 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   // A workflow closes errands with the status alone and records no resolution: its last phase allows
   // closing, and Support Management moves an errand closed earlier into that phase in the same write.
   const closesWithoutResolution = appConfig.features.useUiPhases;
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  // A close before the workflow's last phase is an early one; where the investigation asks why, the handler says so.
+  const asksEarlyCloseMotivation =
+    Boolean(getInvestigationEarlyClose()) &&
+    !closesFromActivePhase(getActiveSupportPhaseId(supportErrand?.phases), getSupportPhases(supportMetadata?.phases));
 
   const showCloseErrorToast = (message = 'Något gick fel när ärendet skulle avslutas') => {
     toastMessage({
@@ -159,24 +173,26 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
   /**
    * Closes a workflow errand with the status alone, reads the closed errand back into the page and then closes
-   * the tab, as closing with a resolution does.
+   * the tab, as closing with a resolution does. Answers whether it closed.
    */
-  const closeWithoutResolution = async () => {
-    if (!supportErrand?.id) return;
+  const closeWithoutResolution = async (closingMotivation?: string): Promise<boolean> => {
+    if (!supportErrand?.id) return false;
     const errandId = supportErrand.id;
     setIsLoading(true);
     try {
       const assignment = await ensureHandlerAssigned(errandId);
-      await setSupportErrandStatus(errandId, municipalityId, Status.SOLVED, assignment.expected);
+      await setSupportErrandStatus(errandId, municipalityId, Status.SOLVED, assignment.expected, closingMotivation);
       const closed = await getSupportErrandById(errandId, municipalityId);
       if (closed.error) throw new Error('Could not read back the closed support errand');
       setSupportErrand(closed.errand);
       formControls.reset(closed.errand);
       toastMessage(getToastOptions({ message: 'Ärendet avslutades', status: 'success' }));
       closeErrandTabSoon();
+      return true;
     } catch (e) {
       console.error('Failed to close support errand', e);
       showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -209,12 +225,26 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
         loadingText="Avslutar ärendet"
         onClick={() => {
           // Unsaved changes are still explained in the dialog; otherwise a workflow closes at once.
-          if (closesWithoutResolution && !hasUnsavedChanges) void closeWithoutResolution();
-          else setShowModal(true);
+          if (closesWithoutResolution && !hasUnsavedChanges) {
+            if (asksEarlyCloseMotivation) setShowEarlyCloseDialog(true);
+            else void closeWithoutResolution();
+          } else setShowModal(true);
         }}
       >
         Avsluta ärendet
       </Button>
+      {asksEarlyCloseMotivation && (
+        <SupportEarlyCloseDialog
+          show={showEarlyCloseDialog}
+          closing={isLoading}
+          onCancel={() => setShowEarlyCloseDialog(false)}
+          onConfirm={(motivation) =>
+            void closeWithoutResolution(motivation).then((closed) => {
+              if (closed) setShowEarlyCloseDialog(false);
+            })
+          }
+        />
+      )}
       <Modal
         show={showModal}
         label={
