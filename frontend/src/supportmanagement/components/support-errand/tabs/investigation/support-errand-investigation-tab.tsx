@@ -11,10 +11,12 @@ import {
   startSupportInvestigation,
   SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
+import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { InspectionProtocol } from './inspection-protocol.component';
 import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
 import { SectionDisclosure } from './investigation-disclosure.component';
 
@@ -33,12 +35,24 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-export const SupportErrandInvestigationTab: React.FC<{
+interface InvestigationTabProps {
   setUnsaved: (unsaved: boolean) => void;
   setHasContent: (hasContent: boolean) => void;
   inStep: boolean;
   writable: boolean;
-}> = ({ setUnsaved, setHasContent, inStep, writable }) => {
+}
+
+/** An inspection errand is examined through its protocol; a permit application through the investigation below. */
+export const SupportErrandInvestigationTab: React.FC<InvestigationTabProps> = (props) => {
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  return isSupportInspectionErrand(supportErrand) ? (
+    <InspectionProtocol writable={props.writable} setHasContent={props.setHasContent} />
+  ) : (
+    <PermitInvestigation {...props} />
+  );
+};
+
+const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setHasContent, inStep, writable }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);

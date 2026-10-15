@@ -2,70 +2,108 @@ import { expect, test } from 'vitest';
 
 import type { SupportErrand } from './support-errand-service';
 import {
-  hasSupportMeasureChanges,
+  isSupportInspectionErrand,
   supportMeasureChanges,
-  supportMeasureRows,
-  supportMeasureTypeForErrand,
+  type SupportMeasureRow,
+  supportMeasureRow,
+  supportMeasuresOfType,
 } from './support-measure-service';
-import type { SupportMetadata } from './support-metadata-service';
 
-const metadata = {
-  measureTypes: [
-    { name: 'INTERNAL_INSPECTION', displayName: 'Inre tillsyn', measureGroups: ['INSPECTION'] },
-    { name: 'EXTERNAL_INSPECTION', displayName: 'Yttre tillsyn', measureGroups: ['INSPECTION'] },
-  ],
-} as SupportMetadata;
-
-const errandOfType = (resourceName: string) =>
+const errandInCategory = (resourceName: string) =>
   ({
     labels: [
-      { classification: 'CATEGORY', resourceName: 'INSPECTION' },
-      { classification: 'TYPE', resourceName },
+      { classification: 'CATEGORY', resourceName },
+      { classification: 'TYPE', resourceName: 'EXTERNAL_INSPECTION' },
     ],
   } as unknown as SupportErrand);
 
-test('the measure type is the TYPE label when the namespace has a measure type by that name', () => {
-  expect(supportMeasureTypeForErrand(errandOfType('EXTERNAL_INSPECTION'), metadata)).toBe('EXTERNAL_INSPECTION');
+test('an errand is an inspection when it is filed under the INSPECTION category', () => {
+  expect(isSupportInspectionErrand(errandInCategory('INSPECTION'))).toBe(true);
+  expect(isSupportInspectionErrand(errandInCategory('SERVING_PERMIT'))).toBe(false);
+  expect(isSupportInspectionErrand({ labels: [] } as unknown as SupportErrand)).toBe(false);
+  expect(isSupportInspectionErrand(undefined)).toBe(false);
 });
 
-test('an errand whose type has no measure type gets none', () => {
-  expect(supportMeasureTypeForErrand(errandOfType('PERMANENT_SERVING'), metadata)).toBeUndefined();
-  expect(supportMeasureTypeForErrand({ labels: [] } as unknown as SupportErrand, metadata)).toBeUndefined();
-  expect(supportMeasureTypeForErrand(errandOfType('EXTERNAL_INSPECTION'), undefined)).toBeUndefined();
+test('control points and action points are told apart by type, and listed in the order they were written', () => {
+  const measures = [
+    { id: 'm1', type: 'INTERNAL', title: 'Nykterhet', created: '2026-10-14T08:00:02Z' },
+    { id: 'm2', type: 'EXTERNAL', title: 'Sätt upp skylt' },
+    { id: 'm3', type: 'INTERNAL', title: 'Ålderskontroll', created: '2026-10-14T08:00:01Z' },
+  ];
+  expect(supportMeasuresOfType(measures, 'INTERNAL')).toEqual([measures[2], measures[0]]);
+  expect(supportMeasuresOfType(measures, 'EXTERNAL')).toEqual([measures[1]]);
+  expect(supportMeasuresOfType(undefined, 'EXTERNAL')).toEqual([]);
+});
+
+test('a row reads the title, result and note, and treats a result Draken does not know as none', () => {
+  expect(supportMeasureRow({ id: 'm1', title: 'Nykterhet', result: 'COMPLETED', description: 'ok' })).toEqual({
+    id: 'm1',
+    title: 'Nykterhet',
+    result: 'COMPLETED',
+    description: 'ok',
+  });
+  expect(supportMeasureRow({ id: 'm1', result: 'DONE' })).toEqual({ id: 'm1', title: '', result: '', description: '' });
+  expect(supportMeasureRow({ id: 'm1', result: null })).toMatchObject({ result: '' });
+});
+
+const row = (id: string | undefined, title: string, rest: Partial<SupportMeasureRow> = {}): SupportMeasureRow => ({
+  id,
+  title,
+  result: '',
+  description: '',
+  ...rest,
 });
 
 const saved = [
-  { id: 'm1', title: 'Ålderskontroll' },
-  { id: 'm2', title: 'Serveringstider följs' },
+  row('m1', 'Ålderskontroll'),
+  row('m2', 'Serveringstider följs', { result: 'COMPLETED', description: 'Stängde 01:00' }),
 ];
 
-test('rows are the saved measures, by id and title', () => {
-  expect(supportMeasureRows(saved)).toEqual([
-    { id: 'm1', title: 'Ålderskontroll' },
-    { id: 'm2', title: 'Serveringstider följs' },
-  ]);
-  expect(supportMeasureRows(undefined)).toEqual([]);
-});
-
 test('rows equal to what was saved change nothing', () => {
-  const changes = supportMeasureChanges(supportMeasureRows(saved), saved);
-
-  expect(changes).toEqual({ create: [], update: [], remove: [] });
-  expect(hasSupportMeasureChanges(changes)).toBe(false);
+  expect(supportMeasureChanges(saved, saved)).toEqual({ create: [], update: [], remove: [] });
 });
 
-test('a row without id is created, a changed row updated, a missing row removed', () => {
-  const changes = supportMeasureChanges([{ id: 'm1', title: 'Ålderskontroll (18 år)' }, { title: 'Prislista' }], saved);
-
-  expect(changes).toEqual({
-    create: ['Prislista'],
-    update: [{ id: 'm1', title: 'Ålderskontroll (18 år)' }],
+test('a row without id is created, a renamed row patched, a missing row removed', () => {
+  expect(supportMeasureChanges([row('m1', 'Ålderskontroll (18 år)'), row(undefined, 'Prislista')], saved)).toEqual({
+    create: [{ title: 'Prislista' }],
+    update: [{ id: 'm1', patch: { title: 'Ålderskontroll (18 år)' } }],
     remove: ['m2'],
   });
 });
 
+test('a new row brings its result and note along, but only when it has them', () => {
+  const changes = supportMeasureChanges(
+    [row(undefined, 'Nykterhet', { result: 'COMPLETED', description: 'Lugnt' }), row(undefined, 'Brandskydd')],
+    []
+  );
+
+  expect(changes.create).toEqual([
+    { title: 'Nykterhet', result: 'COMPLETED', description: 'Lugnt' },
+    { title: 'Brandskydd' },
+  ]);
+});
+
+test('a saved row is patched with the fields that differ, and no result is written as null', () => {
+  const changes = supportMeasureChanges(
+    [
+      row('m1', 'Ålderskontroll', { result: 'NOT_COMPLETED' }),
+      row('m2', 'Serveringstider följs', { description: 'Stängde 01:00' }),
+    ],
+    saved
+  );
+
+  expect(changes).toEqual({
+    create: [],
+    update: [
+      { id: 'm1', patch: { result: 'NOT_COMPLETED' } },
+      { id: 'm2', patch: { result: null } },
+    ],
+    remove: [],
+  });
+});
+
 test('blank rows are dropped, and a saved row that was blanked is removed', () => {
-  expect(supportMeasureChanges([{ id: 'm1', title: '  ' }, { title: '' }], saved)).toEqual({
+  expect(supportMeasureChanges([row('m1', '  '), row(undefined, '')], saved)).toEqual({
     create: [],
     update: [],
     remove: ['m1', 'm2'],
@@ -73,8 +111,8 @@ test('blank rows are dropped, and a saved row that was blanked is removed', () =
 });
 
 test('surrounding whitespace is neither saved nor counted as a change', () => {
-  expect(supportMeasureChanges([{ id: 'm1', title: ' Ålderskontroll ' }, { title: ' Prislista ' }], saved)).toEqual({
-    create: ['Prislista'],
+  expect(supportMeasureChanges([row('m1', ' Ålderskontroll '), row(undefined, ' Prislista ')], saved)).toEqual({
+    create: [{ title: 'Prislista' }],
     update: [],
     remove: ['m2'],
   });
