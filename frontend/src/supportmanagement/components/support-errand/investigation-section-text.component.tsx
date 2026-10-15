@@ -1,17 +1,14 @@
 'use client';
 
-import DynamicTextEditor from '@common/components/dynamic-text-editor';
-import { useTextEditorPlaceholder } from '@common/components/use-text-editor-placeholder';
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { FormControl, FormLabel, useSnackbar } from '@sk-web-gui/react';
+import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import {
-  saveSupportInvestigationSection,
-  SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH,
-} from '@supportmanagement/services/support-investigation-service';
-import { FC, MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { saveSupportInvestigationSection } from '@supportmanagement/services/support-investigation-service';
+import { FC, MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { InvestigationTextEditor } from './investigation-text-editor.component';
 
 /** What the investigation tab hands every section so the section can save itself when the tab saves. */
 export interface InvestigationSectionProps {
@@ -51,9 +48,6 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
   const [loaded, setLoaded] = useState(section.text ?? '');
   const [busy, setBusy] = useState(false);
 
-  const editorHost = useRef<HTMLDivElement>(null);
-  useTextEditorPlaceholder(editorHost, t(placeholderKey));
-
   const errandId = supportErrand?.id;
   const written = section.text ?? '';
   const edited = text !== loaded;
@@ -89,19 +83,13 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
   }, [save, saveRef]);
 
   return (
-    <FormControl className="w-full">
-      <FormLabel>{t(labelKey)}</FormLabel>
-      <div ref={editorHost} data-cy={`${name}-text`}>
-        <DynamicTextEditor
-          name={name}
-          className="investigation-text-editor w-full min-w-0 max-w-full"
-          readOnly={!writable || busy}
-          value={{ markup: text }}
-          onChange={(event: { target: { value: { markup?: string } } }) =>
-            setText((event.target.value.markup ?? '').slice(0, SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH))
-          }
-        />
-      </div>
-    </FormControl>
+    <InvestigationTextEditor
+      name={name}
+      labelKey={labelKey}
+      placeholderKey={placeholderKey}
+      value={text}
+      readOnly={!writable || busy}
+      onChange={setText}
+    />
   );
 };

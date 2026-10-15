@@ -59,7 +59,6 @@ export const SupportErrandInvestigationTab: React.FC<{
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { values, set, load, merge, edited } = useUnsavedEdits({
-    summary: '',
     conclusion: '',
     recommendation: '',
     recommendationMotivation: '',
@@ -206,7 +205,6 @@ export const SupportErrandInvestigationTab: React.FC<{
       receive(
         await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
           version: latest?.version ?? 0,
-          summary: values.summary,
           conclusion: values.conclusion,
           recommendation: values.recommendation || undefined,
           recommendationMotivation: values.recommendationMotivation,
