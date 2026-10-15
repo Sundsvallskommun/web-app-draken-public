@@ -17,7 +17,7 @@ export interface ProtocolOption {
   /** The template's box() parameter that gets "true" when the option is chosen. */
   parameter: string;
   /** Fields shown under the option while it is chosen. */
-  then?: ProtocolTextField[];
+  followUp?: ProtocolTextField[];
 }
 
 /** 'choice' is one option (radio buttons), 'multi' any number of them (checkboxes). */

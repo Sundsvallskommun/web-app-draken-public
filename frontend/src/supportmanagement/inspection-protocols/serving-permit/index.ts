@@ -1,11 +1,11 @@
 import type { InspectionProtocolTemplate, ProtocolOption } from '../types';
 import { SERVING_PERMIT_HTML } from './template';
 
-const yes = (parameter: string, then?: ProtocolOption['then']): ProtocolOption => ({
+const yes = (parameter: string, followUp?: ProtocolOption['followUp']): ProtocolOption => ({
   value: 'yes',
   label: 'Ja',
   parameter,
-  then,
+  followUp,
 });
 const no = (parameter: string): ProtocolOption => ({ value: 'no', label: 'Nej', parameter });
 
@@ -71,7 +71,7 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
               value: 'other',
               label: 'Annan',
               parameter: 'coordinatedOther',
-              then: [{ kind: 'text', key: 'coordinatedOtherText', label: 'Vilken', narrow: true }],
+              followUp: [{ kind: 'text', key: 'coordinatedOtherText', label: 'Vilken', narrow: true }],
             },
           ],
         },
@@ -141,7 +141,7 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
               value: 'actionRequired',
               label: 'Godkänd, men åtgärd krävs',
               parameter: 'summaryApprovedActionRequired',
-              then: [
+              followUp: [
                 { kind: 'textarea', key: 'summaryActionRequiredText', label: 'Åtgärd' },
                 { kind: 'date', key: 'followUpDate', label: 'Uppföljning av åtgärd senast', narrow: true },
               ],
@@ -150,13 +150,13 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
               value: 'revisit',
               label: 'Inte fullt godkänd med återbesök',
               parameter: 'summaryNotApprovedRevisit',
-              then: [{ kind: 'textarea', key: 'summaryRevisitText', label: 'Åtgärder, förbättringspunkter' }],
+              followUp: [{ kind: 'textarea', key: 'summaryRevisitText', label: 'Åtgärder, förbättringspunkter' }],
             },
             {
               value: 'investigation',
               label: 'Tillsynsutredning inleds',
               parameter: 'summaryInvestigationOpened',
-              then: [{ kind: 'date', key: 'investigationDate', label: 'Datum', narrow: true }],
+              followUp: [{ kind: 'date', key: 'investigationDate', label: 'Datum', narrow: true }],
             },
           ],
         },

@@ -112,10 +112,10 @@ export const SupportErrandInspectionProtocolFields: FC<{
           )}
         </FormControl>
         {field.options
-          .filter((option) => chosen(option) && option.then?.length)
+          .filter((option) => chosen(option) && option.followUp?.length)
           .map((option) => (
             <div key={option.value} className="flex flex-col gap-12">
-              {option.then!.map(text)}
+              {option.followUp!.map(text)}
             </div>
           ))}
       </div>

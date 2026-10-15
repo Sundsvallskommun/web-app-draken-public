@@ -55,7 +55,7 @@ export const INTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
               value: 'actionRequired',
               label: 'Godkänd, men åtgärd krävs',
               parameter: 'summaryApprovedActionRequired',
-              then: [
+              followUp: [
                 { kind: 'textarea', key: 'summaryActionRequiredText', label: 'Åtgärd' },
                 { kind: 'date', key: 'followUpDate', label: 'Uppföljning av åtgärd senast', narrow: true },
               ],
@@ -64,7 +64,7 @@ export const INTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
               value: 'investigation',
               label: 'Tillsynsutredning inleds',
               parameter: 'summaryInvestigationOpened',
-              then: [
+              followUp: [
                 { kind: 'date', key: 'investigationDate', label: 'Datum', narrow: true },
                 { kind: 'textarea', key: 'summaryInvestigationText', label: 'Beskrivning' },
               ],

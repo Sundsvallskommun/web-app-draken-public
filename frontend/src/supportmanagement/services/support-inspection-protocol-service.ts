@@ -29,7 +29,7 @@ const isText = (field: ProtocolField): field is ProtocolTextField => field.kind 
 const fieldsOf = (template: InspectionProtocolTemplate): ProtocolField[] =>
   template.sections.flatMap((section) =>
     section.fields.flatMap((field) =>
-      isText(field) ? [field] : [field, ...field.options.flatMap((option) => option.then ?? [])]
+      isText(field) ? [field] : [field, ...field.options.flatMap((option) => option.followUp ?? [])]
     )
   );
 
