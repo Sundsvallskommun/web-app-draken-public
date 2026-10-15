@@ -73,6 +73,18 @@ export async function updateSupportMeasure(
   );
 }
 
+/** Removes a measure, on its own version so a measure somebody changed meanwhile is not removed unseen. */
+export async function deleteSupportMeasure(
+  municipalityId: string,
+  errandId: string,
+  measureId: string,
+  version: Measure['version']
+): Promise<void> {
+  await apiService.deleteRequest<void>(`${measuresUrl(municipalityId, errandId)}/${encodeURIComponent(measureId)}`, {
+    headers: { 'If-Match': measureETag(version) },
+  });
+}
+
 export async function decideSupportMeasure(
   municipalityId: string,
   errandId: string,

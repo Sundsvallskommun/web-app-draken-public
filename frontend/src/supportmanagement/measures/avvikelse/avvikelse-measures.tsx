@@ -1,8 +1,13 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Modal, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { useUserStore } from '@stores/user-store';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { isSupportErrandWriteConflict } from '@supportmanagement/services/support-errand-write-version';
+import {
+  isSupportErrandWriteConflict,
+  supportErrandWriteErrorMessage,
+} from '@supportmanagement/services/support-errand-write-version';
+import { isInSupportPhase } from '@supportmanagement/services/support-phase-service';
 import { useCallback, useId, useRef, useState } from 'react';
 
 import { MeasureActionPlanButton } from '../measure-action-plan-button';
@@ -16,12 +21,14 @@ import {
   measureHoldsFollowUp,
 } from '../measure-follow-up';
 import { MeasureList } from '../measure-list';
+import { MEASURES_PHASE_NAME } from '../measure-phases';
 import type { MeasureSort } from '../measure-sort';
 import { measureTypeLabel } from '../measure-types';
 import {
   changeSupportMeasurePlannedComplete,
   createSupportMeasure,
   decideSupportMeasure,
+  deleteSupportMeasure,
   followUpSupportMeasure,
   type MeasuresSnapshot,
   updateSupportMeasure,
@@ -73,6 +80,9 @@ export function AvvikelseMeasures({
   );
   // Support Management decides whether the measures are writable; the registration roles only decide how.
   const canWrite = snapshot.canWrite && user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
+  const metadataPhases = useMetadataStore((state) => state.supportMetadata?.phases);
+  // While the errand is investigated a decided measure may still be put right, and its registrar may remove it.
+  const errandIsInvestigated = isInSupportPhase(MEASURES_PHASE_NAME, { metadataPhases, errandPhases: errand.phases });
   const canEdit = !followUp && canWrite;
   const canDecide =
     canEdit &&
@@ -123,7 +133,7 @@ export function AvvikelseMeasures({
           errand.id,
           measureId,
           editing.version,
-          measureFormChanges(values, editing)
+          measureFormChanges(values, editing, errandIsInvestigated)
         );
       } catch (cause) {
         if (isSupportErrandWriteConflict(cause)) await rebaseOnCurrent(measureId, 'edit');
@@ -136,6 +146,27 @@ export function AvvikelseMeasures({
     if (editing) closeEditing();
     else resetNewForm();
     snackbar({ message: 'Åtgärden har sparats.', status: 'success' });
+    await onSaved();
+  };
+
+  const removeMeasure = async (measure: Measure) => {
+    if (!canEdit || !errand.id || !measure.id) throw new Error('SupportMeasure is not removable');
+    const confirmed = await confirm.showConfirmation(
+      'Ta bort åtgärden?',
+      `Åtgärden ${measureTypeLabel(metadata.measureTypes, measure)} tas bort från ärendet.`,
+      'Ja, ta bort',
+      'Nej, behåll',
+      'warning',
+      'question'
+    );
+    if (!confirmed) return;
+    try {
+      await deleteSupportMeasure(municipalityId, errand.id, measure.id, measure.version);
+      snackbar({ message: 'Åtgärden har tagits bort.', status: 'success' });
+    } catch (cause) {
+      snackbar({ message: supportErrandWriteErrorMessage(cause, 'Åtgärden kunde inte tas bort.'), status: 'error' });
+    }
+    listHeading.current?.focus();
     await onSaved();
   };
 
@@ -253,6 +284,7 @@ export function AvvikelseMeasures({
                 roles={metadata.roles}
                 registration={registration}
                 onSave={save}
+                errandIsInvestigated={errandIsInvestigated}
                 onCancel={closeEditing}
                 onDirtyChange={reportDirty}
               />
@@ -337,6 +369,8 @@ export function AvvikelseMeasures({
           currentUser={user.username}
           mayFollowUp={snapshot.mayFollowUp}
           onEdit={canEdit && !dirty && !dialog ? (measure) => setDialog({ kind: 'edit', measure }) : undefined}
+          onRemove={canEdit && !dirty && !dialog ? (measure) => void removeMeasure(measure) : undefined}
+          errandIsInvestigated={errandIsInvestigated}
           onDecide={canDecide && !dirty && !dialog ? (measure) => setDialog({ kind: 'decide', measure }) : undefined}
           onFollowUp={followUp && listActionsOpen ? (measure) => setDialog({ kind: 'follow-up', measure }) : undefined}
           onChangeEndDate={listActionsOpen ? (measure) => setDialog({ kind: 'end-date', measure }) : undefined}

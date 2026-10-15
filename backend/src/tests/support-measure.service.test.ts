@@ -100,6 +100,7 @@ function setup(roles: readonly HandlerGroupRole[] = handlerRoles, { closeRequire
   const get = vi.spyOn(api, 'get').mockImplementation(async config => response(config.url?.endsWith('/metadata') ? metadata : current));
   const patch = vi.spyOn(api, 'patch').mockResolvedValue(response(undefined));
   const post = vi.spyOn(api, 'post').mockResolvedValue(response(undefined));
+  const remove = vi.spyOn(api, 'delete').mockResolvedValue(response(undefined));
   // Support Management's answer on the measures resource, which alone decides whether they are writable.
   const access = { getResourceLevel: vi.fn<SupportInvestigationAccessService['getResourceLevel']>(async () => 'RW') };
   const service = new SupportMeasureService(
@@ -109,7 +110,7 @@ function setup(roles: readonly HandlerGroupRole[] = handlerRoles, { closeRequire
     access as unknown as SupportInvestigationAccessService,
     closeRequiresHandled,
   );
-  return { service, get, patch, post, access };
+  return { service, get, patch, post, remove, access };
 }
 
 test('reads protected measures with their own versions and keeps parent synchronization separate', async () => {
@@ -838,4 +839,68 @@ test.each([
     forbidNonWhitelisted: true,
   });
   expect(errors.length).toBeGreaterThan(0);
+});
+
+/** The workflow as the namespace metadata describes it: Utredning, then the follow-up. */
+const phasedMetadata: MetadataResponse = {
+  ...metadata,
+  phases: [
+    { id: 'investigation-phase', name: 'INVESTIGATION', phaseOrder: 2 },
+    { id: 'follow-up-phase', name: 'FOLLOW_UP', phaseOrder: 3 },
+  ],
+};
+
+/** The service over an errand in the given phase, holding the given measure. */
+function setupInPhase(phaseId: string, existing: Measure) {
+  const context = setup();
+  context.get.mockImplementation(async config => {
+    if (config.url?.endsWith('/metadata')) return response(phasedMetadata);
+    if (config.url?.includes('/measures/')) return response(existing);
+    return response({ ...current, phases: [{ phaseId }] });
+  });
+  return context;
+}
+
+const decidedMeasure: Measure = { ...measure, accept: 'TRUE', description: 'Utbilda personalen' };
+
+test("lets a decided measure's content be put right while the errand is investigated, and locks it after", async () => {
+  const investigated = setupInPhase('investigation-phase', decidedMeasure);
+  await investigated.service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { description: 'Utbilda all personal' }, user);
+  expect(investigated.patch.mock.calls[0][0].data).toEqual({ description: 'Utbilda all personal' });
+
+  const followedUp = setupInPhase('follow-up-phase', decidedMeasure);
+  await expect(
+    followedUp.service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { goal: 'Nytt mål' }, user),
+  ).rejects.toMatchObject({ status: 409, message: 'Typ, beskrivning och mål är låsta efter beslut när ärendet har lämnat Utredning.' });
+  expect(followedUp.patch).not.toHaveBeenCalled();
+});
+
+test('removes an own measure that is not carried out while the errand is investigated, on its own version', async () => {
+  const { service, remove } = setupInPhase('investigation-phase', decidedMeasure);
+
+  await service.remove(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', user);
+
+  expect(remove).toHaveBeenCalledTimes(1);
+  expect(remove.mock.calls[0][0]).toMatchObject({
+    url: expect.stringMatching(/\/errands\/[^/]+\/measures\/measure-1$/u),
+    headers: { 'If-Match': '"3"' },
+  });
+});
+
+test.each([
+  ['somebody else registered it', { ...decidedMeasure, addedByUser: 'someone.else' }, 'investigation-phase', 403],
+  ['it is carried out', { ...decidedMeasure, executed: '2026-09-09T12:00:00+02:00' }, 'investigation-phase', 409],
+  ['the errand has left Utredning', decidedMeasure, 'follow-up-phase', 409],
+])('removes no measure when %s', async (_reason, existing, phaseId, status) => {
+  const { service, remove } = setupInPhase(phaseId, existing);
+
+  await expect(service.remove(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', user)).rejects.toMatchObject({ status });
+  expect(remove).not.toHaveBeenCalled();
+});
+
+test('removes no measure on a version somebody has moved past', async () => {
+  const { service, remove } = setupInPhase('investigation-phase', decidedMeasure);
+
+  await expect(service.remove(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"2"', user)).rejects.toMatchObject({ status: 412 });
+  expect(remove).not.toHaveBeenCalled();
 });

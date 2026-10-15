@@ -4,7 +4,7 @@ import { useUserStore } from '@stores/user-store';
 import { useId } from 'react';
 
 import { MeasureCard } from './measure-card';
-import { measureCanBeDecided } from './measure-decision';
+import { measureCanBeDecided, measureCanBeRemoved } from './measure-decision';
 import { measureCanBeFollowedUp } from './measure-follow-up';
 import { isOwnMeasure, mayFollowUpMeasure } from './measure-ownership';
 import { groupMeasuresByPerson, type MeasureSort, sortMeasuresByCreated } from './measure-sort';
@@ -18,6 +18,8 @@ export function MeasureList({
   mayFollowUp,
   sort = 'created',
   onEdit,
+  onRemove,
+  errandIsInvestigated = false,
   onDecide,
   onFollowUp,
   onChangeEndDate,
@@ -33,6 +35,10 @@ export function MeasureList({
   /** The latest added first, or gathered by who registered them. */
   sort?: MeasureSort;
   onEdit?: (measure: Measure) => void;
+  /** Offered on the viewer's own measures that may still be removed. */
+  onRemove?: (measure: Measure) => void;
+  /** Whether the errand is in Utredning, where measures may still be removed. */
+  errandIsInvestigated?: boolean;
   onDecide?: (measure: Measure) => void;
   onFollowUp?: (measure: Measure) => void;
   /** Moves the end date of a measure being followed up, offered to whoever follows it up. */
@@ -58,6 +64,11 @@ export function MeasureList({
         role={roleLabel(measure.addedByRole)}
         responsible={userLabel(measure.responsibleUser)}
         onEdit={onEdit && measure.id && isOwnMeasure(measure, currentUser) ? () => onEdit(measure) : undefined}
+        onRemove={
+          onRemove && isOwnMeasure(measure, currentUser) && measureCanBeRemoved(measure, errandIsInvestigated)
+            ? () => onRemove(measure)
+            : undefined
+        }
         onDecide={onDecide && measureCanBeDecided(measure) ? () => onDecide(measure) : undefined}
         onFollowUp={onFollowUp && followsUp ? () => onFollowUp(measure) : undefined}
         onChangeEndDate={onChangeEndDate && followsUp ? () => onChangeEndDate(measure) : undefined}

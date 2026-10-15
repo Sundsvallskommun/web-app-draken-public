@@ -1,7 +1,7 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, Checkbox, Icon, Label } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { CalendarClock, ClipboardCheck, FileText, Pencil } from 'lucide-react';
+import { CalendarClock, ClipboardCheck, FileText, Pencil, Trash2 } from 'lucide-react';
 
 import { measureDecisionPresentation } from './measure-decision';
 import { measureFollowUp, measureHasFollowUp } from './measure-follow-up';
@@ -32,6 +32,7 @@ export function MeasureCard({
   role,
   responsible,
   onEdit,
+  onRemove,
   onDecide,
   onFollowUp,
   onChangeEndDate,
@@ -44,6 +45,7 @@ export function MeasureCard({
   responsible?: string;
   /** Each action is offered only where the list has decided the viewer may take it. */
   onEdit?: () => void;
+  onRemove?: () => void;
   onDecide?: () => void;
   onFollowUp?: () => void;
   onChangeEndDate?: () => void;
@@ -116,7 +118,7 @@ export function MeasureCard({
           {created ? ` • ${created}` : ''}
         </p>
       </div>
-      {(onEdit || onDecide || onFollowUp || onChangeEndDate) && (
+      {(onEdit || onRemove || onDecide || onFollowUp || onChangeEndDate) && (
         <div className="col-start-2 sm:col-start-3 flex flex-wrap sm:flex-col items-start gap-8">
           {onFollowUp && (
             <Checkbox checked={false} aria-label={`Utförd: ${title}`} onChange={onFollowUp}>
@@ -157,6 +159,18 @@ export function MeasureCard({
               onClick={onEdit}
             >
               Redigera
+            </Button>
+          )}
+          {onRemove && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              leftIcon={<Trash2 />}
+              aria-label={`Ta bort åtgärd ${title}`}
+              onClick={onRemove}
+            >
+              Ta bort
             </Button>
           )}
         </div>

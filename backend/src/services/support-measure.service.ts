@@ -2,7 +2,7 @@ import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { mayFollowUpMeasuresByRole } from '@/config/measure-follow-up-roles';
-import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Role } from '@/data-contracts/supportmanagement/data-contracts';
+import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Phase, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import {
   CreateSupportMeasureDto,
   DecideSupportMeasureDto,
@@ -14,7 +14,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
 
 import ApiService from './api.service';
-import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
+import { assertSupportErrandWritable, getActiveErrandPhaseId, getErrandVersion } from './support-errand.service';
 import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from './support-investigation-access.service';
 import { closeRequiresHandledMeasures, undecidedProposalsMessage, unhandledMeasuresMessage } from './support-measure-closing';
 import {
@@ -65,6 +65,18 @@ export interface PlannedSupportMeasuresSnapshot {
   /** More errands matched than the read covers, so the list is incomplete. */
   truncated: boolean;
 }
+
+/**
+ * Åtgärder are worked out while the errand is investigated. Until it moves on, a decided measure's type, description
+ * and goal may still be put right, and whoever registered a measure may remove it; after that the measures are the
+ * record of what was decided.
+ */
+const MEASURES_PHASE_NAME = 'INVESTIGATION';
+
+const isInvestigated = (errand: Pick<Errand, 'phases'>, phases: readonly Phase[] | undefined): boolean => {
+  const activePhaseId = getActiveErrandPhaseId(errand);
+  return Boolean(activePhaseId) && (phases ?? []).some(phase => phase.id === activePhaseId && phase.name === MEASURES_PHASE_NAME);
+};
 
 // The errand list is paged per errand, not per measure. An overview of one person's planned work is small,
 // so the pages are walked up to a cap that still keeps a runaway namespace from turning into a thousand reads.
@@ -122,6 +134,16 @@ export class SupportMeasureService {
     const existing = await this.readCurrentWritableMeasure(url, measureId, user);
     if (existing.version !== version) throw new HttpException(412, 'If-Match does not match the current measure version');
     return existing;
+  }
+
+  private async errandIsInvestigated(municipalityId: string, errand: Errand, user: User): Promise<boolean> {
+    const metadata = (
+      await this.apiService.get<MetadataResponse>(
+        { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
+    ).data;
+    return isInvestigated(errand, metadata.phases);
   }
 
   /** The unit's managers follow up a measure where the deployment names roles; elsewhere its registrar does. */
@@ -265,9 +287,8 @@ export class SupportMeasureService {
     const existing = await this.readWritableMeasure(url, measureId, ifMatch, user);
     assertOwnMeasure(existing, user);
 
-    if (existing.accept && (['type', 'description', 'goal'] as const).some(key => data[key] !== undefined && data[key] !== existing[key])) {
-      throw new HttpException(409, 'Typ, beskrivning och mål är låsta efter beslut. Skapa ett nytt förslag om innehållet behöver ändras.');
-    }
+    const changesDecidedContent =
+      Boolean(existing.accept) && (['type', 'description', 'goal'] as const).some(key => data[key] !== undefined && data[key] !== existing[key]);
     if (changesStartDate(existing, data.plannedStart)) {
       throw new HttpException(409, 'Startdatumet kan inte ändras.');
     }
@@ -299,6 +320,9 @@ export class SupportMeasureService {
     // Recheck status after dependent reads. Unrelated errand edits do not invalidate this measure's ETag.
     const latest = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(latest.data, 'measure changes');
+    if (changesDecidedContent && !(await this.errandIsInvestigated(municipalityId, latest.data, user))) {
+      throw new HttpException(409, 'Typ, beskrivning och mål är låsta efter beslut när ärendet har lämnat Utredning.');
+    }
 
     // Forward the caller's original version so upstream also catches changes after the checks above.
     await this.apiService.patch<Measure, UpdateSupportMeasureDto>(
@@ -307,6 +331,33 @@ export class SupportMeasureService {
         data,
         headers: { 'If-Match': ifMatch },
         followLocation: false,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
+      user,
+    );
+  }
+
+  /**
+   * Removes a measure its registrar added and has not carried out, while the errand is investigated. Conditioned on
+   * the measure's own version, so a measure somebody changed meanwhile is not removed unseen.
+   */
+  async remove(municipalityId: string, errandId: string, measureId: string, ifMatch: string | undefined, user: User): Promise<void> {
+    const url = this.errandUrl(municipalityId, errandId);
+    const existing = await this.readWritableMeasure(url, measureId, ifMatch, user);
+    assertOwnMeasure(existing, user, 'ta bort');
+    if (existing.executed) throw new HttpException(409, 'En genomförd åtgärd kan inte tas bort.');
+
+    const latest = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
+    assertSupportErrandWritable(latest.data, 'measure changes');
+    if (!(await this.errandIsInvestigated(municipalityId, latest.data, user))) {
+      throw new HttpException(409, 'Åtgärder kan bara tas bort medan ärendet utreds.');
+    }
+
+    await this.apiService.delete(
+      {
+        url: `${url}/measures/${encodeURIComponent(measureId)}`,
+        headers: { 'If-Match': ifMatch },
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,
       },
@@ -463,10 +514,10 @@ function assertMeasureDates(data: UpdateSupportMeasureDto, existing?: Measure): 
 }
 
 /** Only the person who registered a measure may change it; the session identity is the only source of "own". */
-function assertOwnMeasure(existing: Pick<Measure, 'addedByUser'>, user: User): void {
+function assertOwnMeasure(existing: Pick<Measure, 'addedByUser'>, user: User, action: 'redigera' | 'ta bort' = 'redigera'): void {
   const owner = existing.addedByUser?.trim().toLowerCase();
   const editor = user.username?.trim().toLowerCase();
   if (!owner || !editor || owner !== editor) {
-    throw new HttpException(403, 'Du kan bara redigera åtgärder som du själv har registrerat.');
+    throw new HttpException(403, `Du kan bara ${action} åtgärder som du själv har registrerat.`);
   }
 }

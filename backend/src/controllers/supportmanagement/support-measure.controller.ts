@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HeaderParam, OnUndefined, Param, Patch, Post, Req, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HeaderParam, OnUndefined, Param, Patch, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import {
@@ -66,6 +66,21 @@ export class SupportMeasureController {
     @Body() data: UpdateSupportMeasureDto,
   ) {
     await this.measures.update(municipalityId, errandId, measureId, ifMatch, data, req.user);
+  }
+
+  @Delete('/supporterrands/:municipalityId/:errandId/measures/:measureId')
+  @OnUndefined(204)
+  @OpenAPI({ summary: 'Remove an errand measure its registrar has not carried out, while the errand is investigated' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
+  async remove(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Param('measureId') measureId: string,
+    // Keep the runtime decorator type String; Object would JSON-parse and strip the ETag quotes.
+    @HeaderParam('If-Match') ifMatch: string,
+  ) {
+    await this.measures.remove(municipalityId, errandId, measureId, ifMatch, req.user);
   }
 
   @Patch('/supporterrands/:municipalityId/:errandId/measures/:measureId/decision')

@@ -93,11 +93,12 @@ const put = <T, U>(url: string, data: U, customOptions: { [key: string]: any } =
     .catch(handleError);
 };
 
-const deleteRequest = <T>(url: string) => {
+const deleteRequest = <T>(url: string, customOptions: { [key: string]: any } = {}) => {
   return axios
     .delete<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, {
       ...options,
-      headers: { ...options.headers, ...requestGroupHeaders() },
+      ...customOptions,
+      headers: { ...options.headers, ...requestGroupHeaders(), ...customOptions.headers },
     })
     .catch(handleError);
 };

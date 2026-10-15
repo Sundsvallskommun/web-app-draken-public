@@ -49,6 +49,7 @@ export function AvvikelseMeasureForm({
   roles,
   registration,
   onSave,
+  errandIsInvestigated = false,
   onCancel,
   onDirtyChange,
 }: {
@@ -58,6 +59,8 @@ export function AvvikelseMeasureForm({
   roles: readonly Role[];
   registration: MeasuresSnapshot['registration'];
   onSave: (values: MeasureForm) => Promise<void>;
+  /** Whether the errand is in Utredning, where a decided measure's content may still be put right. */
+  errandIsInvestigated?: boolean;
   /** Abandons the edit of an existing measure; a new measure's form has nothing to abandon. */
   onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -79,7 +82,7 @@ export function AvvikelseMeasureForm({
   const roleRule = registration.roleTypes.find((rule) => rule.roleName === (measure?.addedByRole ?? roleName));
   const availableTypes = roleRule?.measureTypes ?? [];
   // Draken's role policy decides: a deciding role adds accepted measures, every other role adds proposals.
-  const contentLocked = Boolean(measure && measureContentIsLocked(measure));
+  const contentLocked = Boolean(measure && measureContentIsLocked(measure, errandIsInvestigated));
   const decision = measure ? measureDecisionPresentation(measure) : undefined;
   const proposes = !measure && Boolean(roleName) && !roleRule?.decides;
   // Before a role is chosen the details are disabled anyway; show the full choice until the policy is known.
@@ -195,7 +198,7 @@ export function AvvikelseMeasureForm({
         <p>
           {measure
             ? contentLocked
-              ? 'Beslutet låser typ, beskrivning och mål. Du kan uppdatera ansvarig och planering samt rapportera genomförande för en godkänd åtgärd.'
+              ? 'Ärendet har lämnat Utredning, så beslutet låser typ, beskrivning och mål. Du kan uppdatera ansvarig och planering samt rapportera genomförande för en godkänd åtgärd.'
               : 'Uppdatera vad som ska göras, när det ska ske och vilket mål åtgärden har.'
             : chooseRole
             ? 'Börja med att välja vilken roll åtgärden registreras för. Välj sedan åtgärdstyp och beskriv vad som ska göras. Du kan lägga till flera åtgärder.'
@@ -344,7 +347,7 @@ export function AvvikelseMeasureForm({
             ))}
           </Select>
           {contentLocked ? (
-            <FormHelperText>Åtgärdstypen är låst eftersom ett beslut har fattats.</FormHelperText>
+            <FormHelperText>Åtgärdstypen är låst efter beslut när ärendet har lämnat Utredning.</FormHelperText>
           ) : (
             registrationRole &&
             types.length === 0 && (

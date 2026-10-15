@@ -8,7 +8,7 @@ import type {
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
-import { errandNumber, installIafApiMock } from './fixtures/investigation-flow.mock';
+import { errandNumber, installIafApiMock, type WorkflowPhaseName } from './fixtures/investigation-flow.mock';
 
 test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), 'Körs med IAF/VOF-profilen.');
 
@@ -33,6 +33,7 @@ async function installMeasures(
     foreignMeasure = false,
     undatedProposal = false,
     existingDecision,
+    activePhaseName,
   }: {
     enabled?: boolean;
     canEdit?: boolean;
@@ -52,10 +53,13 @@ async function installMeasures(
     /** The existing measure is a proposal without dates, which is how a proposing role registers one. */
     undatedProposal?: boolean;
     existingDecision?: Measure['accept'];
+    /** The workflow phase the errand is in; left out, the errand runs no workflow. */
+    activePhaseName?: WorkflowPhaseName;
   } = {}
 ) {
   const trace = await installIafApiMock(page, {
     canEdit,
+    activePhaseName,
     featureFlags: [
       { name: 'isSupportManagement', enabled: true },
       { name: 'useMeasures', enabled },
@@ -159,6 +163,16 @@ async function installMeasures(
         : { ...measures[0], goal: 'Mål satt av någon annan', version: (measures[0].version ?? 0) + 1 };
       errandVersion++;
       await route.fulfill({ status: 412, json: { message: 'Stale version' } });
+      return;
+    }
+    if (request.method() === 'DELETE') {
+      const removedId = new URL(request.url()).pathname.split('/').pop();
+      measures.splice(
+        measures.findIndex((measure) => measure.id === removedId),
+        1
+      );
+      errandVersion++;
+      await route.fulfill({ status: 204 });
       return;
     }
     if (new URL(request.url()).pathname.endsWith('/decision')) {
@@ -863,3 +877,47 @@ test('does not offer an action plan without write access', async ({ page, dismis
   await openMeasures(page, dismissCookieConsent);
   await expect(actionPlanButton(page)).toHaveCount(0);
 });
+
+// While the errand is investigated a decided measure may still be put right; once it has left Utredning it may not.
+test('lets a decided measure be put right while the errand is investigated', async ({ page, dismissCookieConsent }) => {
+  const { writes } = await installMeasures(page, { existingDecision: 'TRUE', activePhaseName: 'INVESTIGATION' });
+  await openMeasures(page, dismissCookieConsent);
+
+  await page.getByRole('button', { name: 'Redigera åtgärd Tidigare åtgärdstyp', exact: true }).click();
+  const description = editDialog(page).getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true });
+  await expect(description).toBeEditable();
+  await description.fill('Rättad beskrivning');
+  await editDialog(page).getByRole('button', { name: 'Spara ändringar', exact: true }).click();
+
+  await expect
+    .poll(() => writes)
+    .toEqual([{ method: 'PATCH', data: { description: 'Rättad beskrivning' }, version: '"3"' }]);
+});
+
+test('removes an own measure that is not carried out while the errand is investigated, once confirmed', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const { writes } = await installMeasures(page, { activePhaseName: 'INVESTIGATION' });
+  await openMeasures(page, dismissCookieConsent);
+
+  await page.getByRole('button', { name: 'Ta bort åtgärd Tidigare åtgärdstyp', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Ta bort åtgärden?');
+  await dialog.getByRole('button', { name: 'Ja, ta bort', exact: true }).click();
+
+  await expect.poll(() => writes).toEqual([{ method: 'DELETE', data: null, version: '"3"' }]);
+  await expect(page.getByText('Det finns inga åtgärder registrerade.', { exact: true })).toBeVisible();
+});
+
+for (const [situation, options] of [
+  ['somebody else registered it', { foreignMeasure: true, activePhaseName: 'INVESTIGATION' }],
+  ['the errand has left Utredning', { activePhaseName: 'DECISION' }],
+] as const) {
+  test(`offers no removal of a measure when ${situation}`, async ({ page, dismissCookieConsent }) => {
+    await installMeasures(page, options);
+    await openMeasures(page, dismissCookieConsent);
+
+    await expect(page.getByRole('button', { name: 'Ta bort åtgärd Tidigare åtgärdstyp', exact: true })).toHaveCount(0);
+  });
+}

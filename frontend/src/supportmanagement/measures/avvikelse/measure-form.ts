@@ -199,11 +199,15 @@ export function measureFormRebase(
 }
 
 /** Send only edited basic fields, preserving audit/decision fields and exact timestamps on untouched dates. */
-export function measureFormChanges(values: MeasureForm, existing: Measure): MeasureChanges {
+export function measureFormChanges(
+  values: MeasureForm,
+  existing: Measure,
+  errandIsInvestigated = false
+): MeasureChanges {
   const initial = measureFormValues(existing);
   const changes: MeasureChanges = {};
   for (const key of ['type', 'responsibleUser', 'goal', 'description'] as const) {
-    if (key !== 'responsibleUser' && measureContentIsLocked(existing)) continue;
+    if (key !== 'responsibleUser' && measureContentIsLocked(existing, errandIsInvestigated)) continue;
     // Responsible is free text, so surrounding whitespace is not a change worth sending.
     const value = key === 'responsibleUser' ? values[key].trim() : values[key];
     if (value !== initial[key]) changes[key] = value;

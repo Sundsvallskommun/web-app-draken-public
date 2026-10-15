@@ -83,8 +83,19 @@ export function measureDecisionPresentation(measure: Pick<Measure, 'accept'>): D
 export const measureIsApproved = (measure: Pick<Measure, 'accept'>): boolean =>
   measure.accept === 'TRUE' || measure.accept === 'REWORK';
 
-/** Unknown decisions also protect the content; they never become editable proposals. */
-export const measureContentIsLocked = (measure: Pick<Measure, 'accept'>): boolean => Boolean(measure.accept);
+/**
+ * A decision locks the measure's type, description and goal once the errand has left Utredning; while it is
+ * investigated they may still be put right. Unknown decisions also protect the content; they never become editable
+ * proposals.
+ */
+export const measureContentIsLocked = (measure: Pick<Measure, 'accept'>, errandIsInvestigated: boolean): boolean =>
+  Boolean(measure.accept) && !errandIsInvestigated;
+
+/** Whether its registrar may remove the measure: while the errand is investigated, and until it is carried out. */
+export const measureCanBeRemoved = (
+  measure: Pick<Measure, 'id' | 'executed'>,
+  errandIsInvestigated: boolean
+): boolean => Boolean(measure.id) && !measure.executed && errandIsInvestigated;
 
 export const measureCanBeDecided = (measure: Measure): boolean =>
   Boolean(measure.id && !measure.executed && measureDecision(measure) === 'proposal');

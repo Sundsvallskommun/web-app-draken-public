@@ -145,9 +145,15 @@ och utredning och är inte åtgärdstyper.
 6. Vid PATCH används åtgärdens egen version i `If-Match`. Skapare, registreringsroll
    och beslut kan inte ändras genom DTO:n för grundfält. Innan beslut kan
    förslagets skapare ändra typ; typbytet kontrolleras mot den sparade rollens
-   typgrupp, även om skaparens nuvarande registreringsroller har ändrats.
-7. Åtgärder kan inte tas bort från Draken; det finns varken knapp eller
-   BFF-endpoint för det. Redigera visas bara för åtgärder som den inloggade
+   typgrupp, även om skaparens nuvarande registreringsroller har ändrats. Medan
+   ärendet är i Utredning får även en beslutad åtgärds typ, beskrivning och mål
+   ändras; när ärendet har lämnat Utredning är de låsta (`measureContentIsLocked`,
+   och samma regel i BFF:en).
+7. Under Utredning kan den som registrerade en åtgärd ta bort den, så länge den
+   inte är genomförd (**Ta bort** på kortet, med bekräftelse). Borttagningen går
+   genom `DELETE .../measures/:measureId` på åtgärdens egen version, och BFF:en
+   avvisar andras åtgärder (403), genomförda åtgärder och borttagning efter
+   Utredning (409). Redigera visas bara för åtgärder som den inloggade
    användaren själv har registrerat (`addedByUser` jämfört med sessionens
    användarnamn, skiftlägesokänsligt), och backend avvisar andra med 403. Listan visar varje
    åtgärd som ett kort med status, beskrivning, mål, datum samt skapare och den
@@ -166,7 +172,7 @@ och utredning och är inte åtgärdstyper.
 
 Saknad eller felaktig konfiguration stoppar nyregistrering, typbyten och nya
 beslut. Läsning och tillåtna ändringar av befintliga åtgärder fungerar fortfarande;
-beslutade förslags typ, beskrivning och mål förblir låsta.
+beslutade förslags typ, beskrivning och mål förblir låsta när ärendet har lämnat Utredning.
 Formuläret skiljer på saknad konfiguration, felaktig konfiguration, avsaknad av
 egen roll och att vald roll inte har några aktiva typer. Tekniska feldetaljer
 stannar i backendloggen. Skrivbehörighet och ärendestatus gäller alltid.
