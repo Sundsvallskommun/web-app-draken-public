@@ -4,8 +4,17 @@ import {
   IAF_VOF_FOLLOW_UP_PHASE_NAME,
   resolveIafVofDecisionInvestigationDocumentKey,
 } from '@/config/iaf-vof-decision-investigation';
+import { IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
+import {
+  hasHslAnalysisDecision,
+  IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME,
+  IAF_VOF_HSL_ANALYSIS_STARTED_LABEL,
+  IAF_VOF_HSL_DECISION_SCHEMA_NAME,
+  startsHslAnalysis,
+} from '@/config/iaf-vof-hsl-analysis';
 import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { LEX_HANDLER_ROLE_KEYS, LEX_INVESTIGATOR_ROLE_KEY, LEX_MANAGER_ROLE_KEY } from '@/config/investigation-handover-steps';
+import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
@@ -25,6 +34,12 @@ export const LEX_HANDLER_CANNOT_START_FOLLOW_UP =
   'Uppföljningen görs av enheten. Återlämna ärendet till chefen, som tar det vidare till uppföljning.';
 
 export const REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END = 'Ett missförhållande avslutas först när processen är klar, från uppföljningen.';
+
+export const HSL_ASSESSMENT_PENDING =
+  'Ärendet har hög risk HSL och kan inte avslutas förrän MAS/MAR har gjort sin initiala bedömning i Händelseanalys HSL.';
+
+export const HSL_ANALYSIS_UNDER_WAY =
+  'Ärendet kan inte avslutas medan MAS/MAR arbetar med händelseanalysen. Händelseanalys HSL ska vara markerad som klar och sparad, och Beslut HSL sparat.';
 
 interface AssertMayEnterPhaseRequest {
   readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy'>;
@@ -96,6 +111,64 @@ export const assertMayCloseReportedMisconduct = ({ policyService, errand, closes
   if (resolveIafVofInvestigationDocumentApplicability(errand) === 'reported-misconduct') {
     throw new HttpException(422, REPORTED_MISCONDUCT_CLOSES_AT_WORKFLOW_END);
   }
+};
+
+interface AssertHslAnalysisFinishedRequest {
+  readonly policyService: Pick<SupportInvestigationPolicyService, 'iafVofClassificationPolicy' | 'profile' | 'getState'>;
+  readonly documentService: Pick<SupportJsonParameterService, 'readBoundSchema'>;
+  readonly user: User;
+  readonly municipalityId: string;
+  readonly errandId: string;
+  /** The errand as the write read it, with its labels and JSON parameters. */
+  readonly errand: Errand;
+  /** Whether the write would close the errand. */
+  readonly closes: boolean;
+}
+
+const carriesLabel = (errand: Pick<Errand, 'labels'>, resourcePath: string): boolean =>
+  (errand.labels ?? []).some(label => normalizeSupportManagementResourcePath(label.resourcePath) === resourcePath);
+
+/**
+ * Refuses closing an IAF/VOF errand before MAS/MAR is done with it, whoever closes it - a unit manager, a head of
+ * operations - and whichever way. An errand with a high HSL risk waits for their initial assessment, whichever way it
+ * goes. Where it is that the event is analysed, Händelseanalys HSL has to be saved as completed and Beslut HSL saved
+ * as well. An analysis the closer cannot read is taken from the errand's labels, and held rather than let through.
+ */
+export const assertHslAnalysisFinishedBeforeClose = async ({
+  policyService,
+  documentService,
+  user,
+  municipalityId,
+  errandId,
+  errand,
+  closes,
+}: AssertHslAnalysisFinishedRequest): Promise<void> => {
+  if (!closes || !policyService.iafVofClassificationPolicy) return;
+  const documents = policyService.profile.documents;
+  const analysisDefinition = documents.find(document => document.schemaName === IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME);
+  const decisionDefinition = documents.find(document => document.schemaName === IAF_VOF_HSL_DECISION_SCHEMA_NAME);
+  if (!analysisDefinition || !decisionDefinition) return;
+
+  const state = await policyService.getState(user);
+  if (state === 'inactive') return;
+  if (state === 'unavailable') throw new HttpException(503, 'Investigation policy is temporarily unavailable');
+
+  const analysis = errand.jsonParameters?.find(parameter => parameter.key === analysisDefinition.key);
+  const analysisValue = isJsonObject(analysis?.value) ? analysis.value : undefined;
+  const analysisStartedLabel = carriesLabel(errand, IAF_VOF_HSL_ANALYSIS_STARTED_LABEL);
+  // A high HSL risk is MAS/MAR's to assess, so the errand waits for that assessment whichever way it goes.
+  const assessed = analysisValue ? hasHslAnalysisDecision(analysisValue) : analysisStartedLabel;
+  if (carriesLabel(errand, IAF_VOF_HIGH_HSL_RISK_LABEL) && !assessed) throw new HttpException(422, HSL_ASSESSMENT_PENDING);
+  const analysed = analysisValue ? startsHslAnalysis(analysisValue) : analysisStartedLabel;
+  if (!analysed) return;
+
+  // 422, as for the other refusals to close: the errand is as the handler left it, and the message names why.
+  const refusal = new HttpException(422, HSL_ANALYSIS_UNDER_WAY);
+  if (!analysis?.schemaId || !analysisValue) throw refusal;
+  const schema = await documentService.readBoundSchema({ definition: analysisDefinition, municipalityId, errandId, user }, analysis.schemaId);
+  if (!isDocumentCompleted(schema, analysisValue)) throw refusal;
+  const decision = errand.jsonParameters?.find(parameter => parameter.key === decisionDefinition.key);
+  if (!isJsonObject(decision?.value)) throw refusal;
 };
 
 interface AssertInvestigationCompletedRequest {

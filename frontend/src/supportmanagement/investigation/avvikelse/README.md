@@ -611,6 +611,18 @@ stänger ärendet före den sista fasen, visas därför inte för ett missförh�
 samma sak (`assertMayCloseReportedMisconduct`): ett avslut som först måste flytta ärendet till en annan fas besvaras
 med 422. En avvikelse kan avslutas i förtid som förut.
 
+### Inget avslut innan MAS/MAR är klar
+
+Ett ärende med hög risk HSL (`RISK/HIGH_HSL`) avslutas först när MAS/MAR har gjort sin initiala bedömning i
+Händelseanalys HSL (`analysisDecision`), oavsett vilken den blev. Har MAS/MAR bedömt att händelsen ska
+händelseanalyseras (`analyze`) avslutas ärendet dessutom först när Händelseanalys HSL är markerad som klar och
+sparad och Beslut HSL är sparat. Annars kunde en enhetschef eller verksamhetschef avsluta ärendet medan MAS/MAR
+fortfarande arbetar med det. BFF:en vägrar båda avsluten, statusbytet och fasbytet som avslutar
+(`assertHslAnalysisFinishedBeforeClose`), med 422 och ett besked som sidopanelen visar. Kan den som avslutar inte
+läsa analysen avgör ärendets etiketter: `ANALYSIS/HSL_STARTED` räknas som en pågående analys, och hög risk HSL utan
+den som en bedömning som saknas, så att ärendet hålls kvar i stället för att släppas igenom. Utan hög risk HSL och
+utan händelseanalys avslutas ärendet som förut.
+
 ### Ingen status att välja
 
 Ärendets status flyttas av flödets egna handlingar: Återuppta ärende, överlämningarna och fasbytena. Sidopanelen

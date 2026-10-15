@@ -14,8 +14,14 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { readRoleGroups } from '@/services/ad-role.service';
 import ApiService from '@/services/api.service';
-import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
 import {
+  CLOSED_SUPPORT_ERRAND_STATUS,
+  getActiveErrandPhaseId,
+  getErrandVersion,
+  resolveSupportErrandPhaseTransition,
+} from '@/services/support-errand.service';
+import {
+  assertHslAnalysisFinishedBeforeClose,
   assertInvestigationCompletedBeforeDecision,
   assertMaySendToDecision,
   assertMayStartFollowUp,
@@ -160,6 +166,15 @@ export class SupportPhaseController {
       baseURL,
       status: transition.status,
       required: this.requiresHandledMeasuresBeforeClose,
+    });
+    await assertHslAnalysisFinishedBeforeClose({
+      policyService: this.investigationPolicyService,
+      documentService: this.jsonParameterService,
+      user: req.user,
+      municipalityId,
+      errandId: id,
+      errand: currentErrand.data,
+      closes: transition.status === CLOSED_SUPPORT_ERRAND_STATUS,
     });
     await this.apiService.patch<SupportErrand, { activePhaseId: string; status?: string }>(
       {

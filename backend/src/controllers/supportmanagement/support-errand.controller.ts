@@ -106,7 +106,11 @@ import {
   assertSupportInvestigationClassificationContext,
   selectErrandClassificationIndex,
 } from '@/services/support-investigation-classification-context.service';
-import { assertMayCloseReportedMisconduct, assertMayStartFollowUp } from '@/services/support-investigation-decision-readiness';
+import {
+  assertHslAnalysisFinishedBeforeClose,
+  assertMayCloseReportedMisconduct,
+  assertMayStartFollowUp,
+} from '@/services/support-investigation-decision-readiness';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
@@ -1131,6 +1135,15 @@ export class SupportErrandController {
         required: this.requiresHandledMeasuresBeforeClose,
       });
     await assertMeasuresHandled();
+    await assertHslAnalysisFinishedBeforeClose({
+      policyService: this.investigationPolicyService,
+      documentService: this.jsonParameterService,
+      user: req.user,
+      municipalityId,
+      errandId: id,
+      errand: currentErrand.data,
+      closes: data.status === CLOSED_SUPPORT_ERRAND_STATUS,
+    });
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
     // A close that has to move the errand into another phase first is one made before its workflow has ended.

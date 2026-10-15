@@ -4,10 +4,13 @@ import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationState } from '@/dtos/support-investigation-profile.dto';
 import {
+  assertHslAnalysisFinishedBeforeClose,
   assertInvestigationCompletedBeforeDecision,
   assertMayCloseReportedMisconduct,
   assertMaySendToDecision,
   assertMayStartFollowUp,
+  HSL_ANALYSIS_UNDER_WAY,
+  HSL_ASSESSMENT_PENDING,
   investigationNotCompletedMessage,
   LEX_HANDLER_CANNOT_START_FOLLOW_UP,
   LEX_INVESTIGATOR_CANNOT_SEND_TO_DECISION,
@@ -213,5 +216,75 @@ describe('closing a reported misconduct', () => {
 
   it('holds nothing back outside IAF/VOF', () => {
     expect(close(reportedMisconduct([]), true, { withPolicy: false })).not.toThrow();
+  });
+});
+
+describe('assertHslAnalysisFinishedBeforeClose', () => {
+  const analysis = (value: Record<string, unknown>) => document('utredning-hsl', value);
+  const decision = document('beslut-hsl', { ivoNotification: 'no' });
+  const analysedLabel = { id: 'analysis-started-id', resourcePath: 'ANALYSIS/HSL_STARTED' };
+  const closeErrand = (errand: Errand, { closes = true, ...options }: { closes?: boolean; state?: SupportInvestigationState } = {}) => {
+    const { policyService, documentService } = setup(options);
+    return assertHslAnalysisFinishedBeforeClose({
+      policyService,
+      documentService,
+      user: mockUser(),
+      municipalityId: mockMunicipalityId,
+      errandId: mockSupportErrandId,
+      errand,
+      closes,
+    });
+  };
+
+  it('lets the errand close once MAS/MAR has completed the analysis and saved the decision', async () => {
+    await expect(closeErrand(ordinaryDeviation([analysis({ analysisDecision: 'analyze', completed: 'yes' }), decision]))).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ['the analysis is not completed', [analysis({ analysisDecision: 'analyze', completed: 'no' }), decision]],
+    ['the decision is not saved', [analysis({ analysisDecision: 'analyze', completed: 'yes' })]],
+    ['neither is done', [analysis({ analysisDecision: 'analyze' })]],
+  ])('refuses the close while MAS/MAR analyses the event and %s', async (_reason, jsonParameters) => {
+    await expect(closeErrand(ordinaryDeviation(jsonParameters))).rejects.toMatchObject({ status: 422, message: HSL_ANALYSIS_UNDER_WAY });
+  });
+
+  it('lets an errand MAS/MAR decided not to analyse, or has not assessed, close as before', async () => {
+    await expect(closeErrand(ordinaryDeviation([analysis({ analysisDecision: 'not_analyze', completed: 'yes' })]))).resolves.toBeUndefined();
+    await expect(closeErrand(ordinaryDeviation([]))).resolves.toBeUndefined();
+  });
+
+  // A closer who cannot read the analysis cannot tell it is finished, so the label MAS/MAR's assessment sets holds it.
+  it('holds an errand carrying the analysis label whose analysis the closer cannot read', async () => {
+    await expect(closeErrand({ ...ordinaryDeviation([decision]), labels: [analysedLabel] } as Errand)).rejects.toMatchObject({ status: 422 });
+  });
+
+  const highHslRisk = { id: 'high-hsl-id', resourcePath: 'RISK/HIGH_HSL' };
+  const withHighHslRisk = (jsonParameters: Errand['jsonParameters']) => ({ ...ordinaryDeviation(jsonParameters), labels: [highHslRisk] }) as Errand;
+
+  // A high HSL risk is MAS/MAR's to assess: the errand waits for the initial assessment, whichever way it goes.
+  it('refuses closing an errand with a high HSL risk until MAS/MAR has made the initial assessment', async () => {
+    await expect(closeErrand(withHighHslRisk([]))).rejects.toMatchObject({ status: 422, message: HSL_ASSESSMENT_PENDING });
+    await expect(closeErrand(withHighHslRisk([analysis({ assignment: 'utkast' })]))).rejects.toMatchObject({
+      status: 422,
+      message: HSL_ASSESSMENT_PENDING,
+    });
+  });
+
+  it('lets an errand with a high HSL risk close once MAS/MAR has assessed it not to be analysed', async () => {
+    await expect(closeErrand(withHighHslRisk([analysis({ analysisDecision: 'not_analyze' })]))).resolves.toBeUndefined();
+  });
+
+  it('holds an errand with a high HSL risk that MAS/MAR analyses until the analysis and the decision are done', async () => {
+    await expect(closeErrand(withHighHslRisk([analysis({ analysisDecision: 'analyze' })]))).rejects.toMatchObject({
+      status: 422,
+      message: HSL_ANALYSIS_UNDER_WAY,
+    });
+    await expect(closeErrand(withHighHslRisk([analysis({ analysisDecision: 'analyze', completed: 'yes' }), decision]))).resolves.toBeUndefined();
+  });
+
+  it('asks nothing of a write that does not close, or where investigation is switched off', async () => {
+    const underWay = ordinaryDeviation([analysis({ analysisDecision: 'analyze' })]);
+    await expect(closeErrand(underWay, { closes: false })).resolves.toBeUndefined();
+    await expect(closeErrand(underWay, { state: 'inactive' })).resolves.toBeUndefined();
   });
 });

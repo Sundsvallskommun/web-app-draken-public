@@ -101,6 +101,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
   const investigationPolicy = {
     getClassificationOwner: vi.fn(async () => classificationOwner),
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
+    getState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'active')),
     profile: configuredProfile,
     labelFilter: configuredProfile.labelFilter,
     iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
