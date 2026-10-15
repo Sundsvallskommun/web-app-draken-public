@@ -6,15 +6,19 @@ import { Status } from '@supportmanagement/services/support-errand-service';
 import {
   awaitedGateOfStep,
   getSupportErrandProcess,
+  getSupportErrandProcessState,
+  hasSupportErrandProcess,
   isSupportProcessCompleted,
   isSupportProcessFailed,
+  supportProcessIsStartable,
+  SupportProcessState,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import { ProcessAction, RESUMED_ELSEWHERE, signalIsRequired, STEP_ACTIONS } from './process-step-actions';
+import { ProcessAction, RESUMED_ELSEWHERE, signalIsRequired, START_ACTION, STEP_ACTIONS } from './process-step-actions';
 import { useProcessStepGates } from './use-process-step-gates';
 import { useProcessStepRun } from './use-process-step-run';
 
@@ -33,6 +37,7 @@ export const SupportProcessStepButton: FC<{
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { handleSubmit, reset } = useFormContext();
   const [decisions, setDecisions] = useState<Decision[]>();
+  const [startableRead, setStartableRead] = useState<{ errandId: string; state: SupportProcessState }>();
 
   const process = getSupportErrandProcess(supportErrand);
   const step = supportProcessStepName(process);
@@ -45,15 +50,36 @@ export const SupportProcessStepButton: FC<{
   const somethingIsUnsaved = Object.values(unsavedTabs).some(Boolean);
   const modified = supportErrand?.modified;
 
+  const noProcessYet = !hasSupportErrandProcess(supportErrand);
+  const startable = startableRead && startableRead.errandId === errandId ? startableRead.state : undefined;
+  const needsAChoice = (startable?.processKeys.length ?? 0) > 1;
+
   const gates = useProcessStepGates(errandId);
   const { running, run } = useProcessStepRun({
     supportErrand: supportErrand!,
     step,
     process,
     processIsOver,
+    processKeys: startable?.processKeys,
     onSubmit,
     reset,
   });
+
+  // Startability is SM's call, read only while the errand has no process.
+  useEffect(() => {
+    if (!errandId || !noProcessYet) return undefined;
+    let stale = false;
+    getSupportErrandProcessState(errandId, municipalityId)
+      .then((state) => {
+        if (!stale) setStartableRead({ errandId, state });
+      })
+      .catch(() => {
+        if (!stale) setStartableRead(undefined);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [errandId, municipalityId, modified, noProcessYet, signalIsOutstanding]);
 
   useEffect(() => {
     if (!errandId || !stepAction?.requiresDecisionOutcome) return;
@@ -121,7 +147,8 @@ export const SupportProcessStepButton: FC<{
         !!running ||
         signalIsOutstanding ||
         somethingIsUnsaved ||
-        (signalIsRequired(action, processIsOver) && !awaitingSignal?.name)
+        (signalIsRequired(action, processIsOver) && !awaitingSignal?.name) ||
+        (action.startsProcess && needsAChoice)
       }
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => void start(action)}
       data-cy={`process-action-${action.key}`}
@@ -134,6 +161,23 @@ export const SupportProcessStepButton: FC<{
   const nothingLeftToDo =
     (stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status)) ||
     (stepAction?.closesErrand && errandIsClosed);
+
+  if (noProcessYet) {
+    const errandIsPutAway = RESUMED_ELSEWHERE.has(supportErrand.status as Status);
+    if (errandIsPutAway || !supportProcessIsStartable(startable?.startability)) {
+      return null;
+    }
+    return (
+      <>
+        {actionButton(START_ACTION)}
+        {needsAChoice ? (
+          <p className="text-small text-dark-secondary mb-12" data-cy="process-action-choose">
+            {t('common:process.actions.start_process.choose')}
+          </p>
+        ) : null}
+      </>
+    );
+  }
 
   if (!stepAction || nothingLeftToDo) {
     return null;

@@ -181,7 +181,10 @@ export const supportProcessPhaseKey = (process: ErrandProcess | undefined): stri
 
 export interface SupportProcessState {
   process: ErrandProcess | undefined;
+  /** startable.status from SM: AVAILABLE, or why not. */
   startability: string | undefined;
+  /** startable.processKeys from SM; several need a choice. */
+  processKeys: string[];
 }
 
 export const getSupportErrandProcessState = (errandId: string, municipalityId: string): Promise<SupportProcessState> =>
@@ -190,6 +193,7 @@ export const getSupportErrandProcessState = (errandId: string, municipalityId: s
     .then((res) => ({
       process: res.data?.processes?.find((candidate) => candidate.processStatus),
       startability: res.data?.startable?.status,
+      processKeys: res.data?.startable?.processKeys ?? [],
     }))
     .catch((e) => {
       console.error('Something went wrong when reading the process');
@@ -197,8 +201,13 @@ export const getSupportErrandProcessState = (errandId: string, municipalityId: s
     });
 
 const START_PENDING = 'START_PENDING';
+const START_AVAILABLE = 'AVAILABLE';
 
 export const supportProcessIsOnItsWay = (startability: string | undefined): boolean => startability === START_PENDING;
+
+/** AVAILABLE covers MANUAL labels and automatic starts that never happened; anything else is no. */
+export const supportProcessIsStartable = (startability: string | undefined): boolean =>
+  startability === START_AVAILABLE;
 
 export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
   apiService
@@ -253,3 +262,16 @@ export const sendSupportProcessSignal = (errandId: string, municipalityId: strin
 /** A signal the process no longer waits for: the button is stale and the errand has to be read again. */
 export const isSupportProcessSignalStale = (error: unknown): boolean =>
   (error as { response?: { status?: number } })?.response?.status === 409;
+
+/** Key optional when the labels point at exactly one process. */
+export const startSupportProcess = (errandId: string, municipalityId: string, processKey?: string): Promise<void> =>
+  apiService
+    .post<void, { processKey?: string }>(
+      `supportprocess/${municipalityId}/${errandId}/start`,
+      processKey ? { processKey } : {}
+    )
+    .then(() => undefined)
+    .catch((e) => {
+      console.error('Something went wrong when starting the process');
+      throw e;
+    });

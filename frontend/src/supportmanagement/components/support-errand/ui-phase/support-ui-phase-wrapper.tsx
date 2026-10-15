@@ -3,18 +3,17 @@
 import { appConfig } from '@config/appconfig';
 import { useSupportStore } from '@stores/index';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
+import { FC } from 'react';
 
 import { SupportProcessRow } from './support-process-row.component';
-import { useSupportProcessPoller } from './use-support-process-poller';
 
 /**
  * Where the errand stands, as the process reports it. An errand without a process - one registered
  * before the process ran, or in a namespace that runs none - has no step of its own, and the row
  * stays away rather than deriving one from the status.
  */
-export const SupportUiPhaseWrapper = () => {
+export const SupportUiPhaseWrapper: FC<{ working: boolean }> = ({ working }) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const working = useSupportProcessPoller();
 
   if (!appConfig.features.useProcess || !hasSupportErrandProcess(supportErrand)) {
     return null;

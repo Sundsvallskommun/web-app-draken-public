@@ -1,3 +1,4 @@
+import type { ErrandProcess } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
@@ -19,6 +20,17 @@ const POLL_WINDOW = 120000;
 const POLL_DELAY_AFTER_A_SIGNAL = 1000;
 const CLOSE_READING_AFTER_A_SIGNAL = 20000;
 
+/** What a report changes; SM may leave `modified` out, so the state itself is the stamp. */
+const processStamp = (process: ErrandProcess | undefined): string | undefined =>
+  process &&
+  [
+    process.modified,
+    process.processInstanceId,
+    process.processStatus,
+    process.currentActivityId,
+    ...(process.awaitingSignals ?? []).map((signal) => signal.name),
+  ].join('|');
+
 export const useSupportProcessPoller = (): boolean => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
@@ -33,7 +45,7 @@ export const useSupportProcessPoller = (): boolean => {
   const signalledAt = processSignal?.errandId && processSignal.errandId === errandId ? processSignal.at : undefined;
   const watching = working || noProcessYet || !!signalledAt;
 
-  const watchedModified = process?.modified;
+  const watchedStamp = processStamp(process);
   const signalledActivity = process?.currentActivityId;
   const errandWrittenWithoutAProcess = noProcessYet ? supportErrand?.modified : undefined;
 
@@ -43,7 +55,7 @@ export const useSupportProcessPoller = (): boolean => {
     let stopped = false;
     let delay = signalledAt ? POLL_DELAY_AFTER_A_SIGNAL : FIRST_POLL_DELAY;
     let timer: ReturnType<typeof setTimeout>;
-    let standing = watchedModified;
+    let standing = watchedStamp;
     const startedAt = Date.now();
     const until = startedAt + POLL_WINDOW;
 
@@ -60,8 +72,9 @@ export const useSupportProcessPoller = (): boolean => {
       const state = await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined);
       if (stopped) return;
 
-      if (state?.process && state.process.modified !== standing) {
-        standing = state.process.modified;
+      const stamp = processStamp(state?.process);
+      if (state?.process && stamp !== standing) {
+        standing = stamp;
 
         const { errand } = await getSupportErrandById(errandId, municipalityId).catch(() => ({ errand: undefined }));
         if (stopped) return;

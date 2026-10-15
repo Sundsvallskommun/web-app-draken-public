@@ -9,6 +9,8 @@ export interface ProcessAction {
   color?: 'vattjom';
   icon?: ReactElement;
   needsSignal: boolean;
+  /** Starts the process instead of stepping it. */
+  startsProcess?: boolean;
   /** Every step is confirmed in a dialog, except starting the handling, which never was. */
   confirms?: boolean;
   /** Takes the errand and sets it ongoing before the signal, the way the handling has always started. */
@@ -20,6 +22,17 @@ export interface ProcessAction {
   closesErrand?: boolean;
   resolution?: Resolution;
 }
+
+/** Manual start for labels with processStartMode MANUAL. Not a step: no process exists yet. */
+export const START_ACTION: ProcessAction = {
+  key: 'start_process',
+  variant: 'primary',
+  color: 'vattjom',
+  icon: <ArrowRight size={18} />,
+  needsSignal: false,
+  startsProcess: true,
+  confirms: false,
+};
 
 /** Parked, solved and reopened errands are picked up from their own buttons, never started again. */
 export const RESUMED_ELSEWHERE = new Set([Status.SUSPENDED, Status.SOLVED, Status.REOPENED]);

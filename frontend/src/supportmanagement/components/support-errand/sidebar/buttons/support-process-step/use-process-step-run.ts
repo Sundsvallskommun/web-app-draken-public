@@ -20,6 +20,7 @@ import {
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
+  startSupportProcess,
   SupportProcessStep,
   SupportProcessStepName,
   supportProcessStepName,
@@ -39,12 +40,22 @@ interface StepContext {
   step: SupportProcessStepName | undefined;
   process: ErrandProcess | undefined;
   processIsOver: boolean;
+  /** Eligible keys for a manual start. */
+  processKeys?: string[];
   onSubmit?: () => Promise<any>;
   reset: (errand: SupportErrand) => void;
 }
 
 /** Carrying a step out: taking the errand, concluding a decision, leaving by the gate, and following where it lands. */
-export const useProcessStepRun = ({ supportErrand, step, process, processIsOver, onSubmit, reset }: StepContext) => {
+export const useProcessStepRun = ({
+  supportErrand,
+  step,
+  process,
+  processIsOver,
+  processKeys,
+  onSubmit,
+  reset,
+}: StepContext) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const user = useUserStore((s) => s.user);
@@ -76,6 +87,12 @@ export const useProcessStepRun = ({ supportErrand, step, process, processIsOver,
     toastMessage({ position: 'bottom', closeable: false, message, status });
 
   const sendSignal = (signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
+
+  /** Starts the process and lets the poller pick it up once the engine has registered it. */
+  const startTheProcess = async () => {
+    await startSupportProcess(errandId, municipalityId, processKeys?.length === 1 ? processKeys[0] : undefined);
+    setProcessSignal({ errandId, at: Date.now() });
+  };
 
   const sendSignalToleratingAStepAlreadyLeft = (signal: string) =>
     sendSignal(signal).catch((error) => {
@@ -179,6 +196,12 @@ export const useProcessStepRun = ({ supportErrand, step, process, processIsOver,
   const run = async (action: ProcessAction, decisionsInHand: Decision[] | undefined) => {
     setRunning(action.key);
     try {
+      if (action.startsProcess) {
+        await startTheProcess();
+        tellTheHandler(t(`common:process.actions.${action.key}.done`), 'success');
+        return;
+      }
+
       if (action.takesErrand) {
         await takeErrand();
       }
