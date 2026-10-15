@@ -483,7 +483,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                           if (confirmed && handoverTarget) {
                             const result = await handover.runHandover(handoverTarget, getValues('message'));
                             if (result) {
-                              handleHandoverSuccess();
+                              await handleHandoverSuccess();
                             }
                           }
                         }}
