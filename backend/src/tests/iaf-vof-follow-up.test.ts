@@ -30,8 +30,12 @@ describe('the unit follow-up of one errand', () => {
             riskAssessmentHsl: { calculatedRiskValue: 6 },
             riskAssessmentSolLss: { calculatedRiskValue: 9 },
             causeAreas: ['procedures_routines_guidelines'],
+            requiresPoliceReport: 'yes',
           }),
-          parameter('utredning-sol-lss', { causeAreas: ['procedures_routines_guidelines', 'environment_organization'], requiresPoliceReport: 'no' }),
+          parameter('utredning-sol-lss', {
+            causeAreas: ['procedures_routines_guidelines', 'environment_organization'],
+            requiresPoliceReport: 'not_applicable',
+          }),
           parameter('beslut-sol-lss', { ivoNotification: 'yes', decidedMisconductDegree: 'serious_misconduct' }),
         ],
       }),
@@ -42,7 +46,9 @@ describe('the unit follow-up of one errand', () => {
       riskValueHsl: 6,
       riskValueSolLss: 9,
       causeAreas: ['procedures_routines_guidelines', 'environment_organization'],
-      policeReport: 'no',
+      // Each investigation answers the police report question for its own legal bases: the unit manager's for HSL.
+      policeReportHsl: 'yes',
+      policeReportSolLss: 'not_applicable',
       ivoNotification: 'yes',
       decidedMisconductDegree: 'serious_misconduct',
     });

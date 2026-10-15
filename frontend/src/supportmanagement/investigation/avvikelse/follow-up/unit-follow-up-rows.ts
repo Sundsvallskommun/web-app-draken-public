@@ -40,7 +40,8 @@ export interface FollowUpErrandRow {
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
   readonly ivoNotification?: FollowUpOption;
-  readonly policeReport?: FollowUpOption;
+  /** The police reports the investigations call for: HSL from the unit manager's, SoL/LSS from LEX's. */
+  readonly policeReports: FollowUpOption[];
   readonly decidedMisconduct?: FollowUpOption;
   readonly status?: FollowUpOption;
   readonly legalBases: FollowUpOption[];
@@ -68,11 +69,18 @@ export const FOLLOW_UP_YES_NO: readonly FollowUpOption[] = Object.freeze([
   { value: 'no', label: 'Nej' },
 ]);
 
-/** The lex Sarah investigation also answers whether to report to the police with Ej aktuellt. */
-export const FOLLOW_UP_POLICE_REPORT: readonly FollowUpOption[] = Object.freeze([
-  ...FOLLOW_UP_YES_NO,
-  { value: 'not_applicable', label: 'Ej aktuellt' },
-]);
+/**
+ * The police reports an errand may call for, each answered by the investigation of its legal bases: the unit
+ * manager's for HSL, the lex Sarah investigation's for SoL/LSS. An errand calls for one where the answer is Ja.
+ */
+const POLICE_REPORTS = [
+  { value: 'hsl', label: 'Polisanmälan HSL', answer: 'policeReportHsl' },
+  { value: 'sol_lss', label: 'Polisanmälan SoL/LSS', answer: 'policeReportSolLss' },
+] as const;
+
+export const FOLLOW_UP_POLICE_REPORT: readonly FollowUpOption[] = Object.freeze(
+  POLICE_REPORTS.map(({ value, label }) => ({ value, label }))
+);
 
 export interface FollowUpMeasureRow {
   readonly key: string;
@@ -141,7 +149,9 @@ const toFollowUpErrandRow = (errand: UnitFollowUpErrand, context: FollowUpRowCon
     riskValueHsl: errand.investigation.riskValueHsl,
     riskValueSolLss: errand.investigation.riskValueSolLss,
     ivoNotification: yesNo(errand.investigation.ivoNotification),
-    policeReport: FOLLOW_UP_POLICE_REPORT.find((option) => option.value === errand.investigation.policeReport),
+    policeReports: POLICE_REPORTS.filter(({ answer }) => errand.investigation[answer] === 'yes').map(
+      ({ value, label }) => ({ value, label })
+    ),
     decidedMisconduct: coded(errand.investigation.decidedMisconductDegree, context.vocabulary.misconductDegrees),
     status: errand.status
       ? { value: errand.status, label: context.statusName(errand.status) ?? errand.status }

@@ -26,6 +26,7 @@ const errand: FollowUpErrandRow = {
   legalBases: [{ value: 'SOL', label: 'SoL – Socialtjänstlagen' }],
   categories: [],
   subcategories: [],
+  policeReports: [{ value: 'sol_lss', label: 'Polisanmälan SoL/LSS' }],
   measureCount: 1,
   labelPaths: ['REPORT_TYPE/ABUSE', 'PROVISION/SOL'],
   keyFigures: ['misconducts', 'legalBaseSolLss'],
@@ -53,8 +54,22 @@ test('keeps an errand that carries any of the chosen values', () => {
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ reportTypes: ['deviation', 'abuse'] })), true);
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ legalBases: ['HSL'] })), false);
   assert.equal(matchesFollowUpErrandFilters(errand, filters({ ivoNotification: ['no'] })), false);
-  // An errand with no answer is not one with the chosen answer.
-  assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['yes'] })), false);
+});
+
+// Polisanmälan HSL or Polisanmälan SoL/LSS: an errand is kept when it calls for either of the chosen ones.
+test('keeps an errand that calls for any of the chosen police reports', () => {
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['sol_lss'] })), true);
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['hsl', 'sol_lss'] })), true);
+  assert.equal(matchesFollowUpErrandFilters(errand, filters({ policeReport: ['hsl'] })), false);
+  assert.equal(
+    matchesFollowUpErrandFilters({ ...errand, policeReports: [] }, filters({ policeReport: ['sol_lss'] })),
+    false
+  );
+});
+
+test('narrows no measure by the police reports, which are the errands alone', () => {
+  const withoutPoliceReport = { ...measure, errand: { ...errand, policeReports: [] } };
+  assert.equal(matchesFollowUpMeasureFilters(withoutPoliceReport, filters({ policeReport: ['hsl'] })), true);
 });
 
 test('keeps an errand on any of the chosen units', () => {

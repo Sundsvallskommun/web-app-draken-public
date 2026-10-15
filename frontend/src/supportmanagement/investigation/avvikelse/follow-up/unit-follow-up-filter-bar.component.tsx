@@ -101,13 +101,16 @@ export const UnitFollowUpFilterBar: FC<UnitFollowUpFilterBarProps> = ({
         onChange={set('ivoNotification')}
         data-cy="follow-up-filter-ivo"
       />
-      <FollowUpMultiSelectFilter
-        label={FOLLOW_UP_FILTER_LABELS.policeReport}
-        options={FOLLOW_UP_POLICE_REPORT}
-        selected={filters.policeReport}
-        onChange={set('policeReport')}
-        data-cy="follow-up-filter-police"
-      />
+      {/* The police reports are the errands' alone; they narrow no measure. */}
+      {tab === 'errands' && (
+        <FollowUpMultiSelectFilter
+          label={FOLLOW_UP_FILTER_LABELS.policeReport}
+          options={FOLLOW_UP_POLICE_REPORT}
+          selected={filters.policeReport}
+          onChange={set('policeReport')}
+          data-cy="follow-up-filter-police"
+        />
+      )}
       <FollowUpMultiSelectFilter
         label={FOLLOW_UP_FILTER_LABELS.statuses}
         options={options.statuses}

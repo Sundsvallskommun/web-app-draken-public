@@ -727,7 +727,7 @@ och ett ärende hos LEX först när det lämnats tillbaka. Når perioden fler ä
 | Lagrum | `legalBases` i utredningen som kategoriserar ärendet: LEX-utredningen för ett missförhållande, annars enhetschefens. Tills den utredningen anger något: `PROVISION`-etiketterna, alltså det lagrum rapporten skickades in under |
 | Orsak | `causeAreas` i enhetschefens och LEX-utredningen |
 | Riskvärde HSL / SOL/LSS | `calculatedRiskValue` i enhetschefens `riskAssessmentHsl` / `riskAssessmentSolLss` |
-| Polisanmälan | `requiresPoliceReport` i `utredning-sol-lss` |
+| Polisanmälan (bara fliken Ärenden) | Polisanmälan HSL: `requiresPoliceReport` i enhetschefens utredning. Polisanmälan SoL/LSS: `requiresPoliceReport` i `utredning-sol-lss`. Ett ärende räknas när svaret är Ja, och filtret behåller ärenden med något av de valda |
 | IVO-anmälan | `ivoNotification` i `beslut-sol-lss`, annars `beslut-hsl` |
 | Beslutat missförhållande | `decidedMisconductDegree` i `beslut-sol-lss` |
 | Åtgärdens status | Genomförd med `executed`, annars Planerad (`TRUE`/`REWORK`), Avslagen eller Förslag |

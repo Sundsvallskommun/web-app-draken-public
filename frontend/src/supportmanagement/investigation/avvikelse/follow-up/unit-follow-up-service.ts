@@ -23,7 +23,9 @@ interface UnitFollowUpInvestigation {
   readonly riskValueHsl?: number;
   readonly riskValueSolLss?: number;
   readonly causeAreas: string[];
-  readonly policeReport?: string;
+  /** The unit manager's answer on a police report, asked where HSL applies, and the lex Sarah investigation's. */
+  readonly policeReportHsl?: string;
+  readonly policeReportSolLss?: string;
   readonly ivoNotification?: string;
   readonly decidedMisconductDegree?: string;
 }

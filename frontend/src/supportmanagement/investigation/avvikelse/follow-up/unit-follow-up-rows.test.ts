@@ -81,12 +81,21 @@ test('shows an errand by its unit, report type, causes, risk, decision and measu
   assert.deepEqual(row.keyFigures, ['misconducts', 'legalBaseSolLss']);
 });
 
-test('names a police report the investigation found not applicable', () => {
-  const [row] = toFollowUpRows(
-    [{ ...errand, investigation: { ...errand.investigation, policeReport: 'not_applicable' } }],
-    context
-  ).errands;
-  assert.deepEqual(row.policeReport, { value: 'not_applicable', label: 'Ej aktuellt' });
+test('names the police reports the investigations answer Ja to, HSL from the unit manager and SoL/LSS from LEX', () => {
+  const policeReports = (policeReportHsl?: string, policeReportSolLss?: string) =>
+    toFollowUpRows(
+      [{ ...errand, investigation: { ...errand.investigation, policeReportHsl, policeReportSolLss } }],
+      context
+    ).errands[0].policeReports;
+
+  assert.deepEqual(policeReports('yes', 'not_applicable'), [{ value: 'hsl', label: 'Polisanmälan HSL' }]);
+  assert.deepEqual(policeReports('not_applicable', 'yes'), [{ value: 'sol_lss', label: 'Polisanmälan SoL/LSS' }]);
+  assert.deepEqual(
+    policeReports('yes', 'yes').map(({ value }) => value),
+    ['hsl', 'sol_lss']
+  );
+  // Nej, as older lex Sarah investigations answered, calls for none.
+  assert.deepEqual(policeReports(undefined, 'no'), []);
 });
 
 test('counts an errand still new more than thirty days after it was registered as not started', () => {

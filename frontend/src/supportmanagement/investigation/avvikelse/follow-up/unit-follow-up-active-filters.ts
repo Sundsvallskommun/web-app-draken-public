@@ -37,6 +37,8 @@ const ERRAND_LIST_FILTERS: readonly ListFilterKey[] = [
   'statuses',
 ];
 const RISK_FILTERS: readonly RiskFilterKey[] = ['riskValueHsl', 'riskValueSolLss'];
+/** The errand filters the Åtgärder tab neither offers nor applies. */
+const ERRANDS_TAB_ONLY_FILTERS: readonly ListFilterKey[] = ['policeReport'];
 const MEASURE_LIST_FILTERS: readonly ListFilterKey[] = ['measureTypes', 'measureStatuses', 'effects'];
 
 const offeredOptions = (
@@ -88,7 +90,9 @@ export const describeActiveFollowUpFilters = (
             without: { ...filters, keyFigure: '' as const },
           },
         ]),
-    ...ERRAND_LIST_FILTERS.flatMap(listChips),
+    ...ERRAND_LIST_FILTERS.filter((key) => tab === 'errands' || !ERRANDS_TAB_ONLY_FILTERS.includes(key)).flatMap(
+      listChips
+    ),
     ...RISK_FILTERS.flatMap(riskChip),
     ...(tab === 'measures' ? MEASURE_LIST_FILTERS.flatMap(listChips) : []),
   ];

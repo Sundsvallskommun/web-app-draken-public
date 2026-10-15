@@ -85,14 +85,17 @@ export const matchesFollowUpErrandFilters = (row: FollowUpErrandRow, filters: Un
   anyChosen(filters.causeAreas, row.causeAreas) &&
   anyChosen(filters.legalBases, row.legalBases) &&
   anyChosen(filters.ivoNotification, [row.ivoNotification]) &&
-  anyChosen(filters.policeReport, [row.policeReport]) &&
+  anyChosen(filters.policeReport, row.policeReports) &&
   anyChosen(filters.statuses, [row.status]) &&
   riskMatches(filters.riskValueHsl, row.riskValueHsl) &&
   riskMatches(filters.riskValueSolLss, row.riskValueSolLss);
 
-/** A measure is shown when its errand passes the errand filters and the measure passes its own. */
+/**
+ * A measure is shown when its errand passes the errand filters and the measure passes its own. The police reports
+ * are the errands' alone: the Åtgärder tab does not offer them, and they narrow no measure.
+ */
 export const matchesFollowUpMeasureFilters = (row: FollowUpMeasureRow, filters: UnitFollowUpFilters): boolean =>
-  matchesFollowUpErrandFilters(row.errand, filters) &&
+  matchesFollowUpErrandFilters(row.errand, { ...filters, policeReport: [] }) &&
   anyChosen(filters.measureTypes, [row.type]) &&
   anyChosen(filters.measureStatuses, [row.status]) &&
   anyChosen(filters.effects, [row.effect]);

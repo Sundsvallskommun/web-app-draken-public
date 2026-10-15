@@ -30,8 +30,10 @@ interface UnitFollowUpInvestigation {
   readonly riskValueSolLss?: number;
   /** Cause area codes, from whichever investigations name them. */
   readonly causeAreas: string[];
+  /** The unit manager's answer on whether the errand calls for a police report, asked where HSL applies. */
+  readonly policeReportHsl?: string;
   /** The LEX investigation's answer on whether the misconduct calls for a police report. */
-  readonly policeReport?: string;
+  readonly policeReportSolLss?: string;
   /** Whether the errand was reported to IVO, from the decision that applies to it. */
   readonly ivoNotification?: string;
   /** What LEX decided the report amounted to, as the lex Sarah decision's code. */
@@ -130,7 +132,8 @@ export const toUnitFollowUpErrand = (profile: SupportInvestigationProfileDto, er
       riskValueHsl: readRiskValue(manager, 'riskAssessmentHsl'),
       riskValueSolLss: readRiskValue(manager, 'riskAssessmentSolLss'),
       causeAreas: [...new Set([...readCodes(manager, 'causeAreas'), ...readCodes(lex, 'causeAreas')])],
-      policeReport: readCode(lex, 'requiresPoliceReport'),
+      policeReportHsl: readCode(manager, 'requiresPoliceReport'),
+      policeReportSolLss: readCode(lex, 'requiresPoliceReport'),
       // An errand takes one decision, never both: lex Sarah for a misconduct, IVO for an HSL deviation.
       ivoNotification: readCode(lexDecision, 'ivoNotification') ?? readCode(hslDecision, 'ivoNotification'),
       decidedMisconductDegree: readCode(lexDecision, 'decidedMisconductDegree'),

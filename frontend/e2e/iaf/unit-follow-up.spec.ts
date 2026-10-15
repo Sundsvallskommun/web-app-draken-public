@@ -62,7 +62,12 @@ const snapshot: UnitFollowUpSnapshot = {
       status: 'INQUIRY',
       created: '2026-05-03T09:00:00.000+02:00',
       labels: [deviation, hsl, ...unit('Granlunda 1')],
-      investigation: { legalBases: ['HSL'], riskValueHsl: 3, causeAreas: ['communication_information'] },
+      investigation: {
+        legalBases: ['HSL'],
+        riskValueHsl: 3,
+        causeAreas: ['communication_information'],
+        policeReportHsl: 'not_applicable',
+      },
       measures: [],
     },
     {
@@ -78,6 +83,7 @@ const snapshot: UnitFollowUpSnapshot = {
         causeAreas: ['procedures_routines_guidelines'],
         ivoNotification: 'yes',
         decidedMisconductDegree: 'serious_misconduct',
+        policeReportSolLss: 'yes',
       },
       measures: [
         {
@@ -106,6 +112,7 @@ const snapshot: UnitFollowUpSnapshot = {
         riskValueHsl: 6,
         causeAreas: ['procedures_routines_guidelines'],
         ivoNotification: 'no',
+        policeReportHsl: 'yes',
       },
       measures: [{ id: 'm3', type: 'EDUCATION', accept: 'TRUE', executed: '2026-04-05', result: 'NOT_COMPLETED' }],
     },
@@ -278,6 +285,31 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     const group = page.locator('[data-cy="follow-up-button"]').locator('..');
     await expect(group).toContainText('Verksamhetsuppföljning');
     await expect(group.locator('button')).toHaveText(['Enheter', 'Planerade åtgärder']);
+  });
+
+  // Polisanmälan HSL is the unit manager's answer, Polisanmälan SoL/LSS LEX's; an errand is kept for either. The
+  // measures are not narrowed by them, and the Åtgärder tab does not offer them.
+  test('filtrerar på polisanmälan HSL eller SoL/LSS, och bara bland ärendena', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installFollowUp(page);
+    await openFollowUp(page, dismissCookieConsent);
+
+    await page.locator('[data-cy="follow-up-filter-police"]').click();
+    await expect(page.locator('[data-cy^="follow-up-filter-police-"]')).toHaveCount(2);
+    // The checkbox's drawn box sits over the input and takes the pointer; a user clicks that box.
+    await page.locator('[data-cy="follow-up-filter-police-hsl"]').check({ force: true });
+    await expect(summary(page)).toHaveText('Visar 1 ärende');
+    // The HSL deviation the unit manager answered Ja for, registered 17 May.
+    await expect(errandRows(page).first()).toContainText('2026-05-17');
+    await page.locator('[data-cy="follow-up-filter-police-sol_lss"]').check({ force: true });
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText('Visar 2 ärenden');
+
+    await page.locator('[data-cy="follow-up-tab-measures"]').click();
+    await expect(page.locator('[data-cy="follow-up-filter-police"]')).toHaveCount(0);
+    await expect(summary(page)).toHaveText('Visar 3 åtgärder');
   });
 
   test('filtrerar på rapporttyp, riskvärde och enhet, och Rensa alla visar allt igen', async ({

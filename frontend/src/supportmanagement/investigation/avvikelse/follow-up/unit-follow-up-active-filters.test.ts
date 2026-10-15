@@ -64,6 +64,16 @@ test('a chip takes away its own value and nothing else', () => {
   assert.deepEqual(risk.without, { ...chosen, riskValueSolLss: '' });
 });
 
+test('the police reports get a chip on the errands alone, where they narrow the list', () => {
+  const chosen = filters({ policeReport: ['hsl', 'sol_lss'] });
+
+  assert.deepEqual(
+    describeActiveFollowUpFilters(chosen, options, 'errands').map((filter) => filter.text),
+    ['Polisanmälan: Polisanmälan HSL', 'Polisanmälan: Polisanmälan SoL/LSS']
+  );
+  assert.deepEqual(describeActiveFollowUpFilters(chosen, options, 'measures'), []);
+});
+
 test("the measures' own filters get chips only where they narrow the list", () => {
   const chosen = filters({ measureTypes: ['EDUCATION'], measureStatuses: ['planned'], effects: ['no'] });
 
