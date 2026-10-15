@@ -573,6 +573,7 @@
     "toast": {
       "save_failed": "Anmärkningarna kunde inte sparas"
     }
+  },
   "measures": {
     "heading": "Tillsynsprotokoll",
     "description": "Välj protokollmall utifrån vad tillsynen gäller. Mallen fylls med standardkontrollpunkter som du kan anpassa inför besöket. Själva protokollet fylls sedan i på plats under Utredning.",
