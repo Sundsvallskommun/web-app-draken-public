@@ -83,6 +83,8 @@ test.describe('errand page', () => {
     await expect(page.locator(`[aria-label="${mockSidebarButtons[0].label}"]`)).toBeVisible();
     await expect(page.locator(`[aria-label="${mockSidebarButtons[1].label}"]`)).toBeVisible();
     await expect(page.locator(`[aria-label="${mockSidebarButtons[2].label}"]`)).toBeVisible();
+    // Only where the assignee alone follows the errand - avvikelse - is there no following by hand.
+    await expect(page.locator('[data-cy="follow-errand-toggle"]')).toBeVisible();
   });
 
   test('Can self assign errand', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -328,9 +330,7 @@ test.describe('errand page', () => {
     await expect(page.locator(MODAL_DIALOG)).toBeVisible();
     await expect(page.locator(MODAL_DIALOG)).toContainText('Nuvarande lösningskod');
     await expect(page.locator(MODAL_DIALOG)).toContainText('Ändra lösningskod');
-    await expect(
-      page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: /^Avsluta$/ })
-    ).toBeVisible();
+    await expect(page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: /^Avsluta$/ })).toBeVisible();
   });
 
   test('Can change resolution code when errand already has one', async ({ page, mockRoute, dismissCookieConsent }) => {

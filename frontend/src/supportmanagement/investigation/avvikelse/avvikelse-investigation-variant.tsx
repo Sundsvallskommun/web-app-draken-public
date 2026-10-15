@@ -268,6 +268,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   renderHandlerFields: (props: InvestigationHandlerFieldsProps) => <MasMarHandlerSelect {...props} />,
   /** The handler is chosen in Ansvarig, MAS/MAR in their own select; nobody takes the errand. */
   withoutTakeErrand: true,
+  /** Whoever handles the errand follows it, and nobody else: the assignment takes care of it. */
+  assigneeFollowsErrand: true,
   /** MAS/MAR narrow the overview to the errands with a high HSL risk. */
   overviewFilterToggle: masMarOverviewFilter,
   /** The errand's owner is the brukare the deviation concerns, never an employee. */

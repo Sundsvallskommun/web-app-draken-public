@@ -52,6 +52,10 @@ export const getInvestigationNotificationChannels = (): InvestigationVariantModu
 export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.renderHandlerFields : undefined;
 
+/** Whether the errand's assignee alone follows it under the running variant. False for every drake without the slot. */
+export const getInvestigationAssigneeFollowsErrand = (): boolean =>
+  appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.assigneeFollowsErrand) : false;
+
 /** Whether the running variant does without Ta ärende. False for every drake without the slot. */
 export const getInvestigationWithoutTakeErrand = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.withoutTakeErrand) : false;

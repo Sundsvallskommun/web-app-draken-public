@@ -78,6 +78,9 @@ delad kod erbjuder:
   som för alla andra drakar.
 - `withoutTakeErrand` — valfri flagga: ingen tar ärendet, så sidopanelen visar ingen Ta ärende och handläggaren
   väljs i Ansvarig (`getInvestigationWithoutTakeErrand`). För avvikelse: satt. Utan slot finns Ta ärende kvar.
+- `assigneeFollowsErrand` — valfri flagga: bara handläggaren följer ärendet, och tilldelningen sköter det (BFF-
+  profilens flagga med samma namn). Sidopanelen visar då ingen Följ ärendet
+  (`getInvestigationAssigneeFollowsErrand`). För avvikelse: satt. Utan slot finns knappen kvar.
 - `overviewFilterToggle` — valfri kryssruta bredvid Mina ärenden i översikten, som smalnar av listan till
   ärendena med en etikett. Den lägger sitt val (`selection`) till begärans `labelFilter` och lagras inte bland
   etikettfiltren utan som en egen inställning (`overviewFilterToggleChecked`), ikryssad tills användaren kryssar

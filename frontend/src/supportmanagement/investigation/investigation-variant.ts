@@ -280,6 +280,11 @@ export interface InvestigationVariantModule {
    * without the slot keeps Ta ärende.
    */
   readonly withoutTakeErrand?: boolean;
+  /**
+   * The errand is followed by its assignee alone, which the assignment takes care of (the BFF profile's
+   * `assigneeFollowsErrand`): the sidebar offers no Följ ärendet. A variant without the slot keeps the button.
+   */
+  readonly assigneeFollowsErrand?: boolean;
   /** The overview's filter checkbox, for a variant with one. */
   readonly overviewFilterToggle?: InvestigationOverviewFilterToggleSlot;
   /**

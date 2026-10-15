@@ -324,7 +324,7 @@ so no conflict detection is available for them.
   follow anything else with the follow button, and Draken never subscribes anyone implicitly - except where the
   investigation profile says the assignee alone follows the errand (`assigneeFollowsErrand`, IAF/VOF): there the
   BFF moves the following with every assignment, handover and registration (`followErrandWithAssignee`), and the
-  previous assignee stops following the errand, Bevaka included. An errand's
+  previous assignee stops following the errand; the sidebar offers no follow button there. An errand's
   notifications are acknowledged when the errand page opens. A user action that makes several writes runs
   in `withRequestGroup` (`common/services/api-service.ts`) so it becomes one notification. The helpers that
   make one request per item (`saveChangedErrandParameters`, `saveSupportAttachments`) group their own

@@ -15,6 +15,7 @@ import {
 } from '@supportmanagement/investigation/avvikelse/assignment/avvikelse-assignment-service';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import {
+  getInvestigationAssigneeFollowsErrand,
   getInvestigationClosesOnlyAtWorkflowEnd,
   getInvestigationHandlerFields,
   getInvestigationStatusFollowsWorkflow,
@@ -86,6 +87,8 @@ export const SidebarInfo: FC<{
   const handlerFields = getInvestigationHandlerFields();
   // Where nobody takes the errand, the handler is chosen in Ansvarig alone.
   const withoutTakeErrand = getInvestigationWithoutTakeErrand();
+  // Where the assignee alone follows the errand, the assignment does it and there is nothing to follow by hand.
+  const assigneeFollowsErrand = getInvestigationAssigneeFollowsErrand();
   // Where the workflow moves the status by its own actions, there is no status to choose here.
   const statusFollowsWorkflow = getInvestigationStatusFollowsWorkflow();
   // Whether errands are parked at all is the investigation's to say; an errand already parked is still resumed.
@@ -813,8 +816,12 @@ export const SidebarInfo: FC<{
             )}
             {/* Following is about notifications, not about edit rights, so it is available on every
                 status and to handlers who are not assigned to the errand. */}
-            <Divider className="mt-16 mb-16" />
-            <SupportFollowErrandButtonComponent />
+            {!assigneeFollowsErrand && (
+              <>
+                <Divider className="mt-16 mb-16" />
+                <SupportFollowErrandButtonComponent />
+              </>
+            )}
           </>
         </div>
       </div>

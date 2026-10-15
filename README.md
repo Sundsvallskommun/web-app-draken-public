@@ -248,7 +248,7 @@ mellan dem.
   man följer ärendet och låter en sluta följa det. Draken prenumererar aldrig någon på eget initiativ,
   utom i IAF/VOF (profilens `assigneeFollowsErrand`): där följer bara handläggaren ärendet. När ärendet
   tilldelas, lämnas över eller registreras prenumererar BFF:en den nya handläggaren och tar bort den
-  förras prenumerationer på ärendet, även en bevakning hen lagt själv.
+  förras prenumerationer på ärendet. Där finns ingen Följ ärendet i sidopanelen.
 - **En notis per ärende.** Support Management samlar allt som hänt sedan användaren senast kvitterade
   i en notis per ärende och användare (`GET /supportnotifications/:municipalityId`). Klockan hämtar
   listan en gång i minuten, pausar i en dold flik och hämtar direkt när användaren byter vy.

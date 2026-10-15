@@ -137,14 +137,16 @@ test('a recorded MAS/MAR handler is shown, and a change is written on that param
   await expect.poll(() => trace.parameterPuts).toEqual([{ key: 'masMarHandler', values: ['mia.mas'], ifMatch: '"3"' }]);
 });
 
-// Nobody takes an avvikelse errand: the handler is chosen in Ansvarig, MAS/MAR in their own select.
+// Nobody takes an avvikelse errand: the handler is chosen in Ansvarig, MAS/MAR in their own select. Nor does anybody
+// follow it by hand: the assignment makes its handler follow it.
 for (const signedInAs of ['mas-mar', 'enhetschef'] as const) {
-  test(`offers ${signedInAs} no Ta ärende`, async ({ page, dismissCookieConsent }) => {
+  test(`offers ${signedInAs} neither Ta ärende nor Följ ärendet`, async ({ page, dismissCookieConsent }) => {
     await installErrand(page, { signedInAs });
     await visitErrand(page, dismissCookieConsent);
 
     await expect(handlerSelect(page)).toBeEnabled();
     await expect(page.locator('[data-cy="self-assign-errand-button"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="follow-errand-toggle"]')).toHaveCount(0);
   });
 }
 

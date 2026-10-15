@@ -98,6 +98,8 @@ test('a variant needs only the required slots', () => {
   // Nor does one with no handlers to record beside the assignee change the sidebar, or take Ta ärende away.
   assert.equal(minimalVariant.renderHandlerFields, undefined);
   assert.equal(minimalVariant.withoutTakeErrand, undefined);
+  // Nor does one whose errands anybody may follow take Följ ärendet away.
+  assert.equal(minimalVariant.assigneeFollowsErrand, undefined);
   // A variant without a filter checkbox leaves the overview's filters as they are.
   assert.equal(minimalVariant.overviewFilterToggle, undefined);
   // Nor does one with no word on who is never an employee take the employee search from any stakeholder.
