@@ -166,11 +166,9 @@ export function PlannedMeasuresOverview() {
                 {measure.errand.errandNumber}
               </Link>
             </span>
-            <span className="text-small text-dark-secondary flex flex-wrap gap-x-8 min-w-0">
-              {measure.errand.title && <span className="truncate max-w-[36rem]">{measure.errand.title}</span>}
-              {measure.errand.title && responsible && <span aria-hidden="true">·</span>}
-              {responsible && <span className="truncate max-w-[20rem]">{responsible}</span>}
-            </span>
+            {responsible && (
+              <span className="text-small text-dark-secondary truncate max-w-[20rem]">{responsible}</span>
+            )}
           </div>
           <span className="col-start-2 sm:col-start-3 justify-self-start sm:justify-self-end">
             <Label rounded inverted color={decision.color} className="whitespace-nowrap">

@@ -382,17 +382,17 @@ Reglerna är rena funktioner i `planned-measures.ts` (`plannedMeasureBucket`,
 `groupPlannedMeasures`, `formatDeadlineDay`, `describeDeadlineDistance`).
 
 - Raden visar datumet störst ("10 sep", med år bara när det inte är innevarande år) och
-  avståndet i dagar under, åtgärdstyp, ärendenummer som länk till ärendet (ny flik), ärendets
-  rubrik, ansvarig och beslutet som etikett. Försenade rader har rött datum; hela raden färgas
-  inte.
+  avståndet i dagar under, åtgärdstyp, ärendenummer som länk till ärendet (ny flik), ansvarig
+  och beslutet som etikett. Ärendets rubrik visas inte och följer inte med från BFF:en. Försenade
+  rader har rött datum; hela raden färgas inte.
 - Raden är ett `details`-element som fälls ut på plats till hela åtgärden: beskrivning, mål,
   planerade datum, ansvarig, registrerad av (roll och datum), beslutsmotiveringen i samma ruta
   som på åtgärdskortet, och knappen **Öppna ärendet**. Flera rader kan vara utfällda samtidigt.
   Länken i raden följs utan att raden fälls ut.
 - Vyn erbjuder ingen registrering, bedömning eller uppföljning; det görs i ärendet. Listan läses
   om när fönstret återfår fokus, så att en uppföljning som gjorts i ärendefliken syns direkt.
-- Fritextsökningen i filterbandet matchar ärendenummer, rubrik, åtgärdstyp, beskrivning, mål
-  och ansvarig; sammanfattningen bredvid anger antal och antal försenade.
+- Fritextsökningen i filterbandet matchar ärendenummer, åtgärdstyp, beskrivning, mål och
+  ansvarig; sammanfattningen bredvid anger antal och antal försenade.
 - Fälten **Slutdatum från** och **Slutdatum till** begränsar listan till åtgärder vars datum i
   agendan (slutdatum, annars startdatum) ligger inom spannet, med båda ändar inräknade
   (`filterPlannedMeasuresByDate`). Ett tomt fält begränsar ingenting, och Rensa datum tar bort

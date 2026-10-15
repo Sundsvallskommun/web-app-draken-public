@@ -4,7 +4,7 @@ import { isPlannedApprovedMeasure } from './support-measure-follow-up';
 
 /** A planned measure together with the errand it belongs to, so an overview can link back to it. */
 export interface PlannedSupportMeasure extends Measure {
-  readonly errand: Pick<Errand, 'id' | 'errandNumber' | 'title' | 'status'>;
+  readonly errand: Pick<Errand, 'id' | 'errandNumber' | 'status'>;
 }
 
 /**
@@ -41,7 +41,7 @@ export function collectOpenPlannedMeasures(errands: readonly Errand[]): PlannedS
   for (const errand of errands) {
     if (!errand.id || !errand.errandNumber || seen.has(errand.id)) continue;
     seen.add(errand.id);
-    const summary = { id: errand.id, errandNumber: errand.errandNumber, title: errand.title, status: errand.status };
+    const summary = { id: errand.id, errandNumber: errand.errandNumber, status: errand.status };
     for (const measure of errand.measures ?? []) {
       if (isOpenPlannedMeasure(measure)) collected.push({ ...measure, errand: summary });
     }

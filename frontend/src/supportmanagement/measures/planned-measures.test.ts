@@ -24,7 +24,7 @@ const planned = (fields: Partial<PlannedSupportMeasure>): PlannedSupportMeasure 
   accept: 'TRUE',
   type: 'EDUCATION',
   plannedComplete: '2026-10-01T00:00:00Z',
-  errand: { id: 'e', errandNumber: 'VOF-2026-0001', title: 'Fallskada på avdelning 3' },
+  errand: { id: 'e', errandNumber: 'VOF-2026-0001' },
   ...fields,
 });
 
@@ -45,10 +45,10 @@ test('a measure is overdue once its completion date lies before today, never on 
   assert.equal(isPlannedMeasureOverdue({}, today), false);
 });
 
-test('free text matches the errand number and title, the type label and the measure content', () => {
+test('free text matches the errand number, the type label and the measure content', () => {
   const measures = [
-    planned({ id: 'by-number', errand: { id: 'e1', errandNumber: 'VOF-2026-0007', title: 'Annat' } }),
-    planned({ id: 'by-title' }),
+    planned({ id: 'by-number', errand: { id: 'e1', errandNumber: 'VOF-2026-0007' } }),
+    planned({ id: 'by-description', description: 'Utbilda på avdelning 3' }),
     planned({ id: 'by-type', type: 'EDUCATION', errand: { id: 'e3', errandNumber: 'VOF-2026-0009' } }),
     planned({ id: 'by-goal', goal: 'Färre fall', type: 'UNKNOWN', errand: { id: 'e4', errandNumber: 'X' } }),
     planned({
@@ -60,8 +60,8 @@ test('free text matches the errand number and title, the type label and the meas
   ];
   const ids = (text: string) => filterPlannedMeasures(measures, text, types).map((measure) => measure.id);
   assert.deepEqual(ids('0007'), ['by-number']);
-  assert.deepEqual(ids('avdelning 3'), ['by-title']);
-  assert.deepEqual(ids('utbildning'), ['by-number', 'by-title', 'by-type']);
+  assert.deepEqual(ids('avdelning 3'), ['by-description']);
+  assert.deepEqual(ids('utbildning'), ['by-number', 'by-description', 'by-type']);
   assert.deepEqual(ids('FÄRRE'), ['by-goal']);
   assert.deepEqual(ids('abc01'), ['by-user']);
   assert.deepEqual(ids('finns inte'), []);

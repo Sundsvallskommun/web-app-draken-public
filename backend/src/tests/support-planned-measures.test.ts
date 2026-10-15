@@ -46,7 +46,8 @@ test('flattens the open planned measures of every errand, nearest deadline first
     errand({ id: 'e2', errandNumber: 'VOF-2026-0002', title: 'Andra', measures: [startOnly, soon] }),
   ]);
   expect(result.map(measure => measure.id)).toEqual(['soon', 'start-only', 'late']);
-  expect(result[0].errand).toEqual({ id: 'e2', errandNumber: 'VOF-2026-0002', title: 'Andra', status: 'ONGOING' });
+  // The errand's title is left out: the overview does not show it.
+  expect(result[0].errand).toEqual({ id: 'e2', errandNumber: 'VOF-2026-0002', status: 'ONGOING' });
   expect(result[2].errand.errandNumber).toBe('VOF-2026-0001');
   expect(result[0]).toMatchObject({ accept: 'TRUE', plannedComplete: '2026-09-20T00:00:00Z' });
 });

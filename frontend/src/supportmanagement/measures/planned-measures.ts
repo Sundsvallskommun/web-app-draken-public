@@ -5,7 +5,7 @@ import { measureTypeLabel } from './measure-types';
 
 /** A planned measure with the errand it belongs to, as the BFF's planned overview returns it. */
 export interface PlannedSupportMeasure extends Measure {
-  errand: { id: string; errandNumber: string; title?: string; status?: string };
+  errand: { id: string; errandNumber: string; status?: string };
 }
 
 /** The date the overview orders by: the deadline when set, otherwise the planned start. */
@@ -17,7 +17,7 @@ export const plannedMeasureDeadline = (
 export const isPlannedMeasureOverdue = (measure: Pick<Measure, 'plannedComplete'>, today = dayjs()): boolean =>
   Boolean(measure.plannedComplete) && dayjs(measure.plannedComplete).isBefore(today.startOf('day'));
 
-/** Free-text match over what the overview shows: the errand, the measure type and its content. */
+/** Free-text match over what the overview shows: the errand number, the measure type and its content. */
 export function filterPlannedMeasures(
   measures: readonly PlannedSupportMeasure[],
   text: string,
@@ -28,7 +28,6 @@ export function filterPlannedMeasures(
   return measures.filter((measure) =>
     [
       measure.errand.errandNumber,
-      measure.errand.title,
       measureTypeLabel(types, measure),
       measure.description,
       measure.goal,

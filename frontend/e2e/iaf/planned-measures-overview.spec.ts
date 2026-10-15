@@ -46,7 +46,7 @@ const planned: PlannedMeasuresSnapshot = {
       responsibleUser: 'kctest',
       addedByUser: 'kctest',
       addedByRole: 'UNIT_MANAGER',
-      errand: { id: 'errand-soon', errandNumber: `${application}-2026-0001`, title: 'Fallskada', status: 'ONGOING' },
+      errand: { id: 'errand-soon', errandNumber: `${application}-2026-0001`, status: 'ONGOING' },
     },
     {
       id: 'measure-later',
@@ -150,7 +150,6 @@ test.describe('Planerade åtgärder i översikten', () => {
     await expect(first).toContainText('31 jan 2020');
     await expect(first).toContainText('dagar sedan');
     await expect(first).toContainText('Utbildning');
-    await expect(first).toContainText('Fallskada');
     await expect(first).toContainText('Godkänd');
     const link = first.getByRole('link', { name: `Ärende ${application}-2026-0001, öppna ärende i ny flik` });
     await expect(link).toHaveAttribute('href', `${basePath}/arende/${application}-2026-0001`);

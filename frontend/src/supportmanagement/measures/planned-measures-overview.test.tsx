@@ -25,7 +25,7 @@ const planned: PlannedSupportMeasure = {
   plannedStart: '2026-09-10T00:00:00+02:00',
   plannedComplete: '2099-09-30T00:00:00+02:00',
   responsibleUser: 'abc01abc',
-  errand: { id: 'errand-one', errandNumber: 'VOF-2026-0001', title: 'Fallskada på avdelning 3', status: 'ONGOING' },
+  errand: { id: 'errand-one', errandNumber: 'VOF-2026-0001', status: 'ONGOING' },
 };
 const snapshot: PlannedMeasuresSnapshot = {
   measures: [
@@ -99,7 +99,6 @@ test('sorts the measures into time buckets and links every row to its errand', a
   const link = upcoming.getByRole('link', { name: 'Ärende VOF-2026-0001, öppna ärende i ny flik' });
   expect(link.getAttribute('href')).toBe('/vof/arende/VOF-2026-0001');
   expect(link.getAttribute('target')).toBe('_blank');
-  expect(upcoming.getByText('Fallskada på avdelning 3')).toBeTruthy();
   expect(upcoming.getByText('Anna Andersson')).toBeTruthy();
   expect(upcoming.getByText('Godkänd')).toBeTruthy();
 });
