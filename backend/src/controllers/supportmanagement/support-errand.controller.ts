@@ -110,6 +110,7 @@ import { assertMayCloseReportedMisconduct, assertMayStartFollowUp } from '@/serv
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
+import { followErrandWithAssignee, SupportSubscriberApi } from '@/services/support-subscriber.service';
 import { selectCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
@@ -571,6 +572,11 @@ export class SupportErrandController {
     };
   }
 
+  /** Built per call from the controller's own collaborators, so a test that replaces `apiService` reaches it too. */
+  private subscriberApi(): SupportSubscriberApi {
+    return { apiService: this.apiService, service: this.SERVICE, namespace: this.namespace };
+  }
+
   /**
    * Built per request from the controller's own collaborators, so a test that replaces `apiService`
    * or the investigation policy reaches the listing too.
@@ -852,6 +858,9 @@ export class SupportErrandController {
       console.error('Something went wrong when initiating support errand');
       logger.error('Something went wrong when initiating support errand');
       return response.status(500).send('Something went wrong when initiating support errand');
+    }
+    if (this.investigationPolicyService.assigneeFollowsErrand && res.data.id) {
+      await followErrandWithAssignee(this.subscriberApi(), { municipalityId, errandId: res.data.id, nextAssignee: req.user.username }, req.user);
     }
     return response.status(201).send(res.data);
   }
@@ -1327,6 +1336,13 @@ export class SupportErrandController {
         logger.error(e);
         throw e;
       });
+    if (this.investigationPolicyService.assigneeFollowsErrand) {
+      await followErrandWithAssignee(
+        this.subscriberApi(),
+        { municipalityId, errandId: id, previousAssignee: currentErrand.data.assignedUserId, nextAssignee: data.assignedUserId },
+        req.user,
+      );
+    }
     return response.status(200).send(res.data);
   }
 

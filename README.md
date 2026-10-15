@@ -245,7 +245,10 @@ mellan dem.
 
 - **Vem får notiser.** Support Management prenumererar handläggaren på ärendet när det tilldelas.
   Övriga ärenden följer användaren själv med **Följ ärendet** i sidopanelen. Knappen visar också om
-  man följer ärendet och låter en sluta följa det. Draken prenumererar aldrig någon på eget initiativ.
+  man följer ärendet och låter en sluta följa det. Draken prenumererar aldrig någon på eget initiativ,
+  utom i IAF/VOF (profilens `assigneeFollowsErrand`): där följer bara handläggaren ärendet. När ärendet
+  tilldelas, lämnas över eller registreras prenumererar BFF:en den nya handläggaren och tar bort den
+  förras prenumerationer på ärendet, även en bevakning hen lagt själv.
 - **En notis per ärende.** Support Management samlar allt som hänt sedan användaren senast kvitterade
   i en notis per ärende och användare (`GET /supportnotifications/:municipalityId`). Klockan hämtar
   listan en gång i minuten, pausar i en dold flik och hämtar direkt när användaren byter vy.

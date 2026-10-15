@@ -44,6 +44,7 @@ import {
   isSupportServiceNote,
   SUPPORT_SERVICE_NOTE,
 } from '@/services/support-note.service';
+import { followErrandWithAssignee } from '@/services/support-subscriber.service';
 import { ManagerCandidate, ManagerRoleOption, managerRoleOptions, resolveLocationManagers } from '@/services/unit-manager-resolution';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -308,6 +309,14 @@ export class SupportInvestigationAssignmentController {
       },
       req.user,
     );
+
+    if (assignedUserId && this.investigationPolicyService.assigneeFollowsErrand) {
+      await followErrandWithAssignee(
+        { apiService: this.apiService, service: this.SERVICE, namespace: this.namespace },
+        { municipalityId, errandId: id, previousAssignee: errand.assignedUserId, nextAssignee: assignedUserId },
+        req.user,
+      );
+    }
 
     logger.info(`Applied investigation handover ${step.step} to support errand ${id}`);
     return response.status(204).send();

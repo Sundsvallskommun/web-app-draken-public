@@ -58,6 +58,8 @@ describe('support investigation profiles', () => {
       },
       // MAS/MAR's own errands under Mina ärenden include those they are recorded on.
       handlerParameters: [{ key: 'masMarHandler', roleKey: 'mas-mar' }],
+      // The errand's assignee alone follows it; every other application leaves the following to Support Management.
+      assigneeFollowsErrand: true,
       labelFilter: {
         groups: [
           { key: 'provision', rootResourcePath: 'PROVISION' },

@@ -7,7 +7,6 @@ import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   EventFilter,
-  IdentifierTypeEnum,
   NotificationChannel,
   NotificationChannelTypeEnum,
   Subscriber,
@@ -19,6 +18,7 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { loadOrCreateSubscriber, sameSubscriptionTarget, subscriptionsUrl, SupportSubscriberApi } from '@/services/support-subscriber.service';
 import { logger } from '@/utils/logger';
 
 /**
@@ -86,20 +86,12 @@ class SubscriptionCreateDto {
   expiresAt?: string;
 }
 
-const DEFAULT_CHANNELS: NotificationChannel[] = [{ type: NotificationChannelTypeEnum.INTERNAL }];
-
 /**
  * The channels to store: each kind once, and always the one in Draken. Choosing e-mail or SMS adds to the
  * notifications in Draken; it does not replace them.
  */
 const withInAppChannel = (channels: readonly NotificationChannelDto[]): NotificationChannel[] =>
   [...new Set([NotificationChannelTypeEnum.INTERNAL, ...channels.map(channel => channel.type)])].map(type => ({ type }));
-
-const sameTarget = (a?: SubscriptionTarget, b?: SubscriptionTarget): boolean => a?.type === b?.type && (a?.id ?? null) === (b?.id ?? null);
-
-/** Duplicates are possible and the list order undefined, so order by id to converge on one subscriber. */
-const pickSubscriber = (subscribers?: Subscriber[]): Subscriber | undefined =>
-  (subscribers ?? []).slice().sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''))[0];
 
 @Controller()
 export class SupportSubscriptionController {
@@ -127,51 +119,20 @@ export class SupportSubscriptionController {
       return pending;
     }
 
-    const resolving = this.loadOrCreateSubscriber(municipalityId, user).finally(() => {
+    const resolving = loadOrCreateSubscriber(this.subscriberApi(), municipalityId, { account: user.username, name: user.name }, user).finally(() => {
       this.pendingSubscribers.delete(key);
     });
     this.pendingSubscribers.set(key, resolving);
     return resolving;
   }
 
-  private async loadOrCreateSubscriber(municipalityId: string, user: User): Promise<Subscriber> {
-    const query = new URLSearchParams({
-      identifierType: IdentifierTypeEnum.AdAccount,
-      identifierValue: user.username,
-    }).toString();
-    const listUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers?${query}`;
-
-    const existing = await this.apiService.get<Subscriber[]>({ url: listUrl }, user);
-    const found = pickSubscriber(existing.data);
-    if (found) {
-      return found;
-    }
-
-    const data: Subscriber = {
-      name: user.name,
-      identifier: { type: IdentifierTypeEnum.AdAccount, value: user.username },
-      channels: DEFAULT_CHANNELS,
-      eventFilters: [],
-    };
-    // Created on the user's first visit, as a side effect; nothing anyone is to be told about.
-    await this.apiService.post<Subscriber, Subscriber>(
-      { url: `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers`, data, notifySubscribers: false },
-      user,
-    );
-
-    // Read back rather than trust the created body: create can answer 201 empty, and another
-    // instance may have created one at the same time.
-    const reread = await this.apiService.get<Subscriber[]>({ url: listUrl }, user);
-    const subscriber = pickSubscriber(reread.data);
-    if (!subscriber) {
-      logger.error(`Subscriber for ${user.username} could not be read back after creation`);
-      throw new Error('Subscriber could not be created');
-    }
-    return subscriber;
+  /** Built per call from the controller's own collaborators, so a test that replaces `apiService` reaches it too. */
+  private subscriberApi(): SupportSubscriberApi {
+    return { apiService: this.apiService, service: this.SERVICE, namespace: this.namespace };
   }
 
   private subscriptionsUrl(municipalityId: string, subscriberId: string): string {
-    return `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers/${subscriberId}/subscriptions`;
+    return subscriptionsUrl(this.subscriberApi(), municipalityId, subscriberId);
   }
 
   @Get('/supportsubscribers/:municipalityId/me')
@@ -238,7 +199,7 @@ export class SupportSubscriptionController {
     const url = this.subscriptionsUrl(municipalityId, subscriber.id!);
 
     const existing = await this.apiService.get<Subscription[]>({ url }, req.user);
-    const alreadySubscribed = (existing.data ?? []).find(subscription => sameTarget(subscription.target, data.target));
+    const alreadySubscribed = (existing.data ?? []).find(subscription => sameSubscriptionTarget(subscription.target, data.target));
     if (alreadySubscribed) {
       return response.status(200).send(alreadySubscribed);
     }
@@ -253,7 +214,7 @@ export class SupportSubscriptionController {
     }
 
     const reread = await this.apiService.get<Subscription[]>({ url }, req.user);
-    const subscription = (reread.data ?? []).find(s => sameTarget(s.target, data.target));
+    const subscription = (reread.data ?? []).find(s => sameSubscriptionTarget(s.target, data.target));
     return response.status(201).send(subscription ?? null);
   }
 

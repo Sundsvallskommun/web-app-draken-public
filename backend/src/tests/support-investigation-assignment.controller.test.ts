@@ -130,6 +130,40 @@ describe('move-location', () => {
     expect(config.data).not.toHaveProperty('jsonParameters');
   });
 
+  // In IAF/VOF the errand is followed by its assignee alone: the manager it leaves stops following it.
+  it('moves the following from the manager the errand leaves to the one it goes to', async () => {
+    const { controller, stubs } = makeController();
+    const readErrandOrMetadata = stubs.get.getMockImplementation() as (config: { url?: string }) => Promise<{ data: object }>;
+    stubs.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url?.includes('/subscribers?')) {
+        return { data: [{ id: config.url.includes('north.manager') ? 'north-subscriber' : 'south-subscriber' }], message: 'success' };
+      }
+      if (config.url?.endsWith('/north-subscriber/subscriptions')) {
+        return { data: [{ id: 'followed', target: { type: 'ERRAND', id: mockSupportErrandId } }], message: 'success' };
+      }
+      if (config.url?.endsWith('/south-subscriber/subscriptions')) return { data: [], message: 'success' };
+      const answer = await readErrandOrMetadata(config);
+      return config.url === errandUrl ? { ...answer, data: { ...answer.data, assignedUserId: 'north.manager' } } : answer;
+    });
+    const post = vi.fn(async (_config: { url: string; data: unknown }) => ({ data: {}, message: 'success' }));
+    const remove = vi.fn(async (_config: { url: string }) => ({ data: {}, message: 'success' }));
+    const internals = controller as unknown as Record<string, Record<string, unknown>>;
+    internals.apiService = { get: stubs.get, patch: stubs.patch, post, delete: remove };
+    internals.investigationPolicyService.assigneeFollowsErrand = true;
+
+    await controller.applyHandover(
+      mockReq(),
+      MUNICIPALITY_ID,
+      mockSupportErrandId,
+      'move-location',
+      { expectedVersion: 7, assignedUserId: 'south.manager', locationLabelId: 'south-unit' },
+      mockRes(),
+    );
+
+    expect(remove.mock.calls.map(([config]) => config.url)).toEqual([expect.stringMatching(/\/north-subscriber\/subscriptions\/followed$/u)]);
+    expect(post.mock.calls.map(([config]) => config.data)).toEqual([{ target: { type: 'ERRAND', id: mockSupportErrandId } }]);
+  });
+
   it('requires a target place and refuses an assignee who is not a manager there', async () => {
     const { controller, stubs } = makeController();
 

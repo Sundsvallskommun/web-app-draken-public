@@ -126,6 +126,10 @@ export class SupportInvestigationPolicyService {
     return this.configuredProfile.handlerParameters;
   }
 
+  get assigneeFollowsErrand(): boolean {
+    return this.configuredProfile.assigneeFollowsErrand === true;
+  }
+
   /**
    * Copying investigation JSON parameters is only valid while the application
    * capability is active. Document authorization itself belongs to Support

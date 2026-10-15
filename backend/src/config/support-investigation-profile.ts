@@ -24,6 +24,11 @@ export interface SupportInvestigationProfile extends SupportInvestigationProfile
   readonly requiredSupportManagementApiTarget?: SupportManagementApiTarget;
   readonly labelFilter?: SupportManagementLabelFilterProfileDto;
   readonly handlerParameters?: readonly SupportInvestigationHandlerParameter[];
+  /**
+   * The errand is followed by its assignee alone, and only while they are it: a new assignee is subscribed to it,
+   * and the previous one stops following it, Bevaka included.
+   */
+  readonly assigneeFollowsErrand?: boolean;
 }
 
 export type SupportInvestigationProfileInput = SupportInvestigationProfileDto &
@@ -31,6 +36,7 @@ export type SupportInvestigationProfileInput = SupportInvestigationProfileDto &
     requiredSupportManagementApiTarget?: SupportManagementApiTarget;
     labelFilter?: SupportManagementLabelFilterProfileDto;
     handlerParameters?: readonly SupportInvestigationHandlerParameter[];
+    assigneeFollowsErrand?: boolean;
   }>;
 
 const requireNonEmptyProfileField = (value: string, field: string): string => {
@@ -123,6 +129,7 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
     ...(labelFilter ? { labelFilter } : {}),
     ...(reportDocument ? { reportDocument } : {}),
     ...(handlerParameters ? { handlerParameters } : {}),
+    ...(profile.assigneeFollowsErrand ? { assigneeFollowsErrand: true } : {}),
   });
 };
 
@@ -164,6 +171,8 @@ const iafVofInvestigationProfileBase = {
   // MAS/MAR record themselves on an errand beside its assignee, in the parameter the MAS/MAR select writes, and
   // find it under Mina ärenden.
   handlerParameters: [{ key: 'masMarHandler', roleKey: 'mas-mar' }],
+  // Whoever handles the errand follows it, and stops when it moves on to somebody else.
+  assigneeFollowsErrand: true,
   // Katla's report of what happened and where. An errand registered in Draken has none until the unit
   // manager fills it in, which they may do until the errand reaches Utredning.
   reportDocument: {

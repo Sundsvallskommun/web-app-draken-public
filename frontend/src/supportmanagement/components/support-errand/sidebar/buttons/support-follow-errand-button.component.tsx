@@ -24,6 +24,9 @@ export const SupportFollowErrandButtonComponent: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useSnackbar();
 
+  // Read again when the errand changes hands: Support Management subscribes the new assignee, and where the
+  // investigation profile says so the previous one stops following it.
+  const assignee = supportErrand?.assignedUserId;
   useEffect(() => {
     if (!municipalityId) return;
     getMySubscriptions(municipalityId)
@@ -32,7 +35,7 @@ export const SupportFollowErrandButtonComponent: FC = () => {
         // A missing subscription list only means the toggle shows "not following"; it is not worth
         // interrupting the user over.
       });
-  }, [municipalityId, setSubscriptions]);
+  }, [municipalityId, setSubscriptions, assignee]);
 
   const subscription = supportErrand?.id ? findErrandSubscription(subscriptions, supportErrand.id) : undefined;
   const isFollowing = !!subscription;

@@ -321,7 +321,10 @@ so no conflict detection is available for them.
 - Multi-tenant via environment configuration (one codebase, many deployments)
 - SAML SSO authentication with Active Directory group-based authorization
 - Support Management notifications come from SM's subscriber model: SM subscribes the assignee, users
-  follow anything else with the follow button, and Draken never subscribes anyone implicitly. An errand's
+  follow anything else with the follow button, and Draken never subscribes anyone implicitly - except where the
+  investigation profile says the assignee alone follows the errand (`assigneeFollowsErrand`, IAF/VOF): there the
+  BFF moves the following with every assignment, handover and registration (`followErrandWithAssignee`), and the
+  previous assignee stops following the errand, Bevaka included. An errand's
   notifications are acknowledged when the errand page opens. A user action that makes several writes runs
   in `withRequestGroup` (`common/services/api-service.ts`) so it becomes one notification. The helpers that
   make one request per item (`saveChangedErrandParameters`, `saveSupportAttachments`) group their own

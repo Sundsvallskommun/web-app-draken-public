@@ -73,6 +73,7 @@ interface ApiStub {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
 }
 
 interface OrgStub {
@@ -90,6 +91,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     get: vi.fn(async () => ({ data: { version: 7, status: 'ONGOING' }, headers: { etag: '"7"' }, message: 'success' })),
     post: vi.fn(async () => ({ data: {}, message: 'success' })),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
+    delete: vi.fn(async () => ({ data: {}, message: 'success' })),
   };
   const organization: OrgStub = {
     getOrganizationNumberByPartyId: vi.fn(async () => ''),
@@ -1532,6 +1534,58 @@ describe('SupportErrandController', () => {
       );
 
       expect(api.patch).toHaveBeenCalledTimes(1);
+    });
+
+    /** The errand as Support Management answers it, assigned to the previous handler, and both handlers' subscribers. */
+    const assignedFromPreviousHandler = async ({ url }: { url: string }) => {
+      if (url.includes('/subscribers?')) {
+        return { data: [{ id: url.includes('previous.handler') ? 'previous-subscriber' : 'next-subscriber' }], message: 'success' };
+      }
+      if (url.endsWith('/previous-subscriber/subscriptions')) {
+        return { data: [{ id: 'followed', target: { type: 'ERRAND', id: mockSupportErrandId } }], message: 'success' };
+      }
+      if (url.endsWith('/next-subscriber/subscriptions')) return { data: [], message: 'success' };
+      return { data: { version: 7, status: 'ONGOING', assignedUserId: 'previous.handler' }, headers: { etag: '"7"' }, message: 'success' };
+    };
+
+    it('moves the following to the new assignee where the profile says the assignee alone follows the errand', async () => {
+      const { controller, api, investigationPolicy } = makeController();
+      Object.assign(investigationPolicy, { assigneeFollowsErrand: true });
+      api.get.mockImplementation(assignedFromPreviousHandler);
+
+      await controller.becomeAdminForSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        '"7"',
+        { assignedUserId: mockAdUsername },
+        mockRes(),
+      );
+
+      expect(api.delete.mock.calls.map(([config]) => config.url)).toEqual([
+        expect.stringMatching(/\/previous-subscriber\/subscriptions\/followed$/u),
+      ]);
+      expect(api.post.mock.calls.map(([config]) => [config.url, config.data])).toEqual([
+        [expect.stringMatching(/\/next-subscriber\/subscriptions$/u), { target: { type: 'ERRAND', id: mockSupportErrandId } }],
+      ]);
+    });
+
+    it('leaves the following to Support Management where the profile does not say so', async () => {
+      const { controller, api } = makeController();
+      api.get.mockImplementation(assignedFromPreviousHandler);
+
+      await controller.becomeAdminForSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        '"7"',
+        { assignedUserId: mockAdUsername },
+        mockRes(),
+      );
+
+      expect(api.get.mock.calls.some(([config]) => config.url.includes('/subscribers'))).toBe(false);
+      expect(api.delete).not.toHaveBeenCalled();
+      expect(api.post).not.toHaveBeenCalled();
     });
   });
 
