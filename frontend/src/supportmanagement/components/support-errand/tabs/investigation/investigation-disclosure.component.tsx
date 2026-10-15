@@ -1,12 +1,9 @@
+import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Disclosure } from '@sk-web-gui/react';
+import type { Sections } from '@supportmanagement/services/support-investigation-service';
 import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type {
-  Investigation,
-  InvestigationSection,
-} from '../../../../../common/data-contracts/supportmanagement/data-contracts';
-import type { Sections } from '../../../../../supportmanagement/services/support-investigation-service';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
 import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
 import { SupportPremisesSection } from '../../premises/support-premises-section.component';
