@@ -5,7 +5,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
 | `utredning-enhetschef`      | 1.10          | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 2.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-sol-lss`         | 2.4           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.5           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.4           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
@@ -74,7 +74,7 @@ på samma ID till `PlainTextareaWidget` för motiveringen, som är ren text och 
 oförändrat och UI-schemat lästes tillbaka identiskt med artefakten.
 
 Den 7 oktober 2026 publicerades `2281_utredning-sol-lss_2.0`, Utredning Lex Sarah enligt verksamhetens
-utredningsmall (se [Utredning Lex Sarah 2.0–2.3](#utredning-lex-sarah-2023)), i testmiljön. Schema och UI
+utredningsmall (se [Utredning Lex Sarah 2.0–2.4](#utredning-lex-sarah-2024)), i testmiljön. Schema och UI
 Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar på 2.0. Inget har publicerats i
 produktionsmiljön. Utredningar som redan är sparade är bundna till 1.4.
 
@@ -120,6 +120,10 @@ bedömningen skriver, fanns vid publiceringen inte i namespacens metadata. De la
 Samma dag publicerades `2281_utredning-enhetschef_1.10` i testmiljön: Utredningsmall är borttagen och lagrummen väljer
 mallen (se Utredning enhetschef 1.10). Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och
 `versions/latest` pekar på 1.10; API:t ordnar versionerna som tal. Inget har publicerats i produktionsmiljön.
+
+Den 15 oktober 2026 publicerades `2281_utredning-sol-lss_2.4` i testmiljön: de fem ställningstagandena besvaras med Ja
+eller Ej aktuellt (se Utredning Lex Sarah 2.0–2.4). Schema och UI Schema lästes tillbaka och var identiska med
+artefakterna, och `versions/latest` pekar på 2.4. Inget har publicerats i produktionsmiljön.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
@@ -173,7 +177,7 @@ Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, va
 | Schema                 | Krav som gäller först vid klarmarkering                                                                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
-| `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej har sin motivering. 2.1: dessutom minst ett lagrum. 2.2: lagrum och sammanfattning av rapporten, motiveringarna är frivilliga |
+| `utredning-sol-lss`    | 1.x: `eventTypes` måste ha minst ett val om fältet finns. 2.0: varje Nej har sin motivering. 2.1: dessutom minst ett lagrum. 2.2: lagrum och sammanfattning av rapporten, motiveringarna är frivilliga. 2.4: inga motiveringar |
 | `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`. 1.5: beslutet `analysisDecision`; med `not_analyze` motiveringen, annars `name` och `role` på varje rad          |
 
 Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
@@ -264,7 +268,12 @@ nycklar under `JSON_PARAMETERS` (`roleFieldRestrictions`). En nyckel som inte st
 `vc-kommentar-hsl` måste läggas till för rollerna i både IAF:s och VOF:s namespace innan någon med en roll ser
 fliken.
 
-## Utredning Lex Sarah 2.0–2.3
+## Utredning Lex Sarah 2.0–2.4
+
+Version 2.4 besvarar de fem ställningstagandena med Ja eller Ej aktuellt (`$defs/yesOrNotApplicable`). Nej finns
+inte längre, och därmed inte heller de fem motiveringarna (`individualNotifiedMotivation` med flera), som bara hörde
+till ett Nej. Utredningar som redan är sparade är bundna till en äldre version och behåller Nej och motiveringarna.
+Verksamhetsuppföljningens filter Polisanmälan har kvar Nej, eftersom äldre utredningar har svarat så.
 
 Version 2.3 ändrar bara beskrivningen av händelsebeskrivningen i Bakgrund, som sa "den inrapporterade avvikelsen":
 ett missförhållande kallas inte avvikelse (se avvikelse-README). Samtidigt säger `utredning-enhetschef` 1.7 det
@@ -326,6 +335,7 @@ en sektion i `ui:sections`.
 
 **Motiveringen** till ett Nej visas så fort frågan besvaras med Nej och tas bort ur dokumentet när svaret ändras
 till Ja (från 2.2 även till Ej aktuellt). I 2.0 och 2.1 krävs den vid klarmarkering; från 2.2 är den frivillig.
+Från 2.4 finns varken Nej eller motiveringen.
 
 Fälten Typ av händelse, Utredningsmall, Primär bakomliggande orsak och Dokumentation om samtal finns inte i 2.0.
 Utredningar som redan är sparade är bundna till 1.4 och visar sina fält som förut. Polisanmälan finns kvar som

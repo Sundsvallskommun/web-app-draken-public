@@ -26,15 +26,10 @@
       "preventiveActions",
       "otherFindings",
       "individualNotified",
-      "individualNotifiedMotivation",
       "representativeNotified",
-      "representativeNotifiedMotivation",
       "documentedInRecord",
-      "documentedInRecordMotivation",
       "feedbackGiven",
-      "feedbackGivenMotivation",
       "requiresPoliceReport",
-      "requiresPoliceReportMotivation",
       "proposedMisconductDegree",
       "proposalMotivation",
       "completed",
@@ -81,15 +76,10 @@
           "preventiveActions",
           "otherFindings",
           "individualNotified",
-          "individualNotifiedMotivation",
           "representativeNotified",
-          "representativeNotifiedMotivation",
           "documentedInRecord",
-          "documentedInRecordMotivation",
           "feedbackGiven",
-          "feedbackGivenMotivation",
-          "requiresPoliceReport",
-          "requiresPoliceReportMotivation"
+          "requiresPoliceReport"
         ]
       },
       {
@@ -282,57 +272,17 @@
     "individualNotified": {
       "ui:widget": "RadiobuttonWidget"
     },
-    "individualNotifiedMotivation": {
-      "ui:widget": "TexteditorWidget",
-      "ui:options": {
-        "className": "w-full",
-        "size": "medium",
-        "disableToolbar": false
-      }
-    },
     "representativeNotified": {
       "ui:widget": "RadiobuttonWidget"
-    },
-    "representativeNotifiedMotivation": {
-      "ui:widget": "TexteditorWidget",
-      "ui:options": {
-        "className": "w-full",
-        "size": "medium",
-        "disableToolbar": false
-      }
     },
     "documentedInRecord": {
       "ui:widget": "RadiobuttonWidget"
     },
-    "documentedInRecordMotivation": {
-      "ui:widget": "TexteditorWidget",
-      "ui:options": {
-        "className": "w-full",
-        "size": "medium",
-        "disableToolbar": false
-      }
-    },
     "feedbackGiven": {
       "ui:widget": "RadiobuttonWidget"
     },
-    "feedbackGivenMotivation": {
-      "ui:widget": "TexteditorWidget",
-      "ui:options": {
-        "className": "w-full",
-        "size": "medium",
-        "disableToolbar": false
-      }
-    },
     "requiresPoliceReport": {
       "ui:widget": "RadiobuttonWidget"
-    },
-    "requiresPoliceReportMotivation": {
-      "ui:widget": "TexteditorWidget",
-      "ui:options": {
-        "className": "w-full",
-        "size": "medium",
-        "disableToolbar": false
-      }
     },
     "proposedMisconductDegree": {
       "ui:widget": "select",
@@ -356,5 +306,5 @@
       "ui:widget": "hidden"
     }
   },
-  "description": "UI schema for version 2.3 of Utredning Lex Sarah in Draken"
+  "description": "UI schema for version 2.4 of Utredning Lex Sarah in Draken"
 }

@@ -135,21 +135,22 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   test('bevarar sparade radioval i samtliga utredningsformulär', async ({ page, dismissCookieConsent }) => {
     const documents = allExistingInvestigationDocuments();
     documents[managerKey].value.suspectedMisconduct = 'no';
-    documents[solLssKey].value.individualNotified = 'no';
+    // Utredning Lex Sarah answers its stances Ja or Ej aktuellt.
+    documents[solLssKey].value.individualNotified = 'not_applicable';
     // Händelseanalys HSL has one choice of its own since the IVO notification moved to the HSL decision.
     documents['utredning-hsl'].value.completed = 'no';
     const trace = await installIafApiMock(page, { documents });
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
 
-    for (const [key, tabName, field] of [
-      [managerKey, 'Utredning enhetschef', 'suspectedMisconduct'],
-      [solLssKey, 'Utredning Lex Sarah', 'individualNotified'],
-      ['utredning-hsl', 'Händelseanalys HSL', 'completed'],
+    for (const [key, tabName, field, saved] of [
+      [managerKey, 'Utredning enhetschef', 'suspectedMisconduct', 'Nej'],
+      [solLssKey, 'Utredning Lex Sarah', 'individualNotified', 'Ej aktuellt'],
+      ['utredning-hsl', 'Händelseanalys HSL', 'completed', 'Nej'],
     ]) {
       await page.getByRole('tab', { name: tabName, exact: true }).click();
       const group = page.locator(`#${key}_${field}`);
-      await expect(group.getByRole('radio', { name: 'Nej', exact: true })).toBeChecked();
+      await expect(group.getByRole('radio', { name: saved, exact: true })).toBeChecked();
       await expect(group.getByRole('radio', { name: 'Ja', exact: true })).not.toBeChecked();
     }
     expect(trace.puts).toHaveLength(0);

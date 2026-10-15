@@ -102,23 +102,31 @@ test('a new lex Sarah investigation follows the template, its background filled 
   await expect(document).toContainText('registreras i fliken Åtgärder.');
 });
 
-test('every No offers a motivation, Ej aktuellt none, and the background is saved with the investigation', async ({
+test('every stance is answered Ja or Ej aktuellt, and the background is saved with the investigation', async ({
   page,
   dismissCookieConsent,
 }) => {
   const trace = await installNewInvestigation(page);
   const document = await openLexInvestigation(page, dismissCookieConsent);
 
-  const motivation = document.locator(`#${key}_individualNotifiedMotivation`);
-  await expect(motivation).toHaveCount(0);
-  await document.locator(`#${key}_individualNotified`).getByRole('radio', { name: 'Nej', exact: true }).check();
-  await expect(motivation).toBeVisible();
-  // Ej aktuellt asks for nothing more.
+  // From 2.4 there is no Nej, and so no motivation of one, to any of the five stances.
+  const individualNotified = document.locator(`#${key}_individualNotified`);
+  await expect(individualNotified.getByRole('radio')).toHaveCount(2);
+  await expect(individualNotified.getByRole('radio', { name: 'Nej', exact: true })).toHaveCount(0);
+  await individualNotified.getByRole('radio', { name: 'Ja', exact: true }).check();
   await document
     .locator(`#${key}_representativeNotified`)
     .getByRole('radio', { name: 'Ej aktuellt', exact: true })
     .check();
-  await expect(document.locator(`#${key}_representativeNotifiedMotivation`)).toHaveCount(0);
+  for (const stance of [
+    'individualNotified',
+    'representativeNotified',
+    'documentedInRecord',
+    'feedbackGiven',
+    'requiresPoliceReport',
+  ]) {
+    await expect(document.locator(`#${key}_${stance}Motivation`)).toHaveCount(0);
+  }
 
   // A misconduct can fall under both SoL and LSS; LEX states which.
   const legalBases = document.locator(`#${key}_legalBases-group`);
@@ -141,7 +149,7 @@ test('every No offers a motivation, Ej aktuellt none, and the background is save
       reportedEventDescription: `<p>${reported}</p>`,
       reportSummary: `<p>${reported}</p>`,
       reportReceivedDate: '2026-10-06',
-      individualNotified: 'no',
+      individualNotified: 'yes',
       representativeNotified: 'not_applicable',
     }),
   });

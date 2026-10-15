@@ -20,7 +20,7 @@ const artifacts = [
   },
   {
     name: 'utredning-sol-lss',
-    version: '2.3',
+    version: '2.4',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
@@ -351,7 +351,7 @@ const incompleteInvestigations: Record<string, Record<string, unknown>> = {
   // Nothing answered at all: the unit manager has opened the investigation and put it down again.
   'utredning-enhetschef (tomt)': {},
   // The report not yet summarized: the summary is asked for when the investigation is completed.
-  'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], individualNotified: 'no' },
+  'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], individualNotified: 'not_applicable' },
   // A participant named, their role not yet chosen.
   'utredning-hsl': { analysisTeamParticipants: [{ name: 'Anna Andersson' }] },
 };
@@ -1001,16 +1001,15 @@ test('the lex Sarah investigation follows the investigation template', () => {
   const completed = { legalBases: ['SOL', 'LSS'], reportSummary: '<p>Kvällsbesöket uteblev.</p>', completed: 'yes' };
   assert.equal(validate(completed), true);
   assert.equal(validate({ ...completed, reportSummary: undefined }), false);
+  // From 2.4 each stance is Ja or Ej aktuellt. Nej is gone, and with it the motivation that belonged to a Nej.
   for (const question of questions) {
-    const motivation = `${question}Motivation`;
-    for (const answer of ['yes', 'no', 'not_applicable']) {
-      assert.equal(validate({ ...completed, [question]: answer }), true, `${question}: ${answer} needs no motivation`);
-    }
-    assert.equal(validate({ ...completed, [question]: 'no', [motivation]: '<p>Därför.</p>' }), true);
-    // The motivation belongs to a No alone.
     for (const answer of ['yes', 'not_applicable']) {
-      assert.equal(validate({ ...completed, [question]: answer, [motivation]: '<p>Därför.</p>' }), false);
+      assert.equal(validate({ ...completed, [question]: answer }), true, `${question}: ${answer}`);
     }
-    assert.equal(validate({ ...completed, [question]: 'kanske' }), false);
+    for (const answer of ['no', 'kanske']) {
+      assert.equal(validate({ ...completed, [question]: answer }), false, `${question}: ${answer}`);
+    }
+    assert.equal(`${question}Motivation` in schema.properties, false);
+    assert.equal(validate({ ...completed, [question]: 'yes', [`${question}Motivation`]: '<p>Därför.</p>' }), false);
   }
 });

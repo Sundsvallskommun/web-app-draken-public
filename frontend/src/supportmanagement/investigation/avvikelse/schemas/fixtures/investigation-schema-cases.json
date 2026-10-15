@@ -75,12 +75,10 @@
       "preventiveActions": "<p>Ny rutin för omplanering.</p>",
       "otherFindings": "<p>Inget.</p>",
       "individualNotified": "yes",
-      "representativeNotified": "no",
-      "representativeNotifiedMotivation": "<p>Den enskilde ville inte att närstående underrättas.</p>",
+      "representativeNotified": "not_applicable",
       "documentedInRecord": "yes",
       "feedbackGiven": "not_applicable",
-      "requiresPoliceReport": "no",
-      "requiresPoliceReportMotivation": "<p>Det inträffade är inte av den karaktären.</p>",
+      "requiresPoliceReport": "not_applicable",
       "proposedMisconductDegree": "misconduct",
       "proposalMotivation": "<p>Utredarens samlade motivering.</p>",
       "completed": "no",
@@ -112,7 +110,7 @@
         }
       },
       {
-        "description": "en motivering hör bara till ett Nej",
+        "description": "ett ställningstagande har ingen motivering",
         "value": {
           "legalBases": ["SOL", "LSS"],
           "individualNotified": "yes",
@@ -120,7 +118,7 @@
         }
       },
       {
-        "description": "ett ställningstagande är Ja, Nej eller Ej aktuellt",
+        "description": "ett ställningstagande är Ja eller Ej aktuellt",
         "value": {
           "legalBases": ["SOL", "LSS"],
           "feedbackGiven": "kanske"
