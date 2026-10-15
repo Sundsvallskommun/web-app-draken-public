@@ -43,10 +43,8 @@ const getResolutionLabels = (): Record<string, string> => {
   return ResolutionLabelKS;
 };
 
-/** Per-code explanation shown on demand in the picker; only KS has them. */
 const getResolutionDescriptions = (): Record<string, string> => (isKC() ? ResolutionDescriptionKS : {});
 
-/** Labels for an already saved code, including codes no longer in the picker. */
 const getResolutionDisplayLabels = (): Record<string, string> => ({
   ...ResolutionLabelKSLegacy,
   ...getResolutionLabels(),
@@ -60,10 +58,160 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
   return Resolution.SOLVED;
 };
 
-/**
- * The "Avsluta ärendet" modal. Opened from the close button, or (`afterHandover`) right after a handover on
- * the already closed source errand, where it only offers to change the code.
- */
+const UnsavedChangesContent: React.FC<{ onOk: () => void }> = ({ onOk }) => (
+  <>
+    <Modal.Content>
+      <p>Ärendet kan inte avslutas då du har osparade ändringar. Var god spara för att fortsätta.</p>
+    </Modal.Content>
+    <Modal.Footer>
+      <Button onClick={onOk} variant="primary" color="vattjom">
+        Ok
+      </Button>
+    </Modal.Footer>
+  </>
+);
+
+const CurrentResolutionContent: React.FC<{
+  resolution: string;
+  description: string;
+  confirmLabel: string;
+  onChangeResolution: () => void;
+  onConfirm: () => void;
+}> = ({ resolution, description, confirmLabel, onChangeResolution, onConfirm }) => (
+  <div>
+    <span>{description}</span>
+    <div className="bg-vattjom-background-100 rounded-12 p-16 mt-24">
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-8">
+          <span>Nuvarande lösningskod</span>
+          <span className="font-bold" data-cy="current-resolution">
+            {getResolutionDisplayLabels()[resolution] || resolution}
+          </span>
+        </div>
+        <Button variant="secondary" onClick={onChangeResolution}>
+          Ändra lösningskod
+        </Button>
+      </div>
+    </div>
+    <Button className="mt-32" variant="primary" color="vattjom" leftIcon={<Check />} onClick={onConfirm}>
+      {confirmLabel}
+    </Button>
+  </div>
+);
+
+const ResolutionPickerContent: React.FC<{
+  canSendClosingMessage: boolean;
+  changeResolution: boolean;
+  description: string;
+  selectedResolution: Resolution;
+  onSelectResolution: (resolution: Resolution) => void;
+  expandedDescription: string | undefined;
+  onToggleDescription: (key: string) => void;
+  closingMessage: boolean;
+  onToggleClosingMessage: () => void;
+  isLoading: boolean;
+  disabled: boolean;
+  onConfirm: () => void;
+}> = ({
+  canSendClosingMessage,
+  changeResolution,
+  description,
+  selectedResolution,
+  onSelectResolution,
+  expandedDescription,
+  onToggleDescription,
+  closingMessage,
+  onToggleClosingMessage,
+  isLoading,
+  disabled,
+  onConfirm,
+}) => {
+  const resolutionDescriptions = getResolutionDescriptions();
+
+  return (
+    <>
+      <Modal.Content>
+        {changeResolution && <span className="pb-24">{description}</span>}
+        <p className="text-content font-semibold pb-24 ">
+          {changeResolution ? 'Välj ny lösningskod' : 'Välj en lösningskod'}
+        </p>
+
+        <FormControl id="resolution" className="w-full" required>
+          <RadioButton.Group data-cy="solve-radiolist">
+            {Object.entries(getResolutionLabels())
+              // KS codes are listed in their defined order, the others alphabetically.
+              .sort((a, b) => (isKC() ? 0 : a[1].localeCompare(b[1])))
+              .map(([_key, _label], idx, arr) => (
+                <React.Fragment key={_key}>
+                  <div className="flex items-center justify-between">
+                    <RadioButton
+                      value={_key}
+                      defaultChecked={_key === selectedResolution}
+                      onClick={(e) => onSelectResolution((e.target as HTMLInputElement).value as Resolution)}
+                    >
+                      {_label}
+                    </RadioButton>
+                    {resolutionDescriptions[_key] && (
+                      <Button
+                        variant="tertiary"
+                        size="sm"
+                        iconButton
+                        leftIcon={<Info />}
+                        aria-label={`Förklaring av ${_label}`}
+                        aria-expanded={expandedDescription === _key}
+                        aria-controls={`resolution-description-${_key}`}
+                        data-cy={`resolution-info-${_key}`}
+                        onClick={() => onToggleDescription(_key)}
+                      />
+                    )}
+                  </div>
+                  {expandedDescription === _key && (
+                    <div
+                      id={`resolution-description-${_key}`}
+                      data-cy={`resolution-description-${_key}`}
+                      className="bg-vattjom-background-100 rounded-12 p-16"
+                    >
+                      {resolutionDescriptions[_key]}
+                    </div>
+                  )}
+                  {idx !== arr.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+          </RadioButton.Group>
+        </FormControl>
+      </Modal.Content>
+      <Modal.Footer className="flex flex-col">
+        {appConfig.features.useClosingMessageCheckbox && (
+          <FormControl id="closingmessage" className="w-full mb-sm px-2">
+            <Checkbox
+              id="closingmessagecheckbox"
+              disabled={!canSendClosingMessage}
+              data-cy="show-closing-message-input"
+              className="w-full"
+              checked={canSendClosingMessage && closingMessage}
+              onChange={onToggleClosingMessage}
+            >
+              Skicka meddelande till ärendeägare
+            </Checkbox>
+          </FormControl>
+        )}
+        <Button
+          variant="primary"
+          color="vattjom"
+          disabled={isLoading || disabled}
+          className="w-fit"
+          leftIcon={<Check />}
+          loading={isLoading}
+          loadingText="Avslutar ärende"
+          onClick={onConfirm}
+        >
+          Avsluta
+        </Button>
+      </Modal.Footer>
+    </>
+  );
+};
+
 export const SupportCloseErrandModal: React.FC<{
   show: boolean;
   onClose: () => void;
@@ -83,7 +231,6 @@ export const SupportCloseErrandModal: React.FC<{
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
   // Code whose explanation is expanded; one at a time.
   const [expandedDescription, setExpandedDescription] = useState<string | undefined>();
-  const resolutionDescriptions = getResolutionDescriptions();
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -108,9 +255,6 @@ export const SupportCloseErrandModal: React.FC<{
     onClose();
   };
 
-  // When an errand is closed without a handler (e.g. directly from status NEW), the user who
-  // closes it becomes the handler so the errand has a responsible person. Returns the resulting
-  // assigned user (the existing handler if one is already set).
   const ensureHandlerAssigned = async (errandId: string): Promise<string | undefined> => {
     if (supportErrand?.assignedUserId) return supportErrand.assignedUserId;
     const currentAdmin = administrators.find((a) => a.adAccount === user.username);
@@ -167,168 +311,73 @@ export const SupportCloseErrandModal: React.FC<{
       .catch((e) => console.error('Failed to refetch errand after close', e));
   };
 
+  const handleCloseWithCurrentResolution = async () => {
+    try {
+      await ensureHandlerAssigned(supportErrand?.id ?? '');
+      await setSupportErrandStatus(supportErrand?.id ?? '', municipalityId, Status.SOLVED);
+      window.close();
+    } catch (e) {
+      console.error('Failed to close support errand', e);
+      showCloseErrorToast();
+    }
+  };
+
   const hasResolution = !!supportErrand?.resolution && supportErrand?.resolution !== '';
   const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some(Boolean);
+  const description = afterHandover ? HANDOVER_DESCRIPTION : RESOLUTION_DESCRIPTION;
+
+  let label: string | React.ReactElement = 'Avsluta ärendet';
+  if (hasUnsavedChanges) {
+    label = 'Du har osparade ändringar';
+  } else if (changeResolution) {
+    label = (
+      <div className="flex flex-row gap-8">
+        <ArrowLeft size={24} onClick={() => setChangeResolution(false)} className="hover:cursor-pointer" /> Avsluta
+        ärendet
+      </div>
+    );
+  }
+
+  let content: React.ReactNode;
+  if (hasUnsavedChanges) {
+    content = <UnsavedChangesContent onOk={closeModal} />;
+  } else if (hasResolution && !changeResolution) {
+    // After a handover the errand is already closed; there is nothing to save.
+    content = (
+      <CurrentResolutionContent
+        resolution={supportErrand.resolution ?? ''}
+        description={description}
+        confirmLabel={afterHandover ? 'Klart' : 'Avsluta'}
+        onChangeResolution={() => setChangeResolution(true)}
+        onConfirm={afterHandover ? closeModal : handleCloseWithCurrentResolution}
+      />
+    );
+  } else {
+    content = (
+      <ResolutionPickerContent
+        canSendClosingMessage={!!supportErrand && applicantHasContactChannel(supportErrand)}
+        changeResolution={changeResolution}
+        description={description}
+        selectedResolution={selectedResolution}
+        onSelectResolution={setSelectedResolution}
+        expandedDescription={expandedDescription}
+        onToggleDescription={(key) => setExpandedDescription(expandedDescription === key ? undefined : key)}
+        closingMessage={closingMessage}
+        onToggleClosingMessage={() => setClosingMessage(!closingMessage)}
+        isLoading={isLoading}
+        disabled={disabled}
+        onConfirm={() => {
+          handleCloseErrand(selectedResolution, closingMessage)
+            .then(closeModal)
+            .catch(() => showCloseErrorToast());
+        }}
+      />
+    );
+  }
 
   return (
-    <Modal
-      show={show}
-      label={
-        hasUnsavedChanges ? (
-          'Du har osparade ändringar'
-        ) : changeResolution ? (
-          <div className="flex flex-row gap-8">
-            <ArrowLeft size={24} onClick={() => setChangeResolution(false)} className="hover:cursor-pointer" /> Avsluta
-            ärendet
-          </div>
-        ) : (
-          'Avsluta ärendet'
-        )
-      }
-      className={hasResolution ? 'w-[67.2rem]' : 'w-[52rem]'}
-      onClose={closeModal}
-    >
-      {hasUnsavedChanges ? (
-        <>
-          <Modal.Content>
-            <p>Ärendet kan inte avslutas då du har osparade ändringar. Var god spara för att fortsätta.</p>
-          </Modal.Content>
-          <Modal.Footer>
-            <Button onClick={closeModal} variant="primary" color="vattjom">
-              Ok
-            </Button>
-          </Modal.Footer>
-        </>
-      ) : hasResolution && !changeResolution ? (
-        <div>
-          <span>{afterHandover ? HANDOVER_DESCRIPTION : RESOLUTION_DESCRIPTION}</span>
-          <div className="bg-vattjom-background-100 rounded-12 p-16 mt-24">
-            <div className="flex justify-between items-center">
-              <div className="flex flex-col gap-8">
-                <span>Nuvarande lösningskod</span>
-                <span className="font-bold" data-cy="current-resolution">
-                  {getResolutionDisplayLabels()[supportErrand?.resolution ?? ''] || supportErrand?.resolution}
-                </span>
-              </div>
-              <Button variant="secondary" onClick={() => setChangeResolution(true)}>
-                Ändra lösningskod
-              </Button>
-            </div>
-          </div>
-          {afterHandover ? (
-            // The handover already closed the errand; nothing to save here.
-            <Button className="mt-32" variant="primary" color="vattjom" leftIcon={<Check />} onClick={closeModal}>
-              Klart
-            </Button>
-          ) : (
-            <Button
-              className="mt-32"
-              variant="primary"
-              color="vattjom"
-              leftIcon={<Check />}
-              onClick={async () => {
-                try {
-                  await ensureHandlerAssigned(supportErrand.id ?? '');
-                  await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
-                  window.close();
-                } catch (e) {
-                  console.error('Failed to close support errand', e);
-                  showCloseErrorToast();
-                }
-              }}
-            >
-              Avsluta
-            </Button>
-          )}
-        </div>
-      ) : (
-        <>
-          <Modal.Content>
-            {changeResolution && (
-              <span className="pb-24">{afterHandover ? HANDOVER_DESCRIPTION : RESOLUTION_DESCRIPTION}</span>
-            )}
-            <p className="text-content font-semibold pb-24 ">
-              {changeResolution ? 'Välj ny lösningskod' : 'Välj en lösningskod'}
-            </p>
-
-            <FormControl id="resolution" className="w-full" required>
-              <RadioButton.Group data-cy="solve-radiolist">
-                {Object.entries(getResolutionLabels())
-                  // KS codes are listed in their defined order, the others alphabetically.
-                  .sort((a, b) => (isKC() ? 0 : a[1].localeCompare(b[1])))
-                  .map(([_key, _label], idx, arr) => (
-                    <React.Fragment key={_key}>
-                      <div className="flex items-center justify-between">
-                        <RadioButton
-                          value={_key}
-                          defaultChecked={_key === selectedResolution}
-                          onClick={(e) => setSelectedResolution((e.target as HTMLInputElement).value as Resolution)}
-                        >
-                          {_label}
-                        </RadioButton>
-                        {resolutionDescriptions[_key] && (
-                          <Button
-                            variant="tertiary"
-                            size="sm"
-                            iconButton
-                            leftIcon={<Info />}
-                            aria-label={`Förklaring av ${_label}`}
-                            aria-expanded={expandedDescription === _key}
-                            aria-controls={`resolution-description-${_key}`}
-                            data-cy={`resolution-info-${_key}`}
-                            onClick={() => setExpandedDescription(expandedDescription === _key ? undefined : _key)}
-                          />
-                        )}
-                      </div>
-                      {expandedDescription === _key && (
-                        <div
-                          id={`resolution-description-${_key}`}
-                          data-cy={`resolution-description-${_key}`}
-                          className="bg-vattjom-background-100 rounded-12 p-16"
-                        >
-                          {resolutionDescriptions[_key]}
-                        </div>
-                      )}
-                      {idx !== arr.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-              </RadioButton.Group>
-            </FormControl>
-          </Modal.Content>
-          <Modal.Footer className="flex flex-col">
-            {appConfig.features.useClosingMessageCheckbox && (
-              <FormControl id="closingmessage" className="w-full mb-sm px-2">
-                <Checkbox
-                  id="closingmessagecheckbox"
-                  disabled={!applicantHasContactChannel(supportErrand!)}
-                  data-cy="show-closing-message-input"
-                  className="w-full"
-                  checked={applicantHasContactChannel(supportErrand!) && closingMessage}
-                  onChange={() => setClosingMessage(!closingMessage)}
-                >
-                  Skicka meddelande till ärendeägare
-                </Checkbox>
-              </FormControl>
-            )}
-            <Button
-              variant="primary"
-              color="vattjom"
-              disabled={isLoading || disabled}
-              className="w-fit"
-              leftIcon={<Check />}
-              loading={isLoading}
-              loadingText="Avslutar ärende"
-              onClick={() => {
-                handleCloseErrand(selectedResolution, closingMessage)
-                  .then(closeModal)
-                  .catch(() => showCloseErrorToast());
-              }}
-            >
-              Avsluta
-            </Button>
-          </Modal.Footer>
-        </>
-      )}
+    <Modal show={show} label={label} className={hasResolution ? 'w-[67.2rem]' : 'w-[52rem]'} onClose={closeModal}>
+      {content}
     </Modal>
   );
 };
