@@ -18,8 +18,8 @@ import {
   getInvestigationClosesOnlyAtWorkflowEnd,
   getInvestigationHandlerFields,
   getInvestigationStatusFollowsWorkflow,
-  getInvestigationTakeErrand,
   getInvestigationWithoutSuspension,
+  getInvestigationWithoutTakeErrand,
 } from '@supportmanagement/investigation/investigation-variant-registry';
 import { useInvestigationNextStep } from '@supportmanagement/investigation/use-investigation-next-step';
 import {
@@ -84,8 +84,8 @@ export const SidebarInfo: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const router = useRouter();
   const handlerFields = getInvestigationHandlerFields();
-  // Where the variant records this viewer beside the assignee, Ta ärende records them there instead.
-  const takeErrand = getInvestigationTakeErrand(user);
+  // Where nobody takes the errand, the handler is chosen in Ansvarig alone.
+  const withoutTakeErrand = getInvestigationWithoutTakeErrand();
   // Where the workflow moves the status by its own actions, there is no status to choose here.
   const statusFollowsWorkflow = getInvestigationStatusFollowsWorkflow();
   // Whether errands are parked at all is the investigation's to say; an errand already parked is still resumed.
@@ -477,20 +477,6 @@ export const SidebarInfo: FC<{
     }
   };
 
-  const takeSupportErrand = () => {
-    if (!takeErrand) return selfAssignSupportErrand();
-    setIsLoading('admin');
-    setError(false);
-    return handleAction(
-      async () => {
-        await takeErrand.take(municipalityId, supportErrand!, user.username);
-        return true;
-      },
-      () => toast('success', takeErrand.successMessage),
-      (e) => toast('error', supportErrandWriteErrorMessage(e, takeErrand.failureMessage))
-    );
-  };
-
   const isAdmin = () => {
     return administrators.some((a) => a.adAccount === user.username);
   };
@@ -502,9 +488,7 @@ export const SidebarInfo: FC<{
    * shut and nothing on screen runs the missing half again.
    */
   const errandIsAssignedToUser = supportErrand?.assignedUserId === user.username;
-  const canTakeErrand = takeErrand
-    ? !!supportErrand && !takeErrand.isTakenBy(supportErrand, user.username)
-    : !errandIsAssignedToUser || supportErrand?.status === Status.NEW;
+  const canTakeErrand = !errandIsAssignedToUser || supportErrand?.status === Status.NEW;
 
   const solutionComponent = (label: string, info: string, icon: string) => (
     <>
@@ -623,20 +607,25 @@ export const SidebarInfo: FC<{
           <FormControl id="administrator" className="w-full" disabled={!!supportErrand?.limitedAccess}>
             <FormLabel className="flex justify-between text-small">
               Ansvarig{' '}
-              <Button
-                variant="link"
-                className="font-normal"
-                size="sm"
-                disabled={
-                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || !canTakeErrand || !!supportErrand?.limitedAccess
-                }
-                onClick={() => {
-                  takeSupportErrand();
-                }}
-                data-cy="self-assign-errand-button"
-              >
-                Ta ärende
-              </Button>
+              {!withoutTakeErrand && (
+                <Button
+                  variant="link"
+                  className="font-normal"
+                  size="sm"
+                  disabled={
+                    supportErrandIsEmpty(supportErrand!) ||
+                    !isAdmin() ||
+                    !canTakeErrand ||
+                    !!supportErrand?.limitedAccess
+                  }
+                  onClick={() => {
+                    selfAssignSupportErrand();
+                  }}
+                  data-cy="self-assign-errand-button"
+                >
+                  Ta ärende
+                </Button>
+              )}
             </FormLabel>
             <Select
               className="w-full"

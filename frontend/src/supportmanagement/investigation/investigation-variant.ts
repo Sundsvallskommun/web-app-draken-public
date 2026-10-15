@@ -110,18 +110,6 @@ interface HidingPhaseEntryRequirement extends PhaseEntryRequirementBase {
 type InvestigationPhaseEntryRequirement = HoldingPhaseEntryRequirement | HidingPhaseEntryRequirement;
 
 /**
- * Ta ärende for a viewer the variant records beside the assignee rather than as it: taking the errand records the
- * viewer in their own field, and the errand stays with its handler.
- */
-export interface InvestigationTakeErrand {
-  /** Whether the errand already records the viewer, so there is nothing to take. */
-  readonly isTakenBy: (errand: SupportErrand, account: string) => boolean;
-  readonly take: (municipalityId: string, errand: SupportErrand, account: string) => Promise<void>;
-  readonly successMessage: string;
-  readonly failureMessage: string;
-}
-
-/**
  * A checkbox beside Mina ärenden that narrows the overview to the errands carrying one label. Whoever is offered it
  * has it checked until they uncheck it, and their choice is kept. Its label-filter group is the checkbox's own: the
  * overview's other label filters leave it out, for everybody.
@@ -288,12 +276,17 @@ export interface InvestigationVariantModule {
    */
   readonly renderHandlerFields?: (props: InvestigationHandlerFieldsProps) => ReactNode;
   /**
-   * What Ta ärende does for this viewer, where the variant records them beside the assignee - MAS/MAR, say.
-   * Undefined for a viewer the ordinary assignment is for; a variant without the slot leaves Ta ärende as it is.
+   * Nobody takes the errand: the sidebar offers no Ta ärende, and the handler is chosen in Ansvarig. A variant
+   * without the slot keeps Ta ärende.
    */
-  readonly takeErrand?: (viewer: InvestigationViewer) => InvestigationTakeErrand | undefined;
+  readonly withoutTakeErrand?: boolean;
   /** The overview's filter checkbox, for a variant with one. */
   readonly overviewFilterToggle?: InvestigationOverviewFilterToggleSlot;
+  /**
+   * The stakeholder roles that are never an employee, so Grunduppgifter offers no employee search for them. A variant
+   * without the slot leaves the search wherever the deployment turns it on.
+   */
+  readonly rolesWithoutEmployeeSearch?: readonly string[];
   /**
    * Who the overview names as responsible when the errand's labels say more than its assigned handler -
    * a whole role holding it, say. Undefined names the handler, as every other drake does.

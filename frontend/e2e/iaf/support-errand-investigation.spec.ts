@@ -83,6 +83,10 @@ async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>
   await dismissCookieConsent();
 }
 
+/** Spara ärende in the sidebar. */
+const errandSaveButton = (page: Page) =>
+  page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' });
+
 async function openInvestigation(page: Page) {
   await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
   await expect(page.locator('[data-cy="support-investigation-tab"]')).toBeVisible();
@@ -199,6 +203,28 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
+  });
+
+  // The brukare is never an employee: the employee search is offered for the other parties, not for the errand owner.
+  test('erbjuder ingen sökning på anställd för brukaren', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, {
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useLabelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
+        { name: 'useEmployeeSearch', enabled: true },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
+
+    const basics = page.locator('[role="tabpanel"]:visible');
+    await expect(basics.locator('[data-cy="search-person-form-PRIMARY"]')).toBeChecked();
+    await expect(basics.locator('[data-cy="search-employee-form-PRIMARY"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="search-employee-form-CONTACT"]')).toHaveCount(1);
   });
 
   /**
@@ -2566,9 +2592,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
    * classification either - the same errand must stay handleable there too.
    */
   /**
-   * Taking an errand is two writes and only the first one landed. The errand is the handler's now
+   * Assigning oneself is two writes and only the first one landed. The errand is the handler's now
    * but still lies in Ny, where the message tab keeps "Nytt meddelande" shut - so the message has
-   * to say which half is missing, and the button has to be usable again to run the other one.
+   * to say which half is missing. Nobody takes an avvikelse errand: the handler is chosen in Ansvarig.
    */
   test('behåller tilldelningen och säger vad som fattas när statusbytet faller', async ({
     page,
@@ -2582,11 +2608,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
 
     await visitErrand(page, dismissCookieConsent);
-    await page.locator('[data-cy="self-assign-errand-button"]').click();
+    await page.locator('[data-cy="admin-input"]').selectOption('Testare Iaf');
+    await errandSaveButton(page).click();
 
     await expect(page.getByText('Handläggaren tilldelades, men ärendet kunde inte sättas till Pågående')).toBeVisible();
     await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('Testare Iaf');
-    await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeEnabled();
   });
 
   /**
@@ -2751,13 +2777,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   }
 
   for (const state of ['active', 'unavailable'] as const) {
-    test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
+    test(`låter ett oklassificerat ärende tilldelas och hanteras när utredningen är ${state}`, async ({
       page,
       dismissCookieConsent,
     }) => {
       const profile = defaultInvestigationProfile();
       profile.state = state;
-      // The mock signs in as iaf.test in both projects; "Ta ärende" needs that account to be an
+      // The mock signs in as iaf.test in both projects; assigning oneself needs that account to be an
       // administrator and the errand to be unassigned.
       await installIafApiMock(page, {
         investigationProfile: profile,
@@ -2769,7 +2795,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
       await visitErrand(page, dismissCookieConsent);
 
-      await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeEnabled();
+      await expect(page.locator('[data-cy="admin-input"]')).toBeEnabled();
       await expect(page.getByRole('heading', { name: 'Registrera nytt ärende' })).toHaveCount(0);
       // An errand the investigation will classify has no type yet, and says nothing about one missing.
       await expect(page.getByText('(Ärendetyp saknas)')).toHaveCount(0);
@@ -2778,14 +2804,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       // Editing anything else must be savable: the errand PATCH leaves classification alone in
       // both states, so the form must not hold the button shut over a classification the user is
       // not the one to give it. Avvikelse renders no "Om ärendet", so the field edited here is a
-      // sidebar one - which needs the errand taken first.
-      const saveButton = page
-        .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
-        .filter({ hasText: 'Spara ärende' });
+      // sidebar one - which needs the errand assigned first.
+      const saveButton = errandSaveButton(page);
       await expect(saveButton).toBeDisabled();
 
-      await page.locator('[data-cy="self-assign-errand-button"]').click();
-      await expect(toast(page, 'Handläggare tilldelades')).toBeVisible();
+      await page.locator('[data-cy="admin-input"]').selectOption('Testare Iaf');
+      await saveButton.click();
+      await expect(toast(page, 'Ärendet uppdaterades')).toBeVisible();
 
       const priority = page.locator('[data-cy="priority-input"]');
       await expect(priority).toBeEnabled();

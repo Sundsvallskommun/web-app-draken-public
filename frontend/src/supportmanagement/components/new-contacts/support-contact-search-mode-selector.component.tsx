@@ -9,6 +9,8 @@ import {
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
+import { offersEmployeeSearchFor } from './support-contact-employee-search';
+
 interface SupportContactSearchModeSelectorProps {
   inName: string;
   searchMode: string;
@@ -38,6 +40,8 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
+  const offersEmployeeSearch = offersEmployeeSearchFor(contact.role);
+
   const clearCommonFields = () => {
     replacePhonenumbers([]);
     form.setValue('city', '');
@@ -79,7 +83,7 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
       <div className="flex flex-col">
         <FormLabel className="mb-12">Välj typ av {label.toLocaleLowerCase()}</FormLabel>
         <RadioButton.Group inline>
-          {appConfig.features.useEmployeeSearch ? (
+          {offersEmployeeSearch ? (
             <RadioButton
               data-cy={`search-employee-${inName}-${contact.role}`}
               size="sm"

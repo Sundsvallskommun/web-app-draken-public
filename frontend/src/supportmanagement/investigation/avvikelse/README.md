@@ -499,9 +499,8 @@ hen har rollen (`ownHandlerParameterKeys`). Listan och räknarna i sidomenyn byg
 och alla drakar utan `handlerParameters`, får exakt samma filter som förut. Fritextsökindexet kan inte matcha en
 parameter, så en sådan fråga ställs till filterendpointen även där indexet är påslaget.
 
-**Ta ärende** för en MAS/MAR-handläggare bokför hen som MAS/MAR i `masMarHandler`, på samma sätt som väljaren, och
-tilldelar inte ärendet (variantens `takeErrand`). Knappen är avstängd när hen redan står som MAS/MAR. Alla andra,
-administratörer också, tilldelas ärendet som förut.
+**Ta ärende** finns inte i IAF/VOF (variantens `withoutTakeErrand`): handläggaren väljs i Ansvarig och MAS/MAR i
+sin egen väljare.
 
 **MAS/MAR-ärenden** är en kryssruta bredvid Mina ärenden i översikten, bara för MAS/MAR (variantens
 `overviewFilterToggle`). Den visar ärendena med `RISK/HIGH_HSL` genom profilens etikettfiltergrupp `risk` (roten

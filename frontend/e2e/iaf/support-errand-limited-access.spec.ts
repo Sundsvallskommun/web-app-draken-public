@@ -47,13 +47,7 @@ test('säger att behörigheten är begränsad och låser ärendet när Support M
 
   await expect(limitedAccessAlert(page)).toHaveText('Du har begränsad behörighet till detta ärende.');
   // The errand is assigned to this very user, which on its own would let them act on it.
-  for (const control of [
-    'self-assign-errand-button',
-    'admin-input',
-    'priority-input',
-    'save-button',
-    'solved-button',
-  ]) {
+  for (const control of ['admin-input', 'priority-input', 'save-button', 'solved-button']) {
     await expect(page.locator(`[data-cy="${control}"]`)).toBeDisabled();
   }
   // What only the handler is offered - moving the phase, parking the errand - is not offered at all.

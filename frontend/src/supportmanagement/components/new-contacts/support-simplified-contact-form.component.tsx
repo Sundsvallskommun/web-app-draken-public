@@ -28,6 +28,7 @@ import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 
+import { withholdsEmployeeSearchFrom } from './support-contact-employee-search';
 import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
@@ -146,6 +147,8 @@ export const SupportSimplifiedContactForm: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setSupportMetadata = useMetadataStore((s) => s.setSupportMetadata);
   const [searchMode, setSearchMode] = useState('person');
+  // Without organisations the search starts on employees, unless the stakeholder's role is never one.
+  const searchModeWithoutOrganizations = withholdsEmployeeSearchFrom(contact.role) ? 'person' : 'employee';
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [manual, setManual] = useState(false);
@@ -217,7 +220,7 @@ export const SupportSimplifiedContactForm: FC<{
     if (appConfig.features.useOrganizationStakeholders) {
       setSearchMode(contact.stakeholderType === SupportStakeholderTypeEnum.PERSON ? 'person' : 'enterprise');
     } else {
-      setSearchMode('employee');
+      setSearchMode(searchModeWithoutOrganizations);
     }
     if (!contact.internalId) {
       setValue(`stakeholderType`, contact.stakeholderType);
@@ -264,7 +267,7 @@ export const SupportSimplifiedContactForm: FC<{
     if (appConfig.features.useOrganizationStakeholders) {
       setSearchMode('person');
     } else {
-      setSearchMode('employee');
+      setSearchMode(searchModeWithoutOrganizations);
     }
     onClose();
     setIsLoading(false);
