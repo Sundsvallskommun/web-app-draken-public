@@ -76,6 +76,16 @@ delad kod erbjuder:
   om användaren är dess handläggare: vem som får fylla i fältet avgör varianten. Fälten sparas med Spara
   ärende genom att registrera sig som deltagare (`useErrandSaveParticipant`). Utan slot ser sidopanelen ut
   som för alla andra drakar.
+- `takeErrand` — valfri: vad Ta ärende gör för användaren, där varianten bokför hen vid sidan av den tilldelade
+  (för avvikelse: MAS/MAR i `masMarHandler`). Sloten säger när ärendet redan är taget och skriver själv. Registret
+  lämnar ut den via `getInvestigationTakeErrand(viewer)`. Utan slot, eller när den svarar `undefined`, tilldelar
+  Ta ärende ärendet som i dag.
+- `overviewFilterToggle` — valfri kryssruta bredvid Mina ärenden i översikten, som smalnar av listan till
+  ärendena med en etikett. Den lägger sitt val (`selection`) till begärans `labelFilter` och lagras inte bland
+  etikettfiltren utan som en egen inställning (`overviewFilterToggleChecked`), ikryssad tills användaren kryssar
+  ur. Den erbjuds den som sloten säger, och bara när profilens `labelFilter` har gruppen; gruppen visas aldrig
+  bland de vanliga etikettfiltren (`overviewLabelFilterGroups`, `resolveOverviewFilterToggle`). Utan slot ser
+  översikten ut som för alla andra drakar.
 - `concealedDocumentKeys` — valfri: de dokument, per nyckel, som sidan håller utom synhåll för användaren på
   ärendet trots att åtkomsten skulle visa dem. Flikwrappern tillämpar den en gång på åtkomsten
   (`concealInvestigationDocuments`) innan den delas ut, så Utredning, Beslut och Ärendeuppgifters JSON-vy döljer

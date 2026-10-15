@@ -9,8 +9,10 @@ import {
   type InvestigationCapability,
   type InvestigationVariantModule,
   isInvestigationTabVisible,
+  overviewLabelFilterGroups,
   resolveInvestigationAdministration,
   resolveInvestigationVariant,
+  resolveOverviewFilterToggle,
 } from './investigation-variant';
 
 /**
@@ -93,8 +95,11 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.nextStep, undefined);
   // A variant with no say in who is responsible leaves the overview naming the assigned handler.
   assert.equal(minimalVariant.overviewAssignee, undefined);
-  // Nor does one with no handlers to record beside the assignee change the sidebar.
+  // Nor does one with no handlers to record beside the assignee change the sidebar, or what Ta ärende does.
   assert.equal(minimalVariant.renderHandlerFields, undefined);
+  assert.equal(minimalVariant.takeErrand, undefined);
+  // A variant without a filter checkbox leaves the overview's filters as they are.
+  assert.equal(minimalVariant.overviewFilterToggle, undefined);
   // Nor does one with nothing to conceal hide any document its access shows.
   assert.equal(minimalVariant.concealedDocumentKeys, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
@@ -121,6 +126,33 @@ test('an administration section is offered by the variant, to the viewers it nam
   // A variant without the slot offers nothing, to anybody; neither does a deployment without a variant.
   assert.equal(resolveInvestigationAdministration(enabled, minimalVariant, { superadmin: true }), undefined);
   assert.equal(resolveInvestigationAdministration(enabled, null, { superadmin: true }), undefined);
+});
+
+test("the overview's filter checkbox owns its label-filter group, and is offered where the variant and the profile say", () => {
+  const filterToggle = {
+    label: 'Fixture-ärenden',
+    selection: { groupKey: 'fixture-risk', fieldKey: 'level', resourcePath: 'FIXTURE_RISK/HIGH' },
+    isOfferedTo: ({ roleKeys = [] }: { roleKeys?: readonly string[] }) => roleKeys.includes('fixture-role'),
+  };
+  const group = (key: string) => ({ key, label: key, rootResourcePath: key.toUpperCase(), fields: [] });
+  const groups = [group('fixture-category'), group('fixture-risk')];
+
+  // No other filter offers the checkbox's group, whoever is looking; without a checkbox every group stays.
+  assert.deepEqual(
+    overviewLabelFilterGroups(groups, filterToggle).map(({ key }) => key),
+    ['fixture-category']
+  );
+  assert.equal(overviewLabelFilterGroups(groups, undefined), groups);
+
+  assert.equal(resolveOverviewFilterToggle(filterToggle, { roleKeys: ['fixture-role'] }, groups), filterToggle);
+  assert.equal(resolveOverviewFilterToggle(filterToggle, { roleKeys: ['other-role'] }, groups), undefined);
+  // The BFF filters on the profile's groups alone, so a profile without the group offers no checkbox.
+  assert.equal(
+    resolveOverviewFilterToggle(filterToggle, { roleKeys: ['fixture-role'] }, [group('fixture-category')]),
+    undefined
+  );
+  assert.equal(resolveOverviewFilterToggle(filterToggle, { roleKeys: ['fixture-role'] }, undefined), undefined);
+  assert.equal(resolveOverviewFilterToggle(undefined, { roleKeys: ['fixture-role'] }, groups), undefined);
 });
 
 test('a second capability selects its own variant and leaves avvikelse unselected', () => {

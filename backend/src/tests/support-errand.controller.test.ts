@@ -373,6 +373,13 @@ const labelFilterLabelStructure: Label[] = [
       },
     ],
   },
+  {
+    id: 'risk-root-id',
+    classification: 'risk-root',
+    resourceName: 'RISK',
+    resourcePath: 'RISK',
+    labels: [{ id: 'risk-high-hsl-id', classification: 'risk', resourceName: 'HIGH_HSL', resourcePath: 'RISK/HIGH_HSL' }],
+  },
   ...classificationLabelStructure,
 ];
 
@@ -507,6 +514,27 @@ describe('SupportErrandController', () => {
       expect(filter).toContain("exists(labels.metadataLabel.resourcePath:'CATEGORY/HSL/REHAB/MISSED')");
       expect(filter).not.toContain("resourcePath:'CATEGORY/HSL/REHAB') or");
       expect(filter).toContain(' and ');
+    });
+
+    // MAS/MAR-ärenden in the overview asks for the errands with a high HSL risk, beside any other label selection.
+    it('narrows the errands to a high HSL risk through the profile risk group', async () => {
+      const { controller, api } = makeController();
+      api.get.mockImplementation(async ({ url }: { url: string }) =>
+        url.includes('/metadata/labels')
+          ? { data: { labelStructure: labelFilterLabelStructure }, message: 'success' }
+          : { data: { content: [] }, message: 'success' },
+      );
+      const labelFilter = JSON.stringify([
+        { groupKey: 'provision', fieldKey: 'provision', resourcePath: 'PROVISION/HSL' },
+        { groupKey: 'risk', fieldKey: 'risk', resourcePath: 'RISK/HIGH_HSL' },
+      ]);
+
+      await controller.errands(mockReq(), ...errandsArgs({ labelFilter }), MUNICIPALITY_ID, mockRes());
+
+      const filter = upstreamFilter(api.get.mock.calls[1][0].url);
+      expect(filter).toContain(
+        "(exists(labels.metadataLabel.resourcePath:'PROVISION/HSL')) and (exists(labels.metadataLabel.resourcePath:'RISK/HIGH_HSL'))",
+      );
     });
 
     it('rejects malformed or crafted generic label selections before searching errands', async () => {

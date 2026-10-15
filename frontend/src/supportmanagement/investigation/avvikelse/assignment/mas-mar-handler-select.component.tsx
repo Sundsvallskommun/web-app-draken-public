@@ -5,12 +5,12 @@ import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { useErrandSaveParticipant } from '@supportmanagement/components/support-errand/errand-save/use-errand-save-participant';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
-import { saveChangedErrandParameters } from '@supportmanagement/services/support-parameter-service';
 import { FC, useState } from 'react';
 
 import type { InvestigationHandlerFieldsProps } from '../../investigation-variant';
 import { MAS_MAR_ROLE_KEY } from './avvikelse-handler-roles';
-import { actsAsMasMar, MAS_MAR_HANDLER_PARAMETER, readMasMarHandler } from './mas-mar-handler';
+import { actsAsMasMar, readMasMarHandler } from './mas-mar-handler';
+import { saveMasMarHandler } from './mas-mar-handler-service';
 
 /**
  * The MAS/MAR handler, beside Ansvarig. It is recorded in an errand parameter rather than as the assignee: the
@@ -43,9 +43,7 @@ export const MasMarHandlerSelect: FC<InvestigationHandlerFieldsProps> = ({ locke
       if (!errand?.id || !chosen) return true;
       setError(undefined);
       try {
-        await saveChangedErrandParameters(municipalityId, errand.id, errand.parameters, [
-          { key: MAS_MAR_HANDLER_PARAMETER, displayName: 'MAS/MAR', values: [chosen] },
-        ]);
+        await saveMasMarHandler(municipalityId, errand, chosen);
         const saved = await getSupportErrandById(errand.id, municipalityId);
         if (!saved.error) useSupportStore.getState().setSupportErrand(saved.errand);
         setChosen(undefined);

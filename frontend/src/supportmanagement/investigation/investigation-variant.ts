@@ -1,6 +1,10 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { AppConfigFeatures } from '@config/appconfig';
 import type { SelectableNotificationChannel } from '@supportmanagement/components/notification-settings/notification-channel-settings';
+import type {
+  LabelFilterGroupDefinition,
+  LabelFilterSelection,
+} from '@supportmanagement/filters/label-filter-projector';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
 import type { ReactNode } from 'react';
@@ -104,6 +108,30 @@ interface HidingPhaseEntryRequirement extends PhaseEntryRequirementBase {
 }
 
 type InvestigationPhaseEntryRequirement = HoldingPhaseEntryRequirement | HidingPhaseEntryRequirement;
+
+/**
+ * Ta ärende for a viewer the variant records beside the assignee rather than as it: taking the errand records the
+ * viewer in their own field, and the errand stays with its handler.
+ */
+export interface InvestigationTakeErrand {
+  /** Whether the errand already records the viewer, so there is nothing to take. */
+  readonly isTakenBy: (errand: SupportErrand, account: string) => boolean;
+  readonly take: (municipalityId: string, errand: SupportErrand, account: string) => Promise<void>;
+  readonly successMessage: string;
+  readonly failureMessage: string;
+}
+
+/**
+ * A checkbox beside Mina ärenden that narrows the overview to the errands carrying one label. Whoever is offered it
+ * has it checked until they uncheck it, and their choice is kept. Its label-filter group is the checkbox's own: the
+ * overview's other label filters leave it out, for everybody.
+ */
+export interface InvestigationOverviewFilterToggleSlot {
+  readonly label: string;
+  /** What the checkbox adds to the overview's label filter while it is checked. */
+  readonly selection: LabelFilterSelection;
+  readonly isOfferedTo: (viewer: InvestigationViewer) => boolean;
+}
 
 export interface InvestigationHandlerFieldsProps {
   /**
@@ -260,6 +288,13 @@ export interface InvestigationVariantModule {
    */
   readonly renderHandlerFields?: (props: InvestigationHandlerFieldsProps) => ReactNode;
   /**
+   * What Ta ärende does for this viewer, where the variant records them beside the assignee - MAS/MAR, say.
+   * Undefined for a viewer the ordinary assignment is for; a variant without the slot leaves Ta ärende as it is.
+   */
+  readonly takeErrand?: (viewer: InvestigationViewer) => InvestigationTakeErrand | undefined;
+  /** The overview's filter checkbox, for a variant with one. */
+  readonly overviewFilterToggle?: InvestigationOverviewFilterToggleSlot;
+  /**
    * Who the overview names as responsible when the errand's labels say more than its assigned handler -
    * a whole role holding it, say. Undefined names the handler, as every other drake does.
    */
@@ -359,6 +394,29 @@ export const resolveInvestigationAdministration = (
   viewer: InvestigationViewer
 ): InvestigationVariantModule['administration'] =>
   features.useInvestigation && variant?.administration?.isOfferedTo(viewer) ? variant.administration : undefined;
+
+/**
+ * The label-filter groups the overview's own filters offer: every one the profile declares but the group the
+ * variant's filter checkbox owns, which no other filter shows to anybody.
+ */
+export const overviewLabelFilterGroups = (
+  groups: readonly LabelFilterGroupDefinition[],
+  filterToggle: InvestigationVariantModule['overviewFilterToggle']
+): readonly LabelFilterGroupDefinition[] =>
+  filterToggle ? groups.filter((group) => group.key !== filterToggle.selection.groupKey) : groups;
+
+/**
+ * The filter checkbox where this viewer is offered it and the profile's label filter has the group it selects in,
+ * which is all the BFF filters on. Undefined otherwise.
+ */
+export const resolveOverviewFilterToggle = (
+  filterToggle: InvestigationVariantModule['overviewFilterToggle'],
+  viewer: InvestigationViewer,
+  labelFilterGroups: readonly LabelFilterGroupDefinition[] | undefined
+): InvestigationVariantModule['overviewFilterToggle'] =>
+  filterToggle?.isOfferedTo(viewer) && labelFilterGroups?.some((group) => group.key === filterToggle.selection.groupKey)
+    ? filterToggle
+    : undefined;
 
 /**
  * The master switch and the phase gate apply to the decision tab exactly as they apply to the

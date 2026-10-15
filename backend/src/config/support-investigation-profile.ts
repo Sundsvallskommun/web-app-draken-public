@@ -254,6 +254,14 @@ const iafVofInvestigationProfileBase = {
           { key: 'type', label: 'Underkategori', classification: 'TYPE' },
         ],
       },
+      // MAS/MAR-ärenden, the overview's checkbox for MAS/MAR: the errands with a high HSL risk. No other filter
+      // offers the group.
+      {
+        key: 'risk',
+        label: 'Risk',
+        rootResourcePath: 'RISK',
+        fields: [{ key: 'risk', label: 'Risk', classification: 'RISK' }],
+      },
     ],
   },
 } as const satisfies Omit<SupportInvestigationProfileInput, 'application'>;

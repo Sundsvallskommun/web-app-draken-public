@@ -152,6 +152,13 @@ const CategorizationFilters = ({ labelFilterState, selections, onChange }: Categ
   );
 };
 
+/** A checkbox beside Mina ärenden, where the investigation offers one. */
+interface SupportManagementFilterToggle {
+  readonly label: string;
+  readonly checked: boolean;
+  readonly onChange: (checked: boolean) => void;
+}
+
 const getFilterToggleLabel = (show: boolean, numberOfFilters: number): string => {
   if (show) return 'Dölj filter';
   return numberOfFilters === 0 ? 'Visa filter' : `Visa filter (${numberOfFilters})`;
@@ -163,7 +170,15 @@ const SupportManagementFiltering: FC<{
   administrators?: Admin[];
   numberOfFilters: number;
   labelFilterState: SupportManagementLabelFilterState;
-}> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [], labelFilterState }) => {
+  filterToggle?: SupportManagementFilterToggle;
+}> = ({
+  numberOfFilters,
+  ownerFilterHandler = () => false,
+  ownerFilter,
+  administrators = [],
+  labelFilterState,
+  filterToggle,
+}) => {
   const [show, setShow] = useState<boolean>(true);
   const registrationEnabled = useInvestigationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
   const { setValue, watch } = useFormContext<SupportManagementFilter>();
@@ -252,6 +267,17 @@ const SupportManagementFiltering: FC<{
                 Mina ärenden
               </Checkbox>
             </div>
+            {filterToggle && (
+              <div className="min-w-fit">
+                <Checkbox
+                  checked={filterToggle.checked}
+                  onChange={() => filterToggle.onChange(!filterToggle.checked)}
+                  data-cy="overview-filter-toggle"
+                >
+                  {filterToggle.label}
+                </Checkbox>
+              </div>
+            )}
           </div>
           <div className="mt-16">
             <SupportManagementFilterTags

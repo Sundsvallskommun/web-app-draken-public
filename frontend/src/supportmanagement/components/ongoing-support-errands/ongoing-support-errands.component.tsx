@@ -17,6 +17,11 @@ import {
   legacyLabelFilterResourcePaths,
 } from '@supportmanagement/filters/legacy-label-filter';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import {
+  overviewLabelFilterGroups,
+  resolveOverviewFilterToggle,
+} from '@supportmanagement/investigation/investigation-variant';
+import { getInvestigationOverviewFilterToggle } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -191,6 +196,16 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const storedFilter = useUiSettingsStore((s) => s.filter);
   const setStoredFilter = useUiSettingsStore((s) => s.setFilter);
   const setStoredSort = useUiSettingsStore((s) => s.setSort);
+  const filterToggleChecked = useUiSettingsStore((s) => s.overviewFilterToggleChecked);
+  const setFilterToggleChecked = useUiSettingsStore((s) => s.setOverviewFilterToggleChecked);
+  const user = useUserStore((s) => s.user);
+  const filterToggle = getInvestigationOverviewFilterToggle();
+  const offeredFilterToggle = resolveOverviewFilterToggle(filterToggle, user, labelFilterProfile?.groups);
+  // The checkbox's selection is asked for, never stored among the label filters: it is kept as a setting of its own.
+  const filterToggleSelections = useMemo<readonly LabelFilterSelection[]>(
+    () => (offeredFilterToggle && filterToggleChecked ? [offeredFilterToggle.selection] : []),
+    [offeredFilterToggle, filterToggleChecked]
+  );
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -216,12 +231,15 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     try {
       return {
         status: 'ready',
-        projections: projectLabelFilterGroups(labelFilterProfile.groups, supportMetadata.labels.labelStructure),
+        projections: projectLabelFilterGroups(
+          overviewLabelFilterGroups(labelFilterProfile.groups, filterToggle),
+          supportMetadata.labels.labelStructure
+        ),
       };
     } catch {
       return { status: 'error' };
     }
-  }, [labelFilterProfile, supportMetadata]);
+  }, [labelFilterProfile, supportMetadata, filterToggle]);
 
   const normalizedLabelFilterSelections = useMemo<readonly LabelFilterSelection[]>(
     () =>
@@ -252,7 +270,6 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   };
 
   const router = useRouter();
-  const user = useUserStore((s) => s.user);
 
   useEffect(() => {
     // The stored filter is restored at once, so filtering neither waits on the metadata nor stops working when
@@ -406,10 +423,20 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       }
       // Until the metadata is there the label filters have not been read back into their controls, so what is
       // stored for them stands: in what is stored, and in the request as far as it applied when the page opened.
-      const requestFilter =
+      const formRequestFilter =
         supportMetadata || labelFilterProfile
           ? fObj
           : { ...fObj, ...pickStoredEntries(storedFilter, LEGACY_LABEL_FILTER_KEYS) };
+      const requestFilter =
+        filterToggleSelections.length > 0
+          ? {
+              ...formRequestFilter,
+              [SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER]: serializeLabelFilterSelections([
+                ...normalizedLabelFilterSelections,
+                ...filterToggleSelections,
+              ]),
+            }
+          : formRequestFilter;
       const persistedFilter = supportMetadata
         ? fObj
         : { ...fObj, ...pickStoredEntries(storedFilter, STORED_LABEL_FILTER_KEYS) };
@@ -436,6 +463,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       enddate,
       normalizedLabelFilterSelections,
       labelFilterState.status,
+      filterToggleSelections,
     ]
   );
 
@@ -462,7 +490,8 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     (getValues().enddate !== '' ? 1 : 0) +
     (getValues().startdate !== '' ? 1 : 0) +
     getValues().priority.length +
-    (ownerFilter ? 1 : 0);
+    (ownerFilter ? 1 : 0) +
+    filterToggleSelections.length;
 
   return (
     <div className="w-full">
@@ -475,6 +504,13 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
               ownerFilter={ownerFilter}
               administrators={administrators}
               labelFilterState={labelFilterState}
+              filterToggle={
+                offeredFilterToggle && {
+                  label: offeredFilterToggle.label,
+                  checked: filterToggleChecked,
+                  onChange: setFilterToggleChecked,
+                }
+              }
             />
           </FormProvider>
         </div>

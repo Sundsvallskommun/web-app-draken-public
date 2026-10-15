@@ -137,6 +137,25 @@ test('a recorded MAS/MAR handler is shown, and a change is written on that param
   await expect.poll(() => trace.parameterPuts).toEqual([{ key: 'masMarHandler', values: ['mia.mas'], ifMatch: '"3"' }]);
 });
 
+test('Ta ärende records MAS/MAR as the MAS/MAR handler, and the errand stays with its assignee', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const trace = await installErrand(page);
+  await visitErrand(page, dismissCookieConsent);
+
+  await page.locator('[data-cy="self-assign-errand-button"]').click();
+
+  await expect
+    .poll(() => trace.parameterPuts)
+    .toEqual([{ key: 'masMarHandler', values: ['iaf.test'], ifNoneMatch: '*' }]);
+  await expect(masMarSelect(page)).toHaveValue('iaf.test');
+  await expect(handlerSelect(page)).toHaveValue('Nora Chef');
+  expect(trace.adminPatches).toEqual([]);
+  // Taken: there is nothing more to take.
+  await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeDisabled();
+});
+
 test('nobody but MAS/MAR is shown the MAS/MAR select', async ({ page, dismissCookieConsent }) => {
   await installErrand(page, { signedInAs: 'enhetschef' });
   await visitErrand(page, dismissCookieConsent);

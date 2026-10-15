@@ -23,6 +23,8 @@ import {
   requiresLexAssignment,
 } from './assignment/avvikelse-assignment-policy';
 import { actsAsMasMar } from './assignment/mas-mar-handler';
+import { masMarTakeErrand } from './assignment/mas-mar-handler-service';
+import { masMarOverviewFilter } from './assignment/mas-mar-overview-filter';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import {
   isAvvikelseReportedMisconductErrand,
@@ -265,6 +267,10 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   limitedAccessNotice: 'Du har begränsad behörighet till detta ärende.',
   /** MAS/MAR record who of them answers for the errand, beside the assignee. */
   renderHandlerFields: (props: InvestigationHandlerFieldsProps) => <MasMarHandlerSelect {...props} />,
+  /** MAS/MAR take an errand as its MAS/MAR handler, not as its assignee. */
+  takeErrand: masMarTakeErrand,
+  /** MAS/MAR narrow the overview to the errands with a high HSL risk. */
+  overviewFilterToggle: masMarOverviewFilter,
   /** MAS/MAR's HSL investigation is kept from the managers until the errand carries a high HSL risk. */
   concealedDocumentKeys: concealedAvvikelseDocumentKeys,
   /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */

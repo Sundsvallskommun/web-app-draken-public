@@ -3,6 +3,7 @@ import { appConfig } from '@config/appconfig';
 import { aotInvestigationVariant } from './aot/aot-investigation-variant';
 import { avvikelseInvestigationVariant } from './avvikelse/avvikelse-investigation-variant';
 import {
+  type InvestigationTakeErrand,
   type InvestigationVariantModule,
   type InvestigationViewer,
   resolveInvestigationAdministration,
@@ -51,6 +52,14 @@ export const getInvestigationNotificationChannels = (): InvestigationVariantModu
 /** The fields the running variant adds beside Ansvarig in the sidebar, if any. */
 export const getInvestigationHandlerFields = (): InvestigationVariantModule['renderHandlerFields'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.renderHandlerFields : undefined;
+
+/** What Ta ärende does for this viewer under the running variant, where it is not the ordinary assignment. */
+export const getInvestigationTakeErrand = (viewer: InvestigationViewer): InvestigationTakeErrand | undefined =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.takeErrand?.(viewer) : undefined;
+
+/** The running variant's filter checkbox for the overview, if it has one, whoever it is offered to. */
+export const getInvestigationOverviewFilterToggle = (): InvestigationVariantModule['overviewFilterToggle'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.overviewFilterToggle : undefined;
 
 /** The documents the running variant keeps out of the viewer's sight, if it conceals any. */
 export const getInvestigationConcealedDocumentKeys = (): InvestigationVariantModule['concealedDocumentKeys'] =>

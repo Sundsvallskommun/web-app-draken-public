@@ -63,6 +63,8 @@ describe('support investigation profiles', () => {
           { key: 'provision', rootResourcePath: 'PROVISION' },
           { key: 'report-type', rootResourcePath: 'REPORT_TYPE' },
           { key: 'classification', rootResourcePath: 'CATEGORY' },
+          // MAS/MAR-ärenden in the overview: the errands with a high HSL risk.
+          { key: 'risk', rootResourcePath: 'RISK' },
         ],
       },
     });
