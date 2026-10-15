@@ -26,11 +26,12 @@ const errand: UnitFollowUpErrand = {
   errandNumber: 'VOF-2026-0011',
   status: 'INQUIRY',
   created: '2026-05-24T10:15:00.000+02:00',
+  // As Support Management spells the classifications: report-type, category and type.
   labels: [
-    { id: 'abuse', classification: 'REPORT_TYPE', displayName: 'Missförhållande', resourcePath: 'REPORT_TYPE/ABUSE' },
+    { id: 'abuse', classification: 'report-type', displayName: 'Missförhållande', resourcePath: 'REPORT_TYPE/ABUSE' },
     { id: 'sol', classification: 'PROVISION', displayName: 'SoL', resourcePath: '/provision/sol/' },
-    { id: 'cat', classification: 'CATEGORY', displayName: 'Brister i rättssäkerhet' },
-    { id: 'sub', classification: 'TYPE', displayName: 'Bristande handläggning' },
+    { id: 'cat', classification: 'category', displayName: 'Brister i rättssäkerhet' },
+    { id: 'sub', classification: 'type', displayName: 'Bristande handläggning' },
     { id: 'vof', classification: 'LOCATION', displayName: 'VOF' },
     { id: 'unit', classification: 'LOCATION', displayName: 'Granlunda 2' },
   ],

@@ -732,7 +732,7 @@ och ett ärende hos LEX först när det lämnats tillbaka. Når perioden fler ä
 | Kolumn / filter | Källa |
 | --- | --- |
 | Enhet | ärendets djupaste plats-etikett |
-| Typ, Avvikelsetyp, Underkategori | etiketterna `REPORT_TYPE`, `CATEGORY`, `TYPE` |
+| Typ, Ärendetyp, Underkategori | etiketterna med klassificeringen `report-type`, `category`, `type`, som Support Management stavar dem (jämförs normaliserat). Ärendetyp och Underkategori smalnar av åtgärderna genom deras ärende också |
 | Lagrum | `legalBases` i utredningen som kategoriserar ärendet: LEX-utredningen för ett missförhållande, annars enhetschefens. Tills den utredningen anger något: `PROVISION`-etiketterna, alltså det lagrum rapporten skickades in under |
 | Orsak | `causeAreas` i enhetschefens och LEX-utredningen |
 | Riskvärde HSL / SOL/LSS | `calculatedRiskValue` i enhetschefens `riskAssessmentHsl` / `riskAssessmentSolLss` |

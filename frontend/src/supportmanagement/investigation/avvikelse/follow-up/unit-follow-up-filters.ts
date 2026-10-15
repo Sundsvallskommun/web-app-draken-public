@@ -50,7 +50,7 @@ export const FOLLOW_UP_FILTER_LABELS: Readonly<Record<Exclude<keyof UnitFollowUp
   Object.freeze({
     reportTypes: 'Rapporttyp',
     units: 'Enhet',
-    categories: 'Avvikelsetyp',
+    categories: 'Ärendetyp',
     subcategories: 'Underkategori',
     causeAreas: 'Orsak till avvikelse',
     legalBases: 'Lagrum',

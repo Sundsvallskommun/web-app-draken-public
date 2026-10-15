@@ -39,20 +39,45 @@ const unit = (name: string) => [
   { id: 'vof', classification: 'LOCATION', displayName: application },
   { id: name, classification: 'LOCATION', displayName: name },
 ];
+// As Support Management spells the classifications: report-type, category and type.
 const deviation = {
   id: 'deviation',
-  classification: 'REPORT_TYPE',
+  classification: 'report-type',
   displayName: 'Avvikelse',
   resourcePath: 'REPORT_TYPE/DEVIATION',
 };
 const misconduct = {
   id: 'abuse',
-  classification: 'REPORT_TYPE',
+  classification: 'report-type',
   displayName: 'Missförhållande',
   resourcePath: 'REPORT_TYPE/ABUSE',
 };
 const hsl = { id: 'hsl', classification: 'PROVISION', displayName: 'HSL', resourcePath: 'PROVISION/HSL' };
 const sol = { id: 'sol', classification: 'PROVISION', displayName: 'SoL', resourcePath: 'PROVISION/SOL' };
+const pressureUlcer = {
+  id: 'pressure-ulcer',
+  classification: 'category',
+  displayName: 'Trycksår',
+  resourcePath: 'CATEGORY/HSL/PRESSURE_ULCER',
+};
+const pressureUlcerGrade = (grade: number) => ({
+  id: `pressure-ulcer-grade-${grade}`,
+  classification: 'type',
+  displayName: `Grad ${grade}`,
+  resourcePath: `CATEGORY/HSL/PRESSURE_ULCER/GRADE_${grade}`,
+});
+const physicalAbuse = {
+  id: 'physical-abuse',
+  classification: 'category',
+  displayName: 'Fysiska övergrepp',
+  resourcePath: 'CATEGORY/SOL_LSS/PHYSICAL_ABUSE',
+};
+const violenceBetweenClients = {
+  id: 'violence-between-clients',
+  classification: 'type',
+  displayName: 'Våld mellan brukare',
+  resourcePath: 'CATEGORY/SOL_LSS/PHYSICAL_ABUSE/VIOLENCE_BETWEEN_CLIENTS',
+};
 
 const snapshot: UnitFollowUpSnapshot = {
   errands: [
@@ -61,7 +86,7 @@ const snapshot: UnitFollowUpSnapshot = {
       errandNumber: `${application}-2026-0008`,
       status: 'INQUIRY',
       created: '2026-05-03T09:00:00.000+02:00',
-      labels: [deviation, hsl, ...unit('Granlunda 1')],
+      labels: [deviation, hsl, pressureUlcer, pressureUlcerGrade(2), ...unit('Granlunda 1')],
       investigation: {
         legalBases: ['HSL'],
         riskValueHsl: 3,
@@ -75,7 +100,7 @@ const snapshot: UnitFollowUpSnapshot = {
       errandNumber: `${application}-2026-0011`,
       status: 'INQUIRY',
       created: '2026-05-24T10:00:00.000+02:00',
-      labels: [misconduct, sol, ...unit('Granlunda 2')],
+      labels: [misconduct, sol, physicalAbuse, violenceBetweenClients, ...unit('Granlunda 2')],
       investigation: {
         // LEX found the misconduct falls under LSS, whatever the report was filed under.
         legalBases: ['LSS'],
@@ -106,7 +131,7 @@ const snapshot: UnitFollowUpSnapshot = {
       errandNumber: `${application}-2026-0010`,
       status: 'SOLVED',
       created: '2026-05-17T08:00:00.000+02:00',
-      labels: [deviation, hsl, ...unit('Granlunda 1')],
+      labels: [deviation, hsl, pressureUlcer, pressureUlcerGrade(3), ...unit('Granlunda 1')],
       investigation: {
         legalBases: ['HSL'],
         riskValueHsl: 6,
@@ -310,6 +335,36 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await page.locator('[data-cy="follow-up-tab-measures"]').click();
     await expect(page.locator('[data-cy="follow-up-filter-police"]')).toHaveCount(0);
     await expect(summary(page)).toHaveText('Visar 3 åtgärder');
+  });
+
+  // Ärendetyp and Underkategori are the errand's categorization labels; they narrow the measures by their errand too.
+  test('filtrerar på ärendetyp och underkategori, bland ärendena och åtgärderna', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installFollowUp(page);
+    await openFollowUp(page, dismissCookieConsent);
+
+    await page.locator('[data-cy="follow-up-filter-category"]').click();
+    await expect(page.locator('[data-cy^="follow-up-filter-category-"]')).toHaveCount(2);
+    await page.locator('[data-cy="follow-up-filter-category-pressure-ulcer"]').check({ force: true });
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText('Visar 2 ärenden');
+
+    await page.locator('[data-cy="follow-up-filter-subcategory"]').click();
+    await page.locator('[data-cy="follow-up-filter-subcategory-pressure-ulcer-grade-3"]').check({ force: true });
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText('Visar 1 ärende');
+    // The pressure ulcer of grade 3, registered 17 May.
+    await expect(errandRows(page).first()).toContainText('2026-05-17');
+
+    await page.locator('[data-cy="follow-up-tab-measures"]').click();
+    await expect(summary(page)).toHaveText('Visar 1 åtgärd');
+    await page.locator('[data-cy="follow-up-filter-clear"]').click();
+    await page.locator('[data-cy="follow-up-filter-category"]').click();
+    await page.locator('[data-cy="follow-up-filter-category-physical-abuse"]').check({ force: true });
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText('Visar 2 åtgärder');
   });
 
   test('filtrerar på rapporttyp, riskvärde och enhet, och Rensa alla visar allt igen', async ({

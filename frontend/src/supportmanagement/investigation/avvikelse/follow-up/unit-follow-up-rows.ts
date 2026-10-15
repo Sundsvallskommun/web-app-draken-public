@@ -1,4 +1,5 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { normalizeClassification } from '@supportmanagement/services/support-label-classification-projector';
 import { normalizeSupportManagementResourcePath } from '@supportmanagement/services/supportmanagement-path';
 import dayjs from 'dayjs';
 
@@ -23,7 +24,10 @@ export interface FollowUpOption {
   readonly label: string;
 }
 
-/** The label classifications the follow-up filters on, as the avvikelse label tree names them. */
+/**
+ * The label classifications the follow-up filters on. Support Management spells them its own way (`report-type`,
+ * `category`, `type`), so they are compared normalized.
+ */
 const FOLLOW_UP_LABEL_CLASSIFICATIONS = Object.freeze({
   reportType: 'REPORT_TYPE',
   category: 'CATEGORY',
@@ -113,7 +117,9 @@ const yesNo = (value: string | undefined): FollowUpOption | undefined =>
 
 const labelsOf = (labels: readonly UnitFollowUpLabel[], classification: string): FollowUpOption[] =>
   labels
-    .filter((label) => label.classification === classification && label.id)
+    .filter(
+      (label) => normalizeClassification(label.classification) === normalizeClassification(classification) && label.id
+    )
     .map((label) => ({ value: label.id!, label: label.displayName || label.resourcePath || label.id! }));
 
 const coded = (code: string | undefined, titles: ReadonlyMap<string, string>): FollowUpOption | undefined =>
