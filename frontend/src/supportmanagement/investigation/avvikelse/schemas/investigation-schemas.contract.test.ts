@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.10',
+    version: '1.11',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -418,6 +418,37 @@ test('unit manager risk objects expose the agreed formula metadata and readonly 
   const inconsistentRiskFixture = structuredClone(validFixture);
   inconsistentRiskFixture.riskAssessmentHsl.calculatedRiskValue = 16;
   assert.equal(validate(inconsistentRiskFixture), false, 'schema accepted an inconsistent calculated HSL risk value');
+});
+
+// From 1.11 the unit manager answers the police report question where HSL applies, Ja or Ej aktuellt, as LEX
+// answers it for SoL/LSS. Verksamhetsuppföljning names the answer Polisanmälan HSL.
+test('the unit manager answers the police report question under HSL alone', () => {
+  const schema = readJson('utredning-enhetschef.schema-request.json').value;
+  const uiSchema = readJson('utredning-enhetschef.ui-schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+
+  assert.equal(schema.properties.requiresPoliceReport.title, 'Ska ärendet polisanmälas?');
+  const section = uiSchema['ui:sections'].find((candidate: { fields: string[] }) =>
+    candidate.fields.includes('requiresPoliceReport')
+  );
+  assert.equal(section.fields[section.fields.indexOf('riskAssessmentHsl') + 1], 'requiresPoliceReport');
+
+  for (const answer of ['yes', 'not_applicable']) {
+    assert.equal(
+      validate({ legalBases: ['HSL'], requiresPoliceReport: answer }),
+      true,
+      ajv.errorsText(validate.errors)
+    );
+  }
+  assert.equal(validate({ legalBases: ['HSL'], requiresPoliceReport: 'no' }), false);
+  assert.equal(validate({ legalBases: ['SOL'], requiresPoliceReport: 'yes' }), false);
+
+  // Shown with HSL, by the same rule as the HSL risk assessment.
+  const shown = schema.allOf.filter((rule: any) => rule.then?.properties?.requiresPoliceReport === true);
+  assert.equal(shown.length, 1);
+  const showsQuestion = createValidator(shown[0].if).validate;
+  assert.equal(showsQuestion({ legalBases: ['SOL', 'HSL'] }), true);
+  assert.equal(showsQuestion({ legalBases: ['SOL'] }), false);
 });
 
 test('unit manager rejects fields that do not match the selected legal bases', () => {

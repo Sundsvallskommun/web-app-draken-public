@@ -4,7 +4,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.10          | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-enhetschef`      | 1.11          | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
 | `utredning-sol-lss`         | 2.4           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.5           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
@@ -125,6 +125,10 @@ Den 15 oktober 2026 publicerades `2281_utredning-sol-lss_2.4` i testmiljön: de 
 eller Ej aktuellt (se Utredning Lex Sarah 2.0–2.4). Schema och UI Schema lästes tillbaka och var identiska med
 artefakterna, och `versions/latest` pekar på 2.4. Inget har publicerats i produktionsmiljön.
 
+Samma dag publicerades `2281_utredning-enhetschef_1.11` i testmiljön: frågan om polisanmälan under HSL (se Utredning
+enhetschef 1.11). Schema och UI Schema lästes tillbaka och var identiska med artefakterna, och `versions/latest` pekar
+på 1.11. Inget har publicerats i produktionsmiljön.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -230,6 +234,15 @@ dokument med ett lagrat mallval godtas inte av 1.10.
 
 Utredningar som redan är sparade är bundna till en äldre version och behåller sitt mallval, med frågan som förut när
 valet ändras.
+
+## Utredning enhetschef 1.11
+
+Version 1.11 ställer frågan **Ska ärendet polisanmälas?** (`requiresPoliceReport`, Ja eller Ej aktuellt) till
+enhetschefen när HSL är ett av lagrummen. Den står efter riskbedömningen HSL och följer samma regel: den visas med HSL
+och försvinner med HSL, svaret också (`MANAGER_HSL_FIELDS` i `investigation-form-data.ts`). Svaret är
+Verksamhetsuppföljningens Polisanmälan HSL, liksom LEX-utredningens svar är Polisanmälan SoL/LSS.
+
+Klarmarkeringens `$comment` säger nu att lagrummen också krävs först vid klarmarkering, som reglerna redan gjorde.
 
 ## Händelseanalys HSL 1.5
 

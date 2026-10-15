@@ -1375,6 +1375,30 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Åtgärder', exact: true })).toHaveAttribute('aria-selected', 'true');
   });
 
+  // The unit manager answers the police report question where HSL applies: after the HSL risk assessment, Ja or Ej
+  // aktuellt, and gone with HSL.
+  test('frågar enhetschefen om polisanmälan när HSL gäller', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, { documents: {} });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const legalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
+    const policeReport = managerDocument.locator(`#${managerKey}_requiresPoliceReport`);
+    await legalBases.getByText(/^SoL –/u).click();
+    await expect(policeReport).toHaveCount(0);
+
+    await legalBases.getByText(/^HSL –/u).click();
+    await expect(policeReport.getByRole('radio')).toHaveCount(2);
+    await expect(policeReport.getByRole('radio', { name: 'Ja', exact: true })).toBeVisible();
+    await expect(policeReport.getByRole('radio', { name: 'Ej aktuellt', exact: true })).toBeVisible();
+    await policeReport.getByRole('radio', { name: 'Ja', exact: true }).check();
+
+    await legalBases.getByText(/^HSL –/u).click();
+    await expect(policeReport).toHaveCount(0);
+  });
+
   // Only a suspected misconduct goes on to LEX-ansvarig; an ordinary deviation stays with the unit manager.
   test('ber enhetschefen tilldela LEX-ansvarig bara när utredningen bedömer ett misstänkt missförhållande', async ({
     page,

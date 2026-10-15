@@ -8,6 +8,7 @@
       "investigationText",
       "causeAreas",
       "riskAssessmentHsl",
+      "requiresPoliceReport",
       "riskAssessmentSolLss",
       "suspectedMisconduct",
       "reportedMisconduct",
@@ -26,6 +27,7 @@
           "investigationText",
           "causeAreas",
           "riskAssessmentHsl",
+          "requiresPoliceReport",
           "riskAssessmentSolLss",
           "suspectedMisconduct",
           "reportedMisconduct"
@@ -62,6 +64,9 @@
         "placeholder": "Välj en eller flera orsaker",
         "className": "w-full max-w-[48rem]"
       }
+    },
+    "requiresPoliceReport": {
+      "ui:widget": "RadiobuttonWidget"
     },
     "riskAssessmentHsl": {
       "ui:options": {
@@ -127,5 +132,5 @@
     "reportedMisconduct": { "ui:widget": "hidden" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.10 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.11 of Utredning enhetschef in Draken"
 }

@@ -1,8 +1,8 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.10",
+  "version": "1.11",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.10",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.11",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
@@ -108,6 +108,10 @@
         },
         "$ref": "#/$defs/riskValueConsistency"
       },
+      "requiresPoliceReport": {
+        "title": "Ska ärendet polisanmälas?",
+        "$ref": "#/$defs/yesOrNotApplicable"
+      },
       "riskAssessmentSolLss": {
         "title": "Riskbedömning SOL/LSS",
         "type": "object",
@@ -204,6 +208,13 @@
         "oneOf": [
           { "const": "yes", "title": "Ja" },
           { "const": "no", "title": "Nej" }
+        ]
+      },
+      "yesOrNotApplicable": {
+        "type": "string",
+        "oneOf": [
+          { "const": "yes", "title": "Ja" },
+          { "const": "not_applicable", "title": "Ej aktuellt" }
         ]
       },
       "riskValueConsistency": {
@@ -607,6 +618,28 @@
           "properties": {
             "legalBases": {
               "contains": {
+                "const": "HSL"
+              }
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "requiresPoliceReport": true
+          }
+        },
+        "else": {
+          "not": {
+            "required": ["requiresPoliceReport"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "contains": {
                 "enum": ["SOL", "LSS"]
               }
             }
@@ -667,7 +700,7 @@
         }
       },
       {
-        "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar. Lagrummen väljs först av allt och krävs därför även i ett utkast: de styr både dokumentets form och ärendets kategorisering.",
+        "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar, lagrummen också: de väljs först av allt, men ett utkast utan lagrum går att spara.",
         "if": {
           "properties": {
             "completed": {
@@ -742,5 +775,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.10 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.11 of the unit manager investigation schema"
 }

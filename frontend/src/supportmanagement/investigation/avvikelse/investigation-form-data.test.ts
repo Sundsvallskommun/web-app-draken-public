@@ -400,3 +400,28 @@ test('only a unit manager investigation bound to a version with a template choic
 
   assert.equal(normalizedTemplate(unitManagerSchema, { legalBases: ['SOL'] }), undefined);
 });
+
+// The police report question is HSL's, as the HSL risk assessment is: it leaves with HSL, answer and all.
+test('the unit manager investigation drops the HSL police report with HSL, and keeps it while HSL applies', () => {
+  const answered = { legalBases: ['HSL', 'SOL'], requiresPoliceReport: 'yes' };
+
+  assert.equal(
+    normalizeInvestigationFormData('utredning-enhetschef', unitManagerSchema, answered).requiresPoliceReport,
+    'yes'
+  );
+  assert.equal(
+    normalizeInvestigationFormData('utredning-enhetschef', unitManagerSchema, { ...answered, legalBases: ['SOL'] })
+      .requiresPoliceReport,
+    undefined
+  );
+  assert.equal(
+    getInvestigationRenderingSchema('utredning-enhetschef', unitManagerSchema, { legalBases: ['SOL'] }).properties
+      ?.requiresPoliceReport,
+    undefined
+  );
+  assert.notEqual(
+    getInvestigationRenderingSchema('utredning-enhetschef', unitManagerSchema, answered).properties
+      ?.requiresPoliceReport,
+    undefined
+  );
+});

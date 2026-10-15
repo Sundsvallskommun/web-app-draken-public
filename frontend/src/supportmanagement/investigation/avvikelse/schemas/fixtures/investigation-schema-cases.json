@@ -3,6 +3,7 @@
     "valid": {
       "legalBases": ["HSL", "SOL"],
       "investigationText": "<p>Enhetschefens samlade utredning.</p>",
+      "requiresPoliceReport": "not_applicable",
       "causeAreas": ["communication_information", "procedures_routines_guidelines"],
       "riskAssessmentHsl": {
         "assessedWith": "Anna Andersson",

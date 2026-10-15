@@ -143,11 +143,14 @@ function getAllowedManagerTemplates(formData: InvestigationFormData): ManagerInv
   return [];
 }
 
+/** The unit manager's fields that belong to HSL: shown with it, and gone with it. */
+const MANAGER_HSL_FIELDS: readonly string[] = ['riskAssessmentHsl', 'requiresPoliceReport'];
+
 function normalizeManagerConditions(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
   const normalizedData = { ...formData };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(normalizedData);
 
-  if (!hasHsl) delete normalizedData.riskAssessmentHsl;
+  if (!hasHsl) MANAGER_HSL_FIELDS.forEach((field) => delete normalizedData[field]);
   if (!hasSolOrLss) {
     delete normalizedData.riskAssessmentSolLss;
     delete normalizedData.suspectedMisconduct;
@@ -377,7 +380,7 @@ export function getInvestigationRenderingSchema(
 
   const properties = { ...schema.properties };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);
-  if (!hasHsl) delete properties.riskAssessmentHsl;
+  if (!hasHsl) MANAGER_HSL_FIELDS.forEach((field) => delete properties[field]);
   if (!showsSolLssRiskAssessment(formData)) delete properties.riskAssessmentSolLss;
   if (!hasSolOrLss) delete properties.suspectedMisconduct;
 
