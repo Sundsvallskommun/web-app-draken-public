@@ -92,6 +92,30 @@ export const MainErrandsSidebar: FC<{
       />
     </NextLink>
   );
+
+  const followsUpUnits = Boolean(appConfig.isSupportManagement && followUp && setShowFollowUp);
+  // Planned measures are followed up across the units, so they sit under Verksamhetsuppföljning where there is
+  // one, and on their own where there is not.
+  const plannedMeasuresButton =
+    appConfig.isSupportManagement && appConfig.features.useMeasures && setShowPlannedMeasures ? (
+      <Button
+        onClick={() => {
+          setShowPlannedMeasures(true);
+          setShowAttestationTable(false);
+          setShowFollowUp?.(false);
+          setShowAdministration?.(false);
+        }}
+        leftIcon={<CalendarCheck />}
+        className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
+        variant={showPlannedMeasures ? 'primary' : 'ghost'}
+        iconButton={!open}
+        aria-label={open ? undefined : 'Planerade åtgärder'}
+        data-cy="planned-measures-button"
+      >
+        {open && <span className="w-full flex justify-between">Planerade åtgärder</span>}
+      </Button>
+    ) : null;
+
   return (
     <aside
       data-cy="overview-aside"
@@ -193,26 +217,11 @@ export const MainErrandsSidebar: FC<{
             </div>
           </>
         )}
-        {appConfig.isSupportManagement && appConfig.features.useMeasures && setShowPlannedMeasures && (
+        {plannedMeasuresButton && !followsUpUnits && (
           <>
             <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
             <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-              <Button
-                onClick={() => {
-                  setShowPlannedMeasures(true);
-                  setShowAttestationTable(false);
-                  setShowFollowUp?.(false);
-                  setShowAdministration?.(false);
-                }}
-                leftIcon={<CalendarCheck />}
-                className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
-                variant={showPlannedMeasures ? 'primary' : 'ghost'}
-                iconButton={!open}
-                aria-label={open ? undefined : 'Planerade åtgärder'}
-                data-cy="planned-measures-button"
-              >
-                {open && <span className="w-full flex justify-between">Planerade åtgärder</span>}
-              </Button>
+              {plannedMeasuresButton}
             </div>
           </>
         )}
@@ -241,6 +250,7 @@ export const MainErrandsSidebar: FC<{
               >
                 {open && <span className="w-full flex justify-between">{followUpLabel}</span>}
               </Button>
+              {plannedMeasuresButton}
             </div>
           </>
         )}

@@ -263,6 +263,23 @@ test.describe('Verksamhetsuppföljning - Enheter', () => {
     await expect.poll(openedErrands).toBe(2);
   });
 
+  // Planned measures are followed up across the units, so they sit under Verksamhetsuppföljning, after Enheter.
+  test('visar Planerade åtgärder under Verksamhetsuppföljning', async ({ page, dismissCookieConsent }) => {
+    await installFollowUp(page);
+    await jsonRoute(page, '**/featureflags', [
+      { name: 'isSupportManagement', enabled: true },
+      { name: 'useInvestigation', enabled: true },
+      { name: 'useAvvikelseInvestigation', enabled: true },
+      { name: 'useMeasures', enabled: true },
+    ]);
+    await page.goto('oversikt/');
+    await dismissCookieConsent();
+
+    const group = page.locator('[data-cy="follow-up-button"]').locator('..');
+    await expect(group).toContainText('Verksamhetsuppföljning');
+    await expect(group.locator('button')).toHaveText(['Enheter', 'Planerade åtgärder']);
+  });
+
   test('filtrerar på rapporttyp, riskvärde och enhet, och Rensa alla visar allt igen', async ({
     page,
     dismissCookieConsent,
