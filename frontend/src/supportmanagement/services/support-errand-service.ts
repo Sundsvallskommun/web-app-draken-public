@@ -109,6 +109,7 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
   WEB_UI = 'Draken webbgränssnitt',
+  MIGRATION = 'Migrerat ärende',
 }
 
 // The channels a user can choose from when registering an errand.

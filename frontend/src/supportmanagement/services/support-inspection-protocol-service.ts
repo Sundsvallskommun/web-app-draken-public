@@ -49,18 +49,20 @@ const prefillsOf = (
   };
 };
 
+/** A fresh answer: nothing chosen, or what the errand already knows for a prefilled text field. */
+const initialValueOf = (field: ProtocolField, prefills: Record<ProtocolPrefill, string>): string | string[] => {
+  if (field.kind === 'multi') return [];
+  if (isText(field) && field.prefill) return prefills[field.prefill];
+  return '';
+};
+
 export const inspectionProtocolValuesOf = (
   template: InspectionProtocolTemplate,
   errand: Pick<SupportErrand, 'customer'> | undefined,
   user: Pick<User, 'name'> | undefined
 ): InspectionProtocolValues => {
   const prefills = prefillsOf(errand, user);
-  return Object.fromEntries(
-    fieldsOf(template).map((field) => [
-      field.key,
-      field.kind === 'multi' ? [] : isText(field) && field.prefill ? prefills[field.prefill] : '',
-    ])
-  );
+  return Object.fromEntries(fieldsOf(template).map((field) => [field.key, initialValueOf(field, prefills)]));
 };
 
 /** The saved answers; a field the investigation has no parameter for keeps its fallback value. */

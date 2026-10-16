@@ -40,7 +40,9 @@ export const InspectionProtocolMeasureCard: FC<{
         </span>
         <span className="font-bold">{row.title}</span>
       </div>
-      <div className="flex gap-8" role="group" aria-label={row.title}>
+      {/* relative keeps the sr-only legend (absolute) from stretching the page below the content scroller */}
+      <fieldset className="flex gap-8 relative">
+        <legend className="sr-only">{row.title}</legend>
         {SUPPORT_MEASURE_RESULTS.map(({ result, translationKey }) => {
           const selected = row.result === result;
           return (
@@ -59,7 +61,7 @@ export const InspectionProtocolMeasureCard: FC<{
             </Button>
           );
         })}
-      </div>
+      </fieldset>
       {/* relative keeps the sr-only label (absolute) from stretching the page below the content scroller */}
       <FormControl id={`measure-note-${key}`} className="w-full relative">
         <FormLabel className="sr-only">{t('common:inspection_protocol.note')}</FormLabel>
