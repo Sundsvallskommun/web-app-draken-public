@@ -143,7 +143,9 @@ export const LinkedErrandsDisclosure: FC<{
     >
       <Disclosure.Header>
         <Disclosure.Icon icon={<Link2 />} />
-        <Disclosure.Title>Kopplade ärenden</Disclosure.Title>
+        <Disclosure.Title>
+          {appConfig.features.useRelatedReports ? 'Relaterade rapporter' : 'Kopplade ärenden'}
+        </Disclosure.Title>
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>

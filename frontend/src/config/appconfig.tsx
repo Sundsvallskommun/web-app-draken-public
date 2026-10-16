@@ -32,6 +32,11 @@ export interface AppConfigFeatures {
   useEscalation: boolean;
   useRequireContactChannel: boolean;
   useRelations: boolean;
+  /**
+   * The relations module shows the other reports on the errand's brukare, read-only, as Relaterade rapporter: no
+   * search, and no relations made or broken. Off, the module is Kopplade ärenden as every other drake has it.
+   */
+  useRelatedReports: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
   useClosingMessageCheckbox: boolean;
@@ -96,6 +101,7 @@ export const appConfig: AppConfig = {
     useEscalation: envBool(process.env.NEXT_PUBLIC_USE_ESCALATION),
     useRequireContactChannel: envBool(process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL),
     useRelations: envBool(process.env.NEXT_PUBLIC_USE_RELATIONS),
+    useRelatedReports: envBool(process.env.NEXT_PUBLIC_USE_RELATED_REPORTS),
     useMyPages: envBool(process.env.NEXT_PUBLIC_USE_MY_PAGES),
     useUiPhases: envBool(process.env.NEXT_PUBLIC_USE_UI_PHASES),
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),

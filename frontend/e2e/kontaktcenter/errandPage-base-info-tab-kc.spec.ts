@@ -258,6 +258,8 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="labelCategory-input"][placeholder="IAF - Vuxenutbildning"]')).toBeVisible();
     await expect(page.locator('[data-cy="labelType-input"][placeholder="SFI"]')).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toContainText('En ärendebeskrivning');
+    // Only avvikelse calls the relations module Relaterade rapporter; Kontakt Sundsvall keeps Kopplade ärenden.
+    await expect(page.locator('[data-cy="connected-errands-disclosure"]')).toContainText('Kopplade ärenden');
 
     await expect(page.locator('[data-cy="channel-input"]')).toContainText('Fysiskt möte');
     await expect(page.locator('[data-cy="contactReason-input"]')).toContainText('Välj orsak');
