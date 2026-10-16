@@ -346,6 +346,8 @@ export interface IafApiScenario {
   errandAccessLevel?: 'LR' | 'R' | 'RW';
   /** The handler roles `/me` names for the signed-in user. Left out, the deployment names none. */
   roleKeys?: string[];
+  /** The person the report concerns, as the errand's PRIMARY stakeholder. Left out, the errand names none. */
+  brukare?: { partyId: string; firstName: string; lastName: string };
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -1129,6 +1131,18 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         lastName: 'Rapportör',
         contactChannels: [],
       },
+      ...(scenario.brukare
+        ? [
+            {
+              externalId: scenario.brukare.partyId,
+              externalIdType: 'PRIVATE',
+              role: 'PRIMARY',
+              firstName: scenario.brukare.firstName,
+              lastName: scenario.brukare.lastName,
+              contactChannels: [],
+            },
+          ]
+        : []),
     ],
     jsonParameters: [
       katlaParameter,

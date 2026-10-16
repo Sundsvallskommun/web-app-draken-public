@@ -1,7 +1,7 @@
-import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { appConfig } from '@config/appconfig';
 import { useSupportStore } from '@stores/index';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
+import { SupportErrandRelations } from '@supportmanagement/components/support-errand/related-reports/support-errand-relations.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
 import { ApiSupportErrand } from '@supportmanagement/services/support-errand-service';
@@ -42,7 +42,7 @@ export const SupportErrandBasicsTab: FC<{
 
       {appConfig.features.useRelations ? (
         <div className="mt-md">
-          <LinkedErrandsDisclosure errand={supportErrand!} />
+          <SupportErrandRelations errand={supportErrand!} />
         </div>
       ) : null}
     </div>
