@@ -52,12 +52,34 @@ test('closing the errand from its last phase closes the tab', async ({ page, dis
   const phaseButton = page.locator('[data-cy="next-phase-button"]');
   await expect(phaseButton).toHaveText('Avsluta ärendet');
   await expect(page.locator('[data-cy="solved-button"]')).toHaveCount(0);
+  // Without the investigation's variant there is nothing to remind the handler of beneath the button.
+  await expect(page.locator('[data-cy="closing-reminder"]')).toHaveCount(0);
   const written = statusWrite(page);
   await phaseButton.click();
 
   expect((await written).postDataJSON()).toMatchObject({ status: 'SOLVED' });
   await expect(page.getByText('Ärendet avslutades')).toBeVisible();
   await expect.poll(() => closeCalls(page), { timeout: 5000 }).toBe(1);
+});
+
+// Ä5: the manager who closes the errand from the follow-up is reminded to tell the reporter what came of the report.
+test('reminds the handler beneath the button that closes the errand to tell the reporter', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installIafApiMock(page, {
+    activePhaseName: 'FOLLOW_UP',
+    errandStatus: 'FOLLOW_UP',
+    assignedUserId: 'iaf.test',
+  });
+  await visitErrand(page, dismissCookieConsent);
+
+  const phaseButton = page.locator('[data-cy="next-phase-button"]');
+  await expect(phaseButton).toHaveText('Avsluta ärendet');
+  await expect(page.locator('[data-cy="closing-reminder"]')).toHaveText(
+    'Återkoppla till rapportören hur det har gått med rapporten.'
+  );
+  await expect(phaseButton).toHaveAccessibleDescription('Återkoppla till rapportören hur det har gått med rapporten.');
 });
 
 test('closing the errand before its last phase closes the tab', async ({ page, dismissCookieConsent }) => {

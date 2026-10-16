@@ -285,6 +285,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   closesOnlyAtWorkflowEnd: (context: InvestigationErrandContext) => isAvvikelseReportedMisconductErrand(context.errand),
   /** A deviation closes early once its handling has started in the review, and the handler says why. */
   earlyClose: { fromPhaseName: REVIEW_PHASE_NAME },
+  /** The manager who closes the errand tells the reporter what came of the report. */
+  closingReminder: 'Återkoppla till rapportören hur det har gått med rapporten.',
   /** The status moves when the handler resumes the errand, hands it over or changes phase; nobody sets it by hand. */
   statusFollowsWorkflow: true,
   /** The organisation has decided not to park errands: an errand waits in the status its phase gives it. */

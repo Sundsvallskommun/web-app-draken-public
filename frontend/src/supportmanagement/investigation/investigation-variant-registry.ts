@@ -81,6 +81,10 @@ export const getInvestigationClosesOnlyAtWorkflowEnd = (): InvestigationVariantM
 export const getInvestigationEarlyClose = (): InvestigationVariantModule['earlyClose'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.earlyClose : undefined;
 
+/** What the running variant reminds the handler of under the button that closes the errand, if anything. */
+export const getInvestigationClosingReminder = (): InvestigationVariantModule['closingReminder'] =>
+  appConfig.features.useInvestigation ? getInvestigationVariant()?.closingReminder : undefined;
+
 /** Whether the running variant moves the errand's status by its own actions, leaving no status to choose. */
 export const getInvestigationStatusFollowsWorkflow = (): boolean =>
   appConfig.features.useInvestigation ? Boolean(getInvestigationVariant()?.statusFollowsWorkflow) : false;

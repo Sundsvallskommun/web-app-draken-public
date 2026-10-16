@@ -316,6 +316,11 @@ export interface InvestigationVariantModule {
    */
   readonly earlyClose?: { readonly fromPhaseName: string };
   /**
+   * What the handler is reminded of under the button that closes the errand at the end of its workflow. A variant
+   * without the slot shows the button alone.
+   */
+  readonly closingReminder?: string;
+  /**
    * The errand's status follows the workflow's own actions - resuming it, the handovers, the phases - so it is not
    * chosen by hand and the sidebar offers no status select. A variant without the slot keeps the select.
    */
