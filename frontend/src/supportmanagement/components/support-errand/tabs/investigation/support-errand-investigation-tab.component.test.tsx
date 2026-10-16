@@ -37,6 +37,9 @@ vi.mock('./investigation-disclosure.component', () => ({
     return null;
   },
 }));
+vi.mock('./inspection-protocol.component', () => ({
+  InspectionProtocol: () => <div data-testid="inspection-protocol" />,
+}));
 vi.mock('./investigation-conclusion-disclosure.component', () => ({
   InvestigationConclusionDisclosure: ({
     values,
@@ -137,4 +140,14 @@ test('the investigation is left alone when only one of its sections was written'
   await expect(useSupportStore.getState().tabSavers.investigation()).resolves.toBe(true);
 
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
+});
+
+test('an inspection errand gets the protocol instead of the investigation', async () => {
+  useSupportStore.setState({
+    supportErrand: { id: ERRAND_ID, labels: [{ classification: 'CATEGORY', resourceName: 'INSPECTION' }] } as never,
+  });
+  mountTab();
+
+  expect(await screen.findByTestId('inspection-protocol')).toBeTruthy();
+  expect(getSupportInvestigation).not.toHaveBeenCalled();
 });

@@ -1,0 +1,51 @@
+{
+  "caseNumber": "2026-IAF-124",
+  "inspectionDate": "2026-10-14",
+  "businessName": "Exempel AB",
+  "businessOrgNumber": "556000-0000",
+  "businessAddress": "Storgatan 1, 852 30 Sundsvall",
+  "businessType": "Restaurang med serveringstillstånd",
+  "inspectionType": "Inre tillsyn, ekonomisk",
+  "inspectionScope": "Bolaget och dess företrädare",
+  "inspectorName": "Anna Andersson",
+  "inspectorRole": "Alkoholhandläggare",
+  "measures": [
+    {
+      "title": "Granskning via upplysningstjänsten Syna/Svensk faktakontroll",
+      "noRemark": "X",
+      "remark": "",
+      "comment": ""
+    },
+    {
+      "title": "Belastningsregistret",
+      "noRemark": "X",
+      "remark": "",
+      "comment": "Inget att anmärka på"
+    },
+    {
+      "title": "Skatteverket",
+      "noRemark": "X",
+      "remark": "",
+      "comment": "Skatteskuld 12 000 kr, avbetalningsplan finns"
+    },
+    {
+      "title": "Kronofogden",
+      "noRemark": "",
+      "remark": "",
+      "comment": ""
+    },
+    {
+      "title": "Annat",
+      "noRemark": "",
+      "remark": "",
+      "comment": ""
+    }
+  ],
+  "summaryApproved": "",
+  "summaryApprovedActionRequired": "true",
+  "summaryActionRequiredText": "Visa att avbetalningsplanen följs.",
+  "followUpDate": "2026-12-01",
+  "summaryInvestigationOpened": "",
+  "investigationDate": "",
+  "summaryInvestigationText": ""
+}
