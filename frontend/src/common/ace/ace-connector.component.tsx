@@ -23,30 +23,28 @@ let jsApiPromise: Promise<AceJSApi> | null = null;
 
 /** Loads the JS API once per tab. The external bundle opens ACE's connector popup when it loads. */
 const loadJsApi = (config: AceConfig): Promise<AceJSApi> => {
-  if (!jsApiPromise) {
-    jsApiPromise = new Promise<AceJSApi>((resolve, reject) => {
-      if (window.ACE?.JSApi) {
-        resolve(window.ACE.JSApi);
-        return;
-      }
-      if (config.mode !== 'script') {
-        reject(new Error('ACE JS API mock is not available'));
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = config.scriptUrl;
-      script.crossOrigin = 'anonymous';
-      script.async = true;
-      script.onload = () =>
-        window.ACE?.JSApi ? resolve(window.ACE.JSApi) : reject(new Error('ACE JS API missing after load'));
-      script.onerror = () => reject(new Error('ACE JS API could not be loaded'));
-      document.head.appendChild(script);
-    }).catch((e) => {
-      // Allow a later mount (e.g. after a reload of the leading tab) to try again.
-      jsApiPromise = null;
-      throw e;
-    });
-  }
+  jsApiPromise ??= new Promise<AceJSApi>((resolve, reject) => {
+    if (window.ACE?.JSApi) {
+      resolve(window.ACE.JSApi);
+      return;
+    }
+    if (config.mode !== 'script') {
+      reject(new Error('ACE JS API mock is not available'));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = config.scriptUrl;
+    script.crossOrigin = 'anonymous';
+    script.async = true;
+    script.onload = () =>
+      window.ACE?.JSApi ? resolve(window.ACE.JSApi) : reject(new Error('ACE JS API missing after load'));
+    script.onerror = () => reject(new Error('ACE JS API could not be loaded'));
+    document.head.appendChild(script);
+  }).catch((e) => {
+    // Allow a later mount (e.g. after a reload of the leading tab) to try again.
+    jsApiPromise = null;
+    throw e;
+  });
   return jsApiPromise;
 };
 
@@ -184,7 +182,7 @@ export const AceConnector: React.FC = () => {
             console.info('[ACE] Inkommande samtal, skapar ärende.');
           }
           handledContactIds.add(caller.contactId);
-          openErrandForCaller(caller);
+          void openErrandForCaller(caller);
         })
       );
       if (jsApi.onPopupDisconnected) {
@@ -208,7 +206,7 @@ export const AceConnector: React.FC = () => {
           if (disposed) {
             return;
           }
-          startAsLeader();
+          void startAsLeader();
           return new Promise<void>((resolve) => {
             releaseLock = resolve;
           });

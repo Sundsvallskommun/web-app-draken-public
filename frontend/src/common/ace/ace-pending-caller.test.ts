@@ -31,14 +31,14 @@ describe('pending ACE caller hand-over', () => {
     expect(takePendingCaller('KC-2', storage, now)).toBeNull();
     expect(takePendingCaller('KC-1', storage, now)).toBe(personNumber);
     expect(takePendingCaller('KC-1', storage, now)).toBeNull();
-    expect(storage.length).toBe(0);
+    expect(storage).toHaveLength(0);
   });
 
   test('does not hand over an expired entry, and removes it', () => {
     storePendingCaller('KC-1', personNumber, storage, now);
 
     expect(takePendingCaller('KC-1', storage, now + twoMinutes)).toBeNull();
-    expect(storage.length).toBe(0);
+    expect(storage).toHaveLength(0);
   });
 
   test('ignores unreadable entries', () => {

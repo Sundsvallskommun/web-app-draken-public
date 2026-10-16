@@ -10,12 +10,11 @@ import { expect, type Locator, type Page } from '@playwright/test';
  */
 export const dismissToasts = async (page: Page): Promise<void> => {
   const close = page.locator('#react-toast .sk-snackbar-action');
-  while (await close.count()) {
-    await close.first().click({ force: true });
-    await expect(close.first())
-      .toBeHidden()
-      .catch(() => {});
-  }
+  const buttons = await close.all();
+  await Promise.all(buttons.map((button) => button.click({ force: true }).catch(() => {})));
+  await expect(close)
+    .toHaveCount(0)
+    .catch(() => {});
 };
 
 /**

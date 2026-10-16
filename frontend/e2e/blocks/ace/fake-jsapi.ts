@@ -9,7 +9,9 @@
 function installFakeAceJsApi() {
   const listeners: Record<string, Set<(payload?: unknown) => void>> = {};
   const on = (event: string) => (callback: (payload?: unknown) => void) => {
-    (listeners[event] ??= new Set()).add(callback);
+    const set = listeners[event] ?? new Set();
+    listeners[event] = set;
+    set.add(callback);
     return () => listeners[event].delete(callback);
   };
   const w = window as any;
