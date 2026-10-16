@@ -1,8 +1,8 @@
 import type { ErrandAttachment } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Button, FormControl, FormLabel, Textarea } from '@sk-web-gui/react';
+import { Button, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
 import { ACCEPTED_UPLOAD_FILETYPES } from '@supportmanagement/services/support-attachment-service';
 import { SUPPORT_MEASURE_RESULTS, type SupportMeasureRow } from '@supportmanagement/services/support-measure-service';
-import { Paperclip, Trash2 } from 'lucide-react';
+import { Paperclip, Trash2, X } from 'lucide-react';
 import { FC, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,7 +16,7 @@ const RESULT_COLOR: Record<string, 'gronsta' | 'error' | 'primary'> = {
   NOT_APPLICABLE: 'primary',
 };
 
-/** One control point: its result, a note and the photos linked to it. Photos need the row to be saved first. */
+/** One control point: its title, result, a note and the photos linked to it. Photos need the row to be saved first. */
 export const InspectionProtocolMeasureCard: FC<{
   index: number;
   row: SupportMeasureRow;
@@ -24,13 +24,15 @@ export const InspectionProtocolMeasureCard: FC<{
   readOnly: boolean;
   busy: boolean;
   onChange: (row: SupportMeasureRow) => void;
+  onRemove: () => void;
   onUpload: (file: File) => void;
   onUnlink: (attachment: ErrandAttachment) => void;
   onOpen: (attachment: ErrandAttachment) => void;
-}> = ({ index, row, attachments, readOnly, busy, onChange, onUpload, onUnlink, onOpen }) => {
+}> = ({ index, row, attachments, readOnly, busy, onChange, onRemove, onUpload, onUnlink, onOpen }) => {
   const { t } = useTranslation();
   const fileInput = useRef<HTMLInputElement>(null);
   const key = row.id ?? `new-${index}`;
+  const name = row.title || t('common:inspection_protocol.control_point', { number: index + 1 });
 
   return (
     <section className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12" data-cy={`measure-${key}`}>
@@ -38,11 +40,30 @@ export const InspectionProtocolMeasureCard: FC<{
         <span className="w-24 h-24 rounded-6 bg-vattjom-surface-primary text-white text-small font-bold flex items-center justify-center">
           {index + 1}
         </span>
-        <span className="font-bold">{row.title}</span>
+        <Input
+          className="w-full"
+          value={row.title}
+          placeholder={t('common:inspection_protocol.control_point_placeholder')}
+          disabled={readOnly}
+          onChange={(event) => onChange({ ...row, title: event.target.value })}
+          aria-label={t('common:inspection_protocol.control_point', { number: index + 1 })}
+          data-cy="measure-title"
+        />
+        <Button
+          iconButton
+          variant="tertiary"
+          showBackground={false}
+          disabled={readOnly || busy}
+          onClick={onRemove}
+          aria-label={t('common:inspection_protocol.remove_control_point', { number: index + 1 })}
+          data-cy="measure-remove"
+        >
+          <X size={16} className="text-error" />
+        </Button>
       </div>
       {/* relative keeps the sr-only legend (absolute) from stretching the page below the content scroller */}
       <fieldset className="flex gap-8 relative">
-        <legend className="sr-only">{row.title}</legend>
+        <legend className="sr-only">{name}</legend>
         {SUPPORT_MEASURE_RESULTS.map(({ result, translationKey }) => {
           const selected = row.result === result;
           return (
@@ -70,7 +91,7 @@ export const InspectionProtocolMeasureCard: FC<{
           rows={2}
           maxLength={NOTE_MAX_LENGTH}
           value={row.description}
-          placeholder={t('common:inspection_protocol.note_placeholder', { title: row.title })}
+          placeholder={t('common:inspection_protocol.note_placeholder', { title: name })}
           disabled={readOnly}
           onChange={(event) => onChange({ ...row, description: event.target.value })}
           data-cy="measure-note"

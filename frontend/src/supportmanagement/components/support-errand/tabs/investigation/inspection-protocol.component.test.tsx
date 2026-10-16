@@ -129,7 +129,7 @@ afterEach(cleanup);
 test('shows the saved template, its answers and a card per control point, and counts the assessed ones', async () => {
   mount();
 
-  expect(await screen.findByText('Ålderskontroll')).toBeTruthy();
+  expect(await screen.findByDisplayValue('Ålderskontroll')).toBeTruthy();
   expect(template().value).toBe('serving_permit');
   expect(screen.getByDisplayValue('Stängde 01:00')).toBeTruthy();
   expect((screen.getByLabelText('Stängt') as HTMLInputElement).checked).toBe(true);
@@ -148,7 +148,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
   expect((await screen.findByLabelText('Protokollmall')) as HTMLSelectElement).toBeTruthy();
   expect(template().value).toBe('');
   expect(screen.getByText('Välj mall…')).toBeTruthy();
-  expect(screen.queryByText('Belastningsregistret')).toBeNull();
+  expect(screen.queryByDisplayValue('Belastningsregistret')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Skapa tillsynsprotokoll' })).toBeNull();
   expect(screen.queryByText(/bedömda/)).toBeNull();
 
@@ -156,7 +156,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     fireEvent.change(template(), { target: { value: 'internal_inspection' } });
   });
   expect(showConfirmation).not.toHaveBeenCalled();
-  expect(screen.getByText('Belastningsregistret')).toBeTruthy();
+  expect(screen.getByDisplayValue('Belastningsregistret')).toBeTruthy();
   expect(screen.getByText('0 av 5 bedömda - 0 brister')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Lägg till foto' })).toBeNull();
   expect(state().unsavedTabs.investigation).toBe(true);
@@ -196,7 +196,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
 
   // After the save the page shows what was written: each point once, now saved, so photos can be added.
   expect(await screen.findAllByRole('button', { name: 'Lägg till foto' })).toHaveLength(5);
-  expect(screen.getAllByText('Belastningsregistret')).toHaveLength(1);
+  expect(screen.getAllByDisplayValue('Belastningsregistret')).toHaveLength(1);
   expect(screen.getByText('1 av 5 bedömda - 0 brister')).toBeTruthy();
   expect(state().unsavedTabs.investigation).toBe(false);
 });
@@ -211,7 +211,7 @@ test('offers its save under the investigation tab, and takes it back when it clo
 
 test('a result marks the tab unsaved, and the save patches only the measures that were edited', async () => {
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Brist' })[0]);
   fireEvent.change(screen.getAllByPlaceholderText('Notering om Ålderskontroll…')[0], {
@@ -258,9 +258,33 @@ test('the action points are listed in their own accordion and written as EXTERNA
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
+test('a control point can be added beyond the template, and a saved one removed, by the same save', async () => {
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Lägg till kontrollpunkt' }));
+  expect(screen.getByText('1 av 3 bedömda - 0 brister')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Kontrollpunkt 3'), { target: { value: 'Brandsläckare på plats' } });
+  fireEvent.click(screen.getAllByRole('button', { name: 'Brist' })[2]);
+  fireEvent.click(screen.getByRole('button', { name: 'Ta bort kontrollpunkt 2' }));
+  expect(screen.queryByDisplayValue('Serveringstider följs')).toBeNull();
+  expect(screen.getByText('1 av 2 bedömda - 1 brist')).toBeTruthy();
+  expect(state().unsavedTabs.investigation).toBe(true);
+
+  await act(async () => {
+    expect(await saver()()).toBe(true);
+  });
+
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
+    create: [{ title: 'Brandsläckare på plats', result: 'NOT_COMPLETED' }],
+    update: [],
+    remove: ['m2'],
+  });
+});
+
 test('a changed answer is saved on the investigation with the version that was read', async () => {
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   fireEvent.click(screen.getByLabelText('Polis'));
   fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
@@ -286,7 +310,7 @@ test('a changed answer is saved on the investigation with the version that was r
 test('another template is taken only after the handler confirms, and replaces control points and answers', async () => {
   showConfirmation.mockResolvedValueOnce(false);
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   await act(async () => {
     fireEvent.change(template(), { target: { value: 'internal_inspection' } });
@@ -300,14 +324,14 @@ test('another template is taken only after the handler confirms, and replaces co
     'info'
   );
   expect(template().value).toBe('serving_permit');
-  expect(screen.getByText('Ålderskontroll')).toBeTruthy();
+  expect(screen.getByDisplayValue('Ålderskontroll')).toBeTruthy();
 
   await act(async () => {
     fireEvent.change(template(), { target: { value: 'internal_inspection' } });
   });
   expect(template().value).toBe('internal_inspection');
-  expect(screen.queryByText('Ålderskontroll')).toBeNull();
-  expect(screen.getByText('Belastningsregistret')).toBeTruthy();
+  expect(screen.queryByDisplayValue('Ålderskontroll')).toBeNull();
+  expect(screen.getByDisplayValue('Belastningsregistret')).toBeTruthy();
   expect(screen.getByLabelText('Verksamhetens namn')).toBeTruthy();
   expect(screen.queryByLabelText('Antal gäster')).toBeNull();
   // The action points are not the template's; they stay.
@@ -334,7 +358,7 @@ test('another template is taken only after the handler confirms, and replaces co
 
 test('clicking the chosen result again clears it, which is written as null', async () => {
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   fireEvent.click(screen.getByRole('button', { name: 'Godkänt', pressed: true }));
   expect(screen.getByText('0 av 2 bedömda - 0 brister')).toBeTruthy();
@@ -353,7 +377,7 @@ test('clicking the chosen result again clears it, which is written as null', asy
 test('a failed save keeps what the handler wrote and answers false', async () => {
   vi.mocked(saveSupportMeasures).mockRejectedValueOnce(new Error('nope'));
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
   fireEvent.change(screen.getAllByPlaceholderText('Notering om Ålderskontroll…')[0], {
     target: { value: 'skrivet men osparat' },
   });
@@ -371,7 +395,7 @@ test('an uploaded photo shows on the card as soon as the service answers', async
   const photo = { id: 'a1', fileName: 'bar.jpg', mimeType: 'image/jpeg' };
   vi.mocked(uploadSupportMeasureAttachment).mockResolvedValue({ ...measures[0], attachments: [photo] });
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   const file = new File(['x'], 'bar.jpg', { type: 'image/jpeg' });
   const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
@@ -392,7 +416,7 @@ test('an uploaded photo shows on the card as soon as the service answers', async
 
 test('is read only when the tab is not writable', async () => {
   render(<InspectionProtocol writable={false} setHasContent={vi.fn()} />);
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   expect(template().disabled).toBe(true);
   expect((screen.getAllByRole('button', { name: 'Brist' })[0] as HTMLButtonElement).disabled).toBe(true);
@@ -403,7 +427,7 @@ test('is read only when the tab is not writable', async () => {
 
 test('the protocol is rendered from the saved answers and control points, and filed on the errand', async () => {
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   expect(screen.getByDisplayValue('Anna Andersson, handläggare')).toBeTruthy();
 
@@ -436,7 +460,7 @@ test('the protocol is rendered from the saved answers and control points, and fi
 
 test('the protocol cannot be generated while a result, a note, an answer or an action point is unsaved', async () => {
   mount();
-  await screen.findByText('Ålderskontroll');
+  await screen.findByDisplayValue('Ålderskontroll');
 
   fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
 

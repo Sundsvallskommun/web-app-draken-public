@@ -48,7 +48,7 @@ import {
 } from '@supportmanagement/services/support-measure-service';
 import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
-import { FileDown } from 'lucide-react';
+import { FileDown, Plus } from 'lucide-react';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -241,6 +241,19 @@ export const InspectionProtocol: FC<{
       controlPoints: current.controlPoints.map((candidate, i) => (i === index ? row : candidate)),
     }));
 
+  /** A point the handler adds beyond the template's; a removed one is deleted when the errand is saved. */
+  const addControlPoint = () =>
+    updateDraft((current) => ({
+      ...current,
+      controlPoints: [...current.controlPoints, { title: '', result: '', description: '' }],
+    }));
+
+  const removeControlPoint = (index: number) =>
+    updateDraft((current) => ({
+      ...current,
+      controlPoints: current.controlPoints.filter((_, i) => i !== index),
+    }));
+
   /** A photo changes the saved measure only; the rows are left as they are. */
   const replaceSaved = (replacement: Measure) =>
     setSaved(
@@ -404,11 +417,26 @@ export const InspectionProtocol: FC<{
               readOnly={readOnly}
               busy={!!row.id && busyRowId === row.id}
               onChange={(changed) => setControlPoint(index, changed)}
+              onRemove={() => removeControlPoint(index)}
               onUpload={(file) => void upload(row, file)}
               onUnlink={(attachment) => void unlink(row, attachment)}
               onOpen={(attachment) => void open(attachment)}
             />
           ))}
+          <div>
+            <Button
+              variant="primary"
+              inverted
+              color="vattjom"
+              size="sm"
+              leftIcon={<Plus size={16} />}
+              disabled={readOnly}
+              onClick={addControlPoint}
+              data-cy="control-point-add"
+            >
+              {t('common:inspection_protocol.add_control_point')}
+            </Button>
+          </div>
           {template ? (
             <>
               <InspectionProtocolFields
