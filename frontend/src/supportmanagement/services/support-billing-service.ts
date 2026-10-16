@@ -1,10 +1,10 @@
-import { All } from '@casedata/interfaces/priority';
 import { PortalPersonData } from '@common/data-contracts/employee/data-contracts';
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { twoDecimals } from '@common/services/helper-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useBillingStore, useConfigStore } from '@stores/index';
+import { All } from '@supportmanagement/interfaces/priority';
 import { useCallback, useEffect } from 'react';
 import {
   CBillingRecord,
