@@ -108,6 +108,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.overviewFilterToggle, undefined);
   // Nor does one with no word on who is never an employee take the employee search from any stakeholder.
   assert.equal(minimalVariant.rolesWithoutEmployeeSearch, undefined);
+  // Nor does one with no say in who adds and removes stakeholders keep the handler from adding or removing any.
+  assert.equal(minimalVariant.handlerManagedStakeholderRoles, undefined);
   // Nor does one with nothing to conceal hide any document its access shows.
   assert.equal(minimalVariant.concealedDocumentKeys, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.

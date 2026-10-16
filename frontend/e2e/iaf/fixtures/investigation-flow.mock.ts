@@ -351,6 +351,8 @@ export interface IafApiScenario {
   roleKeys?: string[];
   /** The person the report concerns, as the errand's PRIMARY stakeholder. Left out, the errand names none. */
   brukare?: { partyId: string; firstName: string; lastName: string };
+  /** Another party the report names, as a CONTACT stakeholder. Left out, the errand names none. */
+  otherParty?: { firstName: string; lastName: string };
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -1155,6 +1157,17 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
               role: 'PRIMARY',
               firstName: scenario.brukare.firstName,
               lastName: scenario.brukare.lastName,
+              contactChannels: [],
+            },
+          ]
+        : []),
+      ...(scenario.otherParty
+        ? [
+            {
+              externalIdType: 'PRIVATE',
+              role: 'CONTACT',
+              firstName: scenario.otherParty.firstName,
+              lastName: scenario.otherParty.lastName,
               contactChannels: [],
             },
           ]

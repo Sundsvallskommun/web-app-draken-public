@@ -205,18 +205,19 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
   });
 
-  // The brukare is never an employee: the employee search is offered for the other parties, not for the errand owner.
-  test('erbjuder ingen sökning på anställd för brukaren', async ({ page, dismissCookieConsent }) => {
-    await installIafApiMock(page, {
-      featureFlags: [
-        { name: 'isSupportManagement', enabled: true },
-        { name: 'useDetailsTab', enabled: true },
-        { name: 'useLabelCategorization', enabled: true },
-        { name: 'useInvestigation', enabled: true },
-        { name: 'useAvvikelseInvestigation', enabled: true },
-        { name: 'useEmployeeSearch', enabled: true },
-      ],
-    });
+  const stakeholderFlags = [
+    { name: 'isSupportManagement', enabled: true },
+    { name: 'useDetailsTab', enabled: true },
+    { name: 'useLabelCategorization', enabled: true },
+    { name: 'useInvestigation', enabled: true },
+    { name: 'useAvvikelseInvestigation', enabled: true },
+    { name: 'useEmployeeSearch', enabled: true },
+  ];
+
+  // The brukare is the one stakeholder the handler looks up, and never an employee. The other parties come with the
+  // report: nobody searches for one or adds one by hand.
+  test('söker bara efter brukaren, och aldrig bland anställda', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, { featureFlags: stakeholderFlags });
 
     await visitErrand(page, dismissCookieConsent);
     await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
@@ -224,7 +225,40 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const basics = page.locator('[role="tabpanel"]:visible');
     await expect(basics.locator('[data-cy="search-person-form-PRIMARY"]')).toBeChecked();
     await expect(basics.locator('[data-cy="search-employee-form-PRIMARY"]')).toHaveCount(0);
-    await expect(basics.locator('[data-cy="search-employee-form-CONTACT"]')).toHaveCount(1);
+    await expect(basics.locator('[data-cy="registered-applicants"] [data-cy="contact-form"]')).toHaveCount(1);
+    await expect(basics.locator('[data-cy="registered-contacts"] [data-cy="contact-form"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="search-person-form-CONTACT"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="search-employee-form-CONTACT"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="add-manually-button-person"]')).toHaveCount(0);
+  });
+
+  // The handler removes the brukare, and edits but never removes another party.
+  test('tar bort brukaren men aldrig en övrig part', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, {
+      featureFlags: stakeholderFlags,
+      brukare: { partyId: 'brukare-party-id', firstName: 'Britt', lastName: 'Brukare' },
+      otherParty: { firstName: 'Olle', lastName: 'Övrig' },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
+
+    const basics = page.locator('[role="tabpanel"]:visible');
+    const brukare = basics.locator('[data-cy="rendered-PRIMARY"]');
+    const otherParty = basics.locator('[data-cy="rendered-CONTACT"]');
+    await expect(otherParty).toContainText('Olle Övrig');
+    await expect(otherParty.getByRole('button', { name: 'Redigera uppgifter', exact: true })).toBeVisible();
+    await expect(otherParty.locator('[data-cy="delete-stakeholder-button"]')).toHaveCount(0);
+
+    await brukare.locator('[data-cy="delete-stakeholder-button"]').click();
+    await expect(page.locator(CONFIRM_DIALOG)).toHaveCSS('opacity', '1');
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja', exact: true }).click();
+    await expect(brukare).toHaveCount(0);
+    // Once the brukare is gone, the search for one is back; the other party stays as it was, and is not made the
+    // brukare in its place.
+    await expect(basics.locator('[data-cy="search-person-form-PRIMARY"]')).toBeChecked();
+    await expect(otherParty).toContainText('Olle Övrig');
+    await expect(otherParty.locator('[data-cy="make-stakeholder-owner-button"]')).toHaveCount(0);
   });
 
   /**

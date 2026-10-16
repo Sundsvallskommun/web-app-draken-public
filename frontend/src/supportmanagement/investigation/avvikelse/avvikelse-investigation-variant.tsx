@@ -274,6 +274,8 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   overviewFilterToggle: masMarOverviewFilter,
   /** The errand's owner is the brukare the deviation concerns, never an employee. */
   rolesWithoutEmployeeSearch: Object.freeze(['PRIMARY']),
+  /** The handler looks up and removes the brukare alone. The other parties come with the report and stay with it. */
+  handlerManagedStakeholderRoles: Object.freeze(['PRIMARY']),
   /** MAS/MAR's HSL investigation is kept from the managers until the errand carries a high HSL risk. */
   concealedDocumentKeys: concealedAvvikelseDocumentKeys,
   /** While `ACCESS/LEX` is on the errand the overview says LEX has it, not which of LEX. */

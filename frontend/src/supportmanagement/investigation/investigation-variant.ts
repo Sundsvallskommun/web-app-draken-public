@@ -293,6 +293,12 @@ export interface InvestigationVariantModule {
    */
   readonly rolesWithoutEmployeeSearch?: readonly string[];
   /**
+   * The stakeholder roles the handler adds in Grunduppgifter - by search or by hand - and removes. A stakeholder of any
+   * other role is shown and its details may be edited, but nobody adds or removes one, nor makes one the errand's owner.
+   * A variant without the slot lets the handler add and remove every role.
+   */
+  readonly handlerManagedStakeholderRoles?: readonly string[];
+  /**
    * Who the overview names as responsible when the errand's labels say more than its assigned handler -
    * a whole role holding it, say. Undefined names the handler, as every other drake does.
    */

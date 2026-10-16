@@ -69,6 +69,11 @@ export const getInvestigationRolesWithoutEmployeeSearch =
   (): InvestigationVariantModule['rolesWithoutEmployeeSearch'] =>
     appConfig.features.useInvestigation ? getInvestigationVariant()?.rolesWithoutEmployeeSearch : undefined;
 
+/** The stakeholder roles the running variant lets the handler add and remove, if it limits them. */
+export const getInvestigationHandlerManagedStakeholderRoles =
+  (): InvestigationVariantModule['handlerManagedStakeholderRoles'] =>
+    appConfig.features.useInvestigation ? getInvestigationVariant()?.handlerManagedStakeholderRoles : undefined;
+
 /** The documents the running variant keeps out of the viewer's sight, if it conceals any. */
 export const getInvestigationConcealedDocumentKeys = (): InvestigationVariantModule['concealedDocumentKeys'] =>
   appConfig.features.useInvestigation ? getInvestigationVariant()?.concealedDocumentKeys : undefined;

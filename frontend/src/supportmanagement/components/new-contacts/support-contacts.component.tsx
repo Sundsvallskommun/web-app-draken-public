@@ -14,6 +14,7 @@ import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { PartyAssetsSection } from './partyassets-section.component';
+import { handlerManagesStakeholderRole } from './support-contact-handler-managed-roles';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 
 interface SupportContactsProps {
@@ -37,6 +38,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   // The deployment's metadata names the role - IAF/VOF call the errand owner "Brukare" there. The
   // page waits for metadata before rendering, so the literal only covers a role without displayName.
   const errandOwnerTitle = supportMetadata?.roles?.find((r) => r.name === 'PRIMARY')?.displayName ?? 'Ärendeägare';
+  const handlerAddsOtherParties = handlerManagesStakeholderRole('CONTACT');
 
   const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -157,32 +159,36 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                 Redigera uppgifter
               </Button>
 
-              <Button
-                disabled={isSupportErrandLocked(supportErrand!)}
-                data-cy="delete-stakeholder-button"
-                variant="link"
-                className="text-body"
-                onClick={() => {
-                  return deleteConfirm
-                    .showConfirmation(
-                      'Ta bort?',
-                      `Vill du ta bort denna ${header?.toLowerCase() || 'intressent'}?`,
-                      'Ja',
-                      'Nej',
-                      'info',
-                      'info'
-                    )
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        onRemove(contact);
-                      }
-                    });
-                }}
-              >
-                Ta bort
-              </Button>
+              {handlerManagesStakeholderRole(contact.role) && (
+                <Button
+                  disabled={isSupportErrandLocked(supportErrand!)}
+                  data-cy="delete-stakeholder-button"
+                  variant="link"
+                  className="text-body"
+                  onClick={() => {
+                    return deleteConfirm
+                      .showConfirmation(
+                        'Ta bort?',
+                        `Vill du ta bort denna ${header?.toLowerCase() || 'intressent'}?`,
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      )
+                      .then((confirmed) => {
+                        if (confirmed) {
+                          onRemove(contact);
+                        }
+                      });
+                  }}
+                >
+                  Ta bort
+                </Button>
+              )}
 
-              {contact.role === 'CONTACT' && stakeholderCustomers.length === 0 ? (
+              {contact.role === 'CONTACT' &&
+              stakeholderCustomers.length === 0 &&
+              handlerManagesStakeholderRole(contact.role) ? (
                 <Button
                   disabled={isSupportErrandLocked(supportErrand!)}
                   data-cy="make-stakeholder-owner-button"
@@ -392,25 +398,27 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
           </Disclosure.Header>
           <Disclosure.Content>
             <div data-cy="registered-contacts">
-              <div className="w-full mt-md">
-                {appConfig.features.useMyPages && (
-                  <div className="pb-[2.5rem]">
-                    <span className="text-dark-secondary">
-                      Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se
-                      ärendet på Mina sidor.
-                    </span>
-                  </div>
-                )}
-                <SupportSimplifiedContactForm
-                  disabled={isSupportErrandLocked(supportErrand!)}
-                  setUnsaved={props.setUnsaved}
-                  contact={{ ...emptyContact, role: 'CONTACT' }}
-                  editing={false}
-                  onSave={(contact) => addStakeholder(contact)}
-                  label="Övrig part"
-                  id="person"
-                />
-              </div>
+              {handlerAddsOtherParties && (
+                <div className="w-full mt-md">
+                  {appConfig.features.useMyPages && (
+                    <div className="pb-[2.5rem]">
+                      <span className="text-dark-secondary">
+                        Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte
+                        se ärendet på Mina sidor.
+                      </span>
+                    </div>
+                  )}
+                  <SupportSimplifiedContactForm
+                    disabled={isSupportErrandLocked(supportErrand!)}
+                    setUnsaved={props.setUnsaved}
+                    contact={{ ...emptyContact, role: 'CONTACT' }}
+                    editing={false}
+                    onSave={(contact) => addStakeholder(contact)}
+                    label="Övrig part"
+                    id="person"
+                  />
+                </div>
+              )}
 
               {contactsFields.length !== 0 ? (
                 <FormControl className="mt-40 w-full">
