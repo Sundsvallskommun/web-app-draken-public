@@ -42,10 +42,14 @@ vi.mock('./investigation-conclusion-disclosure.component', () => ({
     values,
     set,
   }: {
-    values: { summary: string };
+    values: { conclusion: string };
     set: (key: string, value: string) => void;
   }) => (
-    <textarea data-testid="summary" value={values.summary} onChange={(e) => set('summary', e.currentTarget.value)} />
+    <textarea
+      data-testid="conclusion"
+      value={values.conclusion}
+      onChange={(e) => set('conclusion', e.currentTarget.value)}
+    />
   ),
 }));
 
@@ -55,8 +59,7 @@ const investigation = {
   id: 'investigation-1',
   version: 3,
   status: 'ACTIVE',
-  summary: 'ursprunglig text',
-  conclusion: '',
+  conclusion: 'ursprunglig text',
   recommendation: '',
   recommendationMotivation: '',
   sections: [{ id: 'section-1', sectionKey: 'financial_suitability', heading: 'Ekonomisk lämplighet', sortOrder: 3 }],
@@ -92,7 +95,7 @@ test('the registered save is handed over once, however much is written', async (
   await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
 
   const offered = useSupportStore.getState().tabSavers.investigation;
-  const field = await screen.findByTestId('summary');
+  const field = await screen.findByTestId('conclusion');
   fireEvent.change(field, { target: { value: 'ett' } });
   fireEvent.change(field, { target: { value: 'ett ord till' } });
 
@@ -104,14 +107,14 @@ test('the save that was handed over writes what the field holds now, not what it
   await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
 
   const saveFromMount = useSupportStore.getState().tabSavers.investigation;
-  const field = await screen.findByTestId('summary');
+  const field = await screen.findByTestId('conclusion');
   fireEvent.change(field, { target: { value: 'det handlaggaren skrev sist' } });
 
   await saveFromMount();
 
   expect(saveSupportInvestigation).toHaveBeenCalledTimes(1);
   expect(vi.mocked(saveSupportInvestigation).mock.calls[0][3]).toMatchObject({
-    summary: 'det handlaggaren skrev sist',
+    conclusion: 'det handlaggaren skrev sist',
     version: 3,
   });
 });
@@ -121,7 +124,7 @@ test('a section saved first raises the version this save must write with', async
   mountTab();
   await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
 
-  const field = await screen.findByTestId('summary');
+  const field = await screen.findByTestId('conclusion');
   fireEvent.change(field, { target: { value: 'nagot nytt' } });
 
   await useSupportStore.getState().tabSavers.investigation();

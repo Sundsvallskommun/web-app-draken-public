@@ -92,7 +92,7 @@ export const saveSupportInvestigationSection = (
       throw e;
     });
 
-export const SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH = 8192;
+export const SUPPORT_INVESTIGATION_TEXT_MAX_LENGTH = 8192;
 
 export const saveSupportInvestigation = (
   errandId: string,

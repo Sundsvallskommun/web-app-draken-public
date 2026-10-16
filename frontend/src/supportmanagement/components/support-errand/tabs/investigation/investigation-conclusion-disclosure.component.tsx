@@ -1,17 +1,18 @@
 import { DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Disclosure, FormControl, FormLabel, Select, Textarea } from '@sk-web-gui/react';
+import { Disclosure, FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { InvestigationTextEditor } from '../../investigation-text-editor.component';
+
 export const InvestigationConclusionDisclosure: FC<{
   values: {
-    summary: string;
     conclusion: string;
     recommendation: string;
     recommendationMotivation: string;
   };
   readOnly: boolean;
-  set: (key: 'summary' | 'conclusion' | 'recommendation' | 'recommendationMotivation', value: string) => void;
+  set: (key: 'conclusion' | 'recommendation' | 'recommendationMotivation', value: string) => void;
   outcomes: DecisionOutcome[];
 }> = ({ values, readOnly, set, outcomes }) => {
   const { t } = useTranslation();
@@ -23,30 +24,15 @@ export const InvestigationConclusionDisclosure: FC<{
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <div className="flex flex-col gap-16">
-          <FormControl id="investigation-summary" className="w-full">
-            <FormLabel>{t('common:investigation.summary')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={3}
-              value={values.summary}
-              disabled={readOnly}
-              onChange={(event) => set('summary', event.target.value)}
-              data-cy="investigation-summary"
-            />
-          </FormControl>
-
-          <FormControl id="investigation-conclusion" className="w-full">
-            <FormLabel>{t('common:investigation.conclusion')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={3}
-              value={values.conclusion}
-              disabled={readOnly}
-              onChange={(event) => set('conclusion', event.target.value)}
-              data-cy="investigation-conclusion"
-            />
-          </FormControl>
+        <div className="flex flex-col gap-24">
+          <InvestigationTextEditor
+            name="investigation-conclusion"
+            labelKey="common:investigation.conclusion"
+            placeholderKey="common:investigation.conclusion_placeholder"
+            value={values.conclusion}
+            readOnly={readOnly}
+            onChange={(markup) => set('conclusion', markup)}
+          />
 
           <FormControl id="investigation-recommendation" className="w-full max-w-[32rem]">
             <FormLabel>{t('common:investigation.recommendation')}</FormLabel>
@@ -66,17 +52,14 @@ export const InvestigationConclusionDisclosure: FC<{
             </Select>
           </FormControl>
 
-          <FormControl id="investigation-motivation" className="w-full">
-            <FormLabel>{t('common:investigation.recommendation_motivation')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={3}
-              value={values.recommendationMotivation}
-              disabled={readOnly}
-              onChange={(event) => set('recommendationMotivation', event.target.value)}
-              data-cy="investigation-motivation"
-            />
-          </FormControl>
+          <InvestigationTextEditor
+            name="investigation-motivation"
+            labelKey="common:investigation.recommendation_motivation"
+            placeholderKey="common:investigation.recommendation_motivation_placeholder"
+            value={values.recommendationMotivation}
+            readOnly={readOnly}
+            onChange={(markup) => set('recommendationMotivation', markup)}
+          />
         </div>
       </Disclosure.Content>
     </Disclosure>

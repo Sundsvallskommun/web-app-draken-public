@@ -36,7 +36,7 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => ({
 const saveSupportInvestigationSection = vi.fn();
 vi.mock('@supportmanagement/services/support-investigation-service', () => ({
   saveSupportInvestigationSection: (...args: unknown[]) => saveSupportInvestigationSection(...args),
-  SUPPORT_INVESTIGATION_SECTION_TEXT_MAX_LENGTH: 8192,
+  SUPPORT_INVESTIGATION_TEXT_MAX_LENGTH: 8192,
 }));
 
 const onEdited = vi.fn();
