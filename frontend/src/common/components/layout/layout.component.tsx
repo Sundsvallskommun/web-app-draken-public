@@ -1,5 +1,6 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
+import { AceStatusIndicator } from '@common/ace/ace-status.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
@@ -99,6 +100,7 @@ export default function Layout({ title, children }: { title: string; children: R
           logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
           userMenu={
             <div className="flex items-center h-fit">
+              <AceStatusIndicator className="mr-24" />
               <span data-cy="usermenu">
                 <UserMenu
                   initials={`${user.firstName[0]}${user.lastName[0]}`}

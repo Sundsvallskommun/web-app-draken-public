@@ -24,6 +24,8 @@
 199001012386
 199001162396
 199909092380
+# Samma testpersonnummer från Skatteverket som 199001012385, med bindestreck
+19900101-2385
 # Publika organisationsnummer
 212000-2411
 556026-9986
