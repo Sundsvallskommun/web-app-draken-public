@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import type { CaseStatusResponse } from '@common/services/casestatus-service';
+import { appConfig } from '@config/appconfig';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -41,7 +42,10 @@ beforeEach(() => {
     { caseId: 'earlier-report', errandNumber: 'VOF-2026-0002', namespace: 'HEALTHCAREDEVIATIONVOF' },
   ]);
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  appConfig.features.useRelatedReportsMock = false;
+});
 
 // The module's toggle is its only button: a read-only list offers nothing else to press.
 const openModule = () => fireEvent.click(screen.getByRole('button'));
@@ -67,6 +71,35 @@ test("lists the brukare's other reports under one heading, and nothing else", as
   expect(mocks.createRelation).not.toHaveBeenCalled();
   expect(mocks.deleteRelation).not.toHaveBeenCalled();
   expect(mocks.resolvedRelations).not.toHaveBeenCalled();
+});
+
+// A real report says nothing of its subcategory: the column stays empty for it.
+test('lists each report under Status, Ärendetyp, Underkategori and Ärendenummer', async () => {
+  render(<RelatedReportsDisclosure errand={errand} disabled={false} />);
+  openModule();
+
+  await screen.findByText('VOF-2026-0002');
+  expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+    'Status',
+    'Ärendetyp',
+    'Underkategori',
+    'Ärendenummer',
+  ]);
+});
+
+// Where the test environment's CaseStatus cannot see the drake's reports, the list shows examples instead.
+test('shows the example reports, and reads nothing, where the deployment mocks them', async () => {
+  appConfig.features.useRelatedReportsMock = true;
+  render(<RelatedReportsDisclosure errand={errand} disabled={false} />);
+  openModule();
+
+  const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1);
+  expect(rows.map((row) => [...row.querySelectorAll('th, td')].map((cell) => cell.textContent))).toEqual([
+    ['Handläggning pågår', 'Fall', 'Fall vid patientens egna aktiviteter', 'MOCK-0001'],
+    ['Avslutat', 'Fall utan skada', '', 'MOCK-0002'],
+    ['Inskickat', 'Fall', 'Fall med personal - Hjälpmedel', 'MOCK-0003'],
+  ]);
+  expect(mocks.statusesByParty).not.toHaveBeenCalled();
 });
 
 test('looks nothing up for an errand that names no brukare', async () => {

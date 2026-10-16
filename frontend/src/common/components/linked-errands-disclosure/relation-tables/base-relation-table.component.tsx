@@ -26,6 +26,20 @@ export const relationTableHeaders = (labels: readonly RelationTableLabel[]): Rea
     </Table.HeaderColumn>
   ));
 
+/** An errand's status, which heads its row in a relations table. */
+export const RelationStatusCell: FC<{ externalStatus: string | undefined }> = ({ externalStatus }) => (
+  <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
+    <CaseStatusLabelComponent externalStatus={externalStatus ?? ''} />
+  </Table.HeaderColumn>
+);
+
+/** An errand's type, by CaseData's name for it where CaseData has one. */
+export const RelationCaseTypeCell: FC<{ caseType: string | undefined }> = ({ caseType }) => (
+  <Table.Column className="w-[16rem]">
+    {(CaseLabels.ALL as Record<string, string>)[caseType ?? ''] ?? caseType}
+  </Table.Column>
+);
+
 /**
  * What a relations table says about an errand: its status, type, operation and number. A table whose errands all
  * belong to the drake itself leaves the operation out.
@@ -35,12 +49,8 @@ export const RelationErrandCells: FC<{ errand: CaseStatusResponse; showOperation
   showOperation = true,
 }) => (
   <>
-    <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
-      <CaseStatusLabelComponent externalStatus={errand.externalStatus ?? ''} />
-    </Table.HeaderColumn>
-    <Table.Column className="w-[16rem]">
-      {(CaseLabels.ALL as Record<string, string>)[errand.caseType ?? ''] ?? errand.caseType}
-    </Table.Column>
+    <RelationStatusCell externalStatus={errand.externalStatus} />
+    <RelationCaseTypeCell caseType={errand.caseType} />
     {showOperation && (
       <Table.Column className="w-[10rem]">{findOperationUsingNamespace(errand.namespace ?? '')}</Table.Column>
     )}
@@ -49,7 +59,7 @@ export const RelationErrandCells: FC<{ errand: CaseStatusResponse; showOperation
 );
 
 interface BaseRelationsTableProps {
-  errands: CaseStatusResponse[];
+  errands: readonly CaseStatusResponse[];
   headers: ReactNode;
   /** The table's own heading. Left out, a heading above it names it. */
   title?: string;

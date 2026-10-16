@@ -80,3 +80,29 @@ test("lists the brukare's other reports, read-only, under one heading", async ({
     )
   ).toEqual([]);
 });
+
+// The test environment's CaseStatus cannot see VOF's reports, so there the deployment shows examples in their place.
+test('shows example reports, with their subcategory, where the deployment mocks them', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installIafApiMock(page, {
+    featureFlags: [...relatedReportsFlags, { name: 'useRelatedReportsMock', enabled: true }],
+    brukare,
+  });
+  const statusRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/statuses')) statusRequests.push(request.url());
+  });
+  await openBasics(page, dismissCookieConsent);
+
+  await relationsModule(page).getByRole('button').first().click();
+  const table = relationsModule(page).locator('[data-cy="related-reports-table"]');
+  await expect(table.locator('thead th')).toHaveText(['Status', 'Ärendetyp', 'Underkategori', 'Ärendenummer']);
+  await expect(table.locator('tbody tr')).toHaveText([
+    /Handläggning pågår\s*Fall\s*Fall vid patientens egna aktiviteter\s*MOCK-0001/u,
+    /Avslutat\s*Fall utan skada\s*MOCK-0002/u,
+    /Inskickat\s*Fall\s*Fall med personal - Hjälpmedel\s*MOCK-0003/u,
+  ]);
+  expect(statusRequests).toEqual([]);
+});

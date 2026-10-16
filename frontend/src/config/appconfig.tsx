@@ -37,6 +37,11 @@ export interface AppConfigFeatures {
    * search, and no relations made or broken. Off, the module is Kopplade ärenden as every other drake has it.
    */
   useRelatedReports: boolean;
+  /**
+   * Relaterade rapporter shows example reports instead of the brukare's own, for a test environment where CaseStatus
+   * cannot see the drake's reports. Never on in production.
+   */
+  useRelatedReportsMock: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
   useClosingMessageCheckbox: boolean;
@@ -102,6 +107,7 @@ export const appConfig: AppConfig = {
     useRequireContactChannel: envBool(process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL),
     useRelations: envBool(process.env.NEXT_PUBLIC_USE_RELATIONS),
     useRelatedReports: envBool(process.env.NEXT_PUBLIC_USE_RELATED_REPORTS),
+    useRelatedReportsMock: envBool(process.env.NEXT_PUBLIC_USE_RELATED_REPORTS_MOCK),
     useMyPages: envBool(process.env.NEXT_PUBLIC_USE_MY_PAGES),
     useUiPhases: envBool(process.env.NEXT_PUBLIC_USE_UI_PHASES),
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),

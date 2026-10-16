@@ -1,28 +1,42 @@
 import {
   BaseRelationsTable,
-  RelationErrandCells,
+  RelationCaseTypeCell,
+  RelationStatusCell,
   relationTableHeaders,
 } from '@common/components/linked-errands-disclosure/relation-tables/base-relation-table.component';
-import { type CaseStatusResponse, getStatusesUsingPartyId } from '@common/services/casestatus-service';
-import { Disclosure, Spinner } from '@sk-web-gui/react';
+import { getStatusesUsingPartyId } from '@common/services/casestatus-service';
+import { appConfig } from '@config/appconfig';
+import { Disclosure, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Link2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
-import { brukarePartyId, otherReports } from './related-reports';
+import { brukarePartyId, otherReports, type RelatedReport } from './related-reports';
+import { MOCK_RELATED_REPORTS } from './related-reports-mock';
 
 const headers = relationTableHeaders([
   { label: 'Status', screenReaderOnly: false, sortable: false },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false },
+  { label: 'Underkategori', screenReaderOnly: false, sortable: false },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: false },
 ]);
+
+const RelatedReportCells: FC<{ report: RelatedReport }> = ({ report }) => (
+  <>
+    <RelationStatusCell externalStatus={report.externalStatus} />
+    <RelationCaseTypeCell caseType={report.caseType} />
+    <Table.Column className="w-[22rem]">{report.subcategory}</Table.Column>
+    <Table.Column className="w-[14.5rem]">{report.errandNumber}</Table.Column>
+  </>
+);
 
 /**
  * Relaterade rapporter: the other reports on the person the report concerns, the brukare, so the handler sees that
  * there are more of them. Read-only - nothing is searched, and no relation is made or broken. The reports are the
- * drake's own, which the BFF sees to.
+ * drake's own, which the BFF sees to. Where the deployment turns on `useRelatedReportsMock`, the list shows example
+ * reports instead and reads nothing.
  */
 export const RelatedReportsDisclosure: FC<{
   errand: SupportErrand;
@@ -30,11 +44,16 @@ export const RelatedReportsDisclosure: FC<{
   disabled: boolean;
 }> = ({ errand, disabled }) => {
   const municipalityId = useConfigStore((state) => state.municipalityId);
-  const partyId = brukarePartyId(getSupportOwnerStakeholder(errand));
+  const reportsAreMocked = appConfig.features.useRelatedReportsMock;
+  const partyId = reportsAreMocked ? undefined : brukarePartyId(getSupportOwnerStakeholder(errand));
   // The answer is kept with the brukare it was read for, so a reply for somebody else is never shown.
-  const [answer, setAnswer] = useState<{ readFor: string; reports: CaseStatusResponse[] }>();
+  const [answer, setAnswer] = useState<{ readFor: string; reports: RelatedReport[] }>();
   const loading = Boolean(partyId) && answer?.readFor !== partyId;
-  const reports = partyId && answer?.readFor === partyId ? answer.reports : [];
+  const reports: readonly RelatedReport[] = reportsAreMocked
+    ? MOCK_RELATED_REPORTS
+    : partyId && answer?.readFor === partyId
+    ? answer.reports
+    : [];
 
   useEffect(() => {
     if (!partyId) return;
@@ -69,7 +88,7 @@ export const RelatedReportsDisclosure: FC<{
             errands={reports}
             headers={headers}
             dataCy="related-reports-table"
-            renderRow={(report: CaseStatusResponse) => <RelationErrandCells errand={report} showOperation={false} />}
+            renderRow={(report: RelatedReport) => <RelatedReportCells report={report} />}
           />
         )}
       </Disclosure.Content>
