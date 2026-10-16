@@ -11,13 +11,13 @@ const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision', 'details
  */
 export type InvestigationDocumentPlacement = (typeof INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 
-const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
+const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation', 'deviation'] as const;
 
 /**
- * Which errands the document applies to. `all` is every errand. The other values name one kind of
- * errand as the variant's policy resolves it - `reported-misconduct` for a reported misconduct,
- * `hsl-deviation` for an ordinary deviation under HSL - and the BFF refuses the document elsewhere.
- * A policy resolves at most one kind per errand, so two restricted documents never apply together.
+ * Which errands the document applies to. `all` is every errand, and `deviation` every errand but a
+ * reported misconduct. The other values name one kind of errand as the variant's policy resolves it -
+ * `reported-misconduct` for a reported misconduct, `hsl-deviation` for an ordinary deviation under
+ * HSL. The BFF refuses the document on any other errand.
  */
 export type InvestigationDocumentApplicability = (typeof INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
 

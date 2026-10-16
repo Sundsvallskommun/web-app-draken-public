@@ -378,12 +378,12 @@ describe('SupportErrandJsonParameterController', () => {
     it('never reads the parent errand for documents that apply to every errand', async () => {
       const { controller, documentService } = makeController();
       documentService.readJsonParameter.mockResolvedValue({
-        document: { key: 'utredning-hsl', schemaId: '2281_utredning-hsl_1.0', value: {}, version: 1 },
+        document: { key: 'utredning-enhetschef', schemaId: '2281_utredning-enhetschef_1.0', value: {}, version: 1 },
         etag: '"1"',
         status: 200,
       });
 
-      await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'utredning-hsl', resDouble());
+      await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'utredning-enhetschef', resDouble());
 
       expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
     });
@@ -482,6 +482,59 @@ describe('SupportErrandJsonParameterController', () => {
         message: 'This investigation document applies to reported misconduct errands only',
       });
     });
+  });
+
+  // Ä4: MAS/MAR's event analysis and the comment on it belong to deviations. A misconduct - reported, or suspected and
+  // handed to LEX - never has them; an errand LEX hands back is a deviation again and has them back.
+  describe('the documents declared for deviations', () => {
+    const deviationDocuments = ['utredning-hsl', 'vc-kommentar-hsl'] as const;
+    const reportType = (path: string) => ({ classification: 'REPORT_TYPE', resourcePath: path });
+    const highHslRiskLabel = { classification: 'risk', resourcePath: 'RISK/HIGH_HSL', resourceName: 'HIGH_HSL' };
+    const deviations = [
+      ['an ordinary deviation under SoL', { id: mockSupportErrandId, labels: [reportType('REPORT_TYPE/DEVIATION')] }],
+      ['a deviation with a high HSL risk', { id: mockSupportErrandId, labels: [reportType('REPORT_TYPE/DEVIATION'), highHslRiskLabel] }],
+      ['a deviation LEX has handed back', { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] }],
+    ] as const;
+    const misconducts = [
+      ['a reported misconduct', { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }] }],
+      ['a misconduct suspected and handed to LEX', { id: mockSupportErrandId, labels: [reportType('REPORT_TYPE/ABUSE')] }],
+    ] as const;
+    const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document does not apply to reported misconduct errands' };
+
+    it.each(deviationDocuments.flatMap(key => deviations.map(([situation, errand]) => [key, situation, errand] as const)))(
+      'serves %s on %s',
+      async (key, _situation, errand) => {
+        const { controller, documentService } = makeController();
+        documentService.readParentErrandSnapshot.mockResolvedValue(errand);
+        documentService.readJsonParameter.mockResolvedValue({
+          document: { key, schemaId: `2281_${key}_1.0`, value: {}, version: 1 },
+          etag: '"1"',
+          status: 200,
+        });
+
+        await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, key, resDouble());
+
+        expect(documentService.readJsonParameter).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each(deviationDocuments.flatMap(key => misconducts.map(([situation, errand]) => [key, situation, errand] as const)))(
+      'refuses %s on %s before the document is touched',
+      async (key, _situation, errand) => {
+        const { controller, documentService } = makeController();
+        documentService.readParentErrandSnapshot.mockResolvedValue(errand);
+        const update = { schemaId: `2281_${key}_1.0`, value: {} };
+
+        await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, key, resDouble())).rejects.toMatchObject(
+          NOT_APPLICABLE_ERROR,
+        );
+        await expect(
+          controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, key, ABSENT_HEADER, '*', '4', update, resDouble()),
+        ).rejects.toMatchObject(NOT_APPLICABLE_ERROR);
+        expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+        expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+      },
+    );
   });
 
   it('rejects keys outside the configured profile before any upstream or policy call', async () => {

@@ -194,11 +194,14 @@ const iafVofInvestigationProfileBase = {
       tabLabel: 'Utredning Lex Sarah',
       ownerLabel: 'Lex Sarah',
     },
+    // MAS/MAR's event analysis, and the comment on it below, belong to deviations: a misconduct goes to LEX and is
+    // never analysed under HSL. An errand LEX hands back is a deviation again, and has them back.
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
       tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
+      appliesTo: 'deviation',
     },
     // The comment on MAS/MAR's event analysis by the one who commissioned it. A document of its own, so
     // that the head of operations writes it without being given the analysis itself to change.
@@ -207,6 +210,7 @@ const iafVofInvestigationProfileBase = {
       schemaName: 'vc-kommentar-hsl',
       tabLabel: 'VC kommentar HSL',
       ownerLabel: 'Verksamhetschef',
+      appliesTo: 'deviation',
     },
     // LEX-ansvarig's first assessment once the errand has been handed to LEX: whether it is reported to
     // IVO, and whether it is lex-investigated at all. In Ärendeuppgifter, ahead of any investigation.

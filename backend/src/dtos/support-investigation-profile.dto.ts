@@ -11,14 +11,14 @@ export const SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'deci
  */
 export type SupportInvestigationDocumentPlacement = (typeof SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 
-export const SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
+export const SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation', 'deviation'] as const;
 
 /**
  * Which errands the document applies to. `all` (the default) offers it on every errand. The other
  * values restrict it to one kind of errand as the application's classification policy resolves it
  * - `reported-misconduct` for a reported misconduct, `hsl-deviation` for an ordinary deviation
- * under HSL - and the BFF refuses it on any other errand. The policy resolves at most one kind per
- * errand, so two restricted documents never apply to the same errand.
+ * under HSL, `deviation` for every errand but a reported misconduct - and the BFF refuses it on any
+ * other errand.
  */
 export type SupportInvestigationDocumentApplicability = (typeof SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
 

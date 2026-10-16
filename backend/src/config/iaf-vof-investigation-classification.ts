@@ -226,6 +226,20 @@ export const resolveIafVofInvestigationDocumentApplicability = (
 };
 
 /**
+ * Whether a document declared for `appliesTo` belongs on the errand. `deviation` is every errand but a reported
+ * misconduct - an ordinary deviation, one LEX has handed back among them - and the narrower kinds name the errand's
+ * own, as `resolveIafVofInvestigationDocumentApplicability` resolves it.
+ */
+export const iafVofDocumentAppliesToErrand = (
+  appliesTo: IafVofInvestigationDocumentApplicability | 'deviation' | 'all',
+  errand: ClassificationOwnerErrand,
+): boolean => {
+  if (appliesTo === 'all') return true;
+  const applicability = resolveIafVofInvestigationDocumentApplicability(errand);
+  return appliesTo === 'deviation' ? applicability !== 'reported-misconduct' : applicability === appliesTo;
+};
+
+/**
  * What the unit manager's investigation records about its errand, from schema 1.8: whether it is a misconduct. The
  * unit manager risk-assesses deviations, so the schema neither shows nor requires the SoL/LSS risk assessment for a
  * misconduct - and which of the two the errand is, is not the browser's to say. The field is server-owned: the

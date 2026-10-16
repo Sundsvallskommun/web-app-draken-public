@@ -7,7 +7,7 @@ import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { assessesHighHslRisk, IAF_VOF_HIGH_HSL_RISK_LABEL } from '@/config/iaf-vof-high-hsl-risk';
 import { IAF_VOF_HSL_ANALYSIS_SCHEMA_NAME, IAF_VOF_HSL_ANALYSIS_STARTED_LABEL, startsHslAnalysis } from '@/config/iaf-vof-hsl-analysis';
-import { resolveIafVofInvestigationDocumentApplicability, resolveIafVofUnitManagerErrandFacts } from '@/config/iaf-vof-investigation-classification';
+import { iafVofDocumentAppliesToErrand, resolveIafVofUnitManagerErrandFacts } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import type { Errand, MetadataResponse, Phase } from '@/data-contracts/supportmanagement/data-contracts';
 import {
@@ -58,6 +58,7 @@ const NOT_APPLICABLE_MESSAGES: Readonly<Record<Exclude<SupportInvestigationDocum
   {
     'reported-misconduct': 'This investigation document applies to reported misconduct errands only',
     'hsl-deviation': 'This investigation document applies to HSL deviation errands only',
+    deviation: 'This investigation document does not apply to reported misconduct errands',
   },
 );
 
@@ -336,7 +337,7 @@ export class SupportErrandJsonParameterController {
       throw new HttpException(409, 'Restricted investigation documents require an investigation classification policy');
     }
     const errand = await this.documentService.readParentErrandSnapshot({ definition, municipalityId, errandId, user: req.user });
-    if (resolveIafVofInvestigationDocumentApplicability(errand) !== appliesTo) {
+    if (!iafVofDocumentAppliesToErrand(appliesTo, errand)) {
       throw new HttpException(409, NOT_APPLICABLE_MESSAGES[appliesTo]);
     }
     return errand;

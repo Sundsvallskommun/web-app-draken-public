@@ -150,6 +150,34 @@ test('a document that applies to every errand is offered whatever the errand kin
   }
 });
 
+// Ä4: MAS/MAR's event analysis and the comment on it belong to deviations. A misconduct goes to LEX and has neither.
+test('a document for deviations is offered on every errand but a reported misconduct', () => {
+  const hslAnalysis: InvestigationProfileDocument = {
+    ...document(),
+    key: 'utredning-hsl',
+    schemaName: 'utredning-hsl',
+    tabLabel: 'Händelseanalys HSL',
+    appliesTo: 'deviation',
+  };
+  const p = profile({ documents: [document(), hslAnalysis] });
+  const state = access({ 'utredning-enhetschef': 'edit', 'utredning-hsl': 'edit' });
+
+  for (const applicability of ['hsl-deviation', undefined] as const) {
+    assert.deepEqual(
+      visibleInvestigationDocuments(p, { access: state, applicability }).map((d) => d.key),
+      ['utredning-enhetschef', 'utredning-hsl']
+    );
+  }
+  assert.deepEqual(
+    visibleInvestigationDocuments(p, { access: state, applicability: 'reported-misconduct' }).map((d) => d.key),
+    ['utredning-enhetschef']
+  );
+  assert.deepEqual(
+    configuredInvestigationDocuments(p, { applicability: 'reported-misconduct' }).map((d) => d.key),
+    ['utredning-enhetschef']
+  );
+});
+
 test('decision access is independent of investigation access', () => {
   const p = profile({ documents: [document(), decision] });
   const state = access();

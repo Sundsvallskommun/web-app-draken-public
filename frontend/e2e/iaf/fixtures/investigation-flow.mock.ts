@@ -66,7 +66,7 @@ export interface MockInvestigationProfile {
     tabLabel: string;
     ownerLabel: string;
     placement?: 'investigation' | 'decision' | 'details';
-    appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation';
+    appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation' | 'deviation';
     prerequisiteDocumentKey?: InvestigationKey;
   }>;
 }
@@ -93,12 +93,15 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       schemaName: 'utredning-hsl',
       tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
+      // As the BFF's profile: MAS/MAR's analysis and the comment on it belong to deviations, never to a misconduct.
+      appliesTo: 'deviation',
     },
     {
       key: hslCommentKey,
       schemaName: hslCommentKey,
       tabLabel: 'VC kommentar HSL',
       ownerLabel: 'Verksamhetschef',
+      appliesTo: 'deviation',
     },
     {
       key: hslDecisionKey,
@@ -809,6 +812,19 @@ const misconductLabels = [
   legalCertainty,
   deficientHandling,
 ].map(withoutChildren);
+
+/**
+ * A reported misconduct that MAS/MAR asked the head of operations to comment on while it was taken for a deviation.
+ * The request stays on the errand once the investigation finds a misconduct, as the labels notified from do.
+ */
+export const misconductWithVcCommentRequested = (): Pick<
+  IafApiScenario,
+  'eventType' | 'labels' | 'labelStructure'
+> => ({
+  eventType: 'MISSFORHALLANDE',
+  labelStructure: [...labelStructure, analysisRoot],
+  labels: [...misconductLabels, withoutChildren(vcCommentRequested)],
+});
 
 /**
  * An ordinary deviation under SoL only. The default deviation is under HSL, so this is the errand

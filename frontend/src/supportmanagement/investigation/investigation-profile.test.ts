@@ -104,6 +104,20 @@ test('reads a decision document restricted to reported misconduct', () => {
   assert.equal(profile.documents[2].appliesTo, 'reported-misconduct');
 });
 
+test('reads a document restricted to deviations', () => {
+  const withAnalysis = validProfile();
+  withAnalysis.documents.push({
+    key: 'utredning-hsl',
+    schemaName: 'utredning-hsl',
+    tabLabel: 'Händelseanalys HSL',
+    ownerLabel: 'MAS/MAR',
+    placement: 'investigation',
+    appliesTo: 'deviation',
+  } as (typeof withAnalysis.documents)[number]);
+
+  assert.equal(parseInvestigationProfile(withAnalysis, 'IAF').documents[2].appliesTo, 'deviation');
+});
+
 test('reads a prerequisite only when it names another document of the profile', () => {
   const withPrerequisite = validProfile();
   withPrerequisite.documents.push({

@@ -9,6 +9,7 @@ import {
   hslCommentKey,
   iafLabelFixture,
   installIafApiMock,
+  misconductWithVcCommentRequested,
   withHighHslRisk,
 } from './fixtures/investigation-flow.mock';
 
@@ -248,6 +249,28 @@ test('enhetschef saves the classification together with a high HSL risk', async 
     iafLabelFixture.classification.medication.resourcePath
   );
 });
+
+// Ä4: a misconduct goes to LEX and is never analysed under HSL, not even one MAS/MAR asked the head of operations to
+// comment on before it was found a misconduct. Nobody is offered the analysis or the comment, and neither is read.
+for (const roleKey of ['mas-mar', 'verksamhetschef']) {
+  test(`${roleKey} is shown neither Händelseanalys HSL nor VC kommentar HSL on a reported misconduct`, async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, {
+      roleKeys: [roleKey],
+      documents: allExistingInvestigationDocuments(),
+      ...misconductWithVcCommentRequested(),
+    });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    await expect(investigationTabs(page).getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toHaveCount(0);
+    await expect(investigationTabs(page).getByRole('tab', { name: 'VC kommentar HSL', exact: true })).toHaveCount(0);
+    expect(trace.documentGets).not.toContain(hslKey);
+    expect(trace.documentGets).not.toContain(hslCommentKey);
+  });
+}
 
 test('MAS/MAR is shown Händelseanalys HSL whatever the risk', async ({ page, dismissCookieConsent }) => {
   await installErrand(page, { roleKeys: ['mas-mar'], highHslRisk: false });

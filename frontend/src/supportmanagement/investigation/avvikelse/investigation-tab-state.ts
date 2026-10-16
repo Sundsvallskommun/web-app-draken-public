@@ -24,15 +24,25 @@ export type InvestigationTabState =
 export interface InvestigationDocumentContext {
   readonly access?: InvestigationAccessState;
   readonly placement?: InvestigationDocumentPlacement;
-  readonly applicability?: Exclude<InvestigationDocumentApplicability, 'all'>;
+  readonly applicability?: Exclude<InvestigationDocumentApplicability, 'all' | 'deviation'>;
 }
+
+/** Whether a document declared for `appliesTo` belongs on an errand of the kind the policy resolved, if any. */
+const appliesToErrandKind = (
+  appliesTo: InvestigationDocumentApplicability,
+  applicability: InvestigationDocumentContext['applicability']
+): boolean => {
+  if (appliesTo === 'all') return true;
+  if (appliesTo === 'deviation') return applicability !== 'reported-misconduct';
+  return appliesTo === applicability;
+};
 
 const appliesToErrand = (
   document: InvestigationProfile['documents'][number],
   context: InvestigationDocumentContext
 ): boolean =>
   (document.placement ?? 'investigation') === (context.placement ?? 'investigation') &&
-  ((document.appliesTo ?? 'all') === 'all' || document.appliesTo === context.applicability);
+  appliesToErrandKind(document.appliesTo ?? 'all', context.applicability);
 
 /** The documents configured for this tab and errand, before the user's access is considered. */
 export const configuredInvestigationDocuments = (

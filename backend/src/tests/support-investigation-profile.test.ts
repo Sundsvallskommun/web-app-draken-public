@@ -9,9 +9,10 @@ import { SupportInvestigationProfileDto } from '@/dtos/support-investigation-pro
 const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] = [
   { key: 'utredning-enhetschef', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef', ownerLabel: 'Enhetschef' },
   { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning Lex Sarah', ownerLabel: 'Lex Sarah' },
-  { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR' },
+  // MAS/MAR's event analysis and its comment belong to deviations, never to a reported misconduct.
+  { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR', appliesTo: 'deviation' },
   // The commissioner's comment on the event analysis: beside it under Utredning, and the head of operations'.
-  { key: 'vc-kommentar-hsl', schemaName: 'vc-kommentar-hsl', tabLabel: 'VC kommentar HSL', ownerLabel: 'Verksamhetschef' },
+  { key: 'vc-kommentar-hsl', schemaName: 'vc-kommentar-hsl', tabLabel: 'VC kommentar HSL', ownerLabel: 'Verksamhetschef', appliesTo: 'deviation' },
   {
     key: 'bedomning-sol-lss',
     schemaName: 'bedomning-sol-lss',

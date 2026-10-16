@@ -878,8 +878,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
+    // A misconduct is never analysed under HSL, so Händelseanalys HSL is not among its tabs.
     await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
-      investigationTabKeys.length
+      investigationTabKeys.filter((key) => key !== 'utredning-hsl').length
     );
     await expect(
       page.locator('[data-cy="support-investigation-tab"]').getByRole('tab', { name: 'Beslut', exact: true })
