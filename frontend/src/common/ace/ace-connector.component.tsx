@@ -1,5 +1,6 @@
 'use client';
 
+import { appURL } from '@common/utils/app-url';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useUserStore } from '@stores/index';
@@ -120,7 +121,7 @@ export const AceConnector: React.FC = () => {
           throw new Error('No errand number for new errand');
         }
         storePendingCaller(errandNumber, caller.personNumber);
-        const newTab = window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errandNumber}`, '_blank');
+        const newTab = window.open(appURL(`/arende/${errandNumber}`), '_blank');
         if (newTab) {
           newTab.opener = null;
           return;
