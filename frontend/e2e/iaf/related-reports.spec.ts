@@ -100,9 +100,9 @@ test('shows example reports, with their subcategory, where the deployment mocks 
   const table = relationsModule(page).locator('[data-cy="related-reports-table"]');
   await expect(table.locator('thead th')).toHaveText(['Status', 'Ärendetyp', 'Underkategori', 'Ärendenummer']);
   await expect(table.locator('tbody tr')).toHaveText([
-    /Handläggning pågår\s*Fall\s*Fall vid patientens egna aktiviteter\s*MOCK-0001/u,
-    /Avslutat\s*Fall utan skada\s*MOCK-0002/u,
-    /Inskickat\s*Fall\s*Fall med personal - Hjälpmedel\s*MOCK-0003/u,
+    /Handläggning pågår\s*Fall\s*Fall vid patientens egna aktiviteter\s*VOF-26100006/u,
+    /Avslutat\s*Fall utan skada\s*VOF-26100023/u,
+    /Inskickat\s*Fall\s*Fall med personal - Hjälpmedel\s*VOF-26100038/u,
   ]);
   expect(statusRequests).toEqual([]);
 });

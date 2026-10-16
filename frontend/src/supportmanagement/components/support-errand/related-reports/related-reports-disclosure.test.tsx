@@ -95,11 +95,25 @@ test('shows the example reports, and reads nothing, where the deployment mocks t
 
   const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1);
   expect(rows.map((row) => [...row.querySelectorAll('th, td')].map((cell) => cell.textContent))).toEqual([
-    ['Handläggning pågår', 'Fall', 'Fall vid patientens egna aktiviteter', 'MOCK-0001'],
-    ['Avslutat', 'Fall utan skada', '', 'MOCK-0002'],
-    ['Inskickat', 'Fall', 'Fall med personal - Hjälpmedel', 'MOCK-0003'],
+    ['Handläggning pågår', 'Fall', 'Fall vid patientens egna aktiviteter', 'VOF-26100006'],
+    ['Avslutat', 'Fall utan skada', '', 'VOF-26100023'],
+    ['Inskickat', 'Fall', 'Fall med personal - Hjälpmedel', 'VOF-26100038'],
   ]);
   expect(mocks.statusesByParty).not.toHaveBeenCalled();
+});
+
+// The examples are real errand numbers in test: the one being read is not listed as related to itself.
+test('leaves the errand being read out of the example reports', () => {
+  appConfig.features.useRelatedReportsMock = true;
+  render(
+    <RelatedReportsDisclosure errand={{ ...errand, errandNumber: 'VOF-26100023' } as SupportErrand} disabled={false} />
+  );
+  openModule();
+
+  const table = screen.getByRole('table');
+  expect(within(table).queryByText('VOF-26100023')).toBeNull();
+  expect(within(table).getByText('VOF-26100006')).toBeTruthy();
+  expect(within(table).getByText('VOF-26100038')).toBeTruthy();
 });
 
 test('looks nothing up for an errand that names no brukare', async () => {

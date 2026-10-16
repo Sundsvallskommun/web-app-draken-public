@@ -50,7 +50,7 @@ export const RelatedReportsDisclosure: FC<{
   const [answer, setAnswer] = useState<{ readFor: string; reports: RelatedReport[] }>();
   const loading = Boolean(partyId) && answer?.readFor !== partyId;
   const reports: readonly RelatedReport[] = reportsAreMocked
-    ? MOCK_RELATED_REPORTS
+    ? MOCK_RELATED_REPORTS.filter((report) => report.errandNumber !== errand.errandNumber)
     : partyId && answer?.readFor === partyId
     ? answer.reports
     : [];
