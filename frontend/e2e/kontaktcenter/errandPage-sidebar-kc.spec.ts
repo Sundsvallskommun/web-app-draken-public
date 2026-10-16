@@ -255,6 +255,11 @@ test.describe('errand page', () => {
       page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'),
       forwardConfirm.locator('.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
+    // The forward modal only closes after the whole chain (message, assign, close errand), which
+    // takes several seconds on the CI runner; the success toast marks the end of it.
+    await expect(page.locator('.sk-snackbar-text', { hasText: 'Ärendet vidarebefordrades' })).toBeVisible({
+      timeout: 15000,
+    });
     await waitForModalOverlaysGone(page);
 
     //Can suspend the errand
