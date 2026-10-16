@@ -260,7 +260,8 @@ test.describe('errand page', () => {
     await expect(page.locator('.sk-snackbar-text', { hasText: 'Ärendet vidarebefordrades' })).toBeVisible({
       timeout: 15000,
     });
-    await waitForModalOverlaysGone(page);
+    // Only the forward modal: the handover flow may open the close modal right after it.
+    await expect(page.locator(MODAL_DIALOG).filter({ hasText: 'Överlämna ärendet' })).toHaveCount(0);
 
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
