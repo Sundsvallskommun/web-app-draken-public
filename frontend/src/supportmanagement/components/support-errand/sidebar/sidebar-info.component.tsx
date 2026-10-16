@@ -24,6 +24,7 @@ import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'reac
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
+import { SupportCloseErrandModal } from './buttons/support-close-errand-modal.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
@@ -36,6 +37,8 @@ export const SidebarInfo: FC<{
 }> = (props) => {
   const user = useUserStore((s) => s.user);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const showCloseModalAfterHandover = useSupportStore((s) => s.showCloseModalAfterHandover);
+  const setShowCloseModalAfterHandover = useSupportStore((s) => s.setShowCloseModalAfterHandover);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -237,7 +240,7 @@ export const SidebarInfo: FC<{
   const solutionComponent = (label: string, info: string, icon: string) => (
     <>
       <div className="flex">
-        <Label rounded>
+        <Label rounded data-cy="resolution-label">
           {(() => {
             const DynIcon = iconMap[icon];
             return DynIcon ? <DynIcon size="1.5rem" /> : undefined;
@@ -320,6 +323,28 @@ export const SidebarInfo: FC<{
       case Resolution.FORWARDED_TO_EXTERNAL_CONTRACTOR: {
         return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till extern entreprenör.', 'split');
       }
+      case Resolution.INFORMED: {
+        return solutionComponent('Informerat', 'informerade kunden.', 'check');
+      }
+      case Resolution.GUIDED: {
+        return solutionComponent('Guidat', 'guidade kunden.', 'check');
+      }
+      case Resolution.ACTIONED: {
+        return solutionComponent('Åtgärdat', 'åtgärdade ärendet.', 'check');
+      }
+      case Resolution.PREPARED: {
+        return solutionComponent('Förberett', 'förberedde ärendet för handläggare.', 'check');
+      }
+      case Resolution.REFERRED: {
+        return solutionComponent('Hänvisat', 'hänvisade ärendet vidare.', 'split');
+      }
+      case Resolution.HANDED_OVER: {
+        return solutionComponent('Överlämnat', 'överlämnade ärendet.', 'split');
+      }
+      default: {
+        // An unmapped code still gets a label instead of nothing.
+        return solutionComponent(resolution, 'avslutade ärendet.', 'check');
+      }
     }
   };
 
@@ -338,6 +363,11 @@ export const SidebarInfo: FC<{
       <div className="px-0 flex justify-between items-center">
         <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
       </div>
+      <SupportCloseErrandModal
+        show={showCloseModalAfterHandover}
+        afterHandover
+        onClose={() => setShowCloseModalAfterHandover(false)}
+      />
 
       <div className="w-full mt-md flex flex-col gap-12">
         <>

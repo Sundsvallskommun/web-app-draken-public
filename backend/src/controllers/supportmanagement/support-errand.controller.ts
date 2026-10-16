@@ -4,7 +4,7 @@ import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Errand as CasedataErrandDTO,
@@ -49,6 +49,7 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
+import { selectCategorizationLabels } from '@/utils/categorization-labels';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
@@ -624,7 +625,12 @@ export class SupportErrandController {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
       classification: errandDefaults?.classification,
-      labels: errandDefaults?.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, errandDefaults.labels) : [],
+      labels: errandDefaults?.labels
+        ? resolveDefaultLabels(
+            selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
+            errandDefaults.labels,
+          )
+        : [],
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,

@@ -10,6 +10,7 @@ import {
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelKSLegacy,
   ResolutionLabelLOK,
   ResolutionLabelLOP,
 } from '@supportmanagement/services/support-errand-service';
@@ -54,6 +55,7 @@ export const SidebarHistory: React.FC<{}> = () => {
     });
     [
       ...Object.entries(ResolutionLabelKS),
+      ...Object.entries(ResolutionLabelKSLegacy),
       ...Object.entries(ResolutionLabelKA),
       ...Object.entries(ResolutionLabelLOP),
       ...Object.entries(ResolutionLabelIK),

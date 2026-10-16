@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
-import { mockCategories, mockMetaData } from './fixtures/mockMetadata';
+import { mockMetaData } from './fixtures/mockMetadata';
 import {
   mockEmptySupportErrand,
   mockFilterAdminErrands,
@@ -20,9 +20,7 @@ import { mockNotifications } from './fixtures/mockSupportNotifications';
 
 test.describe('Overview support errand', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
@@ -75,7 +73,7 @@ test.describe('Overview support errand', () => {
     //Verksamhet
     await mockRoute('**/supporterrands/2281?page=0*', mockFilteredCategoryErrands, { method: 'GET' });
     await page.locator('[data-cy="Verksamhet-filter"]').click();
-    await page.locator(`[data-cy="Verksamhet-filter-${mockCategories[0].name}"]`).click();
+    await page.locator('[data-cy="Verksamhet-filter-BOU"]').click();
     await page.keyboard.press('Escape');
 
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -91,10 +89,10 @@ test.describe('Overview support errand', () => {
       mockSupportErrands.content.length
     );
 
-    //Ärendetyp
-    await mockRoute('**/supporterrands/2281?page=0*', mockFilteredCategoryErrands, { method: 'GET' });
+    //Ärendekategori. The label's resourcePath has a slash, which a glob `*` does not match, hence the regex.
+    await mockRoute(/\/supporterrands\/2281\?page=0.*labelType=.*/, mockFilteredCategoryErrands, { method: 'GET' });
     await page.locator('[data-cy="Ärendekategori-filter"]').click();
-    await page.locator(`[data-cy="Ärendekategori-filter-${mockCategories[0].types[0].name}"]`).click();
+    await page.locator('[data-cy="Ärendekategori-filter-Barnomsorg"]').click();
     await page.keyboard.press('Escape');
 
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
