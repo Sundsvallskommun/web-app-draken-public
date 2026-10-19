@@ -1,9 +1,12 @@
 'use client';
-
+import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
-import { missingPermitInputs } from '@supportmanagement/services/support-decision-parameters-service';
+import {
+  missingDecisionInputs,
+  missingPermitInputs,
+} from '@supportmanagement/services/support-decision-parameters-service';
 import { supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
 import { getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
 import {
@@ -123,6 +126,31 @@ export const useProcessStepGates = (errandId: string | undefined) => {
     return true;
   };
 
+  const decisionCarriesWhatThePermitNeeds = async (decisions: Decision[]): Promise<boolean> => {
+    if (!supportErrand) return true;
+
+    const permitType = supportDecisionPermitType(
+      getMostSpecificLabelType(supportErrand),
+      supportErrand.process?.processKey
+    );
+    const decided = decisions.find((decision) => !!decision.outcome);
+    const missing = missingDecisionInputs(permitType, decided?.parameters);
+    if (!missing.length) return true;
+
+    const goToTheDecision = await confirm.showConfirmation(
+      t('common:process.actions.missing_permit_inputs.decision_title'),
+      t('common:process.actions.missing_permit_inputs.decision_text', {
+        inputs: missing.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', '),
+      }),
+      t('common:process.actions.missing_permit_inputs.go_to_decision'),
+      t('common:process.actions.missing_permit_inputs.cancel'),
+      'info',
+      'info'
+    );
+    if (goToTheDecision) setActiveTabKey('decision');
+    return false;
+  };
+
   const askForAnOutcomeFirst = () =>
     confirm
       .showConfirmation(
@@ -142,6 +170,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   return {
     statementsAllowADecision,
     permitInputsAreInPlace,
+    decisionCarriesWhatThePermitNeeds,
     askForAnOutcomeFirst,
     complainThatTheDecisionCouldNotBeRead,
   };

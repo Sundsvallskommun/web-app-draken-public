@@ -52,7 +52,7 @@ import {
   saveSupportErrandParameters,
   type SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { text } from '@supportmanagement/services/support-form-value-service';
+import { childText, text } from '@supportmanagement/services/support-form-value-service';
 import {
   formatAddress,
   getPremisesAddress,
@@ -177,6 +177,7 @@ export const SupportErrandDecisionTab: FC<{
   const [terms, setTerms] = useState<string[]>([]);
   const [servingArea, setServingArea] = useState('');
   const [issuedOn, setIssuedOn] = useState('');
+  const [premisesPhone, setPremisesPhone] = useState<string>();
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const typeLabel = supportErrand ? getMostSpecificLabelType(supportErrand) : undefined;
@@ -204,6 +205,13 @@ export const SupportErrandDecisionTab: FC<{
   );
   const premisesText = usePremisesText();
   const premisesToSend = decisionPremises.decided ?? savedPremises;
+  const applicationForm = useMemo(
+    () => getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
+    [supportErrand, supportMetadata?.namespace]
+  );
+  const applicationPremisesPhone =
+    (applicationForm && childText(applicationForm, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer')) ?? '';
+  const premisesPhoneInHand = premisesPhone ?? applicationPremisesPhone;
 
   useEffect(() => {
     if (!supportErrand?.id) return;
@@ -239,6 +247,7 @@ export const SupportErrandDecisionTab: FC<{
     setTerms(termTexts(draft));
     setServingArea(decisionParameterValue(draft.parameters, 'servingAreaDescription') ?? '');
     setIssuedOn(decisionParameterValue(draft.parameters, 'executionDate') ?? '');
+    setPremisesPhone(decisionParameterValue(draft.parameters, 'premisesPhone'));
   };
 
   useEffect(() => {
@@ -256,6 +265,7 @@ export const SupportErrandDecisionTab: FC<{
     premises: premisesToSend ?? null,
     servingArea,
     issuedOn,
+    premisesPhone: premisesPhoneInHand,
   });
 
   const formAsSaved = () => ({
@@ -268,6 +278,7 @@ export const SupportErrandDecisionTab: FC<{
     premises: savedPremises ?? null,
     servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
     issuedOn: decisionParameterValue(decision?.parameters, 'executionDate') ?? '',
+    premisesPhone: decisionParameterValue(decision?.parameters, 'premisesPhone') ?? applicationPremisesPhone,
   });
 
   const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
@@ -293,9 +304,13 @@ export const SupportErrandDecisionTab: FC<{
     servingArea,
     attachments: supportAttachments,
     issuedOn,
+    premisesPhone: premisesPhoneInHand,
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
+
+  /** What the certificate prints and nobody but the handler can supply; without it no permit is issued. */
+  const missingForTheCertificate = (needsIssueDate && !issuedOn) || (servingPermit && !premisesPhoneInHand.trim());
 
   const termsInHand = () => terms.map((term) => term.trim()).filter(Boolean);
 
@@ -327,7 +342,7 @@ export const SupportErrandDecisionTab: FC<{
   };
 
   const save = async () => {
-    if (!supportErrand?.id || !outcome || (needsIssueDate && !issuedOn)) return;
+    if (!supportErrand?.id || !outcome || missingForTheCertificate) return;
     setIsSaving(true);
     const writtenTerms = termsInHand();
     const permitName = getLabelType(supportErrand)?.displayName;
@@ -391,17 +406,33 @@ export const SupportErrandDecisionTab: FC<{
             }
             servingPremisesHandling={
               servingPermit ? (
-                <FormControl id="decision-serving-area" className="w-full pt-12">
-                  <FormLabel>{t('common:decision.basis.serving_premises.description')}</FormLabel>
-                  <Textarea
-                    className="w-full"
-                    rows={3}
-                    value={servingArea}
-                    onChange={(event) => setServingArea(event.target.value)}
-                    disabled={!canEdit || isLoading || error || !editable}
-                    data-cy="decision-serving-area"
-                  />
-                </FormControl>
+                <>
+                  <FormControl id="decision-serving-area" className="w-full pt-12">
+                    <FormLabel>{t('common:decision.basis.serving_premises.description')}</FormLabel>
+                    <Textarea
+                      className="w-full"
+                      rows={3}
+                      value={servingArea}
+                      onChange={(event) => setServingArea(event.target.value)}
+                      disabled={!canEdit || isLoading || error || !editable}
+                      data-cy="decision-serving-area"
+                    />
+                  </FormControl>
+
+                  <FormControl id="decision-premises-phone" className="w-full pt-12" required>
+                    <FormLabel>{t('common:decision.premises.phone')}</FormLabel>
+                    <FormHelperText className="p-0 m-0 text-small text-dark-secondary">
+                      {t('common:decision.premises.phone_help')}
+                    </FormHelperText>
+                    <Input
+                      className="w-full max-w-[20rem]"
+                      value={premisesPhone}
+                      onChange={(event) => setPremisesPhone(event.target.value)}
+                      disabled={!canEdit || isLoading || error || !editable}
+                      data-cy="decision-premises-phone"
+                    />
+                  </FormControl>
+                </>
               ) : undefined
             }
           />
@@ -625,7 +656,7 @@ export const SupportErrandDecisionTab: FC<{
             leftIcon={<CircleCheck size={18} />}
             loadingText={t('common:decision.saving')}
             saving={isSaving}
-            disabled={!canEdit || !outcome || (needsIssueDate && !issuedOn) || isSaving}
+            disabled={!canEdit || !outcome || missingForTheCertificate || isSaving}
             onSave={save}
             unsaved={edited}
             unsavedTitle={t('common:decision.unsaved')}

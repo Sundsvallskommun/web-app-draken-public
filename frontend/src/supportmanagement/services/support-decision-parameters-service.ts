@@ -36,6 +36,8 @@ export interface DecisionParameterInput {
   attachments?: { fileName: string; purpose?: { name?: string } }[];
   /** The day the permit is issued, as the handler set it on the decision. */
   issuedOn?: string;
+  /** The telephone to the premises as the handler has it, which starts as the application's answer. */
+  premisesPhone?: string;
   /** The handler saving the decision. */
   user: { name: string };
   /** Today, YYYY-MM-DD; the backend stamps decidedAt on the same save. */
@@ -76,12 +78,20 @@ const permitHolderParameters = (holder: SupportStakeholderFormModel | undefined)
   permitHolderPostalAddress: postalAddress(holder?.zipCode, holder?.city),
 });
 
-/** The restaurant number is left out: the process resolves it and puts the one it assigned on the certificate. */
-const premisesParameters = (form: FormValue | undefined, premises: DecisionPremises | undefined): Parameters => ({
+/**
+ * The restaurant number is left out: the process resolves it and puts the one it assigned on the
+ * certificate. The telephone is the handler's, since the application asks for it but does not insist.
+ */
+const premisesParameters = (
+  form: FormValue | undefined,
+  premises: DecisionPremises | undefined,
+  premisesPhone: string | undefined
+): Parameters => ({
   premisesName: form && text(form.serveringsstalletsNamn),
   premisesStreet: premises?.street,
   premisesPostalAddress: postalAddress(premises?.postalCode, premises?.city),
-  premisesPhone: form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer'),
+  premisesPhone:
+    text(premisesPhone) ?? (form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer')),
 });
 
 const issuingParameters = ({
@@ -140,12 +150,13 @@ export const servingPermitParameters = ({
   servingArea,
   attachments,
   issuedOn,
+  premisesPhone,
   user,
   today,
 }: DecisionParameterInput): Parameters => ({
   ...permitHolderParameters(errand.customer?.[0]),
   permitHolderPhone: holderPhone(errand.customer?.[0]),
-  ...premisesParameters(form, premises),
+  ...premisesParameters(form, premises, premisesPhone),
   servingToPublic: form && String(servesPublic(form)),
   servingToClosedCompany: form && String(servesPrivate(form)),
   scopeAllYear: form && String(servingPeriods(form).includes('ARET_RUNT')),
@@ -170,11 +181,12 @@ export const tobaccoPermitParameters = ({
   form,
   premises,
   issuedOn,
+  premisesPhone,
   user,
 }: DecisionParameterInput): Parameters => ({
   ...permitHolderParameters(errand.customer?.[0]),
   permitHolderCareOf: errand.customer?.[0]?.careOf,
-  ...premisesParameters(form, premises),
+  ...premisesParameters(form, premises, premisesPhone),
   premisesPropertyDesignation: undefined, // fastighetsbeteckning is not asked for anywhere yet
   salesRetail: undefined, // the form does not ask whether the sales are retail
   salesWholesale: undefined, // the form does not ask whether the sales are wholesale
@@ -190,7 +202,7 @@ export const tobaccoPermitParameters = ({
 const parametersFor = (permitType: string, input: DecisionParameterInput): Parameters => {
   if (permitType === 'SERVERINGSTILLSTAND') return servingPermitParameters(input);
   if (permitType === 'TOBAKSFORSALJNING') return tobaccoPermitParameters(input);
-  return premisesParameters(input.form, input.premises);
+  return premisesParameters(input.form, input.premises, input.premisesPhone);
 };
 
 const CERTIFICATE_TEMPLATES: Record<string, string> = {
@@ -257,14 +269,38 @@ const PERMIT_INPUTS_OF_THE_HANDLER: Record<string, string[]> = {
 const PERMIT_INPUTS_OF_THE_APPLICANT: Record<string, string[]> = {
   SERVERINGSTILLSTAND: [
     'premisesName',
-    'premisesPhone',
     'servingAreaSeats',
     'servingAreaMaxPersons',
     'servingHours',
     'servingAreaDrawingReference',
   ],
-  TOBAKSFORSALJNING: ['premisesName', 'premisesPhone'],
+  TOBAKSFORSALJNING: ['premisesName'],
 };
+
+const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
+  SERVERINGSTILLSTAND: [
+    'decisionText',
+    'decisionMaker',
+    'validFrom',
+    'executionDate',
+    'premisesStreet',
+    'premisesPostalAddress',
+    'premisesPhone',
+    'servingAreaDescription',
+  ],
+  TOBAKSFORSALJNING: [
+    'decisionText',
+    'decisionMaker',
+    'validFrom',
+    'executionDate',
+    'premisesStreet',
+    'premisesPostalAddress',
+    'premisesPhone',
+  ],
+};
+
+export const missingDecisionInputs = (permitType: string, parameters: Parameter[] | undefined): string[] =>
+  (PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []).filter((key) => !decisionParameterValue(parameters, key));
 
 export interface MissingPermitInputs {
   /** Template keys the handler fills on the errand itself. */

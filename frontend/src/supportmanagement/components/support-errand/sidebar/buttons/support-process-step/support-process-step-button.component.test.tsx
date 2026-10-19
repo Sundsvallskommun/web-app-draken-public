@@ -57,6 +57,21 @@ vi.mock('@supportmanagement/services/support-process-service', async (importOrig
 
 const ERRAND_ID = 'errand-1';
 
+const CERTIFICATE_PARAMETERS = [
+  'decisionText',
+  'decisionMaker',
+  'validFrom',
+  'executionDate',
+  'premisesStreet',
+  'premisesPostalAddress',
+  'premisesPhone',
+  'servingAreaDescription',
+].map((key) => ({ key, values: ['ifyllt'] }));
+
+const aDecision = (parameters = CERTIFICATE_PARAMETERS) => [
+  { id: 'decision-1', decisionType: 'PROPOSED', outcome: 'APPROVAL', parameters },
+];
+
 const errandAt = (currentActivityId: string, awaitingSignals: string[]): SupportErrand =>
   ({
     id: ERRAND_ID,
@@ -106,7 +121,7 @@ beforeEach(() => {
   toast.mockReset();
   vi.mocked(getSupportDecisions)
     .mockReset()
-    .mockResolvedValue([{ id: 'decision-1', decisionType: 'PROPOSED', outcome: 'APPROVAL' }] as never);
+    .mockResolvedValue(aDecision() as never);
   vi.mocked(completeSupportDecision)
     .mockReset()
     .mockResolvedValue(true as never);
@@ -336,6 +351,28 @@ test('what only the applicant can complete is said out loud and then left to the
   // The application is not on the errand, so its inputs are missing; the dialog is answered yes here.
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'review_completed'));
   expect(useSupportStore.getState().activeTabKey).not.toBe('basics');
+});
+
+test('a decision is not concluded while the certificate lacks something, since its parameters then freeze', async () => {
+  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  vi.mocked(getSupportDecisions).mockResolvedValue(aDecision(withoutValidFrom) as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('decision'));
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });
 
 test('a process that failed is not offered a restart from the errand page', async () => {

@@ -131,6 +131,8 @@ export const SupportProcessStepButton: FC<{
       return;
     }
 
+    if (!(await gates.decisionCarriesWhatThePermitNeeds(onErrand))) return;
+
     return carryOut(action, onErrand);
   };
 

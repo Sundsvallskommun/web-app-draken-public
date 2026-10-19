@@ -6,6 +6,7 @@ import {
   certificateTemplate,
   type DecisionParameterInput,
   decisionParameterValue,
+  missingDecisionInputs,
   missingPermitInputs,
   PLACEHOLDER,
   servingPermitParameters,
@@ -97,6 +98,13 @@ describe('a serving permit', () => {
       permitHolderPostalAddress: `${HOLDER.postalCode} ${HOLDER.city}`,
       permitHolderPhone: mockEnv.mockPhoneNumber,
     });
+  });
+
+  test('the handler’s telephone to the premises wins over the one the application gave', () => {
+    expect(sent('SERVERINGSTILLSTAND', { form: servingForm, premisesPhone: '060-999999' }).premisesPhone).toBe(
+      '060-999999'
+    );
+    expect(sent('SERVERINGSTILLSTAND', { form: servingForm }).premisesPhone).toBe(mockEnv.mockPhoneNumber);
   });
 
   test('carries the premises as filed, but not the restaurant number the process resolves', () => {
@@ -249,7 +257,6 @@ describe('what the permit needs of the errand', () => {
       fromTheErrand: ['permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
       fromTheApplication: [
         'premisesName',
-        'premisesPhone',
         'servingAreaSeats',
         'servingAreaMaxPersons',
         'servingHours',
@@ -258,16 +265,47 @@ describe('what the permit needs of the errand', () => {
     });
   });
 
-  test('a telephone the application left out, and a drawing nobody attached', () => {
-    const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
-
-    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), withoutPhone, [])).toEqual({
+  test('a drawing nobody attached', () => {
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, [])).toEqual({
       fromTheErrand: [],
-      fromTheApplication: ['premisesPhone', 'servingAreaDrawingReference'],
+      fromTheApplication: ['servingAreaDrawingReference'],
     });
   });
 
+  test('the telephone to the premises is the handler’s, so the review does not wait for it', () => {
+    const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
+
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), withoutPhone, drawing).fromTheApplication).toEqual([]);
+  });
+
+  test('the decision is checked on what it saved, so a concluded decision cannot lack a placeholder', () => {
+    const complete = toDecisionParameters(
+      'SERVERINGSTILLSTAND',
+      input({ form: servingForm, servingArea: 'Matsalen' }),
+      DECISION
+    );
+
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', complete)).toEqual([]);
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', undefined)).toEqual([
+      'decisionText',
+      'decisionMaker',
+      'validFrom',
+      'executionDate',
+      'premisesStreet',
+      'premisesPostalAddress',
+      'premisesPhone',
+      'servingAreaDescription',
+    ]);
+    expect(
+      missingDecisionInputs(
+        'SERVERINGSTILLSTAND',
+        toDecisionParameters('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...DECISION, validFrom: '' })
+      )
+    ).toEqual(['validFrom', 'servingAreaDescription']);
+  });
+
   test('a permit that issues no certificate has nothing to wait for', () => {
+    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual([]);
     expect(missingPermitInputs('FOLKOLSANMALAN', errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],

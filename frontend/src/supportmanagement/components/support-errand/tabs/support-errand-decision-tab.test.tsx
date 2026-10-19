@@ -5,13 +5,18 @@ import { getSupportDecisions, SUPPORT_DECISION_ROLE_KEYS } from '@supportmanagem
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../../../tests/mock-env';
 import { SupportErrandDecisionTab } from './support-errand-decision-tab';
 
-// The form is under test; the basis above it and the premises lookup have tests of their own.
-vi.mock('./support-errand-decision-basis.component', () => ({ SupportErrandDecisionBasis: () => null }));
+// The form is under test; the basis above it and the premises lookup have tests of their own, but the
+// basis renders the fields about the serving premises, so the mock hands those through.
+vi.mock('./support-errand-decision-basis.component', () => ({
+  SupportErrandDecisionBasis: ({ servingPremisesHandling }: { servingPremisesHandling?: ReactNode }) =>
+    servingPremisesHandling ?? null,
+}));
 vi.mock('@common/components/template-preview/template-pdf-preview.component', () => ({
   TemplatePdfPreview: () => null,
 }));
@@ -75,6 +80,11 @@ test('the decision maker starts as handläggare, and a permit needs an outcome a
   expect(saveButton().disabled).toBe(true);
 
   fireEvent.change(select('issued-on'), { target: { value: '2026-10-20' } });
+
+  // A serving permit also prints the telephone to the premises, which this application never gave.
+  expect(saveButton().disabled).toBe(true);
+
+  fireEvent.change(select('premises-phone'), { target: { value: '060-191000' } });
 
   expect(saveButton().disabled).toBe(false);
 });
