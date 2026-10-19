@@ -260,10 +260,13 @@ export const toCertificateParameters = (
  * template's own, and they are read back out of the mapping above so that the two cannot drift apart.
  * The handler fills what stands on the errand; what the application carries can only be completed by
  * the applicant, which is a complement and not something the step should wait for.
+ *
+ * Only the serving permit is listed. The tobacco certificate reads placeholders that have no source
+ * at all, and its application names its fields differently, so demanding them would stop every
+ * tobacco errand without giving the handler anywhere to go. It joins once its template is settled.
  */
 const PERMIT_INPUTS_OF_THE_HANDLER: Record<string, string[]> = {
   SERVERINGSTILLSTAND: ['permitHolderName', 'permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
-  TOBAKSFORSALJNING: ['permitHolderName', 'permitHolderStreet', 'permitHolderPostalAddress'],
 };
 
 const PERMIT_INPUTS_OF_THE_APPLICANT: Record<string, string[]> = {
@@ -274,7 +277,6 @@ const PERMIT_INPUTS_OF_THE_APPLICANT: Record<string, string[]> = {
     'servingHours',
     'servingAreaDrawingReference',
   ],
-  TOBAKSFORSALJNING: ['premisesName'],
 };
 
 const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
@@ -287,15 +289,6 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
     'premisesPostalAddress',
     'premisesPhone',
     'servingAreaDescription',
-  ],
-  TOBAKSFORSALJNING: [
-    'decisionText',
-    'decisionMaker',
-    'validFrom',
-    'executionDate',
-    'premisesStreet',
-    'premisesPostalAddress',
-    'premisesPhone',
   ],
 };
 
