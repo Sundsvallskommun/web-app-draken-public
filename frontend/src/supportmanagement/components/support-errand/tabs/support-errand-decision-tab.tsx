@@ -21,13 +21,17 @@ import { useDecisionPremises } from '@supportmanagement/components/premises/use-
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   certificateTemplate,
+  type CertificateDecision,
   type DecisionParameterInput,
   decisionParameterValue,
-  premisesFromDecisionParameters,
   toCertificateParameters,
   toDecisionParameters,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import type { DecisionPremises as DecisionPremisesValue } from '@supportmanagement/services/support-decision-premises-service';
+import {
+  type DecisionPremises as DecisionPremisesValue,
+  premisesFromErrandParameters,
+  withPremisesProcessParameters,
+} from '@supportmanagement/services/support-decision-premises-service';
 import {
   createSupportDecision,
   getSupportDecisions,
@@ -45,8 +49,10 @@ import {
 import {
   getLabelType,
   getMostSpecificLabelType,
+  saveSupportErrandParameters,
   type SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { text } from '@supportmanagement/services/support-form-value-service';
 import {
   formatAddress,
   getPremisesAddress,
@@ -55,6 +61,7 @@ import {
 import dayjs from 'dayjs';
 import { CircleCheck, Plus, Trash } from 'lucide-react';
 import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
@@ -82,11 +89,14 @@ const usePremisesText = () => {
     ].join(' · ');
 };
 
-const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> = ({ decision, outcomes }) => {
+const DecisionSummary: FC<{
+  decision: Decision;
+  outcomes: DecisionOutcome[];
+  premises: DecisionPremisesValue | undefined;
+}> = ({ decision, outcomes, premises }) => {
   const { t } = useTranslation();
   const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
-  const premises = premisesFromDecisionParameters(decision.parameters);
 
   return (
     <div className="flex flex-col gap-16" data-cy="decision-summary">
@@ -145,11 +155,13 @@ export const SupportErrandDecisionTab: FC<{
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const user = useUserStore((s) => s.user);
   const canEdit = user.permissions.canEditSupportManagement;
   const toastMessage = useSnackbar();
+  const errandForm = useFormContext();
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,7 +190,10 @@ export const SupportErrandDecisionTab: FC<{
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
     [supportErrand, supportMetadata?.namespace]
   );
-  const savedPremises = useMemo(() => premisesFromDecisionParameters(decisions[0]?.parameters), [decisions]);
+  const savedPremises = useMemo(
+    () => premisesFromErrandParameters(supportErrand?.parameters),
+    [supportErrand?.parameters]
+  );
   const decisionPremises = useDecisionPremises(
     handlesPremises && opened ? municipalityId : undefined,
     premises,
@@ -275,11 +290,41 @@ export const SupportErrandDecisionTab: FC<{
     today: dayjs().format('YYYY-MM-DD'),
   });
 
+  const termsInHand = () => terms.map((term) => term.trim()).filter(Boolean);
+
+  /** What the certificate says about the decision, outcome and all, whether previewed or sent. */
+  const certificateDecision = (writtenTerms: string[]): CertificateDecision => ({
+    decisionText: outcomeLabel(outcomes, outcomeForTerms(outcome, writtenTerms, outcomes)),
+    decisionMaker: decidedByRole,
+    validFrom,
+    terms: writtenTerms,
+  });
+
+  /**
+   * The premises belong to the errand, where the process reads them to resolve the restaurant number.
+   * The errand form carries them too, so that saving the errand afterwards does not drop them.
+   */
+  const savePremisesOnErrand = async (input: DecisionParameterInput) => {
+    if (!premisesToSend || !supportErrand?.id) return;
+
+    const parameters = withPremisesProcessParameters(
+      supportErrand.parameters,
+      premisesToSend,
+      text(input.form?.serveringsstalletsNamn) ?? ''
+    );
+    if (JSON.stringify(parameters) === JSON.stringify(supportErrand.parameters)) return;
+
+    await saveSupportErrandParameters(supportErrand.id, municipalityId, parameters);
+    setSupportErrand({ ...supportErrand, parameters });
+    errandForm?.setValue('parameters', parameters, { shouldDirty: false });
+  };
+
   const save = async () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
-    const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
+    const writtenTerms = termsInHand();
     const permitName = getLabelType(supportErrand)?.displayName;
+    const input = parameterInput(supportErrand);
     const written = supportDecisionWithoutBlanks({
       outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
       type: permitType,
@@ -291,10 +336,11 @@ export const SupportErrandDecisionTab: FC<{
       validFrom,
       validTo,
       terms: writtenTerms,
-      parameters: toDecisionParameters(permitType, parameterInput(supportErrand)),
+      parameters: toDecisionParameters(permitType, input, certificateDecision(writtenTerms)),
     });
 
     try {
+      await savePremisesOnErrand(input);
       const saved = decision?.id
         ? await updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
         : await createSupportDecision(supportErrand.id, municipalityId, written);
@@ -368,7 +414,7 @@ export const SupportErrandDecisionTab: FC<{
 
       {!isLoading && !error && decision && !editable ? (
         <DecisionCard>
-          <DecisionSummary decision={decision} outcomes={outcomes} />
+          <DecisionSummary decision={decision} outcomes={outcomes} premises={savedPremises} />
         </DecisionCard>
       ) : null}
 
@@ -534,12 +580,11 @@ export const SupportErrandDecisionTab: FC<{
               watermarked
               title={t('common:decision.preview')}
               identifier={certificateTemplate(permitType)}
-              parameters={toCertificateParameters(permitType, parameterInput(supportErrand), {
-                decisionText: outcomeLabel(outcomes, outcome),
-                decisionMaker: decidedByRole,
-                validFrom,
-                terms: terms.filter(Boolean),
-              })}
+              parameters={toCertificateParameters(
+                permitType,
+                parameterInput(supportErrand),
+                certificateDecision(termsInHand())
+              )}
             />
           ) : null}
 

@@ -17,9 +17,9 @@ import {
 /**
  * What a decision carries to the process that issues the permit: one parameter per key the permit
  * template reads. Each permit's record below lists its keys in order with the expression that fills
- * each one. What the decision holds on its root is not repeated as a parameter: the templates'
- * decisionText (outcome), decisionMaker (decidedByRole), decisionDate (decidedAt), validFrom and
- * conditions / information (terms).
+ * each one. The process adds the conditions out of the decision's terms and the restaurant number it
+ * resolved, and nothing else off the decision's root, so the outcome, the decider, the date and the
+ * first day of validity are sent as parameters too.
  */
 
 export interface DecisionParameterInput {
@@ -40,7 +40,7 @@ export interface DecisionParameterInput {
   today: string;
 }
 
-/** Sent for a key the mapping cannot fill; the process does not yet say which keys it needs. */
+/** No longer sent; decisions saved while it was carry it where a value was missing. */
 export const PLACEHOLDER = 'foobar';
 
 /** A permit's parameters, keyed as its template reads them. */
@@ -48,17 +48,9 @@ type Parameters = Record<string, string | undefined>;
 
 const join = (...parts: (string | undefined)[]): string | undefined => parts.filter(Boolean).join(', ') || undefined;
 
-/** "852 30 Sundsvall" — the postal code as it came, so the premises read back as they were sent. */
+/** "852 30 Sundsvall", as the certificate prints it; the parts go on the errand for the process. */
 const postalAddress = (postalCode: string | undefined, city: string | undefined): string | undefined =>
   [postalCode, city].filter(Boolean).join(' ') || undefined;
-
-/** The inverse of postalAddress: a Swedish postal code, then the city. */
-export const splitPostalAddress = (
-  postalAddress: string | undefined
-): { postalCode: string; city: string } | undefined => {
-  const match = postalAddress?.trim().match(/^(\d{3} ?\d{2})\s+(\S.*)$/);
-  return match ? { postalCode: match[1], city: match[2] } : undefined;
-};
 
 const drawingReference = (attachments: DecisionParameterInput['attachments']): string | undefined =>
   attachments
@@ -82,14 +74,12 @@ const permitHolderParameters = (holder: SupportStakeholderFormModel | undefined)
   permitHolderPostalAddress: postalAddress(holder?.zipCode, holder?.city),
 });
 
-/** The chosen number, or that a new one is to be created; neither until the choice is made. */
+/** The restaurant number is left out: the process resolves it and puts the one it assigned on the certificate. */
 const premisesParameters = (form: FormValue | undefined, premises: DecisionPremises | undefined): Parameters => ({
   premisesName: form && text(form.serveringsstalletsNamn),
   premisesStreet: premises?.street,
   premisesPostalAddress: postalAddress(premises?.postalCode, premises?.city),
   premisesPhone: form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer'),
-  ...(premises?.choice.kind === 'EXISTING' && { premisesRestaurantNumber: premises.choice.restaurantNumber }),
-  ...(premises?.choice.kind === 'NEW' && { newRestaurantNumber: 'true' }),
 });
 
 const issuingParameters = ({ errand, user }: Pick<DecisionParameterInput, 'errand' | 'user'>): Parameters => ({
@@ -205,53 +195,55 @@ export interface CertificateDecision {
   terms: string[];
 }
 
-/** What the permit template renders for the decision in hand, blank where nothing is known. */
+/** The permit's record with the decision's own fields, named as the template reads them. */
+const decisionParameters = (
+  permitType: string,
+  input: DecisionParameterInput,
+  decision: CertificateDecision
+): Parameters => ({
+  ...parametersFor(permitType, input),
+  decisionText: decision.decisionText,
+  decisionMaker: decision.decisionMaker,
+  decisionDate: input.today,
+  validFrom: decision.validFrom,
+  ...(permitType === 'TOBAKSFORSALJNING' ? { information: decision.terms.join('\n') || undefined } : {}),
+});
+
+const chosenRestaurantNumber = (premises: DecisionPremises | undefined): string =>
+  premises?.choice.kind === 'EXISTING' ? premises.choice.restaurantNumber : '';
+
+/**
+ * What the permit template renders for the decision in hand, blank where nothing is known. The
+ * conditions and the restaurant number are the process's to fill, and stand here as the handler
+ * chose them so that the preview shows what the certificate will.
+ */
 export const toCertificateParameters = (
   permitType: string,
   input: DecisionParameterInput,
   decision: CertificateDecision
 ): Record<string, string> => {
-  const terms = decision.terms.join('\n');
   const parameters = {
-    premisesRestaurantNumber: '',
-    ...parametersFor(permitType, input),
-    decisionText: decision.decisionText,
-    decisionMaker: decision.decisionMaker,
-    decisionDate: input.today,
-    validFrom: decision.validFrom,
-    ...(permitType === 'TOBAKSFORSALJNING' ? { information: terms } : { conditions: terms }),
+    ...decisionParameters(permitType, input, decision),
+    premisesRestaurantNumber: chosenRestaurantNumber(input.premises),
+    ...(permitType === 'TOBAKSFORSALJNING' ? {} : { conditions: decision.terms.join('\n') }),
     executionDate: '',
     replacesDecision: '',
   };
   return Object.fromEntries(Object.entries(parameters).map(([key, value]) => [key, value ?? '']));
 };
 
-/** Every key of the permit's record, in its order; a key without a value carries the placeholder. */
-export const toDecisionParameters = (permitType: string, input: DecisionParameterInput): Parameter[] =>
-  Object.entries(parametersFor(permitType, input)).map(([key, value]) => ({ key, values: [value || PLACEHOLDER] }));
+/** Sent with the decision. A key without a value is left out, so a strict template names it instead of printing a stand-in. */
+export const toDecisionParameters = (
+  permitType: string,
+  input: DecisionParameterInput,
+  decision: CertificateDecision
+): Parameter[] =>
+  Object.entries(decisionParameters(permitType, input, decision))
+    .filter((entry): entry is [string, string] => !!entry[1])
+    .map(([key, value]) => ({ key, values: [value] }));
 
 /** What a saved decision carries under the key; undefined when nothing but the placeholder was sent. */
 export const decisionParameterValue = (parameters: Parameter[] | undefined, key: string): string | undefined => {
   const sent = parameters?.find((parameter) => parameter.key === key)?.values?.[0];
   return sent && sent !== PLACEHOLDER ? sent : undefined;
-};
-
-/** The choice a saved decision carries: an existing number, or that a new one was asked for. */
-const savedChoice = (
-  restaurantNumber: string | undefined,
-  newRestaurantNumber: string | undefined
-): DecisionPremises['choice'] | undefined => {
-  if (restaurantNumber) return { kind: 'EXISTING', restaurantNumber };
-  return newRestaurantNumber === 'true' ? { kind: 'NEW' } : undefined;
-};
-
-/** The premises a saved decision concerns; undefined without a complete address and a choice. */
-export const premisesFromDecisionParameters = (parameters: Parameter[] | undefined): DecisionPremises | undefined => {
-  const value = (key: string) => decisionParameterValue(parameters, key);
-  const street = value('premisesStreet');
-  const postal = splitPostalAddress(value('premisesPostalAddress'));
-  const choice = savedChoice(value('premisesRestaurantNumber'), value('newRestaurantNumber'));
-  if (!street || !postal || !choice) return undefined;
-
-  return { street, ...postal, choice };
 };
