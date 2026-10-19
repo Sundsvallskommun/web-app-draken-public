@@ -1,4 +1,3 @@
-import { SaveRow } from '@common/components/save-row/save-row.component';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
@@ -59,8 +58,8 @@ import {
   hasServingPremises,
 } from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
-import { CircleCheck, Plus, Trash } from 'lucide-react';
-import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
+import { Plus, Trash } from 'lucide-react';
+import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -156,6 +155,7 @@ export const SupportErrandDecisionTab: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const user = useUserStore((s) => s.user);
@@ -165,8 +165,9 @@ export const SupportErrandDecisionTab: FC<{
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(false);
+  const saveLatest = useRef<() => Promise<boolean>>(undefined);
+  const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
   const [outcome, setOutcome] = useState('');
   const [decidedByRole, setDecidedByRole] = useState(t(SUPPORT_DECISION_ROLE_KEYS[0]));
   const [legalBasis, setLegalBasis] = useState('');
@@ -287,6 +288,12 @@ export const SupportErrandDecisionTab: FC<{
     setUnsaved(edited);
   }, [edited, setUnsaved]);
 
+  // Spara ärende in the sidebar saves every tab that registered a saver; the tab has no save of its own.
+  useEffect(() => {
+    setTabSaver('decision', saver);
+    return () => setTabSaver('decision', undefined);
+  }, [saver, setTabSaver]);
+
   useEffect(() => {
     setHasContent(decisions.length > 0);
   }, [decisions, setHasContent]);
@@ -309,9 +316,6 @@ export const SupportErrandDecisionTab: FC<{
     today: dayjs().format('YYYY-MM-DD'),
   });
 
-  /** What the certificate prints and nobody but the handler can supply; without it no permit is issued. */
-  const missingForTheCertificate = (needsIssueDate && !issuedOn) || (servingPermit && !premisesPhoneInHand.trim());
-
   const termsInHand = () => terms.map((term) => term.trim()).filter(Boolean);
 
   /** What the certificate says about the decision, outcome and all, whether previewed or sent. */
@@ -329,21 +333,45 @@ export const SupportErrandDecisionTab: FC<{
   const savePremisesOnErrand = async (input: DecisionParameterInput) => {
     if (!premisesToSend || !supportErrand?.id) return;
 
+    // Spara ärende saves the errand before it saves the tabs, so the freshest parameters are the form's.
+    const onErrand = errandForm?.getValues('parameters') ?? supportErrand.parameters;
     const parameters = withPremisesProcessParameters(
-      supportErrand.parameters,
+      onErrand,
       premisesToSend,
       text(input.form?.serveringsstalletsNamn) ?? ''
     );
-    if (JSON.stringify(parameters) === JSON.stringify(supportErrand.parameters)) return;
+    if (JSON.stringify(parameters) === JSON.stringify(onErrand)) return;
 
     await saveSupportErrandParameters(supportErrand.id, municipalityId, parameters);
-    setSupportErrand({ ...supportErrand, parameters });
+    const latest = useSupportStore.getState().supportErrand;
+    if (latest) setSupportErrand({ ...latest, parameters });
     errandForm?.setValue('parameters', parameters, { shouldDirty: false });
   };
 
-  const save = async () => {
-    if (!supportErrand?.id || !outcome || missingForTheCertificate) return;
-    setIsSaving(true);
+  /** Named in the order the fields stand on the tab, so the message reads as the form does. */
+  const missingBeforeSaving = (): string[] =>
+    [
+      !outcome && 'decisionText',
+      needsIssueDate && !issuedOn && 'executionDate',
+      servingPermit && !premisesPhoneInHand.trim() && 'premisesPhone',
+    ].filter((key): key is string => !!key);
+
+  const save = async (): Promise<boolean> => {
+    if (!supportErrand?.id || !editable || !edited) return true;
+
+    const missing = missingBeforeSaving();
+    if (missing.length) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:decision.incomplete', {
+          inputs: missing.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', '),
+        }),
+        status: 'error',
+      });
+      return false;
+    }
+
     const writtenTerms = termsInHand();
     const permitName = getLabelType(supportErrand)?.displayName;
     const input = parameterInput(supportErrand);
@@ -374,6 +402,7 @@ export const SupportErrandDecisionTab: FC<{
         message: t('common:decision.saved'),
         status: 'success',
       });
+      return true;
     } catch (error) {
       const isLocked = isSupportDecisionLockedError(error);
       if (isLocked) {
@@ -387,10 +416,11 @@ export const SupportErrandDecisionTab: FC<{
         message: t(isLocked ? 'common:decision.locked_error' : 'common:decision.save_error'),
         status: 'error',
       });
-    } finally {
-      setIsSaving(false);
+      return false;
     }
   };
+
+  saveLatest.current = save;
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
@@ -651,18 +681,11 @@ export const SupportErrandDecisionTab: FC<{
             </p>
           ) : null}
 
-          <SaveRow
-            label={t('common:decision.save')}
-            leftIcon={<CircleCheck size={18} />}
-            loadingText={t('common:decision.saving')}
-            saving={isSaving}
-            disabled={!canEdit || !outcome || missingForTheCertificate || isSaving}
-            onSave={save}
-            unsaved={edited}
-            unsavedTitle={t('common:decision.unsaved')}
-            unsavedText={t('common:tabs.unsaved_decision')}
-            dataCy="decision-save"
-          />
+          {edited ? (
+            <p className="text-small text-dark-secondary m-0" data-cy="decision-unsaved">
+              {t('common:decision.unsaved_hint')}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -330,6 +330,8 @@
     "issued_on": "Datum för utfärdande",
     "issued_on_help": "Datumet som trycks på tillståndsbeviset. Beslutet kan inte sparas utan det.",
     "empty_value": "—",
+    "incomplete": "Beslutet kan inte sparas förrän {{inputs}} är ifyllt.",
+    "unsaved_hint": "Beslutet har ändringar som inte är sparade. De sparas med Spara ärende.",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
     "preview": "Förhandsgranskning av tillståndsbevis",
