@@ -106,6 +106,13 @@ test('a permit is not saved until it carries what the certificate prints', async
 
   fireEvent.change(select('issued-on'), { target: { value: '2026-10-20' } });
   fireEvent.change(select('premises-phone'), { target: { value: '060-191000' } });
+  fireEvent.change(select('serving-area'), { target: { value: 'Matsalen' } });
+
+  // The day the permit starts is as strict on the certificate as the day it was issued.
+  await expect(saveTheTab()).resolves.toBe(false);
+  expect(createSupportDecision).not.toHaveBeenCalled();
+
+  fireEvent.change(select('valid-from'), { target: { value: '2026-11-01' } });
 
   await expect(saveTheTab()).resolves.toBe(true);
   expect(createSupportDecision).toHaveBeenCalledWith(

@@ -348,12 +348,18 @@ export const SupportErrandDecisionTab: FC<{
     errandForm?.setValue('parameters', parameters, { shouldDirty: false });
   };
 
-  /** Named in the order the fields stand on the tab, so the message reads as the form does. */
+  /**
+   * What a decision that will be printed cannot be saved without, named in the order the fields stand
+   * on the tab. The premises are left to the step that concludes the decision: they are picked in a
+   * card of their own, which says for itself when nothing is chosen.
+   */
   const missingBeforeSaving = (): string[] =>
     [
       !outcome && 'decisionText',
+      needsIssueDate && !validFrom && 'validFrom',
       needsIssueDate && !issuedOn && 'executionDate',
       servingPermit && !premisesPhoneInHand.trim() && 'premisesPhone',
+      servingPermit && !servingArea.trim() && 'servingAreaDescription',
     ].filter((key): key is string => !!key);
 
   const save = async (): Promise<boolean> => {
@@ -437,7 +443,7 @@ export const SupportErrandDecisionTab: FC<{
             servingPremisesHandling={
               servingPermit ? (
                 <>
-                  <FormControl id="decision-serving-area" className="w-full pt-12">
+                  <FormControl id="decision-serving-area" className="w-full pt-12" required>
                     <FormLabel>{t('common:decision.basis.serving_premises.description')}</FormLabel>
                     <Textarea
                       className="w-full"
@@ -558,7 +564,7 @@ export const SupportErrandDecisionTab: FC<{
 
           <DecisionCard>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-              <FormControl id="decision-valid-from" className="w-full">
+              <FormControl id="decision-valid-from" className="w-full" required={needsIssueDate}>
                 <FormLabel>{t('common:decision.valid_from')}</FormLabel>
                 <Input
                   type="date"
