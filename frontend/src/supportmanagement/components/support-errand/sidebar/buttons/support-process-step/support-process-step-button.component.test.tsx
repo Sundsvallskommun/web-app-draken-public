@@ -32,12 +32,14 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   getSupportDecisions: vi.fn(),
   completeSupportDecision: vi.fn(),
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
+  supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
 }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),
   closeSupportErrand: vi.fn(),
   setSupportErrandAdmin: vi.fn(),
   setSupportErrandStatus: vi.fn(),
+  getMostSpecificLabelType: () => undefined,
   Status: { ONGOING: 'ONGOING', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: { CLOSED: 'CLOSED' },
 }));
@@ -300,8 +302,17 @@ const reviewGateIsOffered = () =>
     startability: 'LIVE_INSTANCE',
   } as never);
 
-test('the review is not left behind until the applicant has an address the certificate can print', async () => {
-  useSupportStore.setState({ supportErrand: inReview([{ address: 'Storgatan 3', zipCode: '', city: 'Sundsvall' }]) });
+const applicant = (overrides: object = {}) => ({
+  organizationName: 'Testbolaget',
+  address: 'Storgatan 3',
+  zipCode: '852 31',
+  city: 'Sundsvall',
+  phoneNumbers: [{ value: '060-191000' }],
+  ...overrides,
+});
+
+test('the review waits for what the certificate prints about the applicant', async () => {
+  useSupportStore.setState({ supportErrand: inReview([applicant({ zipCode: '' })]) });
   reviewGateIsOffered();
 
   renderButton();
@@ -313,10 +324,8 @@ test('the review is not left behind until the applicant has an address the certi
   expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });
 
-test('an applicant with a whole address lets the review be left', async () => {
-  useSupportStore.setState({
-    supportErrand: inReview([{ address: 'Storgatan 3', zipCode: '852 31', city: 'Sundsvall' }]),
-  });
+test('what only the applicant can complete is said out loud and then left to the handler', async () => {
+  useSupportStore.setState({ supportErrand: inReview([applicant()]) });
   reviewGateIsOffered();
 
   renderButton();
@@ -324,7 +333,9 @@ test('an applicant with a whole address lets the review be left', async () => {
   const button = await theButton('start_investigation');
   button.click();
 
+  // The application is not on the errand, so its inputs are missing; the dialog is answered yes here.
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'review_completed'));
+  expect(useSupportStore.getState().activeTabKey).not.toBe('basics');
 });
 
 test('a process that failed is not offered a restart from the errand page', async () => {

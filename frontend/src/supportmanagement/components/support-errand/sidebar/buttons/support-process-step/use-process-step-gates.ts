@@ -1,7 +1,11 @@
 'use client';
 
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
+import { missingPermitInputs } from '@supportmanagement/services/support-decision-parameters-service';
+import { supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
+import { getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportStatements,
   isSupportStatementAwaitingAnswer,
@@ -20,6 +24,8 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   const complain = (message: string) =>
     toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
@@ -67,25 +73,54 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   };
 
   /**
-   * The permit certificate prints the holder's street, postal code and city, and only the errand can
-   * say what they are. An application from the e-service does not always carry them, so they are
-   * asked for while the errand is still being reviewed rather than at the decision, where a missing
-   * address stops the process after the decision is already locked.
+   * What the permit certificate prints, checked while the errand is still being reviewed rather than
+   * at the decision, where a missing value stops the process after the decision is already locked.
+   * What stands on the errand is the handler's to fill, so the step waits for it. What the application
+   * carries can only be completed by the applicant, so that is said out loud and then left to the
+   * handler to judge.
    */
-  const applicantHasAnAddress = async (): Promise<boolean> => {
-    const applicant = supportErrand?.customer?.[0];
-    if (applicant?.address && applicant.zipCode && applicant.city) return true;
+  const permitInputsAreInPlace = async (): Promise<boolean> => {
+    if (!supportErrand) return true;
 
-    const goToTheApplicant = await confirm.showConfirmation(
-      t('common:process.actions.missing_applicant_address.title'),
-      t('common:process.actions.missing_applicant_address.text'),
-      t('common:process.actions.missing_applicant_address.go_to_basics'),
-      t('common:process.actions.missing_applicant_address.cancel'),
-      'info',
-      'info'
+    const permitType = supportDecisionPermitType(
+      getMostSpecificLabelType(supportErrand),
+      supportErrand.process?.processKey
     );
-    if (goToTheApplicant) setActiveTabKey('basics');
-    return false;
+    const missing = missingPermitInputs(
+      permitType,
+      supportErrand,
+      getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
+      supportAttachments
+    );
+    const named = (keys: string[]) => keys.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', ');
+
+    if (missing.fromTheErrand.length) {
+      const goToTheErrand = await confirm.showConfirmation(
+        t('common:process.actions.missing_permit_inputs.errand_title'),
+        t('common:process.actions.missing_permit_inputs.errand_text', { inputs: named(missing.fromTheErrand) }),
+        t('common:process.actions.missing_permit_inputs.go_to_basics'),
+        t('common:process.actions.missing_permit_inputs.cancel'),
+        'info',
+        'info'
+      );
+      if (goToTheErrand) setActiveTabKey('basics');
+      return false;
+    }
+
+    if (missing.fromTheApplication.length) {
+      return confirm.showConfirmation(
+        t('common:process.actions.missing_permit_inputs.application_title'),
+        t('common:process.actions.missing_permit_inputs.application_text', {
+          inputs: named(missing.fromTheApplication),
+        }),
+        t('common:process.actions.missing_permit_inputs.continue_anyway'),
+        t('common:process.actions.missing_permit_inputs.cancel'),
+        'info',
+        'info'
+      );
+    }
+
+    return true;
   };
 
   const askForAnOutcomeFirst = () =>
@@ -106,7 +141,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
 
   return {
     statementsAllowADecision,
-    applicantHasAnAddress,
+    permitInputsAreInPlace,
     askForAnOutcomeFirst,
     complainThatTheDecisionCouldNotBeRead,
   };

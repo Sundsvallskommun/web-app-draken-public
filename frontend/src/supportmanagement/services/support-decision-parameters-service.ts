@@ -50,9 +50,8 @@ type Parameters = Record<string, string | undefined>;
 
 const join = (...parts: (string | undefined)[]): string | undefined => parts.filter(Boolean).join(', ') || undefined;
 
-/** "852 30 Sundsvall", as the certificate prints it; the parts go on the errand for the process. */
 const postalAddress = (postalCode: string | undefined, city: string | undefined): string | undefined =>
-  [postalCode, city].filter(Boolean).join(' ') || undefined;
+  postalCode && city ? `${postalCode} ${city}` : undefined;
 
 const drawingReference = (attachments: DecisionParameterInput['attachments']): string | undefined =>
   attachments
@@ -242,6 +241,52 @@ export const toCertificateParameters = (
     replacesDecision: '',
   };
   return Object.fromEntries(Object.entries(parameters).map(([key, value]) => [key, value ?? '']));
+};
+
+/**
+ * What the permit template demands of the errand, by the party that can supply it. The keys are the
+ * template's own, and they are read back out of the mapping above so that the two cannot drift apart.
+ * The handler fills what stands on the errand; what the application carries can only be completed by
+ * the applicant, which is a complement and not something the step should wait for.
+ */
+const PERMIT_INPUTS_OF_THE_HANDLER: Record<string, string[]> = {
+  SERVERINGSTILLSTAND: ['permitHolderName', 'permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
+  TOBAKSFORSALJNING: ['permitHolderName', 'permitHolderStreet', 'permitHolderPostalAddress'],
+};
+
+const PERMIT_INPUTS_OF_THE_APPLICANT: Record<string, string[]> = {
+  SERVERINGSTILLSTAND: [
+    'premisesName',
+    'premisesPhone',
+    'servingAreaSeats',
+    'servingAreaMaxPersons',
+    'servingHours',
+    'servingAreaDrawingReference',
+  ],
+  TOBAKSFORSALJNING: ['premisesName', 'premisesPhone'],
+};
+
+export interface MissingPermitInputs {
+  /** Template keys the handler fills on the errand itself. */
+  fromTheErrand: string[];
+  /** Template keys the application and its attachments carry. */
+  fromTheApplication: string[];
+}
+
+/** Empty lists for a permit that issues no certificate, since nothing is printed. */
+export const missingPermitInputs = (
+  permitType: string,
+  errand: DecisionParameterInput['errand'],
+  form: FormValue | undefined,
+  attachments: DecisionParameterInput['attachments']
+): MissingPermitInputs => {
+  const parameters = parametersFor(permitType, { errand, form, attachments, user: { name: '' }, today: '' });
+  const unfilled = (keys: string[]) => keys.filter((key) => !parameters[key]);
+
+  return {
+    fromTheErrand: unfilled(PERMIT_INPUTS_OF_THE_HANDLER[permitType] ?? []),
+    fromTheApplication: unfilled(PERMIT_INPUTS_OF_THE_APPLICANT[permitType] ?? []),
+  };
 };
 
 /** Sent with the decision. A key without a value is left out, so a strict template names it instead of printing a stand-in. */

@@ -225,11 +225,26 @@
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       },
-      "missing_applicant_address": {
-        "title": "Sökanden saknar adress",
-        "text": "Tillståndsbeviset trycker tillståndshavarens gatuadress, postnummer och postort. Fyll i dem under Grundinformation innan granskningen avslutas, annars kan tillståndet inte utfärdas.",
+      "missing_permit_inputs": {
+        "errand_title": "Uppgifter om sökanden saknas",
+        "errand_text": "Tillståndsbeviset trycker {{inputs}}. Fyll i det under Grundinformation innan granskningen avslutas, annars kan tillståndet inte utfärdas.",
         "go_to_basics": "Till grundinformationen",
+        "application_title": "Uppgifter i ansökan saknas",
+        "application_text": "Tillståndsbeviset trycker {{inputs}}, och ansökan bär det inte. Det kan bara kompletteras av sökanden. Vill du avsluta granskningen ändå?",
+        "continue_anyway": "Avsluta granskningen",
         "cancel": "Avbryt"
+      },
+      "permit_inputs": {
+        "permitHolderName": "sökandens namn",
+        "permitHolderStreet": "sökandens gatuadress",
+        "permitHolderPostalAddress": "sökandens postnummer och postort",
+        "permitHolderPhone": "sökandens telefonnummer",
+        "premisesName": "serveringsställets namn",
+        "premisesPhone": "telefonnummer till serveringsstället",
+        "servingAreaSeats": "antal sittplatser inomhus",
+        "servingAreaMaxPersons": "maximalt antal personer i lokalen",
+        "servingHours": "serveringstider",
+        "servingAreaDrawingReference": "planritning som bilaga"
       },
       "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
       "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",

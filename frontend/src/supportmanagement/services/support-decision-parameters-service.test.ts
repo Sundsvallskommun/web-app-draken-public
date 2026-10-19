@@ -6,6 +6,7 @@ import {
   certificateTemplate,
   type DecisionParameterInput,
   decisionParameterValue,
+  missingPermitInputs,
   PLACEHOLDER,
   servingPermitParameters,
   tobaccoPermitParameters,
@@ -227,6 +228,50 @@ describe('a tobacco permit', () => {
     };
 
     expect(sent('TOBAKSFORSALJNING', { errand: person }).permitHolderName).toBe('Anna Andersson');
+  });
+});
+
+describe('what the permit needs of the errand', () => {
+  const drawing = [{ fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } }];
+
+  test('a whole application and a whole applicant leave nothing missing', () => {
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, drawing)).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: [],
+    });
+  });
+
+  test('what the handler fills is told apart from what only the applicant can complete', () => {
+    const bare = errand();
+    bare.customer[0] = { ...bare.customer[0], address: '', zipCode: '', city: '', phoneNumbers: [] };
+
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', bare, undefined, [])).toEqual({
+      fromTheErrand: ['permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
+      fromTheApplication: [
+        'premisesName',
+        'premisesPhone',
+        'servingAreaSeats',
+        'servingAreaMaxPersons',
+        'servingHours',
+        'servingAreaDrawingReference',
+      ],
+    });
+  });
+
+  test('a telephone the application left out, and a drawing nobody attached', () => {
+    const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
+
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), withoutPhone, [])).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: ['premisesPhone', 'servingAreaDrawingReference'],
+    });
+  });
+
+  test('a permit that issues no certificate has nothing to wait for', () => {
+    expect(missingPermitInputs('FOLKOLSANMALAN', errand(), undefined, [])).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: [],
+    });
   });
 });
 
