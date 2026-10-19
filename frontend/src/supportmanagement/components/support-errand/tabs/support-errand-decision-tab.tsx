@@ -20,8 +20,8 @@ import { DecisionPremises } from '@supportmanagement/components/premises/decisio
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
-  certificateTemplate,
   type CertificateDecision,
+  certificateTemplate,
   type DecisionParameterInput,
   decisionParameterValue,
   toCertificateParameters,
@@ -176,11 +176,14 @@ export const SupportErrandDecisionTab: FC<{
   const [validTo, setValidTo] = useState('');
   const [terms, setTerms] = useState<string[]>([]);
   const [servingArea, setServingArea] = useState('');
+  const [issuedOn, setIssuedOn] = useState('');
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const typeLabel = supportErrand ? getMostSpecificLabelType(supportErrand) : undefined;
   const permitType = supportDecisionPermitType(typeLabel, supportErrand?.process?.processKey);
   const servingPermit = permitType === 'SERVERINGSTILLSTAND';
+  /** The date of issue is printed on the certificate, so it is asked for wherever one is made. */
+  const needsIssueDate = !!certificateTemplate(permitType);
 
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
   const [opened, setOpened] = useState(isActive);
@@ -235,6 +238,7 @@ export const SupportErrandDecisionTab: FC<{
     setJustification(draft.justification ?? '');
     setTerms(termTexts(draft));
     setServingArea(decisionParameterValue(draft.parameters, 'servingAreaDescription') ?? '');
+    setIssuedOn(decisionParameterValue(draft.parameters, 'executionDate') ?? '');
   };
 
   useEffect(() => {
@@ -251,6 +255,7 @@ export const SupportErrandDecisionTab: FC<{
     terms: terms.filter(Boolean),
     premises: premisesToSend ?? null,
     servingArea,
+    issuedOn,
   });
 
   const formAsSaved = () => ({
@@ -262,6 +267,7 @@ export const SupportErrandDecisionTab: FC<{
     terms: termTexts(decision),
     premises: savedPremises ?? null,
     servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
+    issuedOn: decisionParameterValue(decision?.parameters, 'executionDate') ?? '',
   });
 
   const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
@@ -286,6 +292,7 @@ export const SupportErrandDecisionTab: FC<{
     premises: premisesToSend,
     servingArea,
     attachments: supportAttachments,
+    issuedOn,
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
@@ -320,7 +327,7 @@ export const SupportErrandDecisionTab: FC<{
   };
 
   const save = async () => {
-    if (!supportErrand?.id || !outcome) return;
+    if (!supportErrand?.id || !outcome || (needsIssueDate && !issuedOn)) return;
     setIsSaving(true);
     const writtenTerms = termsInHand();
     const permitName = getLabelType(supportErrand)?.displayName;
@@ -513,6 +520,23 @@ export const SupportErrandDecisionTab: FC<{
                   data-cy="decision-valid-to"
                 />
               </FormControl>
+
+              {needsIssueDate ? (
+                <FormControl id="decision-issued-on" className="w-full" required>
+                  <FormLabel>{t('common:decision.issued_on')}</FormLabel>
+                  <FormHelperText className="p-0 m-0 text-small text-dark-secondary">
+                    {t('common:decision.issued_on_help')}
+                  </FormHelperText>
+                  <Input
+                    type="date"
+                    className="w-full"
+                    value={issuedOn}
+                    onChange={(event) => setIssuedOn(event.target.value)}
+                    disabled={!canEdit}
+                    data-cy="decision-issued-on"
+                  />
+                </FormControl>
+              ) : null}
             </div>
           </DecisionCard>
 
@@ -601,7 +625,7 @@ export const SupportErrandDecisionTab: FC<{
             leftIcon={<CircleCheck size={18} />}
             loadingText={t('common:decision.saving')}
             saving={isSaving}
-            disabled={!canEdit || !outcome || isSaving}
+            disabled={!canEdit || !outcome || (needsIssueDate && !issuedOn) || isSaving}
             onSave={save}
             unsaved={edited}
             unsavedTitle={t('common:decision.unsaved')}

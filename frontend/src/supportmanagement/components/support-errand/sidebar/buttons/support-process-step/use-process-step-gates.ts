@@ -19,6 +19,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   const toastMessage = useSnackbar();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const complain = (message: string) =>
     toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
@@ -65,6 +66,28 @@ export const useProcessStepGates = (errandId: string | undefined) => {
     return true;
   };
 
+  /**
+   * The permit certificate prints the holder's street, postal code and city, and only the errand can
+   * say what they are. An application from the e-service does not always carry them, so they are
+   * asked for while the errand is still being reviewed rather than at the decision, where a missing
+   * address stops the process after the decision is already locked.
+   */
+  const applicantHasAnAddress = async (): Promise<boolean> => {
+    const applicant = supportErrand?.customer?.[0];
+    if (applicant?.address && applicant.zipCode && applicant.city) return true;
+
+    const goToTheApplicant = await confirm.showConfirmation(
+      t('common:process.actions.missing_applicant_address.title'),
+      t('common:process.actions.missing_applicant_address.text'),
+      t('common:process.actions.missing_applicant_address.go_to_basics'),
+      t('common:process.actions.missing_applicant_address.cancel'),
+      'info',
+      'info'
+    );
+    if (goToTheApplicant) setActiveTabKey('basics');
+    return false;
+  };
+
   const askForAnOutcomeFirst = () =>
     confirm
       .showConfirmation(
@@ -81,5 +104,10 @@ export const useProcessStepGates = (errandId: string | undefined) => {
 
   const complainThatTheDecisionCouldNotBeRead = () => complain(t('common:process.actions.decision_unread'));
 
-  return { statementsAllowADecision, askForAnOutcomeFirst, complainThatTheDecisionCouldNotBeRead };
+  return {
+    statementsAllowADecision,
+    applicantHasAnAddress,
+    askForAnOutcomeFirst,
+    complainThatTheDecisionCouldNotBeRead,
+  };
 };

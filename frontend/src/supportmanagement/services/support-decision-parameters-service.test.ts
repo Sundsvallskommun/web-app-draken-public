@@ -19,6 +19,7 @@ const PREMISES = mockEnv.mockPremisesAddress;
 const EXISTING = { kind: 'EXISTING', restaurantNumber: mockEnv.mockRestaurantNumber } as const;
 const NEW = { kind: 'NEW' } as const;
 const TODAY = '2026-10-07';
+const ISSUED = '2026-10-09';
 const DECISION = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
 
 const errand = () =>
@@ -42,6 +43,7 @@ const errand = () =>
 const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParameterInput => ({
   errand: errand(),
   premises: { ...PREMISES, choice: EXISTING },
+  issuedOn: ISSUED,
   user: { name: 'Test Testsson' },
   today: TODAY,
   ...overrides,
@@ -62,7 +64,8 @@ const servingForm = {
   serveringstiderUtomhusAllmanheten: { startTime: '11:00', endTime: '23:00' },
   serveringsperiodForSlutetSallskap: 'ARLIGEN_UNDER_VISS_PERIOD',
   periodServeringSlutetSallskap: { startDate: '2026-05-01', endDate: '2026-09-30' },
-  serveringstiderInomhusSlutetSallskap: { startTime: '18:00', endTime: '02:00' },
+  // The schema asks for an RFC 3339 time, so an application carries the offset; the hours read the same.
+  serveringstiderInomhusSlutetSallskap: { startTime: '18:00:00+02:00', endTime: '02:00:00+02:00' },
   alkoholdrycker: ['STARKOL', 'VIN', 'SPRITDRYCKER'],
   sittplatserILokalen: { antalSittplatserInomhus: '60', antalSittplatserUteservering: '30' },
   maximaltAntalPersonerILokalen: { antalPersoner: '90' },
@@ -144,13 +147,17 @@ describe('a serving permit', () => {
     expect(parameters.issuedByNameAndTitle).toBe('Test Testsson, handläggare');
   });
 
+  test('the date of issue is the handler’s, and the decision date is today', () => {
+    expect(parameters.executionDate).toBe(ISSUED);
+    expect(parameters.decisionDate).toBe(TODAY);
+    expect(sent('SERVERINGSTILLSTAND', { issuedOn: undefined })).not.toHaveProperty('executionDate');
+  });
+
   test('a tasting permit is told apart by the errand type', () => {
     expect(sent('SERVERINGSTILLSTAND', { errandType: 'TASTING' }).scopeTasting).toBe('true');
   });
 
   test('a key without a value is left out, so the strict template names it instead of printing a stand-in', () => {
-    expect(parameters).not.toHaveProperty('executionDate');
-
     const bare = sent('SERVERINGSTILLSTAND', { form: undefined, premises: undefined });
     for (const key of [
       'premisesName',
@@ -233,7 +240,7 @@ describe('every permit', () => {
       decisionDate: TODAY,
       validFrom: '2026-11-01',
       conditions: 'A\nB',
-      executionDate: '',
+      executionDate: ISSUED,
       replacesDecision: '',
       servingHours: '',
     });

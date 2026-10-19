@@ -225,6 +225,12 @@
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       },
+      "missing_applicant_address": {
+        "title": "Sökanden saknar adress",
+        "text": "Tillståndsbeviset trycker tillståndshavarens gatuadress, postnummer och postort. Fyll i dem under Grundinformation innan granskningen avslutas, annars kan tillståndet inte utfärdas.",
+        "go_to_basics": "Till grundinformationen",
+        "cancel": "Avbryt"
+      },
       "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
       "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",
       "awaiting_statements": {
@@ -296,6 +302,8 @@
     "title_for": "Beslut om {{permit}}",
     "valid_from": "Gäller från",
     "valid_to": "Gäller till (lämna tomt för tills vidare)",
+    "issued_on": "Datum för utfärdande",
+    "issued_on_help": "Datumet som trycks på tillståndsbeviset. Beslutet kan inte sparas utan det.",
     "empty_value": "—",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",

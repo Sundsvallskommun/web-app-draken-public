@@ -61,7 +61,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test('the decision maker starts as handläggare, so an outcome is all a decision needs to be saved', async () => {
+test('the decision maker starts as handläggare, and a permit needs an outcome and a date of issue', async () => {
   const setUnsaved = await renderTab();
 
   expect(select('role').value).toBe(HANDLAGGARE);
@@ -70,6 +70,11 @@ test('the decision maker starts as handläggare, so an outcome is all a decision
   expect(saveButton().disabled).toBe(true);
 
   fireEvent.change(select('outcome'), { target: { value: APPROVAL } });
+
+  // The certificate prints the date of issue, so a permit cannot be saved without one.
+  expect(saveButton().disabled).toBe(true);
+
+  fireEvent.change(select('issued-on'), { target: { value: '2026-10-20' } });
 
   expect(saveButton().disabled).toBe(false);
 });

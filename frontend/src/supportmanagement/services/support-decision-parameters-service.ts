@@ -34,6 +34,8 @@ export interface DecisionParameterInput {
   servingArea?: string;
   /** The errand's attachments; the drawings of the serving area are referenced by file name. */
   attachments?: { fileName: string; purpose?: { name?: string } }[];
+  /** The day the permit is issued, as the handler set it on the decision. */
+  issuedOn?: string;
   /** The handler saving the decision. */
   user: { name: string };
   /** Today, YYYY-MM-DD; the backend stamps decidedAt on the same save. */
@@ -67,6 +69,7 @@ const holderPhone = (holder: SupportStakeholderFormModel | undefined): string | 
     .filter(Boolean)
     .join(', ') || undefined;
 
+/** The address is the errand's own; the review step sees to it that the applicant has one. */
 const permitHolderParameters = (holder: SupportStakeholderFormModel | undefined): Parameters => ({
   permitHolderName: holder?.organizationName || personName(holder),
   permitHolderOrgNumber: holder?.organizationNumber,
@@ -82,10 +85,13 @@ const premisesParameters = (form: FormValue | undefined, premises: DecisionPremi
   premisesPhone: form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer'),
 });
 
-const issuingParameters = ({ errand, user }: Pick<DecisionParameterInput, 'errand' | 'user'>): Parameters => ({
+const issuingParameters = ({
+  errand,
+  user,
+  issuedOn,
+}: Pick<DecisionParameterInput, 'errand' | 'user' | 'issuedOn'>): Parameters => ({
   caseNumber: errand.errandNumber,
-  // FIXME What date to use?
-  executionDate: undefined, // nothing on the tab asks for it
+  executionDate: issuedOn,
   // replacesDecision: undefined, // the replaced decision is not tracked
   issuedByNameAndTitle: join(user.name, 'handläggare'),
   issuedByUnit: 'Alkohol- och tobaksenheten',
@@ -134,6 +140,7 @@ export const servingPermitParameters = ({
   premises,
   servingArea,
   attachments,
+  issuedOn,
   user,
   today,
 }: DecisionParameterInput): Parameters => ({
@@ -155,11 +162,17 @@ export const servingPermitParameters = ({
   servingAreaSeats: form && childText(form, 'sittplatserILokalen', 'antalSittplatserInomhus'),
   servingAreaMaxPersons: form && childText(form, 'maximaltAntalPersonerILokalen', 'antalPersoner'),
   servingHours: form && servingHours(form),
-  ...issuingParameters({ errand, user }),
+  ...issuingParameters({ errand, user, issuedOn }),
   decisionDateAndCaseNumber: join(today, errand.errandNumber),
 });
 
-export const tobaccoPermitParameters = ({ errand, form, premises, user }: DecisionParameterInput): Parameters => ({
+export const tobaccoPermitParameters = ({
+  errand,
+  form,
+  premises,
+  issuedOn,
+  user,
+}: DecisionParameterInput): Parameters => ({
   ...permitHolderParameters(errand.customer?.[0]),
   permitHolderCareOf: errand.customer?.[0]?.careOf,
   ...premisesParameters(form, premises),
@@ -170,7 +183,7 @@ export const tobaccoPermitParameters = ({ errand, form, premises, user }: Decisi
   validityIndefinite: form && String(form.tidsperiodForForsaljningen === 'TILLSVIDARE'),
   validityTemporary: form && String(form.tidsperiodForForsaljningen === 'TIDSBEGRANSAD_FORSALJNING'),
   temporaryPeriod: form && dateRangeText(form, 'periodTidsbegransadForsaljning'),
-  ...issuingParameters({ errand, user }),
+  ...issuingParameters({ errand, user, issuedOn }),
   decisionOfficerAndCaseNumber: join(user.name, errand.errandNumber),
 });
 
@@ -226,7 +239,6 @@ export const toCertificateParameters = (
     ...decisionParameters(permitType, input, decision),
     premisesRestaurantNumber: chosenRestaurantNumber(input.premises),
     ...(permitType === 'TOBAKSFORSALJNING' ? {} : { conditions: decision.terms.join('\n') }),
-    executionDate: '',
     replacesDecision: '',
   };
   return Object.fromEntries(Object.entries(parameters).map(([key, value]) => [key, value ?? '']));

@@ -115,6 +115,7 @@ export const SupportProcessStepButton: FC<{
     action.confirms === false ? run(action, decisionsInHand) : ask(action, decisionsInHand);
 
   const start = async (action: ProcessAction) => {
+    if (action.requiresApplicantAddress && !(await gates.applicantHasAnAddress())) return;
     if (action.requiresAnsweredStatements && !(await gates.statementsAllowADecision())) return;
 
     if (!action.requiresDecisionOutcome) return carryOut(action);

@@ -287,6 +287,46 @@ test('a solved errand that never had a process is left alone', async () => {
   expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
 });
 
+const inReview = (customer: unknown[]): SupportErrand =>
+  ({ ...errandAt('review_phase', ['review_completed', 'process_cancelled']), customer } as unknown as SupportErrand);
+
+const reviewGateIsOffered = () =>
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'review_phase',
+      awaitingSignals: [{ name: 'review_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+test('the review is not left behind until the applicant has an address the certificate can print', async () => {
+  useSupportStore.setState({ supportErrand: inReview([{ address: 'Storgatan 3', zipCode: '', city: 'Sundsvall' }]) });
+  reviewGateIsOffered();
+
+  renderButton();
+
+  const button = await theButton('start_investigation');
+  button.click();
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an applicant with a whole address lets the review be left', async () => {
+  useSupportStore.setState({
+    supportErrand: inReview([{ address: 'Storgatan 3', zipCode: '852 31', city: 'Sundsvall' }]),
+  });
+  reviewGateIsOffered();
+
+  renderButton();
+
+  const button = await theButton('start_investigation');
+  button.click();
+
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'review_completed'));
+});
+
 test('a process that failed is not offered a restart from the errand page', async () => {
   useSupportStore.setState({
     supportErrand: {
