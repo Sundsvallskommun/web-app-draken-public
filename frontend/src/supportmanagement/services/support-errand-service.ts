@@ -938,6 +938,23 @@ export const setSupportErrandAdmin: (
     });
 };
 
+/** Replaces the errand's parameters; the caller sends every parameter to keep (see `upsertErrandParameter`). */
+export const saveSupportErrandParameters: (
+  errandId: string,
+  municipalityId: string,
+  parameters: CParameter[]
+) => Promise<boolean> = async (errandId, municipalityId, parameters) => {
+  return apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+      parameters,
+    })
+    .then(() => true)
+    .catch((e) => {
+      console.error('Something went wrong when patching errand parameters');
+      throw e;
+    });
+};
+
 /** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
 export const saveSupportErrandJsonParameters: (
   errandId: string,
