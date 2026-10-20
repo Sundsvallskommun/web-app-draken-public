@@ -157,6 +157,29 @@ test('the gate is taken from the process as it stands, not from the errand the d
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
 });
 
+test('the decision is read again for the gate, so one saved after the list was read is judged as it stands', async () => {
+  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  vi.mocked(getSupportDecisions)
+    .mockResolvedValueOnce(aDecision(withoutValidFrom) as never)
+    .mockResolvedValue(aDecision() as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
+});
+
 test('a phase whose gate the process no longer offers says so instead of saying it is done', async () => {
   useSupportStore.setState({
     supportErrand: errandAt('investigation_phase', ['investigation_completed', 'process_cancelled']),

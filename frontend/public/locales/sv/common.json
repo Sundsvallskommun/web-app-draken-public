@@ -55,7 +55,7 @@
     "followup": "Uppföljning",
     "unsaved_title": "Du har osparade ändringar",
     "unsaved_basics": "Intressenterna är inte sparade. Det du ändrat ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara ärende.",
-    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
+    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du sparar ärendet.",
     "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslut.",
     "unsaved_leave": "Byt flik ändå",
     "unsaved_stay": "Stanna kvar"
@@ -612,15 +612,50 @@
       "save_failed": "Anmärkningarna kunde inte sparas"
     }
   },
-  "measures": {
+  "action_points": {
+    "heading": "Åtgärdspunkter",
+    "description": "Punkter som tillståndshavaren ska åtgärda efter tillsynen. De förs över till åtgärdsärendet när tillsynsärendet beslutas.",
+    "count": "Åtgärdspunkter ({{count}})",
+    "row": "Åtgärdspunkt {{number}}",
+    "remove": "Ta bort åtgärdspunkt {{number}}",
+    "add": "Lägg till åtgärdspunkt",
+    "save_error": "Åtgärdspunkterna kunde inte sparas"
+  },
+  "inspection_protocol": {
     "heading": "Tillsynsprotokoll",
-    "description": "Välj protokollmall utifrån vad tillsynen gäller. Mallen fylls med standardkontrollpunkter som du kan anpassa inför besöket. Själva protokollet fylls sedan i på plats under Utredning.",
-    "template": "Välj protokollmall",
+    "intro": "Välj protokollmall och fyll i protokollet under tillsynen: uppgifterna om besöket, resultat och noteringar per kontrollpunkt, och summeringen. Allt sparas med Spara ärende, foton sparas direkt.",
+    "loading": "Hämtar kontrollpunkter",
+    "read_error": "Protokollet kunde inte hämtas.",
+    "assessed": "{{assessed}} av {{total}} bedömda",
+    "deficient_one": "{{count}} brist",
+    "deficient_other": "{{count}} brister",
+    "result": {
+      "approved": "Godkänt",
+      "not_completed": "Brist",
+      "not_applicable": "Ej aktuellt"
+    },
+    "note": "Notering",
+    "note_placeholder": "Notering om {{title}}…",
+    "add_photo": "Lägg till foto",
+    "remove_attachment": "Ta bort {{fileName}}",
+    "save_error": "Protokollet kunde inte sparas.",
+    "upload_failed": "Bilagan kunde inte laddas upp.",
+    "unlink_failed": "Bilagan kunde inte tas bort.",
+    "open_failed": "Bilagan kunde inte öppnas.",
+    "template": "Protokollmall",
     "template_placeholder": "Välj mall…",
-    "count": "Kontrollpunkter ({{count}})",
-    "row": "Kontrollpunkt {{number}}",
-    "remove": "Ta bort kontrollpunkt {{number}}",
-    "add": "Lägg till kontrollpunkt",
-    "save_error": "Kontrollpunkterna kunde inte sparas"
+    "template_change_title": "Byta protokollmall?",
+    "template_change_text": "Kontrollpunkterna och de ifyllda uppgifterna för den nuvarande mallen ersätts med den nya mallens. Ändringen skrivs när du sparar ärendet.",
+    "template_change_yes": "Byt mall",
+    "template_change_no": "Avbryt",
+    "generate": "Skapa tillsynsprotokoll",
+    "generating": "Skapar protokoll",
+    "generated": "Tillsynsprotokollet är skapat och ligger under Bilagor.",
+    "generate_failed": "Tillsynsprotokollet kunde inte skapas.",
+    "action_points": "Skapa åtgärdspunkter",
+    "control_point": "Kontrollpunkt {{number}}",
+    "control_point_placeholder": "Rubrik för kontrollpunkten",
+    "add_control_point": "Lägg till kontrollpunkt",
+    "remove_control_point": "Ta bort kontrollpunkt {{number}}"
   }
 }

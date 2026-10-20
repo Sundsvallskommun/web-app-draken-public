@@ -34,6 +34,25 @@ export class CreateSupportInvestigationSectionDto {
   sortOrder!: number;
 }
 
+// A protocol answer: Support Management takes any non-blank value up to 3000 characters.
+export class SupportInvestigationParameterDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  key!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  displayName?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(3000, { each: true })
+  values!: string[];
+}
+
 export class CreateSupportInvestigationDto {
   @IsOptional()
   @IsString()
@@ -49,11 +68,33 @@ export class CreateSupportInvestigationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSupportInvestigationSectionDto)
   sections!: CreateSupportInvestigationSectionDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationParameterDto)
+  parameters?: SupportInvestigationParameterDto[];
 }
 
 export class UpdateSupportInvestigationDto {
   @IsInt()
   version!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationParameterDto)
+  parameters?: SupportInvestigationParameterDto[];
 
   @IsOptional()
   @IsString()
@@ -152,8 +193,26 @@ export class SupportInvestigationController {
     }
 
     const [existing] = await this.readInvestigations(municipalityId, id, req.user);
-    if (existing) {
-      return response.status(200).send(existing);
+    if (existing?.id) {
+      const protocol = {
+        ...(data.type && { type: data.type }),
+        ...(data.title && { title: data.title }),
+        ...(data.parameters && { parameters: data.parameters }),
+      };
+      if (Object.keys(protocol).length === 0) {
+        return response.status(200).send(existing);
+      }
+      await this.apiService.patch<Investigation, Partial<Investigation>>(
+        {
+          url: `${this.investigationsUrl(municipalityId, id)}/${existing.id}`,
+          baseURL: apiURL(this.SERVICE),
+          data: protocol,
+          headers: { 'If-Match': `"${existing.version ?? 0}"` },
+          propagateClientError: true,
+        },
+        req.user,
+      );
+      return response.status(200).send(await this.readInvestigation(municipalityId, id, existing.id, req.user));
     }
 
     const baseURL = apiURL(this.SERVICE);
@@ -167,6 +226,7 @@ export class SupportInvestigationController {
           investigatorUserId: req.user.username,
           ...(data.type && { type: data.type }),
           ...(data.title && { title: data.title }),
+          ...(data.parameters && { parameters: data.parameters }),
         },
         propagateClientError: true,
       },

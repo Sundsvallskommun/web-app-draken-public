@@ -1,4 +1,4 @@
-import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation, Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
 export interface SupportInvestigationSectionInput {
@@ -9,6 +9,10 @@ export interface SupportInvestigationSectionInput {
 
 export interface SupportInvestigationInput {
   version: number;
+  type?: string;
+  title?: string;
+  /** Replaces the whole list. */
+  parameters?: Parameter[];
   summary?: string;
   conclusion?: string;
   recommendation?: string;
@@ -57,17 +61,27 @@ export const getSupportInvestigation = (errandId: string, municipalityId: string
       throw e;
     });
 
+interface SupportInvestigationStart {
+  title: string;
+  sections: SupportInvestigationSectionInput[];
+  type?: string;
+  parameters?: Parameter[];
+}
+
+/** Answers with the investigation the errand already has, if any, instead of starting a second one. */
 export const startSupportInvestigation = (
   errandId: string,
   municipalityId: string,
   title: string,
-  sections: SupportInvestigationSectionInput[]
+  sections: SupportInvestigationSectionInput[],
+  protocol?: Pick<SupportInvestigationStart, 'type' | 'parameters'>
 ): Promise<Investigation> =>
   apiService
-    .post<Investigation, { title: string; sections: SupportInvestigationSectionInput[] }>(
-      `supportinvestigations/${municipalityId}/${errandId}`,
-      { title, sections }
-    )
+    .post<Investigation, SupportInvestigationStart>(`supportinvestigations/${municipalityId}/${errandId}`, {
+      title,
+      sections,
+      ...protocol,
+    })
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when starting the investigation');
