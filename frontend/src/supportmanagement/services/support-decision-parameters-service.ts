@@ -78,6 +78,10 @@ const permitHolderParameters = (holder: SupportStakeholderFormModel | undefined)
   permitHolderPostalAddress: postalAddress(holder?.zipCode, holder?.city),
 });
 
+/** The telephone to the premises the application gave, which the handler's field starts from. */
+export const applicationPremisesPhone = (form: FormValue | undefined): string =>
+  (form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer')) ?? '';
+
 /**
  * The restaurant number is left out: the process resolves it and puts the one it assigned on the
  * certificate. The telephone is the handler's, since the application asks for it but does not insist.
@@ -90,8 +94,7 @@ const premisesParameters = (
   premisesName: form && text(form.serveringsstalletsNamn),
   premisesStreet: premises?.street,
   premisesPostalAddress: postalAddress(premises?.postalCode, premises?.city),
-  premisesPhone:
-    text(premisesPhone) ?? (form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer')),
+  premisesPhone: text(premisesPhone) ?? text(applicationPremisesPhone(form)),
 });
 
 const issuingParameters = ({

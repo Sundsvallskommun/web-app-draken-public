@@ -12,7 +12,7 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { mockEnv } from '../../../../tests/mock-env';
+import { mockEnv } from '../../../../../tests/mock-env';
 import { SupportErrandDecisionTab } from './support-errand-decision-tab';
 
 // The form is under test; the basis above it and the premises lookup have tests of their own, but the
