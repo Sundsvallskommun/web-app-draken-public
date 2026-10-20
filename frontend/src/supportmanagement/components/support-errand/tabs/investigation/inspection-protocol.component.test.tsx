@@ -175,17 +175,20 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
-    create: [
-      { title: 'Granskning via upplysningstjänsten Syna/Svensk faktakontroll' },
-      { title: 'Belastningsregistret', result: 'COMPLETED' },
-      { title: 'Skatteverket' },
-      { title: 'Kronofogden' },
-      { title: 'Annat' },
-    ],
-    update: [],
-    remove: [],
-  });
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    {
+      create: [
+        { type: 'INTERNAL', title: 'Granskning via upplysningstjänsten Syna/Svensk faktakontroll' },
+        { type: 'INTERNAL', title: 'Belastningsregistret', result: 'COMPLETED' },
+        { type: 'INTERNAL', title: 'Skatteverket' },
+        { type: 'INTERNAL', title: 'Kronofogden' },
+        { type: 'INTERNAL', title: 'Annat' },
+      ],
+      update: [],
+      remove: [],
+    },
+    nothing,
+  ]);
   expect(startSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'Inre tillsyn', [], {
     type: 'internal_inspection',
     parameters: expect.arrayContaining([
@@ -224,12 +227,14 @@ test('a result marks the tab unsaved, and the save patches only the measures tha
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
-    create: [],
-    update: [{ id: 'm1', patch: { result: 'NOT_COMPLETED', description: 'Ingen legitimation begärdes' } }],
-    remove: [],
-  });
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'EXTERNAL', nothing);
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    {
+      create: [],
+      update: [{ id: 'm1', patch: { result: 'NOT_COMPLETED', description: 'Ingen legitimation begärdes' } }],
+      remove: [],
+    },
+    nothing,
+  ]);
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
@@ -249,12 +254,10 @@ test('the action points are listed in their own accordion and written as EXTERNA
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', nothing);
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'EXTERNAL', {
-    create: [{ title: 'Byt ut prislistan' }],
-    update: [],
-    remove: [],
-  });
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    nothing,
+    { create: [{ type: 'EXTERNAL', title: 'Byt ut prislistan' }], update: [], remove: [] },
+  ]);
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
@@ -275,11 +278,14 @@ test('a control point can be added beyond the template, and a saved one removed,
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
-    create: [{ title: 'Brandsläckare på plats', result: 'NOT_COMPLETED' }],
-    update: [],
-    remove: ['m2'],
-  });
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    {
+      create: [{ type: 'INTERNAL', title: 'Brandsläckare på plats', result: 'NOT_COMPLETED' }],
+      update: [],
+      remove: ['m2'],
+    },
+    nothing,
+  ]);
 });
 
 test('a changed answer is saved on the investigation with the version that was read', async () => {
@@ -294,7 +300,7 @@ test('a changed answer is saved on the investigation with the version that was r
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', nothing);
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing]);
   expect(saveSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', {
     version: 3,
     type: 'serving_permit',
@@ -342,12 +348,13 @@ test('another template is taken only after the handler confirms, and replaces co
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(
-    ERRAND_ID,
-    '2281',
-    'INTERNAL',
-    expect.objectContaining({ create: expect.arrayContaining([{ title: 'Kronofogden' }]), remove: ['m1', 'm2'] })
-  );
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    expect.objectContaining({
+      create: expect.arrayContaining([{ type: 'INTERNAL', title: 'Kronofogden' }]),
+      remove: ['m1', 'm2'],
+    }),
+    nothing,
+  ]);
   expect(saveSupportInvestigation).toHaveBeenCalledWith(
     ERRAND_ID,
     '2281',
@@ -356,22 +363,14 @@ test('another template is taken only after the handler confirms, and replaces co
   );
 });
 
-test('clicking the chosen result again clears it, which is written as null', async () => {
+test('clicking the chosen result again keeps it, since a result cannot be taken back', async () => {
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
 
   fireEvent.click(screen.getByRole('button', { name: 'Godkänt', pressed: true }));
-  expect(screen.getByText('0 av 2 bedömda - 0 brister')).toBeTruthy();
-
-  await act(async () => {
-    await saver()();
-  });
-
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', 'INTERNAL', {
-    create: [],
-    update: [{ id: 'm2', patch: { result: null } }],
-    remove: [],
-  });
+  expect(screen.getByRole('button', { name: 'Godkänt', pressed: true })).toBeTruthy();
+  expect(screen.getByText('1 av 2 bedömda - 0 brister')).toBeTruthy();
+  expect(state().unsavedTabs.investigation).toBe(false);
 });
 
 test('a failed save keeps what the handler wrote and answers false', async () => {
@@ -389,6 +388,40 @@ test('a failed save keeps what the handler wrote and answers false', async () =>
   expect(screen.getByDisplayValue('skrivet men osparat')).toBeTruthy();
   expect(state().unsavedTabs.investigation).toBe(true);
   expect(getSupportMeasures).toHaveBeenCalledTimes(1);
+});
+
+test('a failed investigation save does not write the measures again', async () => {
+  vi.mocked(saveSupportInvestigation).mockRejectedValueOnce(new Error('nope'));
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+  fireEvent.click(screen.getByRole('button', { name: 'Lägg till kontrollpunkt' }));
+  fireEvent.change(screen.getByLabelText('Kontrollpunkt 3'), { target: { value: 'Ny punkt' } });
+  fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
+
+  // The measures were written, so the server now holds the new one.
+  vi.mocked(getSupportMeasures).mockResolvedValue([
+    ...measures,
+    { id: 'm3', type: 'INTERNAL', title: 'Ny punkt', attachments: [], created: '2026-10-14T09:00:00Z' },
+  ]);
+  await act(async () => {
+    expect(await saver()()).toBe(false);
+  });
+
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    { create: [{ type: 'INTERNAL', title: 'Ny punkt' }], update: [], remove: [] },
+    nothing,
+  ]);
+  expect(screen.getAllByDisplayValue('Ny punkt')).toHaveLength(1);
+  expect(screen.getByDisplayValue('120')).toBeTruthy();
+  expect(state().unsavedTabs.investigation).toBe(true);
+
+  await act(async () => {
+    expect(await saver()()).toBe(true);
+  });
+
+  expect(saveSupportMeasures).toHaveBeenLastCalledWith(ERRAND_ID, '2281', [nothing, nothing]);
+  expect(saveSupportInvestigation).toHaveBeenCalledTimes(2);
+  expect(screen.getAllByDisplayValue('Ny punkt')).toHaveLength(1);
 });
 
 test('an uploaded photo shows on the card as soon as the service answers', async () => {

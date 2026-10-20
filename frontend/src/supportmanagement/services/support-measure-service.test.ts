@@ -60,12 +60,14 @@ const saved = [
 ];
 
 test('rows equal to what was saved change nothing', () => {
-  expect(supportMeasureChanges(saved, saved)).toEqual({ create: [], update: [], remove: [] });
+  expect(supportMeasureChanges('INTERNAL', saved, saved)).toEqual({ create: [], update: [], remove: [] });
 });
 
 test('a row without id is created, a renamed row patched, a missing row removed', () => {
-  expect(supportMeasureChanges([row('m1', 'Ålderskontroll (18 år)'), row(undefined, 'Prislista')], saved)).toEqual({
-    create: [{ title: 'Prislista' }],
+  expect(
+    supportMeasureChanges('INTERNAL', [row('m1', 'Ålderskontroll (18 år)'), row(undefined, 'Prislista')], saved)
+  ).toEqual({
+    create: [{ type: 'INTERNAL', title: 'Prislista' }],
     update: [{ id: 'm1', patch: { title: 'Ålderskontroll (18 år)' } }],
     remove: ['m2'],
   });
@@ -73,18 +75,20 @@ test('a row without id is created, a renamed row patched, a missing row removed'
 
 test('a new row brings its result and note along, but only when it has them', () => {
   const changes = supportMeasureChanges(
+    'EXTERNAL',
     [row(undefined, 'Nykterhet', { result: 'COMPLETED', description: 'Lugnt' }), row(undefined, 'Brandskydd')],
     []
   );
 
   expect(changes.create).toEqual([
-    { title: 'Nykterhet', result: 'COMPLETED', description: 'Lugnt' },
-    { title: 'Brandskydd' },
+    { type: 'EXTERNAL', title: 'Nykterhet', result: 'COMPLETED', description: 'Lugnt' },
+    { type: 'EXTERNAL', title: 'Brandskydd' },
   ]);
 });
 
-test('a saved row is patched with the fields that differ, and no result is written as null', () => {
+test('a saved row is patched with the fields that differ; a result cannot be taken back', () => {
   const changes = supportMeasureChanges(
+    'INTERNAL',
     [
       row('m1', 'Ålderskontroll', { result: 'NOT_COMPLETED' }),
       row('m2', 'Serveringstider följs', { description: 'Stängde 01:00' }),
@@ -94,16 +98,13 @@ test('a saved row is patched with the fields that differ, and no result is writt
 
   expect(changes).toEqual({
     create: [],
-    update: [
-      { id: 'm1', patch: { result: 'NOT_COMPLETED' } },
-      { id: 'm2', patch: { result: null } },
-    ],
+    update: [{ id: 'm1', patch: { result: 'NOT_COMPLETED' } }],
     remove: [],
   });
 });
 
 test('blank rows are dropped, and a saved row that was blanked is removed', () => {
-  expect(supportMeasureChanges([row('m1', '  '), row(undefined, '')], saved)).toEqual({
+  expect(supportMeasureChanges('INTERNAL', [row('m1', '  '), row(undefined, '')], saved)).toEqual({
     create: [],
     update: [],
     remove: ['m1', 'm2'],
@@ -111,8 +112,10 @@ test('blank rows are dropped, and a saved row that was blanked is removed', () =
 });
 
 test('surrounding whitespace is neither saved nor counted as a change', () => {
-  expect(supportMeasureChanges([row('m1', ' Ålderskontroll '), row(undefined, ' Prislista ')], saved)).toEqual({
-    create: [{ title: 'Prislista' }],
+  expect(
+    supportMeasureChanges('INTERNAL', [row('m1', ' Ålderskontroll '), row(undefined, ' Prislista ')], saved)
+  ).toEqual({
+    create: [{ type: 'INTERNAL', title: 'Prislista' }],
     update: [],
     remove: ['m2'],
   });

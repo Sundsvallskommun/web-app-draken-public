@@ -105,9 +105,9 @@ describe('the inspection protocol on a measure', () => {
     const { controller, api } = makeController();
     const res = mockRes();
 
-    await controller.updateMeasure(mockReq(), errandId, mockMunicipalityId, measureId, { result: null, description: 'Ingen anmärkning' }, res);
+    await controller.updateMeasure(mockReq(), errandId, mockMunicipalityId, measureId, { result: 'COMPLETED', description: 'Ingen anmärkning' }, res);
 
-    expect(api.patch.mock.calls[0][0]).toMatchObject({ data: { result: null, description: 'Ingen anmärkning' } });
+    expect(api.patch.mock.calls[0][0]).toMatchObject({ data: { result: 'COMPLETED', description: 'Ingen anmärkning' } });
     expect((api.patch.mock.calls[0][0] as { data: object }).data).not.toHaveProperty('title');
   });
 

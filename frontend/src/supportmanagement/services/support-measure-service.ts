@@ -34,15 +34,15 @@ export interface SupportMeasureRow {
   description: string;
 }
 
-/** What a changed row is patched with; whatever is left out stays as it is. `result: null` clears it. */
+/** What a changed row is patched with; whatever is left out stays as it is. A result cannot be cleared. */
 interface SupportMeasurePatch {
   title?: string;
-  result?: SupportMeasureResultName | null;
+  result?: SupportMeasureResultName;
   description?: string;
 }
 
 export interface SupportMeasureChanges {
-  create: { title: string; result?: SupportMeasureResultName; description?: string }[];
+  create: { type: SupportMeasureTypeName; title: string; result?: SupportMeasureResultName; description?: string }[];
   update: { id: string; patch: SupportMeasurePatch }[];
   remove: string[];
 }
@@ -72,12 +72,16 @@ export const supportMeasureRow = (measure: Measure): SupportMeasureRow => ({
 
 const patchOf = (before: SupportMeasureRow, row: SupportMeasureRow): SupportMeasurePatch => ({
   ...(row.title !== before.title && { title: row.title }),
-  ...(row.result !== before.result && { result: row.result || null }),
+  ...(row.result && row.result !== before.result && { result: row.result }),
   ...(row.description !== before.description && { description: row.description }),
 });
 
 /** Blank rows are dropped; a saved row that was blanked or removed is deleted; a saved row is patched with what differs. */
-export const supportMeasureChanges = (rows: SupportMeasureRow[], saved: SupportMeasureRow[]): SupportMeasureChanges => {
+export const supportMeasureChanges = (
+  type: SupportMeasureTypeName,
+  rows: SupportMeasureRow[],
+  saved: SupportMeasureRow[]
+): SupportMeasureChanges => {
   const kept = rows.map((row) => ({ ...row, title: row.title.trim() })).filter((row) => row.title !== '');
   const savedById = new Map(saved.map((row) => [row.id, row]));
   const keptIds = new Set(kept.map((row) => row.id));
@@ -85,6 +89,7 @@ export const supportMeasureChanges = (rows: SupportMeasureRow[], saved: SupportM
     create: kept
       .filter((row) => !row.id)
       .map(({ title, result, description }) => ({
+        type,
         title,
         ...(result && { result }),
         ...(description && { description }),
@@ -104,7 +109,7 @@ const measuresUrl = (errandId: string, municipalityId: string): string =>
 export const getSupportMeasures = (errandId: string, municipalityId: string): Promise<Measure[]> =>
   apiService.get<Measure[]>(measuresUrl(errandId, municipalityId)).then((res) => res.data ?? []);
 
-type SupportMeasureInput = { type: SupportMeasureTypeName } & SupportMeasureChanges['create'][number];
+type SupportMeasureInput = SupportMeasureChanges['create'][number];
 
 const createSupportMeasure = (errandId: string, municipalityId: string, input: SupportMeasureInput): Promise<Measure> =>
   apiService.post<Measure, SupportMeasureInput>(measuresUrl(errandId, municipalityId), input).then((res) => res.data);
@@ -122,21 +127,22 @@ const updateSupportMeasure = (
 const deleteSupportMeasure = (errandId: string, municipalityId: string, measureId: string): Promise<void> =>
   apiService.deleteRequest<void>(`${measuresUrl(errandId, municipalityId)}/${measureId}`).then(() => undefined);
 
-/** Writes one change at a time; whoever called reads the measures again afterwards. */
+/** Writes one change at a time, list by list; whoever called reads the measures again afterwards. */
 export const saveSupportMeasures = async (
   errandId: string,
   municipalityId: string,
-  type: SupportMeasureTypeName,
-  changes: SupportMeasureChanges
+  changes: SupportMeasureChanges[]
 ): Promise<void> => {
-  for (const row of changes.create) {
-    await createSupportMeasure(errandId, municipalityId, { type, ...row });
-  }
-  for (const { id, patch } of changes.update) {
-    await updateSupportMeasure(errandId, municipalityId, id, patch);
-  }
-  for (const id of changes.remove) {
-    await deleteSupportMeasure(errandId, municipalityId, id);
+  for (const list of changes) {
+    for (const row of list.create) {
+      await createSupportMeasure(errandId, municipalityId, row);
+    }
+    for (const { id, patch } of list.update) {
+      await updateSupportMeasure(errandId, municipalityId, id, patch);
+    }
+    for (const id of list.remove) {
+      await deleteSupportMeasure(errandId, municipalityId, id);
+    }
   }
 };
 

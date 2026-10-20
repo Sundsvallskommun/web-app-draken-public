@@ -52,7 +52,7 @@ export class UpdateSupportMeasureDto {
 
   @IsOptional()
   @IsIn(MEASURE_RESULTS)
-  result?: string | null;
+  result?: string;
 }
 
 const ADDED_BY_ROLE = 'PRIMARY';

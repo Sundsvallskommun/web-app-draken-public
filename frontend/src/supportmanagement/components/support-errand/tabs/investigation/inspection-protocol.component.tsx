@@ -98,6 +98,9 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
   };
 };
 
+const baselineOf = (data: Saved): Draft =>
+  draftOf(data, useSupportStore.getState().supportErrand, useUserStore.getState().user);
+
 const load = (errandId: string, municipalityId: string): Promise<Saved> =>
   Promise.all([getSupportMeasures(errandId, municipalityId), getSupportInvestigation(errandId, municipalityId)]).then(
     ([measures, investigation]) => ({ measures, investigation })
@@ -128,11 +131,25 @@ export const InspectionProtocol: FC<{
   const [busyRowId, setBusyRowId] = useState<string>();
   const [generating, setGenerating] = useState(false);
 
-  /** Takes what the errand holds as both the saved state and the page. */
+  const updateDraft = (change: (current: Draft) => Draft) =>
+    setDraft((current) => (current ? change(current) : current));
+
+  /** Measures and investigation as saved on the server */
   const receive = (data: Saved) => {
-    const baseline = draftOf(data, useSupportStore.getState().supportErrand, useUserStore.getState().user);
+    const baseline = baselineOf(data);
     setSaved({ data, baseline });
     setDraft(baseline);
+  };
+
+  /** Measures as saved on the server */
+  const receiveMeasures = (data: Saved) => {
+    const baseline = baselineOf(data);
+    setSaved({ data, baseline });
+    updateDraft((current) => ({
+      ...current,
+      controlPoints: baseline.controlPoints,
+      actionPoints: baseline.actionPoints,
+    }));
   };
 
   // Read once per errand and after each save. The errand is read again by Spara before the tab savers run,
@@ -176,23 +193,19 @@ export const InspectionProtocol: FC<{
   const toast = (status: 'error' | 'success', key: string) =>
     toastMessage(getToastOptions({ status, message: t(key) }));
 
-  /** Writes both measure lists, then the template with its answers on the investigation. */
+  /**
+   * Writes both measure lists, then the template with its answers on the investigation. The measures are read back
+   * in between, so a failed investigation save does not have them written again on the next try.
+   */
   const save = async (): Promise<boolean> => {
     if (!errandId || !municipalityId || !draft || !saved) return true;
     const { baseline, data } = saved;
     try {
-      await saveSupportMeasures(
-        errandId,
-        municipalityId,
-        SupportMeasureType.INTERNAL,
-        supportMeasureChanges(draft.controlPoints, baseline.controlPoints)
-      );
-      await saveSupportMeasures(
-        errandId,
-        municipalityId,
-        SupportMeasureType.EXTERNAL,
-        supportMeasureChanges(draft.actionPoints, baseline.actionPoints)
-      );
+      await saveSupportMeasures(errandId, municipalityId, [
+        supportMeasureChanges(SupportMeasureType.INTERNAL, draft.controlPoints, baseline.controlPoints),
+        supportMeasureChanges(SupportMeasureType.EXTERNAL, draft.actionPoints, baseline.actionPoints),
+      ]);
+      receiveMeasures({ ...data, measures: await getSupportMeasures(errandId, municipalityId) });
       if (template) {
         const parameters = toInspectionProtocolInvestigationParameters(template, draft.values);
         if (!data.investigation?.id) {
@@ -231,9 +244,6 @@ export const InspectionProtocol: FC<{
     setTabSaver(TAB_KEY, saver);
     return () => setTabSaver(TAB_KEY, undefined);
   }, [saver, setTabSaver]);
-
-  const updateDraft = (change: (current: Draft) => Draft) =>
-    setDraft((current) => (current ? change(current) : current));
 
   const setControlPoint = (index: number, row: SupportMeasureRow) =>
     updateDraft((current) => ({

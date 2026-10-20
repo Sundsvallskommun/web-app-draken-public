@@ -75,7 +75,7 @@ export const InspectionProtocolMeasureCard: FC<{
               color={RESULT_COLOR[result]}
               aria-pressed={selected}
               disabled={readOnly}
-              onClick={() => onChange({ ...row, result: selected ? '' : result })}
+              onClick={() => onChange({ ...row, result })}
               data-cy={`measure-result-${result}`}
             >
               {t(translationKey)}
