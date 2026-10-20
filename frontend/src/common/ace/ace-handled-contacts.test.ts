@@ -37,6 +37,12 @@ describe('markContactHandled', () => {
     expect(storage.getItem('draken-ace-contact:4712')).not.toBeNull();
   });
 
+  test('drops unreadable entries', () => {
+    storage.setItem('draken-ace-contact:4711', 'not a timestamp');
+
+    expect(markContactHandled('4711', storage, now)).toBe(true);
+  });
+
   test('ignores keys it does not own', () => {
     storage.setItem('unrelated', 'value');
     markContactHandled('4711', storage, now);

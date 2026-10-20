@@ -21,7 +21,12 @@ const removeExpired = (storage: KeyValueStorage, now: number) => {
   const expired: string[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (key?.startsWith(KEY_PREFIX) && !(Number(storage.getItem(key)) > now)) {
+    if (!key?.startsWith(KEY_PREFIX)) {
+      continue;
+    }
+    // Unreadable entries count as expired.
+    const expiresAt = Number(storage.getItem(key));
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) {
       expired.push(key);
     }
   }
