@@ -192,8 +192,6 @@ export class SupportInvestigationController {
       return response.status(400).send('Invalid municipality id');
     }
 
-    // Someone may have got there first (a colleague, or a build that starts the permit investigation by itself).
-    // The errand keeps that investigation, but a protocol's template and answers are written onto it.
     const [existing] = await this.readInvestigations(municipalityId, id, req.user);
     if (existing?.id) {
       const protocol = {

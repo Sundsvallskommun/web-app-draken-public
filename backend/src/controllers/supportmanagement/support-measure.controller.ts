@@ -50,7 +50,6 @@ export class UpdateSupportMeasureDto {
   @MaxLength(3000)
   description?: string;
 
-  // null clears the result
   @IsOptional()
   @IsIn(MEASURE_RESULTS)
   result?: string | null;
@@ -94,8 +93,6 @@ export class SupportMeasureController {
     return response.status(200).send(res.data ?? []);
   }
 
-  // Support Management answers 201 + Location; ApiService follows it, so the created measure comes back.
-  // addedByUser/addedByRole are required by Support Management: always the signed-in handler, as PRIMARY.
   @Post('/supportmeasures/:municipalityId/:id')
   @HttpCode(201)
   @OpenAPI({ summary: 'Add a measure to a support errand' })
@@ -168,8 +165,6 @@ export class SupportMeasureController {
     return response.status(204).send();
   }
 
-  // Stores the file as an attachment of the errand, linked to the measure. Answers with the measure read back,
-  // attachments included, since the errand's own measure list leaves them out.
   @Post('/supportmeasures/:municipalityId/:id/:measureId/attachments')
   @HttpCode(201)
   @OpenAPI({ summary: 'Upload a file as an attachment of the errand, linked to the measure' })
