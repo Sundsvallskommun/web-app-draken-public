@@ -16,6 +16,7 @@ interface SupportState {
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: (SupportNotification | CaseDataNotification)[];
   activeTabKey?: string;
+  showCloseModalAfterHandover: boolean;
 }
 
 interface SupportActions {
@@ -26,6 +27,7 @@ interface SupportActions {
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
+  setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
 }
 
@@ -39,6 +41,7 @@ const initialState: SupportState = {
   stakeholderCustomers: [],
   notifications: [],
   activeTabKey: 'basics',
+  showCloseModalAfterHandover: false,
 };
 
 export const useSupportStore = create<SupportStore>((set) => ({
@@ -50,5 +53,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
+  setShowCloseModalAfterHandover: (showCloseModalAfterHandover) => set({ showCloseModalAfterHandover }),
   reset: () => set(initialState),
 }));

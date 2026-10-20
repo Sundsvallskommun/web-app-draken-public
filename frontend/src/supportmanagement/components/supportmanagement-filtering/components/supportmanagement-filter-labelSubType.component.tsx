@@ -1,6 +1,11 @@
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { getSelectableSubTypes, getUniqueLabelDisplayNames } from '@supportmanagement/services/support-label-service';
+import {
+  getClassificationDisplayName,
+  getLabelsAtDepth,
+  getSelectableSubTypes,
+  getUniqueLabelDisplayNames,
+} from '@supportmanagement/services/support-label-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -35,6 +40,7 @@ export const SupportManagementFilterLabelSubType: FC = () => {
       ),
     [supportMetadata, labelCategories, labelTypes]
   );
+  const title = getClassificationDisplayName(getLabelsAtDepth(supportMetadata?.labels?.labelStructure, 3), 'Ärendetyp');
 
   return (
     <PopupMenu>
@@ -46,7 +52,7 @@ export const SupportManagementFilterLabelSubType: FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Ärendetyp
+        {title}
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <SearchField

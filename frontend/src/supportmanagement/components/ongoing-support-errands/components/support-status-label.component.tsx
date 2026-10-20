@@ -2,7 +2,12 @@ import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.componen
 import { isROB } from '@common/services/application-service';
 import { Label } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
+import {
+  Resolution,
+  ResolutionLabelKS,
+  ResolutionLabelROB,
+  Status,
+} from '@supportmanagement/services/support-errand-service';
 import { Hourglass } from 'lucide-react';
 import { FC } from 'react';
 import { CErrandAction } from 'src/data-contracts/backend/data-contracts';
@@ -18,6 +23,8 @@ export const SupportStatusLabelComponent: FC<{
 
   const solvedErrandIcon = () => {
     if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
+    else if (resolution === Resolution.REFERRED) return 'split';
+    else if (resolution === Resolution.HANDED_OVER) return 'split';
     else if (resolution === Resolution.CLOSED) return 'check';
     else if (resolution === Resolution.BACK_TO_MANAGER) return 'redo';
     else if (resolution === Resolution.BACK_TO_HR) return 'redo';
@@ -102,6 +109,8 @@ export const SupportStatusLabelComponent: FC<{
       if (isROB()) {
         return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }
+      const ksLabel = (ResolutionLabelKS as Record<string, string>)[resolution];
+      if (ksLabel) return ksLabel;
 
       switch (resolution) {
         case Resolution.REGISTERED_EXTERNAL_SYSTEM:

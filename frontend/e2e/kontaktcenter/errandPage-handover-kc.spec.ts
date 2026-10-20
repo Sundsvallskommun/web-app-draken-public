@@ -30,11 +30,21 @@ test.describe('errand handover to another namespace', () => {
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
-    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
+    await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
+      method: 'GET',
+    });
     await mockRoute('**/party/*/statuses', mockStakeholderStatus, { method: 'GET' });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, { method: 'GET' });
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, {
+      method: 'GET',
+    });
     // Refetch of the (now closed) source errand after a successful handover, mirroring MEX.
-    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/2281/${mockSupportErrand.id}`,
+      { ...mockSupportErrand, status: 'SOLVED', resolution: 'PREPARED' },
+      { method: 'GET' }
+    );
+    // The client closes the source errand after the handover.
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'PATCH' });
 
     // Handover-specific endpoints
     await mockRoute('**/supportnamespaceconfigs/2281', mockNamespaceConfigs, { method: 'GET' });
@@ -49,6 +59,10 @@ test.describe('errand handover to another namespace', () => {
   });
 
   test('hands over the errand to another namespace and closes the modal', async ({ page, dismissCookieConsent }) => {
+    // Dismissing the post-handover close modal closes the tab; keep the page alive for the rest of the test.
+    await page.addInitScript(() => {
+      window.close = () => undefined;
+    });
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -75,11 +89,21 @@ test.describe('errand handover to another namespace', () => {
 
     // Assert the idempotency key is sent so retries don't create duplicates.
     const handoverRequest = page.waitForRequest((req) => req.url().endsWith('/handover') && req.method() === 'POST');
+    const closeRequest = page.waitForRequest(
+      (req) => req.url().endsWith(`/supporterrands/2281/${mockSupportErrand.id}`) && req.method() === 'PATCH'
+    );
     await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
     const request = await handoverRequest;
     expect(request.headers()['idempotency-key']).toBeTruthy();
 
-    // Like the MEX forward: the modal closes after a successful handover (no in-modal success view).
-    await expect(page.locator(MODAL_DIALOG)).toBeHidden();
+    // After the handover the client closes the source errand with Förberett; the close modal then opens to
+    // confirm or change the code.
+    expect((await closeRequest).postDataJSON()).toEqual({ status: 'SOLVED', resolution: 'PREPARED' });
+    const closeModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Avsluta ärendet' });
+    await expect(closeModal).toBeVisible();
+    await expect(closeModal.locator('[data-cy="current-resolution"]')).toHaveText('Förberett');
+    await expect(closeModal.getByRole('button', { name: 'Ändra lösningskod' })).toBeVisible();
+    await closeModal.getByRole('button', { name: 'Klart' }).click();
+    await expect(closeModal).toBeHidden();
   });
 });
