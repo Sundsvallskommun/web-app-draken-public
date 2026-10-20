@@ -93,8 +93,6 @@ export const SupportProcessStepButton: FC<{
   }
 
   const decisionsOnErrand = async (): Promise<Decision[] | undefined> => {
-    if (decisions) return decisions;
-
     const read = await getSupportDecisions(supportErrand.id!, municipalityId).catch(() => undefined);
     if (read) setDecisions(read);
     return read;
