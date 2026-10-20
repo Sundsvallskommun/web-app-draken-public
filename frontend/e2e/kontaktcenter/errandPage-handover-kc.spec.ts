@@ -40,7 +40,7 @@ test.describe('errand handover to another namespace', () => {
     // Refetch of the (now closed) source errand after a successful handover, mirroring MEX.
     await mockRoute(
       `**/supporterrands/2281/${mockSupportErrand.id}`,
-      { ...mockSupportErrand, status: 'SOLVED', resolution: 'HANDED_OVER' },
+      { ...mockSupportErrand, status: 'SOLVED', resolution: 'PREPARED' },
       { method: 'GET' }
     );
     // The client closes the source errand after the handover.
@@ -96,12 +96,12 @@ test.describe('errand handover to another namespace', () => {
     const request = await handoverRequest;
     expect(request.headers()['idempotency-key']).toBeTruthy();
 
-    // After the handover the client closes the source errand with Överlämnat; the close modal then opens to
+    // After the handover the client closes the source errand with Förberett; the close modal then opens to
     // confirm or change the code.
-    expect((await closeRequest).postDataJSON()).toEqual({ status: 'SOLVED', resolution: 'HANDED_OVER' });
+    expect((await closeRequest).postDataJSON()).toEqual({ status: 'SOLVED', resolution: 'PREPARED' });
     const closeModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Avsluta ärendet' });
     await expect(closeModal).toBeVisible();
-    await expect(closeModal.locator('[data-cy="current-resolution"]')).toHaveText('Överlämnat');
+    await expect(closeModal.locator('[data-cy="current-resolution"]')).toHaveText('Förberett');
     await expect(closeModal.getByRole('button', { name: 'Ändra lösningskod' })).toBeVisible();
     await closeModal.getByRole('button', { name: 'Klart' }).click();
     await expect(closeModal).toBeHidden();

@@ -333,7 +333,7 @@ export const ResolutionDescriptionKS: Record<keyof typeof ResolutionLabelKS, str
 
 /** Code the source errand is closed with when forwarded or handed over. */
 export const forwardResolution = (): Resolution =>
-  isKC() ? Resolution.HANDED_OVER : Resolution.REGISTERED_EXTERNAL_SYSTEM;
+  isKC() ? Resolution.PREPARED : Resolution.REGISTERED_EXTERNAL_SYSTEM;
 
 /** KC's handler confirms or changes that code in the close modal right after (DRAKEN-5139). */
 export const choosesResolutionAfterForward = (): boolean => isKC();
