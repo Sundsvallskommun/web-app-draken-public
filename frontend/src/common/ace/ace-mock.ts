@@ -1,10 +1,9 @@
-import { AceJSApi, AceScreenPopMessage } from './ace-jsapi.types';
+import { createFakeAceJsApi, FakeAceEvent } from './ace-fake-jsapi';
+import { AceScreenPopMessage } from './ace-jsapi.types';
 
 // Test person number from Skatteverket, not a real person (same as backend/src/tests/helpers/mock-data.ts).
 const MOCK_PERSON_NUMBER = '199001012385';
 const CHANNEL_NAME = 'draken-ace-mock';
-
-type Listener = (...args: any[]) => void;
 
 interface AceMockControls {
   screenPop: (personNumber?: string) => void;
@@ -31,55 +30,30 @@ export const installAceMock = (): void => {
   if (window.ACE?.JSApi) {
     return;
   }
-  const listeners = new Map<string, Set<Listener>>();
-  const on =
-    (event: string) =>
-    (callback: Listener): (() => void) => {
-      const set = listeners.get(event) ?? new Set<Listener>();
-      set.add(callback);
-      listeners.set(event, set);
-      return () => set.delete(callback);
-    };
+  const fake = createFakeAceJsApi();
+  window.ACE = { JSApi: fake.jsApi };
 
-  let connected = false;
-  const emit = (event: string, args: unknown[]) => {
-    if (event === 'connected' || event === 'disconnected') {
-      connected = event === 'connected';
-    }
-    listeners.get(event)?.forEach((callback) => callback(...args));
-  };
-
-  const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
+  const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(CHANNEL_NAME);
   if (channel) {
-    channel.onmessage = (e: MessageEvent<{ event: string; args: unknown[] }>) => emit(e.data.event, e.data.args);
+    channel.onmessage = (e: MessageEvent<{ event: FakeAceEvent; payload?: unknown }>) =>
+      fake.emit(e.data.event, e.data.payload);
   }
-  const dispatch = (event: string, ...args: unknown[]) => {
-    emit(event, args);
-    channel?.postMessage({ event, args });
+  const dispatch = (event: FakeAceEvent, payload?: unknown) => {
+    fake.emit(event, payload);
+    channel?.postMessage({ event, payload });
   };
-
-  const jsApi: AceJSApi = {
-    // Like a live ACE Interact session, tell listeners that register later (e.g. after a hot reload) it is up.
-    onConnected: (callback) => {
-      const remove = on('connected')(callback);
-      if (connected) {
-        setTimeout(callback, 0);
-      }
-      return remove;
-    },
-    onDisconnected: on('disconnected'),
-    onLoggedIn: on('loggedIn'),
-    onLoggedOut: on('loggedOut'),
-    onServerConnectionDown: on('serverConnectionDown'),
-    onPopupDisconnected: on('popupDisconnected'),
-    onOperationFailed: on('operationFailed'),
-    onScreenPop: on('screenPop'),
-  };
-  window.ACE = { JSApi: jsApi };
 
   window.drakenAceMock = {
     // Shaped after Telia's afterNormalAccept example, with the identity replaced by a test person.
     screenPop: (personNumber = MOCK_PERSON_NUMBER) => {
+      if (!/^\d{12}$/.test(personNumber)) {
+        console.warn('[ACE-mock] ACE skickar personnumret som 12 siffror utan bindestreck (YYYYMMDDNNNN).');
+      }
+      console.info(
+        fake.listenerCount('screenPop') > 0
+          ? '[ACE-mock] Samtal skickat, hanteras i den här fliken.'
+          : '[ACE-mock] Samtal skickat till fliken som har ACE-anslutningen. Om inget händer: ladda om alla Draken-flikar.'
+      );
       const message: AceScreenPopMessage = {
         popEvent: 'afterNormalAccept',
         contact: {
@@ -94,15 +68,6 @@ export const installAceMock = (): void => {
           },
         },
       };
-      if (!/^\d{12}$/.test(personNumber)) {
-        console.warn('[ACE-mock] ACE skickar personnumret som 12 siffror utan bindestreck (YYYYMMDDNNNN).');
-      }
-      const handledHere = (listeners.get('screenPop')?.size ?? 0) > 0;
-      console.info(
-        handledHere
-          ? '[ACE-mock] Samtal skickat, hanteras i den här fliken.'
-          : '[ACE-mock] Samtal skickat till fliken som har ACE-anslutningen. Om inget händer: ladda om alla Draken-flikar.'
-      );
       dispatch('screenPop', message);
     },
     connect: () => dispatch('connected'),

@@ -5,7 +5,7 @@
  */
 
 const KEY_PREFIX = 'draken-ace-caller:';
-const PENDING_CALLER_TTL_MS = 2 * 60 * 1000;
+export const PENDING_CALLER_TTL_MS = 2 * 60 * 1000;
 
 type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
@@ -64,6 +64,15 @@ export const storePendingCaller = (
     );
   } catch {
     // Storage unavailable or full: the errand still opens, just without a pre-filled customer.
+  }
+};
+
+/** Drops the hand-over for an errand that will not be opened, e.g. when navigation was cancelled. */
+export const removePendingCaller = (errandNumber: string, storage = browserStorage()): void => {
+  try {
+    storage?.removeItem(`${KEY_PREFIX}${errandNumber}`);
+  } catch {
+    // Ignore: the entry expires anyway.
   }
 };
 

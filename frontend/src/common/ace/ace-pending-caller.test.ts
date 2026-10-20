@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { removeExpiredPendingCallers, storePendingCaller, takePendingCaller } from './ace-pending-caller';
+import {
+  removeExpiredPendingCallers,
+  removePendingCaller,
+  storePendingCaller,
+  takePendingCaller,
+} from './ace-pending-caller';
 
 // Test person number from Skatteverket, not a real person.
 const personNumber = '199001012385';
@@ -39,6 +44,16 @@ describe('pending ACE caller hand-over', () => {
 
     expect(takePendingCaller('KC-1', storage, now + twoMinutes)).toBeNull();
     expect(storage).toHaveLength(0);
+  });
+
+  test('drops the hand-over of an errand that will not be opened', () => {
+    storePendingCaller('KC-1', personNumber, storage, now);
+    storePendingCaller('KC-2', personNumber, storage, now);
+
+    removePendingCaller('KC-1', storage);
+
+    expect(takePendingCaller('KC-1', storage, now)).toBeNull();
+    expect(takePendingCaller('KC-2', storage, now)).toBe(personNumber);
   });
 
   test('ignores unreadable entries', () => {

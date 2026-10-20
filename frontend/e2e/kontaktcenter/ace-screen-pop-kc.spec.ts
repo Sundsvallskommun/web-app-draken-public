@@ -125,6 +125,24 @@ test.describe('ACE screen pop', () => {
       expect(newErrands).toHaveLength(2);
     });
 
+    test('does not open a second errand when ACE repeats the contact after a reload', async ({ page, ace }) => {
+      const newErrands = recordNewErrandRequests(page.context());
+      const errandPage = await ace.acceptCall({ contactId: 5000 });
+      await expect(errandOwner(errandPage).card).toBeVisible();
+      // Close the errand tab so this tab takes the ACE connection again after the reload.
+      await errandPage.close();
+
+      // The cookie consent was given before the reload, so there is no banner to dismiss.
+      await page.reload();
+      await ace.waitUntilListening();
+      await ace.screenPop({ contactId: 5000 });
+      // Pops are handled in order: once the next contact has opened its errand, the repeat was ignored.
+      const nextErrandPage = await ace.acceptCall({ contactId: 5001 });
+      await expect(errandOwner(nextErrandPage).card).toBeVisible();
+
+      expect(newErrands).toHaveLength(2);
+    });
+
     test('ignores events that are not an accepted call from an identified caller', async ({ page, ace }) => {
       const newErrands = recordNewErrandRequests(page.context());
 
@@ -195,6 +213,24 @@ test.describe('ACE screen pop', () => {
 
       await expect(page).toHaveURL(new RegExp(`/arende/${mockEmptySupportErrand.errandNumber}$`));
       await expect(errandOwner(page).card).toBeVisible();
+    });
+
+    test('tells the other tabs where the errand was opened', async ({ page, ace, dismissCookieConsent }) => {
+      await openOverview(page, dismissCookieConsent);
+      await ace.waitUntilListening();
+      const otherTab = await page.context().newPage();
+      await otherTab.goto('oversikt/');
+      // The other tab shows the status once its integration runs and listens to the leading tab.
+      await expect(otherTab.locator('[data-cy="ace-status"]')).toBeVisible();
+
+      await ace.screenPop();
+
+      await expect(
+        otherTab.locator('.sk-snackbar-text', {
+          hasText: `Ärende ${mockEmptySupportErrand.errandNumber} har skapats för det inkommande samtalet och öppnats i en annan Draken-flik`,
+        })
+      ).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/arende/${mockEmptySupportErrand.errandNumber}$`));
     });
 
     test('names the created errand when the case worker stays on unsaved changes', async ({
