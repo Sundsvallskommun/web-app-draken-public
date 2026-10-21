@@ -5,14 +5,19 @@ vi.mock('@common/components/file-upload/file-upload.component', () => ({
   documentMimeTypes: [],
 }));
 
+import sv from '../../../public/locales/sv/common.json';
 import { mockEnv } from '../../tests/mock-env';
 import { SupportStakeholderFormModel } from './support-errand-service';
 import {
+  emptyKnowledgeTest,
   engagementIsMarked,
   existsOnlyAsPbi,
   hyphenatedIdentity,
   isPbi,
+  knowledgeTestTypeChoice,
+  knowledgeTestTypeName,
   newPbiContact,
+  PBI_KNOWLEDGE_TEST_TYPES,
   pbiCandidates,
   pbiOf,
   pbiPeople,
@@ -22,7 +27,7 @@ import {
   sameIdentity,
   stakeholderForEngagement,
   withAssessment,
-  withKnowledgeTest,
+  withKnowledgeTests,
   withMotivation,
   withoutPbi,
   withPbi,
@@ -103,7 +108,7 @@ test('a verdict is written beside the marking and leaves source and role alone',
     motivation: '',
     assessment: 'DEFICIENCY',
     comment: 'Skuld hos Kronofogden.',
-    knowledgeTest: { status: '', testedAt: '', comment: '' },
+    knowledgeTests: [],
   });
   expect(keysOf(withAssessment(assessed, { assessment: 'APPROVED', comment: '   ' }))).toEqual([
     'PBI',
@@ -118,36 +123,123 @@ test('the knowledge test is written beside the verdict, and each examination lea
     assessment: 'APPROVED',
     comment: '',
   });
-  const tested = withKnowledgeTest(assessed, { status: 'BOOKED', testedAt: ' 2026-11-01 ', comment: '   ' });
+  const tested = withKnowledgeTests(assessed, [
+    { type: 'PERMANENT_PUBLIC', status: 'BOOKED', testedAt: ' 2026-11-01 ', comment: '   ' },
+  ]);
 
   expect(keysOf(tested)).toEqual([
     'PBI',
     'PBI_SOURCE',
     'PBI_ASSESSMENT',
-    'PBI_KNOWLEDGE_TEST',
-    'PBI_KNOWLEDGE_TEST_DATE',
+    'PBI_KNOWLEDGE_TESTS',
+    'PBI_KNOWLEDGE_TEST_1_TYPE',
+    'PBI_KNOWLEDGE_TEST_1_STATUS',
+    'PBI_KNOWLEDGE_TEST_1_DATE',
   ]);
-  expect(pbiOf(tested).knowledgeTest).toEqual({ status: 'BOOKED', testedAt: '2026-11-01', comment: '' });
-  expect(pbiOf(withAssessment(tested, { assessment: 'DEFICIENCY', comment: 'Skuld.' })).knowledgeTest.status).toBe(
+  expect(pbiOf(tested).knowledgeTests).toEqual([
+    { type: 'PERMANENT_PUBLIC', status: 'BOOKED', testedAt: '2026-11-01', comment: '' },
+  ]);
+  expect(pbiOf(withAssessment(tested, { assessment: 'DEFICIENCY', comment: 'Skuld.' })).knowledgeTests[0].status).toBe(
     'BOOKED'
   );
-  expect(keysOf(withKnowledgeTest(tested, { status: '', testedAt: '2026-11-01', comment: 'Omprov.' }))).toEqual([
-    'PBI',
-    'PBI_SOURCE',
-    'PBI_ASSESSMENT',
-    'PBI_KNOWLEDGE_TEST_DATE',
-    'PBI_KNOWLEDGE_TEST_COMMENT',
-  ]);
   expect(withoutPbi(tested).parameters).toEqual([]);
 });
 
+test('a person sits several tests, each one numbered and read back in the order it was taken', () => {
+  const marked = withPbi(stakeholder({}), { source: 'COMPANY' });
+  const tests = [
+    { type: 'PERMANENT_PUBLIC', status: 'FAILED' as const, testedAt: '2026-09-01', comment: 'För få poäng.' },
+    { type: 'Prov hos annan myndighet', status: 'APPROVED' as const, testedAt: '2026-11-01', comment: '' },
+  ];
+  const tested = withKnowledgeTests(marked, tests);
+
+  expect(keysOf(tested)).toEqual([
+    'PBI',
+    'PBI_SOURCE',
+    'PBI_KNOWLEDGE_TESTS',
+    'PBI_KNOWLEDGE_TEST_1_TYPE',
+    'PBI_KNOWLEDGE_TEST_1_STATUS',
+    'PBI_KNOWLEDGE_TEST_1_DATE',
+    'PBI_KNOWLEDGE_TEST_1_COMMENT',
+    'PBI_KNOWLEDGE_TEST_2_TYPE',
+    'PBI_KNOWLEDGE_TEST_2_STATUS',
+    'PBI_KNOWLEDGE_TEST_2_DATE',
+  ]);
+  expect(pbiOf(tested).knowledgeTests).toEqual(tests);
+
+  const withoutTheFirst = withKnowledgeTests(tested, pbiOf(tested).knowledgeTests.slice(1));
+  expect(pbiOf(withoutTheFirst).knowledgeTests).toEqual([tests[1]]);
+  expect(keysOf(withoutTheFirst)).not.toContain('PBI_KNOWLEDGE_TEST_2_TYPE');
+});
+
+test('a test the handler has opened but not filled in is still there, since the number of tests is stored', () => {
+  const marked = withPbi(stakeholder({}), { source: 'COMPANY' });
+  const opened = withKnowledgeTests(marked, [
+    { type: 'TASTING', status: 'APPROVED', testedAt: '2026-11-01', comment: '' },
+    emptyKnowledgeTest(),
+  ]);
+
+  expect(opened.parameters?.find((parameter) => parameter.key === 'PBI_KNOWLEDGE_TESTS')?.values).toEqual(['2']);
+  expect(pbiOf(opened).knowledgeTests).toEqual([
+    { type: 'TASTING', status: 'APPROVED', testedAt: '2026-11-01', comment: '' },
+    emptyKnowledgeTest(),
+  ]);
+  expect(keysOf(withKnowledgeTests(marked, []))).toEqual(['PBI', 'PBI_SOURCE']);
+});
+
+test('the single test an errand was written with before is read as the first of the tests', () => {
+  const asItWasStored = stakeholder({
+    parameters: [
+      { key: 'PBI', values: ['true'] },
+      { key: 'PBI_KNOWLEDGE_TEST', values: ['APPROVED'] },
+      { key: 'PBI_KNOWLEDGE_TEST_DATE', values: ['2026-02-03'] },
+      { key: 'PBI_KNOWLEDGE_TEST_COMMENT', values: ['Godkänt på första försöket.'] },
+    ],
+  });
+
+  expect(pbiOf(asItWasStored).knowledgeTests).toEqual([
+    { type: '', status: 'APPROVED', testedAt: '2026-02-03', comment: 'Godkänt på första försöket.' },
+  ]);
+  expect(keysOf(withKnowledgeTests(asItWasStored, pbiOf(asItWasStored).knowledgeTests))).toEqual([
+    'PBI',
+    'PBI_KNOWLEDGE_TESTS',
+    'PBI_KNOWLEDGE_TEST_1_STATUS',
+    'PBI_KNOWLEDGE_TEST_1_DATE',
+    'PBI_KNOWLEDGE_TEST_1_COMMENT',
+  ]);
+  expect(pbiOf(stakeholder({ parameters: [{ key: 'PBI', values: ['true'] }] })).knowledgeTests).toEqual([]);
+});
+
+test('every test Folkhälsomyndigheten holds is named in Swedish', () => {
+  const swedish = (key: string): unknown =>
+    key
+      .replace(/^common:/, '')
+      .split('.')
+      .reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], sv);
+
+  for (const candidate of PBI_KNOWLEDGE_TEST_TYPES) {
+    expect(swedish(candidate.translationKey), candidate.type).toBeTypeOf('string');
+  }
+  expect(PBI_KNOWLEDGE_TEST_TYPES).toHaveLength(7);
+});
+
+test('a test outside the list is the one the handler wrote, and one from the list is named from it', () => {
+  const translate = (key: string) => `översatt:${key}`;
+
+  expect(knowledgeTestTypeChoice('TASTING')).toBe('TASTING');
+  expect(knowledgeTestTypeChoice('Prov hos annan myndighet')).toBe('OTHER');
+  expect(knowledgeTestTypeChoice('')).toBe('');
+  expect(knowledgeTestTypeName('TASTING', translate)).toBe('översatt:common:knowledge_test.types.tasting');
+  expect(knowledgeTestTypeName('Prov hos annan myndighet', translate)).toBe('Prov hos annan myndighet');
+});
+
 test('the motivation is written beside the marking, and neither verdict is touched', () => {
-  const examined = withKnowledgeTest(
+  const examined = withKnowledgeTests(
     withAssessment(withPbi(stakeholder({}), { source: 'COMPANY', role: 'Finansiär' }), {
       assessment: 'APPROVED',
       comment: 'Inget.',
     }),
-    { status: 'BOOKED', testedAt: '2026-11-01', comment: '' }
+    [{ type: '', status: 'BOOKED', testedAt: '2026-11-01', comment: '' }]
   );
   const motivated = withMotivation(examined, 'Driver verksamheten dagligen. ');
 
@@ -158,15 +250,16 @@ test('the motivation is written beside the marking, and neither verdict is touch
     'PBI_MOTIVATION',
     'PBI_ASSESSMENT',
     'PBI_ASSESSMENT_COMMENT',
-    'PBI_KNOWLEDGE_TEST',
-    'PBI_KNOWLEDGE_TEST_DATE',
+    'PBI_KNOWLEDGE_TESTS',
+    'PBI_KNOWLEDGE_TEST_1_STATUS',
+    'PBI_KNOWLEDGE_TEST_1_DATE',
   ]);
   expect(pbiOf(motivated)).toMatchObject({
     role: 'Finansiär',
     motivation: 'Driver verksamheten dagligen. ',
     assessment: 'APPROVED',
     comment: 'Inget.',
-    knowledgeTest: { status: 'BOOKED', testedAt: '2026-11-01', comment: '' },
+    knowledgeTests: [{ type: '', status: 'BOOKED', testedAt: '2026-11-01', comment: '' }],
   });
   expect(keysOf(withMotivation(motivated, '   '))).not.toContain('PBI_MOTIVATION');
   expect(withoutPbi(motivated).parameters).toEqual([]);
@@ -186,8 +279,10 @@ test('a comment is stored as it was typed, since the field reads it back between
   const midSentence = withAssessment(marked, { assessment: 'APPROVED', comment: 'Ingen anmärkning ' });
   expect(pbiOf(midSentence).comment).toBe('Ingen anmärkning ');
 
-  const midTest = withKnowledgeTest(marked, { status: 'BOOKED', testedAt: '', comment: 'Bokat till ' });
-  expect(pbiOf(midTest).knowledgeTest.comment).toBe('Bokat till ');
+  const midTest = withKnowledgeTests(marked, [
+    { type: 'Prov hos ', status: 'BOOKED', testedAt: '', comment: 'Bokat till ' },
+  ]);
+  expect(pbiOf(midTest).knowledgeTests[0]).toMatchObject({ type: 'Prov hos ', comment: 'Bokat till ' });
 
   const blank = withAssessment(marked, { assessment: 'APPROVED', comment: '   ' });
   expect(blank.parameters?.map((parameter) => parameter.key)).not.toContain('PBI_ASSESSMENT_COMMENT');

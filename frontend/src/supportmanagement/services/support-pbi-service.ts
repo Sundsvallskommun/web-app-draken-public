@@ -21,6 +21,9 @@ const PBI_ROLE_PARAMETER = 'PBI_ROLE';
 const PBI_MOTIVATION_PARAMETER = 'PBI_MOTIVATION';
 const PBI_ASSESSMENT_PARAMETER = 'PBI_ASSESSMENT';
 const PBI_ASSESSMENT_COMMENT_PARAMETER = 'PBI_ASSESSMENT_COMMENT';
+const PBI_KNOWLEDGE_TEST_COUNT_PARAMETER = 'PBI_KNOWLEDGE_TESTS';
+
+/** The single test an errand carried before a person could sit several. Read, never written again. */
 const PBI_KNOWLEDGE_TEST_PARAMETER = 'PBI_KNOWLEDGE_TEST';
 const PBI_KNOWLEDGE_TEST_DATE_PARAMETER = 'PBI_KNOWLEDGE_TEST_DATE';
 const PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER = 'PBI_KNOWLEDGE_TEST_COMMENT';
@@ -32,6 +35,7 @@ const PBI_PARAMETERS = new Set([
   PBI_MOTIVATION_PARAMETER,
   PBI_ASSESSMENT_PARAMETER,
   PBI_ASSESSMENT_COMMENT_PARAMETER,
+  PBI_KNOWLEDGE_TEST_COUNT_PARAMETER,
   PBI_KNOWLEDGE_TEST_PARAMETER,
   PBI_KNOWLEDGE_TEST_DATE_PARAMETER,
   PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER,
@@ -67,15 +71,59 @@ export const PBI_KNOWLEDGE_TEST_STATUSES: { status: PbiKnowledgeTestStatusName; 
   { status: PbiKnowledgeTestStatus.NOT_APPLICABLE, translationKey: 'common:knowledge_test.status.not_applicable' },
 ];
 
+const PbiKnowledgeTestType = {
+  PERMANENT_PUBLIC: 'PERMANENT_PUBLIC',
+  PERMANENT_CLOSED_CATERING: 'PERMANENT_CLOSED_CATERING',
+  PERMANENT_CLOSED: 'PERMANENT_CLOSED',
+  TEMPORARY_PUBLIC: 'TEMPORARY_PUBLIC',
+  TEMPORARY_CLOSED: 'TEMPORARY_CLOSED',
+  TASTING: 'TASTING',
+  FARM_SALES: 'FARM_SALES',
+} as const;
+export type PbiKnowledgeTestTypeName = (typeof PbiKnowledgeTestType)[keyof typeof PbiKnowledgeTestType];
+
+export const PBI_KNOWLEDGE_TEST_TYPES: { type: PbiKnowledgeTestTypeName; translationKey: string }[] = [
+  { type: PbiKnowledgeTestType.PERMANENT_PUBLIC, translationKey: 'common:knowledge_test.types.permanent_public' },
+  {
+    type: PbiKnowledgeTestType.PERMANENT_CLOSED_CATERING,
+    translationKey: 'common:knowledge_test.types.permanent_closed_catering',
+  },
+  { type: PbiKnowledgeTestType.PERMANENT_CLOSED, translationKey: 'common:knowledge_test.types.permanent_closed' },
+  { type: PbiKnowledgeTestType.TEMPORARY_PUBLIC, translationKey: 'common:knowledge_test.types.temporary_public' },
+  { type: PbiKnowledgeTestType.TEMPORARY_CLOSED, translationKey: 'common:knowledge_test.types.temporary_closed' },
+  { type: PbiKnowledgeTestType.TASTING, translationKey: 'common:knowledge_test.types.tasting' },
+  { type: PbiKnowledgeTestType.FARM_SALES, translationKey: 'common:knowledge_test.types.farm_sales' },
+];
+
+export const PBI_KNOWLEDGE_TEST_TYPE_OTHER = 'OTHER';
+
+const knowledgeTestType = (type: string): { translationKey: string } | undefined =>
+  PBI_KNOWLEDGE_TEST_TYPES.find((candidate) => candidate.type === type);
+
+export const knowledgeTestTypeChoice = (type: string): string =>
+  !type || knowledgeTestType(type) ? type : PBI_KNOWLEDGE_TEST_TYPE_OTHER;
+
+export const knowledgeTestTypeName = (type: string, translate: (key: string) => string): string => {
+  const named = knowledgeTestType(type);
+  return named ? translate(named.translationKey) : type;
+};
+
 export const PBI_ROLE_MAX_LENGTH = 200;
+export const PBI_KNOWLEDGE_TEST_TYPE_MAX_LENGTH = 200;
 export const SUPPORT_PARAMETER_VALUE_MAX_LENGTH = 3000;
 
-/** The knowledge test of one person. A status cleared is a status the errand no longer carries. */
+/** One test of one person. A status cleared is a status the errand no longer carries. */
 export interface PbiKnowledgeTest {
+  type: string;
   status: PbiKnowledgeTestStatusName | '';
   testedAt: string;
   comment: string;
 }
+
+export const emptyKnowledgeTest = (): PbiKnowledgeTest => ({ type: '', status: '', testedAt: '', comment: '' });
+
+const knowledgeTestIsEmpty = (test: PbiKnowledgeTest): boolean =>
+  !test.type.trim() && !test.status && !test.testedAt.trim() && !test.comment.trim();
 
 export interface Pbi {
   source?: PbiSourceName;
@@ -84,11 +132,48 @@ export interface Pbi {
   motivation: string;
   assessment: PbiAssessmentName | '';
   comment: string;
-  knowledgeTest: PbiKnowledgeTest;
+  knowledgeTests: PbiKnowledgeTest[];
 }
 
 const valueOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>, key: string): string | undefined =>
   stakeholder.parameters?.find((parameter) => parameter.key === key)?.values?.[0] || undefined;
+
+const KNOWLEDGE_TEST_KEY = /^PBI_KNOWLEDGE_TEST_(\d+)_(TYPE|STATUS|DATE|COMMENT)$/;
+
+const KNOWLEDGE_TEST_FIELDS: Record<string, keyof PbiKnowledgeTest> = {
+  TYPE: 'type',
+  STATUS: 'status',
+  DATE: 'testedAt',
+  COMMENT: 'comment',
+};
+
+const knowledgeTestKey = (number: number, field: string): string => `PBI_KNOWLEDGE_TEST_${number}_${field}`;
+
+const knowledgeTestsOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>): PbiKnowledgeTest[] => {
+  const written = new Map<number, PbiKnowledgeTest>();
+  for (const parameter of stakeholder.parameters ?? []) {
+    const match = KNOWLEDGE_TEST_KEY.exec(parameter.key);
+    if (!match) continue;
+    const number = Number(match[1]);
+    written.set(number, {
+      ...(written.get(number) ?? emptyKnowledgeTest()),
+      [KNOWLEDGE_TEST_FIELDS[match[2]]]: parameter.values?.[0] ?? '',
+    });
+  }
+
+  const counted = Number(valueOf(stakeholder, PBI_KNOWLEDGE_TEST_COUNT_PARAMETER) ?? 0);
+  const numbers = [...written.keys()];
+  const count = Math.max(counted, ...numbers, 0);
+  if (count > 0) return Array.from({ length: count }, (_, index) => written.get(index + 1) ?? emptyKnowledgeTest());
+
+  const single: PbiKnowledgeTest = {
+    ...emptyKnowledgeTest(),
+    status: (valueOf(stakeholder, PBI_KNOWLEDGE_TEST_PARAMETER) as PbiKnowledgeTestStatusName | undefined) ?? '',
+    testedAt: valueOf(stakeholder, PBI_KNOWLEDGE_TEST_DATE_PARAMETER) ?? '',
+    comment: valueOf(stakeholder, PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER) ?? '',
+  };
+  return knowledgeTestIsEmpty(single) ? [] : [single];
+};
 
 export const isPbi = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>): boolean =>
   valueOf(stakeholder, PBI_PARAMETER) === 'true';
@@ -99,11 +184,7 @@ export const pbiOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters
   motivation: valueOf(stakeholder, PBI_MOTIVATION_PARAMETER) ?? '',
   assessment: (valueOf(stakeholder, PBI_ASSESSMENT_PARAMETER) as PbiAssessmentName | undefined) ?? '',
   comment: valueOf(stakeholder, PBI_ASSESSMENT_COMMENT_PARAMETER) ?? '',
-  knowledgeTest: {
-    status: (valueOf(stakeholder, PBI_KNOWLEDGE_TEST_PARAMETER) as PbiKnowledgeTestStatusName | undefined) ?? '',
-    testedAt: valueOf(stakeholder, PBI_KNOWLEDGE_TEST_DATE_PARAMETER) ?? '',
-    comment: valueOf(stakeholder, PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER) ?? '',
-  },
+  knowledgeTests: knowledgeTestsOf(stakeholder),
 });
 
 /** A stakeholder that exists only because of the marking leaves the errand with it. */
@@ -111,7 +192,9 @@ export const existsOnlyAsPbi = (stakeholder: Pick<SupportStakeholderFormModel, '
   isPbi(stakeholder) && !!pbiOf(stakeholder).source;
 
 const otherParameters = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>): Parameter[] =>
-  (stakeholder.parameters ?? []).filter((parameter) => !PBI_PARAMETERS.has(parameter.key));
+  (stakeholder.parameters ?? []).filter(
+    (parameter) => !PBI_PARAMETERS.has(parameter.key) && !KNOWLEDGE_TEST_KEY.test(parameter.key)
+  );
 
 const settledParameter = (key: string, value: string | undefined): Parameter[] =>
   value?.trim() ? [{ key, values: [value.trim()] }] : [];
@@ -119,11 +202,20 @@ const settledParameter = (key: string, value: string | undefined): Parameter[] =
 const writtenParameter = (key: string, value: string | undefined): Parameter[] =>
   value?.trim() ? [{ key, values: [value] }] : [];
 
-const knowledgeTestParameters = (test: PbiKnowledgeTest | undefined): Parameter[] => [
-  ...settledParameter(PBI_KNOWLEDGE_TEST_PARAMETER, test?.status),
-  ...settledParameter(PBI_KNOWLEDGE_TEST_DATE_PARAMETER, test?.testedAt),
-  ...writtenParameter(PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER, test?.comment),
-];
+const knowledgeTestParameters = (tests: PbiKnowledgeTest[] | undefined): Parameter[] => {
+  const written = tests ?? [];
+  if (written.length === 0) return [];
+
+  return [
+    { key: PBI_KNOWLEDGE_TEST_COUNT_PARAMETER, values: [String(written.length)] },
+    ...written.flatMap((test, index) => [
+      ...writtenParameter(knowledgeTestKey(index + 1, 'TYPE'), test.type),
+      ...settledParameter(knowledgeTestKey(index + 1, 'STATUS'), test.status),
+      ...settledParameter(knowledgeTestKey(index + 1, 'DATE'), test.testedAt),
+      ...writtenParameter(knowledgeTestKey(index + 1, 'COMMENT'), test.comment),
+    ]),
+  ];
+};
 
 const pbiParameters = (pbi: Partial<Pbi>): Parameter[] => [
   { key: PBI_PARAMETER, values: ['true'] },
@@ -132,7 +224,7 @@ const pbiParameters = (pbi: Partial<Pbi>): Parameter[] => [
   ...writtenParameter(PBI_MOTIVATION_PARAMETER, pbi.motivation),
   ...(pbi.assessment ? [{ key: PBI_ASSESSMENT_PARAMETER, values: [pbi.assessment] }] : []),
   ...writtenParameter(PBI_ASSESSMENT_COMMENT_PARAMETER, pbi.comment),
-  ...knowledgeTestParameters(pbi.knowledgeTest),
+  ...knowledgeTestParameters(pbi.knowledgeTests),
 ];
 
 /** The same stakeholder, now marked. Any verdict already on them is kept; the source and role are what was given. */
@@ -168,13 +260,13 @@ export const withAssessment = <T extends Pick<SupportStakeholderFormModel, 'para
   parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), ...verdict })],
 });
 
-/** The same stakeholder with the knowledge test written beside the marking. The verdict is examined apart and left alone. */
-export const withKnowledgeTest = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(
+/** The same stakeholder with the knowledge tests written beside the marking. The verdict is examined apart and left alone. */
+export const withKnowledgeTests = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(
   stakeholder: T,
-  knowledgeTest: PbiKnowledgeTest
+  knowledgeTests: PbiKnowledgeTest[]
 ): T => ({
   ...stakeholder,
-  parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), knowledgeTest })],
+  parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), knowledgeTests })],
 });
 
 /** A comment cannot stand without a verdict: the service stores it beside the verdict. */

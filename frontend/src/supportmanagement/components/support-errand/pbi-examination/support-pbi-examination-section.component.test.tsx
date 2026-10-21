@@ -2,10 +2,12 @@
 import { useSupportStore, useUserStore } from '@stores/index';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import {
+  emptyKnowledgeTest,
   hyphenatedIdentity,
+  type PbiKnowledgeTest,
   pbiOf,
   withAssessment,
-  withKnowledgeTest,
+  withKnowledgeTests,
   withPbi,
 } from '@supportmanagement/services/support-pbi-service';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -60,6 +62,11 @@ const edwin = withPbi(
 
 const fieldOf = (part: string) => document.querySelector(`[data-cy="${part}-${EDWIN}"]`) as HTMLInputElement;
 
+const testFieldOf = (part: string, number = 1) =>
+  document.querySelector(`[data-cy="knowledge-test-${part}-${EDWIN}-${number}"]`) as HTMLInputElement;
+
+const tested = (...tests: PbiKnowledgeTest[]) => withKnowledgeTests(edwin, tests);
+
 const saveRef: { current: (() => Promise<boolean>) | undefined } = { current: undefined };
 
 const theSection = (writable: boolean) => (
@@ -99,8 +106,9 @@ test('one card per marked person, carrying the motivation and both examinations'
   expect(document.querySelectorAll(`[data-cy="pbi-examination-${EDWIN}"]`).length).toBe(1);
   expect(fieldOf('pbi-motivation')).toBeTruthy();
   expect(fieldOf('suitability-assessment')).toBeTruthy();
-  expect(fieldOf('knowledge-test-status')).toBeTruthy();
-  expect(fieldOf('knowledge-test-date')).toBeTruthy();
+  expect(fieldOf('knowledge-test-empty')).toBeTruthy();
+  expect(fieldOf('knowledge-test-add')).toBeTruthy();
+  expect(testFieldOf('status')).toBeNull();
   expect(document.querySelector('[data-cy="pbi-examination-empty"]')).toBeNull();
 });
 
@@ -135,56 +143,105 @@ test('the motivation is written onto the stakeholder in the form, beside the ver
   });
 });
 
-test('the knowledge test is written onto the stakeholder in the form, where Spara ärende picks it up', () => {
+test('a knowledge test is added and written onto the stakeholder, where Spara ärende picks it up', () => {
   const { rerender } = mountSection();
 
-  fireEvent.change(fieldOf('knowledge-test-status'), { target: { value: 'APPROVED' } });
+  fireEvent.click(fieldOf('knowledge-test-add'));
   rerender(theSection(true));
-  fireEvent.change(fieldOf('knowledge-test-date'), { target: { value: '2026-10-02' } });
+  fireEvent.change(testFieldOf('type'), { target: { value: 'TASTING' } });
   rerender(theSection(true));
-  fireEvent.change(fieldOf('knowledge-test-comment'), { target: { value: 'Bokat till torsdag.' } });
+  fireEvent.change(testFieldOf('status'), { target: { value: 'APPROVED' } });
+  rerender(theSection(true));
+  fireEvent.change(testFieldOf('date'), { target: { value: '2026-10-02' } });
+  rerender(theSection(true));
+  fireEvent.change(testFieldOf('comment'), { target: { value: 'Godkänt på första försöket.' } });
 
-  expect(pbiOf(form.contacts[0]).knowledgeTest).toEqual({
-    status: 'APPROVED',
-    testedAt: '2026-10-02',
-    comment: 'Bokat till torsdag.',
-  });
+  expect(pbiOf(form.contacts[0]).knowledgeTests).toEqual([
+    { type: 'TASTING', status: 'APPROVED', testedAt: '2026-10-02', comment: 'Godkänt på första försöket.' },
+  ]);
 });
 
-test('the two examinations sit on one card without overwriting each other', () => {
+test('a test the list does not hold is written as the handler wrote it', () => {
+  form.contacts = [tested(emptyKnowledgeTest())];
+  const { rerender } = mountSection();
+
+  fireEvent.change(testFieldOf('type'), { target: { value: 'OTHER' } });
+  rerender(theSection(true));
+  fireEvent.change(testFieldOf('own-type'), { target: { value: 'Prov hos annan myndighet' } });
+  rerender(theSection(true));
+
+  expect(pbiOf(form.contacts[0]).knowledgeTests[0].type).toBe('Prov hos annan myndighet');
+  expect(testFieldOf('own-type').value).toBe('Prov hos annan myndighet');
+  expect(testFieldOf('type').value).toBe('OTHER');
+});
+
+test('a person sits several tests, and the one removed takes nothing of the others with it', () => {
+  form.contacts = [
+    tested(
+      { type: 'PERMANENT_PUBLIC', status: 'FAILED', testedAt: '2026-09-01', comment: 'För få poäng.' },
+      { type: 'TASTING', status: 'APPROVED', testedAt: '2026-11-01', comment: '' }
+    ),
+  ];
+  const { rerender } = mountSection();
+
+  expect(testFieldOf('type', 2).value).toBe('TASTING');
+
+  fireEvent.click(testFieldOf('remove'));
+  rerender(theSection(true));
+
+  expect(pbiOf(form.contacts[0]).knowledgeTests).toEqual([
+    { type: 'TASTING', status: 'APPROVED', testedAt: '2026-11-01', comment: '' },
+  ]);
+  expect(testFieldOf('type', 2)).toBeNull();
+});
+
+test('the examinations sit on one card without overwriting each other', () => {
+  form.contacts = [tested(emptyKnowledgeTest())];
   const { rerender } = mountSection();
 
   fireEvent.change(fieldOf('suitability-assessment'), { target: { value: 'APPROVED' } });
   rerender(theSection(true));
-  fireEvent.change(fieldOf('knowledge-test-status'), { target: { value: 'BOOKED' } });
+  fireEvent.change(testFieldOf('status'), { target: { value: 'BOOKED' } });
+  rerender(theSection(true));
+  fireEvent.change(fieldOf('pbi-motivation'), { target: { value: 'Driver verksamheten.' } });
   rerender(theSection(true));
   fireEvent.change(fieldOf('suitability-comment'), { target: { value: 'Ingen anmärkning i yttrandet.' } });
 
   expect(pbiOf(form.contacts[0])).toMatchObject({
     source: 'COMPANY',
     role: 'Verkställande direktör',
+    motivation: 'Driver verksamheten.',
     assessment: 'APPROVED',
     comment: 'Ingen anmärkning i yttrandet.',
-    knowledgeTest: { status: 'BOOKED', testedAt: '', comment: '' },
+    knowledgeTests: [{ type: '', status: 'BOOKED', testedAt: '', comment: '' }],
   });
 });
 
 test('a space survives being typed, although the field reads its value back out of the parameter', () => {
+  form.contacts = [tested(emptyKnowledgeTest())];
   const { rerender } = mountSection();
-  const press = (key: string, field: string) => {
-    const before = fieldOf(field).value;
-    fireEvent.change(fieldOf(field), { target: { value: before + key } });
+  const press = (key: string, field: () => HTMLInputElement) => {
+    fireEvent.change(field(), { target: { value: field().value + key } });
     rerender(theSection(true));
-    return fieldOf(field).value;
+    return field().value;
   };
+  const suitabilityComment = () => fieldOf('suitability-comment');
+  const testComment = () => testFieldOf('comment');
+  const ownType = () => testFieldOf('own-type');
 
-  expect(press('a', 'suitability-comment')).toBe('a');
-  expect(press(' ', 'suitability-comment')).toBe('a ');
-  expect(press('b', 'suitability-comment')).toBe('a b');
+  expect(press('a', suitabilityComment)).toBe('a');
+  expect(press(' ', suitabilityComment)).toBe('a ');
+  expect(press('b', suitabilityComment)).toBe('a b');
 
-  expect(press('c', 'knowledge-test-comment')).toBe('c');
-  expect(press(' ', 'knowledge-test-comment')).toBe('c ');
-  expect(press('d', 'knowledge-test-comment')).toBe('c d');
+  expect(press('c', testComment)).toBe('c');
+  expect(press(' ', testComment)).toBe('c ');
+  expect(press('d', testComment)).toBe('c d');
+
+  fireEvent.change(testFieldOf('type'), { target: { value: 'OTHER' } });
+  rerender(theSection(true));
+  expect(press('e', ownType)).toBe('e');
+  expect(press(' ', ownType)).toBe('e ');
+  expect(press('f', ownType)).toBe('e f');
 });
 
 test('a comment without a verdict is pointed out on the card', () => {
@@ -196,18 +253,18 @@ test('a comment without a verdict is pointed out on the card', () => {
 
 test('a status cleared is a status the errand no longer carries, while the verdict and the date stay', () => {
   form.contacts = [
-    withKnowledgeTest(withAssessment(edwin, { assessment: 'APPROVED', comment: '' }), {
-      status: 'BOOKED',
-      testedAt: '2026-10-02',
-      comment: '',
-    }),
+    withKnowledgeTests(withAssessment(edwin, { assessment: 'APPROVED', comment: '' }), [
+      { type: 'TASTING', status: 'BOOKED', testedAt: '2026-10-02', comment: '' },
+    ]),
   ];
   mountSection();
 
-  fireEvent.change(fieldOf('knowledge-test-status'), { target: { value: '' } });
+  fireEvent.change(testFieldOf('status'), { target: { value: '' } });
 
-  expect(form.contacts[0].parameters?.map((parameter) => parameter.key)).not.toContain('PBI_KNOWLEDGE_TEST');
-  expect(pbiOf(form.contacts[0]).knowledgeTest).toEqual({ status: '', testedAt: '2026-10-02', comment: '' });
+  expect(form.contacts[0].parameters?.map((parameter) => parameter.key)).not.toContain('PBI_KNOWLEDGE_TEST_1_STATUS');
+  expect(pbiOf(form.contacts[0]).knowledgeTests).toEqual([
+    { type: 'TASTING', status: '', testedAt: '2026-10-02', comment: '' },
+  ]);
   expect(pbiOf(form.contacts[0]).assessment).toBe('APPROVED');
 });
 
