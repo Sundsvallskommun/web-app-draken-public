@@ -19,7 +19,6 @@ import {
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { pbiCandidates } from '@supportmanagement/services/support-pbi-service';
 import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
   attachmentsOfKind,
@@ -43,6 +42,7 @@ import {
   uploadSupportStatementAttachment,
 } from '@supportmanagement/services/support-statement-service';
 import {
+  chosenReferralPartyIds,
   supportReferralPeople,
   type SupportReferralPerson,
   SupportReferralPersons,
@@ -57,9 +57,10 @@ import {
   supportStatementTemplates,
 } from '@supportmanagement/services/support-statement-template-service';
 import { Mail, Trash2, Upload } from 'lucide-react';
-import { FC, useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
   name,
@@ -242,16 +243,25 @@ export const SupportStatementCard: FC<{
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const { getValues } = useFormContext<SupportErrand>();
+  const { watch } = useFormContext<SupportErrand>();
   const user = useUserStore((s) => s.user);
   const fileInput = useRef<HTMLInputElement>(null);
-  const peopleAskedFor = useRef(false);
+  const engagementsAskedFor = useRef(false);
+  const partyIdsAlreadySeen = useRef<string[]>([]);
 
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [chosenTemplate, setChosenTemplate] = useState('');
-  const [people, setPeople] = useState<SupportReferralPerson[]>([]);
+  const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
   const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
+
+  const watchedCustomer = watch('customer');
+  const watchedContacts = watch('contacts');
+  const stakeholders = useMemo(
+    () => [...(watchedCustomer ?? []), ...(watchedContacts ?? [])],
+    [watchedCustomer, watchedContacts]
+  );
+  const people = useMemo(() => supportReferralPeople(engagements, stakeholders), [engagements, stakeholders]);
 
   const statementId = statement.id;
   const outcomes = selectableSupportStatementOutcomes(supportMetadata);
@@ -313,31 +323,33 @@ export const SupportStatementCard: FC<{
   };
 
   useEffect(() => {
-    if (peopleNeeded === SupportReferralPersons.NONE || peopleAskedFor.current) return;
-    peopleAskedFor.current = true;
+    if (peopleNeeded === SupportReferralPersons.NONE || engagementsAskedFor.current) return;
+    engagementsAskedFor.current = true;
 
-    const readPeople = async () => {
+    const company = supportErrand?.stakeholders?.find(
+      (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+    )?.externalId;
+    if (!company) return;
+
+    const readEngagements = async () => {
       setBusy(true);
       try {
-        const company = supportErrand?.stakeholders?.find(
-          (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
-        )?.externalId;
-        const engagements = company ? await getLegalEntityEngagements(company) : [];
-        const candidates = supportReferralPeople(
-          pbiCandidates(engagements, [...(getValues('customer') ?? []), ...(getValues('contacts') ?? [])])
-        );
-        setPeople(candidates);
-        setChosenPartyIds(candidates.filter((person) => person.marked).map((person) => person.partyId));
+        setEngagements(await getLegalEntityEngagements(company));
       } catch {
-        peopleAskedFor.current = false;
+        engagementsAskedFor.current = false;
         toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
       } finally {
         setBusy(false);
       }
     };
 
-    void readPeople();
-  }, [peopleNeeded, supportErrand?.stakeholders, getValues, t, toastMessage]);
+    void readEngagements();
+  }, [peopleNeeded, supportErrand?.stakeholders, t, toastMessage]);
+
+  useEffect(() => {
+    setChosenPartyIds((chosen) => chosenReferralPartyIds(people, chosen, partyIdsAlreadySeen.current));
+    partyIdsAlreadySeen.current = people.map((person) => person.partyId);
+  }, [people]);
 
   const togglePerson = (partyId: string) =>
     setChosenPartyIds((current) =>
