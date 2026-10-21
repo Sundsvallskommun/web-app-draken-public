@@ -1,6 +1,7 @@
+import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { engagementRoles } from '@common/services/legal-entity-service';
 
-import type { SupportErrand } from './support-errand-service';
+import { getStakeholderOrganizationNumber, SupportErrand } from './support-errand-service';
 import { engagementIsPerson, hyphenatedIdentity, normalizeIdentity, SupportPbiCandidate } from './support-pbi-service';
 import { supportStatementCounterparty, supportStatementCounterpartyKey } from './support-statement-counterparties';
 
@@ -180,8 +181,8 @@ const textOf = (value: unknown, key: string): string => {
   return typeof field === 'string' ? field : '';
 };
 
-const organizationNumberOf = (owner: { parameters?: { key?: string; values?: string[] }[] } | undefined): string =>
-  owner?.parameters?.find((parameter) => parameter.key === 'organizationNumber')?.values?.[0] ?? '';
+const organizationNumberOf = (owner: SupportStakeholder | undefined): string =>
+  (owner && getStakeholderOrganizationNumber(owner)) || '';
 
 const supportStatementPremises = (errand: SupportErrand | undefined): SupportStatementPremises => {
   const document = (errand?.jsonParameters ?? []).map((parameter) => parameter.value).find(Boolean) as
