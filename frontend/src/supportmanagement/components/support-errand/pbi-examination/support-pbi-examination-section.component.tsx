@@ -54,7 +54,7 @@ const PersonHeading: FC<{ person: SupportStakeholderFormModel; engagements: Lega
 );
 
 const BlockIntro: FC<{ label: string; description: string }> = ({ label, description }) => (
-  <p className="text-small m-0">
+  <p className="m-0">
     <span className="font-bold">{label}</span> - {description}
   </p>
 );
@@ -72,7 +72,7 @@ const MotivationBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
 
   return (
     <FormControl className="w-full">
-      <FormLabel>{t('common:pbi_motivation.label')}</FormLabel>
+      <FormLabel className="text-small">{t('common:pbi_motivation.label')}</FormLabel>
       <Textarea
         className="w-full"
         rows={2}
@@ -103,7 +103,7 @@ const SuitabilityBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
       <BlockFields
         comment={
           <FormControl className="w-full" invalid={!!problem}>
-            <FormLabel>{t('common:personal_suitability.comment')}</FormLabel>
+            <FormLabel className="text-small">{t('common:personal_suitability.comment')}</FormLabel>
             <Textarea
               className="w-full"
               rows={3}
