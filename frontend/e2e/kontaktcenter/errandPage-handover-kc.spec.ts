@@ -4,7 +4,14 @@ import { expect, test } from '../fixtures/base.fixture';
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockComments } from './fixtures/mockComments';
-import { mockHandoverPreview, mockHandoverResult, mockNamespaceConfigs } from './fixtures/mockHandover';
+import {
+  mockHandoverPreview,
+  mockHandoverResult,
+  mockLabelTarget,
+  mockLabelTargetMetadata,
+  mockLabelTargetPreview,
+  mockNamespaceConfigs,
+} from './fixtures/mockHandover';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
@@ -105,5 +112,40 @@ test.describe('errand handover to another namespace', () => {
     await expect(closeModal.getByRole('button', { name: 'Ändra lösningskod' })).toBeVisible();
     await closeModal.getByRole('button', { name: 'Klart' }).click();
     await expect(closeModal).toBeHidden();
+  });
+
+  test('preselects the label path the preview suggests for a label target', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/supportnamespaceconfigs/2281', [...mockNamespaceConfigs, mockLabelTarget], { method: 'GET' });
+    await mockRoute('**/supportnamespacemetadata/2281/*', mockLabelTargetMetadata, { method: 'GET' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/handover/preview`, mockLabelTargetPreview, {
+      method: 'POST',
+    });
+
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+
+    const previewResponse = page.waitForResponse((resp) => resp.url().includes('/handover/preview'));
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption(mockLabelTarget.namespace);
+    await previewResponse;
+
+    // The deepest suggested label and its ancestors are preselected and marked as an auto-suggestion.
+    const labels = page.locator('[data-cy="handover-labels"]');
+    await expect(labels.locator('[data-cy="labelCategory-input"][placeholder="Lön"]')).toBeVisible();
+    await expect(labels.locator('[data-cy="labelType-input"][placeholder="Lönespecifikation"]')).toBeVisible();
+    await expect(labels.locator('[data-cy="handover-auto-suggest"]')).toBeVisible();
+
+    await page.locator('[data-cy="handover-submit-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+    const handoverRequest = page.waitForRequest((req) => req.url().endsWith('/handover') && req.method() === 'POST');
+    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
+    expect((await handoverRequest).postDataJSON().mapping.labels).toEqual(['label-salary', 'label-payslip']);
   });
 });

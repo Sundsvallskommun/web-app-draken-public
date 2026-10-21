@@ -36,6 +36,17 @@ const getBoxLabel = (optionLabels: Label[], fallback: string, required: boolean)
   return name ? `${name}${suffix}` : fallback;
 };
 
+/** A box label, with an optional addon (e.g. a marker) on the same line. */
+const BoxLabel: FC<{ text: string; addon?: ReactNode }> = ({ text, addon }) =>
+  addon ? (
+    <div className="flex items-center gap-8">
+      <FormLabel>{text}</FormLabel>
+      {addon}
+    </div>
+  ) : (
+    <FormLabel>{text}</FormLabel>
+  );
+
 const filterBySearch = (
   nodes: Label[],
   grouped: boolean,
@@ -66,6 +77,8 @@ export interface LabelTreePickerProps {
   fallbackLabels: { first: string; second: string };
   errors?: { first?: string; second?: string };
   notes?: { first?: ReactNode; second?: ReactNode };
+  /** Shown beside the box labels, where `notes` go below them. */
+  labelAddons?: { first?: ReactNode; second?: ReactNode };
 }
 
 export const LabelTreePicker: FC<LabelTreePickerProps> = ({
@@ -77,6 +90,7 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
   fallbackLabels,
   errors,
   notes,
+  labelAddons,
 }) => {
   const structure = useMemo(() => getCategorizationStructure(labelStructure), [labelStructure]);
   const pivot = useMemo(() => getClassificationDepth(structure, CATEGORY) ?? 0, [structure]);
@@ -173,7 +187,10 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
     <>
       <div className="flex my-md gap-xl w-1/2">
         <FormControl id="labelCategory" className="w-full" readOnly={!metadata}>
-          <FormLabel>{getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true)}</FormLabel>
+          <BoxLabel
+            text={getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true)}
+            addon={labelAddons?.first}
+          />
           {notes?.first}
           <Combobox
             disabled={disabled}
@@ -206,9 +223,10 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
       </div>
       <div className="flex my-md gap-xl w-1/2">
         <FormControl id="labelType" className="w-full" readOnly={!metadata}>
-          <FormLabel>
-            {getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf)}
-          </FormLabel>
+          <BoxLabel
+            text={getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf)}
+            addon={labelAddons?.second}
+          />
           {notes?.second}
           <Combobox
             disabled={disabled || !firstSelection || firstIsLeaf}
