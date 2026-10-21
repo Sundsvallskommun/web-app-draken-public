@@ -23,6 +23,7 @@ import {
   stakeholderForEngagement,
   withAssessment,
   withKnowledgeTest,
+  withMotivation,
   withoutPbi,
   withPbi,
 } from './support-pbi-service';
@@ -99,6 +100,7 @@ test('a verdict is written beside the marking and leaves source and role alone',
   expect(pbiOf(assessed)).toEqual({
     source: 'MANUAL',
     role: 'Finansiär',
+    motivation: '',
     assessment: 'DEFICIENCY',
     comment: 'Skuld hos Kronofogden.',
     knowledgeTest: { status: '', testedAt: '', comment: '' },
@@ -137,6 +139,37 @@ test('the knowledge test is written beside the verdict, and each examination lea
     'PBI_KNOWLEDGE_TEST_COMMENT',
   ]);
   expect(withoutPbi(tested).parameters).toEqual([]);
+});
+
+test('the motivation is written beside the marking, and neither verdict is touched', () => {
+  const examined = withKnowledgeTest(
+    withAssessment(withPbi(stakeholder({}), { source: 'COMPANY', role: 'Finansiär' }), {
+      assessment: 'APPROVED',
+      comment: 'Inget.',
+    }),
+    { status: 'BOOKED', testedAt: '2026-11-01', comment: '' }
+  );
+  const motivated = withMotivation(examined, 'Driver verksamheten dagligen. ');
+
+  expect(keysOf(motivated)).toEqual([
+    'PBI',
+    'PBI_SOURCE',
+    'PBI_ROLE',
+    'PBI_MOTIVATION',
+    'PBI_ASSESSMENT',
+    'PBI_ASSESSMENT_COMMENT',
+    'PBI_KNOWLEDGE_TEST',
+    'PBI_KNOWLEDGE_TEST_DATE',
+  ]);
+  expect(pbiOf(motivated)).toMatchObject({
+    role: 'Finansiär',
+    motivation: 'Driver verksamheten dagligen. ',
+    assessment: 'APPROVED',
+    comment: 'Inget.',
+    knowledgeTest: { status: 'BOOKED', testedAt: '2026-11-01', comment: '' },
+  });
+  expect(keysOf(withMotivation(motivated, '   '))).not.toContain('PBI_MOTIVATION');
+  expect(withoutPbi(motivated).parameters).toEqual([]);
 });
 
 test('unmarking removes every PBI parameter and nothing else', () => {

@@ -16,6 +16,10 @@ import { SupportPbiExaminationSection } from './support-pbi-examination-section.
 
 vi.mock('@common/components/file-upload/file-upload.component', () => ({ imageMimeTypes: [], documentMimeTypes: [] }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('@common/components/dynamic-text-editor', () => ({
+  default: ({ value }: { value: { markup?: string } }) => <div data-cy="editor">{value.markup}</div>,
+}));
+vi.mock('@common/components/use-text-editor-placeholder', () => ({ useTextEditorPlaceholder: () => undefined }));
 vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getLegalEntityEngagements: vi.fn().mockResolvedValue([]),
@@ -56,7 +60,20 @@ const edwin = withPbi(
 
 const fieldOf = (part: string) => document.querySelector(`[data-cy="${part}-${EDWIN}"]`) as HTMLInputElement;
 
-const mountSection = (writable = true) => render(<SupportPbiExaminationSection writable={writable} />);
+const saveRef: { current: (() => Promise<boolean>) | undefined } = { current: undefined };
+
+const theSection = (writable: boolean) => (
+  <SupportPbiExaminationSection
+    section={{ id: 's1', sectionKey: 'persons_of_influence', text: '' }}
+    investigationId="i1"
+    writable={writable}
+    onEdited={vi.fn()}
+    onSaved={vi.fn()}
+    saveRef={saveRef}
+  />
+);
+
+const mountSection = (writable = true) => render(theSection(writable));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -68,12 +85,19 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test('one card per marked person, carrying both examinations', () => {
+test('the section carries the ownership of the company, written as its own text', () => {
+  mountSection();
+
+  expect(document.querySelector('[data-cy="persons_of_influence-text"]')).toBeTruthy();
+});
+
+test('one card per marked person, carrying the motivation and both examinations', () => {
   mountSection();
 
   expect(screen.getByText('Edwin Molina')).toBeTruthy();
   expect(screen.getByText(`${hyphenatedIdentity(mockEnv.mockPersonNumber)} · Verkställande direktör`)).toBeTruthy();
   expect(document.querySelectorAll(`[data-cy="pbi-examination-${EDWIN}"]`).length).toBe(1);
+  expect(fieldOf('pbi-motivation')).toBeTruthy();
   expect(fieldOf('suitability-assessment')).toBeTruthy();
   expect(fieldOf('knowledge-test-status')).toBeTruthy();
   expect(fieldOf('knowledge-test-date')).toBeTruthy();
@@ -85,7 +109,7 @@ test('a verdict is written onto the stakeholder in the form, where Spara ärende
   const { rerender } = mountSection();
 
   fireEvent.change(fieldOf('suitability-assessment'), { target: { value: 'DEFICIENCY' } });
-  rerender(<SupportPbiExaminationSection writable={true} />);
+  rerender(theSection(true));
   fireEvent.change(fieldOf('suitability-comment'), { target: { value: 'Skuld hos Kronofogden.' } });
 
   expect(setValue).toHaveBeenCalledWith('contacts', expect.anything(), { shouldDirty: true, shouldValidate: true });
@@ -97,13 +121,27 @@ test('a verdict is written onto the stakeholder in the form, where Spara ärende
   });
 });
 
+test('the motivation is written onto the stakeholder in the form, beside the verdict', () => {
+  const { rerender } = mountSection();
+
+  fireEvent.change(fieldOf('suitability-assessment'), { target: { value: 'APPROVED' } });
+  rerender(theSection(true));
+  fireEvent.change(fieldOf('pbi-motivation'), { target: { value: 'Driver verksamheten dagligen.' } });
+
+  expect(pbiOf(form.contacts[0])).toMatchObject({
+    role: 'Verkställande direktör',
+    motivation: 'Driver verksamheten dagligen.',
+    assessment: 'APPROVED',
+  });
+});
+
 test('the knowledge test is written onto the stakeholder in the form, where Spara ärende picks it up', () => {
   const { rerender } = mountSection();
 
   fireEvent.change(fieldOf('knowledge-test-status'), { target: { value: 'APPROVED' } });
-  rerender(<SupportPbiExaminationSection writable={true} />);
+  rerender(theSection(true));
   fireEvent.change(fieldOf('knowledge-test-date'), { target: { value: '2026-10-02' } });
-  rerender(<SupportPbiExaminationSection writable={true} />);
+  rerender(theSection(true));
   fireEvent.change(fieldOf('knowledge-test-comment'), { target: { value: 'Bokat till torsdag.' } });
 
   expect(pbiOf(form.contacts[0]).knowledgeTest).toEqual({
@@ -117,9 +155,9 @@ test('the two examinations sit on one card without overwriting each other', () =
   const { rerender } = mountSection();
 
   fireEvent.change(fieldOf('suitability-assessment'), { target: { value: 'APPROVED' } });
-  rerender(<SupportPbiExaminationSection writable={true} />);
+  rerender(theSection(true));
   fireEvent.change(fieldOf('knowledge-test-status'), { target: { value: 'BOOKED' } });
-  rerender(<SupportPbiExaminationSection writable={true} />);
+  rerender(theSection(true));
   fireEvent.change(fieldOf('suitability-comment'), { target: { value: 'Ingen anmärkning i yttrandet.' } });
 
   expect(pbiOf(form.contacts[0])).toMatchObject({
@@ -136,7 +174,7 @@ test('a space survives being typed, although the field reads its value back out 
   const press = (key: string, field: string) => {
     const before = fieldOf(field).value;
     fireEvent.change(fieldOf(field), { target: { value: before + key } });
-    rerender(<SupportPbiExaminationSection writable={true} />);
+    rerender(theSection(true));
     return fieldOf(field).value;
   };
 

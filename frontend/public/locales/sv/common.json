@@ -137,6 +137,10 @@
       "child_perspective": "Barnperspektivet"
     },
     "section_texts": {
+      "persons_of_influence": {
+        "label": "Ägarförhållanden",
+        "placeholder": "Beskriv ägarförhållandena i bolaget, till exempel ägarandelar och hur inflytandet är fördelat"
+      },
       "lease": {
         "label": "Utredning av nyttjanderätten",
         "placeholder": "Beskriv nyttjanderätten till lokalen och vad hyresavtalet säger"
@@ -603,6 +607,11 @@
       "save_failed": "Bedömningen kunde inte sparas"
     },
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
+  },
+  "pbi_motivation": {
+    "label": "Motivering",
+    "placeholder": "Motivera {{person}}s betydande inflytande, till exempel rollen i den dagliga driften…",
+    "too_long": "Motiveringen får vara högst 3000 tecken."
   },
   "knowledge_test": {
     "label": "Kunskapsprov",

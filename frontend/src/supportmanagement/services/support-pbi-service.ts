@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 const PBI_PARAMETER = 'PBI';
 const PBI_SOURCE_PARAMETER = 'PBI_SOURCE';
 const PBI_ROLE_PARAMETER = 'PBI_ROLE';
+const PBI_MOTIVATION_PARAMETER = 'PBI_MOTIVATION';
 const PBI_ASSESSMENT_PARAMETER = 'PBI_ASSESSMENT';
 const PBI_ASSESSMENT_COMMENT_PARAMETER = 'PBI_ASSESSMENT_COMMENT';
 const PBI_KNOWLEDGE_TEST_PARAMETER = 'PBI_KNOWLEDGE_TEST';
@@ -28,6 +29,7 @@ const PBI_PARAMETERS = new Set([
   PBI_PARAMETER,
   PBI_SOURCE_PARAMETER,
   PBI_ROLE_PARAMETER,
+  PBI_MOTIVATION_PARAMETER,
   PBI_ASSESSMENT_PARAMETER,
   PBI_ASSESSMENT_COMMENT_PARAMETER,
   PBI_KNOWLEDGE_TEST_PARAMETER,
@@ -78,6 +80,8 @@ export interface PbiKnowledgeTest {
 export interface Pbi {
   source?: PbiSourceName;
   role: string;
+  /** Why the person has significant influence, for example what they do in the daily running of the business. */
+  motivation: string;
   assessment: PbiAssessmentName | '';
   comment: string;
   knowledgeTest: PbiKnowledgeTest;
@@ -92,6 +96,7 @@ export const isPbi = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters
 export const pbiOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>): Pbi => ({
   source: valueOf(stakeholder, PBI_SOURCE_PARAMETER) as PbiSourceName | undefined,
   role: valueOf(stakeholder, PBI_ROLE_PARAMETER) ?? '',
+  motivation: valueOf(stakeholder, PBI_MOTIVATION_PARAMETER) ?? '',
   assessment: (valueOf(stakeholder, PBI_ASSESSMENT_PARAMETER) as PbiAssessmentName | undefined) ?? '',
   comment: valueOf(stakeholder, PBI_ASSESSMENT_COMMENT_PARAMETER) ?? '',
   knowledgeTest: {
@@ -124,6 +129,7 @@ const pbiParameters = (pbi: Partial<Pbi>): Parameter[] => [
   { key: PBI_PARAMETER, values: ['true'] },
   ...(pbi.source ? [{ key: PBI_SOURCE_PARAMETER, values: [pbi.source] }] : []),
   ...settledParameter(PBI_ROLE_PARAMETER, pbi.role),
+  ...writtenParameter(PBI_MOTIVATION_PARAMETER, pbi.motivation),
   ...(pbi.assessment ? [{ key: PBI_ASSESSMENT_PARAMETER, values: [pbi.assessment] }] : []),
   ...writtenParameter(PBI_ASSESSMENT_COMMENT_PARAMETER, pbi.comment),
   ...knowledgeTestParameters(pbi.knowledgeTest),
@@ -142,6 +148,15 @@ export const withPbi = <T extends Pick<SupportStakeholderFormModel, 'parameters'
 export const withoutPbi = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(stakeholder: T): T => ({
   ...stakeholder,
   parameters: otherParameters(stakeholder),
+});
+
+/** The same stakeholder with the motivation written beside the marking. Every verdict is left as it was. */
+export const withMotivation = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(
+  stakeholder: T,
+  motivation: string
+): T => ({
+  ...stakeholder,
+  parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), motivation })],
 });
 
 /** The same stakeholder with a verdict written beside the marking. Source and role are left as they were. */

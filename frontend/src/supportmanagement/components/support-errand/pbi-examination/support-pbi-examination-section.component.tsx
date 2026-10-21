@@ -3,6 +3,7 @@
 import { Alert, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { supportInvestigationTextKeys } from '@supportmanagement/services/support-investigation-sections';
 import {
   hyphenatedIdentity,
   PBI_ASSESSMENTS,
@@ -17,11 +18,13 @@ import {
   SUPPORT_PARAMETER_VALUE_MAX_LENGTH,
   withAssessment,
   withKnowledgeTest,
+  withMotivation,
 } from '@supportmanagement/services/support-pbi-service';
 import { FC, ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
+import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
 import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { useSupportPbi } from '../tabs/use-support-pbi';
@@ -56,6 +59,28 @@ const BlockFields: FC<{ comment: ReactNode; controls: ReactNode }> = ({ comment,
     <div className="flex flex-col gap-8 shrink-0">{controls}</div>
   </div>
 );
+
+const MotivationBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
+  const { t } = useTranslation();
+  const { motivation } = pbiOf(person);
+
+  return (
+    <FormControl className="w-full">
+      <FormLabel>{t('common:pbi_motivation.label')}</FormLabel>
+      <Textarea
+        className="w-full"
+        rows={2}
+        maxLength={SUPPORT_PARAMETER_VALUE_MAX_LENGTH}
+        maxLengthWarningText={t('common:pbi_motivation.too_long')}
+        value={motivation}
+        disabled={!writable}
+        data-cy={`pbi-motivation-${person.internalId}`}
+        placeholder={t('common:pbi_motivation.placeholder', { person: stakeholderName(person) })}
+        onChange={(e) => onChange(withMotivation(person, e.currentTarget.value))}
+      />
+    </FormControl>
+  );
+};
 
 const SuitabilityBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
   const { t } = useTranslation();
@@ -183,17 +208,20 @@ const PersonCard: FC<BlockProps & { engagements: LegalEntityEngagement[] }> = ({
 }) => (
   <div className="border-1 rounded-groups p-16 flex flex-col gap-16" data-cy={`pbi-examination-${person.internalId}`}>
     <PersonHeading person={person} engagements={engagements} />
+    <MotivationBlock person={person} writable={writable} onChange={onChange} />
     <SuitabilityBlock person={person} writable={writable} onChange={onChange} />
     <KnowledgeTestBlock person={person} writable={writable} onChange={onChange} />
   </div>
 );
 
 /**
- * One card per person marked on the errand, carrying both the personal suitability and the knowledge test, since
- * both are judgements about the same person. Both are written onto the stakeholder in the form and saved by Spara
- * ärende, so the card has no state of its own: what it shows is what the form holds.
+ * The ownership of the company, and one card per person marked on the errand carrying the motivation, the personal
+ * suitability and the knowledge test, since all three are about the same person. The cards are written onto the
+ * stakeholders in the form and saved by Spara ärende, so they have no state of their own: what they show is what
+ * the form holds. The ownership is the text of the section itself.
  */
-export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writable }) => {
+export const SupportPbiExaminationSection: FC<InvestigationSectionProps> = (props) => {
+  const { writable } = props;
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const [adding, setAdding] = useState(false);
@@ -205,29 +233,37 @@ export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writab
   const canWrite = writable && pbi.canEdit;
 
   return (
-    <div className="flex flex-col gap-16" data-cy="pbi-examination-section">
-      {pbi.people.length === 0 ? (
-        <Alert type="info" data-cy="pbi-examination-empty">
-          <Alert.Icon />
-          <Alert.Content>
-            <Alert.Content.Description>{t('common:personal_suitability.empty')}</Alert.Content.Description>
-          </Alert.Content>
-        </Alert>
-      ) : null}
+    <div className="flex flex-col gap-24" data-cy="pbi-examination-section">
+      <InvestigationSectionText
+        {...props}
+        name="persons_of_influence"
+        {...supportInvestigationTextKeys('persons_of_influence')}
+      />
 
-      {pbi.people.map((person) => (
-        <PersonCard
-          key={person.internalId}
-          person={person}
-          engagements={pbi.engagements}
-          writable={canWrite}
-          onChange={pbi.replace}
-        />
-      ))}
+      <div className="flex flex-col gap-16">
+        {pbi.people.length === 0 ? (
+          <Alert type="info" data-cy="pbi-examination-empty">
+            <Alert.Icon />
+            <Alert.Content>
+              <Alert.Content.Description>{t('common:personal_suitability.empty')}</Alert.Content.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
 
-      {canWrite ? (
-        <AddPbiButton disabled={false} onClick={() => setAdding(true)} label={t('common:company.pbi.add.open')} />
-      ) : null}
+        {pbi.people.map((person) => (
+          <PersonCard
+            key={person.internalId}
+            person={person}
+            engagements={pbi.engagements}
+            writable={canWrite}
+            onChange={pbi.replace}
+          />
+        ))}
+
+        {canWrite ? (
+          <AddPbiButton disabled={false} onClick={() => setAdding(true)} label={t('common:company.pbi.add.open')} />
+        ) : null}
+      </div>
 
       <SupportPbiAddDialog show={adding} onClose={() => setAdding(false)} onAdd={pbi.addByHand} />
     </div>

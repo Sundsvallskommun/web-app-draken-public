@@ -25,8 +25,9 @@ const CATALOGUED = [
   'child_perspective',
 ];
 
-/** The examinations that are nothing but a written text, plus the communication, which also carries one. */
+/** The examinations that carry a written text, whether or not they carry anything else. */
 const WRITTEN: Sections[] = [
+  'persons_of_influence',
   'lease',
   'fire_safety',
   'food_and_beverages',
