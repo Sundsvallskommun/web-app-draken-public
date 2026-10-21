@@ -4,7 +4,7 @@ import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/er
 
 import {
   ContactChannelType,
-  ExternalIdType,
+  isOrganizationExternalIdType,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
@@ -66,7 +66,7 @@ export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
 };
 
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
-  c.externalIdType === ExternalIdType.COMPANY
+  isOrganizationExternalIdType(c.externalIdType)
     ? SupportStakeholderTypeEnum.ORGANIZATION
     : SupportStakeholderTypeEnum.PERSON;
 

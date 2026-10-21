@@ -34,6 +34,9 @@ export enum ExternalIdType {
   COMPANY = 'COMPANY',
 }
 
+export const isOrganizationExternalIdType = (type?: string): boolean =>
+  type === ExternalIdType.COMPANY || type === ExternalIdType.ENTERPRISE;
+
 // Keeping both enums for now, as the backend uses the uppercase version
 // but existing stakeholders use the lowercase version
 export enum ContactChannelType {
@@ -627,10 +630,10 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
 };
 
 // Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
-// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
+// and fall back to externalId for legacy organization stakeholders saved before the org number was split out.
 const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
   s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
-  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+  (isOrganizationExternalIdType(s.externalIdType) ? s.externalId : undefined);
 
 // Read the first value of an errand parameter by key.
 export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>

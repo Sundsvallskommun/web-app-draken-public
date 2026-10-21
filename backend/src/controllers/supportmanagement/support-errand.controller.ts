@@ -29,7 +29,7 @@ import {
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
-import { ExternalIdType } from '@/interfaces/externalIdType.interface';
+import { ExternalIdType, isOrganizationExternalIdType } from '@/interfaces/externalIdType.interface';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
@@ -386,7 +386,7 @@ export class SupportErrandController {
   }
 
   /**
-   * Resolves the organization number for a COMPANY stakeholder when forwarding an errand.
+   * Resolves the organization number for an organization (COMPANY/ENTERPRISE) stakeholder when forwarding an errand.
    * Prefers the organization number persisted as a stakeholder parameter (written on save), falls
    * back to a Legal Entity lookup by partyId, and degrades gracefully on failure instead of
    * aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
@@ -745,8 +745,9 @@ export class SupportErrandController {
       //   logger.error('Missing required contact channels for stakeholder');
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
-      const organizationNumber =
-        s.externalIdType === ExternalIdType.COMPANY ? await this.resolveStakeholderOrgNumber(s, municipalityId, req) : undefined;
+      const organizationNumber = isOrganizationExternalIdType(s.externalIdType)
+        ? await this.resolveStakeholderOrgNumber(s, municipalityId, req)
+        : undefined;
       stakeholders.push(toCasedataStakeholder(s, organizationNumber));
     }
 

@@ -4,7 +4,7 @@ import { useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandPremisesSection } from '@supportmanagement/components/premises/support-errand-premises-section.component';
 import {
   emptyContact,
-  ExternalIdType,
+  isOrganizationExternalIdType,
   isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderFormModel,
@@ -117,7 +117,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   };
 
   const canBePbi = (contact: SupportStakeholderFormModel) =>
-    appConfig.features.useCompanyInformation && contact.externalIdType !== ExternalIdType.COMPANY;
+    appConfig.features.useCompanyInformation && !isOrganizationExternalIdType(contact.externalIdType);
 
   const onMakeOwner = async (stakeholder: SupportStakeholderFormModel) => {
     stakeholder.role = 'PRIMARY';
@@ -279,7 +279,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
             />
             <div>
               <div>
-                {contact.externalIdType === ExternalIdType.COMPANY ? (
+                {isOrganizationExternalIdType(contact.externalIdType) ? (
                   <>
                     <p className="my-xs mt-0 text-small" data-cy={`stakeholder-name`}>
                       <strong>{`${contact.organizationName ? contact.organizationName : ''}`}</strong>

@@ -5,8 +5,8 @@ vi.mock('@common/components/file-upload/file-upload.component', () => ({
   documentMimeTypes: [],
 }));
 
-import { SupportStakeholderFormModel } from './support-errand-service';
-import { buildStakeholdersList } from './support-stakeholder-service';
+import { ExternalIdType, SupportStakeholderFormModel, SupportStakeholderTypeEnum } from './support-errand-service';
+import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
 const contactWith = (parameters: { key: string; values: string[] }[]): SupportStakeholderFormModel =>
   ({
@@ -60,3 +60,19 @@ test('a form field the handler cleared is not brought back by what the stakehold
 
   expect(keysOf(stakeholder.parameters)).not.toContain('title');
 });
+
+test.each([ExternalIdType.COMPANY, ExternalIdType.ENTERPRISE])(
+  '%s maps to an organization stakeholder',
+  (externalIdType) => {
+    expect(mapExternalIdTypeToStakeholderType({ externalIdType } as never)).toBe(
+      SupportStakeholderTypeEnum.ORGANIZATION
+    );
+  }
+);
+
+test.each([ExternalIdType.PRIVATE, ExternalIdType.EMPLOYEE, undefined])(
+  '%s maps to a person stakeholder',
+  (externalIdType) => {
+    expect(mapExternalIdTypeToStakeholderType({ externalIdType } as never)).toBe(SupportStakeholderTypeEnum.PERSON);
+  }
+);

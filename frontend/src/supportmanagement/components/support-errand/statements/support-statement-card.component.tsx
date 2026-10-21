@@ -18,7 +18,7 @@ import {
 } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isOrganizationExternalIdType, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { pbiCandidates } from '@supportmanagement/services/support-pbi-service';
 import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
@@ -320,7 +320,7 @@ export const SupportStatementCard: FC<{
       setBusy(true);
       try {
         const company = supportErrand?.stakeholders?.find(
-          (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+          (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
         )?.externalId;
         const engagements = company ? await getLegalEntityEngagements(company) : [];
         const candidates = supportReferralPeople(
