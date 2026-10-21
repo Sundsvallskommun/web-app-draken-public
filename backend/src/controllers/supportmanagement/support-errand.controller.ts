@@ -420,18 +420,26 @@ export class SupportErrandController {
       return { data: errandData, message: 'success' };
     }
 
+    const municipalityId = MUNICIPALITY_ID ?? '';
     const personNumberOf = (s: SupportStakeholder) =>
-      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${s.externalId}/personnumber` }, req.user);
+      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${municipalityId}/${s.externalId}/personnumber` }, req.user);
 
     // The first PRIMARY stakeholder is the customer; every non-PRIMARY one is a contact. Any further
     // PRIMARY stakeholders are neither, and are passed through untouched.
     const customerIndex = stakeholders.findIndex(s => s.role === SupportStakeholderRole.PRIMARY);
 
     const enriched = await Promise.all(
-      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string }> => {
+      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string; organizationNumber?: string }> => {
         const isCustomer = i === customerIndex;
         const isContact = s.role !== SupportStakeholderRole.PRIMARY;
-        if ((!isCustomer && !isContact) || !this.hasResolvablePersonNumber(s)) {
+        if (!isCustomer && !isContact) {
+          return s;
+        }
+        if (isOrganizationExternalIdType(s.externalIdType)) {
+          const organizationNumber = await this.resolveStakeholderOrgNumber(s, municipalityId, req);
+          return organizationNumber ? { ...s, organizationNumber } : s;
+        }
+        if (!this.hasResolvablePersonNumber(s)) {
           return s;
         }
         if (isCustomer) {
