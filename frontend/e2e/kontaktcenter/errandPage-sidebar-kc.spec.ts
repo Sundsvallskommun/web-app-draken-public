@@ -10,7 +10,7 @@ import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressR
 import { mockComments } from './fixtures/mockComments';
 import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockMexTarget, mockParkingPermitTarget } from './fixtures/mockHandover';
-import { mockMetaData } from './fixtures/mockMetadata';
+import { mockMetaData, mockTypeEscalationEmail } from './fixtures/mockMetadata';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
@@ -173,7 +173,9 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
-    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).not.toBeVisible();
+    // Both the errand's category and type carry an escalation email; the lowest label's is pre-filled.
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).toContainText(mockTypeEscalationEmail);
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-1"]`)).not.toBeVisible();
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();

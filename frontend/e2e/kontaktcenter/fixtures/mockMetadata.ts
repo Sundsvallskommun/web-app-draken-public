@@ -514,7 +514,16 @@ type MockLabel = {
   resourcePath: string;
   resourceName: string;
   labels: MockLabel[];
+  attributes?: { key: string; value: string }[];
 };
+
+const mockCategoryEscalationEmail = 'vuxenutbildning@example.com';
+export const mockTypeEscalationEmail = 'sfi@example.com';
+
+const withEscalationEmail = (mockLabel: MockLabel, escalationEmail: string): MockLabel => ({
+  ...mockLabel,
+  attributes: [{ key: 'escalationEmail', value: escalationEmail }],
+});
 
 const label = (
   classification: string,
@@ -531,6 +540,7 @@ const label = (
 });
 
 // DEPARTMENT > CATEGORY > TYPE. BOU/COMPLAINTS is a leaf category with no types.
+// IAF/ADULT_EDUCATION and its SFI type both carry an escalation email; the type's is the one pre-filled.
 const mockLabelStructure: MockLabel[] = [
   label('DEPARTMENT', 'BOU', 'BoU', [
     label('CATEGORY', 'BOU/CHILDCARE', 'Barnomsorg', [
@@ -540,7 +550,12 @@ const mockLabelStructure: MockLabel[] = [
     label('CATEGORY', 'BOU/COMPLAINTS', 'Synpunkter'),
   ]),
   label('DEPARTMENT', 'IAF', 'IAF', [
-    label('CATEGORY', 'IAF/ADULT_EDUCATION', 'Vuxenutbildning', [label('TYPE', 'IAF/ADULT_EDUCATION/SFI', 'SFI')]),
+    withEscalationEmail(
+      label('CATEGORY', 'IAF/ADULT_EDUCATION', 'Vuxenutbildning', [
+        withEscalationEmail(label('TYPE', 'IAF/ADULT_EDUCATION/SFI', 'SFI'), mockTypeEscalationEmail),
+      ]),
+      mockCategoryEscalationEmail
+    ),
   ]),
   label('DEPARTMENT', 'KSK', 'KSK', [
     label('CATEGORY', 'KSK/SERVICE_CENTER_IT', 'Servicecenter IT', [
@@ -549,8 +564,8 @@ const mockLabelStructure: MockLabel[] = [
   ]),
 ];
 
-/** The labels an errand carries for the path down to `resourcePath`: the tree nodes without their children. */
-export const mockLabelPath = (resourcePath: string): Omit<MockLabel, 'labels'>[] => {
+/** The labels an errand carries for the path down to `resourcePath`: the tree nodes without children or attributes. */
+export const mockLabelPath = (resourcePath: string): Omit<MockLabel, 'labels' | 'attributes'>[] => {
   const walk = (labels: MockLabel[]): MockLabel[] => {
     for (const node of labels) {
       if (node.resourcePath === resourcePath) return [node];
@@ -559,7 +574,7 @@ export const mockLabelPath = (resourcePath: string): Omit<MockLabel, 'labels'>[]
     }
     return [];
   };
-  return walk(mockLabelStructure).map(({ labels: _children, ...node }) => node);
+  return walk(mockLabelStructure).map(({ labels: _children, attributes: _attributes, ...node }) => node);
 };
 
 export const mockMetaData = {
