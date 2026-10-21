@@ -1,0 +1,26 @@
+# Lokal fake-IdP (SAML) för inloggning i Draken under utveckling.
+#
+# Kräver att repot web-app-fake-idp-admin ligger bredvid det här projektet
+# (../web-app-fake-idp-admin) och att dess .env finns (cp .env.example .env).
+#
+#   yarn idp:up     # startar IdP + admin-UI på http://localhost:7001
+#   yarn idp:down
+#
+# Med COMPOSE_FILE=docker-compose.idp.yml i en lokal .env i repots rot räcker
+# det med `docker compose up`.
+#
+# Endast backend, admin och proxy startas — Keycloak m.fl. ligger bakom profilen
+# "keycloak" (se docker-compose.idp.override.yml) eftersom Draken pratar SAML
+# direkt med fake-IdP:n.
+#
+# I backend/.env.{drake}.development.local:
+#   SAML_ENTRY_SSO=http://localhost:7001/api/saml/idp/sso
+#   SAML_LOGOUT_URL=http://localhost:7001/api/saml/idp/logout
+#   SAML_IDP_PUBLIC_CERT=<samma värde som SAML_IDP_PUBLIC_CERT i ../web-app-fake-idp-admin/.env>
+
+include:
+  - path:
+      - ../web-app-fake-idp-admin/docker-compose.yml
+      - docker-compose.idp.override.yml
+    project_directory: ../web-app-fake-idp-admin
+    env_file: ../web-app-fake-idp-admin/.env

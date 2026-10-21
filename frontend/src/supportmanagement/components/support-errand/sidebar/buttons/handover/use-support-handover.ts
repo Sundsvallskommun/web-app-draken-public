@@ -20,6 +20,8 @@ import { SupportMetadata } from '@supportmanagement/services/support-metadata-se
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+import { getHandoverLabelSuggestion, isHandoverLabelSuggestionPicked } from './handover-label-suggestion';
+
 export type HandoverStep = 1 | 2;
 
 /** Target namespaces of the casedata forward flow (MEX and PT). Every other namespace uses the handover. */
@@ -54,6 +56,9 @@ const defaultIncludes = (): HandoverInclude => ({
 
 /** Nothing below the last picked label is left to pick. */
 const isCompletePath = (path: Label[]): boolean => path.length > 0 && (path.at(-1)?.labels?.length ?? 0) === 0;
+
+/** Key of a target in the per-target caches (preview, idempotency key). */
+const targetKey = (municipalityId: string, namespace?: string): string => `${municipalityId}:${namespace}`;
 
 interface UseSupportHandoverArgs {
   errandId?: string;
@@ -144,6 +149,27 @@ export const useSupportHandover = ({
     setMappingContactReason(mappingRequired?.contactReason?.suggested ?? '');
   }, []);
 
+  // The target path the preview suggests. Read from the per-target caches: the preview and metadata
+  // state still hold the previous target's until the new one has loaded.
+  const labelSuggestion = useMemo(
+    () =>
+      targetUsesLabels
+        ? getHandoverLabelSuggestion(
+            metadataCache[selectedNamespace]?.labels?.labelStructure,
+            previewCache[targetKey(sourceMunicipalityId, selectedNamespace)]?.mappingRequired?.labels?.mappings
+          )
+        : undefined,
+    [targetUsesLabels, metadataCache, previewCache, sourceMunicipalityId, selectedNamespace]
+  );
+
+  // Preselect the suggestion until a path is picked. The picker never reports an empty path and a new
+  // target clears the pick (runPreview), so the user's own choice is never overwritten.
+  useEffect(() => {
+    if (labelSuggestion && targetLabels.length === 0) {
+      setTargetLabels(labelSuggestion.path);
+    }
+  }, [labelSuggestion, targetLabels]);
+
   /**
    * Clears the handover session state – choices, preview, errors, message and the per-target preview
    * and idempotency-key caches. Called when the modal is opened/closed so each session starts fresh.
@@ -192,7 +218,7 @@ export const useSupportHandover = ({
         });
       }
 
-      const cacheKey = `${sourceMunicipalityId}:${namespace}`;
+      const cacheKey = targetKey(sourceMunicipalityId, namespace);
       // Ensure this target has a stable idempotency key (kept across retries and target switches).
       setIdempotencyKeys((prev) => (prev[cacheKey] ? prev : { ...prev, [cacheKey]: uuidv4() }));
 
@@ -265,7 +291,7 @@ export const useSupportHandover = ({
         return undefined;
       }
       // Reuse this target's stable idempotency key (set in runPreview before step 2).
-      const idempotencyKey = idempotencyKeys[`${sourceMunicipalityId}:${target.namespace}`] ?? uuidv4();
+      const idempotencyKey = idempotencyKeys[targetKey(sourceMunicipalityId, target.namespace)] ?? uuidv4();
       setHandoverError(undefined);
       setHandoverLoading(true);
       try {
@@ -324,6 +350,8 @@ export const useSupportHandover = ({
     setMappingContactReason,
     targetLabels,
     setTargetLabels,
+    labelSuggestion,
+    labelSuggestionPicked: isHandoverLabelSuggestionPicked(labelSuggestion, targetLabels),
     handoverLoading,
     handoverError,
     runPreview,

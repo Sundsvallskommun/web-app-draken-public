@@ -10,7 +10,7 @@ import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressR
 import { mockComments } from './fixtures/mockComments';
 import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockMexTarget, mockParkingPermitTarget } from './fixtures/mockHandover';
-import { mockMetaData } from './fixtures/mockMetadata';
+import { mockMetaData, mockTypeEscalationEmail } from './fixtures/mockMetadata';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
@@ -23,7 +23,8 @@ import {
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
-import { MODAL_DIALOG } from '../utils/modal';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
+import { waitForDialogOpened, waitForModalOverlaysGone } from '../blocks/ui';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -172,7 +173,9 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
-    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).not.toBeVisible();
+    // Both the errand's category and type carry an escalation email; the lowest label's is pre-filled.
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).toContainText(mockTypeEscalationEmail);
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-1"]`)).not.toBeVisible();
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
@@ -236,7 +239,7 @@ test.describe('errand page', () => {
     //Can forward the errand
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await waitForDialogOpened(page.locator(MODAL_DIALOG));
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
@@ -250,12 +253,21 @@ test.describe('errand page', () => {
 
     await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
 
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+    const forwardConfirm = page.locator(CONFIRM_DIALOG);
+    await waitForDialogOpened(forwardConfirm);
+    await expect(forwardConfirm).toContainText('Vill du överlämna ärendet?');
+    await expect(forwardConfirm.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'),
-      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+      forwardConfirm.locator('.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
+    // The forward modal only closes after the whole chain (message, assign, close errand), which
+    // takes several seconds on the CI runner; the success toast marks the end of it.
+    await expect(page.locator('.sk-snackbar-text', { hasText: 'Ärendet vidarebefordrades' })).toBeVisible({
+      timeout: 15000,
+    });
+    // Only the forward modal: the handover flow may open the close modal right after it.
+    await expect(page.locator(MODAL_DIALOG).filter({ hasText: 'Överlämna ärendet' })).toHaveCount(0);
 
     // The forward opens the close modal to confirm or change the code; dismiss it to go on.
     const closeModalAfterForward = page.locator(MODAL_DIALOG).filter({ hasText: 'Avsluta ärendet' });
@@ -266,8 +278,9 @@ test.describe('errand page', () => {
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
     const suspendModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Parkera ärendet' });
-    await expect(suspendModal).toBeVisible();
+    await waitForDialogOpened(suspendModal);
     await suspendModal.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
+    await waitForModalOverlaysGone(page);
 
     const solveLables = [
       { label: 'Informerat', id: 'INFORMED' },
@@ -281,7 +294,7 @@ test.describe('errand page', () => {
     //can change supportErrand to solved
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     const solveModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Välj en lösning' });
-    await expect(solveModal).toBeVisible();
+    await waitForDialogOpened(solveModal);
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLables.length);
 
     // The explanation is hidden until its info button is clicked, and hidden again on a second click.
