@@ -18,7 +18,7 @@ import {
 } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isOrganizationExternalIdType, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
 import {
   attachmentsOfKind,
@@ -327,7 +327,7 @@ export const SupportStatementCard: FC<{
     engagementsAskedFor.current = true;
 
     const company = supportErrand?.stakeholders?.find(
-      (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+      (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
     )?.externalId;
     if (!company) return;
 

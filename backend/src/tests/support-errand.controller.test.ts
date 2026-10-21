@@ -659,6 +659,30 @@ describe('SupportErrandController', () => {
       expect(api.post.mock.calls[0][0].data.stakeholders[0]).toMatchObject({ organizationNumber: mockOrganizationNumber });
     });
 
+    it('resolves the organization number for an ENTERPRISE stakeholder as well', async () => {
+      const { controller, api, organization } = makeController();
+      organization.getOrganizationNumberByPartyId.mockResolvedValue(mockOrganizationNumberDigits);
+      routeGets(
+        api,
+        supportErrand({
+          stakeholders: [
+            {
+              role: 'PRIMARY',
+              organizationName: mockOrganizationName,
+              externalId: mockOrganizationPartyId,
+              externalIdType: ExternalIdType.ENTERPRISE,
+            },
+          ],
+        }),
+      );
+      api.post.mockResolvedValue({ data: { id: mockCasedataErrandId, errandNumber: mockCasedataErrandNumber }, message: 'success' });
+
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, mockRes());
+
+      expect(organization.getOrganizationNumberByPartyId).toHaveBeenCalledWith(MUNICIPALITY_ID, mockOrganizationPartyId, expect.anything());
+      expect(api.post.mock.calls[0][0].data.stakeholders[0]).toMatchObject({ type: 'ORGANIZATION', organizationNumber: mockOrganizationNumber });
+    });
+
     it('still forwards when the organization number cannot be resolved', async () => {
       const { controller, api, organization } = makeController();
       organization.getOrganizationNumberByPartyId.mockRejectedValue(new Error('legal entity down'));

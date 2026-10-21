@@ -2,7 +2,10 @@
 
 import { Alert, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
-import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import {
+  isOrganizationExternalIdType,
+  SupportStakeholderFormModel,
+} from '@supportmanagement/services/support-errand-service';
 import {
   hyphenatedIdentity,
   PBI_ASSESSMENTS,
@@ -199,7 +202,7 @@ export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writab
   const [adding, setAdding] = useState(false);
 
   const organizationPartyId = supportErrand?.stakeholders?.find(
-    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+    (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
   )?.externalId;
   const pbi = useSupportPbi(organizationPartyId);
   const canWrite = writable && pbi.canEdit;
