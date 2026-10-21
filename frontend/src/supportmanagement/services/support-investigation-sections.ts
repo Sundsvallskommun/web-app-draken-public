@@ -27,6 +27,20 @@ export const SUPPORT_INVESTIGATION_SECTIONS = [
     sortOrder: 3,
   },
   { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 4 },
+  { sectionKey: 'lease', headingKey: 'common:investigation.sections.lease', sortOrder: 5 },
+  { sectionKey: 'fire_safety', headingKey: 'common:investigation.sections.fire_safety', sortOrder: 6 },
+  {
+    sectionKey: 'food_and_beverages',
+    headingKey: 'common:investigation.sections.food_and_beverages',
+    sortOrder: 7,
+  },
+  { sectionKey: 'staffing', headingKey: 'common:investigation.sections.staffing', sortOrder: 8 },
+  { sectionKey: 'communication', headingKey: 'common:investigation.sections.communication', sortOrder: 9 },
+  {
+    sectionKey: 'child_perspective',
+    headingKey: 'common:investigation.sections.child_perspective',
+    sortOrder: 10,
+  },
 ] as const satisfies readonly { sectionKey: string; headingKey: string; sortOrder: number }[];
 
 /**
@@ -69,6 +83,18 @@ export const missingSupportInvestigationSections = (investigation: Investigation
   const written = (investigation?.sections ?? []).map(sectionKeyOf);
   return SUPPORT_INVESTIGATION_SECTIONS.filter((section) => !written.includes(section.sectionKey));
 };
+
+export interface SupportInvestigationTextKeys {
+  labelKey: string;
+  placeholderKey: string;
+  saveFailedKey: string;
+}
+
+export const supportInvestigationTextKeys = (sectionKey: Sections): SupportInvestigationTextKeys => ({
+  labelKey: `common:investigation.section_texts.${sectionKey}.label`,
+  placeholderKey: `common:investigation.section_texts.${sectionKey}.placeholder`,
+  saveFailedKey: 'common:investigation.section_save_failed',
+});
 
 export const supportInvestigationSectionInputs = (
   translate: (key: string) => string,

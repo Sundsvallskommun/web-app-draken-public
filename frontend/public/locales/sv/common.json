@@ -128,8 +128,42 @@
       "statements": "Remisser och yttranden",
       "persons_of_influence": "Personer med betydande inflytande",
       "financial_suitability": "Ekonomisk lämplighet",
-      "premises": "Lokal och serveringsställe"
+      "premises": "Lokal och serveringsställe",
+      "lease": "Nyttjanderätt och hyresavtal",
+      "fire_safety": "Brandskyddsdokumentation",
+      "food_and_beverages": "Mat och dryckesutbud",
+      "staffing": "Personal",
+      "communication": "Handläggning och kommunicering",
+      "child_perspective": "Barnperspektivet"
     },
+    "section_texts": {
+      "lease": {
+        "label": "Utredning av nyttjanderätten",
+        "placeholder": "Beskriv nyttjanderätten till lokalen och vad hyresavtalet säger"
+      },
+      "fire_safety": {
+        "label": "Utredning av brandskyddet",
+        "placeholder": "Beskriv brandskyddsdokumentationen och vad räddningstjänsten kräver"
+      },
+      "food_and_beverages": {
+        "label": "Utredning av mat och dryckesutbudet",
+        "placeholder": "Beskriv utbudet av mat och dryck på serveringsstället"
+      },
+      "staffing": {
+        "label": "Utredning av personalen",
+        "placeholder": "Beskriv personalens omfattning och kunskaper, till exempel utbildning i ansvarsfull alkoholservering"
+      },
+      "communication": {
+        "label": "Redogörelse för handläggningen och kommuniceringen",
+        "placeholder": "Beskriv handläggningen och hur sökanden har fått ta del av underlaget"
+      },
+      "child_perspective": {
+        "label": "Utredning av barnperspektivet",
+        "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
+      }
+    },
+    "section_save_failed": "Utredningstexten kunde inte sparas.",
+    "application_complete_at": "Ansökan komplett",
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",

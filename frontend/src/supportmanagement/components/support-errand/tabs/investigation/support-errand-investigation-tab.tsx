@@ -4,6 +4,7 @@ import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   missingSupportInvestigationSections,
+  sectionKeyOf,
   supportInvestigationSectionInputs,
   visibleSupportInvestigationSections,
 } from '@supportmanagement/services/support-investigation-sections';
@@ -34,6 +35,8 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
+type SectionSave = React.MutableRefObject<(() => Promise<boolean>) | undefined>;
+
 interface InvestigationTabProps {
   setUnsaved: (unsaved: boolean) => void;
   setHasContent: (hasContent: boolean) => void;
@@ -60,12 +63,8 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   const toastMessage = useSnackbar();
 
   const [investigation, setInvestigation] = useState<Investigation>();
-  const [statementsEdited, setStatementsEdited] = useState(false);
-  const saveStatements = useRef<() => Promise<boolean>>(undefined);
-  const [financialEdited, setFinancialEdited] = useState(false);
-  const saveFinancial = useRef<() => Promise<boolean>>(undefined);
-  const [premisesEdited, setPremisesEdited] = useState(false);
-  const savePremises = useRef<() => Promise<boolean>>(undefined);
+  const [editedSections, setEditedSections] = useState<Record<string, boolean>>({});
+  const sectionSaves = useRef<Record<string, SectionSave>>({});
   const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +111,25 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     [receiveKeepingUnsavedEdits]
   );
 
+  const saveRefOfSection = (sectionKey: string): SectionSave =>
+    (sectionSaves.current[sectionKey] ??= { current: undefined });
+
+  const noteSectionEdited = useCallback((sectionKey: string, sectionEdited: boolean) => {
+    setEditedSections((current) =>
+      current[sectionKey] === sectionEdited ? current : { ...current, [sectionKey]: sectionEdited }
+    );
+  }, []);
+
+  const someSectionEdited = Object.values(editedSections).some(Boolean);
+
+  const saveTheSections = async (): Promise<boolean> => {
+    let allSaved = true;
+    for (const save of Object.values(sectionSaves.current)) {
+      if (!((await save.current?.()) ?? true)) allSaved = false;
+    }
+    return allSaved;
+  };
+
   useEffect(() => {
     if (!errandId) return undefined;
     let current = true;
@@ -132,8 +150,8 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || financialEdited || premisesEdited);
-  }, [edited, statementsEdited, financialEdited, premisesEdited, setUnsaved]);
+    setUnsaved(edited || someSectionEdited);
+  }, [edited, someSectionEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -222,10 +240,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     if (!errandId || !investigation?.id) return true;
 
     savedInvestigation.current = investigation;
-    const statementsSaved = (await saveStatements.current?.()) ?? true;
-    const financialSaved = (await saveFinancial.current?.()) ?? true;
-    const premisesSaved = (await savePremises.current?.()) ?? true;
-    if (!statementsSaved || !financialSaved || !premisesSaved) return false;
+    if (!(await saveTheSections())) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -311,14 +326,9 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
                 key={section.id ?? section.sectionKey}
                 section={section}
                 writable={!readOnly}
-                onStatementsEdited={setStatementsEdited}
-                saveStatements={saveStatements}
-                onFinancialEdited={setFinancialEdited}
-                onFinancialSaved={receiveFromSection}
-                saveFinancial={saveFinancial}
-                onPremisesEdited={setPremisesEdited}
-                onPremisesSaved={receiveFromSection}
-                savePremises={savePremises}
+                onEdited={noteSectionEdited}
+                onSaved={receiveFromSection}
+                saveRef={saveRefOfSection(sectionKeyOf(section))}
                 investigationId={investigation.id}
               />
             ))}

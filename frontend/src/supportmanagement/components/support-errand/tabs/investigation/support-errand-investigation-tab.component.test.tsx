@@ -6,6 +6,7 @@ import {
   saveSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportErrandInvestigationTab } from './support-errand-investigation-tab';
@@ -22,18 +23,28 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   startSupportInvestigation: vi.fn(),
   completeSupportInvestigationSections: vi.fn(),
 }));
-const sectionStub = vi.hoisted(() => ({ handsBack: null as object | null }));
+const sectionStub = vi.hoisted(() => ({
+  handsBack: null as object | null,
+  saved: [] as string[],
+  notes: {} as Record<string, (edited: boolean) => void>,
+}));
 
 vi.mock('./investigation-disclosure.component', () => ({
   SectionDisclosure: ({
-    onFinancialSaved,
-    saveFinancial,
+    section,
+    onEdited,
+    onSaved,
+    saveRef,
   }: {
-    onFinancialSaved: (investigation: object) => void;
-    saveFinancial: { current?: () => Promise<boolean> };
+    section: { sectionKey: string };
+    onEdited: (sectionKey: string, edited: boolean) => void;
+    onSaved: (investigation: object) => void;
+    saveRef: { current?: () => Promise<boolean> };
   }) => {
-    saveFinancial.current = async () => {
-      if (sectionStub.handsBack) onFinancialSaved(sectionStub.handsBack);
+    sectionStub.notes[section.sectionKey] = (edited: boolean) => onEdited(section.sectionKey, edited);
+    saveRef.current = async () => {
+      sectionStub.saved.push(section.sectionKey);
+      if (sectionStub.handsBack) onSaved(sectionStub.handsBack);
       return true;
     };
     return null;
@@ -70,11 +81,17 @@ const investigation = {
   sections: [{ id: 'section-1', sectionKey: 'financial_suitability', heading: 'Ekonomisk lämplighet', sortOrder: 3 }],
 };
 
+const setUnsaved = vi.fn();
+
 const mountTab = () =>
-  render(<SupportErrandInvestigationTab setUnsaved={vi.fn()} setHasContent={vi.fn()} inStep={true} writable={true} />);
+  render(
+    <SupportErrandInvestigationTab setUnsaved={setUnsaved} setHasContent={vi.fn()} inStep={true} writable={true} />
+  );
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sectionStub.saved = [];
+  sectionStub.notes = {};
   useSupportStore.setState({ supportErrand: { id: ERRAND_ID } as never, tabSavers: {} });
   useConfigStore.setState({ municipalityId: '2281' } as never);
   useMetadataStore.setState({ supportMetadata: { decisionOutcomes: [] } } as never);
@@ -96,6 +113,12 @@ test('an investigation that lacks an examination is completed with it, once, and
     { sectionKey: 'statements', heading: 'common:investigation.sections.statements', sortOrder: 1 },
     { sectionKey: 'persons_of_influence', heading: 'common:investigation.sections.persons_of_influence', sortOrder: 2 },
     { sectionKey: 'premises', heading: 'common:investigation.sections.premises', sortOrder: 4 },
+    { sectionKey: 'lease', heading: 'common:investigation.sections.lease', sortOrder: 5 },
+    { sectionKey: 'fire_safety', heading: 'common:investigation.sections.fire_safety', sortOrder: 6 },
+    { sectionKey: 'food_and_beverages', heading: 'common:investigation.sections.food_and_beverages', sortOrder: 7 },
+    { sectionKey: 'staffing', heading: 'common:investigation.sections.staffing', sortOrder: 8 },
+    { sectionKey: 'communication', heading: 'common:investigation.sections.communication', sortOrder: 9 },
+    { sectionKey: 'child_perspective', heading: 'common:investigation.sections.child_perspective', sortOrder: 10 },
   ]);
 });
 
@@ -177,6 +200,35 @@ test('the investigation is left alone when only one of its sections was written'
   await expect(useSupportStore.getState().tabSavers.investigation()).resolves.toBe(true);
 
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
+});
+
+test('every section is handed a save of its own, and all of them run when the tab saves', async () => {
+  const twoSections = {
+    ...investigation,
+    sections: [
+      { id: 'section-1', sectionKey: 'financial_suitability', heading: 'Ekonomisk lämplighet', sortOrder: 3 },
+      { id: 'section-2', sectionKey: 'premises', heading: 'Lokal och serveringsställe', sortOrder: 4 },
+    ],
+  };
+  vi.mocked(getSupportInvestigation).mockResolvedValue(twoSections as never);
+  vi.mocked(completeSupportInvestigationSections).mockResolvedValue(twoSections as never);
+  mountTab();
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  await useSupportStore.getState().tabSavers.investigation();
+
+  expect(sectionStub.saved).toEqual(['financial_suitability', 'premises']);
+});
+
+test('a section that has something unsaved makes the whole tab unsaved', async () => {
+  mountTab();
+  await waitFor(() => expect(sectionStub.notes.financial_suitability).toBeTypeOf('function'));
+
+  act(() => sectionStub.notes.financial_suitability(true));
+  expect(setUnsaved).toHaveBeenLastCalledWith(true);
+
+  act(() => sectionStub.notes.financial_suitability(false));
+  expect(setUnsaved).toHaveBeenLastCalledWith(false);
 });
 
 test('an inspection errand gets the protocol instead of the investigation', async () => {
