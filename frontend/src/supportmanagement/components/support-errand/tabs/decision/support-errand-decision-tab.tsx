@@ -9,6 +9,12 @@ import { getDecisionBasisForm } from '@supportmanagement/services/support-decisi
 import { applicationPremisesPhone } from '@supportmanagement/services/support-decision-parameters-service';
 import { premisesFromErrandParameters } from '@supportmanagement/services/support-decision-premises-service';
 import {
+  resolveScope,
+  scopeFromDecision,
+  scopeFromForm,
+  servingHoursSlotsFor,
+} from '@supportmanagement/services/support-decision-scope-service';
+import {
   getSupportDecisions,
   isSupportDecisionDraft,
   SUPPORT_DECISION_ROLE_KEYS,
@@ -20,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { DecisionCard } from './decision-card.component';
 import { DecisionFields } from './decision-fields.component';
 import { decisionPermit } from './decision-permit';
+import { DecisionBeveragesField, DecisionServingHoursFields } from './decision-scope-fields.component';
 import { DecisionServingPremises } from './decision-serving-premises.component';
 import { DecisionSummary } from './decision-summary.component';
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
@@ -70,6 +77,10 @@ export const SupportErrandDecisionTab: FC<{
     () => getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
     [supportErrand, supportMetadata?.namespace]
   );
+  const servingHoursSlots = useMemo(
+    () => servingHoursSlotsFor(permit.errandType, applicationForm),
+    [permit.errandType, applicationForm]
+  );
 
   useEffect(() => {
     if (!supportErrand?.id) return;
@@ -94,12 +105,24 @@ export const SupportErrandDecisionTab: FC<{
   const decision = decisions[0];
   const editable = writable && (!decision || isSupportDecisionDraft(decision));
 
+  // The saved decision where it has a key, the application elsewhere; the fields start from this.
+  const scopeAsSaved = useMemo(
+    () =>
+      resolveScope(
+        scopeFromDecision(decision?.parameters, servingHoursSlots),
+        scopeFromForm(applicationForm, permit.errandType, servingHoursSlots),
+        servingHoursSlots
+      ),
+    [decision?.parameters, servingHoursSlots, applicationForm, permit.errandType]
+  );
+
   const form = useDecisionForm({
     decision,
     editable,
     savedPremises,
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
+    scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
   });
 
@@ -111,6 +134,7 @@ export const SupportErrandDecisionTab: FC<{
     permit,
     premisesToSend,
     applicationForm,
+    servingHoursSlots,
     onSaved: setDecisions,
   });
 
@@ -138,6 +162,30 @@ export const SupportErrandDecisionTab: FC<{
             }
             servingPremisesHandling={
               permit.serving ? <DecisionServingPremises form={form} disabled={premisesReadOnly} /> : undefined
+            }
+            servingHoursHandling={
+              servingHoursSlots.length ? (
+                <DecisionServingHoursFields
+                  slots={servingHoursSlots}
+                  value={form.values.scope.servingHours}
+                  onChange={(slot, range) =>
+                    form.set('scope', {
+                      ...form.values.scope,
+                      servingHours: { ...form.values.scope.servingHours, [slot]: range },
+                    })
+                  }
+                  disabled={premisesReadOnly}
+                />
+              ) : undefined
+            }
+            servingHandling={
+              permit.serving ? (
+                <DecisionBeveragesField
+                  value={form.values.scope.beverages}
+                  onChange={(beverages) => form.set('scope', { ...form.values.scope, beverages })}
+                  disabled={premisesReadOnly}
+                />
+              ) : undefined
             }
           />
           <Divider />

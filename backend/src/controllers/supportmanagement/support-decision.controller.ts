@@ -26,6 +26,16 @@ class SupportDecisionParameterDto {
   @MaxLength(255)
   key!: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  group?: string;
+
   @IsArray()
   @IsString({ each: true })
   @MaxLength(3000, { each: true })

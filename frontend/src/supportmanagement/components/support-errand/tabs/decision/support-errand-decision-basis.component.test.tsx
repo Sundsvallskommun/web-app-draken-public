@@ -298,3 +298,35 @@ test('what handles the premises is shown in the premises section', () => {
 
   expect(document.querySelector('[data-cy="decision-basis-premises"] [data-cy="premises-handling"]')).toBeTruthy();
 });
+
+test('what handles the serving hours and the serving is shown in its section, even without rows from the form', () => {
+  render(
+    <SupportErrandDecisionBasis
+      supportErrand={errand(company)}
+      supportMetadata={METADATA}
+      servingHoursHandling={<span data-cy="serving-hours-handling" />}
+      servingHandling={<span data-cy="serving-handling" />}
+    />
+  );
+
+  expect(sectionIds()).toEqual(['errand', 'holder', 'serving_hours', 'serving', 'premises', 'referrals']);
+  expect(
+    document.querySelector('[data-cy="decision-basis-serving_hours"] [data-cy="serving-hours-handling"]')
+  ).toBeTruthy();
+  expect(document.querySelector('[data-cy="decision-basis-serving"] [data-cy="serving-handling"]')).toBeTruthy();
+  expect(document.querySelector('[data-cy="decision-basis-serving"] dl')).toBeNull();
+});
+
+test('handling follows the rows of its section when the form has them', () => {
+  render(
+    <SupportErrandDecisionBasis
+      supportErrand={errand(company, ANSWERS)}
+      supportMetadata={METADATA}
+      servingHandling={<span data-cy="serving-handling" />}
+    />
+  );
+
+  const section = document.querySelector('[data-cy="decision-basis-serving"]')!;
+  expect(value('serving-drinks')).toBe('Starköl, Vin');
+  expect(section.querySelector('dl + [data-cy="serving-handling"]')).toBeTruthy();
+});
