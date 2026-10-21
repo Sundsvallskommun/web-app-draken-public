@@ -94,6 +94,11 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ h
           onChange={handover.setTargetLabels}
           metadata={handover.targetMetadata}
           fallbackLabels={{ first: 'Kategori*', second: 'Ärendetyp*' }}
+          labelAddons={
+            handover.labelSuggestionPicked
+              ? { first: <HandoverAutoSuggestIndicator matchReason={handover.labelSuggestion?.matchReason} /> }
+              : undefined
+          }
         />
       </div>
     ) : (
