@@ -28,7 +28,7 @@ export const SupportErrandBasicsAboutForm: FC<{
   const { supportErrand } = props;
   const { t } = useTranslation();
 
-  const contactReasonList = supportMetadata?.contactReasons;
+  const contactReasonList = (supportMetadata?.contactReasons ?? []).filter((c) => !c.deprecated);
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
