@@ -126,7 +126,7 @@
     "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade - försök igen.",
     "sections": {
       "statements": "Remisser och yttranden",
-      "personal_suitability": "Personlig lämplighet och kunskapsprov",
+      "persons_of_influence": "Personer med betydande inflytande",
       "financial_suitability": "Ekonomisk lämplighet",
       "premises": "Lokal och serveringsställe"
     },

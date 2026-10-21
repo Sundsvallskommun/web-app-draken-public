@@ -1,15 +1,19 @@
-import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  missingSupportInvestigationSections,
+  supportInvestigationSectionInputs,
+  visibleSupportInvestigationSections,
+} from '@supportmanagement/services/support-investigation-sections';
+import {
+  completeSupportInvestigationSections,
   getSupportInvestigation,
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
-  RETIRED_INVESTIGATION_SECTION_KEYS,
   saveSupportInvestigation,
   startSupportInvestigation,
-  SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
 import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import dayjs from 'dayjs';
@@ -19,11 +23,6 @@ import { useTranslation } from 'react-i18next';
 import { InspectionProtocol } from './inspection-protocol.component';
 import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
 import { SectionDisclosure } from './investigation-disclosure.component';
-
-const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
-  (investigation?.sections ?? [])
-    .filter((section) => !RETIRED_INVESTIGATION_SECTION_KEYS.includes(section.sectionKey ?? ''))
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 const asDate = (value: string | undefined): string =>
   value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
@@ -89,6 +88,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
+  const examinationsCompleted = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   const receive = (result: Investigation | undefined) => {
@@ -167,11 +167,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
       errandId,
       municipalityId,
       t('common:investigation.title'),
-      SUPPORT_INVESTIGATION_SECTIONS.map((section) => ({
-        sectionKey: section.sectionKey,
-        heading: t(section.headingKey),
-        sortOrder: section.sortOrder,
-      }))
+      supportInvestigationSectionInputs(t)
     )
       .then((result) => {
         receive(result);
@@ -190,6 +186,29 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     void start().then(forgetAStartThatFailed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
+
+  const completeTheExaminations = (): Promise<void> => {
+    const missing = missingSupportInvestigationSections(investigation);
+    if (!errandId || !investigation?.id || missing.length === 0) return Promise.resolve();
+
+    return completeSupportInvestigationSections(
+      errandId,
+      municipalityId,
+      investigation.id,
+      supportInvestigationSectionInputs(t, missing)
+    )
+      .then(receiveKeepingUnsavedEdits)
+      .catch(() => {
+        examinationsCompleted.current = false;
+      });
+  };
+
+  useEffect(() => {
+    if (isLoading || error || !investigation || readOnly || examinationsCompleted.current) return;
+    examinationsCompleted.current = true;
+    void completeTheExaminations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, error, investigation, readOnly]);
 
   const reportSaved = () =>
     toastMessage({
@@ -238,7 +257,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   // The saver is registered once; the ref keeps it pointing at the current fields.
   saveLatest.current = save;
 
-  const sections = useMemo(() => sectionsInOrder(investigation), [investigation]);
+  const sections = useMemo(() => visibleSupportInvestigationSections(investigation), [investigation]);
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">

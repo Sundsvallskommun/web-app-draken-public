@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  completeSupportInvestigationSections,
   getSupportInvestigation,
   saveSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
@@ -19,6 +20,7 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   getSupportInvestigation: vi.fn(),
   saveSupportInvestigation: vi.fn(),
   startSupportInvestigation: vi.fn(),
+  completeSupportInvestigationSections: vi.fn(),
 }));
 const sectionStub = vi.hoisted(() => ({ handsBack: null as object | null }));
 
@@ -80,9 +82,41 @@ beforeEach(() => {
   sectionStub.handsBack = null;
   vi.mocked(getSupportInvestigation).mockResolvedValue(investigation as never);
   vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...investigation, version: 4 } as never);
+  vi.mocked(completeSupportInvestigationSections).mockResolvedValue(investigation as never);
 });
 
 afterEach(cleanup);
+
+test('an investigation that lacks an examination is completed with it, once, and with nothing it already has', async () => {
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalledTimes(1));
+
+  expect(completeSupportInvestigationSections).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation-1', [
+    { sectionKey: 'statements', heading: 'common:investigation.sections.statements', sortOrder: 1 },
+    { sectionKey: 'persons_of_influence', heading: 'common:investigation.sections.persons_of_influence', sortOrder: 2 },
+    { sectionKey: 'premises', heading: 'common:investigation.sections.premises', sortOrder: 4 },
+  ]);
+});
+
+test('a concluded investigation is left as it stands, however many examinations it lacks', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({ ...investigation, status: 'COMPLETED' } as never);
+  mountTab();
+
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  expect(completeSupportInvestigationSections).not.toHaveBeenCalled();
+});
+
+test('a tab that is only read is not written to either', async () => {
+  render(
+    <SupportErrandInvestigationTab setUnsaved={vi.fn()} setHasContent={vi.fn()} inStep={false} writable={false} />
+  );
+
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  expect(completeSupportInvestigationSections).not.toHaveBeenCalled();
+});
 
 test('the tab offers its save to whoever saves the errand, and takes it back when it closes', async () => {
   const { unmount } = mountTab();

@@ -1,6 +1,9 @@
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Disclosure } from '@sk-web-gui/react';
-import type { Sections } from '@supportmanagement/services/support-investigation-service';
+import {
+  type Sections,
+  supportInvestigationSectionSpec,
+} from '@supportmanagement/services/support-investigation-sections';
 import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -38,7 +41,7 @@ export const SectionDisclosure: React.FC<{
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={onStatementsEdited} saveRef={saveStatements} />,
-    personal_suitability: <SupportPbiExaminationSection writable={writable} />,
+    persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: (
       <SupportFinancialSuitabilitySection
         section={section}
@@ -61,17 +64,19 @@ export const SectionDisclosure: React.FC<{
     ),
   };
 
+  const spec = supportInvestigationSectionSpec(section);
+  const heading = spec ? t(spec.headingKey) : section.heading;
+  const content = spec ? sectionContent[spec.sectionKey] : undefined;
+
   return (
     section.sectionKey && (
       <Disclosure variant="alt" className="w-full" data-cy={`section-${section.sectionKey}`}>
         <Disclosure.Header>
-          <Disclosure.Title>{section.heading}</Disclosure.Title>
+          <Disclosure.Title>{heading}</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          {sectionContent[section.sectionKey] ?? (
-            <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
-          )}
+          {content ?? <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>}
         </Disclosure.Content>
       </Disclosure>
     )
