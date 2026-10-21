@@ -198,15 +198,6 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels?.length !== 0
-    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
-
-export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'TYPE');
-};
-
 /** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
 export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
   CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
@@ -225,10 +216,6 @@ export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: S
   return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
 };
 
-export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
-};
-
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
   return allTypesFlattened.find((t) => t?.resourcePath === name);
@@ -240,10 +227,6 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
     .filter((l) => l?.labels && l.labels.length > 0)
     .flatMap((l) => l.labels ?? []) as Label[];
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
 };
 
 export enum Resolution {

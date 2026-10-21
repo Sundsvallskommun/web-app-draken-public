@@ -138,7 +138,8 @@ test.describe('register page', () => {
       externalTags: mockEmptySupportErrand.externalTags,
       contactReason: 'E-tjänst saknas',
       contactReasonDescription: 'Mock contact reason description',
-      labels: mockLabelPath('IAF/ADULT_EDUCATION/SFI'),
+      // Picked labels are sent as tree nodes without children, so they keep fields such as attributes.
+      labels: mockLabelPath('IAF/ADULT_EDUCATION/SFI').map((label) => expect.objectContaining(label)),
       parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
