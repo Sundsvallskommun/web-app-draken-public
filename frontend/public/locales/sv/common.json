@@ -164,6 +164,11 @@
       "child_perspective": {
         "label": "Utredning av barnperspektivet",
         "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
+      },
+      "decision_basis": {
+        "label": "Beslutsunderlag",
+        "placeholder": "Tryck på knappen för att förhandsvisa beslutsunderlaget. När ärendet går vidare till beslut så skapas beslutsunderlaget som en bilaga.",
+        "button_label": "Beslutsunderlag"
       }
     },
     "section_save_failed": "Utredningstexten kunde inte sparas.",

@@ -1,6 +1,6 @@
 import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
-import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { Button, Icon, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   missingSupportInvestigationSections,
@@ -18,6 +18,7 @@ import {
 } from '@supportmanagement/services/support-investigation-service';
 import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import dayjs from 'dayjs';
+import { File } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -333,6 +334,16 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
+            <div className="border-1 rounded-groups p-16 flex flex-wrap gap-16 mb-16">
+              <div className="flex items-center gap-8">
+                <Icon icon={<File />} />
+                <p className="sk-disclosure-header-title-md">
+                  {t('common:investigation.section_texts.decision_basis.label')}
+                </p>
+              </div>
+              <p>{t('common:investigation.section_texts.decision_basis.placeholder')}</p>
+              <Button>{t('common:investigation.section_texts.decision_basis.button_label')}</Button>
+            </div>
           </div>
         </div>
       ) : null}
