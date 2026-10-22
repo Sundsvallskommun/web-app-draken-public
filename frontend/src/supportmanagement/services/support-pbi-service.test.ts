@@ -19,14 +19,17 @@ import {
   newPbiContact,
   PBI_KNOWLEDGE_TEST_TYPES,
   pbiCandidates,
+  pbiEngagements,
   pbiOf,
   pbiPeople,
   pbiProblem,
   pbiProblemAmong,
   pbiRoles,
+  rolesAreOnlyAuditor,
   sameIdentity,
   stakeholderForEngagement,
   withAssessment,
+  withEngagements,
   withKnowledgeTests,
   withMotivation,
   withoutPbi,
@@ -109,6 +112,7 @@ test('a verdict is written beside the marking and leaves source and role alone',
     assessment: 'DEFICIENCY',
     comment: 'Skuld hos Kronofogden.',
     knowledgeTests: [],
+    engagements: [],
   });
   expect(keysOf(withAssessment(assessed, { assessment: 'APPROVED', comment: '   ' }))).toEqual([
     'PBI',
@@ -263,6 +267,48 @@ test('the motivation is written beside the marking, and neither verdict is touch
   });
   expect(keysOf(withMotivation(motivated, '   '))).not.toContain('PBI_MOTIVATION');
   expect(withoutPbi(motivated).parameters).toEqual([]);
+});
+
+test('the companies chosen for the underlay are written beside the marking, and nothing else is touched', () => {
+  const examined = withMotivation(withPbi(stakeholder({}), { source: 'COMPANY', role: 'Finansiär' }), 'Driver.');
+  const chosen = withEngagements(examined, ['5560068255', '5567890123']);
+
+  expect(keysOf(chosen)).toEqual(['PBI', 'PBI_SOURCE', 'PBI_ROLE', 'PBI_MOTIVATION', 'PBI_ENGAGEMENT']);
+  expect(chosen.parameters?.find((parameter) => parameter.key === 'PBI_ENGAGEMENT')?.values).toEqual([
+    '5560068255',
+    '5567890123',
+  ]);
+  expect(pbiOf(chosen)).toMatchObject({
+    role: 'Finansiär',
+    motivation: 'Driver.',
+    engagements: ['5560068255', '5567890123'],
+  });
+  expect(keysOf(withEngagements(chosen, []))).not.toContain('PBI_ENGAGEMENT');
+  expect(withoutPbi(chosen).parameters).toEqual([]);
+});
+
+test('a company the person only audits is no engagement of theirs, but one they also sit on the board of is', () => {
+  const engagements = [
+    { organizationNumber: '5560068255', name: 'Drivet AB', roles: [{ description: 'Verkställande direktör' }] },
+    { organizationNumber: '5567890123', name: 'Granskat AB', roles: [{ description: 'Revisor' }] },
+    {
+      organizationNumber: '5569990000',
+      name: 'Både och AB',
+      roles: [{ description: 'Revisor' }, { description: 'Ledamot' }],
+    },
+    { organizationNumber: '5561112222', name: 'Suppleanten AB', roles: [{ description: 'Revisorssuppleant' }] },
+    { organizationNumber: '5563334444', name: 'Utan roll AB', roles: [] },
+    { name: 'Utan nummer AB', roles: [{ description: 'Ledamot' }] },
+  ];
+
+  expect(pbiEngagements(engagements).map((engagement) => engagement.name)).toEqual([
+    'Drivet AB',
+    'Både och AB',
+    'Utan roll AB',
+  ]);
+  expect(rolesAreOnlyAuditor(['Huvudansvarig revisor'])).toBe(true);
+  expect(rolesAreOnlyAuditor([])).toBe(false);
+  expect(rolesAreOnlyAuditor([undefined, '  '])).toBe(false);
 });
 
 test('unmarking removes every PBI parameter and nothing else', () => {

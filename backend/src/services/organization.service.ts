@@ -1,8 +1,8 @@
 import { User } from '@interfaces/users.interface';
 
 import { apiServiceName } from '@/config/api-config';
-import { LegalEntity2, OrganizationEngagements } from '@/data-contracts/legalentity/data-contracts';
-import { LegalEntityProfile } from '@/responses/legal-entity.response';
+import { LegalEntity2, OrganizationEngagements, PersonEngagement } from '@/data-contracts/legalentity/data-contracts';
+import { LegalEntityPersonEngagement, LegalEntityProfile } from '@/responses/legal-entity.response';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 import ApiService from './api.service';
@@ -20,6 +20,13 @@ export const toLegalEntityProfile = (legalEntity: LegalEntity2): LegalEntityProf
   },
   employeeSize: legalEntity.employeeSize && { name: legalEntity.employeeSize.name },
   businessDescription: legalEntity.businessDescription,
+});
+
+export const toLegalEntityPersonEngagement = (engagement: PersonEngagement): LegalEntityPersonEngagement => ({
+  organizationNumber: engagement.organizationNumber,
+  name: engagement.name,
+  form: engagement.form,
+  roles: (engagement.roles ?? []).map(role => ({ description: role.description, code: role.code })),
 });
 
 export class OrganizationService {
@@ -47,6 +54,17 @@ export class OrganizationService {
     const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/engagements/organization/${formatOrgNr(organizationNumber, OrgNumberFormat.NODASH)}`;
     const response = await this.apiService.get<OrganizationEngagements>({ url }, user);
     return response.data;
+  }
+
+  async getPersonEngagements(municipalityId: string, personNumber: string, user: User): Promise<LegalEntityPersonEngagement[]> {
+    const digits = personNumber.replace(/\D/g, '');
+    if (!digits) {
+      return [];
+    }
+
+    const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/engagements/person/${digits}`;
+    const response = await this.apiService.get<PersonEngagement[]>({ url }, user);
+    return (response.data ?? []).map(toLegalEntityPersonEngagement);
   }
 
   async getPartyIdByOrganizationNumber(municipalityId: string, organizationNumber: string, user: User): Promise<string> {

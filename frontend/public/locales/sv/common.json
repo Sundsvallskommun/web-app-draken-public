@@ -608,6 +608,17 @@
     },
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
   },
+  "pbi_engagements": {
+    "label": "Bolagsengagemang",
+    "description": "Bolag som personen är engagerad i enligt bolagsdata. Välj de bolag som ska med i utredningsunderlaget. Uppdrag som revisor listas inte.",
+    "choose": "Bolag som ska med i underlaget",
+    "placeholder": "Välj bolag",
+    "search": "Sök bolag",
+    "remove": "Ta bort {{company}} från underlaget",
+    "loading": "Hämtar bolagsengagemang",
+    "empty": "Inga bolagsengagemang hittades för {{person}}.",
+    "error": "Bolagsengagemangen kunde inte hämtas."
+  },
   "pbi_motivation": {
     "label": "Motivering",
     "placeholder": "Motivera {{person}}s betydande inflytande, till exempel rollen i den dagliga driften…",

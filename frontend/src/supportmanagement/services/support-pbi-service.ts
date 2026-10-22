@@ -1,5 +1,5 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { engagementRoles } from '@common/services/legal-entity-service';
+import { engagementRoles, type LegalEntityPersonEngagement } from '@common/services/legal-entity-service';
 import {
   emptyContact,
   ExternalIdType,
@@ -21,9 +21,9 @@ const PBI_ROLE_PARAMETER = 'PBI_ROLE';
 const PBI_MOTIVATION_PARAMETER = 'PBI_MOTIVATION';
 const PBI_ASSESSMENT_PARAMETER = 'PBI_ASSESSMENT';
 const PBI_ASSESSMENT_COMMENT_PARAMETER = 'PBI_ASSESSMENT_COMMENT';
+const PBI_ENGAGEMENT_PARAMETER = 'PBI_ENGAGEMENT';
 const PBI_KNOWLEDGE_TEST_COUNT_PARAMETER = 'PBI_KNOWLEDGE_TESTS';
 
-/** The single test an errand carried before a person could sit several. Read, never written again. */
 const PBI_KNOWLEDGE_TEST_PARAMETER = 'PBI_KNOWLEDGE_TEST';
 const PBI_KNOWLEDGE_TEST_DATE_PARAMETER = 'PBI_KNOWLEDGE_TEST_DATE';
 const PBI_KNOWLEDGE_TEST_COMMENT_PARAMETER = 'PBI_KNOWLEDGE_TEST_COMMENT';
@@ -35,6 +35,7 @@ const PBI_PARAMETERS = new Set([
   PBI_MOTIVATION_PARAMETER,
   PBI_ASSESSMENT_PARAMETER,
   PBI_ASSESSMENT_COMMENT_PARAMETER,
+  PBI_ENGAGEMENT_PARAMETER,
   PBI_KNOWLEDGE_TEST_COUNT_PARAMETER,
   PBI_KNOWLEDGE_TEST_PARAMETER,
   PBI_KNOWLEDGE_TEST_DATE_PARAMETER,
@@ -128,15 +129,18 @@ const knowledgeTestIsEmpty = (test: PbiKnowledgeTest): boolean =>
 export interface Pbi {
   source?: PbiSourceName;
   role: string;
-  /** Why the person has significant influence, for example what they do in the daily running of the business. */
   motivation: string;
   assessment: PbiAssessmentName | '';
   comment: string;
   knowledgeTests: PbiKnowledgeTest[];
+  engagements: string[];
 }
 
 const valueOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>, key: string): string | undefined =>
   stakeholder.parameters?.find((parameter) => parameter.key === key)?.values?.[0] || undefined;
+
+const valuesOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters'>, key: string): string[] =>
+  stakeholder.parameters?.find((parameter) => parameter.key === key)?.values?.filter(Boolean) ?? [];
 
 const KNOWLEDGE_TEST_KEY = /^PBI_KNOWLEDGE_TEST_(\d+)_(TYPE|STATUS|DATE|COMMENT)$/;
 
@@ -185,6 +189,7 @@ export const pbiOf = (stakeholder: Pick<SupportStakeholderFormModel, 'parameters
   assessment: (valueOf(stakeholder, PBI_ASSESSMENT_PARAMETER) as PbiAssessmentName | undefined) ?? '',
   comment: valueOf(stakeholder, PBI_ASSESSMENT_COMMENT_PARAMETER) ?? '',
   knowledgeTests: knowledgeTestsOf(stakeholder),
+  engagements: valuesOf(stakeholder, PBI_ENGAGEMENT_PARAMETER),
 });
 
 /** A stakeholder that exists only because of the marking leaves the errand with it. */
@@ -225,6 +230,7 @@ const pbiParameters = (pbi: Partial<Pbi>): Parameter[] => [
   ...(pbi.assessment ? [{ key: PBI_ASSESSMENT_PARAMETER, values: [pbi.assessment] }] : []),
   ...writtenParameter(PBI_ASSESSMENT_COMMENT_PARAMETER, pbi.comment),
   ...knowledgeTestParameters(pbi.knowledgeTests),
+  ...(pbi.engagements?.length ? [{ key: PBI_ENGAGEMENT_PARAMETER, values: [...pbi.engagements] }] : []),
 ];
 
 /** The same stakeholder, now marked. Any verdict already on them is kept; the source and role are what was given. */
@@ -249,6 +255,18 @@ export const withMotivation = <T extends Pick<SupportStakeholderFormModel, 'para
 ): T => ({
   ...stakeholder,
   parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), motivation })],
+});
+
+/** The same stakeholder with the companies chosen for the underlay written beside the marking. */
+export const withEngagements = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(
+  stakeholder: T,
+  organizationNumbers: string[]
+): T => ({
+  ...stakeholder,
+  parameters: [
+    ...otherParameters(stakeholder),
+    ...pbiParameters({ ...pbiOf(stakeholder), engagements: organizationNumbers }),
+  ],
 });
 
 /** The same stakeholder with a verdict written beside the marking. Source and role are left as they were. */
@@ -315,6 +333,23 @@ export const engagementIsMarked = (
   const stakeholder = stakeholderForEngagement(engagement, stakeholders);
   return !!stakeholder && isPbi(stakeholder);
 };
+
+/**
+ * An auditor has no influence over the business they audit, so a company the person only audits is kept out of
+ * the engagements. The role code is not settled with the service owner, so the description decides for now.
+ */
+const AUDITOR_ROLE = /revisor|revision/i;
+
+export const rolesAreOnlyAuditor = (roles: (string | null | undefined)[]): boolean => {
+  const named = roles.filter((role): role is string => !!role?.trim());
+  return named.length > 0 && named.every((role) => AUDITOR_ROLE.test(role));
+};
+
+export const pbiEngagements = (engagements: LegalEntityPersonEngagement[]): LegalEntityPersonEngagement[] =>
+  engagements.filter(
+    (engagement) =>
+      !!engagement.organizationNumber && !rolesAreOnlyAuditor((engagement.roles ?? []).map((role) => role.description))
+  );
 
 /** An engagement as the table shows it: who it is, whether they are marked, and the stakeholder that carries the mark. */
 export interface SupportPbiCandidate {

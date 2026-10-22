@@ -11,7 +11,11 @@ import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { LegalEntityEngagementsApiResponse, LegalEntityProfileApiResponse } from '@/responses/legal-entity.response';
+import {
+  LegalEntityEngagementsApiResponse,
+  LegalEntityPersonEngagementsApiResponse,
+  LegalEntityProfileApiResponse,
+} from '@/responses/legal-entity.response';
 import { OrganizationService, toLegalEntityProfile } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
@@ -214,6 +218,33 @@ export class AddressController {
     }
 
     const data = await this.organizationService.getOrganizationEngagements(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data, message: 'success' };
+  }
+
+  @Get('/legalentity/person/:partyId/engagements')
+  @OpenAPI({ summary: 'Return the companies a given person is engaged in' })
+  @ResponseSchema(LegalEntityPersonEngagementsApiResponse)
+  @UseBefore(authMiddleware)
+  async legalEntityPersonEngagements(
+    @Req() req: RequestWithUser,
+    @Param('partyId') partyId: string,
+  ): Promise<LegalEntityPersonEngagementsApiResponse> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${partyId}/personnumber`;
+    const personNumber = await this.apiService.get<string>({ url }, req.user).catch(() => undefined);
+    if (!personNumber?.data) {
+      return { data: [], message: 'success' };
+    }
+
+    const data = await this.organizationService.getPersonEngagements(MUNICIPALITY_ID, String(personNumber.data), req.user);
 
     return { data, message: 'success' };
   }

@@ -25,6 +25,7 @@ vi.mock('@common/components/use-text-editor-placeholder', () => ({ useTextEditor
 vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getLegalEntityEngagements: vi.fn().mockResolvedValue([]),
+  getLegalEntityPersonEngagements: vi.fn().mockResolvedValue([]),
 }));
 vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),

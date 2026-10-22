@@ -28,6 +28,8 @@ import { type InvestigationSectionProps, InvestigationSectionText } from '../inv
 import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { useSupportPbi } from '../tabs/use-support-pbi';
+import { BlockIntro } from './support-pbi-examination-block.component';
+import { EngagementsBlock } from './support-pbi-examination-engagements.component';
 import { KnowledgeTestCard } from './support-pbi-examination-knowledge-card.component';
 
 interface BlockProps {
@@ -46,12 +48,6 @@ const PersonHeading: FC<{ person: SupportStakeholderFormModel; engagements: Lega
       {[hyphenatedIdentity(person.personNumber), pbiRoles(person, engagements)].filter(Boolean).join(' · ')}
     </span>
   </div>
-);
-
-const BlockIntro: FC<{ label: string; description: string }> = ({ label, description }) => (
-  <p className="m-0">
-    <span className="font-bold">{label}</span> - {description}
-  </p>
 );
 
 const BlockFields: FC<{ comment: ReactNode; controls: ReactNode }> = ({ comment, controls }) => (
@@ -200,6 +196,7 @@ const PersonCard: FC<BlockProps & { engagements: LegalEntityEngagement[] }> = ({
   <div className="border-1 rounded-groups p-16 flex flex-col gap-16" data-cy={`pbi-examination-${person.internalId}`}>
     <PersonHeading person={person} engagements={engagements} />
     <MotivationBlock person={person} writable={writable} onChange={onChange} />
+    <EngagementsBlock person={person} writable={writable} onChange={onChange} />
     <SuitabilityBlock person={person} writable={writable} onChange={onChange} />
     <KnowledgeTestBlock person={person} writable={writable} onChange={onChange} />
   </div>
