@@ -14,6 +14,7 @@ import {
   stakeholderName,
   withEngagements,
 } from '@supportmanagement/services/support-pbi-service';
+import { Building2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -71,7 +72,11 @@ export const EngagementsBlock: FC<EngagementsBlockProps> = ({ person, writable, 
 
   return (
     <div className="flex flex-col gap-8" data-cy={`pbi-engagements-${person.internalId}`}>
-      <BlockIntro label={t('common:pbi_engagements.label')} description={t('common:pbi_engagements.description')} />
+      <BlockIntro
+        label={t('common:pbi_engagements.label')}
+        description={t('common:pbi_engagements.description')}
+        icon={<Building2 />}
+      />
 
       {loading ? <Spinner size={2} aria-label={t('common:pbi_engagements.loading')} /> : null}
 

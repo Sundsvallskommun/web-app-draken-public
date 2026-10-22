@@ -19,7 +19,7 @@ import {
   withKnowledgeTests,
   withMotivation,
 } from '@supportmanagement/services/support-pbi-service';
-import { Plus } from 'lucide-react';
+import { BookOpenCheck, Plus, User } from 'lucide-react';
 import { FC, ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
@@ -90,6 +90,7 @@ const SuitabilityBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
       <BlockIntro
         label={t('common:personal_suitability.label')}
         description={t('common:personal_suitability.description')}
+        icon={<User />}
       />
       <BlockFields
         comment={
@@ -144,7 +145,11 @@ const KnowledgeTestBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
 
   return (
     <div className="flex flex-col gap-8">
-      <BlockIntro label={t('common:knowledge_test.label')} description={t('common:knowledge_test.description')} />
+      <BlockIntro
+        label={t('common:knowledge_test.label')}
+        description={t('common:knowledge_test.description')}
+        icon={<BookOpenCheck />}
+      />
 
       {knowledgeTests.length === 0 ? (
         <p className="text-small text-dark-secondary m-0" data-cy={`knowledge-test-empty-${person.internalId}`}>
