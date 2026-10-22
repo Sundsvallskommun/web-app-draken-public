@@ -656,61 +656,73 @@ export const mockMetaData = {
   contactReasons: [
     {
       reason: 'E-tjänst hittas inte',
+      displayName: 'E-tjänst hittas inte',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Övrigt',
+      displayName: 'Övrigt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Valde personlig kontakt',
+      displayName: 'Valde personlig kontakt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Synpunkt',
+      displayName: 'Synpunkt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Problem med digitala verktyg',
+      displayName: 'Problem med digitala verktyg',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Klagomål',
+      displayName: 'Klagomål',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information svår att förstå',
+      displayName: 'Information svår att förstå',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information felaktig',
+      displayName: 'Information felaktig',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information saknas',
+      displayName: 'Information saknas',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information hittas inte',
+      displayName: 'Information hittas inte',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Felanmälan',
+      displayName: 'Felanmälan',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'E-tjänst saknas',
+      displayName: 'E-tjänst saknas',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
