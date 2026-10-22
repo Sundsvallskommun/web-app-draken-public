@@ -154,7 +154,7 @@ export const SupportErrandBasicsAboutForm: FC<{
                   .map((reason: ContactReason) => {
                     return (
                       <Select.Option value={reason.reason} key={`reason-${reason.reason}`}>
-                        {reason.reason}
+                        {reason.displayName}
                       </Select.Option>
                     );
                   })}
