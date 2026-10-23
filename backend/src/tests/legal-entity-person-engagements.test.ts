@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AddressController } from '@/controllers/address.controller';
 import { PersonEngagement } from '@/data-contracts/legalentity/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { OrganizationService, toLegalEntityPersonEngagement } from '@/services/organization.service';
 
 import { mockAdUsername, mockMunicipalityId, mockPersonNumber } from './helpers/mock-data';
@@ -21,7 +22,7 @@ const engagement = (): PersonEngagement => ({
 
 const makeService = (engagements: PersonEngagement[]) => {
   const service = new OrganizationService();
-  const api = { get: vi.fn(async () => ({ data: engagements, message: 'success' })) };
+  const api = { get: vi.fn(async (_config: { url: string }) => ({ data: engagements, message: 'success' })) };
   Object.assign(service as object, { apiService: api });
   return { service, api };
 };
@@ -64,7 +65,9 @@ const PARTY_ID = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
 
 const makeController = (personNumber: string | undefined) => {
   const controller = new AddressController();
-  const api = { get: vi.fn(async () => (personNumber ? { data: personNumber, message: 'success' } : { data: '', message: 'success' })) };
+  const api = {
+    get: vi.fn(async (_config: { url: string }) => (personNumber ? { data: personNumber, message: 'success' } : { data: '', message: 'success' })),
+  };
   const organizationService = { getPersonEngagements: vi.fn(async () => [toLegalEntityPersonEngagement(engagement())]) };
   Object.assign(controller as object, { apiService: api, organizationService });
   return { controller, api, organizationService };
@@ -94,5 +97,19 @@ describe('the route', () => {
 
     await expect(controller.legalEntityPersonEngagements({ user } as never, mockPersonNumber)).rejects.toThrow();
     expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('answers with an empty list when Legal Entity has nothing on the person', async () => {
+    const { controller, organizationService } = makeController(mockPersonNumber);
+    organizationService.getPersonEngagements.mockRejectedValue(new HttpException(404, 'Not found'));
+
+    expect(await controller.legalEntityPersonEngagements({ user } as never, PARTY_ID)).toEqual({ data: [], message: 'success' });
+  });
+
+  it('passes a fault of the service itself on, so it is not read as a person without engagements', async () => {
+    const { controller, organizationService } = makeController(mockPersonNumber);
+    organizationService.getPersonEngagements.mockRejectedValue(new HttpException(500, 'Internal server error'));
+
+    await expect(controller.legalEntityPersonEngagements({ user } as never, PARTY_ID)).rejects.toThrow('Internal server error');
   });
 });

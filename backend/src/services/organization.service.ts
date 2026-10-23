@@ -62,8 +62,9 @@ export class OrganizationService {
       return [];
     }
 
+    // Why: Legal Entity answers 4xx for a person it has nothing on, and the caller reads that as an empty list.
     const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/engagements/person/${digits}`;
-    const response = await this.apiService.get<PersonEngagement[]>({ url }, user);
+    const response = await this.apiService.get<PersonEngagement[]>({ url, propagateClientError: true }, user);
     return (response.data ?? []).map(toLegalEntityPersonEngagement);
   }
 

@@ -244,7 +244,14 @@ export class AddressController {
       return { data: [], message: 'success' };
     }
 
-    const data = await this.organizationService.getPersonEngagements(MUNICIPALITY_ID, String(personNumber.data), req.user);
+    const data = await this.organizationService.getPersonEngagements(MUNICIPALITY_ID, String(personNumber.data), req.user).catch(error => {
+      const status = (error as { status?: number })?.status ?? 0;
+      if (status >= 400 && status < 500) {
+        logger.info(`Legal Entity has no engagements for the person behind party id ${partyId}: ${error.message}`);
+        return [];
+      }
+      throw error;
+    });
 
     return { data, message: 'success' };
   }
