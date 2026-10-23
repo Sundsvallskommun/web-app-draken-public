@@ -17,7 +17,7 @@ import { FC, PropsWithChildren } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { mockEnv } from '../../../src/tests/mock-env';
+import { mockEnv } from '../../../../../../tests/mock-env';
 import { SupportProcessStepButton } from './support-process-step-button.component';
 
 vi.mock('@config/appconfig', () => ({ appConfig: { features: { useProcess: true } } }));
