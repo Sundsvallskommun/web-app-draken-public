@@ -301,6 +301,19 @@ describe('support-errand.service', () => {
       });
     });
 
+    it('maps an ENTERPRISE stakeholder to an organization just like COMPANY', () => {
+      const result = toCasedataStakeholder(
+        stakeholder({ externalIdType: ExternalIdType.ENTERPRISE, externalId: mockOrganizationPartyId, organizationName: mockOrganizationName }),
+        mockOrganizationNumber,
+      );
+      expect(result).toMatchObject({
+        type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
+        organizationName: mockOrganizationName,
+        personId: mockOrganizationPartyId,
+        organizationNumber: mockOrganizationNumber,
+      });
+    });
+
     it('maps every other externalIdType to a person', () => {
       const result = toCasedataStakeholder(
         stakeholder({ externalIdType: ExternalIdType.PRIVATE, role: 'CONTACT', firstName: mockFirstName, lastName: mockLastName }),

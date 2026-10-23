@@ -29,7 +29,7 @@ import {
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
-import { ExternalIdType } from '@/interfaces/externalIdType.interface';
+import { ExternalIdType, isOrganizationExternalIdType } from '@/interfaces/externalIdType.interface';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
@@ -386,7 +386,7 @@ export class SupportErrandController {
   }
 
   /**
-   * Resolves the organization number for a COMPANY stakeholder when forwarding an errand.
+   * Resolves the organization number for an organization (COMPANY/ENTERPRISE) stakeholder when forwarding an errand.
    * Prefers the organization number persisted as a stakeholder parameter (written on save), falls
    * back to a Legal Entity lookup by partyId, and degrades gracefully on failure instead of
    * aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
@@ -420,18 +420,26 @@ export class SupportErrandController {
       return { data: errandData, message: 'success' };
     }
 
+    const municipalityId = MUNICIPALITY_ID ?? '';
     const personNumberOf = (s: SupportStakeholder) =>
-      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${s.externalId}/personnumber` }, req.user);
+      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${municipalityId}/${s.externalId}/personnumber` }, req.user);
 
     // The first PRIMARY stakeholder is the customer; every non-PRIMARY one is a contact. Any further
     // PRIMARY stakeholders are neither, and are passed through untouched.
     const customerIndex = stakeholders.findIndex(s => s.role === SupportStakeholderRole.PRIMARY);
 
     const enriched = await Promise.all(
-      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string }> => {
+      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string; organizationNumber?: string }> => {
         const isCustomer = i === customerIndex;
         const isContact = s.role !== SupportStakeholderRole.PRIMARY;
-        if ((!isCustomer && !isContact) || !this.hasResolvablePersonNumber(s)) {
+        if (!isCustomer && !isContact) {
+          return s;
+        }
+        if (isOrganizationExternalIdType(s.externalIdType)) {
+          const organizationNumber = await this.resolveStakeholderOrgNumber(s, municipalityId, req);
+          return organizationNumber ? { ...s, organizationNumber } : s;
+        }
+        if (!this.hasResolvablePersonNumber(s)) {
           return s;
         }
         if (isCustomer) {
@@ -745,8 +753,9 @@ export class SupportErrandController {
       //   logger.error('Missing required contact channels for stakeholder');
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
-      const organizationNumber =
-        s.externalIdType === ExternalIdType.COMPANY ? await this.resolveStakeholderOrgNumber(s, municipalityId, req) : undefined;
+      const organizationNumber = isOrganizationExternalIdType(s.externalIdType)
+        ? await this.resolveStakeholderOrgNumber(s, municipalityId, req)
+        : undefined;
       stakeholders.push(toCasedataStakeholder(s, organizationNumber));
     }
 
