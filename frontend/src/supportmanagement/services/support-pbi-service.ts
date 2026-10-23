@@ -55,7 +55,7 @@ export const PBI_ASSESSMENTS: { assessment: PbiAssessmentName; translationKey: s
   { assessment: PbiAssessment.PENDING, translationKey: 'common:personal_suitability.assessment.pending' },
 ];
 
-const PbiKnowledgeTestStatus = {
+export const PbiKnowledgeTestStatus = {
   APPROVED: 'APPROVED',
   FAILED: 'FAILED',
   BOOKED: 'BOOKED',
