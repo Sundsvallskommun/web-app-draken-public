@@ -1,11 +1,7 @@
 import type { Investigation, Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
-export interface SupportInvestigationSectionInput {
-  sectionKey: string;
-  heading: string;
-  sortOrder: number;
-}
+import type { SupportInvestigationSectionInput } from './support-investigation-sections';
 
 export interface SupportInvestigationInput {
   version: number;
@@ -18,33 +14,6 @@ export interface SupportInvestigationInput {
   recommendation?: string;
   recommendationMotivation?: string;
 }
-
-export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];
-
-/**
- * The examinations an AoT investigation is made of, in the order the business examines them. Support
- * Management holds no list of its own - the sections are written when the investigation starts.
- */
-export const SUPPORT_INVESTIGATION_SECTIONS: { sectionKey: string; headingKey: string; sortOrder: number }[] = [
-  { sectionKey: 'statements', headingKey: 'common:investigation.sections.statements', sortOrder: 1 },
-  {
-    sectionKey: 'personal_suitability',
-    headingKey: 'common:investigation.sections.personal_suitability',
-    sortOrder: 2,
-  },
-  {
-    sectionKey: 'financial_suitability',
-    headingKey: 'common:investigation.sections.financial_suitability',
-    sortOrder: 3,
-  },
-  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 4 },
-];
-
-/**
- * Sections that used to be written when an investigation started. The knowledge test is examined on the same card
- * as the personal suitability, so investigations started before the merge still carry an empty section of its own.
- */
-export const RETIRED_INVESTIGATION_SECTION_KEYS = ['knowledge_test'];
 
 export const isSupportInvestigationCompleted = (investigation: Investigation | undefined): boolean =>
   investigation?.status === 'COMPLETED' || investigation?.status === 'CANCELLED';
@@ -85,6 +54,23 @@ export const startSupportInvestigation = (
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when starting the investigation');
+      throw e;
+    });
+
+export const completeSupportInvestigationSections = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  sections: SupportInvestigationSectionInput[]
+): Promise<Investigation> =>
+  apiService
+    .post<Investigation, { sections: SupportInvestigationSectionInput[] }>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections`,
+      { sections }
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when completing the investigation with its examinations');
       throw e;
     });
 

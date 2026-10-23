@@ -28,9 +28,9 @@ export const supportFinancingAmount = (beloppKronor: string | undefined): string
   return /^\d+$/.test(digits) ? `${Number(digits).toLocaleString('sv-SE')} kr` : given;
 };
 
-export const supportFinancingSources = (errand: SupportErrand | undefined): SupportFinancingSource[] => {
-  const application = applicationOf(errand);
-
+export const supportFinancingSourcesOf = (
+  application: Record<string, unknown> | undefined
+): SupportFinancingSource[] => {
   const sourcesOf = (key: string, kind: string): SupportFinancingSource[] =>
     entriesUnder(application, key).map((entry) => ({
       kind: entry.lanetyp?.trim() || kind,
@@ -46,8 +46,14 @@ export const supportFinancingSources = (errand: SupportErrand | undefined): Supp
   ];
 };
 
+export const supportFinancingSources = (errand: SupportErrand | undefined): SupportFinancingSource[] =>
+  supportFinancingSourcesOf(applicationOf(errand));
+
+export const supportFinancingNotesOf = (application: Record<string, unknown> | undefined): string =>
+  ((application?.ovrigaUpplysningarFinansiering as string) ?? '').trim();
+
 export const supportFinancingNotes = (errand: SupportErrand | undefined): string =>
-  ((applicationOf(errand)?.ovrigaUpplysningarFinansiering as string) ?? '').trim();
+  supportFinancingNotesOf(applicationOf(errand));
 
 export const supportFinancingSourceLine = (source: SupportFinancingSource): string =>
   [source.kind, source.amount].filter(Boolean).join(' ') + (source.lender ? ` (${source.lender})` : '');

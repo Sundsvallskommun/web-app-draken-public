@@ -134,14 +134,22 @@ const choice =
   (value, schema) =>
     cell(choiceText(value, schema, field));
 
+export const formChoiceLabel = (value: FormValue, schema: RJSFSchema | null, field: string): string | undefined =>
+  choiceText(value, schema, field);
+
+export const formMultiChoiceLabels = (value: FormValue, schema: RJSFSchema | null, field: string): string[] => {
+  const chosen = value[field];
+  if (!Array.isArray(chosen)) return [];
+  const items = propertySchema(schema, field)?.items;
+  const options = isRecord(items) ? items.oneOf : undefined;
+  return chosen.map((constant) => optionTitle(options, String(constant)));
+};
+
 const multiChoice =
   (field: string): Reader =>
   (value, schema) => {
-    const chosen = value[field];
-    if (!Array.isArray(chosen) || chosen.length === 0) return undefined;
-    const items = propertySchema(schema, field)?.items;
-    const options = isRecord(items) ? items.oneOf : undefined;
-    return cell(chosen.map((constant) => optionTitle(options, String(constant))).join(', '));
+    const labels = formMultiChoiceLabels(value, schema, field);
+    return labels.length === 0 ? undefined : cell(labels.join(', '));
   };
 
 const dateRange =

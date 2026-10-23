@@ -113,3 +113,36 @@ export class LegalEntityEngagementsApiResponse implements ApiResponse<LegalEntit
   @IsString()
   message!: string;
 }
+
+export class LegalEntityRole {
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+  @IsOptional()
+  @IsString()
+  code?: string | null;
+}
+
+export class LegalEntityPersonEngagement {
+  @IsOptional()
+  @IsString()
+  organizationNumber?: string | null;
+  @IsOptional()
+  @IsString()
+  name?: string | null;
+  @IsOptional()
+  @IsString()
+  form?: string | null;
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => LegalEntityRole)
+  roles?: LegalEntityRole[] | null;
+}
+
+export class LegalEntityPersonEngagementsApiResponse implements ApiResponse<LegalEntityPersonEngagement[]> {
+  @ValidateNested({ each: true })
+  @Type(() => LegalEntityPersonEngagement)
+  data!: LegalEntityPersonEngagement[];
+  @IsString()
+  message!: string;
+}

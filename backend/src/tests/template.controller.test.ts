@@ -12,7 +12,7 @@ const selector = {
 const makeController = () => {
   const controller = new TemplateController();
   const api = {
-    post: vi.fn(async (_config: { url?: string; data?: unknown }) => ({
+    post: vi.fn(async (_config: { url?: string; data?: unknown; propagateClientError?: boolean }) => ({
       data: { output: 'JVBERi0xLg==' },
       message: 'success',
     })),
@@ -52,5 +52,13 @@ describe('rendering a template as pdf', () => {
     await controller.decisionPreviewPdf(mockReq(), selector);
 
     expect(api.post.mock.calls[0][0].url).not.toContain('/preview');
+  });
+
+  it('lets the templating service say what it objects to, so the handler is not left with an opaque failure', async () => {
+    const { controller, api } = makeController();
+
+    await controller.previewPdfWithWatermark(mockReq(), selector);
+
+    expect(api.post.mock.calls[0][0].propagateClientError).toBe(true);
   });
 });
