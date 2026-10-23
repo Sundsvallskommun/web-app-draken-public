@@ -2,16 +2,21 @@ import type { Parameter } from '@common/data-contracts/supportmanagement/data-co
 
 import { FLOOR_PLAN_PURPOSES } from './support-decision-basis-service';
 import type { DecisionPremises } from './support-decision-premises-service';
+import {
+  type DecisionScope,
+  scopeFromForm,
+  type ServingHoursSlot,
+  servingHoursSlotsFor,
+  servingHoursText,
+} from './support-decision-scope-service';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import {
   childText,
   dateRangeText,
   type FormValue,
-  hasChosen,
   servesPrivate,
   servesPublic,
   text,
-  timeRangeText,
 } from './support-form-value-service';
 
 /**
@@ -19,7 +24,9 @@ import {
  * template reads. Each permit's record below lists its keys in order with the expression that fills
  * each one. The process adds the conditions out of the decision's terms and the restaurant number it
  * resolved, and nothing else off the decision's root, so the outcome, the decider, the date and the
- * first day of validity are sent as parameters too.
+ * first day of validity are sent as parameters too. The beverages and serving hours come from what
+ * the handler decided (support-decision-scope-service), not from the form; the decided values are
+ * saved beside these as their own parameters.
  */
 
 export interface DecisionParameterInput {
@@ -30,6 +37,8 @@ export interface DecisionParameterInput {
   form?: FormValue;
   /** The premises the decision concerns, once chosen. */
   premises?: DecisionPremises;
+  /** The beverages and serving hours the handler decided (prefilled from the form). */
+  scope?: DecisionScope;
   /** The premises within which serving is allowed, as the handler wrote it. */
   servingArea?: string;
   /** The errand's attachments; the drawings of the serving area are referenced by file name. */
@@ -128,28 +137,31 @@ const servingPeriodDates = (form: FormValue): string | undefined =>
     .filter(Boolean)
     .join('\n') || undefined;
 
-// One line per serving time asked, labelled where the form asks more than one.
-const SERVING_HOURS: [label: string, field: string][] = [
-  ['Inomhus, allmänheten', 'serveringstiderInomhusAllmanheten'],
-  ['Utomhus, allmänheten', 'serveringstiderUtomhusAllmanheten'],
-  ['Inomhus, slutet sällskap', 'serveringstiderInomhusSlutetSallskap'],
-  ['Utomhus, slutet sällskap', 'serveringstiderUtomhusSlutetSallskap'],
-  ['', 'klockslagForServeringen'],
-  ['', 'forsaljningstider'],
+// One line per decided serving time, labelled where the permit has more than one.
+const SERVING_HOURS_LINES: [slot: ServingHoursSlot, label: string][] = [
+  ['indoorPublic', 'Inomhus, allmänheten'],
+  ['outdoorPublic', 'Utomhus, allmänheten'],
+  ['indoorPrivate', 'Inomhus, slutet sällskap'],
+  ['outdoorPrivate', 'Utomhus, slutet sällskap'],
+  ['single', ''],
 ];
-const servingHours = (form: FormValue): string | undefined =>
-  SERVING_HOURS.map(([label, field]) => {
-    const hours = timeRangeText(form, field);
+const servingHours = (scope: DecisionScope): string | undefined =>
+  SERVING_HOURS_LINES.map(([slot, label]) => {
+    const hours = servingHoursText(scope.servingHours[slot]);
     return hours && [label, hours].filter(Boolean).join(' ');
   })
     .filter(Boolean)
     .join('\n') || undefined;
+
+const decided = (scope: DecisionScope | undefined, beverage: string): string | undefined =>
+  scope && String(scope.beverages.includes(beverage));
 
 export const servingPermitParameters = ({
   errand,
   errandType,
   form,
   premises,
+  scope,
   servingArea,
   attachments,
   issuedOn,
@@ -166,15 +178,15 @@ export const servingPermitParameters = ({
   scopeAnnualPeriod: form && String(servingPeriods(form).includes('ARLIGEN_UNDER_VISS_PERIOD')),
   scopeTasting: String(errandType === 'TASTING'),
   scopePeriodFromTo: form && servingPeriodDates(form),
-  beverageSpirits: form && String(hasChosen(form, 'alkoholdrycker', 'SPRITDRYCKER')),
-  beverageWine: form && String(hasChosen(form, 'alkoholdrycker', 'VIN')),
-  beverageBeer: form && String(hasChosen(form, 'alkoholdrycker', 'STARKOL')),
-  beverageOtherFermented: form && String(hasChosen(form, 'alkoholdrycker', 'CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER')),
+  beverageSpirits: decided(scope, 'SPRITDRYCKER'),
+  beverageWine: decided(scope, 'VIN'),
+  beverageBeer: decided(scope, 'STARKOL'),
+  beverageOtherFermented: decided(scope, 'CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER'),
   servingAreaDescription: text(servingArea),
   servingAreaDrawingReference: drawingReference(attachments),
   servingAreaSeats: form && childText(form, 'sittplatserILokalen', 'antalSittplatserInomhus'),
   servingAreaMaxPersons: form && childText(form, 'maximaltAntalPersonerILokalen', 'antalPersoner'),
-  servingHours: form && servingHours(form),
+  servingHours: scope && servingHours(scope),
   ...issuingParameters({ errand, user, issuedOn }),
   decisionDateAndCaseNumber: join(today, errand.errandNumber),
 });
@@ -308,11 +320,14 @@ export interface MissingPermitInputs {
 /** Empty lists for a permit that issues no certificate, since nothing is printed. */
 export const missingPermitInputs = (
   permitType: string,
+  errandType: string | undefined,
   errand: DecisionParameterInput['errand'],
   form: FormValue | undefined,
   attachments: DecisionParameterInput['attachments']
 ): MissingPermitInputs => {
-  const parameters = parametersFor(permitType, { errand, form, attachments, user: { name: '' }, today: '' });
+  // Before the decision the hours are the application's, which is where the decision will start from.
+  const scope = scopeFromForm(form, errandType, servingHoursSlotsFor(errandType, form));
+  const parameters = parametersFor(permitType, { errand, form, scope, attachments, user: { name: '' }, today: '' });
   const unfilled = (keys: string[]) => keys.filter((key) => !parameters[key]);
 
   return {

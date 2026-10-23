@@ -179,6 +179,13 @@ export const supportProcessShownStepIndex = (process: ErrandProcess | undefined)
 export const supportProcessPhaseKey = (process: ErrandProcess | undefined): string | undefined =>
   supportProcessStepKeys()[supportProcessShownStepIndex(process)];
 
+/** Whether the process has taken the errand beyond the step, by the phase it is shown in. */
+export const hasSupportProcessPassedStep = (
+  step: SupportProcessStepName,
+  process: ErrandProcess | undefined
+): boolean =>
+  supportProcessShownStepIndex(process) > SUPPORT_PROCESS_STEPS.findIndex((candidate) => candidate.name === step);
+
 export interface SupportProcessState {
   process: ErrandProcess | undefined;
   /** startable.status from SM: AVAILABLE, or why not. */

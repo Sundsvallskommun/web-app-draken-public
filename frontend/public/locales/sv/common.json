@@ -392,6 +392,29 @@
       "sent": "Serveringsställe som skickas med beslutet: {{premises}}",
       "not_chosen": "Inget restaurangnummer är valt under Serveringsställe. Beslutet sparas utan uppgifter om serveringsställe."
     },
+    "scope": {
+      "beverages": {
+        "heading": "Beslutade alkoholdrycker",
+        "label": "Alkoholdrycker som får serveras",
+        "STARKOL": "Starköl",
+        "VIN": "Vin",
+        "SPRITDRYCKER": "Spritdrycker",
+        "CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER": "Cider eller andra jästa alkoholdrycker"
+      },
+      "serving_hours": {
+        "heading": "Beslutade serveringstider",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "single": "Serveringstid",
+        "from": "Från klockan",
+        "to": "Till klockan",
+        "half_filled": "Ange både från och till, eller lämna båda tomma."
+      },
+      "help": "Förifyllt från ansökan. Ändra om beslutet ska avvika från det som söktes.",
+      "none": "Inga"
+    },
     "basis": {
       "heading": "Beslutsunderlag",
       "intro": "En sammanställning av de uppgifter beslutet ska grundas på, hämtade från ärendet.",

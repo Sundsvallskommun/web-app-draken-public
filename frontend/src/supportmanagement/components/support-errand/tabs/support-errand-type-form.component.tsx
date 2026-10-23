@@ -10,11 +10,11 @@ import { useSupportStore } from '@stores/index';
 import { jsonParameterForSchema, upsertJsonParameter } from '@supportmanagement/services/support-errand-schema-service';
 import {
   getSupportErrandById,
-  isEserviceErrand,
   isSupportErrandLocked,
   saveSupportErrandJsonParameters,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { hasSupportProcessPassedStep, SupportProcessStep } from '@supportmanagement/services/support-process-service';
 import { FC, useCallback, useEffect, useState } from 'react';
 
 interface SupportErrandTypeFormProps {
@@ -26,7 +26,9 @@ interface SupportErrandTypeFormProps {
 
 /**
  * The Ärendeuppgifter form for the errand's type, stored as a JSON parameter keyed by schema name.
- * An application filed in an e-service is shown as filed — its own schema version, read-only.
+ * An application filed in an e-service keeps the schema version it was filed under. The answers can
+ * be changed until the errand has passed the review; from then on they stand as reviewed. The copy
+ * Katla keeps of them as filed (`<key>_original`) is never loaded here.
  */
 export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
   supportErrand,
@@ -52,7 +54,9 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
     setFormData(parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {});
   }, [storedValue, schemaName]);
 
-  const readOnly = isEserviceErrand(supportErrand) || isSupportErrandLocked(supportErrand);
+  const readOnly =
+    isSupportErrandLocked(supportErrand) ||
+    hasSupportProcessPassedStep(SupportProcessStep.REVIEW, supportErrand.process);
 
   const handleSubmit = useCallback(
     async (payload: Record<string, unknown>) => {
