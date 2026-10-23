@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
 import {
+  CompleteSupportInvestigationSectionsDto,
   CreateSupportInvestigationDto,
   SupportInvestigationController,
   UpdateSupportInvestigationDto,
@@ -27,13 +28,13 @@ interface ApiStub {
   patch: ReturnType<typeof vi.fn>;
 }
 
-const makeController = (existing: object[] = []) => {
+const anInvestigation = { id: INVESTIGATION_ID, version: 4, status: 'ACTIVE', sections: [] as object[] };
+
+const makeController = (existing: object[] = [], investigation: object = anInvestigation) => {
   const controller = new SupportInvestigationController();
   const api: ApiStub = {
     get: vi.fn(async (config: { url?: string }) =>
-      config.url === investigationsUrl
-        ? { data: existing, message: 'success' }
-        : { data: { id: INVESTIGATION_ID, version: 4, status: 'ACTIVE', sections: [] }, message: 'success' },
+      config.url === investigationsUrl ? { data: existing, message: 'success' } : { data: investigation, message: 'success' },
     ),
     post: vi.fn(async () => ({ data: { id: INVESTIGATION_ID }, message: 'success' })),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
@@ -63,6 +64,14 @@ describe('the investigation payloads', () => {
     await expect(validate(valid)).resolves.toEqual([]);
     expect(JSON.stringify(await validate(blank))).toMatch(/values/);
     expect(JSON.stringify(await validate(noKey))).toMatch(/key/);
+  });
+
+  it('requires the examinations to complete an investigation with to carry the same fields', async () => {
+    const valid = plainToInstance(CompleteSupportInvestigationSectionsDto, { sections });
+    const invalid = plainToInstance(CompleteSupportInvestigationSectionsDto, { sections: [{ sectionKey: 'premises' }] });
+
+    await expect(validate(valid)).resolves.toEqual([]);
+    expect(JSON.stringify(await validate(invalid))).toMatch(/heading|sortOrder/);
   });
 
   it('refuses an assessment the service does not know', async () => {
@@ -154,6 +163,53 @@ describe('createInvestigation', () => {
     expect(config.data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn', parameters });
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
+  });
+});
+
+describe('completeInvestigationSections', () => {
+  const startedWith = (...sectionKeys: string[]) => ({
+    id: INVESTIGATION_ID,
+    version: 4,
+    status: 'ACTIVE',
+    sections: sectionKeys.map((sectionKey, index) => ({ id: `section-${index}`, sectionKey })),
+  });
+
+  it('writes only the examinations the investigation has no section for', async () => {
+    const { controller, api } = makeController([], startedWith('suitability'));
+    const res = mockRes();
+
+    await controller.completeInvestigationSections(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, INVESTIGATION_ID, { sections }, res);
+
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post.mock.calls[0][0]).toMatchObject({
+      url: `${investigationsUrl}/${INVESTIGATION_ID}/sections`,
+      data: { sectionKey: 'knowledge_test', heading: 'Kunskapsprov', sortOrder: 2, assessment: 'PENDING' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
+  });
+
+  it('writes nothing when every examination already has its section', async () => {
+    const { controller, api } = makeController([], startedWith('suitability', 'knowledge_test'));
+    const res = mockRes();
+
+    await controller.completeInvestigationSections(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, INVESTIGATION_ID, { sections }, res);
+
+    expect(api.post).not.toHaveBeenCalled();
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
+  });
+
+  it('rejects a municipality id other than the configured one and writes nothing', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.completeInvestigationSections(mockReq(), mockSupportErrandId, '9999', INVESTIGATION_ID, { sections }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(api.get).not.toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
   });
 });
 

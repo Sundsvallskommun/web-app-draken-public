@@ -4,10 +4,13 @@ import { describe, expect, test } from 'vitest';
 
 import type { SupportMetadata } from './support-metadata-service';
 import {
+  emptySupportPremisesPreviousPermit,
   supportPremisesCapacity,
   supportPremisesExamination,
   supportPremisesFireSafety,
+  supportPremisesPreviousPermits,
   withSupportPremisesExamination,
+  withSupportPremisesPreviousPermits,
 } from './support-premises-examination-service';
 
 const NAMESPACE = 'AOT';
@@ -127,6 +130,8 @@ describe('what the handler establishes, kept on the errand', () => {
       inspectedAt: '2026-04-10',
       rightOfDisposal: 'PROVEN',
       rightOfDisposalNote: 'hyresavtal t.o.m. 2029',
+      restaurantNumber: '',
+      servingArea: '',
     });
   });
 
@@ -135,6 +140,8 @@ describe('what the handler establishes, kept on the errand', () => {
       inspectedAt: '',
       rightOfDisposal: '',
       rightOfDisposalNote: '',
+      restaurantNumber: '',
+      servingArea: '',
     });
   });
 
@@ -156,5 +163,61 @@ describe('what the handler establishes, kept on the errand', () => {
     const written = withSupportPremisesExamination(parameters, 'inspectedAt', '');
 
     expect(written.some((parameter) => parameter.key === 'PREMISES_INSPECTED_AT')).toBe(false);
+  });
+});
+
+describe('what the handler establishes for the underlay', () => {
+  test('the restaurant number and the serving areas are written onto the errand', () => {
+    const withNumber = withSupportPremisesExamination([], 'restaurantNumber', '2262-0112');
+    const written = withSupportPremisesExamination(withNumber, 'servingArea', 'Matsalen och bryggan');
+
+    expect(supportPremisesExamination(written).restaurantNumber).toBe('2262-0112');
+    expect(supportPremisesExamination(written).servingArea).toBe('Matsalen och bryggan');
+  });
+
+  test('the permits the premises has had are written as a row each, and read back in order', () => {
+    const written = withSupportPremisesPreviousPermits(
+      [{ key: 'object', values: ['Testgatan 1'] }],
+      [
+        { holderName: 'Tynderö Sjökrog AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
+        { holderName: 'Bryggan i Söråker HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
+      ]
+    );
+
+    expect(supportPremisesPreviousPermits(written)).toEqual([
+      { holderName: 'Tynderö Sjökrog AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
+      { holderName: 'Bryggan i Söråker HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
+    ]);
+    expect(written.find((parameter) => parameter.key === 'object')?.values).toEqual(['Testgatan 1']);
+  });
+
+  test('a row opened but not filled in is still there when the errand is read back', () => {
+    const written = withSupportPremisesPreviousPermits([], [emptySupportPremisesPreviousPermit()]);
+
+    expect(supportPremisesPreviousPermits(written)).toEqual([{ holderName: '', validFrom: '', validTo: '' }]);
+  });
+
+  test('a row taken away leaves no parameter of its own behind', () => {
+    const two = withSupportPremisesPreviousPermits(
+      [],
+      [
+        { holderName: 'Tynderö Sjökrog AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
+        { holderName: 'Bryggan i Söråker HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
+      ]
+    );
+
+    const one = withSupportPremisesPreviousPermits(two, supportPremisesPreviousPermits(two).slice(0, 1));
+
+    expect(one.some((parameter) => parameter.key.includes('PERMIT_2'))).toBe(false);
+    expect(supportPremisesPreviousPermits(one)).toHaveLength(1);
+  });
+
+  test('every permit taken away leaves nothing of the list on the errand', () => {
+    const written = withSupportPremisesPreviousPermits([], [emptySupportPremisesPreviousPermit()]);
+
+    const cleared = withSupportPremisesPreviousPermits(written, []);
+
+    expect(cleared.some((parameter) => parameter.key.startsWith('PREMISES_PREVIOUS_PERMIT'))).toBe(false);
+    expect(supportPremisesPreviousPermits(cleared)).toEqual([]);
   });
 });

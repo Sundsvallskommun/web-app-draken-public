@@ -21,40 +21,44 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "baseUrl": ".",
     "paths": {
       "@pages/*": [
-        "src/pages/*"
+        "./src/pages/*"
       ],
       "@public/*": [
-        "src/public/*"
+        "./src/public/*"
       ],
       "@config/*": [
-        "src/config/*"
+        "./src/config/*"
       ],
       "@contexts/*": [
-        "src/common/contexts/*"
+        "./src/common/contexts/*"
       ],
       "@supportmanagement/*": [
-        "src/supportmanagement/*"
+        "./src/supportmanagement/*"
       ],
       "@casedata/*": [
-        "src/casedata/*"
+        "./src/casedata/*"
       ],
       "@common/*": [
-        "src/common/*"
+        "./src/common/*"
       ],
       "@jestRoot/*": [
-        ".jest/*"
+        "./.jest/*"
       ],
       "@styles/*": [
-        "src/styles/*"
+        "./src/styles/*"
       ],
       "@e2e/*": [
-        "e2e/*"
+        "./e2e/*"
       ],
       "@stores/*": [
-        "src/stores/*"
+        "./src/stores/*"
+      ],
+      // Imports written as `src/...`, which used to resolve through `baseUrl`. TypeScript 6
+      // deprecates baseUrl, so the mapping stands here instead.
+      "src/*": [
+        "./src/*"
       ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
@@ -68,7 +72,10 @@
     ]
   },
   "include": [
-    "src/**/*.{ts,tsx}",
+    // TypeScript does not expand braces in these patterns, so `src/**/*.{ts,tsx}` matched nothing
+    // and a file no other file imported stood outside the project, without the paths below.
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "e2e/**/*.{ts,tsx}",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",

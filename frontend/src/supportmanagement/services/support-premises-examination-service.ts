@@ -36,19 +36,99 @@ export interface SupportPremisesExamination {
   inspectedAt: string;
   rightOfDisposal: string;
   rightOfDisposalNote: string;
+  restaurantNumber: string;
+  servingArea: string;
 }
 
 const EXAMINATION_PARAMETERS: Record<keyof SupportPremisesExamination, { key: string; displayName: string }> = {
   inspectedAt: { key: 'PREMISES_INSPECTED_AT', displayName: 'Lokalinspektion genomförd' },
   rightOfDisposal: { key: 'PREMISES_RIGHT_OF_DISPOSAL', displayName: 'Dispositionsrätt styrkt' },
   rightOfDisposalNote: { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', displayName: 'Dispositionsrätt, underlag' },
+  restaurantNumber: { key: 'PREMISES_RESTAURANT_NUMBER', displayName: 'Restaurangnummer' },
+  servingArea: { key: 'PREMISES_SERVING_AREA', displayName: 'Serveringsytor' },
 };
 
 export const supportPremisesExamination = (parameters: CParameter[] | undefined): SupportPremisesExamination => ({
   inspectedAt: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.inspectedAt.key),
   rightOfDisposal: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposal.key),
   rightOfDisposalNote: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposalNote.key),
+  restaurantNumber: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.restaurantNumber.key),
+  servingArea: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.servingArea.key),
 });
+
+export interface SupportPremisesPreviousPermit {
+  holderName: string;
+  validFrom: string;
+  validTo: string;
+}
+
+export const emptySupportPremisesPreviousPermit = (): SupportPremisesPreviousPermit => ({
+  holderName: '',
+  validFrom: '',
+  validTo: '',
+});
+
+const PREVIOUS_PERMIT_COUNT_PARAMETER = 'PREMISES_PREVIOUS_PERMITS';
+
+const PREVIOUS_PERMIT_KEY = /^PREMISES_PREVIOUS_PERMIT_(\d+)_(HOLDER|FROM|TO)$/;
+
+const PREVIOUS_PERMIT_FIELDS: Record<string, { field: keyof SupportPremisesPreviousPermit; displayName: string }> = {
+  HOLDER: { field: 'holderName', displayName: 'Tidigare tillståndshavare' },
+  FROM: { field: 'validFrom', displayName: 'Tidigare tillstånd från' },
+  TO: { field: 'validTo', displayName: 'Tidigare tillstånd till' },
+};
+
+const previousPermitKey = (number: number, field: string): string => `PREMISES_PREVIOUS_PERMIT_${number}_${field}`;
+
+export const supportPremisesPreviousPermits = (
+  parameters: CParameter[] | undefined
+): SupportPremisesPreviousPermit[] => {
+  const written = new Map<number, SupportPremisesPreviousPermit>();
+  for (const parameter of parameters ?? []) {
+    const match = PREVIOUS_PERMIT_KEY.exec(parameter.key);
+    if (!match) continue;
+    const number = Number(match[1]);
+    written.set(number, {
+      ...(written.get(number) ?? emptySupportPremisesPreviousPermit()),
+      [PREVIOUS_PERMIT_FIELDS[match[2]].field]: parameter.values?.[0] ?? '',
+    });
+  }
+
+  const counted = Number(getErrandParameterValue(parameters, PREVIOUS_PERMIT_COUNT_PARAMETER) || 0);
+  const count = Math.max(counted, ...written.keys(), 0);
+  return Array.from({ length: count }, (_, index) => written.get(index + 1) ?? emptySupportPremisesPreviousPermit());
+};
+
+export const withSupportPremisesPreviousPermits = (
+  parameters: CParameter[] | undefined,
+  permits: SupportPremisesPreviousPermit[]
+): CParameter[] => {
+  const others = (parameters ?? []).filter(
+    (parameter) => parameter.key !== PREVIOUS_PERMIT_COUNT_PARAMETER && !PREVIOUS_PERMIT_KEY.test(parameter.key)
+  );
+  if (permits.length === 0) return others;
+
+  const written = (number: number, field: string, value: string): CParameter[] =>
+    value.trim()
+      ? [
+          {
+            key: previousPermitKey(number, field),
+            displayName: `${PREVIOUS_PERMIT_FIELDS[field].displayName} ${number}`,
+            values: [value],
+          },
+        ]
+      : [];
+
+  return [
+    { key: PREVIOUS_PERMIT_COUNT_PARAMETER, displayName: 'Tidigare tillstånd', values: [String(permits.length)] },
+    ...permits.flatMap((permit, index) => [
+      ...written(index + 1, 'HOLDER', permit.holderName),
+      ...written(index + 1, 'FROM', permit.validFrom),
+      ...written(index + 1, 'TO', permit.validTo),
+    ]),
+    ...others,
+  ];
+};
 
 export const withSupportPremisesExamination = (
   parameters: CParameter[] | undefined,
@@ -76,11 +156,7 @@ const answersOf = (errand: PremisesErrand | undefined, namespace: string | undef
   return isRecord(value) ? value : undefined;
 };
 
-export const supportPremisesCapacity = (
-  errand: PremisesErrand | undefined,
-  namespace: string | undefined
-): SupportPremisesCapacity => {
-  const answers = answersOf(errand, namespace);
+export const supportPremisesCapacityOf = (answers: FormValue | undefined): SupportPremisesCapacity => {
   if (!answers) return {};
 
   return {
@@ -89,6 +165,11 @@ export const supportPremisesCapacity = (
     maxPersons: childText(answers, 'maximaltAntalPersonerILokalen', 'antalPersoner'),
   };
 };
+
+export const supportPremisesCapacity = (
+  errand: PremisesErrand | undefined,
+  namespace: string | undefined
+): SupportPremisesCapacity => supportPremisesCapacityOf(answersOf(errand, namespace));
 
 export interface SupportPremisesFireSafety {
   counterparty: string;
