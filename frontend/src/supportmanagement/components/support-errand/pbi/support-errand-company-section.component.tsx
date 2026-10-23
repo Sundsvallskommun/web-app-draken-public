@@ -2,6 +2,7 @@
 
 import { useCompanyProfile } from '@common/hooks/use-company-profile';
 import { useSupportStore } from '@stores/index';
+import { isOrganizationExternalIdType } from '@supportmanagement/services/support-errand-service';
 import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +26,7 @@ export const SupportErrandCompanySection: FC<{ organizationPartyId?: string }> =
   const [adding, setAdding] = useState(false);
 
   const organizationStakeholder = supportErrand?.stakeholders?.find(
-    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+    (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
   );
 
   return (

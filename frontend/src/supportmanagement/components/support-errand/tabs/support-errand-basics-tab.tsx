@@ -5,7 +5,7 @@ import { SupportContactsComponent } from '@supportmanagement/components/new-cont
 import { SupportErrandCompanySection } from '@supportmanagement/components/support-errand/pbi/support-errand-company-section.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { ApiSupportErrand } from '@supportmanagement/services/support-errand-service';
+import { ApiSupportErrand, isOrganizationExternalIdType } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 export const SupportErrandBasicsTab: FC<{
   errand: ApiSupportErrand;
@@ -16,7 +16,7 @@ export const SupportErrandBasicsTab: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const organizationPartyId = supportErrand?.stakeholders?.find(
-    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+    (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
   )?.externalId;
 
   return (
