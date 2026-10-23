@@ -1,31 +1,19 @@
 'use client';
 
-import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import { PdfPreview } from '@common/components/template-preview/pdf-preview.component';
 import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
-import {
-  getCompanyProfileByPartyId,
-  getLegalEntityEngagements,
-  getLegalEntityPersonEngagements,
-} from '@common/services/legal-entity-service';
-import type { Admin } from '@common/services/user-service';
 import { Button, Icon } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
+  collectInvestigationBasisParameters,
   INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER,
-  investigationBasisParameters,
-  renderInvestigationBasis,
+  investigationBasisHandlerName,
+  renderInvestigationBasisPreview,
 } from '@supportmanagement/services/support-investigation-basis-service';
-import { isPbi } from '@supportmanagement/services/support-pbi-service';
-import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { FileText, RefreshCw } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const handlerNameOf = (admin: Admin | undefined): string =>
-  [admin?.firstName, admin?.lastName].filter(Boolean).join(' ') || admin?.displayName || '';
 
 const reasonOf = (failure: unknown): string => {
   const message = (failure as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -50,52 +38,25 @@ export const InvestigationBasis: FC<InvestigationBasisProps> = ({ investigation,
   const [failed, setFailed] = useState(false);
   const [reason, setReason] = useState('');
 
-  const form = getDecisionBasisForm(supportErrand, supportMetadata?.namespace);
-  const { schema } = useJsonSchema(municipalityId, form?.schemaId ?? '');
-
-  const stakeholders = [...(supportErrand?.customer ?? []), ...(supportErrand?.contacts ?? [])];
-  const companyPartyId = supportErrand?.customer?.[0]?.externalId;
-  const partyIdsOfInfluence = stakeholders
-    .filter(isPbi)
-    .map((stakeholder) => stakeholder.externalId)
-    .filter((partyId): partyId is string => !!partyId);
-
-  const readTheFacts = async () => {
-    const errandId = supportErrand?.id ?? '';
-    const [statements, companyProfile, companyEngagements, personEngagements] = await Promise.all([
-      getSupportStatements(errandId, municipalityId).catch(() => []),
-      companyPartyId ? getCompanyProfileByPartyId(companyPartyId).catch(() => undefined) : undefined,
-      companyPartyId ? getLegalEntityEngagements(companyPartyId).catch(() => []) : [],
-      Promise.all(partyIdsOfInfluence.map((partyId) => getLegalEntityPersonEngagements(partyId).catch(() => []))).then(
-        (read) => read.flat()
-      ),
-    ]);
-
-    return investigationBasisParameters({
+  const readTheFacts = () =>
+    collectInvestigationBasisParameters({
       errand: supportErrand,
-      namespace: supportMetadata?.namespace,
-      form: form?.value,
-      schema,
-      investigation,
-      statements,
-      attachments: attachments ?? [],
-      companyProfile,
-      companyEngagements,
-      personEngagements,
+      municipalityId,
       metadata: supportMetadata,
-      handlerName: handlerNameOf(
+      attachments: attachments ?? [],
+      investigation,
+      handlerName: investigationBasisHandlerName(
         administrators.find((administrator) => administrator.adAccount === supportErrand?.assignedUserId)
       ),
       today: dayjs().format('YYYY-MM-DD'),
       translate: t,
     });
-  };
 
   const render = async () => {
     setRendering(true);
     setFailed(false);
     try {
-      setPdf(await renderInvestigationBasis(await readTheFacts()));
+      setPdf(await renderInvestigationBasisPreview(await readTheFacts()));
     } catch (failure) {
       setFailed(true);
       setReason(reasonOf(failure));

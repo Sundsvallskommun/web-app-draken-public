@@ -1,10 +1,38 @@
+import { getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import type { RJSFSchema } from '@rjsf/utils';
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { supportFinancingAmount } from './support-financial-suitability-service';
-import { type InvestigationBasisInput, investigationBasisParameters } from './support-investigation-basis-service';
+import {
+  collectInvestigationBasisParameters,
+  type InvestigationBasisFacts,
+  type InvestigationBasisInput,
+  investigationBasisParameters,
+} from './support-investigation-basis-service';
 import { withAssessment, withEngagements, withKnowledgeTests, withMotivation, withPbi } from './support-pbi-service';
+
+vi.mock('@common/components/json/utils/schema-utils', () => ({ getRjsfSchema: vi.fn(async () => null) }));
+vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getCompanyProfileByPartyId: vi.fn(async () => ({ form: 'Aktiebolag' })),
+  getLegalEntityEngagements: vi.fn(async () => []),
+  getLegalEntityPersonEngagements: vi.fn(async () => [
+    { organizationNumber: '5560068255', name: 'Tynderö Fastighets AB' },
+  ]),
+}));
+vi.mock('./support-statement-service', () => ({
+  getSupportStatements: vi.fn(async () => [
+    {
+      id: 'st-1',
+      counterpartyName: 'Polismyndigheten',
+      sentAt: '2026-05-12T09:00:00Z',
+      outcome: 'NO_REMARK',
+    },
+  ]),
+}));
+
+beforeEach(() => vi.clearAllMocks());
 
 const AXEL_IDENTITY = '196902287819';
 const ERICA_IDENTITY = '198205057907';
@@ -650,4 +678,29 @@ test('the company applying is not one of the companies the representatives are a
   );
 
   expect(parameters.company.associatedCompanies.map((company) => company.orgNumber)).toEqual(['556006-8255']);
+});
+
+const factsOf = (over: Partial<InvestigationBasisFacts> = {}): InvestigationBasisFacts => ({
+  errand,
+  municipalityId: '2281',
+  metadata: { ...METADATA, attachmentPurposes: [{ id: 'purpose-1', name: 'DECISION_BASIS' }] } as never,
+  attachments: [],
+  investigation,
+  handlerName: 'Annika Jansson',
+  today: '2026-06-05',
+  translate,
+  ...over,
+});
+
+test('what the preview is made of is read from the services, each failure leaving its own part out', async () => {
+  vi.mocked(getLegalEntityEngagements).mockRejectedValue(new Error('no company data'));
+
+  const parameters = await collectInvestigationBasisParameters(factsOf());
+
+  expect(parameters.statements.map((statement) => statement.counterparty)).toEqual(['Polismyndigheten']);
+  expect(parameters.company.otherOfficers).toEqual([]);
+  expect(parameters.company.associatedCompanies).toEqual([
+    { name: 'Tynderö Fastighets AB', orgNumber: '556006-8255', organizationNumber: '556006-8255' },
+  ]);
+  expect(parameters.caseNumber).toBe('AOT-26100216');
 });

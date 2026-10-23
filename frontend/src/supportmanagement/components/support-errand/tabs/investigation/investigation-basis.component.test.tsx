@@ -7,7 +7,7 @@ import {
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER,
-  renderInvestigationBasis,
+  renderInvestigationBasisPreview,
 } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -50,7 +50,7 @@ vi.mock('@supportmanagement/services/support-statement-service', async (importOr
 
 vi.mock('@supportmanagement/services/support-investigation-basis-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  renderInvestigationBasis: vi.fn(),
+  renderInvestigationBasisPreview: vi.fn(),
 }));
 
 const PARTY_ID = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
@@ -88,7 +88,7 @@ beforeEach(() => {
   vi.mocked(getCompanyProfileByPartyId).mockResolvedValue({ form: 'Aktiebolag' });
   vi.mocked(getLegalEntityEngagements).mockResolvedValue([]);
   vi.mocked(getLegalEntityPersonEngagements).mockResolvedValue([]);
-  vi.mocked(renderInvestigationBasis).mockResolvedValue(window.btoa('%PDF-1.7'));
+  vi.mocked(renderInvestigationBasisPreview).mockResolvedValue(window.btoa('%PDF-1.7'));
 });
 
 afterEach(cleanup);
@@ -98,7 +98,7 @@ test('nothing is read and nothing is rendered until the handler asks for the und
 
   expect(button().textContent).toBe('Beslutsunderlag');
   expect(preview()).toBeNull();
-  expect(renderInvestigationBasis).not.toHaveBeenCalled();
+  expect(renderInvestigationBasisPreview).not.toHaveBeenCalled();
   expect(getSupportStatements).not.toHaveBeenCalled();
 });
 
@@ -111,7 +111,7 @@ test('the underlay is rendered from what the errand holds, and the button then o
   expect(preview().getAttribute('src')).toContain(window.btoa('%PDF-1.7'));
   expect(button().textContent).toBe('Uppdatera');
 
-  const parameters = vi.mocked(renderInvestigationBasis).mock.calls[0][0];
+  const parameters = vi.mocked(renderInvestigationBasisPreview).mock.calls[0][0];
   expect(parameters.caseNumber).toBe('AOT-26100216');
   expect(parameters.handlerName).toBe('Annika Jansson');
   expect(parameters.premises.leaseHtml).toBe('<p>Hyresavtal till 2029.</p>');
@@ -123,15 +123,15 @@ test('pressing update renders the underlay as the errand now stands', async () =
   fireEvent.click(button());
   await waitFor(() => expect(preview()).toBeTruthy());
 
-  vi.mocked(renderInvestigationBasis).mockResolvedValue(window.btoa('%PDF-1.7 andra'));
+  vi.mocked(renderInvestigationBasisPreview).mockResolvedValue(window.btoa('%PDF-1.7 andra'));
   fireEvent.click(button());
 
   await waitFor(() => expect(preview().getAttribute('src')).toContain(window.btoa('%PDF-1.7 andra')));
-  expect(renderInvestigationBasis).toHaveBeenCalledTimes(2);
+  expect(renderInvestigationBasisPreview).toHaveBeenCalledTimes(2);
 });
 
 test('a template that cannot be rendered is told to the handler, named', async () => {
-  vi.mocked(renderInvestigationBasis).mockRejectedValue(new Error('404'));
+  vi.mocked(renderInvestigationBasisPreview).mockRejectedValue(new Error('404'));
   mount();
 
   fireEvent.click(button());
@@ -151,7 +151,7 @@ test('an unsaved edit keeps the underlay from being rendered, since it would not
 });
 
 test('what the service objected to is told along with the template name', async () => {
-  vi.mocked(renderInvestigationBasis).mockRejectedValue({
+  vi.mocked(renderInvestigationBasisPreview).mockRejectedValue({
     response: { data: { message: "Missing parameter 'premises.name'" } },
   });
   mount();

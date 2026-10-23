@@ -1,14 +1,27 @@
+import { getRjsfSchema } from '@common/components/json/utils/schema-utils';
 import type { Investigation, Statement } from '@common/data-contracts/supportmanagement/data-contracts';
 import { formatOrgNr, OrgNumberFormat } from '@common/services/helper-service';
-import { engagementRoles, type LegalEntityPersonEngagement } from '@common/services/legal-entity-service';
+import {
+  engagementRoles,
+  getCompanyProfileByPartyId,
+  getLegalEntityEngagements,
+  getLegalEntityPersonEngagements,
+  type LegalEntityPersonEngagement,
+} from '@common/services/legal-entity-service';
 import { sanitized, sanitizedInline } from '@common/services/sanitizer-service';
 import { renderTemplatePdfPreview } from '@common/services/template-render-service';
+import type { Admin } from '@common/services/user-service';
 import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
 import type { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
 import type { SupportAttachment } from './support-attachment-service';
-import { FLOOR_PLAN_PURPOSES, formChoiceLabel, formMultiChoiceLabels } from './support-decision-basis-service';
+import {
+  FLOOR_PLAN_PURPOSES,
+  formChoiceLabel,
+  formMultiChoiceLabels,
+  getDecisionBasisForm,
+} from './support-decision-basis-service';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import {
   supportFinancingNotesOf,
@@ -43,6 +56,7 @@ import {
   type SupportPremisesPreviousPermit,
   supportPremisesPreviousPermits,
 } from './support-premises-examination-service';
+import { getSupportStatements } from './support-statement-service';
 
 /**
  * The underlay the handler shares with the board: the investigation template in Templating rendered
@@ -675,9 +689,63 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
   });
 };
 
+const asTemplateParameters = (parameters: InvestigationBasisParameters): { [key: string]: string | Object } =>
+  parameters as unknown as { [key: string]: string | Object };
+
 /** Watermarked, since the underlay the handler looks at is not the document the decision is taken on. */
-export const renderInvestigationBasis = (parameters: InvestigationBasisParameters): Promise<string> =>
-  renderTemplatePdfPreview(
-    INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER,
-    parameters as unknown as { [key: string]: string | Object }
-  );
+export const renderInvestigationBasisPreview = (parameters: InvestigationBasisParameters): Promise<string> =>
+  renderTemplatePdfPreview(INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER, asTemplateParameters(parameters));
+
+export const investigationBasisHandlerName = (admin: Admin | undefined): string =>
+  [admin?.firstName, admin?.lastName].filter(Boolean).join(' ') || admin?.displayName || '';
+
+export interface InvestigationBasisFacts {
+  errand: SupportErrand | undefined;
+  municipalityId: string;
+  metadata: SupportMetadata | undefined;
+  attachments: SupportAttachment[];
+  investigation: Investigation | undefined;
+  handlerName: string;
+  today: string;
+  translate: (key: string) => string;
+}
+
+export const collectInvestigationBasisParameters = async (
+  facts: InvestigationBasisFacts
+): Promise<InvestigationBasisParameters> => {
+  const { errand, municipalityId, metadata } = facts;
+  const namespace = metadata?.namespace;
+  const form = getDecisionBasisForm(errand, namespace);
+  const partyIdsOfInfluence = stakeholdersOf(errand)
+    .filter(isPbi)
+    .map((stakeholder) => stakeholder.externalId)
+    .filter((partyId): partyId is string => !!partyId);
+  const companyPartyId = errand?.customer?.[0]?.externalId;
+
+  const [statements, companyProfile, companyEngagements, personEngagements, schema] = await Promise.all([
+    getSupportStatements(errand?.id ?? '', municipalityId).catch(() => []),
+    companyPartyId ? getCompanyProfileByPartyId(companyPartyId).catch(() => undefined) : undefined,
+    companyPartyId ? getLegalEntityEngagements(companyPartyId).catch(() => []) : [],
+    Promise.all(partyIdsOfInfluence.map((partyId) => getLegalEntityPersonEngagements(partyId).catch(() => []))).then(
+      (read) => read.flat()
+    ),
+    form?.schemaId ? getRjsfSchema(municipalityId, form.schemaId).catch(() => null) : null,
+  ]);
+
+  return investigationBasisParameters({
+    errand,
+    namespace,
+    form: form?.value,
+    schema,
+    investigation: facts.investigation,
+    statements,
+    attachments: facts.attachments,
+    companyProfile,
+    companyEngagements,
+    personEngagements,
+    metadata,
+    handlerName: facts.handlerName,
+    today: facts.today,
+    translate: facts.translate,
+  });
+};
