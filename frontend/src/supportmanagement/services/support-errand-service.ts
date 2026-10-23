@@ -396,11 +396,6 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
 
-export const isEserviceErrand: (errand: SupportErrand) => boolean = (errand) =>
-  errand?.channel === ('ESERVICE' satisfies keyof typeof Channels) ||
-  errand?.channel === ('ESERVICE_INTERNAL' satisfies keyof typeof Channels) ||
-  isOpenEErrand(errand);
-
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
     errand?.status === Status.SOLVED ||

@@ -46,7 +46,7 @@ export interface BasisRow {
   cell?: BasisCell;
 }
 
-type BasisSectionId =
+export type BasisSectionId =
   | 'operation'
   | 'serving_hours'
   | 'serving_premises'
@@ -632,6 +632,9 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     ],
   },
 ];
+
+/** The section ids in display order, so a section can be placed even when the form gives it no rows. */
+export const BASIS_SECTION_IDS: BasisSectionId[] = SECTIONS.map((section) => section.id);
 
 /**
  * The sections of the decision basis read from the form, in display order. Without the schema

@@ -85,12 +85,11 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   const permitInputsAreInPlace = async (): Promise<boolean> => {
     if (!supportErrand) return true;
 
-    const permitType = supportDecisionPermitType(
-      getMostSpecificLabelType(supportErrand),
-      supportErrand.process?.processKey
-    );
+    const typeLabel = getMostSpecificLabelType(supportErrand);
+    const permitType = supportDecisionPermitType(typeLabel, supportErrand.process?.processKey);
     const missing = missingPermitInputs(
       permitType,
+      typeLabel?.resourceName,
       supportErrand,
       getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
       supportAttachments

@@ -2,7 +2,10 @@ import { JsonParametersDisplay } from '@common/components/json/schema/json-param
 import { appConfig } from '@config/appconfig';
 import { Alert, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
-import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
+import {
+  isOriginalJsonParameter,
+  schemaNameForErrand,
+} from '@supportmanagement/services/support-errand-schema-service';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
@@ -18,8 +21,12 @@ export const SupportErrandDetailsTab: React.FC = () => {
   const loadsTypeForm = usesTypeForm && !supportMetadata;
   const typeSchemaName = usesTypeForm ? schemaNameForErrand(supportErrand, supportMetadata?.namespace) : undefined;
   const showsTypeForm = !loadsTypeForm && !!typeSchemaName && !!municipalityId;
+  // The copy Katla keeps of the application as filed is not a document of its own.
   const otherJsonParameters = useMemo(
-    () => supportErrand.jsonParameters?.filter((parameter) => parameter.key !== typeSchemaName) ?? [],
+    () =>
+      supportErrand.jsonParameters?.filter(
+        (parameter) => parameter.key !== typeSchemaName && !isOriginalJsonParameter(parameter)
+      ) ?? [],
     [supportErrand.jsonParameters, typeSchemaName]
   );
   const showsJsonParameters = !loadsTypeForm && otherJsonParameters.length > 0 && !!municipalityId;

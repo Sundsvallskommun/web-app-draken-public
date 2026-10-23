@@ -3,8 +3,10 @@ import { sanitized } from '@common/services/sanitizer-service';
 import { Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
+  BASIS_SECTION_IDS,
   type BasisCell,
   type BasisRow,
+  type BasisSectionId,
   buildDecisionBasisSections,
   getDecisionBasisForm,
 } from '@supportmanagement/services/support-decision-basis-service';
@@ -111,9 +113,20 @@ export const SupportErrandDecisionBasis: FC<{
   supportMetadata: SupportMetadata | undefined;
   /** Rendered in the premises section. */
   premisesHandling?: ReactNode;
-  /** Rendered in the serving premises section, when the form has one. */
+  /** Rendered in the serving premises section. */
   servingPremisesHandling?: ReactNode;
-}> = ({ supportErrand, supportMetadata, premisesHandling, servingPremisesHandling }) => {
+  /** Rendered in the serving hours section. */
+  servingHoursHandling?: ReactNode;
+  /** Rendered in the serving section. */
+  servingHandling?: ReactNode;
+}> = ({
+  supportErrand,
+  supportMetadata,
+  premisesHandling,
+  servingPremisesHandling,
+  servingHoursHandling,
+  servingHandling,
+}) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
@@ -136,7 +149,15 @@ export const SupportErrandDecisionBasis: FC<{
     .filter((name): name is string => !!name);
 
   const sections = form && !loading ? buildDecisionBasisSections(form.value, schema, uploadedPurposes) : [];
-  const formSections = sections.filter((section) => section.id !== 'premises' && section.rows.length > 0);
+  const handling: Partial<Record<BasisSectionId, ReactNode>> = {
+    serving_premises: servingPremisesHandling,
+    serving_hours: servingHoursHandling,
+    serving: servingHandling,
+  };
+  // A section with something to handle is shown even when the form gives it no rows.
+  const formSections = BASIS_SECTION_IDS.filter((id) => id !== 'premises')
+    .map((id) => ({ id, rows: sections.find((section) => section.id === id)?.rows ?? [] }))
+    .filter((section) => section.rows.length > 0 || handling[section.id]);
   const premisesFormRows = sections.find((section) => section.id === 'premises')?.rows.map(toDisplayRow) ?? [];
 
   const errandRows: DisplayRow[] = [
@@ -232,8 +253,8 @@ export const SupportErrandDecisionBasis: FC<{
 
       {formSections.map((section) => (
         <BasisSection key={section.id} id={section.id} heading={t(`common:decision.basis.${section.id}.heading`)}>
-          <BasisRows section={section.id} rows={section.rows.map(toDisplayRow)} />
-          {section.id === 'serving_premises' ? servingPremisesHandling : null}
+          {section.rows.length > 0 ? <BasisRows section={section.id} rows={section.rows.map(toDisplayRow)} /> : null}
+          {handling[section.id]}
         </BasisSection>
       ))}
 

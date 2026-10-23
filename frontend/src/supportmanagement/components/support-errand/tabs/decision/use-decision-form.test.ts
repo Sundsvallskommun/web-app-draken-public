@@ -4,16 +4,19 @@ import type { DecisionPremises } from '@supportmanagement/services/support-decis
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 
+import { mockEnv } from '../../../../../tests/mock-env';
 import { useDecisionForm } from './use-decision-form';
 
 const ROLE = 'Handläggare';
-const APPLICATION_PHONE = '060-191000';
+const APPLICATION_PHONE = mockEnv.mockPhoneNumber;
 const PREMISES: DecisionPremises = {
-  street: 'Storgatan 3',
-  postalCode: '852 30',
-  city: 'Sundsvall',
-  choice: { kind: 'EXISTING', restaurantNumber: '22814540' },
+  street: mockEnv.mockCompanyAddress.street,
+  postalCode: mockEnv.mockCompanyAddress.postalCode,
+  city: mockEnv.mockCompanyAddress.city,
+  choice: { kind: 'EXISTING', restaurantNumber: '00000000' },
 };
+
+const NOTHING_DECIDED = { beverages: [], servingHours: {} };
 
 const saved = (overrides: Partial<Decision> = {}): Decision =>
   ({
@@ -43,6 +46,7 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
       savedPremises: undefined,
       premisesToSend: undefined,
       applicationPremisesPhone: APPLICATION_PHONE,
+      scopeAsSaved: NOTHING_DECIDED,
       defaultRole: ROLE,
       ...input,
     },
@@ -106,6 +110,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
+    scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });
   expect(result.current.values.justification).toBe('Skrivet men inte sparat');
@@ -116,6 +121,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
+    scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });
   expect(result.current.values.justification).toBe('Som beslutet sparades');

@@ -51,6 +51,17 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
   ...overrides,
 });
 
+/** What the handler decided, as the tab prefills it from the serving form below. */
+const servingScope = {
+  beverages: ['STARKOL', 'VIN', 'SPRITDRYCKER'],
+  servingHours: {
+    indoorPublic: { from: '11:00', to: '01:00' },
+    outdoorPublic: { from: '11:00', to: '23:00' },
+    indoorPrivate: { from: '18:00', to: '02:00' },
+    outdoorPrivate: { from: '', to: '' },
+  },
+};
+
 const asObject = (parameters: Parameter[]): Record<string, string | undefined> =>
   Object.fromEntries(parameters.map((parameter) => [parameter.key, parameter.values?.[0]]));
 
@@ -76,6 +87,7 @@ const servingForm = {
 describe('a serving permit', () => {
   const parameters = sent('SERVERINGSTILLSTAND', {
     form: servingForm,
+    scope: servingScope,
     servingArea: ' Matsalen och uteserveringen ',
     attachments: [
       { fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } },
@@ -128,7 +140,7 @@ describe('a serving permit', () => {
     expect(parameters).not.toHaveProperty('conditions');
   });
 
-  test('reads the audiences, periods, beverages, seats and hours off the form', () => {
+  test('reads the audiences, periods and seats off the form, the beverages and hours off the decision', () => {
     expect(parameters).toMatchObject({
       servingToPublic: 'true',
       servingToClosedCompany: 'true',
@@ -164,6 +176,21 @@ describe('a serving permit', () => {
 
   test('a tasting permit is told apart by the errand type', () => {
     expect(sent('SERVERINGSTILLSTAND', { errandType: 'TASTING' }).scopeTasting).toBe('true');
+  });
+
+  test('the beverages and hours follow the decision even where the form says otherwise', () => {
+    const decidedLess = sent('SERVERINGSTILLSTAND', {
+      form: servingForm,
+      scope: { beverages: ['VIN'], servingHours: { single: { from: '12:00', to: '22:00' } } },
+    });
+
+    expect(decidedLess).toMatchObject({
+      beverageSpirits: 'false',
+      beverageWine: 'true',
+      beverageBeer: 'false',
+      beverageOtherFermented: 'false',
+      servingHours: '12:00–22:00',
+    });
   });
 
   test('a key without a value is left out, so the strict template names it instead of printing a stand-in', () => {
@@ -240,10 +267,11 @@ describe('a tobacco permit', () => {
 });
 
 describe('what the permit needs of the errand', () => {
+  const PERMANENT = 'PERMANENT_SERVING';
   const drawing = [{ fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } }];
 
   test('a whole application and a whole applicant leave nothing missing', () => {
-    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, drawing)).toEqual({
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', PERMANENT, errand(), servingForm, drawing)).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],
     });
@@ -253,7 +281,7 @@ describe('what the permit needs of the errand', () => {
     const bare = errand();
     bare.customer[0] = { ...bare.customer[0], address: '', zipCode: '', city: '', phoneNumbers: [] };
 
-    expect(missingPermitInputs('SERVERINGSTILLSTAND', bare, undefined, [])).toEqual({
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', PERMANENT, bare, undefined, [])).toEqual({
       fromTheErrand: ['permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
       fromTheApplication: [
         'premisesName',
@@ -266,7 +294,7 @@ describe('what the permit needs of the errand', () => {
   });
 
   test('a drawing nobody attached', () => {
-    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, [])).toEqual({
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', PERMANENT, errand(), servingForm, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: ['servingAreaDrawingReference'],
     });
@@ -275,7 +303,9 @@ describe('what the permit needs of the errand', () => {
   test('the telephone to the premises is the handler’s, so the review does not wait for it', () => {
     const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
 
-    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), withoutPhone, drawing).fromTheApplication).toEqual([]);
+    expect(
+      missingPermitInputs('SERVERINGSTILLSTAND', PERMANENT, errand(), withoutPhone, drawing).fromTheApplication
+    ).toEqual([]);
   });
 
   test('the decision is checked on what it saved, so a concluded decision cannot lack a placeholder', () => {
@@ -306,7 +336,7 @@ describe('what the permit needs of the errand', () => {
 
   test('a permit that issues no certificate has nothing to wait for', () => {
     expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual([]);
-    expect(missingPermitInputs('FOLKOLSANMALAN', errand(), undefined, [])).toEqual({
+    expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],
     });

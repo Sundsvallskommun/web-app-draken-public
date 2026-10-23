@@ -4,6 +4,7 @@ import { expect, test } from 'vitest';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   awaitedGateOfStep,
+  hasSupportProcessPassedStep,
   hasVisitedSupportProcessStep,
   supportProcessActivityKey,
   supportProcessName,
@@ -163,4 +164,20 @@ test('the decision phase offers nothing to send until a decision is there', () =
 
   expect(awaitedGateOfStep(beforeTheDecision, SupportProcessStep.DECISION)).toBeUndefined();
   expect(awaitedGateOfStep(afterTheDecision, SupportProcessStep.DECISION)?.name).toBe('decision_completed');
+});
+
+test('the review is passed once the process shows a later phase, whether the handler or the process runs it', () => {
+  const at = (currentActivityId: string, processStatus = 'WAITING') =>
+    ({ processStatus, currentActivityId } as ErrandProcess);
+
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, undefined)).toBe(false);
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('registration_phase'))).toBe(false);
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('review_phase'))).toBe(false);
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('investigation_phase'))).toBe(true);
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_create_decision'))).toBe(true);
+  expect(
+    hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_complete_process', 'COMPLETED'))
+  ).toBe(true);
+  // A cancellation belongs to no phase, so it has passed none.
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_cancel_process'))).toBe(false);
 });

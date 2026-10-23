@@ -59,6 +59,15 @@ export const schemaNameForErrand = (
   return [namespace, ...path].join('_').toLowerCase();
 };
 
+/**
+ * Katla files the answers a second time under this suffix, as they were filed, and rebuilds that copy on
+ * every save of its own. Draken never writes it and never loads it into a form.
+ */
+const ORIGINAL_KEY_SUFFIX = '_original';
+
+export const isOriginalJsonParameter = (parameter: Pick<CJsonParameter, 'key'>): boolean =>
+  parameter.key.endsWith(ORIGINAL_KEY_SUFFIX);
+
 /** `key` is the schema name, which is what Katla files the answers under. */
 export const jsonParameterForSchema = (
   errand: Pick<SupportErrand, 'jsonParameters'> | undefined,
