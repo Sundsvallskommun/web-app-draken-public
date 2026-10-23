@@ -164,12 +164,17 @@
       "child_perspective": {
         "label": "Utredning av barnperspektivet",
         "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
-      },
-      "decision_basis": {
-        "label": "Beslutsunderlag",
-        "placeholder": "Tryck på knappen för att förhandsvisa beslutsunderlaget. När ärendet går vidare till beslut så skapas beslutsunderlaget som en bilaga.",
-        "button_label": "Beslutsunderlag"
       }
+    },
+    "decision_basis": {
+      "label": "Beslutsunderlag",
+      "description": "Tryck på knappen för att förhandsvisa beslutsunderlaget. När ärendet går vidare till beslut så skapas beslutsunderlaget som en bilaga.",
+      "button_label": "Beslutsunderlag",
+      "update": "Uppdatera",
+      "rendering": "Skapar förhandsvisning",
+      "unsaved": "Spara ärendet så kommer det du nyss skrev med i underlaget.",
+      "preview_title": "Förhandsvisning av beslutsunderlaget",
+      "error": "Beslutsunderlaget kunde inte skapas. Mallen som efterfrågades heter {{template}}."
     },
     "section_save_failed": "Utredningstexten kunde inte sparas.",
     "application_complete_at": "Ansökan komplett",
@@ -687,7 +692,23 @@
     "requirement_note": "Obs: Kraven på matservering, eget kök och sittplatser slopades den 1 juni 2026. Krav på brandsäker lokal och avgränsad serveringsyta kvarstår.",
     "toast": {
       "save_failed": "Anmärkningarna kunde inte sparas"
-    }
+    },
+    "restaurant_number": "Restaurangnummer",
+    "restaurant_number_placeholder": "Nummer enligt registret, t.ex. 2281-0112",
+    "serving_area": "Serveringsytor",
+    "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
+    "previous_permits": {
+      "label": "Tidigare verksamhet i lokalen",
+      "description": "Tidigare serveringstillstånd för serveringsstället, enligt registret.",
+      "empty": "Inga tidigare tillstånd är angivna.",
+      "holder": "Tillståndshavare",
+      "holder_placeholder": "Bolagets namn",
+      "valid_from": "Från",
+      "valid_to": "Till",
+      "add": "Lägg till tidigare tillstånd",
+      "remove": "Ta bort tidigare tillstånd {{number}}"
+    },
+    "also_in_decision": "Obs: restaurangnummer, serveringsytor och tidigare verksamhet följer inte med till beslutet, utan anges på nytt där."
   },
   "action_points": {
     "heading": "Åtgärdspunkter",

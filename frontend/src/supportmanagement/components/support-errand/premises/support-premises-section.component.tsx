@@ -1,7 +1,7 @@
 'use client';
 
 import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
-import { FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
@@ -10,7 +10,10 @@ import {
   type SupportPremisesExamination,
   supportPremisesExamination,
   supportPremisesFireSafety,
+  type SupportPremisesPreviousPermit,
+  supportPremisesPreviousPermits,
   withSupportPremisesExamination,
+  withSupportPremisesPreviousPermits,
 } from '@supportmanagement/services/support-premises-examination-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -19,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 import { InvestigationFact } from '../investigation-fact.component';
 import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
+import { PreviousPermits } from './support-premises-previous-permits.component';
 
 export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => {
   const { writable } = props;
@@ -40,6 +44,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     [statements, supportMetadata]
   );
   const examination = supportPremisesExamination(watch('parameters'));
+  const previousPermits = supportPremisesPreviousPermits(watch('parameters'));
 
   useEffect(() => {
     if (!errandId || !municipalityId) return undefined;
@@ -63,6 +68,17 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
       shouldDirty: true,
     });
 
+  const writePreviousPermits = (
+    update: (permits: SupportPremisesPreviousPermit[]) => SupportPremisesPreviousPermit[]
+  ) => {
+    const parameters = getValues('parameters');
+    setValue(
+      'parameters',
+      withSupportPremisesPreviousPermits(parameters, update(supportPremisesPreviousPermits(parameters))),
+      { shouldDirty: true }
+    );
+  };
+
   const seats = [
     capacity.indoorSeats ? t('common:premises.seats_indoor', { number: capacity.indoorSeats }) : undefined,
     capacity.outdoorSeats ? t('common:premises.seats_outdoor', { number: capacity.outdoorSeats }) : undefined,
@@ -70,9 +86,11 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     .filter(Boolean)
     .join(' / ');
 
+  const threeColRow = 'flex flex-col md:flex-row gap-24 md:[&>*]:w-[calc((100%-2*theme(spacing.24))/3)]';
+
   return (
     <div className="flex flex-col gap-24" data-cy="premises-section">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-24">
+      <div className={threeColRow}>
         <FormControl className="min-w-0">
           <FormLabel className="text-small font-bold text-dark-secondary">
             {t('common:premises.inspected_at')}
@@ -117,7 +135,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         </FormControl>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-24">
+      <div className={threeColRow}>
         <InvestigationFact label={t('common:premises.max_persons')}>
           <span data-cy="premises-max-persons">{capacity.maxPersons ?? t('common:premises.not_answered')}</span>
         </InvestigationFact>
@@ -135,6 +153,36 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         </InvestigationFact>
       </div>
 
+      <div className={threeColRow}>
+        <FormControl className="min-w-0">
+          <FormLabel className="text-small font-bold text-dark-secondary">
+            {t('common:premises.restaurant_number')}
+          </FormLabel>
+          <Input
+            disabled={!writable}
+            value={examination.restaurantNumber}
+            placeholder={t('common:premises.restaurant_number_placeholder')}
+            onChange={(event) => write('restaurantNumber', event.target.value)}
+            data-cy="premises-restaurant-number"
+          />
+        </FormControl>
+      </div>
+
+      <FormControl className="w-full">
+        <FormLabel className="text-small font-bold text-dark-secondary">{t('common:premises.serving_area')}</FormLabel>
+        <Textarea
+          className="w-full"
+          rows={3}
+          disabled={!writable}
+          value={examination.servingArea}
+          placeholder={t('common:premises.serving_area_placeholder')}
+          onChange={(event) => write('servingArea', event.target.value)}
+          data-cy="premises-serving-area"
+        />
+      </FormControl>
+
+      <PreviousPermits permits={previousPermits} writable={writable} onChange={writePreviousPermits} />
+
       <InvestigationSectionText
         {...props}
         name="premises"
@@ -144,6 +192,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
       />
 
       <p className="text-small text-dark-secondary italic m-0">{t('common:premises.requirement_note')}</p>
+      <p className="text-small text-dark-secondary italic m-0">{t('common:premises.also_in_decision')}</p>
     </div>
   );
 };
