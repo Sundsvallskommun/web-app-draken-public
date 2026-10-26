@@ -14,8 +14,11 @@ export const mockEnv = {
   mockPtPersonNumber: '199001162396',
   // A third fake person (also used in e2e fixtures), for tests where several stakeholders need distinct identities.
   mockTertiaryPersonNumber: '197311194612',
+  mockTertiaryPersonNumberDashed: '19731119-4612',
   mockOrganizationNumber: '556026-9986',
   mockInvalidOrganizationNumber: '556026-9987',
+  // A second company beside mockOrganizationNumber. Luhn-valid so it formats like one; not a company we know of.
+  mockSecondaryOrganizationNumber: '556999-9997',
   mockEmail: 'a@example.com',
   mockRecipientEmail: ' mail@example.com',
   mockPhoneNumber: '0701740635',

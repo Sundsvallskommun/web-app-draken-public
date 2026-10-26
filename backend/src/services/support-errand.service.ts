@@ -22,7 +22,7 @@ import {
   Stakeholder as SupportStakeholder,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
-import { ExternalIdType } from '@/interfaces/externalIdType.interface';
+import { isOrganizationExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
@@ -266,11 +266,11 @@ const mapAddresses = (s: SupportStakeholder): CasedataStakeholderDTO['addresses'
 /**
  * Maps a SupportManagement stakeholder onto a CaseData stakeholder when forwarding an errand.
  * `organizationNumber` is resolved by the caller (stakeholder parameter or Legal Entity lookup)
- * and only emitted for COMPANY stakeholders.
+ * and only emitted for organization (COMPANY/ENTERPRISE) stakeholders.
  */
 export const toCasedataStakeholder = (s: SupportStakeholder, organizationNumber?: string): CasedataStakeholderDTO => {
   const roles = [s.role === SupportStakeholderRole.PRIMARY ? Role.APPLICANT : Role.CONTACT_PERSON];
-  if (s.externalIdType === ExternalIdType.COMPANY) {
+  if (isOrganizationExternalIdType(s.externalIdType)) {
     return {
       type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
       roles,

@@ -2,6 +2,7 @@ import { getLegalEntityEngagements } from '@common/services/legal-entity-service
 import type { RJSFSchema } from '@rjsf/utils';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { mockEnv } from '../../tests/mock-env';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { supportFinancingAmount } from './support-financial-suitability-service';
 import {
@@ -17,9 +18,7 @@ vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getCompanyProfileByPartyId: vi.fn(async () => ({ form: 'Aktiebolag' })),
   getLegalEntityEngagements: vi.fn(async () => []),
-  getLegalEntityPersonEngagements: vi.fn(async () => [
-    { organizationNumber: '5560068255', name: 'Tynderö Fastighets AB' },
-  ]),
+  getLegalEntityPersonEngagements: vi.fn(async () => [ASSOCIATED_COMPANY]),
 }));
 vi.mock('./support-statement-service', () => ({
   getSupportStatements: vi.fn(async () => [
@@ -34,8 +33,13 @@ vi.mock('./support-statement-service', () => ({
 
 beforeEach(() => vi.clearAllMocks());
 
-const AXEL_IDENTITY = '196902287819';
-const ERICA_IDENTITY = '198205057907';
+const AXEL_IDENTITY = mockEnv.mockPersonNumber;
+const ERICA_IDENTITY = mockEnv.mockSecondaryPersonNumber;
+// The company data writes organization numbers without a hyphen; the mock keeps the one users type.
+const undashed = (organizationNumber: string) => organizationNumber.replace('-', '');
+const APPLICANT_ORG = mockEnv.mockOrganizationNumber;
+const ASSOCIATED_ORG = undashed(mockEnv.mockSecondaryOrganizationNumber);
+const ASSOCIATED_COMPANY = { organizationNumber: ASSOCIATED_ORG, name: 'Testfastigheter AB' };
 
 const translate = (key: string): string =>
   ({
@@ -59,7 +63,10 @@ const person = (internalId: string, firstName: string, lastName: string, role: s
   );
 
 const axel = withKnowledgeTests(
-  withMotivation(withEngagements(person('axel', 'Axel', 'Hellman', 'Styrelseledamot'), ['5560068255']), 'Daglig drift'),
+  withMotivation(
+    withEngagements(person('axel', 'Axel', 'Hellman', 'Styrelseledamot'), [ASSOCIATED_ORG]),
+    'Daglig drift'
+  ),
   [
     { type: 'PERMANENT_PUBLIC', status: 'APPROVED', testedAt: '2026-05-26', comment: 'Första försöket' },
     { type: 'Eget prov hos annan kommun', status: 'APPROVED', testedAt: '2026-05-30', comment: '' },
@@ -95,9 +102,9 @@ const investigation = {
 
 const errand = {
   id: 'errand-1',
-  errandNumber: 'AOT-26100216',
+  errandNumber: mockEnv.mockErrandNumber,
   created: '2026-04-15T08:12:00Z',
-  assignedUserId: 'anjan',
+  assignedUserId: mockEnv.mockAdUsername,
   labels: [
     { classification: 'CATEGORY', resourceName: 'ALCOHOL', displayName: 'Alkohol' },
     { classification: 'TYPE', resourceName: 'SERVING', displayName: 'Stadigvarande serveringstillstånd' },
@@ -112,11 +119,11 @@ const errand = {
     {
       internalId: 'owner',
       externalId: 'party-owner',
-      organizationName: 'Färjas i Tynderö AB',
-      organizationNumber: '559580-9475',
-      address: 'Unnviksvägen 6',
-      zipCode: '861 94',
-      city: 'Söråker',
+      organizationName: mockEnv.mockCompanyName,
+      organizationNumber: APPLICANT_ORG,
+      address: mockEnv.mockCompanyAddress.street,
+      zipCode: mockEnv.mockCompanyAddress.postalCode,
+      city: mockEnv.mockCompanyAddress.city,
       parameters: [],
     },
   ],
@@ -124,7 +131,7 @@ const errand = {
 } as unknown as SupportErrand;
 
 const FORM = {
-  serveringsstalletsNamn: 'Färjas Brygga',
+  serveringsstalletsNamn: mockEnv.mockPremisesName,
   serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_ALLMANHETEN',
   alkoholdrycker: ['STARKOL', 'VIN'],
   verksamhetensInriktning: ['RESTAURANG'],
@@ -136,12 +143,13 @@ const FORM = {
   beskrivVerksamhetensInriktning: '<p>Social mötesplats för bygden.</p>',
   ordningOchNykterhet: '<p>Inga spelningar.</p>',
   serveringsansvarigPersonal: [
-    { namn: 'Erica Fritz', personnummer: '198205057907' },
-    { namn: 'Axel Hellman', personnummer: '690228-7819' },
+    { namn: 'Erica Fritz', personnummer: ERICA_IDENTITY },
+    // Written the short way, as a form lets one; it is passed on as written.
+    { namn: 'Axel Hellman', personnummer: mockEnv.mockPersonNumberDashed.slice(2) },
   ],
   sittplatserILokalen: { antalSittplatserInomhus: '32', antalSittplatserUteservering: '100' },
   maximaltAntalPersonerILokalen: { antalPersoner: '50' },
-  banklan: [{ langivare: 'Tynderö Fiskarförening', beloppKronor: '25000' }],
+  banklan: [{ langivare: 'Testbanken', beloppKronor: '25000' }],
   ovrigaUpplysningarFinansiering: '<p>Aktieägartillskott vid behov.</p>',
 };
 
@@ -178,12 +186,12 @@ const COMPANY_ENGAGEMENTS = [
   },
   {
     name: 'Rickard Jonsson',
-    identity: { code: '196705237896', type: 'PERSONNUMMER' },
+    identity: { code: mockEnv.mockTertiaryPersonNumber, type: 'PERSONNUMMER' },
     relations: [{ description: 'Styrelseledamot' }],
   },
   {
     name: 'Granskad Revision AB',
-    identity: { code: '198001019999', type: 'PERSONNUMMER' },
+    identity: { code: mockEnv.mockNonexistentPersonNumber, type: 'PERSONNUMMER' },
     relations: [{ description: 'Revisor' }],
   },
 ];
@@ -223,14 +231,14 @@ const input = (over: Partial<InvestigationBasisInput> = {}): InvestigationBasisI
   investigation,
   statements: STATEMENTS as never,
   attachments: [
-    { fileName: 'planritning-farjas-brygga.pdf', purpose: { name: 'FLOOR_PLAN' } },
-    { fileName: 'meny-farjas-brygga.pdf', purpose: { name: 'MENU' } },
-    { fileName: 'dryckesmeny-farjas-brygga.pdf', purpose: { name: 'DRINKS_MENU' } },
+    { fileName: 'planritning-testkrogen.pdf', purpose: { name: 'FLOOR_PLAN' } },
+    { fileName: 'meny-testkrogen.pdf', purpose: { name: 'MENU' } },
+    { fileName: 'dryckesmeny-testkrogen.pdf', purpose: { name: 'DRINKS_MENU' } },
     { fileName: 'ovrigt.pdf', purpose: { name: 'OTHER' } },
   ] as never,
   companyProfile: { form: 'Aktiebolag' },
   companyEngagements: COMPANY_ENGAGEMENTS,
-  personEngagements: [{ organizationNumber: '5560068255', name: 'Tynderö Fastighets AB' }],
+  personEngagements: [ASSOCIATED_COMPANY],
   metadata: METADATA as never,
   handlerName: 'Annika Jansson',
   today: '2026-06-05',
@@ -244,16 +252,16 @@ test('the errand and the handler name the document the board reads', () => {
   const parameters = built();
 
   expect(parameters.documentDate).toBe('2026-06-05');
-  expect(parameters.caseNumber).toBe('AOT-26100216');
+  expect(parameters.caseNumber).toBe(mockEnv.mockErrandNumber);
   expect(parameters.caseType).toBe('stadigvarande serveringstillstånd');
   expect(parameters.handlerName).toBe('Annika Jansson');
   expect(parameters.handlerTitle).toBe('handläggare');
   expect(parameters.issuedByUnit).toBe('Alkohol- och tobaksenheten');
   expect(parameters.applicant).toEqual({
-    name: 'Färjas i Tynderö AB',
-    orgNumber: '559580-9475',
-    street: 'Unnviksvägen 6',
-    postalAddress: '861 94 Söråker',
+    name: mockEnv.mockCompanyName,
+    orgNumber: APPLICANT_ORG,
+    street: mockEnv.mockCompanyAddress.street,
+    postalAddress: `${mockEnv.mockCompanyAddress.postalCode} ${mockEnv.mockCompanyAddress.city}`,
   });
 });
 
@@ -286,7 +294,7 @@ test('the people of influence are named by the company data, which is where thei
   const people = built().personsOfInfluence;
 
   expect(people.map((candidate) => candidate.name)).toEqual(['Axel Hellman', 'Erica Fritz']);
-  expect(people[0].personalNumber).toBe('19690228-7819');
+  expect(people[0].personalNumber).toBe(mockEnv.mockPersonNumberDashed);
   expect(people[0].roles).toBe('Verkställande direktör, Styrelseledamot');
   expect(people[0].motivation).toBe('Daglig drift');
 });
@@ -329,19 +337,34 @@ test('the company people who are not marked are listed apart, and an auditor is 
   const officers = built().company.otherOfficers;
 
   expect(officers.map((officer) => officer.name)).toEqual(['Rickard Jonsson']);
-  expect(officers[0]).toMatchObject({ personalNumber: '19670523-7896', roles: 'Styrelseledamot' });
+  expect(officers[0]).toMatchObject({
+    personalNumber: mockEnv.mockTertiaryPersonNumberDashed,
+    roles: 'Styrelseledamot',
+  });
 });
 
 test('the companies ticked for the people of influence are named once each', () => {
   const parameters = investigationBasisParameters(
     input({
-      errand: { ...errand, contacts: [axel, withEngagements(erica, ['5560068255', '5569999999'])] } as SupportErrand,
+      errand: {
+        ...errand,
+        contacts: [axel, withEngagements(erica, [ASSOCIATED_ORG, mockEnv.mockInvalidOrganizationNumber])],
+      } as SupportErrand,
     })
   );
 
   expect(parameters.company.associatedCompanies).toEqual([
-    { name: 'Tynderö Fastighets AB', orgNumber: '556006-8255', organizationNumber: '556006-8255' },
-    { name: '', orgNumber: '5569999999', organizationNumber: '5569999999' },
+    {
+      name: ASSOCIATED_COMPANY.name,
+      orgNumber: mockEnv.mockSecondaryOrganizationNumber,
+      organizationNumber: mockEnv.mockSecondaryOrganizationNumber,
+    },
+    // One the checksum rejects is passed on as written, since the handler ticked it.
+    {
+      name: '',
+      orgNumber: mockEnv.mockInvalidOrganizationNumber,
+      organizationNumber: mockEnv.mockInvalidOrganizationNumber,
+    },
   ]);
 });
 
@@ -357,14 +380,14 @@ test('the application is read with the texts of the schema version it was filed 
   expect(application.rightOfDisposal).toBe('Hyresavtal');
   expect(application.servesFood).toBe('Ja');
   expect(application.servingHours).toEqual(['Inomhus, allmänheten 11:00–23:00', 'Utomhus, allmänheten 11:00–23:00']);
-  expect(application.menuFiles).toEqual(['meny-farjas-brygga.pdf']);
-  expect(application.drinksMenuFiles).toEqual(['dryckesmeny-farjas-brygga.pdf']);
+  expect(application.menuFiles).toEqual(['meny-testkrogen.pdf']);
+  expect(application.drinksMenuFiles).toEqual(['dryckesmeny-testkrogen.pdf']);
 });
 
 test('the staff of the application is read by the shape of the row, the columns being named differently between schemas', () => {
   expect(built().application.responsibleStaff).toEqual([
-    { name: 'Erica Fritz', personalNumber: '19820505-7907' },
-    { name: 'Axel Hellman', personalNumber: '690228-7819' },
+    { name: 'Erica Fritz', personalNumber: mockEnv.mockSecondaryPersonNumberDashed },
+    { name: 'Axel Hellman', personalNumber: mockEnv.mockPersonNumberDashed.slice(2) },
   ]);
 });
 
@@ -372,7 +395,7 @@ test('the financing of the application travels as its own rows', () => {
   const financing = built().application.financing;
 
   expect(financing.sources).toEqual([
-    { kind: 'Banklån', lender: 'Tynderö Fiskarförening', amount: supportFinancingAmount('25000') },
+    { kind: 'Banklån', lender: 'Testbanken', amount: supportFinancingAmount('25000') },
   ]);
   expect(financing.notesHtml).toBe('<p>Aktieägartillskott vid behov.</p>');
 });
@@ -380,14 +403,14 @@ test('the financing of the application travels as its own rows', () => {
 test('the premises carry what the application asks and what the handler established', () => {
   const premises = built().premises;
 
-  expect(premises.name).toBe('Färjas Brygga');
+  expect(premises.name).toBe(mockEnv.mockPremisesName);
   expect(premises.seatsIndoor).toBe('32');
   expect(premises.seatsOutdoor).toBe('100');
   expect(premises.maxPersons).toBe('50');
   expect(premises.inspectedAt).toBe('2026-05-21');
   expect(premises.rightOfDisposalLabel).toBe('Ja');
   expect(premises.rightOfDisposalNote).toBe('Hyresavtal 2026-05-01');
-  expect(premises.floorPlanFiles).toEqual(['planritning-farjas-brygga.pdf']);
+  expect(premises.floorPlanFiles).toEqual(['planritning-testkrogen.pdf']);
   expect(premises.fireSafety).toBe('Medelpads Räddningstjänstförbund: Ingen erinran');
 });
 
@@ -648,13 +671,13 @@ test('what the handler established about the premises for the underlay travels w
         ...errand,
         parameters: [
           ...(errand.parameters ?? []),
-          { key: 'PREMISES_RESTAURANT_NUMBER', values: ['2262-0112'] },
+          { key: 'PREMISES_RESTAURANT_NUMBER', values: [mockEnv.mockRestaurantNumber] },
           { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
           { key: 'PREMISES_PREVIOUS_PERMITS', values: ['2'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_1_HOLDER', values: ['Tynderö Sjökrog AB'] },
+          { key: 'PREMISES_PREVIOUS_PERMIT_1_HOLDER', values: ['Förra Krogen AB'] },
           { key: 'PREMISES_PREVIOUS_PERMIT_1_FROM', values: ['2019-05-01'] },
           { key: 'PREMISES_PREVIOUS_PERMIT_1_TO', values: ['2023-09-30'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_2_HOLDER', values: ['Bryggan i Söråker HB'] },
+          { key: 'PREMISES_PREVIOUS_PERMIT_2_HOLDER', values: ['Gamla Bryggan HB'] },
           { key: 'PREMISES_PREVIOUS_PERMIT_2_FROM', values: ['2024-05-15'] },
           { key: 'PREMISES_PREVIOUS_PERMIT_2_TO', values: ['2025-09-30'] },
         ],
@@ -662,22 +685,24 @@ test('what the handler established about the premises for the underlay travels w
     })
   );
 
-  expect(parameters.premises.restaurantNumber).toBe('2262-0112');
+  expect(parameters.premises.restaurantNumber).toBe(mockEnv.mockRestaurantNumber);
   expect(parameters.premises.servingAreaDescription).toBe('Matsalen, uteserveringen och bryggan');
   expect(parameters.premises.previousPermits).toEqual([
-    { holderName: 'Tynderö Sjökrog AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
-    { holderName: 'Bryggan i Söråker HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
+    { holderName: 'Förra Krogen AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
+    { holderName: 'Gamla Bryggan HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
   ]);
 });
 
 test('the company applying is not one of the companies the representatives are also engaged in', () => {
-  const alsoTheApplicant = withEngagements(axel, ['5595809475', '5560068255']);
+  const alsoTheApplicant = withEngagements(axel, [undashed(APPLICANT_ORG), ASSOCIATED_ORG]);
 
   const parameters = investigationBasisParameters(
     input({ errand: { ...errand, contacts: [alsoTheApplicant, erica] } as SupportErrand })
   );
 
-  expect(parameters.company.associatedCompanies.map((company) => company.orgNumber)).toEqual(['556006-8255']);
+  expect(parameters.company.associatedCompanies.map((company) => company.orgNumber)).toEqual([
+    mockEnv.mockSecondaryOrganizationNumber,
+  ]);
 });
 
 const factsOf = (over: Partial<InvestigationBasisFacts> = {}): InvestigationBasisFacts => ({
@@ -700,7 +725,11 @@ test('what the preview is made of is read from the services, each failure leavin
   expect(parameters.statements.map((statement) => statement.counterparty)).toEqual(['Polismyndigheten']);
   expect(parameters.company.otherOfficers).toEqual([]);
   expect(parameters.company.associatedCompanies).toEqual([
-    { name: 'Tynderö Fastighets AB', orgNumber: '556006-8255', organizationNumber: '556006-8255' },
+    {
+      name: ASSOCIATED_COMPANY.name,
+      orgNumber: mockEnv.mockSecondaryOrganizationNumber,
+      organizationNumber: mockEnv.mockSecondaryOrganizationNumber,
+    },
   ]);
-  expect(parameters.caseNumber).toBe('AOT-26100216');
+  expect(parameters.caseNumber).toBe(mockEnv.mockErrandNumber);
 });

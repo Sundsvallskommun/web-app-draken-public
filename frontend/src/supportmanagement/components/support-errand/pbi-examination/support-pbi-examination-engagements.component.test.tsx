@@ -21,14 +21,17 @@ vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
 
 const EDWIN = 'edwin';
 const EDWIN_PARTY_ID = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
+// The company data writes organization numbers without a hyphen; the mock keeps the one users type.
+const DRIVEN = mockEnv.mockSecondaryOrganizationNumber.replace('-', '');
+const AUDITED = mockEnv.mockOrganizationNumber.replace('-', '');
 
 const edwin: SupportStakeholderFormModel = withPbi(
   {
     internalId: EDWIN,
     externalId: EDWIN_PARTY_ID,
     externalIdType: 'PRIVATE',
-    firstName: 'Edwin',
-    lastName: 'Molina',
+    firstName: mockEnv.mockFirstName,
+    lastName: mockEnv.mockLastName,
     personNumber: mockEnv.mockPersonNumber,
     parameters: [],
   } as never,
@@ -36,8 +39,8 @@ const edwin: SupportStakeholderFormModel = withPbi(
 );
 
 const ENGAGEMENTS = [
-  { organizationNumber: '5560068255', name: 'Drivet AB', roles: [{ description: 'Verkställande direktör' }] },
-  { organizationNumber: '5567890123', name: 'Granskat AB', roles: [{ description: 'Revisor' }] },
+  { organizationNumber: DRIVEN, name: 'Drivet AB', roles: [{ description: 'Verkställande direktör' }] },
+  { organizationNumber: AUDITED, name: 'Granskat AB', roles: [{ description: 'Revisor' }] },
 ];
 
 const onChange = vi.fn();
@@ -64,29 +67,31 @@ afterEach(cleanup);
 test('the companies the person is engaged in are read by the party id the errand carries, auditing left out', async () => {
   mountBlock();
 
-  await waitFor(() => expect(boxFor('5560068255')).toBeTruthy());
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
   expect(getLegalEntityPersonEngagements).toHaveBeenCalledWith(EDWIN_PARTY_ID);
-  expect(boxFor('5567890123')).toBeNull();
-  expect(screen.getByText('Drivet AB - 556006-8255 - Verkställande direktör')).toBeTruthy();
+  expect(boxFor(AUDITED)).toBeNull();
+  expect(
+    screen.getByText(`Drivet AB - ${mockEnv.mockSecondaryOrganizationNumber} - Verkställande direktör`)
+  ).toBeTruthy();
 });
 
 test('a company ticked is written onto the stakeholder, where Spara ärende picks it up', async () => {
   mountBlock();
-  await waitFor(() => expect(boxFor('5560068255')).toBeTruthy());
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
-  fireEvent.click(boxFor('5560068255'));
+  fireEvent.click(boxFor(DRIVEN));
 
-  expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual(['5560068255']);
+  expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual([DRIVEN]);
 });
 
 test('a company already chosen is ticked, and ticking it again takes it off the underlay', async () => {
-  mountBlock(withEngagements(edwin, ['5560068255']));
-  await waitFor(() => expect(boxFor('5560068255')).toBeTruthy());
+  mountBlock(withEngagements(edwin, [DRIVEN]));
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
-  await waitFor(() => expect(boxFor('5560068255').checked).toBe(true));
+  await waitFor(() => expect(boxFor(DRIVEN).checked).toBe(true));
 
-  fireEvent.click(boxFor('5560068255'));
+  fireEvent.click(boxFor(DRIVEN));
 
   expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual([]);
 });
@@ -113,9 +118,9 @@ test('the personal number is never what the company data is asked for, since the
 });
 
 test('the chosen companies stand under the combobox as chips, named and nothing more', async () => {
-  mountBlock(withEngagements(edwin, ['5560068255']));
+  mountBlock(withEngagements(edwin, [DRIVEN]));
 
-  const chip = await waitFor(() => chipFor('5560068255'));
+  const chip = await waitFor(() => chipFor(DRIVEN));
 
   expect(chip.textContent).toBe('Drivet AB');
 
@@ -126,17 +131,17 @@ test('the chosen companies stand under the combobox as chips, named and nothing 
 
 test('a company chosen before the company data changed is still named on its chip', async () => {
   getLegalEntityPersonEngagements.mockResolvedValue([]);
-  mountBlock(withEngagements(edwin, ['5560068255']));
+  mountBlock(withEngagements(edwin, [DRIVEN]));
 
-  await waitFor(() => expect(chipFor('5560068255')).toBeTruthy());
+  await waitFor(() => expect(chipFor(DRIVEN)).toBeTruthy());
 
-  expect(chipFor('5560068255').textContent).toBe('556006-8255');
+  expect(chipFor(DRIVEN).textContent).toBe(mockEnv.mockSecondaryOrganizationNumber);
 });
 
 test('a passed step leaves the choice as it is', async () => {
   mountBlock(edwin, false);
 
-  await waitFor(() => expect(boxFor('5560068255')).toBeTruthy());
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
   expect(searchFieldOf().disabled).toBe(true);
 });
