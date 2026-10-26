@@ -1,4 +1,4 @@
-export const mockCategories = [
+const mockCategories = [
   {
     name: 'BOU',
     displayName: 'BoU',
@@ -506,8 +506,80 @@ export const mockCategories = [
   },
 ];
 
+/** A label in the tree the BFF returns for KC: the categorization root is stripped, so DEPARTMENT is the top. */
+type MockLabel = {
+  id: string;
+  classification: string;
+  displayName: string;
+  resourcePath: string;
+  resourceName: string;
+  labels: MockLabel[];
+  attributes?: { key: string; value: string }[];
+};
+
+const mockCategoryEscalationEmail = 'vuxenutbildning@example.com';
+export const mockTypeEscalationEmail = 'sfi@example.com';
+
+const withEscalationEmail = (mockLabel: MockLabel, escalationEmail: string): MockLabel => ({
+  ...mockLabel,
+  attributes: [{ key: 'escalationEmail', value: escalationEmail }],
+});
+
+const label = (
+  classification: string,
+  resourcePath: string,
+  displayName: string,
+  labels: MockLabel[] = []
+): MockLabel => ({
+  id: `label-${resourcePath.toLowerCase().replace(/\//g, '-')}`,
+  classification,
+  displayName,
+  resourcePath,
+  resourceName: resourcePath.split('/').pop()!,
+  labels,
+});
+
+// DEPARTMENT > CATEGORY > TYPE. BOU/COMPLAINTS is a leaf category with no types.
+// IAF/ADULT_EDUCATION and its SFI type both carry an escalation email; the type's is the one pre-filled.
+const mockLabelStructure: MockLabel[] = [
+  label('DEPARTMENT', 'BOU', 'BoU', [
+    label('CATEGORY', 'BOU/CHILDCARE', 'Barnomsorg', [
+      label('TYPE', 'BOU/CHILDCARE/INVOICES', 'Fakturor'),
+      label('TYPE', 'BOU/CHILDCARE/OTHER', 'Övrigt'),
+    ]),
+    label('CATEGORY', 'BOU/COMPLAINTS', 'Synpunkter'),
+  ]),
+  label('DEPARTMENT', 'IAF', 'IAF', [
+    withEscalationEmail(
+      label('CATEGORY', 'IAF/ADULT_EDUCATION', 'Vuxenutbildning', [
+        withEscalationEmail(label('TYPE', 'IAF/ADULT_EDUCATION/SFI', 'SFI'), mockTypeEscalationEmail),
+      ]),
+      mockCategoryEscalationEmail
+    ),
+  ]),
+  label('DEPARTMENT', 'KSK', 'KSK', [
+    label('CATEGORY', 'KSK/SERVICE_CENTER_IT', 'Servicecenter IT', [
+      label('TYPE', 'KSK/SERVICE_CENTER_IT/PASSWORD', 'Lösenord'),
+    ]),
+  ]),
+];
+
+/** The labels an errand carries for the path down to `resourcePath`: the tree nodes without children or attributes. */
+export const mockLabelPath = (resourcePath: string): Omit<MockLabel, 'labels' | 'attributes'>[] => {
+  const walk = (labels: MockLabel[]): MockLabel[] => {
+    for (const node of labels) {
+      if (node.resourcePath === resourcePath) return [node];
+      const below = walk(node.labels);
+      if (below.length) return [node, ...below];
+    }
+    return [];
+  };
+  return walk(mockLabelStructure).map(({ labels: _children, attributes: _attributes, ...node }) => node);
+};
+
 export const mockMetaData = {
   categories: mockCategories,
+  labels: { labelStructure: mockLabelStructure },
   externalIdTypes: [
     {
       name: 'EMPLOYEE',
@@ -584,61 +656,73 @@ export const mockMetaData = {
   contactReasons: [
     {
       reason: 'E-tjänst hittas inte',
+      displayName: 'E-tjänst hittas inte',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Övrigt',
+      displayName: 'Övrigt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Valde personlig kontakt',
+      displayName: 'Valde personlig kontakt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Synpunkt',
+      displayName: 'Synpunkt',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Problem med digitala verktyg',
+      displayName: 'Problem med digitala verktyg',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Klagomål',
+      displayName: 'Klagomål',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information svår att förstå',
+      displayName: 'Information svår att förstå',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information felaktig',
+      displayName: 'Information felaktig',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information saknas',
+      displayName: 'Information saknas',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Information hittas inte',
+      displayName: 'Information hittas inte',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'Felanmälan',
+      displayName: 'Felanmälan',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },
     {
       reason: 'E-tjänst saknas',
+      displayName: 'E-tjänst saknas',
       created: '2024-05-27T15:15:00+02:00',
       modified: '2024-05-27T15:15:00+02:00',
     },

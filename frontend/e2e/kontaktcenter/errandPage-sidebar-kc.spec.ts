@@ -9,8 +9,8 @@ import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockComments } from './fixtures/mockComments';
 import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
-import { mockMexTarget } from './fixtures/mockHandover';
-import { mockMetaData } from './fixtures/mockMetadata';
+import { mockMexTarget, mockParkingPermitTarget } from './fixtures/mockHandover';
+import { mockMetaData, mockTypeEscalationEmail } from './fixtures/mockMetadata';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
@@ -25,7 +25,8 @@ import {
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockNotificationsForErrandLog } from './fixtures/mockSupportNotifications';
 import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
-import { MODAL_DIALOG } from '../utils/modal';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
+import { waitForDialogOpened, waitForModalOverlaysGone } from '../blocks/ui';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -37,7 +38,7 @@ test.describe('errand page', () => {
     await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     // The errand log loads notifications to mark notified events.
     await mockRoute('**/supportnotifications/2281', [], { method: 'GET' });
-    await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget], { method: 'GET' });
+    await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget, mockParkingPermitTarget], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
     await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {
@@ -177,7 +178,9 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
-    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).not.toBeVisible();
+    // Both the errand's category and type carry an escalation email; the lowest label's is pre-filled.
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).toContainText(mockTypeEscalationEmail);
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-1"]`)).not.toBeVisible();
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
@@ -229,6 +232,10 @@ test.describe('errand page', () => {
 
   test('Can manage forwarding, suspending and solving errand', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+    // Dismissing the post-handover close modal closes the tab; keep the page alive for the rest of the test.
+    await page.addInitScript(() => {
+      window.close = () => undefined;
+    });
 
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -237,7 +244,7 @@ test.describe('errand page', () => {
     //Can forward the errand
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await waitForDialogOpened(page.locator(MODAL_DIALOG));
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
@@ -251,34 +258,58 @@ test.describe('errand page', () => {
 
     await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
 
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+    const forwardConfirm = page.locator(CONFIRM_DIALOG);
+    await waitForDialogOpened(forwardConfirm);
+    await expect(forwardConfirm).toContainText('Vill du överlämna ärendet?');
+    await expect(forwardConfirm.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'),
-      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+      forwardConfirm.locator('.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
+    // The forward modal only closes after the whole chain (message, assign, close errand), which
+    // takes several seconds on the CI runner; the success toast marks the end of it.
+    await expect(page.locator('.sk-snackbar-text', { hasText: 'Ärendet vidarebefordrades' })).toBeVisible({
+      timeout: 15000,
+    });
+    // Only the forward modal: the handover flow may open the close modal right after it.
+    await expect(page.locator(MODAL_DIALOG).filter({ hasText: 'Överlämna ärendet' })).toHaveCount(0);
+
+    // The forward opens the close modal to confirm or change the code; dismiss it to go on.
+    const closeModalAfterForward = page.locator(MODAL_DIALOG).filter({ hasText: 'Avsluta ärendet' });
+    await expect(closeModalAfterForward).toBeVisible();
+    await closeModalAfterForward.locator('.sk-modal-dialog-close').click();
+    await expect(closeModalAfterForward).toBeHidden();
 
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
     const suspendModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Parkera ärendet' });
-    await expect(suspendModal).toBeVisible();
+    await waitForDialogOpened(suspendModal);
     await suspendModal.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
+    await waitForModalOverlaysGone(page);
 
     const solveLables = [
-      { label: 'Hänvisat att återkomma', id: 'REFERRED_TO_RETURN' },
-      { label: 'Hänvisat till intern service', id: 'INTERNAL_SERVICE' },
-      { label: 'Hänvisat till självservice', id: 'SELF_SERVICE' },
-      { label: 'Kopplat samtal', id: 'CONNECTED' },
-      { label: 'Löst av Kontakt Sundsvall', id: 'SOLVED' },
-      { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
-      { label: 'SecureAppbox', id: 'SECURE_APPBOX' },
+      { label: 'Informerat', id: 'INFORMED' },
+      { label: 'Guidat', id: 'GUIDED' },
+      { label: 'Åtgärdat', id: 'ACTIONED' },
+      { label: 'Förberett', id: 'PREPARED' },
+      { label: 'Hänvisat', id: 'REFERRED' },
+      { label: 'Överlämnat', id: 'HANDED_OVER' },
     ];
 
     //can change supportErrand to solved
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     const solveModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Välj en lösning' });
-    await expect(solveModal).toBeVisible();
+    await waitForDialogOpened(solveModal);
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLables.length);
+
+    // The explanation is hidden until its info button is clicked, and hidden again on a second click.
+    const description = solveModal.locator('[data-cy="resolution-description-INFORMED"]');
+    await expect(description).toBeHidden();
+    await solveModal.locator('[data-cy="resolution-info-INFORMED"]').click();
+    await expect(description).toContainText('Jag har gett kunden den allmänna fakta');
+    await solveModal.locator('[data-cy="resolution-info-INFORMED"]').click();
+    await expect(description).toBeHidden();
+
     await expect(page.locator('[data-cy="solve-radiolist"] label input').nth(1)).toHaveValue(solveLables[1].id);
     await page.locator('[data-cy="solve-radiolist"] label input').nth(1).check();
     await solveModal
@@ -370,6 +401,25 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await expect(page.locator(MODAL_DIALOG)).toBeVisible();
     await expect(page.locator(MODAL_DIALOG)).toContainText('Nuvarande lösningskod');
+  });
+
+  test('Shows the resolution code as label on a solved errand', async ({ page, mockRoute, dismissCookieConsent }) => {
+    const mockSolvedSupportErrand = {
+      ...mockSupportErrand,
+      status: 'SOLVED',
+      resolution: 'HANDED_OVER',
+    };
+
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSolvedSupportErrand, {
+      method: 'GET',
+    });
+
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await expect(page.locator('[data-cy="resolution-label"]')).toHaveText(/Överlämnat/);
+    await expect(page.getByText('överlämnade ärendet.')).toBeVisible();
   });
 
   test('Can manage Kommentarer', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -472,7 +522,51 @@ test.describe('errand page', () => {
     );
   });
 
-  test('Can manage Vidarebefodra', async ({ page, mockRoute, dismissCookieConsent }) => {
+  // MEX and PT are both casedata forwards: same dialog, and the forward endpoint gets the target namespace.
+  for (const casedataTarget of [mockMexTarget, mockParkingPermitTarget]) {
+    test(`Can manage Vidarebefodra to ${casedataTarget.shortCode}`, async ({
+      page,
+      mockRoute,
+      dismissCookieConsent,
+    }) => {
+      await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
+      await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {
+        method: 'POST',
+      });
+
+      await page.goto('arende/KC-00000001');
+      await dismissCookieConsent();
+
+      await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+      await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+      await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+      await expect(page.locator('[data-cy="resolution-input"]')).toHaveValue('');
+      await expect(
+        page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' })
+      ).toBeDisabled();
+      await page.locator('[data-cy="resolution-input"]').selectOption(casedataTarget.displayName);
+      // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
+      // into the editor before forwarding.
+      await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
+      await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
+      await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
+
+      await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
+
+      await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
+      await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+      const [forwardResponse] = await Promise.all([
+        page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
+        page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+      ]);
+      const forwardRequest = forwardResponse.request();
+      const forwardBody = forwardRequest.postDataJSON();
+      expect(forwardBody.department).toBe(casedataTarget.namespace);
+      expect(forwardBody.recipient).toBe('DEPARTMENT');
+    });
+  }
+
+  test('Can forward to PT without a message', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {
       method: 'POST',
@@ -482,30 +576,19 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
-    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
-    await expect(page.locator('[data-cy="resolution-input"]')).toHaveValue('');
-    await expect(
-      page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' })
-    ).toBeDisabled();
-    await page.locator('[data-cy="resolution-input"]').selectOption('Mark och exploatering (MEX)');
-    // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
-    // into the editor before forwarding.
+    await page.locator('[data-cy="resolution-input"]').selectOption(mockParkingPermitTarget.displayName);
+    // The message is optional for a Draken forward, so leave the editor empty.
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
-    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
-    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
 
     await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
-
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     const [forwardResponse] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
       page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
     ]);
-    const forwardRequest = forwardResponse.request();
-    const forwardBody = forwardRequest.postDataJSON();
-    expect(forwardBody.department).toBe('SBK_MEX');
-    expect(forwardBody.recipient).toBe('DEPARTMENT');
+    const forwardBody = forwardResponse.request().postDataJSON();
+    expect(forwardBody.department).toBe(mockParkingPermitTarget.namespace);
+    expect(forwardBody.message).toBe('');
+    await expect(page.getByText('Ärendet vidarebefordrades')).toBeVisible();
   });
 });

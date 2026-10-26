@@ -1,3 +1,4 @@
+import { useAceCallerPrefill } from '@common/ace/use-ace-caller-prefill';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
@@ -12,6 +13,7 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+import { v4 as uuidv4 } from 'uuid';
 
 import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
@@ -48,6 +50,31 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errandId]);
+
+  // An errand opened from an ACE screen pop gets the identified caller as (unsaved) customer, so the
+  // case worker reviews it before it is saved - saving makes the errand visible on Mina sidor.
+  useAceCallerPrefill(supportErrand?.errandNumber, (person, personNumber) => {
+    if (useSupportStore.getState().stakeholderCustomers.length > 0) {
+      return;
+    }
+    const customer: SupportStakeholderFormModel = {
+      ...emptyContact,
+      role: 'PRIMARY',
+      internalId: uuidv4(),
+      externalIdType: ExternalIdType.PRIVATE,
+      externalId: person.personId,
+      personNumber,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      address: person.street,
+      careOf: person.careof,
+      zipCode: person.zip,
+      city: person.city,
+    };
+    setStakeholderCustomers([customer]);
+    setValue('customer', [customer], { shouldDirty: true });
+    props.setUnsaved(true);
+  });
 
   const contactsFieldArray = useFieldArray({
     control,

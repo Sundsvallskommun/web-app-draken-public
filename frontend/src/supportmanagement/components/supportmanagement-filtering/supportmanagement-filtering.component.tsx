@@ -136,7 +136,8 @@ const SupportManagementFiltering: FC<{
                 </>
               ) : null}
 
-              {appConfig.features.useThreeLevelCategorization ? (
+              {/* Positional on the tree (getLabelsAtDepth): the three top levels. */}
+              {appConfig.features.useLabelCategorization ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />

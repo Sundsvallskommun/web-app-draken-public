@@ -18,6 +18,7 @@ interface SupportState {
   /** Errand and namespace subscriptions belonging to the logged in user. */
   subscriptions: Subscription[];
   activeTabKey?: string;
+  showCloseModalAfterHandover: boolean;
 }
 
 interface SupportActions {
@@ -29,6 +30,7 @@ interface SupportActions {
   setNotifications: (notifications: NotificationView[]) => void;
   setSubscriptions: (subscriptions: Subscription[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
+  setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
 }
 
@@ -43,6 +45,7 @@ const initialState: SupportState = {
   notifications: [],
   subscriptions: [],
   activeTabKey: 'basics',
+  showCloseModalAfterHandover: false,
 };
 
 export const useSupportStore = create<SupportStore>((set) => ({
@@ -55,5 +58,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setNotifications: (notifications) => set({ notifications }),
   setSubscriptions: (subscriptions) => set({ subscriptions }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
+  setShowCloseModalAfterHandover: (showCloseModalAfterHandover) => set({ showCloseModalAfterHandover }),
   reset: () => set(initialState),
 }));

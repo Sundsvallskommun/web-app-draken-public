@@ -1,5 +1,6 @@
 'use client';
 
+import { AceConnector } from '@common/ace/ace-connector.component';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -87,7 +88,12 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <AceConnector />
+      {children}
+    </>
+  );
 }
 
 function AppLayout({ children }: ClientApplicationProps) {

@@ -41,10 +41,7 @@ export const getNamespaceConfigs = (municipalityId: string): Promise<NamespaceCo
     .catch(() => []);
 };
 
-/**
- * Fetches the metadata for the target namespace. Used for display names (two-level) and the label
- * tree (three-level classification). Best-effort: returns an empty object on failure.
- */
+/** Metadata of the target namespace (a tree under a ROOT comes back as the levels below it). Best-effort: {} on failure. */
 export const getNamespaceMetadata = (municipalityId: string, namespace: string): Promise<MetadataResponse> => {
   return apiService
     .get<MetadataResponse>(`supportnamespacemetadata/${municipalityId}/${namespace}`)

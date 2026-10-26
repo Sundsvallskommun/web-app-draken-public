@@ -70,6 +70,14 @@ test.describe('Decisions tab', () => {
 
   test('displays the correct fields', async ({ page }) => {
     await expect(page.locator('[data-cy="decision-outcome-select"]')).toBeVisible();
+    // The PT-only outcomes (Bifall / Avslag, Återkallelse) are not offered in MEX.
+    await expect(page.locator('[data-cy="decision-outcome-select"] option')).toHaveText([
+      'Välj utfall',
+      'Bifall',
+      'Avslag',
+      'Ärendet avskrivs',
+      'Ärendet avvisas',
+    ]);
     await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="validTo-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toBeVisible();
