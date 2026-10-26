@@ -53,8 +53,6 @@ import {
   supportPremisesCapacityOf,
   supportPremisesExamination,
   supportPremisesFireSafety,
-  type SupportPremisesPreviousPermit,
-  supportPremisesPreviousPermits,
 } from './support-premises-examination-service';
 import { getSupportStatements } from './support-statement-service';
 
@@ -179,7 +177,8 @@ export interface InvestigationBasisParameters {
     leaseHtml: string;
     servingAreaDescription: string;
     floorPlanFiles: string[];
-    previousPermits: SupportPremisesPreviousPermit[];
+    /** No longer collected, but the template still iterates it. */
+    previousPermits: never[];
     fireSafety: string;
     fireSafetyHtml: string;
   };
@@ -673,7 +672,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       leaseHtml: texts.lease ?? '',
       servingAreaDescription: examination.servingArea,
       floorPlanFiles: fileNames(input.attachments, FLOOR_PLAN_PURPOSES),
-      previousPermits: supportPremisesPreviousPermits(errand?.parameters),
+      previousPermits: [],
       fireSafety: fireSafetyLine(input.statements, metadata),
       fireSafetyHtml: texts.fire_safety ?? '',
     },

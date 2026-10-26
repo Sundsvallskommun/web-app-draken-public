@@ -720,18 +720,7 @@
     "restaurant_number_placeholder": "Nummer enligt registret, t.ex. 2281-0112",
     "serving_area": "Serveringsytor",
     "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
-    "previous_permits": {
-      "label": "Tidigare verksamhet i lokalen",
-      "description": "Tidigare serveringstillstånd för serveringsstället, enligt registret.",
-      "empty": "Inga tidigare tillstånd är angivna.",
-      "holder": "Tillståndshavare",
-      "holder_placeholder": "Bolagets namn",
-      "valid_from": "Från",
-      "valid_to": "Till",
-      "add": "Lägg till tidigare tillstånd",
-      "remove": "Ta bort tidigare tillstånd {{number}}"
-    },
-    "also_in_decision": "Obs: restaurangnummer, serveringsytor och tidigare verksamhet följer inte med till beslutet, utan anges på nytt där."
+    "also_in_decision": "Obs: restaurangnummer och serveringsytor följer inte med till beslutet, utan anges på nytt där."
   },
   "action_points": {
     "heading": "Åtgärdspunkter",
