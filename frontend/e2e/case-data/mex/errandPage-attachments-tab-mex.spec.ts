@@ -179,8 +179,10 @@ test.describe('Errand page attachments tab', () => {
       });
     }); // @uploadAttachment
 
-    await page.goto(`arende/${mockMexErrand_base.data.id}`);
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200),
+      page.goto(`arende/${mockMexErrand_base.data.id}`),
+    ]);
     await dismissCookieConsent();
     const attachmentsTab = page.getByRole('tab', { name: /^Bilagor/ });
     await expect(attachmentsTab).toHaveText(`Bilagor (${totalAttachmentCount})`);
@@ -211,7 +213,9 @@ test.describe('Errand page attachments tab', () => {
       .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
       .filter({ hasText: pdfAttachment.name });
     await expect(pdfRow.locator('.sk-form-file-upload-list-item-icon img')).toHaveCount(0);
-    expect(contentRequests).toEqual([imageAttachment.id]);
+    // Only the image's content is fetched. Compared as a set: in development React strict mode runs
+    // the preview effect twice, so the image may be requested twice there.
+    expect([...new Set(contentRequests)]).toEqual([imageAttachment.id]);
   });
 
   test('opens an image attachment in a modal', async ({ page }) => {

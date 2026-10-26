@@ -57,8 +57,10 @@ test.describe('Errand page', () => {
     await mockRoute('**/estateInfo/**1:1', mockEstateInfo11, { method: 'GET' });
     await mockRoute('**/estateInfo/**1:2', mockEstateInfo12, { method: 'GET' });
 
-    await page.goto('arende/MEX-2024-000280');
-    await page.waitForResponse((resp) => resp.url().includes('errand/errandNumber') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('errand/errandNumber') && resp.status() === 200),
+      page.goto('arende/MEX-2024-000280'),
+    ]);
     await dismissCookieConsent();
   });
 

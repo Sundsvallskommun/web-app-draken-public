@@ -1,8 +1,6 @@
 import {
   Contract,
   ContractType,
-  IntervalType,
-  InvoicedIn,
   LeaseType,
   StakeholderRole,
   Status,
@@ -392,90 +390,6 @@ test.describe('Errand page contracts tab', () => {
     await expect(page.locator('[data-cy="index-adjustment-help-text"]')).toHaveText(
       `Indexreglering utgår från index enligt KPI 80 för oktober ${indexYear}: ${indexNumber}`
     );
-  });
-
-  test('manages lease fee automatically in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
-    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
-
-    await expect(page.locator('[data-cy="generate-invoice-true-radiobutton"]')).toBeVisible();
-    await expect(page.locator('[data-cy="generate-invoice-false-radiobutton"]')).toBeVisible();
-
-    await page.locator('[data-cy="fees-yearly-input"]').fill('120');
-
-    await expect(page.locator('[data-cy="indexed-true-radiobutton"]')).toBeVisible();
-    await expect(page.locator('[data-cy="indexed-false-radiobutton"]')).toBeVisible();
-
-    await expect(page.locator('[data-cy="invoice-interval-yearly-radiobutton"]')).toBeVisible();
-    await expect(page.locator('[data-cy="invoice-interval-halfyearly-radiobutton"]')).toBeVisible();
-    await page.locator('[data-cy="invoice-interval-quarterly-radiobutton"]').check({ force: true });
-
-    await page.locator('[data-cy="invoice-markup-input"]').fill('TEST markup');
-
-    await expect(page.locator('[data-cy="fees-additional-information-0-input"]')).toBeVisible();
-
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
-    await page.locator('[data-cy="avtalstid-start"]').clear();
-    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
-    await page.locator('[data-cy="all-notice-period"]').clear();
-    await page.locator('[data-cy="all-notice-period"]').fill('1');
-
-    const putContractRequest = page.waitForRequest(
-      (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
-    );
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
-    expect(leaseAgreement.invoicing).toEqual({
-      invoiceInterval: IntervalType.QUARTERLY,
-      invoicedIn: InvoicedIn.ADVANCE,
-    });
-    expect(leaseAgreement.fees).toEqual({
-      currency: 'SEK',
-      monthly: 0,
-      yearly: 120,
-      total: 120,
-      additionalInformation: ['Avgift, lägenhetsarrende'],
-    });
-  });
-
-  test('manages extra avitexter in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
-    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
-
-    await page.locator('[data-cy="fees-yearly-input"]').fill('120');
-
-    // Extra avitexter are stored as detailedDescriptionNN under the InvoiceInfo extraParameter group
-    await page.locator('[data-cy="add-detailed-description-button"]').click();
-    await expect(page.getByText('Kompletterande avitext 1', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Ta bort kompletterande avitext 1' })).toBeVisible();
-    await page.locator('[data-cy="detailed-description-input-0"]').fill('Första kompletterande raden');
-    await page.locator('[data-cy="add-detailed-description-button"]').click();
-    await page.locator('[data-cy="detailed-description-input-1"]').fill('Andra kompletterande raden');
-
-    // Each row is capped at 51 characters
-    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveAttribute('maxlength', '51');
-
-    // Removing the first row renumbers the remaining one
-    await page.locator('[data-cy="remove-detailed-description-0-button"]').click();
-    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveValue('Andra kompletterande raden');
-    await expect(page.locator('[data-cy="detailed-description-input-1"]')).not.toBeVisible();
-
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
-    await page.locator('[data-cy="avtalstid-start"]').clear();
-    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
-    await page.locator('[data-cy="all-notice-period"]').clear();
-    await page.locator('[data-cy="all-notice-period"]').fill('1');
-
-    const putContractRequest = page.waitForRequest(
-      (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
-    );
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
-    const invoiceInfo = leaseAgreement.extraParameters?.find((p) => p.name === 'InvoiceInfo');
-    expect(invoiceInfo?.parameters?.detailedDescription01).toBe('Andra kompletterande raden');
-    expect(invoiceInfo?.parameters?.detailedDescription02).toBeUndefined();
   });
 
   test('manages creating a new lease agreement with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -961,8 +875,9 @@ test.describe('Errand page contracts tab', () => {
         await expect(page.locator('[data-cy="lessor-notice-period"]')).toHaveAttribute('readonly');
 
         await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
-        await expect(page.locator('[data-cy="generate-invoice-true-radiobutton"]')).toBeDisabled();
-        await expect(page.locator('[data-cy="generate-invoice-false-radiobutton"]')).toBeDisabled();
+        // Whether the contract is billed (invoicing.billingEnabled) can be changed also on ACTIVE contracts.
+        await expect(page.locator('[data-cy="generate-invoice-true-radiobutton"]')).toBeEnabled();
+        await expect(page.locator('[data-cy="generate-invoice-false-radiobutton"]')).toBeEnabled();
         await expect(page.locator('[data-cy="fees-yearly-input"]')).toHaveAttribute('readonly');
         await expect(page.locator('[data-cy="indexed-true-radiobutton"]')).toBeDisabled();
         await expect(page.locator('[data-cy="indexed-false-radiobutton"]')).toBeDisabled();

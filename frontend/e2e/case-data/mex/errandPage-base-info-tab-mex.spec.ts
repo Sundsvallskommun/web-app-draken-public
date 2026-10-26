@@ -79,8 +79,10 @@ test.describe('Errand page', () => {
   });
 
   const visit = async (page, dismissCookieConsent) => {
-    await page.goto('arende/PRH-2022-000019');
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200),
+      page.goto('arende/PRH-2022-000019'),
+    ]);
     await dismissCookieConsent();
     const tab = page.locator('.sk-tabs-list button').nth(0);
     await expect(tab).toHaveText('Grunduppgifter');
@@ -270,22 +272,34 @@ test.describe('Errand page', () => {
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await visit(page, dismissCookieConsent);
 
+    // Choosing "Företag" swaps the search field for an organization number field (same data-cy) and
+    // updates the form's stakeholder type asynchronously; the number is validated when the field loses
+    // focus. Retry typing until the form has settled, as a user typing a number always lets it.
+    const enterOrganizationNumber = async (id: 'owner' | 'person', number: string) => {
+      const field = page.locator(`[data-cy="contact-personalNumber-${id}"]`);
+      await expect(field).toHaveAttribute('name', 'organizationNumber');
+      await field.clear();
+      await field.fill(number);
+      await field.blur();
+    };
+    const orgNumberError = (id: 'owner' | 'person') => page.locator(`[data-cy="org-number-error-message-${id}"]`);
+
     await page.locator('[data-cy="search-enterprise-owner-form"]').click();
-    await page.locator('[data-cy="search-enterprise-owner-form"]').click();
-    await page.locator('[data-cy="contact-personalNumber-owner"]').clear();
-    await page.locator('[data-cy="contact-personalNumber-owner"]').fill(env.mockInvalidOrganizationNumber);
-    await expect(page.locator('[data-cy="org-number-error-message-owner"]')).toBeVisible();
-    await expect(page.locator('[data-cy="org-number-error-message-owner"]')).toContainText(invalidOrgNumberMessage);
+    await expect(async () => {
+      await enterOrganizationNumber('owner', env.mockInvalidOrganizationNumber);
+      await expect(orgNumberError('owner')).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    await expect(orgNumberError('owner')).toContainText(invalidOrgNumberMessage);
 
     await page.locator('[data-cy="search-enterprise-person-form"]').click();
-    await page.locator('[data-cy="contact-personalNumber-person"]').clear();
-    await page.locator('[data-cy="contact-personalNumber-person"]').fill(env.mockInvalidOrganizationNumber);
-    await expect(page.locator('[data-cy="org-number-error-message-person"]')).toBeVisible();
-    await expect(page.locator('[data-cy="org-number-error-message-person"]')).toContainText(invalidOrgNumberMessage);
+    await expect(async () => {
+      await enterOrganizationNumber('person', env.mockInvalidOrganizationNumber);
+      await expect(orgNumberError('person')).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    await expect(orgNumberError('person')).toContainText(invalidOrgNumberMessage);
 
-    await page.locator('[data-cy="contact-personalNumber-person"]').clear();
-    await page.locator('[data-cy="contact-personalNumber-person"]').fill(env.mockOrganizationNumber);
-    await expect(page.locator('[data-cy="org-number-error-message-person"]')).not.toBeVisible();
+    await enterOrganizationNumber('person', env.mockOrganizationNumber);
+    await expect(orgNumberError('person')).not.toBeVisible();
   });
 
   test('saves the correct errand information', async ({ page, mockRoute, env }) => {
@@ -315,8 +329,10 @@ test.describe('Errand page', () => {
     await mockRoute(`**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base, { method: 'PATCH' }); // @patchErrand
     await mockRoute('**/address', mockAddress, { method: 'POST' }); // @postAddress
     await mockRoute('**/organization', mockOrganization, { method: 'POST' }); // @postOrganization
-    await page.goto('arende/PRH-2022-000019');
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200),
+      page.goto('arende/PRH-2022-000019'),
+    ]);
 
     await page.locator('.sk-cookie-consent-btn-wrapper').getByText('Godkänn alla').click();
     const tab = page.locator('.sk-tabs-list button').nth(0);

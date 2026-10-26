@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": false,
+        "amount": 30
+    },
+    "auditLog": "/Users/zaralundgrenpettersson/project/code/kommunen/web-app-draken-public/backend/src/utils/error/.212cd3e0a038c069bbb004fdeea91697095ff729-audit.json",
+    "files": [
+        {
+            "date": 1792743602576,
+            "name": "/Users/zaralundgrenpettersson/project/code/kommunen/web-app-draken-public/backend/src/utils/error/2026-10-23.log",
+            "hash": "511aacdb17f4d50cdcc9857e14af2aeb53cd4886d9bdcbfb4e30bf49b4be1ff1"
+        }
+    ],
+    "hashType": "sha256"
+}
