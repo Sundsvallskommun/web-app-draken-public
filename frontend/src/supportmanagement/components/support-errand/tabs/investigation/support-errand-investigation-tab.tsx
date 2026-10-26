@@ -1,15 +1,20 @@
-import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  missingSupportInvestigationSections,
+  sectionKeyOf,
+  supportInvestigationSectionInputs,
+  visibleSupportInvestigationSections,
+} from '@supportmanagement/services/support-investigation-sections';
+import {
+  completeSupportInvestigationSections,
   getSupportInvestigation,
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
-  RETIRED_INVESTIGATION_SECTION_KEYS,
   saveSupportInvestigation,
   startSupportInvestigation,
-  SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
 import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import dayjs from 'dayjs';
@@ -17,13 +22,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InspectionProtocol } from './inspection-protocol.component';
+import { InvestigationBasis } from './investigation-basis.component';
 import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
 import { SectionDisclosure } from './investigation-disclosure.component';
-
-const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
-  (investigation?.sections ?? [])
-    .filter((section) => !RETIRED_INVESTIGATION_SECTION_KEYS.includes(section.sectionKey ?? ''))
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 const asDate = (value: string | undefined): string =>
   value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
@@ -34,6 +35,8 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
     <span>{value}</span>
   </div>
 );
+
+type SectionSave = React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 
 interface InvestigationTabProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -61,12 +64,8 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   const toastMessage = useSnackbar();
 
   const [investigation, setInvestigation] = useState<Investigation>();
-  const [statementsEdited, setStatementsEdited] = useState(false);
-  const saveStatements = useRef<() => Promise<boolean>>(undefined);
-  const [financialEdited, setFinancialEdited] = useState(false);
-  const saveFinancial = useRef<() => Promise<boolean>>(undefined);
-  const [premisesEdited, setPremisesEdited] = useState(false);
-  const savePremises = useRef<() => Promise<boolean>>(undefined);
+  const [editedSections, setEditedSections] = useState<Record<string, boolean>>({});
+  const sectionSaves = useRef<Record<string, SectionSave>>({});
   const savedInvestigation = useRef<Investigation>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +88,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
+  const examinationsCompleted = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   const receive = (result: Investigation | undefined) => {
@@ -112,6 +112,25 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     [receiveKeepingUnsavedEdits]
   );
 
+  const saveRefOfSection = (sectionKey: string): SectionSave =>
+    (sectionSaves.current[sectionKey] ??= { current: undefined });
+
+  const noteSectionEdited = useCallback((sectionKey: string, sectionEdited: boolean) => {
+    setEditedSections((current) =>
+      current[sectionKey] === sectionEdited ? current : { ...current, [sectionKey]: sectionEdited }
+    );
+  }, []);
+
+  const someSectionEdited = Object.values(editedSections).some(Boolean);
+
+  const saveTheSections = async (): Promise<boolean> => {
+    let allSaved = true;
+    for (const save of Object.values(sectionSaves.current)) {
+      if (!((await save.current?.()) ?? true)) allSaved = false;
+    }
+    return allSaved;
+  };
+
   useEffect(() => {
     if (!errandId) return undefined;
     let current = true;
@@ -132,8 +151,8 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
   useEffect(() => {
-    setUnsaved(edited || statementsEdited || financialEdited || premisesEdited);
-  }, [edited, statementsEdited, financialEdited, premisesEdited, setUnsaved]);
+    setUnsaved(edited || someSectionEdited);
+  }, [edited, someSectionEdited, setUnsaved]);
 
   useEffect(() => {
     setHasContent(Boolean(investigation));
@@ -167,11 +186,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
       errandId,
       municipalityId,
       t('common:investigation.title'),
-      SUPPORT_INVESTIGATION_SECTIONS.map((section) => ({
-        sectionKey: section.sectionKey,
-        heading: t(section.headingKey),
-        sortOrder: section.sortOrder,
-      }))
+      supportInvestigationSectionInputs(t)
     )
       .then((result) => {
         receive(result);
@@ -191,6 +206,29 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 
+  const completeTheExaminations = (): Promise<void> => {
+    const missing = missingSupportInvestigationSections(investigation);
+    if (!errandId || !investigation?.id || missing.length === 0) return Promise.resolve();
+
+    return completeSupportInvestigationSections(
+      errandId,
+      municipalityId,
+      investigation.id,
+      supportInvestigationSectionInputs(t, missing)
+    )
+      .then(receiveKeepingUnsavedEdits)
+      .catch(() => {
+        examinationsCompleted.current = false;
+      });
+  };
+
+  useEffect(() => {
+    if (isLoading || error || !investigation || readOnly || examinationsCompleted.current) return;
+    examinationsCompleted.current = true;
+    void completeTheExaminations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, error, investigation, readOnly]);
+
   const reportSaved = () =>
     toastMessage({
       position: 'bottom',
@@ -203,10 +241,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     if (!errandId || !investigation?.id) return true;
 
     savedInvestigation.current = investigation;
-    const statementsSaved = (await saveStatements.current?.()) ?? true;
-    const financialSaved = (await saveFinancial.current?.()) ?? true;
-    const premisesSaved = (await savePremises.current?.()) ?? true;
-    if (!statementsSaved || !financialSaved || !premisesSaved) return false;
+    if (!(await saveTheSections())) return false;
 
     const latest = savedInvestigation.current;
     if (!edited) {
@@ -238,7 +273,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   // The saver is registered once; the ref keeps it pointing at the current fields.
   saveLatest.current = save;
 
-  const sections = useMemo(() => sectionsInOrder(investigation), [investigation]);
+  const sections = useMemo(() => visibleSupportInvestigationSections(investigation), [investigation]);
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
@@ -292,18 +327,14 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
                 key={section.id ?? section.sectionKey}
                 section={section}
                 writable={!readOnly}
-                onStatementsEdited={setStatementsEdited}
-                saveStatements={saveStatements}
-                onFinancialEdited={setFinancialEdited}
-                onFinancialSaved={receiveFromSection}
-                saveFinancial={saveFinancial}
-                onPremisesEdited={setPremisesEdited}
-                onPremisesSaved={receiveFromSection}
-                savePremises={savePremises}
+                onEdited={noteSectionEdited}
+                onSaved={receiveFromSection}
+                saveRef={saveRefOfSection(sectionKeyOf(section))}
                 investigationId={investigation.id}
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
+            <InvestigationBasis investigation={investigation} unsaved={edited || someSectionEdited} />
           </div>
         </div>
       ) : null}
