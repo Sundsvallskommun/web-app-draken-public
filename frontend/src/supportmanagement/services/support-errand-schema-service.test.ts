@@ -1,7 +1,12 @@
 import type { ErrandLabel } from '@common/data-contracts/supportmanagement/data-contracts';
 import { expect, test } from 'vitest';
 
-import { jsonParameterForSchema, schemaNameForErrand, upsertJsonParameter } from './support-errand-schema-service';
+import {
+  isOriginalJsonParameter,
+  jsonParameterForSchema,
+  schemaNameForErrand,
+  upsertJsonParameter,
+} from './support-errand-schema-service';
 import type { SupportErrand } from './support-errand-service';
 
 const label = (classification: string, resourceName: string): ErrandLabel => ({ classification, resourceName });
@@ -94,4 +99,9 @@ test('upserting replaces the value and the schema version of the document it mat
   expect(upsertJsonParameter(existing, { key: 'aot_alcohol', value: { a: 2 }, schemaId: 'alcohol-id-1-1' })).toEqual([
     { key: 'aot_alcohol', value: { a: 2 }, schemaId: 'alcohol-id-1-1', version: 3 },
   ]);
+});
+
+test('the copy Katla keeps of the answers as filed is told apart from the documents Draken handles', () => {
+  expect(isOriginalJsonParameter({ key: 'aot_alcohol_serving_permit_application_original' })).toBe(true);
+  expect(isOriginalJsonParameter({ key: 'aot_alcohol_serving_permit_application' })).toBe(false);
 });

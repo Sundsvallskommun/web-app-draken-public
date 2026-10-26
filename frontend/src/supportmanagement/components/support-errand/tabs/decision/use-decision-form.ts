@@ -3,6 +3,7 @@
 import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { decisionParameterValue } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import type { DecisionScope } from '@supportmanagement/services/support-decision-scope-service';
 import { decisionTermTexts, outcomeWithoutConditions } from '@supportmanagement/services/support-decision-service';
 import { useCallback, useState } from 'react';
 
@@ -21,6 +22,8 @@ export interface DecisionFormValues {
   /** Starts as the telephone the application gave, which it often does not. */
   premisesPhone: string;
   terms: string[];
+  /** The beverages and serving hours the permit grants, which start as the application asked. */
+  scope: DecisionScope;
 }
 
 interface DecisionFormInput {
@@ -31,6 +34,8 @@ interface DecisionFormInput {
   savedPremises: DecisionPremises | undefined;
   premisesToSend: DecisionPremises | undefined;
   applicationPremisesPhone: string;
+  /** The decided scope as saved, and the application's where the decision has none saved. */
+  scopeAsSaved: DecisionScope;
   defaultRole: string;
 }
 
@@ -42,7 +47,12 @@ export interface DecisionForm {
 }
 
 /** What the decision was saved with, which is also what an unsaved form starts from. */
-const asSaved = ({ decision, applicationPremisesPhone, defaultRole }: DecisionFormInput): DecisionFormValues => ({
+const asSaved = ({
+  decision,
+  applicationPremisesPhone,
+  scopeAsSaved,
+  defaultRole,
+}: DecisionFormInput): DecisionFormValues => ({
   outcome: outcomeWithoutConditions(decision?.outcome),
   decidedByRole: decision?.decidedByRole || defaultRole,
   legalBasis: decision?.legalBasis ?? '',
@@ -54,6 +64,7 @@ const asSaved = ({ decision, applicationPremisesPhone, defaultRole }: DecisionFo
   servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
   premisesPhone: decisionParameterValue(decision?.parameters, 'premisesPhone') ?? applicationPremisesPhone,
   terms: decisionTermTexts(decision),
+  scope: scopeAsSaved,
 });
 
 const comparable = (values: DecisionFormValues, premises: DecisionPremises | undefined) =>

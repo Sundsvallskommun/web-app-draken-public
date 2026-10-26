@@ -6,7 +6,7 @@ import {
   saveSupportErrandJsonParameters,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportErrandTypeForm } from './support-errand-type-form.component';
@@ -20,7 +20,6 @@ vi.mock('@common/components/json/fields/facility-search-field.componant', () => 
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),
   saveSupportErrandJsonParameters: vi.fn(),
-  isEserviceErrand: (errand: SupportErrand) => errand.channel === 'ESERVICE',
   isSupportErrandLocked: () => false,
 }));
 
@@ -29,6 +28,11 @@ const schema: RJSFSchema = { type: 'object', properties: { answer: { type: 'stri
 
 const errand = (overrides: Partial<SupportErrand>): SupportErrand =>
   ({ id: 'errand-id', channel: 'WEB_UI', ...overrides } as unknown as SupportErrand);
+
+const standingIn = (currentActivityId: string) => ({ processStatus: 'WAITING', currentActivityId });
+/** What the citizen filed, and the copy of it Katla keeps beside it. */
+const filed = { key: SCHEMA_NAME, value: { answer: 'Sparat svar' }, schemaId: 'schema-id-1.0' };
+const original = { ...filed, key: `${SCHEMA_NAME}_original` };
 
 beforeEach(() => {
   vi.mocked(getLatestRjsfSchema).mockReset().mockResolvedValue({
@@ -52,19 +56,46 @@ test('an errand registered in Draken is filled in against the latest schema of i
   expect(vi.mocked(getRjsfSchema)).not.toHaveBeenCalled();
 });
 
-test('an errand filed in an e-service is shown as filed: its own schema version, read-only', async () => {
+test('an application filed in an e-service is edited on its own schema version while the errand is under review', async () => {
   const supportErrand = errand({
     channel: 'ESERVICE',
-    jsonParameters: [{ key: SCHEMA_NAME, value: { answer: 'Sparat svar' }, schemaId: 'schema-id-1.0' }],
-  });
+    process: standingIn('review_phase'),
+    jsonParameters: [filed, original],
+  } as Partial<SupportErrand>);
+  vi.mocked(saveSupportErrandJsonParameters).mockResolvedValue(true);
+  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: supportErrand } as never);
+
+  render(<SupportErrandTypeForm supportErrand={supportErrand} municipalityId="2281" schemaName={SCHEMA_NAME} />);
+
+  const input = (await screen.findByDisplayValue('Sparat svar')) as HTMLInputElement;
+  expect(input.hasAttribute('disabled')).toBe(false);
+  expect(vi.mocked(getRjsfSchema).mock.calls[0]).toEqual(['2281', 'schema-id-1.0']);
+  expect(vi.mocked(getLatestRjsfSchema)).not.toHaveBeenCalled();
+
+  fireEvent.change(input, { target: { value: 'Ändrat svar' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Spara ärendeuppgifter' }));
+
+  // The answers stay on the version they were filed under; the copy Katla keeps goes along untouched.
+  await waitFor(() => expect(saveSupportErrandJsonParameters).toHaveBeenCalled());
+  expect(vi.mocked(saveSupportErrandJsonParameters).mock.calls[0]).toEqual([
+    'errand-id',
+    '2281',
+    [{ ...filed, value: { answer: 'Ändrat svar' } }, original],
+  ]);
+});
+
+test('once the errand has passed the review the answers stand as reviewed', async () => {
+  const supportErrand = errand({
+    channel: 'ESERVICE',
+    process: standingIn('investigation_phase'),
+    jsonParameters: [filed, original],
+  } as Partial<SupportErrand>);
 
   render(<SupportErrandTypeForm supportErrand={supportErrand} municipalityId="2281" schemaName={SCHEMA_NAME} />);
 
   const input = await screen.findByDisplayValue('Sparat svar');
   expect(input.hasAttribute('disabled')).toBe(true);
   expect(screen.queryByRole('button', { name: 'Spara ärendeuppgifter' })).toBeNull();
-  expect(vi.mocked(getRjsfSchema).mock.calls[0]).toEqual(['2281', 'schema-id-1.0']);
-  expect(vi.mocked(getLatestRjsfSchema)).not.toHaveBeenCalled();
 });
 
 test('the first save binds the errand to the loaded version without reloading the form', async () => {

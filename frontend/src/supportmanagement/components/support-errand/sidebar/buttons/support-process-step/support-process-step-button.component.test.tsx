@@ -17,6 +17,7 @@ import { FC, PropsWithChildren } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
+import { mockEnv } from '../../../../../../tests/mock-env';
 import { SupportProcessStepButton } from './support-process-step-button.component';
 
 vi.mock('@config/appconfig', () => ({ appConfig: { features: { useProcess: true } } }));
@@ -345,7 +346,7 @@ const applicant = (overrides: object = {}) => ({
   address: 'Storgatan 3',
   zipCode: '852 31',
   city: 'Sundsvall',
-  phoneNumbers: [{ value: '060-191000' }],
+  phoneNumbers: [{ value: mockEnv.mockPhoneNumber }],
   ...overrides,
 });
 

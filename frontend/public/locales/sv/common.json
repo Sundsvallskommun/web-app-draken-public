@@ -126,10 +126,58 @@
     "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade - försök igen.",
     "sections": {
       "statements": "Remisser och yttranden",
-      "personal_suitability": "Personlig lämplighet och kunskapsprov",
+      "persons_of_influence": "Personer med betydande inflytande",
       "financial_suitability": "Ekonomisk lämplighet",
-      "premises": "Lokal och serveringsställe"
+      "premises": "Lokal och serveringsställe",
+      "lease": "Nyttjanderätt och hyresavtal",
+      "fire_safety": "Brandskyddsdokumentation",
+      "food_and_beverages": "Mat och dryckesutbud",
+      "staffing": "Personal",
+      "communication": "Handläggning och kommunicering",
+      "child_perspective": "Barnperspektivet"
     },
+    "section_texts": {
+      "persons_of_influence": {
+        "label": "Ägarförhållanden",
+        "placeholder": "Beskriv ägarförhållandena i bolaget, till exempel ägarandelar och hur inflytandet är fördelat"
+      },
+      "lease": {
+        "label": "Utredning av nyttjanderätten",
+        "placeholder": "Beskriv nyttjanderätten till lokalen och vad hyresavtalet säger"
+      },
+      "fire_safety": {
+        "label": "Utredning av brandskyddet",
+        "placeholder": "Beskriv brandskyddsdokumentationen och vad räddningstjänsten kräver"
+      },
+      "food_and_beverages": {
+        "label": "Utredning av mat och dryckesutbudet",
+        "placeholder": "Beskriv utbudet av mat och dryck på serveringsstället"
+      },
+      "staffing": {
+        "label": "Utredning av personalen",
+        "placeholder": "Beskriv personalens omfattning och kunskaper, till exempel utbildning i ansvarsfull alkoholservering"
+      },
+      "communication": {
+        "label": "Redogörelse för handläggningen och kommuniceringen",
+        "placeholder": "Beskriv handläggningen och hur sökanden har fått ta del av underlaget"
+      },
+      "child_perspective": {
+        "label": "Utredning av barnperspektivet",
+        "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
+      }
+    },
+    "decision_basis": {
+      "label": "Beslutsunderlag",
+      "description": "Tryck på knappen för att förhandsvisa beslutsunderlaget. När ärendet går vidare till beslut så skapas beslutsunderlaget som en bilaga.",
+      "button_label": "Beslutsunderlag",
+      "update": "Uppdatera",
+      "rendering": "Skapar förhandsvisning",
+      "unsaved": "Spara ärendet så kommer det du nyss skrev med i underlaget.",
+      "preview_title": "Förhandsvisning av beslutsunderlaget",
+      "error": "Beslutsunderlaget kunde inte skapas. Mallen som efterfrågades heter {{template}}."
+    },
+    "section_save_failed": "Utredningstexten kunde inte sparas.",
+    "application_complete_at": "Ansökan komplett",
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",
@@ -343,6 +391,29 @@
       "new_number": "nytt restaurangnummer",
       "sent": "Serveringsställe som skickas med beslutet: {{premises}}",
       "not_chosen": "Inget restaurangnummer är valt under Serveringsställe. Beslutet sparas utan uppgifter om serveringsställe."
+    },
+    "scope": {
+      "beverages": {
+        "heading": "Beslutade alkoholdrycker",
+        "label": "Alkoholdrycker som får serveras",
+        "STARKOL": "Starköl",
+        "VIN": "Vin",
+        "SPRITDRYCKER": "Spritdrycker",
+        "CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER": "Cider eller andra jästa alkoholdrycker"
+      },
+      "serving_hours": {
+        "heading": "Beslutade serveringstider",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "single": "Serveringstid",
+        "from": "Från klockan",
+        "to": "Till klockan",
+        "half_filled": "Ange både från och till, eller lämna båda tomma."
+      },
+      "help": "Förifyllt från ansökan. Ändra om beslutet ska avvika från det som söktes.",
+      "none": "Inga"
     },
     "basis": {
       "heading": "Beslutsunderlag",
@@ -570,15 +641,49 @@
     },
     "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
   },
+  "pbi_engagements": {
+    "label": "Bolagsengagemang",
+    "description": "Bolag som personen är engagerad i enligt bolagsdata. Välj de bolag som ska med i utredningsunderlaget. Uppdrag som revisor listas inte.",
+    "choose": "Bolag som ska med i underlaget",
+    "placeholder": "Välj bolag",
+    "search": "Sök bolag",
+    "remove": "Ta bort {{company}} från underlaget",
+    "loading": "Hämtar bolagsengagemang",
+    "empty": "Inga bolagsengagemang hittades för {{person}}.",
+    "error": "Bolagsengagemangen kunde inte hämtas."
+  },
+  "pbi_motivation": {
+    "label": "Motivering",
+    "placeholder": "Motivera {{person}}s betydande inflytande, till exempel rollen i den dagliga driften…",
+    "too_long": "Motiveringen får vara högst 3000 tecken."
+  },
   "knowledge_test": {
     "label": "Kunskapsprov",
-    "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Sätt status, provdatum och kommentar per person.",
+    "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Lägg till ett prov i taget med typ, status, provdatum och kommentar.",
+    "empty": "Inget kunskapsprov är tillagt.",
+    "add": "Lägg till kunskapsprov",
+    "remove": "Ta bort kunskapsprov {{number}} för {{person}}",
+    "type": "Typ av kunskapsprov",
+    "type_placeholder": "Välj typ av kunskapsprov…",
+    "type_for": "Typ för {{person}}s kunskapsprov {{number}}",
+    "type_other": "Annat kunskapsprov",
+    "own_type": "Ange kunskapsprov",
+    "own_type_placeholder": "Skriv vilket prov det gäller",
+    "types": {
+      "permanent_public": "Stadigvarande serveringstillstånd till allmänheten",
+      "permanent_closed_catering": "Stadigvarande serveringstillstånd i slutet sällskap vid cateringverksamhet",
+      "permanent_closed": "Stadigvarande serveringstillstånd i slutet sällskap utan cateringverksamhet",
+      "temporary_public": "Tillfälligt serveringstillstånd till allmänheten",
+      "temporary_closed": "Tillfälligt serveringstillstånd i slutet sällskap",
+      "tasting": "Tillstånd för provsmakning",
+      "farm_sales": "Gårdsförsäljning"
+    },
     "comment": "Kommentar",
-    "comment_placeholder": "Kommentar om {{person}}s kunskapsprov…",
+    "comment_placeholder": "Kommentar om {{person}}s kunskapsprov {{number}}…",
     "comment_too_long": "Kommentaren får vara högst 3000 tecken.",
     "status_placeholder": "Välj status…",
-    "status_for": "Status för {{person}}s kunskapsprov",
-    "tested_at_for": "Provdatum för {{person}}",
+    "status_for": "Status för {{person}}s kunskapsprov {{number}}",
+    "tested_at_for": "Provdatum för {{person}}s kunskapsprov {{number}}",
     "status": {
       "approved": "Godkänt",
       "failed": "Underkänt",
@@ -610,7 +715,23 @@
     "requirement_note": "Obs: Kraven på matservering, eget kök och sittplatser slopades den 1 juni 2026. Krav på brandsäker lokal och avgränsad serveringsyta kvarstår.",
     "toast": {
       "save_failed": "Anmärkningarna kunde inte sparas"
-    }
+    },
+    "restaurant_number": "Restaurangnummer",
+    "restaurant_number_placeholder": "Nummer enligt registret, t.ex. 2281-0112",
+    "serving_area": "Serveringsytor",
+    "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
+    "previous_permits": {
+      "label": "Tidigare verksamhet i lokalen",
+      "description": "Tidigare serveringstillstånd för serveringsstället, enligt registret.",
+      "empty": "Inga tidigare tillstånd är angivna.",
+      "holder": "Tillståndshavare",
+      "holder_placeholder": "Bolagets namn",
+      "valid_from": "Från",
+      "valid_to": "Till",
+      "add": "Lägg till tidigare tillstånd",
+      "remove": "Ta bort tidigare tillstånd {{number}}"
+    },
+    "also_in_decision": "Obs: restaurangnummer, serveringsytor och tidigare verksamhet följer inte med till beslutet, utan anges på nytt där."
   },
   "action_points": {
     "heading": "Åtgärdspunkter",
