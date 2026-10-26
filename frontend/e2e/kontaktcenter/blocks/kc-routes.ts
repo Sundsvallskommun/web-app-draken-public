@@ -16,6 +16,7 @@ import {
   mockSupportNotes,
 } from '../fixtures/mockSupportErrands';
 import { mockNotifications } from '../fixtures/mockSupportNotifications';
+import { mockSubscriptions } from '../fixtures/mockSupportSubscriptions';
 
 /**
  * Route blocks for Kontakt Sundsvall (municipality 2281). Each block mocks the backend calls of
@@ -66,6 +67,8 @@ export const mockKcErrandPage = async (
   // The page refetches the errand by id after some actions, e.g. viewing an attachment.
   await mockJson(target, `**/supporterrands/2281/${errand.id}`, errand, { method: 'GET' });
   await mockJson(target, `**/supporterrands/2281/${errand.id}`, errand, { method: 'PATCH' });
+  // The "Följ ärendet" toggle in the sidebar loads the user's subscriptions.
+  await mockJson(target, '**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
   await mockJson(target, '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
   await mockJson(target, '**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], {
     method: 'GET',

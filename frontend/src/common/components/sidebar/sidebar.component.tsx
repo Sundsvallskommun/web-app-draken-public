@@ -29,11 +29,13 @@ export const Sidebar: FC<{
     icon: string;
     component: ReactNode;
   }[];
-}> = ({ buttons }) => {
+  /** Panel to open on mount. Lets a deep link land the user straight on e.g. the errand log. */
+  initialKey?: SidebarButtonKey;
+}> = ({ buttons, initialKey }) => {
   const [open, setOpen] = useState(true);
   const [hover, setHover] = useState<SidebarButtonKey>();
   const [scrolled, setScrolled] = useState<number>(0);
-  const [selected, setSelected] = useState<SidebarButtonKey>('info');
+  const [selected, setSelected] = useState<SidebarButtonKey>(initialKey ?? 'info');
   const [active, setActive] = useState<number>(buttons.findIndex((button) => selected === button.key));
   const menuRef = useRef<HTMLDivElement>(null);
   const gui = useGui();

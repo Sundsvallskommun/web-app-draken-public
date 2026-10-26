@@ -1,20 +1,31 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Avatar, cx } from '@sk-web-gui/react';
 import { FC } from 'react';
-type Notification = SupportNotification | CaseDataNotification;
 
+/**
+ * Takes the fields it draws rather than a whole notification, so the same icon renders both a
+ * collapsed notification row and a single event inside an expanded one.
+ */
 interface NotificationRenderIconProps {
-  notification: Notification;
+  subType?: string;
+  acknowledged?: boolean;
+  /** Only casedata knows who acted; without a name the avatar variant falls back to its icon. */
+  sender?: string;
 }
 
-const iconConfig = {
-  'Meddelande mottaget': { icon: 'message-circle', defaultColor: 'gronsta' },
-  'Parkering av ärendet har upphört': { icon: 'bell-ring', defaultColor: 'juniskar' },
-  'Ärende uppdaterat': { icon: 'bell-ring', defaultColor: 'juniskar' },
-  'En bilaga har lagts till i ärendet.': { icon: 'file', defaultColor: 'vattjom' },
-  'Notering skapad': { avatar: true, defaultColor: 'juniskar' },
+/**
+ * Keyed on subtype rather than on the description text, so the icon survives upstream rewording of
+ * the notification message.
+ */
+const iconConfig: Record<string, { icon?: string; avatar?: boolean; defaultColor: string }> = {
+  MESSAGE: { icon: 'message-circle', defaultColor: 'gronsta' },
+  SUSPENSION: { icon: 'bell-ring', defaultColor: 'juniskar' },
+  ERRAND: { icon: 'bell-ring', defaultColor: 'juniskar' },
+  ATTACHMENT: { icon: 'file', defaultColor: 'vattjom' },
+  DECISION: { icon: 'file-text', defaultColor: 'vattjom' },
+  // The avatar variant needs a name to build initials from; without one it renders as an empty
+  // circle, so the icon is used instead.
+  NOTE: { avatar: true, icon: 'clipboard-pen', defaultColor: 'juniskar' },
   default: { icon: 'bell', defaultColor: 'vattjom' },
 };
 
@@ -33,15 +44,15 @@ const textColor: Record<string, string> = {
   primary: 'text-primary',
 };
 
-export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ notification }) => {
-  const config = iconConfig[notification.description as keyof typeof iconConfig] ?? iconConfig.default;
-  const color = notification.acknowledged ? 'primary' : config.defaultColor;
+export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ subType, acknowledged, sender }) => {
+  const config = (subType && iconConfig[subType]) || iconConfig.default;
+  const color = acknowledged ? 'primary' : config.defaultColor;
   const bgColor = surfaceColor[color] ?? 'bg-tertiary-surface';
 
-  if ('avatar' in config && config.avatar) {
+  if (config.avatar && sender) {
     const initials =
-      `${notification.createdByFullName?.split(' ')[1]?.charAt(0).toUpperCase() ?? ''}` +
-      `${notification.createdByFullName?.split(' ')[0]?.charAt(0).toUpperCase() ?? ''}`;
+      `${sender.split(' ')[1]?.charAt(0).toUpperCase() ?? ''}` +
+      `${sender.split(' ')[0]?.charAt(0).toUpperCase() ?? ''}`;
 
     return (
       <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center bg-${color}-surface-accent`)}>
@@ -54,7 +65,7 @@ export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ notifi
 
   return (
     <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center`, bgColor, iconColor)}>
-      {'icon' in config &&
+      {config.icon &&
         (() => {
           const DynIcon = iconMap[config.icon as string];
           return DynIcon ? <DynIcon size="2.4rem" /> : null;
