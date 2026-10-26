@@ -14,6 +14,11 @@ import {
   withPremisesProcessParameters,
 } from '@supportmanagement/services/support-decision-premises-service';
 import {
+  hasInvalidServingHours,
+  type SlotSpec,
+  toScopeParameters,
+} from '@supportmanagement/services/support-decision-scope-service';
+import {
   createSupportDecision,
   getSupportDecisions,
   isSupportDecisionLockedError,
@@ -46,6 +51,8 @@ interface DecisionSaveInput {
   premisesToSend: DecisionPremises | undefined;
   /** The answers filed under the errand type's schema, which several parameters are read off. */
   applicationForm: FormValue | undefined;
+  /** The serving-hours slots the errand type decides on; every one of them is written on save. */
+  servingHoursSlots: SlotSpec[];
   onSaved: (decisions: Decision[]) => void;
 }
 
@@ -68,6 +75,7 @@ export const useDecisionSave = ({
   permit,
   premisesToSend,
   applicationForm,
+  servingHoursSlots,
   onSaved,
 }: DecisionSaveInput): DecisionSave => {
   const { t } = useTranslation();
@@ -90,6 +98,7 @@ export const useDecisionSave = ({
     errandType: permit.errandType,
     form: applicationForm,
     premises: premisesToSend,
+    scope: values.scope,
     servingArea: values.servingArea,
     attachments: supportAttachments,
     issuedOn: values.issuedOn,
@@ -154,6 +163,10 @@ export const useDecisionSave = ({
       );
       return false;
     }
+    if (hasInvalidServingHours(values.scope)) {
+      tell(t('common:decision.scope.serving_hours.half_filled'), 'error');
+      return false;
+    }
 
     const permitName = getLabelType(supportErrand)?.displayName;
     const written = supportDecisionWithoutBlanks({
@@ -167,7 +180,10 @@ export const useDecisionSave = ({
       validFrom: values.validFrom,
       validTo: values.validTo,
       terms: writtenTerms,
-      parameters: toDecisionParameters(permit.type, parameterInput(supportErrand), certificateDecision),
+      parameters: [
+        ...toDecisionParameters(permit.type, parameterInput(supportErrand), certificateDecision),
+        ...toScopeParameters(values.scope, servingHoursSlots, permit.type, t),
+      ],
     });
 
     try {

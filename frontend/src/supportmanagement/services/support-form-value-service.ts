@@ -25,12 +25,6 @@ export const childText = (value: FormValue, field: string, name: string): string
   return isRecord(object) ? text(object[name]) : undefined;
 };
 
-/** Whether a multi-choice field holds the constant. */
-export const hasChosen = (value: FormValue, field: string, constant: string): boolean => {
-  const chosen = value[field];
-  return Array.isArray(chosen) && chosen.includes(constant);
-};
-
 export const dateRangeText = (value: FormValue, field: string): string | undefined => {
   const range = value[field];
   if (!isRecord(range)) return undefined;
@@ -50,12 +44,18 @@ const clock = (value: unknown): string | undefined => {
   return time.isValid() ? time.format('HH:mm') : undefined;
 };
 
-export const timeRangeText = (value: FormValue, field: string): string | undefined => {
+/** The HH:mm ends of a time-range field; undefined when neither end was answered. */
+export const timeRangeClocks = (value: FormValue, field: string): { from?: string; to?: string } | undefined => {
   const range = value[field];
   if (!isRecord(range)) return undefined;
   const from = clock(range.startTime);
   const to = clock(range.endTime);
-  return from || to ? `${from ?? ''}–${to ?? ''}` : undefined;
+  return from || to ? { from, to } : undefined;
+};
+
+export const timeRangeText = (value: FormValue, field: string): string | undefined => {
+  const range = timeRangeClocks(value, field);
+  return range && `${range.from ?? ''}–${range.to ?? ''}`;
 };
 
 export const AUDIENCE = 'serveringTillAllmanhetenEllerSlutetSallskap';

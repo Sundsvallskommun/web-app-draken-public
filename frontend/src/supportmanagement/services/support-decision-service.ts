@@ -17,8 +17,8 @@ export interface SupportDecisionInput {
   validFrom?: string;
   validTo?: string;
   terms?: string[];
-  /** Metadata for the process, e.g. the premises. */
-  parameters?: Pick<Parameter, 'key' | 'values'>[];
+  /** Metadata for the process, e.g. the premises, and what the handler decided (see support-decision-scope-service). */
+  parameters?: Pick<Parameter, 'key' | 'values' | 'displayName' | 'group'>[];
 }
 
 const PERMIT_TYPE_ATTRIBUTE = 'permitType';

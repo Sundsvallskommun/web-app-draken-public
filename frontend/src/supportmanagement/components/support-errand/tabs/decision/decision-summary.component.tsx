@@ -1,9 +1,14 @@
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Label } from '@sk-web-gui/react';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import {
+  scopeFromDecision,
+  SERVING_HOURS_SLOTS,
+  servingHoursText,
+} from '@supportmanagement/services/support-decision-scope-service';
 import { isSupportDecisionLocked, outcomeLabel } from '@supportmanagement/services/support-decision-service';
 import dayjs from 'dayjs';
-import { FC } from 'react';
+import { FC, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePremisesText } from './use-premises-text';
@@ -17,6 +22,8 @@ export const DecisionSummary: FC<{
   const { t } = useTranslation();
   const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
+  const decided = scopeFromDecision(decision.parameters, SERVING_HOURS_SLOTS);
+  const decidedHours = SERVING_HOURS_SLOTS.filter((spec) => decided.servingHours[spec.slot]);
 
   return (
     <div className="flex flex-col gap-16" data-cy="decision-summary">
@@ -46,6 +53,23 @@ export const DecisionSummary: FC<{
             </dd>
           </>
         ) : null}
+        {decided.beverages ? (
+          <>
+            <dt className="text-dark-secondary">{t('common:decision.scope.beverages.label')}</dt>
+            <dd className="m-0" data-cy="decision-summary-beverages">
+              {decided.beverages.map((beverage) => t(`common:decision.scope.beverages.${beverage}`)).join(', ') ||
+                t('common:decision.scope.none')}
+            </dd>
+          </>
+        ) : null}
+        {decidedHours.map((spec) => (
+          <Fragment key={spec.slot}>
+            <dt className="text-dark-secondary">{t(spec.labelKey)}</dt>
+            <dd className="m-0" data-cy={`decision-summary-serving-hours-${spec.slot}`}>
+              {servingHoursText(decided.servingHours[spec.slot]) ?? empty}
+            </dd>
+          </Fragment>
+        ))}
       </dl>
       {decision.justification ? (
         <div>
