@@ -79,9 +79,11 @@ export class TemplateController {
   @UseBefore(authMiddleware)
   async templatePhrases(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<ResponseData> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render`;
-    const res = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
-      throw e;
-    });
+    const res = await this.apiService
+      .post<PdfRender, TemplateSelector>({ url, data: templateSelector, propagateClientError: true }, req.user)
+      .catch(e => {
+        throw e;
+      });
     return { data: { content: res.data.output }, message: 'success' } as ResponseData;
   }
 
@@ -101,9 +103,11 @@ export class TemplateController {
   @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
   async decisionPreviewHtml(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render`;
-    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
-      throw e;
-    });
+    const response = await this.apiService
+      .post<PdfRender, TemplateSelector>({ url, data: templateSelector, propagateClientError: true }, req.user)
+      .catch(e => {
+        throw e;
+      });
     return { data: response.data, message: `Decision HTML rendered` };
   }
 
@@ -113,9 +117,11 @@ export class TemplateController {
   @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
   async decisionPreviewPdf(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
-    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
-      throw e;
-    });
+    const response = await this.apiService
+      .post<PdfRender, TemplateSelector>({ url, data: templateSelector, propagateClientError: true }, req.user)
+      .catch(e => {
+        throw e;
+      });
     return { data: response.data, message: `Decision PDF rendered` };
   }
 
@@ -128,7 +134,7 @@ export class TemplateController {
     @Body() templateSelector: TemplateSelector,
   ): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/pdf/preview`;
-    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user);
+    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector, propagateClientError: true }, req.user);
     return { data: response.data, message: 'Watermarked PDF rendered' };
   }
 
@@ -141,9 +147,11 @@ export class TemplateController {
     @Body() templateSelector: TemplateSelector,
   ): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/direct/pdf`;
-    const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
-      throw e;
-    });
+    const response = await this.apiService
+      .post<PdfRender, TemplateSelector>({ url, data: templateSelector, propagateClientError: true }, req.user)
+      .catch(e => {
+        throw e;
+      });
     return { data: response.data, message: `Decision PDF rendered` };
   }
 

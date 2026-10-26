@@ -93,8 +93,6 @@ export const SupportProcessStepButton: FC<{
   }
 
   const decisionsOnErrand = async (): Promise<Decision[] | undefined> => {
-    if (decisions) return decisions;
-
     const read = await getSupportDecisions(supportErrand.id!, municipalityId).catch(() => undefined);
     if (read) setDecisions(read);
     return read;
@@ -115,6 +113,7 @@ export const SupportProcessStepButton: FC<{
     action.confirms === false ? run(action, decisionsInHand) : ask(action, decisionsInHand);
 
   const start = async (action: ProcessAction) => {
+    if (action.requiresPermitInputs && !(await gates.permitInputsAreInPlace())) return;
     if (action.requiresAnsweredStatements && !(await gates.statementsAllowADecision())) return;
 
     if (!action.requiresDecisionOutcome) return carryOut(action);
@@ -129,6 +128,8 @@ export const SupportProcessStepButton: FC<{
       gates.askForAnOutcomeFirst();
       return;
     }
+
+    if (!(await gates.decisionCarriesWhatThePermitNeeds(onErrand))) return;
 
     return carryOut(action, onErrand);
   };

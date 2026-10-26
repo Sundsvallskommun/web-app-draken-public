@@ -5,10 +5,11 @@ import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
   type DecisionParameterInput,
+  decisionParameterValue,
+  missingDecisionInputs,
+  missingPermitInputs,
   PLACEHOLDER,
-  premisesFromDecisionParameters,
   servingPermitParameters,
-  splitPostalAddress,
   tobaccoPermitParameters,
   toCertificateParameters,
   toDecisionParameters,
@@ -20,6 +21,8 @@ const PREMISES = mockEnv.mockPremisesAddress;
 const EXISTING = { kind: 'EXISTING', restaurantNumber: mockEnv.mockRestaurantNumber } as const;
 const NEW = { kind: 'NEW' } as const;
 const TODAY = '2026-10-07';
+const ISSUED = '2026-10-09';
+const DECISION = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
 
 const errand = () =>
   ({
@@ -42,6 +45,7 @@ const errand = () =>
 const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParameterInput => ({
   errand: errand(),
   premises: { ...PREMISES, choice: EXISTING },
+  issuedOn: ISSUED,
   user: { name: 'Test Testsson' },
   today: TODAY,
   ...overrides,
@@ -49,6 +53,9 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
 
 const asObject = (parameters: Parameter[]): Record<string, string | undefined> =>
   Object.fromEntries(parameters.map((parameter) => [parameter.key, parameter.values?.[0]]));
+
+const sent = (permitType: string, overrides: Partial<DecisionParameterInput> = {}) =>
+  asObject(toDecisionParameters(permitType, input(overrides), DECISION));
 
 const servingForm = {
   serveringsstalletsNamn: mockEnv.mockPremisesName,
@@ -59,28 +66,24 @@ const servingForm = {
   serveringstiderUtomhusAllmanheten: { startTime: '11:00', endTime: '23:00' },
   serveringsperiodForSlutetSallskap: 'ARLIGEN_UNDER_VISS_PERIOD',
   periodServeringSlutetSallskap: { startDate: '2026-05-01', endDate: '2026-09-30' },
-  serveringstiderInomhusSlutetSallskap: { startTime: '18:00', endTime: '02:00' },
+  // The schema asks for an RFC 3339 time, so an application carries the offset; the hours read the same.
+  serveringstiderInomhusSlutetSallskap: { startTime: '18:00:00+02:00', endTime: '02:00:00+02:00' },
   alkoholdrycker: ['STARKOL', 'VIN', 'SPRITDRYCKER'],
   sittplatserILokalen: { antalSittplatserInomhus: '60', antalSittplatserUteservering: '30' },
   maximaltAntalPersonerILokalen: { antalPersoner: '90' },
 };
 
 describe('a serving permit', () => {
-  const parameters = asObject(
-    toDecisionParameters(
-      'SERVERINGSTILLSTAND',
-      input({
-        form: servingForm,
-        servingArea: ' Matsalen och uteserveringen ',
-        attachments: [
-          { fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } },
-          { fileName: 'meny.pdf', purpose: { name: 'MENU' } },
-          { fileName: 'kok.pdf', purpose: { name: 'KITCHEN_FLOOR_PLAN' } },
-          { fileName: 'utan-syfte.pdf' },
-        ],
-      })
-    )
-  );
+  const parameters = sent('SERVERINGSTILLSTAND', {
+    form: servingForm,
+    servingArea: ' Matsalen och uteserveringen ',
+    attachments: [
+      { fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } },
+      { fileName: 'meny.pdf', purpose: { name: 'MENU' } },
+      { fileName: 'kok.pdf', purpose: { name: 'KITCHEN_FLOOR_PLAN' } },
+      { fileName: 'utan-syfte.pdf' },
+    ],
+  });
 
   test('describes the serving area as the handler wrote it, and names the drawings among the attachments', () => {
     expect(parameters.servingAreaDescription).toBe('Matsalen och uteserveringen');
@@ -97,14 +100,32 @@ describe('a serving permit', () => {
     });
   });
 
-  test('carries the premises as filed and as chosen', () => {
+  test('the handler’s telephone to the premises wins over the one the application gave', () => {
+    expect(sent('SERVERINGSTILLSTAND', { form: servingForm, premisesPhone: '060-999999' }).premisesPhone).toBe(
+      '060-999999'
+    );
+    expect(sent('SERVERINGSTILLSTAND', { form: servingForm }).premisesPhone).toBe(mockEnv.mockPhoneNumber);
+  });
+
+  test('carries the premises as filed, but not the restaurant number the process resolves', () => {
     expect(parameters).toMatchObject({
       premisesName: mockEnv.mockPremisesName,
       premisesStreet: PREMISES.street,
       premisesPostalAddress: `${PREMISES.postalCode} ${PREMISES.city}`,
       premisesPhone: mockEnv.mockPhoneNumber,
-      premisesRestaurantNumber: mockEnv.mockRestaurantNumber,
     });
+    expect(parameters).not.toHaveProperty('premisesRestaurantNumber');
+    expect(parameters).not.toHaveProperty('newRestaurantNumber');
+  });
+
+  test('carries the decision itself, since the process adds nothing off its root but the conditions', () => {
+    expect(parameters).toMatchObject({
+      decisionText: 'Bifall',
+      decisionMaker: 'Nämnd',
+      decisionDate: TODAY,
+      validFrom: '2026-11-01',
+    });
+    expect(parameters).not.toHaveProperty('conditions');
   });
 
   test('reads the audiences, periods, beverages, seats and hours off the form', () => {
@@ -135,27 +156,30 @@ describe('a serving permit', () => {
     expect(parameters.issuedByNameAndTitle).toBe('Test Testsson, handläggare');
   });
 
-  test('a tasting permit is told apart by the errand type', () => {
-    expect(asObject(toDecisionParameters('SERVERINGSTILLSTAND', input({ errandType: 'TASTING' }))).scopeTasting).toBe(
-      'true'
-    );
+  test('the date of issue is the handler’s, and the decision date is today', () => {
+    expect(parameters.executionDate).toBe(ISSUED);
+    expect(parameters.decisionDate).toBe(TODAY);
+    expect(sent('SERVERINGSTILLSTAND', { issuedOn: undefined })).not.toHaveProperty('executionDate');
   });
 
-  test('what nothing asks for carries the placeholder, as does what the form left out', () => {
-    expect(parameters).toMatchObject({ executionDate: PLACEHOLDER });
+  test('a tasting permit is told apart by the errand type', () => {
+    expect(sent('SERVERINGSTILLSTAND', { errandType: 'TASTING' }).scopeTasting).toBe('true');
+  });
 
-    const bare = asObject(toDecisionParameters('SERVERINGSTILLSTAND', input({ form: undefined, premises: undefined })));
-    expect(bare).toMatchObject({
-      premisesName: PLACEHOLDER,
-      premisesStreet: PLACEHOLDER,
-      servingToPublic: PLACEHOLDER,
-      beverageWine: PLACEHOLDER,
-      servingAreaDescription: PLACEHOLDER,
-      servingAreaDrawingReference: PLACEHOLDER,
-    });
-    expect(bare).not.toHaveProperty('premisesRestaurantNumber');
-    expect(bare).not.toHaveProperty('newRestaurantNumber');
+  test('a key without a value is left out, so the strict template names it instead of printing a stand-in', () => {
+    const bare = sent('SERVERINGSTILLSTAND', { form: undefined, premises: undefined });
+    for (const key of [
+      'premisesName',
+      'premisesStreet',
+      'servingToPublic',
+      'beverageWine',
+      'servingAreaDescription',
+      'servingAreaDrawingReference',
+    ]) {
+      expect(bare).not.toHaveProperty(key);
+    }
     expect(Object.values(bare).some((value) => !value)).toBe(false);
+    expect(Object.values(bare)).not.toContain(PLACEHOLDER);
   });
 });
 
@@ -167,7 +191,7 @@ describe('a tobacco permit', () => {
     tidsperiodForForsaljningen: 'TIDSBEGRANSAD_FORSALJNING',
     periodTidsbegransadForsaljning: { startDate: '2026-11-01', endDate: '2027-10-31' },
   };
-  const parameters = asObject(toDecisionParameters('TOBAKSFORSALJNING', input({ form })));
+  const parameters = sent('TOBAKSFORSALJNING', { form });
 
   test('carries the holder with its care-of, and the premises', () => {
     expect(parameters).toMatchObject({
@@ -176,15 +200,20 @@ describe('a tobacco permit', () => {
       premisesName: mockEnv.mockPremisesName,
       premisesStreet: PREMISES.street,
       premisesPhone: mockEnv.mockPhoneNumber,
-      premisesPropertyDesignation: PLACEHOLDER,
     });
     expect(parameters).not.toHaveProperty('permitHolderPhone');
+    expect(parameters).not.toHaveProperty('premisesPropertyDesignation');
+  });
+
+  test('the terms are the information of a tobacco permit, which the process does not fill', () => {
+    expect(parameters.information).toBe('A\nB');
+    expect(parameters).not.toHaveProperty('conditions');
   });
 
   test('reads the sales channels and validity off the form', () => {
+    expect(parameters).not.toHaveProperty('salesRetail');
+    expect(parameters).not.toHaveProperty('salesWholesale');
     expect(parameters).toMatchObject({
-      salesRetail: PLACEHOLDER,
-      salesWholesale: PLACEHOLDER,
       salesOnline: 'true',
       validityIndefinite: 'false',
       validityTemporary: 'true',
@@ -206,15 +235,87 @@ describe('a tobacco permit', () => {
       lastName: 'Andersson',
     };
 
-    expect(asObject(toDecisionParameters('TOBAKSFORSALJNING', input({ errand: person }))).permitHolderName).toBe(
-      'Anna Andersson'
+    expect(sent('TOBAKSFORSALJNING', { errand: person }).permitHolderName).toBe('Anna Andersson');
+  });
+});
+
+describe('what the permit needs of the errand', () => {
+  const drawing = [{ fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } }];
+
+  test('a whole application and a whole applicant leave nothing missing', () => {
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, drawing)).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: [],
+    });
+  });
+
+  test('what the handler fills is told apart from what only the applicant can complete', () => {
+    const bare = errand();
+    bare.customer[0] = { ...bare.customer[0], address: '', zipCode: '', city: '', phoneNumbers: [] };
+
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', bare, undefined, [])).toEqual({
+      fromTheErrand: ['permitHolderStreet', 'permitHolderPostalAddress', 'permitHolderPhone'],
+      fromTheApplication: [
+        'premisesName',
+        'servingAreaSeats',
+        'servingAreaMaxPersons',
+        'servingHours',
+        'servingAreaDrawingReference',
+      ],
+    });
+  });
+
+  test('a drawing nobody attached', () => {
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), servingForm, [])).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: ['servingAreaDrawingReference'],
+    });
+  });
+
+  test('the telephone to the premises is the handler’s, so the review does not wait for it', () => {
+    const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
+
+    expect(missingPermitInputs('SERVERINGSTILLSTAND', errand(), withoutPhone, drawing).fromTheApplication).toEqual([]);
+  });
+
+  test('the decision is checked on what it saved, so a concluded decision cannot lack a placeholder', () => {
+    const complete = toDecisionParameters(
+      'SERVERINGSTILLSTAND',
+      input({ form: servingForm, servingArea: 'Matsalen' }),
+      DECISION
     );
+
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', complete)).toEqual([]);
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', undefined)).toEqual([
+      'decisionText',
+      'decisionMaker',
+      'validFrom',
+      'executionDate',
+      'premisesStreet',
+      'premisesPostalAddress',
+      'premisesPhone',
+      'servingAreaDescription',
+    ]);
+    expect(
+      missingDecisionInputs(
+        'SERVERINGSTILLSTAND',
+        toDecisionParameters('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...DECISION, validFrom: '' })
+      )
+    ).toEqual(['validFrom', 'servingAreaDescription']);
+  });
+
+  test('a permit that issues no certificate has nothing to wait for', () => {
+    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual([]);
+    expect(missingPermitInputs('FOLKOLSANMALAN', errand(), undefined, [])).toEqual({
+      fromTheErrand: [],
+      fromTheApplication: [],
+    });
   });
 });
 
 describe('every permit', () => {
   test('the certificate carries the decision too, blank where nothing is known', () => {
-    const decision = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
+    const decision = DECISION;
     const serving = toCertificateParameters('SERVERINGSTILLSTAND', input(), decision);
     expect(serving).toMatchObject({
       decisionText: 'Bifall',
@@ -222,7 +323,7 @@ describe('every permit', () => {
       decisionDate: TODAY,
       validFrom: '2026-11-01',
       conditions: 'A\nB',
-      executionDate: '',
+      executionDate: ISSUED,
       replacesDecision: '',
       servingHours: '',
     });
@@ -236,49 +337,31 @@ describe('every permit', () => {
     expect(certificateTemplate('FOLKOLSANMALAN')).toBeUndefined();
   });
 
-  test('a permit without a record of its own still carries the premises', () => {
-    expect(Object.keys(asObject(toDecisionParameters('FOLKOLSANMALAN', input())))).toEqual([
+  test('a permit without a record of its own still carries the premises and the decision', () => {
+    expect(Object.keys(sent('FOLKOLSANMALAN', { form: servingForm }))).toEqual([
       'premisesName',
       'premisesStreet',
       'premisesPostalAddress',
       'premisesPhone',
-      'premisesRestaurantNumber',
+      'decisionText',
+      'decisionMaker',
+      'decisionDate',
+      'validFrom',
     ]);
   });
 
-  test('the premises and the choice are read back from what was sent', () => {
-    for (const permitType of ['SERVERINGSTILLSTAND', 'TOBAKSFORSALJNING', 'OTHER']) {
-      const existing = toDecisionParameters(permitType, input());
-      expect(premisesFromDecisionParameters(existing)).toEqual({ ...PREMISES, choice: EXISTING });
-
-      const fresh = toDecisionParameters(permitType, input({ premises: { ...PREMISES, choice: NEW } }));
-      expect(asObject(fresh).newRestaurantNumber).toBe('true');
-      expect(asObject(fresh)).not.toHaveProperty('premisesRestaurantNumber');
-      expect(premisesFromDecisionParameters(fresh)).toEqual({ ...PREMISES, choice: NEW });
-    }
+  test('a value a decision saved while the placeholder was sent reads back as nothing', () => {
+    expect(
+      decisionParameterValue([{ key: 'servingAreaDescription', values: [PLACEHOLDER] }], 'servingAreaDescription')
+    ).toBeUndefined();
+    expect(
+      decisionParameterValue([{ key: 'servingAreaDescription', values: ['Matsalen'] }], 'servingAreaDescription')
+    ).toBe('Matsalen');
+    expect(decisionParameterValue(undefined, 'servingAreaDescription')).toBeUndefined();
   });
 
-  test('a decision without a complete premises address and a choice carries no premises', () => {
-    const sent = (premises: DecisionParameterInput['premises']) =>
-      premisesFromDecisionParameters(toDecisionParameters('OTHER', input({ premises })));
-
-    expect(premisesFromDecisionParameters(undefined)).toBeUndefined();
-    expect(premisesFromDecisionParameters([])).toBeUndefined();
-    expect(premisesFromDecisionParameters([{ key: 'premisesStreet', values: [PREMISES.street] }])).toBeUndefined();
-    expect(sent(undefined)).toBeUndefined();
-    expect(sent({ ...PREMISES, city: '', choice: NEW })).toBeUndefined();
-  });
-
-  test('a postal address splits into code and city whether or not the code has its space', () => {
-    expect(splitPostalAddress('852 30 Sundsvall')).toEqual({ postalCode: '852 30', city: 'Sundsvall' });
-    expect(splitPostalAddress('85230 Sundsvall')).toEqual({ postalCode: '85230', city: 'Sundsvall' });
-    expect(splitPostalAddress('852 30 Sundsvall Centrum')).toEqual({ postalCode: '852 30', city: 'Sundsvall Centrum' });
-    expect(splitPostalAddress('Sundsvall')).toBeUndefined();
-    expect(splitPostalAddress(undefined)).toBeUndefined();
-  });
-
-  // The keys the permit templates read, as handed over, less those on the decision root; the
-  // restaurant number rides along for tobacco.
+  // The keys the permit templates read, as handed over, less the conditions and the restaurant number
+  // that the process fills.
   test('the tobacco and serving records name every parameter key the permit templates read, and nothing else', () => {
     const holder = ['permitHolderName', 'permitHolderOrgNumber', 'permitHolderStreet', 'permitHolderPostalAddress'];
     const premises = ['premisesName', 'premisesStreet', 'premisesPostalAddress', 'premisesPhone'];
@@ -290,7 +373,6 @@ describe('every permit', () => {
         'permitHolderCareOf',
         ...premises,
         'premisesPropertyDesignation',
-        'premisesRestaurantNumber',
         'salesRetail',
         'salesWholesale',
         'salesOnline',
@@ -306,7 +388,6 @@ describe('every permit', () => {
         ...holder,
         'permitHolderPhone',
         ...premises,
-        'premisesRestaurantNumber',
         'servingToPublic',
         'servingToClosedCompany',
         'scopeAllYear',

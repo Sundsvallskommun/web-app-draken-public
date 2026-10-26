@@ -77,6 +77,14 @@ export const outcomeWithoutConditions = (outcome: string | undefined): string =>
 export const selectableSupportDecisionOutcomes = (outcomes: DecisionOutcome[]): DecisionOutcome[] =>
   outcomes.filter((outcome) => !outcome.name?.endsWith(WITH_CONDITIONS));
 
+/** What the outcome is called, falling back to its name for one the metadata does not cover. */
+export const outcomeLabel = (outcomes: DecisionOutcome[], name: string | undefined): string =>
+  outcomes.find((outcome) => outcome.name === name)?.displayName || name || '';
+
+/** The terms of a decision as text, in their order. */
+export const decisionTermTexts = (decision: Decision | undefined): string[] =>
+  [...(decision?.terms ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((term) => term.text ?? '');
+
 export const outcomeForTerms = (outcome: string, terms: string[], outcomes: DecisionOutcome[]): string => {
   const plain = outcomeWithoutConditions(outcome);
   if (!terms.length) return plain;

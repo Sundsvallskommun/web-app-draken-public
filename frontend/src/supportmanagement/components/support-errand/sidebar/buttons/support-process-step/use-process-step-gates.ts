@@ -1,7 +1,14 @@
 'use client';
-
+import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
+import {
+  missingDecisionInputs,
+  missingPermitInputs,
+} from '@supportmanagement/services/support-decision-parameters-service';
+import { supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
+import { getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportStatements,
   isSupportStatementAwaitingAnswer,
@@ -19,6 +26,9 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   const toastMessage = useSnackbar();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   const complain = (message: string) =>
     toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
@@ -65,6 +75,82 @@ export const useProcessStepGates = (errandId: string | undefined) => {
     return true;
   };
 
+  /**
+   * What the permit certificate prints, checked while the errand is still being reviewed rather than
+   * at the decision, where a missing value stops the process after the decision is already locked.
+   * What stands on the errand is the handler's to fill, so the step waits for it. What the application
+   * carries can only be completed by the applicant, so that is said out loud and then left to the
+   * handler to judge.
+   */
+  const permitInputsAreInPlace = async (): Promise<boolean> => {
+    if (!supportErrand) return true;
+
+    const permitType = supportDecisionPermitType(
+      getMostSpecificLabelType(supportErrand),
+      supportErrand.process?.processKey
+    );
+    const missing = missingPermitInputs(
+      permitType,
+      supportErrand,
+      getDecisionBasisForm(supportErrand, supportMetadata?.namespace)?.value,
+      supportAttachments
+    );
+    const named = (keys: string[]) => keys.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', ');
+
+    if (missing.fromTheErrand.length) {
+      const goToTheErrand = await confirm.showConfirmation(
+        t('common:process.actions.missing_permit_inputs.errand_title'),
+        t('common:process.actions.missing_permit_inputs.errand_text', { inputs: named(missing.fromTheErrand) }),
+        t('common:process.actions.missing_permit_inputs.go_to_basics'),
+        t('common:process.actions.missing_permit_inputs.cancel'),
+        'info',
+        'info'
+      );
+      if (goToTheErrand) setActiveTabKey('basics');
+      return false;
+    }
+
+    if (missing.fromTheApplication.length) {
+      return confirm.showConfirmation(
+        t('common:process.actions.missing_permit_inputs.application_title'),
+        t('common:process.actions.missing_permit_inputs.application_text', {
+          inputs: named(missing.fromTheApplication),
+        }),
+        t('common:process.actions.missing_permit_inputs.continue_anyway'),
+        t('common:process.actions.missing_permit_inputs.cancel'),
+        'info',
+        'info'
+      );
+    }
+
+    return true;
+  };
+
+  const decisionCarriesWhatThePermitNeeds = async (decisions: Decision[]): Promise<boolean> => {
+    if (!supportErrand) return true;
+
+    const permitType = supportDecisionPermitType(
+      getMostSpecificLabelType(supportErrand),
+      supportErrand.process?.processKey
+    );
+    const decided = decisions.find((decision) => !!decision.outcome);
+    const missing = missingDecisionInputs(permitType, decided?.parameters);
+    if (!missing.length) return true;
+
+    const goToTheDecision = await confirm.showConfirmation(
+      t('common:process.actions.missing_permit_inputs.decision_title'),
+      t('common:process.actions.missing_permit_inputs.decision_text', {
+        inputs: missing.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', '),
+      }),
+      t('common:process.actions.missing_permit_inputs.go_to_decision'),
+      t('common:process.actions.missing_permit_inputs.cancel'),
+      'info',
+      'info'
+    );
+    if (goToTheDecision) setActiveTabKey('decision');
+    return false;
+  };
+
   const askForAnOutcomeFirst = () =>
     confirm
       .showConfirmation(
@@ -81,5 +167,11 @@ export const useProcessStepGates = (errandId: string | undefined) => {
 
   const complainThatTheDecisionCouldNotBeRead = () => complain(t('common:process.actions.decision_unread'));
 
-  return { statementsAllowADecision, askForAnOutcomeFirst, complainThatTheDecisionCouldNotBeRead };
+  return {
+    statementsAllowADecision,
+    permitInputsAreInPlace,
+    decisionCarriesWhatThePermitNeeds,
+    askForAnOutcomeFirst,
+    complainThatTheDecisionCouldNotBeRead,
+  };
 };

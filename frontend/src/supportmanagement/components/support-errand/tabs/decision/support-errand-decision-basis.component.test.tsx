@@ -7,7 +7,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { mockEnv } from '../../../../tests/mock-env';
+import { mockEnv } from '../../../../../tests/mock-env';
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
 
 // The real module pulls in the stores and the app config; the section only needs the label lookup.

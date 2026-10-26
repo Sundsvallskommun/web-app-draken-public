@@ -1,8 +1,19 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { engagementRoles } from '@common/services/legal-entity-service';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
+import type { SupportStakeholderFormModel } from './support-errand-service';
 import { getStakeholderOrganizationNumber, SupportErrand } from './support-errand-service';
-import { engagementIsPerson, hyphenatedIdentity, normalizeIdentity, SupportPbiCandidate } from './support-pbi-service';
+import {
+  engagementIsPerson,
+  hyphenatedIdentity,
+  isPbi,
+  normalizeIdentity,
+  pbiCandidates,
+  pbiOf,
+  stakeholderName,
+  SupportPbiCandidate,
+} from './support-pbi-service';
 import { supportStatementCounterparty, supportStatementCounterpartyKey } from './support-statement-counterparties';
 
 export const SupportReferralPersons = {
@@ -153,21 +164,63 @@ const splitName = (name: string): { firstName: string; lastName: string } => {
     : { firstName: parts.slice(0, -1).join(' '), lastName: parts.at(-1) ?? '' };
 };
 
-/**
- * The people a referral can be about: everyone the company data names, with the ones marked on the errand ticked.
- * The key is the party id when the person is a stakeholder, otherwise the identity, since only a choice hangs on it.
- */
-export const supportReferralPeople = (candidates: SupportPbiCandidate[]): SupportReferralPerson[] =>
-  candidates
-    .filter(({ engagement }) => engagementIsPerson(engagement) && engagement.name)
-    .map(({ engagement, marked, stakeholder }) => ({
-      partyId: stakeholder?.externalId || normalizeIdentity(engagement.identity?.code),
-      name: engagement.name as string,
-      ...splitName(engagement.name as string),
-      personalNumber: hyphenatedIdentity(engagement.identity?.code),
-      roles: engagementRoles(engagement),
-      marked,
-    }));
+const candidatesTheCompanyNames = (candidates: SupportPbiCandidate[]): SupportPbiCandidate[] =>
+  candidates.filter(({ engagement }) => engagementIsPerson(engagement) && !!engagement.name);
+
+const peopleOfTheCompany = (candidates: SupportPbiCandidate[]): SupportReferralPerson[] =>
+  candidates.map(({ engagement, marked, stakeholder }) => ({
+    partyId: stakeholder?.externalId || normalizeIdentity(engagement.identity?.code),
+    name: engagement.name as string,
+    ...splitName(engagement.name as string),
+    personalNumber: hyphenatedIdentity(engagement.identity?.code),
+    roles: engagementRoles(engagement),
+    marked,
+  }));
+
+const referralPersonOfStakeholder = (stakeholder: SupportStakeholderFormModel): SupportReferralPerson => ({
+  partyId: stakeholder.externalId || normalizeIdentity(stakeholder.personNumber),
+  name: stakeholderName(stakeholder),
+  firstName: stakeholder.firstName ?? '',
+  lastName: stakeholder.lastName ?? '',
+  personalNumber: hyphenatedIdentity(stakeholder.personNumber),
+  roles: pbiOf(stakeholder).role,
+  marked: true,
+});
+
+const peopleMarkedApartFromTheCompany = (
+  companyCandidates: SupportPbiCandidate[],
+  stakeholders: SupportStakeholderFormModel[]
+): SupportReferralPerson[] => {
+  const alreadyNamed = companyCandidates.map(({ stakeholder }) => stakeholder?.internalId).filter(Boolean);
+  return stakeholders
+    .filter((stakeholder) => isPbi(stakeholder) && !alreadyNamed.includes(stakeholder.internalId))
+    .map(referralPersonOfStakeholder);
+};
+
+export const supportReferralPeople = (
+  engagements: LegalEntityEngagement[],
+  stakeholders: SupportStakeholderFormModel[]
+): SupportReferralPerson[] => {
+  const companyCandidates = candidatesTheCompanyNames(pbiCandidates(engagements, stakeholders));
+  return [
+    ...peopleOfTheCompany(companyCandidates),
+    ...peopleMarkedApartFromTheCompany(companyCandidates, stakeholders),
+  ];
+};
+
+export const chosenReferralPartyIds = (
+  people: SupportReferralPerson[],
+  chosen: string[],
+  alreadySeen: string[]
+): string[] => {
+  const present = people.map((person) => person.partyId);
+  const kept = chosen.filter((partyId) => present.includes(partyId));
+  const arriving = people
+    .filter((person) => person.marked && !alreadySeen.includes(person.partyId) && !kept.includes(person.partyId))
+    .map((person) => person.partyId);
+
+  return arriving.length === 0 && kept.length === chosen.length ? chosen : [...kept, ...arriving];
+};
 
 interface SupportStatementPremises {
   name: string;

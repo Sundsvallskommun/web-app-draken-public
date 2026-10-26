@@ -17,6 +17,8 @@ export interface ProcessAction {
   takesErrand?: boolean;
   requiresDecisionOutcome?: boolean;
   requiresAnsweredStatements?: boolean;
+  /** What the permit certificate prints has to be on the errand before the process needs it. */
+  requiresPermitInputs?: boolean;
   completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
@@ -56,6 +58,7 @@ export const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>
     variant: 'primary',
     needsSignal: true,
     tabKey: 'investigation',
+    requiresPermitInputs: true,
   },
   [SupportProcessStep.INVESTIGATION]: {
     key: 'ready_for_decision',

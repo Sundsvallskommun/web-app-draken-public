@@ -117,6 +117,13 @@ export class UpdateSupportInvestigationDto {
   recommendationMotivation?: string;
 }
 
+export class CompleteSupportInvestigationSectionsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSupportInvestigationSectionDto)
+  sections!: CreateSupportInvestigationSectionDto[];
+}
+
 export class UpdateSupportInvestigationSectionDto {
   @IsOptional()
   @IsString()
@@ -251,6 +258,44 @@ export class SupportInvestigationController {
     }
 
     return response.status(201).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
+  }
+
+  @Post('/supportinvestigations/:municipalityId/:id/:investigationId/sections')
+  @OpenAPI({ summary: 'Write the examinations an investigation has no section for, and leave the rest alone' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(CompleteSupportInvestigationSectionsDto, 'body'))
+  async completeInvestigationSections(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('investigationId') investigationId: string,
+    @Body() data: CompleteSupportInvestigationSectionsDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const investigation = await this.readInvestigation(municipalityId, id, investigationId, req.user);
+    const written = (investigation?.sections ?? []).map(section => section.sectionKey);
+    const missing = data.sections.filter(section => !written.includes(section.sectionKey));
+
+    if (missing.length === 0) {
+      return response.status(200).send(investigation);
+    }
+
+    for (const section of missing) {
+      await this.apiService.post<InvestigationSection, InvestigationSection>(
+        {
+          url: `${this.investigationsUrl(municipalityId, id)}/${investigationId}/sections`,
+          baseURL: apiURL(this.SERVICE),
+          data: { ...section, assessment: PENDING_ASSESSMENT },
+          propagateClientError: true,
+        },
+        req.user,
+      );
+    }
+
+    return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
   }
 
   @Patch('/supportinvestigations/:municipalityId/:id/:investigationId')

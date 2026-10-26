@@ -8,6 +8,7 @@ vi.mock('@common/components/file-upload/file-upload.component', () => ({
 import { mockEnv } from '../../tests/mock-env';
 import { hyphenatedIdentity } from './support-pbi-service';
 import {
+  chosenReferralPartyIds,
   supportReferralPeople,
   SupportReferralPersons,
   supportStatementTemplateOfQuestion,
@@ -249,14 +250,50 @@ test('how many documents a template makes is read off the template', () => {
   expect(supportStatementTemplatePersons('referral-general')).toBe(SupportReferralPersons.NONE);
 });
 
+const engagementOfMaria = {
+  name: 'Maria Anna Exempelsdotter',
+  identity: { type: 'PERSONNUMMER', code: androidNumber },
+  relations: [{ description: 'VD' }, { description: 'Styrelsesuppleant' }],
+};
+
+const maria = {
+  internalId: 'a3d2e5f1-0000-4000-8000-000000000001',
+  externalId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
+  personNumber: androidNumber,
+  firstName: 'Maria Anna',
+  lastName: 'Exempelsdotter',
+  parameters: [{ key: 'PBI', values: ['true'] }],
+};
+
+const mariaAsReferralPerson = {
+  partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
+  name: 'Maria Anna Exempelsdotter',
+  firstName: 'Maria Anna',
+  lastName: 'Exempelsdotter',
+  personalNumber: hyphenatedIdentity(androidNumber),
+  roles: 'VD, Styrelsesuppleant',
+  marked: true,
+};
+
+const erikByHand = {
+  internalId: 'a3d2e5f1-0000-4000-8000-000000000002',
+  externalId: 'f0c1d2e3-4a5b-4c6d-8e9f-0a1b2c3d4e5f',
+  personNumber: robotNumber,
+  firstName: 'Erik',
+  lastName: 'Exempelsson',
+  parameters: [
+    { key: 'PBI', values: ['true'] },
+    { key: 'PBI_SOURCE', values: ['MANUAL'] },
+    { key: 'PBI_ROLE', values: ['Firmatecknare'] },
+  ],
+};
+
 test('an identity code is written the way a form is read, with a hyphen', () => {
   expect(
-    supportReferralPeople([
-      {
-        engagement: { name: 'Erik Exempelsson', identity: { type: 'PERSONNUMMER', code: robotNumber } },
-        marked: false,
-      },
-    ])[0]
+    supportReferralPeople(
+      [{ name: 'Erik Exempelsson', identity: { type: 'PERSONNUMMER', code: robotNumber } }] as never,
+      []
+    )[0]
   ).toMatchObject({
     partyId: robotNumber,
     personalNumber: hyphenatedIdentity(robotNumber),
@@ -265,33 +302,70 @@ test('an identity code is written the way a form is read, with a hyphen', () => 
 
 test('the people are read off the company engagements, surname last', () => {
   expect(
-    supportReferralPeople([
-      {
-        engagement: {
-          name: 'Maria Anna Exempelsdotter',
-          identity: { type: 'PERSONNUMMER', code: androidNumber },
-          relations: [{ description: 'VD' }, { description: 'Styrelsesuppleant' }],
-        },
-        marked: true,
-        stakeholder: { externalId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11' } as never,
-      },
-      {
-        engagement: { name: 'Ägarbolaget AB', identity: { type: 'ORGANISATIONSNUMMER', code: '5560269986' } },
-        marked: false,
-      },
-      { engagement: { name: 'Utan identitet' }, marked: false },
-    ])
-  ).toEqual([
+    supportReferralPeople(
+      [
+        engagementOfMaria,
+        { name: 'Ägarbolaget AB', identity: { type: 'ORGANISATIONSNUMMER', code: '5560269986' } },
+        { name: 'Utan identitet' },
+      ] as never,
+      [maria] as never
+    )
+  ).toEqual([mariaAsReferralPerson]);
+});
+
+test('a person marked by hand is offered beside the ones the company data names', () => {
+  expect(supportReferralPeople([engagementOfMaria] as never, [maria, erikByHand] as never)).toEqual([
+    mariaAsReferralPerson,
     {
-      partyId: 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11',
-      name: 'Maria Anna Exempelsdotter',
-      firstName: 'Maria Anna',
-      lastName: 'Exempelsdotter',
-      personalNumber: hyphenatedIdentity(androidNumber),
-      roles: 'VD, Styrelsesuppleant',
+      partyId: 'f0c1d2e3-4a5b-4c6d-8e9f-0a1b2c3d4e5f',
+      name: 'Erik Exempelsson',
+      firstName: 'Erik',
+      lastName: 'Exempelsson',
+      personalNumber: hyphenatedIdentity(robotNumber),
+      roles: 'Firmatecknare',
       marked: true,
     },
   ]);
+});
+
+test('a person the company data names is offered once, however they were marked', () => {
+  expect(supportReferralPeople([engagementOfMaria] as never, [maria] as never)).toEqual([mariaAsReferralPerson]);
+});
+
+test('an unmarked stakeholder the company data says nothing about is not offered', () => {
+  const contact = { internalId: 'a3d2e5f1-0000-4000-8000-000000000003', firstName: 'Sara', lastName: 'Sekreterare' };
+
+  expect(supportReferralPeople([] as never, [contact] as never)).toEqual([]);
+});
+
+const referralPerson = (partyId: string, marked: boolean) => ({ partyId, marked } as never);
+
+test('a person who appears already marked arrives ticked', () => {
+  expect(chosenReferralPartyIds([referralPerson('maria', true), referralPerson('erik', false)], [], [])).toEqual([
+    'maria',
+  ]);
+});
+
+test('a person the handler has unticked stays unticked when the list is read again', () => {
+  expect(chosenReferralPartyIds([referralPerson('maria', true)], [], ['maria'])).toEqual([]);
+});
+
+test('a person marked while the card is open is added to the ones already chosen', () => {
+  expect(
+    chosenReferralPartyIds([referralPerson('maria', true), referralPerson('erik', true)], ['maria'], ['maria'])
+  ).toEqual(['maria', 'erik']);
+});
+
+test('a person who has left the errand is dropped from the chosen ones', () => {
+  expect(chosenReferralPartyIds([referralPerson('maria', true)], ['maria', 'erik'], ['maria', 'erik'])).toEqual([
+    'maria',
+  ]);
+});
+
+test('the chosen ones are handed back untouched when nothing changed', () => {
+  const chosen = ['maria'];
+
+  expect(chosenReferralPartyIds([referralPerson('maria', true)], chosen, ['maria'])).toBe(chosen);
 });
 
 test('the premises are read from the errand, and the owner stands in when they share an address', () => {

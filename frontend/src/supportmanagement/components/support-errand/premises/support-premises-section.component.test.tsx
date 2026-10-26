@@ -26,7 +26,7 @@ vi.mock('@supportmanagement/services/support-statement-service', () => ({
 }));
 
 const form: { parameters: CParameter[] } = { parameters: [] };
-const setValue = vi.fn((name: 'parameters', value: CParameter[]) => {
+const setValue = vi.fn((name: 'parameters', value: CParameter[], _options?: { shouldDirty?: boolean }) => {
   form[name] = value;
 });
 vi.mock('react-hook-form', () => ({
@@ -195,4 +195,64 @@ test('a passed step leaves nothing to change', () => {
   expect(fieldOf('premises-inspected-at').disabled).toBe(true);
   expect(fieldOf('premises-right-of-disposal').disabled).toBe(true);
   expect(fieldOf('premises-right-of-disposal-note').disabled).toBe(true);
+});
+
+test('the restaurant number and the serving areas are written onto the errand', () => {
+  mountSection();
+
+  fireEvent.change(fieldOf('premises-restaurant-number'), { target: { value: '2262-0112' } });
+  fireEvent.change(fieldOf('premises-serving-area'), { target: { value: 'Matsalen och bryggan' } });
+
+  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_RESTAURANT_NUMBER')?.values).toEqual([
+    '2262-0112',
+  ]);
+  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_SERVING_AREA')?.values).toEqual([
+    'Matsalen och bryggan',
+  ]);
+  expect(setValue.mock.calls.every((call) => call[2]?.shouldDirty)).toBe(true);
+});
+
+test('a permit the premises has had before is added, written and taken away again', () => {
+  const { rerender } = mountSection();
+  const again = () =>
+    rerender(
+      <SupportPremisesSection
+        section={{ id: 's1', sectionKey: 'premises', text: '' }}
+        investigationId="i1"
+        writable={true}
+        onEdited={vi.fn()}
+        onSaved={vi.fn()}
+        saveRef={saveRef}
+      />
+    );
+
+  expect(fieldOf('premises-previous-permits-empty')).toBeTruthy();
+
+  fireEvent.click(fieldOf('premises-previous-permit-add'));
+  again();
+
+  fireEvent.change(fieldOf('premises-previous-permit-holder-1'), { target: { value: 'Tynderö Sjökrog AB' } });
+  fireEvent.change(fieldOf('premises-previous-permit-from-1'), { target: { value: '2019-05-01' } });
+  again();
+
+  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_PREVIOUS_PERMIT_1_HOLDER')?.values).toEqual([
+    'Tynderö Sjökrog AB',
+  ]);
+  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_PREVIOUS_PERMIT_1_FROM')?.values).toEqual([
+    '2019-05-01',
+  ]);
+
+  fireEvent.click(fieldOf('premises-previous-permit-remove-1'));
+  again();
+
+  expect(form.parameters.some((parameter) => parameter.key.startsWith('PREMISES_PREVIOUS_PERMIT'))).toBe(false);
+  expect(fieldOf('premises-previous-permits-empty')).toBeTruthy();
+});
+
+test('a passed step leaves the new fields as they are', () => {
+  mountSection(false);
+
+  expect(fieldOf('premises-restaurant-number').disabled).toBe(true);
+  expect(fieldOf('premises-serving-area').disabled).toBe(true);
+  expect((fieldOf('premises-previous-permit-add') as unknown as HTMLButtonElement).disabled).toBe(true);
 });

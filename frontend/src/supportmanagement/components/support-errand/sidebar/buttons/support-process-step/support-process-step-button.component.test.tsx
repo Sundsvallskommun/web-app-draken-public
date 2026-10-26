@@ -32,12 +32,14 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   getSupportDecisions: vi.fn(),
   completeSupportDecision: vi.fn(),
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
+  supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
 }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),
   closeSupportErrand: vi.fn(),
   setSupportErrandAdmin: vi.fn(),
   setSupportErrandStatus: vi.fn(),
+  getMostSpecificLabelType: () => undefined,
   Status: { ONGOING: 'ONGOING', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: { CLOSED: 'CLOSED' },
 }));
@@ -54,6 +56,21 @@ vi.mock('@supportmanagement/services/support-process-service', async (importOrig
 }));
 
 const ERRAND_ID = 'errand-1';
+
+const CERTIFICATE_PARAMETERS = [
+  'decisionText',
+  'decisionMaker',
+  'validFrom',
+  'executionDate',
+  'premisesStreet',
+  'premisesPostalAddress',
+  'premisesPhone',
+  'servingAreaDescription',
+].map((key) => ({ key, values: ['ifyllt'] }));
+
+const aDecision = (parameters = CERTIFICATE_PARAMETERS) => [
+  { id: 'decision-1', decisionType: 'PROPOSED', outcome: 'APPROVAL', parameters },
+];
 
 const errandAt = (currentActivityId: string, awaitingSignals: string[]): SupportErrand =>
   ({
@@ -104,7 +121,7 @@ beforeEach(() => {
   toast.mockReset();
   vi.mocked(getSupportDecisions)
     .mockReset()
-    .mockResolvedValue([{ id: 'decision-1', decisionType: 'PROPOSED', outcome: 'APPROVAL' }] as never);
+    .mockResolvedValue(aDecision() as never);
   vi.mocked(completeSupportDecision)
     .mockReset()
     .mockResolvedValue(true as never);
@@ -122,6 +139,29 @@ afterEach(() => {
 });
 
 test('the gate is taken from the process as it stands, not from the errand the decision tab left behind', async () => {
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
+});
+
+test('the decision is read again for the gate, so one saved after the list was read is judged as it stands', async () => {
+  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  vi.mocked(getSupportDecisions)
+    .mockResolvedValueOnce(aDecision(withoutValidFrom) as never)
+    .mockResolvedValue(aDecision() as never);
   vi.mocked(getSupportErrandProcessState).mockResolvedValue({
     process: {
       processStatus: 'WAITING',
@@ -285,6 +325,77 @@ test('a solved errand that never had a process is left alone', async () => {
 
   await waitFor(() => expect(getSupportErrandProcessState).toHaveBeenCalled());
   expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
+});
+
+const inReview = (customer: unknown[]): SupportErrand =>
+  ({ ...errandAt('review_phase', ['review_completed', 'process_cancelled']), customer } as unknown as SupportErrand);
+
+const reviewGateIsOffered = () =>
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'review_phase',
+      awaitingSignals: [{ name: 'review_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+const applicant = (overrides: object = {}) => ({
+  organizationName: 'Testbolaget',
+  address: 'Storgatan 3',
+  zipCode: '852 31',
+  city: 'Sundsvall',
+  phoneNumbers: [{ value: '060-191000' }],
+  ...overrides,
+});
+
+test('the review waits for what the certificate prints about the applicant', async () => {
+  useSupportStore.setState({ supportErrand: inReview([applicant({ zipCode: '' })]) });
+  reviewGateIsOffered();
+
+  renderButton();
+
+  const button = await theButton('start_investigation');
+  button.click();
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('what only the applicant can complete is said out loud and then left to the handler', async () => {
+  useSupportStore.setState({ supportErrand: inReview([applicant()]) });
+  reviewGateIsOffered();
+
+  renderButton();
+
+  const button = await theButton('start_investigation');
+  button.click();
+
+  // The application is not on the errand, so its inputs are missing; the dialog is answered yes here.
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'review_completed'));
+  expect(useSupportStore.getState().activeTabKey).not.toBe('basics');
+});
+
+test('a decision is not concluded while the certificate lacks something, since its parameters then freeze', async () => {
+  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  vi.mocked(getSupportDecisions).mockResolvedValue(aDecision(withoutValidFrom) as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('decision'));
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });
 
 test('a process that failed is not offered a restart from the errand page', async () => {
