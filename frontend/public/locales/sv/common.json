@@ -177,7 +177,6 @@
       "error": "Beslutsunderlaget kunde inte skapas. Mallen som efterfrågades heter {{template}}."
     },
     "section_save_failed": "Utredningstexten kunde inte sparas.",
-    "application_complete_at": "Ansökan komplett",
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",
