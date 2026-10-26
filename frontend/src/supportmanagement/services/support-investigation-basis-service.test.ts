@@ -578,7 +578,6 @@ const TEMPLATE_FIELDS = [
   'premises.name',
   'premises.street',
   'premises.postalAddress',
-  'premises.restaurantNumber',
   'premises.seatsIndoor',
   'premises.seatsOutdoor',
   'premises.maxPersons',
@@ -671,7 +670,6 @@ test('what the handler established about the premises for the underlay travels w
         ...errand,
         parameters: [
           ...(errand.parameters ?? []),
-          { key: 'PREMISES_RESTAURANT_NUMBER', values: [mockEnv.mockRestaurantNumber] },
           { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
           { key: 'PREMISES_PREVIOUS_PERMITS', values: ['2'] },
           { key: 'PREMISES_PREVIOUS_PERMIT_1_HOLDER', values: ['Förra Krogen AB'] },
@@ -685,7 +683,6 @@ test('what the handler established about the premises for the underlay travels w
     })
   );
 
-  expect(parameters.premises.restaurantNumber).toBe(mockEnv.mockRestaurantNumber);
   expect(parameters.premises.servingAreaDescription).toBe('Matsalen, uteserveringen och bryggan');
   expect(parameters.premises.previousPermits).toEqual([
     { holderName: 'Förra Krogen AB', validFrom: '2019-05-01', validTo: '2023-09-30' },

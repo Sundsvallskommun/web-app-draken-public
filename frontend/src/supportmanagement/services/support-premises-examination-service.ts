@@ -36,7 +36,6 @@ export interface SupportPremisesExamination {
   inspectedAt: string;
   rightOfDisposal: string;
   rightOfDisposalNote: string;
-  restaurantNumber: string;
   servingArea: string;
 }
 
@@ -44,7 +43,6 @@ const EXAMINATION_PARAMETERS: Record<keyof SupportPremisesExamination, { key: st
   inspectedAt: { key: 'PREMISES_INSPECTED_AT', displayName: 'Lokalinspektion genomförd' },
   rightOfDisposal: { key: 'PREMISES_RIGHT_OF_DISPOSAL', displayName: 'Dispositionsrätt styrkt' },
   rightOfDisposalNote: { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', displayName: 'Dispositionsrätt, underlag' },
-  restaurantNumber: { key: 'PREMISES_RESTAURANT_NUMBER', displayName: 'Restaurangnummer' },
   servingArea: { key: 'PREMISES_SERVING_AREA', displayName: 'Serveringsytor' },
 };
 
@@ -52,7 +50,6 @@ export const supportPremisesExamination = (parameters: CParameter[] | undefined)
   inspectedAt: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.inspectedAt.key),
   rightOfDisposal: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposal.key),
   rightOfDisposalNote: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposalNote.key),
-  restaurantNumber: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.restaurantNumber.key),
   servingArea: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.servingArea.key),
 });
 

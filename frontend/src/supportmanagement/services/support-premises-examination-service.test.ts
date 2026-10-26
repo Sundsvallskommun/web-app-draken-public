@@ -130,7 +130,6 @@ describe('what the handler establishes, kept on the errand', () => {
       inspectedAt: '2026-04-10',
       rightOfDisposal: 'PROVEN',
       rightOfDisposalNote: 'hyresavtal t.o.m. 2029',
-      restaurantNumber: '',
       servingArea: '',
     });
   });
@@ -140,7 +139,6 @@ describe('what the handler establishes, kept on the errand', () => {
       inspectedAt: '',
       rightOfDisposal: '',
       rightOfDisposalNote: '',
-      restaurantNumber: '',
       servingArea: '',
     });
   });
@@ -167,11 +165,9 @@ describe('what the handler establishes, kept on the errand', () => {
 });
 
 describe('what the handler establishes for the underlay', () => {
-  test('the restaurant number and the serving areas are written onto the errand', () => {
-    const withNumber = withSupportPremisesExamination([], 'restaurantNumber', '2262-0112');
-    const written = withSupportPremisesExamination(withNumber, 'servingArea', 'Matsalen och bryggan');
+  test('the serving areas are written onto the errand', () => {
+    const written = withSupportPremisesExamination([], 'servingArea', 'Matsalen och bryggan');
 
-    expect(supportPremisesExamination(written).restaurantNumber).toBe('2262-0112');
     expect(supportPremisesExamination(written).servingArea).toBe('Matsalen och bryggan');
   });
 

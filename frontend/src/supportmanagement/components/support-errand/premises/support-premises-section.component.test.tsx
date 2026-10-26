@@ -197,15 +197,11 @@ test('a passed step leaves nothing to change', () => {
   expect(fieldOf('premises-right-of-disposal-note').disabled).toBe(true);
 });
 
-test('the restaurant number and the serving areas are written onto the errand', () => {
+test('the serving areas are written onto the errand', () => {
   mountSection();
 
-  fireEvent.change(fieldOf('premises-restaurant-number'), { target: { value: '2262-0112' } });
   fireEvent.change(fieldOf('premises-serving-area'), { target: { value: 'Matsalen och bryggan' } });
 
-  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_RESTAURANT_NUMBER')?.values).toEqual([
-    '2262-0112',
-  ]);
   expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_SERVING_AREA')?.values).toEqual([
     'Matsalen och bryggan',
   ]);
@@ -252,7 +248,6 @@ test('a permit the premises has had before is added, written and taken away agai
 test('a passed step leaves the new fields as they are', () => {
   mountSection(false);
 
-  expect(fieldOf('premises-restaurant-number').disabled).toBe(true);
   expect(fieldOf('premises-serving-area').disabled).toBe(true);
   expect((fieldOf('premises-previous-permit-add') as unknown as HTMLButtonElement).disabled).toBe(true);
 });

@@ -716,8 +716,6 @@
     "toast": {
       "save_failed": "Anmärkningarna kunde inte sparas"
     },
-    "restaurant_number": "Restaurangnummer",
-    "restaurant_number_placeholder": "Nummer enligt registret, t.ex. 2281-0112",
     "serving_area": "Serveringsytor",
     "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
     "previous_permits": {
