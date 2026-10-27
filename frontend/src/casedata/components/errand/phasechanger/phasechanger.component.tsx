@@ -34,6 +34,9 @@ export const PhaseChanger = () => {
   const administrators = useUserStore((s) => s.administrators);
   const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [isLoading, setIsLoading] = useState(false);
+  // The process often discards the first COMPLETE and only moves on once it is resent, so for a few seconds the
+  // errand itself can look as if nothing happened. The start counts as in progress until the polling is done.
+  const [isStartingHandling, setIsStartingHandling] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
@@ -146,6 +149,16 @@ export const PhaseChanger = () => {
       status: 'error',
     });
     setIsLoading(false);
+    setIsStartingHandling(false);
+  };
+
+  const showPhaseChangeError = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när fasbytet inleddes',
+      status: 'error',
+    });
   };
 
   const onSave = () => {
@@ -164,10 +177,21 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        void getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        void triggerErrandPhaseChange(municipalityId, errand!);
-        pollDisplayPhase();
+        // Poll only once COMPLETE is saved: from then on, Registrerad with UNKNOWN means the process lost it.
+        void triggerErrandPhaseChange(municipalityId, errand!)
+          .then(() => getErrand(municipalityId, errand!.id.toString()))
+          .then((res) => {
+            setErrand(res.errand);
+            pollDisplayPhase({
+              resendLostComplete: true,
+              onPollingFinished: () => setIsStartingHandling(false),
+            });
+          })
+          .catch(() => {
+            setIsStartingHandling(false);
+            showPhaseChangeError();
+          });
       })
       .catch(() => {
         showSaveError();
@@ -177,6 +201,7 @@ export const PhaseChanger = () => {
 
   const onError = () => {
     console.error('Something went wrong when saving');
+    setIsStartingHandling(false);
   };
 
   const errandSave = useSaveCasedataErrand(false);
@@ -195,13 +220,8 @@ export const PhaseChanger = () => {
           status: 'success',
         })
       );
-    } catch (error) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när fasbytet inleddes',
-        status: 'error',
-      });
+    } catch {
+      showPhaseChangeError();
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +234,7 @@ export const PhaseChanger = () => {
   const activeStakeholders = (formStakeholders ?? errand.stakeholders).filter((stakeholder) => !stakeholder.removed);
   const ownerMissingForStart = !validateStakeholdersForDecision({ ...errand, stakeholders: activeStakeholders }).valid;
 
-  return phaseChangeInProgress(errand) ? (
+  return phaseChangeInProgress(errand) || isStartingHandling ? (
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>
       Fasbyte pågår
     </Button>
@@ -232,6 +252,7 @@ export const PhaseChanger = () => {
           });
           return;
         }
+        setIsStartingHandling(true);
         setValue('admin', user.username);
         await errandSave();
         handleSubmit(onSave, onError)();
