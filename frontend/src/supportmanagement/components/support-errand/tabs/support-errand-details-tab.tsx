@@ -17,7 +17,7 @@ export const SupportErrandDetailsTab: React.FC = () => {
   const supportErrand = _supportErrand!;
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  const usesTypeForm = appConfig.features.useDetailsTab;
+  const usesTypeForm = appConfig.features.useErrandTypeJsonParameters;
   const loadsTypeForm = usesTypeForm && !supportMetadata;
   const typeSchemaName = usesTypeForm ? schemaNameForErrand(supportErrand, supportMetadata?.namespace) : undefined;
   const showsTypeForm = !loadsTypeForm && !!typeSchemaName && !!municipalityId;
@@ -79,7 +79,7 @@ export const SupportErrandDetailsTab: React.FC = () => {
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
-        {(isOpenEErrand(supportErrand) || simpleParams.length > 0) && (
+        {appConfig.features.useErrandParameters && (isOpenEErrand(supportErrand) || simpleParams.length > 0) && (
           <div className="rounded-lg gap-md p-16">
             <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
             {isOpenEErrand(supportErrand) ? (
@@ -99,31 +99,32 @@ export const SupportErrandDetailsTab: React.FC = () => {
           </div>
         )}
 
-        {tables.map((table, idx) => (
-          <div key={`table-${idx}`} className="p-16">
-            <h3 className="text-h3-md mb-12">{table.label}</h3>
-            <Table dense background>
-              <Table.Header>
-                {table.header.map((header, headerIdx) => (
-                  <Table.HeaderColumn key={`header-${headerIdx}`} className="flex justify-start">
-                    {header}
-                  </Table.HeaderColumn>
-                ))}
-              </Table.Header>
-              <Table.Body>
-                {table.rows.map((row, rowIdx) => (
-                  <Table.Row key={`row-${rowIdx}`}>
-                    {row.map((cell) => (
-                      <Table.Column key={cell.key} className="flex justify-start">
-                        {cell.value}
-                      </Table.Column>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-          </div>
-        ))}
+        {appConfig.features.useErrandParameters &&
+          tables.map((table, idx) => (
+            <div key={`table-${idx}`} className="p-16">
+              <h3 className="text-h3-md mb-12">{table.label}</h3>
+              <Table dense background>
+                <Table.Header>
+                  {table.header.map((header, headerIdx) => (
+                    <Table.HeaderColumn key={`header-${headerIdx}`} className="flex justify-start">
+                      {header}
+                    </Table.HeaderColumn>
+                  ))}
+                </Table.Header>
+                <Table.Body>
+                  {table.rows.map((row, rowIdx) => (
+                    <Table.Row key={`row-${rowIdx}`}>
+                      {row.map((cell) => (
+                        <Table.Column key={cell.key} className="flex justify-start">
+                          {cell.value}
+                        </Table.Column>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table>
+            </div>
+          ))}
         {loadsTypeForm ? (
           <div className="flex items-center gap-md p-16">
             <Spinner size={2} />
