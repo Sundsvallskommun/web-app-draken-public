@@ -51,9 +51,10 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errandId]);
 
-  // An errand opened from an ACE screen pop gets the identified caller as (unsaved) customer, so the
-  // case worker reviews it before it is saved - saving makes the errand visible on Mina sidor.
-  useAceCallerPrefill(supportErrand?.errandNumber, (person, personNumber) => {
+  // An errand opened from an ACE screen pop gets the caller as (unsaved) customer, so the case worker
+  // reviews it before it is saved - saving makes the errand of an identified caller visible on Mina
+  // sidor. Whatever ACE knew is filled in: the person when identified, and the number they call from.
+  useAceCallerPrefill(supportErrand?.errandNumber, ({ person, personNumber, phoneNumber }) => {
     if (useSupportStore.getState().stakeholderCustomers.length > 0) {
       return;
     }
@@ -62,14 +63,17 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
       role: 'PRIMARY',
       internalId: uuidv4(),
       externalIdType: ExternalIdType.PRIVATE,
-      externalId: person.personId,
-      personNumber,
-      firstName: person.firstName,
-      lastName: person.lastName,
-      address: person.street,
-      careOf: person.careof,
-      zipCode: person.zip,
-      city: person.city,
+      ...(person && {
+        externalId: person.personId,
+        personNumber,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        address: person.street,
+        careOf: person.careof,
+        zipCode: person.zip,
+        city: person.city,
+      }),
+      phoneNumbers: phoneNumber ? [{ value: phoneNumber }] : [],
     };
     setStakeholderCustomers([customer]);
     setValue('customer', [customer], { shouldDirty: true });

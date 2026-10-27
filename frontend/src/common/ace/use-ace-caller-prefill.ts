@@ -2,10 +2,17 @@ import { AddressResult, searchPerson } from '@common/services/adress-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useRef } from 'react';
 
-import { takePendingCaller } from './ace-pending-caller';
+import { HandedOverCaller, takePendingCaller } from './ace-pending-caller';
+
+/** The caller as the errand form gets it: the looked-up person when identified, and the phone number when known. */
+export interface AceCallerPrefill {
+  personNumber?: string;
+  phoneNumber?: string;
+  person?: AddressResult;
+}
 
 interface CallerLookup {
-  personNumber: string;
+  caller: HandedOverCaller;
   person: Promise<AddressResult | undefined>;
 }
 
@@ -19,23 +26,26 @@ const getCallerLookup = (errandNumber: string): CallerLookup | null => {
   if (inFlight) {
     return inFlight;
   }
-  const personNumber = takePendingCaller(errandNumber);
-  if (!personNumber) {
+  const caller = takePendingCaller(errandNumber);
+  if (!caller) {
     return null;
   }
-  const lookup = { personNumber, person: searchPerson(personNumber) };
+  // A caller who was not identified is only known by phone number; there is nobody to look up.
+  const person = caller.personNumber ? searchPerson(caller.personNumber) : Promise.resolve(undefined);
+  const lookup = { caller, person };
   lookups.set(errandNumber, lookup);
   lookup.person.finally(() => lookups.delete(errandNumber)).catch(() => {});
   return lookup;
 };
 
 /**
- * When this errand was opened for a caller identified in ACE (see AceConnector), looks the caller
- * up via the BFF/Citizen and hands the result to onCaller, once, so the form can be pre-filled.
+ * When this errand was opened for a caller in ACE (see AceConnector), hands the caller to onCaller,
+ * once, so the form can be pre-filled: an identified caller is looked up via the BFF/Citizen, and
+ * the phone number is passed on whenever ACE had one, also when the lookup fails.
  */
 export const useAceCallerPrefill = (
   errandNumber: string | undefined,
-  onCaller: (person: AddressResult, personNumber: string) => void
+  onCaller: (caller: AceCallerPrefill) => void
 ): void => {
   const toastMessage = useSnackbar();
   const latest = useRef({ onCaller, toastMessage });
@@ -51,20 +61,25 @@ export const useAceCallerPrefill = (
     if (!lookup) {
       return;
     }
+    const { personNumber, phoneNumber } = lookup.caller;
     let active = true;
     lookup.person
       .then((person) => {
         if (!active) {
           return;
         }
-        if (!person) {
+        if (personNumber && !person) {
           throw new Error('Caller not found');
         }
-        latest.current.onCaller(person, lookup.personNumber);
+        latest.current.onCaller({ personNumber, phoneNumber, person });
       })
       .catch(() => {
         if (!active) {
           return;
+        }
+        // Keep what is known without the lookup, so the case worker only adds the person.
+        if (phoneNumber) {
+          latest.current.onCaller({ phoneNumber });
         }
         latest.current.toastMessage({
           position: 'bottom',

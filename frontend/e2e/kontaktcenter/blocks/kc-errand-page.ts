@@ -8,6 +8,7 @@ export const errandOwner = (page: Page) => {
     name: card.locator('[data-cy="stakeholder-name"]'),
     personNumber: card.locator('[data-cy="stakeholder-ssn"]'),
     address: card.locator('[data-cy="stakeholder-adress"]'),
+    phone: card.locator('[data-cy="stakeholder-phone"]'),
   };
 };
 
