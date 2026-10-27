@@ -578,7 +578,6 @@ const TEMPLATE_FIELDS = [
   'premises.name',
   'premises.street',
   'premises.postalAddress',
-  'premises.restaurantNumber',
   'premises.seatsIndoor',
   'premises.seatsOutdoor',
   'premises.maxPersons',
@@ -671,14 +670,12 @@ test('what the handler established about the premises for the underlay travels w
         ...errand,
         parameters: [
           ...(errand.parameters ?? []),
-          { key: 'PREMISES_RESTAURANT_NUMBER', values: [mockEnv.mockRestaurantNumber] },
           { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
         ],
       } as SupportErrand,
     })
   );
 
-  expect(parameters.premises.restaurantNumber).toBe(mockEnv.mockRestaurantNumber);
   expect(parameters.premises.servingAreaDescription).toBe('Matsalen, uteserveringen och bryggan');
 });
 

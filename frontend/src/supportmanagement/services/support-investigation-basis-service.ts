@@ -167,7 +167,6 @@ export interface InvestigationBasisParameters {
     name: string;
     street: string;
     postalAddress: string;
-    restaurantNumber: string;
     seatsIndoor: string;
     seatsOutdoor: string;
     maxPersons: string;
@@ -662,7 +661,6 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       name: premisesName(form, errand),
       street: address?.street ?? '',
       postalAddress: postalAddressOf(address?.postalCode, address?.city),
-      restaurantNumber: examination.restaurantNumber,
       seatsIndoor: capacity.indoorSeats ?? '',
       seatsOutdoor: capacity.outdoorSeats ?? '',
       maxPersons: capacity.maxPersons ?? '',

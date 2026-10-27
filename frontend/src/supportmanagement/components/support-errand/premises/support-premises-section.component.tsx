@@ -137,21 +137,6 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         </InvestigationFact>
       </div>
 
-      <div className={threeColRow}>
-        <FormControl className="min-w-0">
-          <FormLabel className="text-small font-bold text-dark-secondary">
-            {t('common:premises.restaurant_number')}
-          </FormLabel>
-          <Input
-            disabled={!writable}
-            value={examination.restaurantNumber}
-            placeholder={t('common:premises.restaurant_number_placeholder')}
-            onChange={(event) => write('restaurantNumber', event.target.value)}
-            data-cy="premises-restaurant-number"
-          />
-        </FormControl>
-      </div>
-
       <FormControl className="w-full">
         <FormLabel className="text-small font-bold text-dark-secondary">{t('common:premises.serving_area')}</FormLabel>
         <Textarea
