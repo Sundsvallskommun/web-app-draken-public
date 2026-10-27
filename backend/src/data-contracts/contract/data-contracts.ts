@@ -359,6 +359,13 @@ export interface Invoicing {
   invoiceInterval: IntervalType;
   /** Invoiced in */
   invoicedIn: InvoicedIn;
+  /** Whether the contract is to be billed or not */
+  billingEnabled: boolean;
+  /**
+   * The month in which yearly billing takes place, June (6) or December (12). Mandatory when invoiceInterval is YEARLY
+   * @format int32
+   */
+  yearlyBillingMonth?: number;
 }
 
 /** Leasehold */
@@ -548,19 +555,6 @@ export interface ConstraintViolationProblem {
   /** @format uri */
   instance?: string;
   detail?: string;
-  causeAsProblem?: ThrowableProblem;
-}
-
-export interface ThrowableProblem {
-  /** @format uri */
-  type?: string;
-  title?: string;
-  /** @format int32 */
-  status?: number;
-  detail?: string;
-  /** @format uri */
-  instance?: string;
-  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -674,8 +668,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
