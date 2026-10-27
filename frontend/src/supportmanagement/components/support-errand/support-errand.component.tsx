@@ -52,7 +52,7 @@ export const SupportErrandComponent: FC = () => {
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { supportErrand, setSupportErrand } = useSupportStore();
-  const { setNotesCount } = useBadgeStore();
+  const { setNotesCount, setServiceNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
   const pathName = usePathname() ?? '';
@@ -157,12 +157,15 @@ export const SupportErrandComponent: FC = () => {
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
-      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+      void getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
+      if (appConfig.features.useServiceNotes) {
+        void getSupportNotesCount(supportErrand.id!, municipalityId!, 'PUBLIC').then(setServiceNotesCount);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand?.id, municipalityId, setNotesCount]);
+  }, [supportErrand?.id, municipalityId, setNotesCount, setServiceNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 

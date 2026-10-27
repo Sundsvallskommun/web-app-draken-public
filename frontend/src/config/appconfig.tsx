@@ -56,6 +56,7 @@ interface AppConfigFeatures {
   useOverviewNotice: boolean;
   useCustomerPages: boolean;
   useLicensedBusiness: boolean;
+  useServiceNotes: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -120,6 +121,7 @@ export const appConfig: AppConfig = {
     useOverviewNotice: envBool(process.env.NEXT_PUBLIC_USE_OVERVIEW_NOTICE),
     useCustomerPages: envBool(process.env.NEXT_PUBLIC_USE_CUSTOMER_PAGES),
     useLicensedBusiness: envBool(process.env.NEXT_PUBLIC_USE_LICENSED_BUSINESS),
+    useServiceNotes: envBool(process.env.NEXT_PUBLIC_USE_SERVICE_NOTES),
   },
 };
 

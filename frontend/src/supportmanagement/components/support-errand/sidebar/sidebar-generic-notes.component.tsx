@@ -48,6 +48,8 @@ export const SidebarGenericNotes: FC<{
 }> = ({ label_plural, label_singular, noteType }) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setNotesCount = useBadgeStore((s) => s.setNotesCount);
+  const setServiceNotesCount = useBadgeStore((s) => s.setServiceNotesCount);
+  const user = useUserStore((s) => s.user);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
@@ -58,17 +60,13 @@ export const SidebarGenericNotes: FC<{
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const pageSize = 8;
-  const [allowed, setAllowed] = useState(false);
+  const isAssignedToUser = !!user.username && supportErrand?.assignedUserId === user.username;
 
   const readNotes = () =>
-    getSupportNotes(supportErrand!.id!, municipalityId).then((res) => {
+    getSupportNotes(supportErrand!.id!, municipalityId, noteType).then((res) => {
       setNotes(res.notes);
-      setNotesCount(res.notes.length);
+      (noteIsTjansteanteckning(noteType) ? setServiceNotesCount : setNotesCount)(res.notes.length);
     });
-  // useEffect(() => {
-  //   const _a = validateAction(errand, user);
-  //   setAllowed(_a);
-  // }, [user, errand]);
 
   const {
     register,
@@ -88,7 +86,7 @@ export const SidebarGenericNotes: FC<{
 
     const apiCall = note.id
       ? updateSupportNote(supportErrand!.id!, municipalityId, note.id, note.text)
-      : saveSupportNote(supportErrand!.id!, municipalityId, note.text, note.partyId);
+      : saveSupportNote(supportErrand!.id!, municipalityId, note.text, note.partyId, noteType);
 
     return apiCall
       .then(() => {
@@ -249,64 +247,66 @@ export const SidebarGenericNotes: FC<{
                         </p>
                       </div>
                     </div>
-                    <div className="relative">
-                      <PopupMenu position="left">
-                        <PopupMenu.Button
-                          size="sm"
-                          aria-label="Allternativ"
-                          data-cy={`options-${note.id}`}
-                          iconButton
-                          className="bg-transparent"
-                          variant="ghost"
-                        >
-                          <Ellipsis />
-                        </PopupMenu.Button>
-                        <PopupMenu.Panel>
-                          <PopupMenu.Items>
-                            <PopupMenu.Group>
-                              <PopupMenu.Item>
-                                <Button
-                                  data-cy="edit-note-button"
-                                  disabled={noteIsComment(noteType) && supportErrand?.status === 'SOLVED'}
-                                  leftIcon={<Pencil />}
-                                  onClick={() => {
-                                    updateNote(note);
-                                  }}
-                                >
-                                  Ändra
-                                </Button>
-                              </PopupMenu.Item>
-                            </PopupMenu.Group>
-                            <PopupMenu.Group>
-                              <PopupMenu.Item>
-                                <Button
-                                  data-cy="delete-note-button"
-                                  leftIcon={<Trash />}
-                                  onClick={() => {
-                                    confirm
-                                      .showConfirmation(
-                                        'Ta bort kommentar',
-                                        'Vill du ta bort kommentaren?',
-                                        'Ja',
-                                        'Nej',
-                                        'info',
-                                        'info'
-                                      )
-                                      .then((confirmed) => {
-                                        if (confirmed) {
-                                          removeNote(note);
-                                        }
-                                      });
-                                  }}
-                                >
-                                  Ta bort
-                                </Button>
-                              </PopupMenu.Item>
-                            </PopupMenu.Group>
-                          </PopupMenu.Items>
-                        </PopupMenu.Panel>
-                      </PopupMenu>
-                    </div>
+                    {noteIsComment(noteType) ? (
+                      <div className="relative">
+                        <PopupMenu position="left">
+                          <PopupMenu.Button
+                            size="sm"
+                            aria-label="Allternativ"
+                            data-cy={`options-${note.id}`}
+                            iconButton
+                            className="bg-transparent"
+                            variant="ghost"
+                          >
+                            <Ellipsis />
+                          </PopupMenu.Button>
+                          <PopupMenu.Panel>
+                            <PopupMenu.Items>
+                              <PopupMenu.Group>
+                                <PopupMenu.Item>
+                                  <Button
+                                    data-cy="edit-note-button"
+                                    disabled={noteIsComment(noteType) && supportErrand?.status === 'SOLVED'}
+                                    leftIcon={<Pencil />}
+                                    onClick={() => {
+                                      updateNote(note);
+                                    }}
+                                  >
+                                    Ändra
+                                  </Button>
+                                </PopupMenu.Item>
+                              </PopupMenu.Group>
+                              <PopupMenu.Group>
+                                <PopupMenu.Item>
+                                  <Button
+                                    data-cy="delete-note-button"
+                                    leftIcon={<Trash />}
+                                    onClick={() => {
+                                      confirm
+                                        .showConfirmation(
+                                          'Ta bort kommentar',
+                                          'Vill du ta bort kommentaren?',
+                                          'Ja',
+                                          'Nej',
+                                          'info',
+                                          'info'
+                                        )
+                                        .then((confirmed) => {
+                                          if (confirmed) {
+                                            removeNote(note);
+                                          }
+                                        });
+                                    }}
+                                  >
+                                    Ta bort
+                                  </Button>
+                                </PopupMenu.Item>
+                              </PopupMenu.Group>
+                            </PopupMenu.Items>
+                          </PopupMenu.Panel>
+                        </PopupMenu>
+                      </div>
+                    ) : null}
                   </div>
                   <Divider />
                 </Fragment>
@@ -335,7 +335,7 @@ export const SidebarGenericNotes: FC<{
             disabled={
               !supportErrand?.id ||
               text === '' ||
-              (noteIsTjansteanteckning(noteType) && !allowed) ||
+              (noteIsTjansteanteckning(noteType) && !isAssignedToUser) ||
               (noteIsComment(noteType) && supportErrand.status === 'SOLVED')
             }
             loadingText="Sparar"

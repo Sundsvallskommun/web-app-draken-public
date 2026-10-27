@@ -60,6 +60,7 @@ export const mockCasedataErrandNumber = 'MEX-2026-000001';
 export const mockAttachmentId = 'att-1';
 export const mockRelationId = 'relation-1';
 export const mockConversationId = 'conversation-1';
+export const mockNoteId = 'note-1';
 // The MEX casedata namespace, and the supportmanagement namespaces used as handover targets
 export const mockDepartment = 'SBK_MEX';
 export const mockHandoverNamespace = 'LOK';
