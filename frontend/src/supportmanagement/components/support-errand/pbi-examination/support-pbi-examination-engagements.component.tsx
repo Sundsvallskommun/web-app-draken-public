@@ -68,7 +68,11 @@ export const EngagementsBlock: FC<EngagementsBlockProps> = ({ person, writable, 
     };
   }, [partyId]);
 
-  const choose = (picked: string[]) => onChange(withEngagements(person, picked));
+  // The combobox reports its value on mount; an unchanged choice must not dirty the errand.
+  const choose = (picked: string[]) => {
+    const unchanged = picked.length === chosen.length && picked.every((number) => chosen.includes(number));
+    if (!unchanged) onChange(withEngagements(person, picked));
+  };
 
   return (
     <div className="flex flex-col gap-8" data-cy={`pbi-engagements-${person.internalId}`}>
