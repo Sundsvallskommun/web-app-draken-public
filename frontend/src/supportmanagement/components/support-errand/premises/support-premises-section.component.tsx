@@ -19,7 +19,9 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { InvestigationFact } from '../investigation-fact.component';
-import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
+import type { InvestigationSectionProps } from '../investigation-section-text.component';
+import { InvestigationTextEditor } from '../investigation-text-editor.component';
+import { useInvestigationSectionSave } from '../use-investigation-section-save';
 
 const APPROVED = 'APPROVED';
 const PENDING = 'PENDING';
@@ -33,9 +35,10 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   const { getValues, setValue, watch } = useFormContext<SupportErrand>();
 
   const [statements, setStatements] = useState<Statement[]>([]);
-  const [knownBefore, setKnownBefore] = useState(section.assessment === APPROVED);
+  const sectionSave = useInvestigationSectionSave(props, 'common:premises.toast.save_failed');
+  const knownBefore = sectionSave.values.assessment === APPROVED;
   // Unchecking only takes back an approval; any other assessment is left as it is.
-  const assessment = knownBefore ? APPROVED : section.assessment === APPROVED ? PENDING : section.assessment;
+  const uncheckedAssessment = section.assessment === APPROVED ? PENDING : section.assessment ?? '';
 
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
@@ -96,9 +99,9 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
               data-cy="premises-inspected-at"
             />
             <Checkbox
-              disabled={!writable}
+              disabled={sectionSave.readOnly}
               checked={knownBefore}
-              onChange={(event) => setKnownBefore(event.target.checked)}
+              onChange={(event) => sectionSave.set('assessment', event.target.checked ? APPROVED : uncheckedAssessment)}
               data-cy="premises-known-before"
             >
               {t('common:premises.known_before')}
@@ -196,13 +199,13 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         />
       </FormControl>
 
-      <InvestigationSectionText
-        {...props}
+      <InvestigationTextEditor
         name="premises"
-        assessment={assessment}
         labelKey="common:premises.notes"
         placeholderKey="common:premises.notes_placeholder"
-        saveFailedKey="common:premises.toast.save_failed"
+        value={sectionSave.values.text}
+        readOnly={sectionSave.readOnly}
+        onChange={(markup) => sectionSave.set('text', markup)}
       />
 
       <p className="text-small text-dark-secondary italic m-0">{t('common:premises.requirement_note')}</p>
