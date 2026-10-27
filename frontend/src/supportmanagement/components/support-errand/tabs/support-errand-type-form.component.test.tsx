@@ -96,7 +96,7 @@ test('the answers can still be changed during the investigation, and the origina
   const input = await screen.findByDisplayValue('Utrett svar');
   expect(input.hasAttribute('disabled')).toBe(false);
 
-  fireEvent.click(screen.getByRole('checkbox', { name: 'Visa ursprungliga uppgifter' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Visa uppgifter från ansökan' }));
 
   const originalInput = await screen.findByDisplayValue('Sparat svar');
   expect(originalInput.hasAttribute('disabled')).toBe(true);
