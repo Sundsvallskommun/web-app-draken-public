@@ -10,10 +10,7 @@ import {
   type SupportPremisesExamination,
   supportPremisesExamination,
   supportPremisesFireSafety,
-  type SupportPremisesPreviousPermit,
-  supportPremisesPreviousPermits,
   withSupportPremisesExamination,
-  withSupportPremisesPreviousPermits,
 } from '@supportmanagement/services/support-premises-examination-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -22,7 +19,6 @@ import { useTranslation } from 'react-i18next';
 
 import { InvestigationFact } from '../investigation-fact.component';
 import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
-import { PreviousPermits } from './support-premises-previous-permits.component';
 
 export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => {
   const { writable } = props;
@@ -44,7 +40,6 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     [statements, supportMetadata]
   );
   const examination = supportPremisesExamination(watch('parameters'));
-  const previousPermits = supportPremisesPreviousPermits(watch('parameters'));
 
   useEffect(() => {
     if (!errandId || !municipalityId) return undefined;
@@ -67,17 +62,6 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     setValue('parameters', withSupportPremisesExamination(getValues('parameters'), field, value), {
       shouldDirty: true,
     });
-
-  const writePreviousPermits = (
-    update: (permits: SupportPremisesPreviousPermit[]) => SupportPremisesPreviousPermit[]
-  ) => {
-    const parameters = getValues('parameters');
-    setValue(
-      'parameters',
-      withSupportPremisesPreviousPermits(parameters, update(supportPremisesPreviousPermits(parameters))),
-      { shouldDirty: true }
-    );
-  };
 
   const seats = [
     capacity.indoorSeats ? t('common:premises.seats_indoor', { number: capacity.indoorSeats }) : undefined,
@@ -180,8 +164,6 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
           data-cy="premises-serving-area"
         />
       </FormControl>
-
-      <PreviousPermits permits={previousPermits} writable={writable} onChange={writePreviousPermits} />
 
       <InvestigationSectionText
         {...props}

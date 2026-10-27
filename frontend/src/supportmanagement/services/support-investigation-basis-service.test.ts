@@ -673,13 +673,6 @@ test('what the handler established about the premises for the underlay travels w
           ...(errand.parameters ?? []),
           { key: 'PREMISES_RESTAURANT_NUMBER', values: [mockEnv.mockRestaurantNumber] },
           { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
-          { key: 'PREMISES_PREVIOUS_PERMITS', values: ['2'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_1_HOLDER', values: ['Förra Krogen AB'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_1_FROM', values: ['2019-05-01'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_1_TO', values: ['2023-09-30'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_2_HOLDER', values: ['Gamla Bryggan HB'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_2_FROM', values: ['2024-05-15'] },
-          { key: 'PREMISES_PREVIOUS_PERMIT_2_TO', values: ['2025-09-30'] },
         ],
       } as SupportErrand,
     })
@@ -687,10 +680,6 @@ test('what the handler established about the premises for the underlay travels w
 
   expect(parameters.premises.restaurantNumber).toBe(mockEnv.mockRestaurantNumber);
   expect(parameters.premises.servingAreaDescription).toBe('Matsalen, uteserveringen och bryggan');
-  expect(parameters.premises.previousPermits).toEqual([
-    { holderName: 'Förra Krogen AB', validFrom: '2019-05-01', validTo: '2023-09-30' },
-    { holderName: 'Gamla Bryggan HB', validFrom: '2024-05-15', validTo: '2025-09-30' },
-  ]);
 });
 
 test('the company applying is not one of the companies the representatives are also engaged in', () => {
