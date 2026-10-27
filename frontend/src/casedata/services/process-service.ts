@@ -36,6 +36,9 @@ export const phaseChangeInProgress = (errand: IErrand) => {
 export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
   errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values?.[0] as UiPhase;
 
+export const getPhaseAction: (errand: IErrand) => string | undefined = (errand) =>
+  errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values?.[0];
+
 export const cancelErrandPhaseChange = async (municipalityId: string, errand: IErrand) =>
   savePhaseAction(municipalityId, 'CANCEL', errand);
 

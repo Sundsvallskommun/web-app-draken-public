@@ -25,6 +25,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportCloseErrandModal } from './buttons/support-close-errand-modal.component';
+import { SupportFollowErrandButtonComponent } from './buttons/support-follow-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
@@ -555,6 +556,10 @@ export const SidebarInfo: FC<{
                 <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
               </div>
             )}
+            {/* Following is about notifications, not about edit rights, so it is available on every
+                status and to handlers who are not assigned to the errand. */}
+            <Divider className="mt-16 mb-16" />
+            <SupportFollowErrandButtonComponent />
           </>
         </div>
       </div>

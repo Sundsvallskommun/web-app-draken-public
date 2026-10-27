@@ -1,5 +1,5 @@
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import { NotificationView } from '@common/components/notifications/notification-view';
+import { Subscription } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   SupportErrand,
@@ -14,7 +14,9 @@ interface SupportState {
   supportAttachments: SupportAttachment[] | undefined;
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
-  notifications: (SupportNotification | CaseDataNotification)[];
+  notifications: NotificationView[];
+  /** Errand and namespace subscriptions belonging to the logged in user. */
+  subscriptions: Subscription[];
   activeTabKey?: string;
   showCloseModalAfterHandover: boolean;
 }
@@ -25,7 +27,8 @@ interface SupportActions {
   setSupportAttachments: (attachments: SupportAttachment[]) => void;
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
-  setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
+  setNotifications: (notifications: NotificationView[]) => void;
+  setSubscriptions: (subscriptions: Subscription[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
   setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
@@ -40,6 +43,7 @@ const initialState: SupportState = {
   stakeholderContacts: [],
   stakeholderCustomers: [],
   notifications: [],
+  subscriptions: [],
   activeTabKey: 'basics',
   showCloseModalAfterHandover: false,
 };
@@ -52,6 +56,7 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
+  setSubscriptions: (subscriptions) => set({ subscriptions }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   setShowCloseModalAfterHandover: (showCloseModalAfterHandover) => set({ showCloseModalAfterHandover }),
   reset: () => set(initialState),

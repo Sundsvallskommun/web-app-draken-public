@@ -29,6 +29,27 @@ const registeredErrand = (stakeholders = mockPTErrand_base.data.stakeholders) =>
   },
 });
 
+// The same errand once the process has picked up the COMPLETE and moved the handling on to Granskning.
+const errandInReview = () => {
+  const errand = registeredErrand();
+  return {
+    ...errand,
+    data: {
+      ...errand.data,
+      status: {
+        statusType: 'Under granskning',
+        description: 'Under granskning',
+        created: '2023-12-14T13:52:45.765+01:00',
+      },
+      extraParameters: [
+        { key: 'process.displayPhase', values: ['Granskning'] },
+        { key: 'process.phaseStatus', values: ['ONGOING'] },
+        { key: 'process.phaseAction', values: ['UNKNOWN'] },
+      ],
+    },
+  };
+};
+
 test.describe('Phase changer', () => {
   const visitErrand = async (
     page: import('@playwright/test').Page,
@@ -112,5 +133,109 @@ test.describe('Phase changer', () => {
     await expect.poll(() => processPatches.length).toBeGreaterThan(0);
     await expect(page.getByText('Ärendet saknar ärendeägare.')).not.toBeVisible();
     expect(processPatches[0]).toEqual([{ key: 'process.phaseAction', values: ['COMPLETE'] }]);
+  });
+
+  test('shows Fasbyte pågår while a fast process starts the handling', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const errandWaitingForProcess = {
+      ...registeredErrand(),
+      data: {
+        ...registeredErrand().data,
+        extraParameters: [
+          { key: 'process.displayPhase', values: ['Registrerad'] },
+          { key: 'process.phaseStatus', values: ['WAITING'] },
+          { key: 'process.phaseAction', values: ['COMPLETE'] },
+        ],
+      },
+    };
+    let errandOnServer: object = registeredErrand();
+    await page.route('**/errands/*/extraparameters/process', async (route) => {
+      await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+      // The process moves the errand on after half a second, well within the one second between polls.
+      errandOnServer = errandWaitingForProcess;
+      setTimeout(() => (errandOnServer = errandInReview()), 500);
+    });
+    await visitErrand(page, mockRoute, dismissCookieConsent, registeredErrand());
+    await page.route(/\/errand\/\d+$/, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(errandOnServer) })
+    );
+
+    await page.getByRole('button', { name: 'Starta handläggning' }).click();
+
+    await expect(page.getByRole('button', { name: /Fasbyte pågår/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Inled utredning' })).toBeVisible();
+  });
+
+  test('shows Fasbyte pågår while the process discards the first COMPLETE', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const processPatches: unknown[] = [];
+    let errandOnServer: object = registeredErrand();
+    await page.route('**/errands/*/extraparameters/process', async (route) => {
+      processPatches.push(route.request().postDataJSON());
+      await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+      // The process overwrites the first COMPLETE with UNKNOWN and only moves on once it is resent.
+      if (processPatches.length > 1) {
+        errandOnServer = errandInReview();
+      }
+    });
+    await visitErrand(page, mockRoute, dismissCookieConsent, registeredErrand());
+    await page.route(/\/errand\/\d+$/, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(errandOnServer) })
+    );
+
+    await page.getByRole('button', { name: 'Starta handläggning' }).click();
+
+    await expect(page.getByRole('button', { name: /Fasbyte pågår/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Inled utredning' })).toBeVisible({ timeout: 10000 });
+    expect(processPatches).toHaveLength(2);
+  });
+
+  test('sends COMPLETE again, at most twice, while the process keeps discarding it', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const processPatches: unknown[] = [];
+    await page.route('**/errands/*/extraparameters/process', async (route) => {
+      processPatches.push(route.request().postDataJSON());
+      await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+    });
+    // The mocked errand stays in Registrerad with phaseAction UNKNOWN, as when the process overwrites COMPLETE.
+    await visitErrand(page, mockRoute, dismissCookieConsent, registeredErrand());
+
+    await page.getByRole('button', { name: 'Starta handläggning' }).click();
+
+    await expect.poll(() => processPatches.length, { timeout: 10000 }).toBe(3);
+    await page.waitForTimeout(2500);
+    expect(processPatches).toHaveLength(3);
+    processPatches.forEach((patch) => expect(patch).toEqual([{ key: 'process.phaseAction', values: ['COMPLETE'] }]));
+  });
+
+  test('does not send COMPLETE again once the process has moved the errand on', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const processPatches: unknown[] = [];
+    await page.route('**/errands/*/extraparameters/process', async (route) => {
+      processPatches.push(route.request().postDataJSON());
+      // The process handles the COMPLETE, so every later fetch of the errand returns it in Granskning.
+      await page.route(/\/errand\/\d+$/, (errandRoute) =>
+        errandRoute.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(errandInReview()) })
+      );
+      await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+    });
+    await visitErrand(page, mockRoute, dismissCookieConsent, registeredErrand());
+
+    await page.getByRole('button', { name: 'Starta handläggning' }).click();
+
+    await expect(page.getByRole('button', { name: 'Inled utredning' })).toBeVisible({ timeout: 10000 });
+    expect(processPatches).toHaveLength(1);
   });
 });

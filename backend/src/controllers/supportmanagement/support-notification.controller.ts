@@ -1,60 +1,102 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
+import { Type as TypeTransformer } from 'class-transformer';
+import { ArrayNotEmpty, IsArray, IsString, ValidateNested } from 'class-validator';
+import { randomUUID } from 'crypto';
+import { Body, Controller, Get, Param, Patch, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Notification as SupportNotification } from '@/data-contracts/supportmanagement/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
+import {
+  IdentifierTypeEnum,
+  PageSubscriberNotification,
+  SubscriberNotification,
+  SubscriberNotificationEvent,
+} from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
 
+/**
+ * One thing that happened on an errand, as the frontend consumes it.
+ *
+ * Upstream aggregates every event since the last acknowledgement onto a single notification, so a
+ * notification carries a list of these rather than one flat event of its own.
+ */
+export class SupportNotificationEventDto {
+  @IsString()
+  created?: string;
+  @IsString()
+  eventType?: string;
+  @IsString()
+  subType?: string;
+  @IsString()
+  description?: string;
+}
+
+/**
+ * A notification as the frontend consumes it.
+ *
+ * One notification per errand, holding everything that has happened on it since the user last
+ * acknowledged. The panel renders a notification as a single row, so no grouping is needed on the
+ * client any more.
+ */
 export class SupportNotificationDto {
   @IsString()
   id!: string;
   @IsString()
-  ownerFullName?: string;
+  created!: string;
+  /** Timestamp of acknowledgement, absent while the notification is unacknowledged. */
   @IsString()
-  ownerId?: string;
+  acknowledged?: string;
   @IsString()
-  @IsOptional()
-  created?: string;
+  errandId!: string;
   @IsString()
-  @IsOptional()
-  createdBy?: string;
-  @IsString()
-  @IsOptional()
-  createdByFullName?: string;
-  @IsString()
-  @IsOptional()
-  modified?: string;
-  @IsString()
-  type?: string;
-  @IsString()
-  description?: string;
-  @IsString()
-  @IsOptional()
-  content?: string;
-  @IsString()
-  @IsOptional()
-  expires?: string;
-  @IsBoolean()
-  @IsOptional()
-  acknowledged?: boolean;
-  @IsBoolean()
-  @IsOptional()
-  globalAcknowledged?: boolean;
-  @IsString()
-  errandId?: string;
-  @IsString()
-  errandNumber?: string;
-  @IsString()
-  subtype?: string;
+  errandNumber!: string;
+  /**
+   * Events since the last acknowledgement, newest first. Can be empty — upstream does not guarantee
+   * an event for every notification, and consumers have to stay readable when it is.
+   */
+  @IsArray()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => SupportNotificationEventDto)
+  events!: SupportNotificationEventDto[];
 }
+
+class AcknowledgeNotificationsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  ids!: string[];
+}
+
+export class AcknowledgeResultDto {
+  acknowledged!: string[];
+  failed!: string[];
+}
+
+/**
+ * Newest first. Upstream does not promise an order, and the panel takes the first event as the one
+ * that represents the notification, so the order is settled here rather than in every consumer.
+ */
+const byCreatedDesc = (a: SubscriberNotificationEvent, b: SubscriberNotificationEvent): number =>
+  new Date(b.created ?? 0).getTime() - new Date(a.created ?? 0).getTime();
+
+const toNotificationDto = (notification: SubscriberNotification): SupportNotificationDto => ({
+  id: notification.id!,
+  created: notification.created!,
+  acknowledged: notification.acknowledged,
+  errandId: notification.errandId!,
+  errandNumber: notification.errandNumber!,
+  events: [...(notification.events ?? [])].sort(byCreatedDesc).map(event => ({
+    created: event.created,
+    eventType: event.eventType,
+    subType: event.subType,
+    description: event.description,
+  })),
+});
 
 @Controller()
 export class SupportNotificationController {
@@ -62,116 +104,91 @@ export class SupportNotificationController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
+  private notificationsUrl(municipalityId: string, user: User): string {
+    return `${this.SERVICE}/${municipalityId}/${this.namespace}/notifications/${IdentifierTypeEnum.AdAccount}/${user.username}`;
+  }
+
+  private async fetchNotifications(municipalityId: string, user: User, page: number, size: number): Promise<SubscriberNotification[]> {
+    const query = new URLSearchParams({ page: String(page), size: String(size), sort: 'created,desc' }).toString();
+    const res = await this.apiService.get<PageSubscriberNotification>({ url: `${this.notificationsUrl(municipalityId, user)}?${query}` }, user);
+    return res.data?.content ?? [];
+  }
+
+  /**
+   * Acknowledge several notifications.
+   *
+   * Upstream only acknowledges one notification per call, so the fan-out lives here rather than in
+   * the browser. The shared request-group id ties the individual calls together as one operation in
+   * the upstream event log. Failures are collected instead of thrown so that a single bad id does
+   * not discard the notifications that were acknowledged successfully.
+   */
+  private async acknowledgeMany(municipalityId: string, user: User, ids: string[]): Promise<AcknowledgeResultDto> {
+    const requestGroupId = randomUUID();
+    const baseUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/notifications`;
+    const results = await Promise.allSettled(
+      ids.map(id => this.apiService.put({ url: `${baseUrl}/${id}/acknowledge`, headers: { 'X-Request-Group-Id': requestGroupId } }, user)),
+    );
+
+    const acknowledged: string[] = [];
+    const failed: string[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        acknowledged.push(ids[index]);
+      } else {
+        failed.push(ids[index]);
+        logger.error(`Failed to acknowledge notification ${ids[index]}: ${result.reason}`);
+      }
+    });
+    return { acknowledged, failed };
+  }
+
   @Get('/supportnotifications/:municipalityId')
-  @OpenAPI({ summary: 'Get support notifications' })
+  @OpenAPI({ summary: 'Get notifications for the logged in user' })
   @UseBefore(authMiddleware)
   async getSupportNotifications(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
+    @QueryParam('page') page: number,
+    @QueryParam('size') size: number,
     @Res() response: any,
-  ): Promise<SupportNotification[]> {
-    const queryObject = {
-      ownerId: req.user.username,
-    };
-    const queryString = new URLSearchParams(queryObject).toString();
-    const url = `${municipalityId}/${this.namespace}/notifications?${queryString}`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<SupportNotification[]>({ url, baseURL }, req.user);
-    return response.status(200).send(res.data);
+  ): Promise<SupportNotificationDto[]> {
+    const notifications = await this.fetchNotifications(municipalityId, req.user, page ?? 0, size ?? 100);
+    return response.status(200).send(notifications.map(toNotificationDto));
   }
 
-  @Post('/supportnotifications/:municipalityId')
-  @HttpCode(201)
-  @OpenAPI({ summary: 'Create a support notification' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportNotificationDto, 'body'))
-  async createSupportNotification(
+  @Patch('/supportnotifications/:municipalityId/acknowledge')
+  @OpenAPI({ summary: 'Acknowledge one or more notifications for the logged in user' })
+  @UseBefore(authMiddleware, validationMiddleware(AcknowledgeNotificationsDto, 'body'))
+  async acknowledgeSupportNotifications(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: SupportNotificationDto,
+    @Body() data: AcknowledgeNotificationsDto,
     @Res() response: any,
-  ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
-    }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to create notification.');
-      logger.error('No municipality id found, it is needed to create notification.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/notifications`;
-    const baseURL = apiURL(this.SERVICE);
-    const body: SupportNotificationDto = {
-      ...data,
-    };
-    const res = await this.apiService.patch<any, Partial<SupportNotificationDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
-      throw e;
-    });
-    return response.status(200).send(res.data);
+  ): Promise<AcknowledgeResultDto> {
+    const result = await this.acknowledgeMany(municipalityId, req.user, data.ids);
+    return response.status(200).send(result);
   }
 
-  @Patch('/supportnotifications/:municipalityId')
-  @HttpCode(201)
-  @OpenAPI({ summary: 'Update a support notification' })
+  /**
+   * Acknowledge every notification the logged in user has for one errand, used when the errand is
+   * opened from the overview. Upstream cannot filter notifications by errand, so the user's list is
+   * read and filtered here.
+   */
+  @Put('/supportnotifications/:municipalityId/:errandId/acknowledge-all')
+  @OpenAPI({ summary: 'Acknowledge all notifications the logged in user has for an errand' })
   @UseBefore(authMiddleware)
-  async updateSupportNotification(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Body() data: SupportNotificationDto,
-    @Res() response: any,
-  ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
-    }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update notification.');
-      logger.error('No municipality id found, it is needed to update notification.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/notifications`;
-    const baseURL = apiURL(this.SERVICE);
-    const body: SupportNotificationDto[] = [
-      {
-        ...data,
-      },
-    ];
-    const res = await this.apiService.patch<any, Partial<SupportNotificationDto[]>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
-      throw e;
-    });
-    return response.status(200).send(res.data);
-  }
-
-  @Put('/supportnotifications/:municipalityId/:errandId/global-acknowledged')
-  @HttpCode(201)
-  @OpenAPI({ summary: 'Global-acknowledged all support notification for errand' })
-  @UseBefore(authMiddleware)
-  async globalAcknowledgedSupportNotification(
+  async acknowledgeAllForErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('errandId') errandId: string,
     @Res() response: any,
-  ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
+  ): Promise<AcknowledgeResultDto> {
+    const notifications = await this.fetchNotifications(municipalityId, req.user, 0, 100);
+    const ids = notifications.filter(n => n.errandId === errandId && !n.acknowledged).map(n => n.id!);
+    if (!ids.length) {
+      return response.status(200).send({ acknowledged: [], failed: [] });
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to set global acknowledged.');
-      logger.error('No municipality id found, it is needed to set global acknowledged.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when global acknowledging support notification');
-      logger.error(e);
-      throw e;
-    });
-    return response.status(200).send(res.data);
+    const result = await this.acknowledgeMany(municipalityId, req.user, ids);
+    return response.status(200).send(result);
   }
 }

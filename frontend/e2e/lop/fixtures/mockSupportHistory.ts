@@ -5,8 +5,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har raderats.',
       owner: 'SupportManagement',
       created: '2024-05-22T10:58:50.405+02:00',
+      id: 'event-1',
+      requestGroupId: 'req-group-0',
       historyReference: 'b88c8c71-9687-4a79-91ae-1618acab14fa',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -31,8 +34,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har skapats.',
       owner: 'SupportManagement',
       created: '2024-05-22T10:58:45.071+02:00',
+      id: 'event-2',
+      requestGroupId: 'req-group-0',
       historyReference: 'b88c8c71-9687-4a79-91ae-1618acab14fa',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -57,8 +63,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har skapats.',
       owner: 'SupportManagement',
       created: '2024-05-17T15:23:30.967+02:00',
+      id: 'event-3',
+      requestGroupId: 'req-group-1',
       historyReference: '8520925d-d0ca-4d6b-825f-46bba8933a88',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -83,8 +92,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har uppdaterats.',
       owner: 'SupportManagement',
       created: '2024-05-17T15:23:27.86+02:00',
+      id: 'event-4',
+      requestGroupId: 'req-group-1',
       historyReference: '06913855-a547-4b6c-9205-7d1ea3bef4fb',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -117,8 +129,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har uppdaterats.',
       owner: 'SupportManagement',
       created: '2024-05-17T15:22:47.588+02:00',
+      id: 'event-5',
+      requestGroupId: 'req-group-2',
       historyReference: '882c4849-5191-4cfe-b045-434ab94dffdd',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -151,8 +166,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har uppdaterats.',
       owner: 'SupportManagement',
       created: '2024-05-17T15:22:42.844+02:00',
+      id: 'event-6',
+      requestGroupId: 'req-group-2',
       historyReference: 'e210352e-61ec-4d02-9ad4-5887640acbe4',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -185,8 +203,11 @@ export const mockSupportHistory = {
       message: 'Ärendenotering har skapats.',
       owner: 'SupportManagement',
       created: '2024-05-17T15:22:25.592+02:00',
+      id: 'event-7',
+      requestGroupId: 'req-group-2',
       historyReference: 'ccb0248f-31ce-4c39-ba96-2f9eb06e3a0e',
       sourceType: 'Note',
+      subType: 'NOTE',
       metadata: [
         {
           key: 'NoteId',
@@ -211,8 +232,10 @@ export const mockSupportHistory = {
       message: 'Ärendet har uppdaterats.',
       owner: 'SupportManagement',
       created: '2024-05-17T10:43:02.958+02:00',
+      id: 'event-8',
       historyReference: 'd37ea0b6-0440-4961-9b40-6393e2fb456d',
       sourceType: 'Errand',
+      subType: 'ERRAND',
       metadata: [
         {
           key: 'PreviousRevision',
@@ -241,8 +264,10 @@ export const mockSupportHistory = {
       message: 'Ärendet har skapats.',
       owner: 'SupportManagement',
       created: '2024-05-17T10:42:49.496+02:00',
+      id: 'event-9',
       historyReference: 'abe25a8c-f96f-4d9d-b84b-da293ba46e1a',
       sourceType: 'Errand',
+      subType: 'ERRAND',
       metadata: [
         {
           key: 'CurrentVersion',
