@@ -25,6 +25,7 @@ interface WrittenPart {
   labelKey: string;
   placeholderKey: string;
   saveFailedKey: string;
+  assessment?: string;
 }
 
 export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPart> = ({
@@ -38,6 +39,7 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
   labelKey,
   placeholderKey,
   saveFailedKey,
+  assessment,
 }) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
@@ -50,7 +52,8 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
 
   const errandId = supportErrand?.id;
   const written = section.text ?? '';
-  const edited = text !== loaded;
+  const assessmentEdited = assessment !== undefined && assessment !== (section.assessment ?? '');
+  const edited = text !== loaded || assessmentEdited;
 
   useEffect(() => {
     if (written === loaded) return;
@@ -67,7 +70,12 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
 
     setBusy(true);
     try {
-      onSaved(await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, { text }));
+      onSaved(
+        await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, {
+          text,
+          ...(assessmentEdited && { assessment }),
+        })
+      );
       setLoaded(text);
       return true;
     } catch {
@@ -76,7 +84,20 @@ export const InvestigationSectionText: FC<InvestigationSectionProps & WrittenPar
     } finally {
       setBusy(false);
     }
-  }, [edited, errandId, investigationId, municipalityId, onSaved, saveFailedKey, section.id, t, text, toastMessage]);
+  }, [
+    assessment,
+    assessmentEdited,
+    edited,
+    errandId,
+    investigationId,
+    municipalityId,
+    onSaved,
+    saveFailedKey,
+    section.id,
+    t,
+    text,
+    toastMessage,
+  ]);
 
   useEffect(() => {
     saveRef.current = save;
