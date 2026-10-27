@@ -5,9 +5,13 @@ import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFValidationError } from '@rjsf/utils';
-import { Alert, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { Alert, Spinner, Switch, useSnackbar } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
-import { jsonParameterForSchema, upsertJsonParameter } from '@supportmanagement/services/support-errand-schema-service';
+import {
+  jsonParameterForSchema,
+  ORIGINAL_KEY_SUFFIX,
+  upsertJsonParameter,
+} from '@supportmanagement/services/support-errand-schema-service';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -27,8 +31,8 @@ interface SupportErrandTypeFormProps {
 /**
  * The Ärendeuppgifter form for the errand's type, stored as a JSON parameter keyed by schema name.
  * An application filed in an e-service keeps the schema version it was filed under. The answers can
- * be changed until the errand has passed the review; from then on they stand as reviewed. The copy
- * Katla keeps of them as filed (`<key>_original`) is never loaded here.
+ * be changed until the errand has passed the investigation; from then on they stand as investigated. The
+ * copy Katla keeps of them as filed (`<key>_original`) can be shown, read-only, in their place.
  */
 export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
   supportErrand,
@@ -38,6 +42,8 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toastMessage = useSnackbar();
   const storedParameter = jsonParameterForSchema(supportErrand, schemaName);
+  const originalParameter = jsonParameterForSchema(supportErrand, `${schemaName}${ORIGINAL_KEY_SUFFIX}`);
+  const [showsOriginal, setShowsOriginal] = useState(false);
   const { schema, uiSchema, schemaId, loading, error, notFound } = useJsonSchemaByName(
     municipalityId,
     schemaName,
@@ -56,7 +62,7 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
 
   const readOnly =
     isSupportErrandLocked(supportErrand) ||
-    hasSupportProcessPassedStep(SupportProcessStep.REVIEW, supportErrand.process);
+    hasSupportProcessPassedStep(SupportProcessStep.INVESTIGATION, supportErrand.process);
 
   const handleSubmit = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -128,18 +134,30 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
   }
 
   return (
-    <SchemaForm
-      schema={schema}
-      uiSchema={uiSchema ?? undefined}
-      formData={formData}
-      onChange={(data: Record<string, unknown>) => setFormData(data)}
-      onSubmit={handleSubmit}
-      onError={handleError}
-      validationErrors={validationErrors}
-      idPrefix={idPrefix}
-      sectionOpening="first"
-      disabled={readOnly}
-      submitButtonOptions={{ label: 'Spara ärendeuppgifter', leadingIcon: false, loading: submitting }}
-    />
+    <>
+      {originalParameter ? (
+        <Switch
+          className="mb-md"
+          checked={showsOriginal}
+          onChange={(e) => setShowsOriginal(e.target.checked)}
+          data-cy="type-form-original-toggle"
+        >
+          Visa uppgifter från ansökan
+        </Switch>
+      ) : null}
+      <SchemaForm
+        schema={schema}
+        uiSchema={uiSchema ?? undefined}
+        formData={showsOriginal ? originalParameter?.value : formData}
+        onChange={(data: Record<string, unknown>) => !showsOriginal && setFormData(data)}
+        onSubmit={handleSubmit}
+        onError={handleError}
+        validationErrors={validationErrors}
+        idPrefix={idPrefix}
+        sectionOpening="first"
+        disabled={readOnly || showsOriginal}
+        submitButtonOptions={{ label: 'Spara ärendeuppgifter', leadingIcon: false, loading: submitting }}
+      />
+    </>
   );
 };

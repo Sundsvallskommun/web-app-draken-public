@@ -84,10 +84,29 @@ test('an application filed in an e-service is edited on its own schema version w
   ]);
 });
 
-test('once the errand has passed the review the answers stand as reviewed', async () => {
+test('the answers can still be changed during the investigation, and the original shown read-only', async () => {
   const supportErrand = errand({
     channel: 'ESERVICE',
     process: standingIn('investigation_phase'),
+    jsonParameters: [{ ...filed, value: { answer: 'Utrett svar' } }, original],
+  } as Partial<SupportErrand>);
+
+  render(<SupportErrandTypeForm supportErrand={supportErrand} municipalityId="2281" schemaName={SCHEMA_NAME} />);
+
+  const input = await screen.findByDisplayValue('Utrett svar');
+  expect(input.hasAttribute('disabled')).toBe(false);
+
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Visa ursprungliga uppgifter' }));
+
+  const originalInput = await screen.findByDisplayValue('Sparat svar');
+  expect(originalInput.hasAttribute('disabled')).toBe(true);
+  expect(screen.queryByRole('button', { name: 'Spara ärendeuppgifter' })).toBeNull();
+});
+
+test('once the errand has passed the investigation the answers stand as investigated', async () => {
+  const supportErrand = errand({
+    channel: 'ESERVICE',
+    process: standingIn('decision_phase'),
     jsonParameters: [filed, original],
   } as Partial<SupportErrand>);
 

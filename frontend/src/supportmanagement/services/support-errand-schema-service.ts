@@ -61,9 +61,9 @@ export const schemaNameForErrand = (
 
 /**
  * Katla files the answers a second time under this suffix, as they were filed, and rebuilds that copy on
- * every save of its own. Draken never writes it and never loads it into a form.
+ * every save of its own. Draken never writes it and only shows it read-only.
  */
-const ORIGINAL_KEY_SUFFIX = '_original';
+export const ORIGINAL_KEY_SUFFIX = '_original';
 
 export const isOriginalJsonParameter = (parameter: Pick<CJsonParameter, 'key'>): boolean =>
   parameter.key.endsWith(ORIGINAL_KEY_SUFFIX);
