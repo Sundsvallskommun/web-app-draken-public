@@ -76,7 +76,6 @@ const axel = withKnowledgeTests(
 const erica = withMotivation(person('erica', 'Erica', 'Fritz', 'Styrelsesuppleant'), 'Står i baren');
 
 const SECTION_TEXTS: [key: string, text: string][] = [
-  ['persons_of_influence', '<p>Bolaget ägs av två fysiska personer.</p>'],
   ['financial_suitability', '<p>Ekonomin bedöms ordnad.</p>'],
   ['premises', '<p>Överblickbarheten är god.</p>'],
   ['lease', '<p>Hyresavtal till 2029.</p>'],
@@ -85,6 +84,7 @@ const SECTION_TEXTS: [key: string, text: string][] = [
   ['staffing', '<p>Fem personer i tjänst.</p>'],
   ['communication', '<p>Remissvaren skickades</p><p>2026-05-29 via e-post.</p>'],
   ['child_perspective', '<p>Ingen skola i närheten.</p>'],
+  ['ownership', '<p>Bolaget ägs av två fysiska personer.</p>'],
 ];
 
 const investigation = {

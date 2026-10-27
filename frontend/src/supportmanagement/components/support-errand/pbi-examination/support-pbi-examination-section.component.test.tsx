@@ -68,18 +68,7 @@ const testFieldOf = (part: string, number = 1) =>
 
 const tested = (...tests: PbiKnowledgeTest[]) => withKnowledgeTests(edwin, tests);
 
-const saveRef: { current: (() => Promise<boolean>) | undefined } = { current: undefined };
-
-const theSection = (writable: boolean) => (
-  <SupportPbiExaminationSection
-    section={{ id: 's1', sectionKey: 'persons_of_influence', text: '' }}
-    investigationId="i1"
-    writable={writable}
-    onEdited={vi.fn()}
-    onSaved={vi.fn()}
-    saveRef={saveRef}
-  />
-);
+const theSection = (writable: boolean) => <SupportPbiExaminationSection writable={writable} />;
 
 const mountSection = (writable = true) => render(theSection(writable));
 
@@ -92,12 +81,6 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
-
-test('the section carries the ownership of the company, written as its own text', () => {
-  mountSection();
-
-  expect(document.querySelector('[data-cy="persons_of_influence-text"]')).toBeTruthy();
-});
 
 test('one card per marked person, carrying the motivation and both examinations', () => {
   mountSection();

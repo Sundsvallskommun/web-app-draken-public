@@ -628,7 +628,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       shareCapital: '',
       totalShares: '',
       owners: [],
-      ownershipHtml: texts.persons_of_influence ?? '',
+      ownershipHtml: texts.ownership ?? '',
       signatory: '',
       otherOfficers: otherOfficers(errand, input.companyEngagements),
       associatedCompanies: associatedCompanies(errand, input.personEngagements),
