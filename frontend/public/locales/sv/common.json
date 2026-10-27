@@ -693,6 +693,7 @@
   },
   "premises": {
     "inspected_at": "Lokalinspektion genomförd",
+    "known_before": "Känd sedan tidigare",
     "fire_safety": "Brandsäkerhet",
     "fire_safety_pending": "Inget yttrande ännu",
     "right_of_disposal": {

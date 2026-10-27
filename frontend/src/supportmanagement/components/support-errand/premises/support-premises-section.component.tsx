@@ -1,7 +1,7 @@
 'use client';
 
 import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
-import { FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
+import { Checkbox, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
@@ -21,8 +21,11 @@ import { useTranslation } from 'react-i18next';
 import { InvestigationFact } from '../investigation-fact.component';
 import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
 
+const APPROVED = 'APPROVED';
+const PENDING = 'PENDING';
+
 export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => {
-  const { writable } = props;
+  const { section, writable } = props;
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
@@ -30,6 +33,9 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   const { getValues, setValue, watch } = useFormContext<SupportErrand>();
 
   const [statements, setStatements] = useState<Statement[]>([]);
+  const [knownBefore, setKnownBefore] = useState(section.assessment === APPROVED);
+  // Unchecking only takes back an approval; any other assessment is left as it is.
+  const assessment = knownBefore ? APPROVED : section.assessment === APPROVED ? PENDING : section.assessment;
 
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
@@ -76,20 +82,31 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
 
   return (
     <div className="flex flex-col gap-24" data-cy="premises-section">
-      <div className={threeColRow}>
+      <div>
         <FormControl className="min-w-0">
           <FormLabel className="text-small font-bold text-dark-secondary">
             {t('common:premises.inspected_at')}
           </FormLabel>
-          <Input
-            type="date"
-            disabled={!writable}
-            value={examination.inspectedAt}
-            onChange={(event) => write('inspectedAt', event.target.value)}
-            data-cy="premises-inspected-at"
-          />
+          <div className="flex items-center gap-16">
+            <Input
+              type="date"
+              disabled={!writable}
+              value={examination.inspectedAt}
+              onChange={(event) => write('inspectedAt', event.target.value)}
+              data-cy="premises-inspected-at"
+            />
+            <Checkbox
+              disabled={!writable}
+              checked={knownBefore}
+              onChange={(event) => setKnownBefore(event.target.checked)}
+              data-cy="premises-known-before"
+            >
+              {t('common:premises.known_before')}
+            </Checkbox>
+          </div>
         </FormControl>
-
+      </div>
+      <div className={threeColRow}>
         <FormControl id="premises-right-of-disposal" className="min-w-0 flex flex-col">
           <FormLabel className="text-small font-bold text-dark-secondary">
             {t('common:premises.right_of_disposal.label')}
@@ -182,6 +199,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
       <InvestigationSectionText
         {...props}
         name="premises"
+        assessment={assessment}
         labelKey="common:premises.notes"
         placeholderKey="common:premises.notes_placeholder"
         saveFailedKey="common:premises.toast.save_failed"
