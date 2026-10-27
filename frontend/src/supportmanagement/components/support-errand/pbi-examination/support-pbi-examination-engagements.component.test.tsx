@@ -76,6 +76,13 @@ test('the companies the person is engaged in are read by the party id the errand
   ).toBeTruthy();
 });
 
+test('showing the companies writes nothing, so the errand is not left with unsaved changes', async () => {
+  mountBlock();
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
+
+  expect(onChange).not.toHaveBeenCalled();
+});
+
 test('a company ticked is written onto the stakeholder, where Spara ärende picks it up', async () => {
   mountBlock();
   await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
