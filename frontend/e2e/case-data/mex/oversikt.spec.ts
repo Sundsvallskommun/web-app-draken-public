@@ -15,8 +15,10 @@ test.describe('Overview page', () => {
     await mockRoute('**/errands*', mockErrands_base, { method: 'GET' }); // @getErrands
     await mockRoute('**/casedatanotifications/2281', mockNotifications, { method: 'GET' }); // @getNotifications
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await page.goto('oversikt');
-    await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200),
+      page.goto('oversikt'),
+    ]);
     await dismissCookieConsent();
   });
 

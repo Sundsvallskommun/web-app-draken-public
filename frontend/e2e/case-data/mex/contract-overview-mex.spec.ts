@@ -13,6 +13,7 @@ import {
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 import { MODAL_DIALOG } from '../../utils/modal';
+import { billingSection } from '../blocks/mex-billing';
 
 test.describe('Contract Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -22,8 +23,12 @@ test.describe('Contract Overview page', () => {
     await mockRoute('**/errands*', mockErrands_base, { method: 'GET' }); // @getErrands
     await mockRoute('**/casedatanotifications/2281', mockNotifications, { method: 'GET' }); // @getNotifications
     await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getContracts
-    await page.goto('oversikt');
-    await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
+    // Wait from before navigating: the errands can load before goto resolves, and a wait started
+    // afterwards would miss that response.
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200),
+      page.goto('oversikt'),
+    ]);
     await dismissCookieConsent();
   });
 
@@ -1086,6 +1091,67 @@ test.describe('Contract Overview page', () => {
         await expect(page.locator('[data-cy="contract-detail-edit-button"]')).toContainText('Skapar ärende...');
         await expect(page.locator('[data-cy="contract-detail-edit-button"]')).toBeDisabled();
       });
+    });
+  });
+
+  test.describe('Billing details (Löpande avgift)', () => {
+    const leaseAgreementWithBilling = (changes: Record<string, unknown>) => {
+      const page = structuredClone(mockContractDetailLeaseAgreement);
+      Object.assign(page.content[0], changes);
+      return page;
+    };
+
+    const openBillingDetails = async (page, mockRoute, contracts) => {
+      await mockRoute('**/contracts?*', contracts, { method: 'GET' }); // @getContracts
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-row-0"]').click();
+      const billing = billingSection(page);
+      await billing.root.click();
+      return billing;
+    };
+
+    test('shows whether the contract is billed and when a yearly invoice is created, read-only', async ({
+      page,
+      mockRoute,
+    }) => {
+      const billing = await openBillingDetails(
+        page,
+        mockRoute,
+        leaseAgreementWithBilling({
+          invoicing: { invoiceInterval: 'YEARLY', invoicedIn: 'ARREARS', billingEnabled: false, yearlyBillingMonth: 6 },
+          fees: { yearly: 1500, monthly: 0, total: 1500, currency: 'SEK' },
+          extraParameters: [{ name: 'InvoiceInfo', parameters: { markup: 'REF-1' } }],
+        })
+      );
+
+      await expect(billing.billed.no).toBeChecked();
+      await expect(billing.billed.no).toBeDisabled();
+      await expect(billing.root.getByText('Om en administrativ avgift ska faktureras')).toBeVisible();
+      await expect(billing.yearlyFee).toHaveValue('1500');
+      await expect(billing.yearlyFee).toHaveAttribute('readonly');
+      await expect(billing.interval.yearly).toBeChecked();
+      await expect(billing.interval.yearly).toBeDisabled();
+      await expect(billing.yearlyBillingMonth.locator('option:checked')).toHaveText('Juni');
+      await expect(billing.yearlyBillingMonth).toBeDisabled();
+      await expect(billing.invoicedIn.arrears).toBeChecked();
+      await expect(billing.reference).toHaveValue('REF-1');
+      await expect(billing.reference).toHaveAttribute('readonly');
+      await expect(billing.addDetailedDescription).toHaveCount(0);
+      await expect(billing.saveButton).toHaveCount(0);
+    });
+
+    test('shows a billed contract invoiced quarterly without a billing month', async ({ page, mockRoute }) => {
+      const billing = await openBillingDetails(
+        page,
+        mockRoute,
+        leaseAgreementWithBilling({
+          invoicing: { invoiceInterval: 'QUARTERLY', invoicedIn: 'ADVANCE', billingEnabled: true },
+        })
+      );
+
+      await expect(billing.billed.yes).toBeChecked();
+      await expect(billing.interval.quarterly).toBeChecked();
+      await expect(billing.yearlyBillingMonth).toHaveCount(0);
     });
   });
 });

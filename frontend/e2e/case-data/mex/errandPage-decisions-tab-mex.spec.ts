@@ -60,8 +60,10 @@ test.describe('Decisions tab', () => {
     await mockRoute('**/estateInfo/**1:1', mockEstateInfo11, { method: 'GET' }); // @getEstateInfo
     await mockRoute('**/estateInfo/**1:2', mockEstateInfo12, { method: 'GET' }); // @getEstateInfo
 
-    await page.goto(`arende/${mockMexErrand_base.data.errandNumber}`);
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200),
+      page.goto(`arende/${mockMexErrand_base.data.errandNumber}`),
+    ]);
     await dismissCookieConsent();
     const tab = page.getByRole('tab', { name: 'Beslut', exact: true });
     await expect(tab).toBeVisible();
