@@ -128,6 +128,7 @@ describe('what the handler establishes, kept on the errand', () => {
       rightOfDisposal: 'PROVEN',
       rightOfDisposalNote: 'hyresavtal t.o.m. 2029',
       servingArea: '',
+      previousBusiness: '',
     });
   });
 
@@ -137,6 +138,7 @@ describe('what the handler establishes, kept on the errand', () => {
       rightOfDisposal: '',
       rightOfDisposalNote: '',
       servingArea: '',
+      previousBusiness: '',
     });
   });
 

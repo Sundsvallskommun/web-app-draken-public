@@ -37,6 +37,7 @@ export interface SupportPremisesExamination {
   rightOfDisposal: string;
   rightOfDisposalNote: string;
   servingArea: string;
+  previousBusiness: string;
 }
 
 const EXAMINATION_PARAMETERS: Record<keyof SupportPremisesExamination, { key: string; displayName: string }> = {
@@ -44,6 +45,7 @@ const EXAMINATION_PARAMETERS: Record<keyof SupportPremisesExamination, { key: st
   rightOfDisposal: { key: 'PREMISES_RIGHT_OF_DISPOSAL', displayName: 'Dispositionsrätt styrkt' },
   rightOfDisposalNote: { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', displayName: 'Dispositionsrätt, underlag' },
   servingArea: { key: 'PREMISES_SERVING_AREA', displayName: 'Serveringsytor' },
+  previousBusiness: { key: 'PREMISES_PREVIOUS_BUSINESS', displayName: 'Tidigare verksamhet' },
 };
 
 export const supportPremisesExamination = (parameters: CParameter[] | undefined): SupportPremisesExamination => ({
@@ -51,6 +53,7 @@ export const supportPremisesExamination = (parameters: CParameter[] | undefined)
   rightOfDisposal: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposal.key),
   rightOfDisposalNote: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposalNote.key),
   servingArea: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.servingArea.key),
+  previousBusiness: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.previousBusiness.key),
 });
 
 export const withSupportPremisesExamination = (
@@ -93,6 +96,20 @@ export const supportPremisesCapacity = (
   errand: PremisesErrand | undefined,
   namespace: string | undefined
 ): SupportPremisesCapacity => supportPremisesCapacityOf(answersOf(errand, namespace));
+
+export const supportPremisesVerksamhetsbeskrivning = (
+  errand: PremisesErrand | undefined,
+  namespace: string | undefined
+): string => {
+  const answers = answersOf(errand, namespace);
+  if (answers) {
+    const s = answers.verksamhetsbeskrivning;
+    if (typeof s !== 'string') return '';
+    const html = s.replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '\n');
+    return (new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '').trim();
+  }
+  return '';
+};
 
 export interface SupportPremisesFireSafety {
   counterparty: string;

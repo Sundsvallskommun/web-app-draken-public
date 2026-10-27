@@ -10,6 +10,7 @@ import {
   type SupportPremisesExamination,
   supportPremisesExamination,
   supportPremisesFireSafety,
+  supportPremisesVerksamhetsbeskrivning,
   withSupportPremisesExamination,
 } from '@supportmanagement/services/support-premises-examination-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
@@ -35,6 +36,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   const namespace = supportMetadata?.namespace;
 
   const capacity = useMemo(() => supportPremisesCapacity(supportErrand, namespace), [supportErrand, namespace]);
+  const verksamhetsBeskrivning = supportPremisesVerksamhetsbeskrivning(supportErrand, namespace);
   const fireSafety = useMemo(
     () => supportPremisesFireSafety(statements, supportMetadata),
     [statements, supportMetadata]
@@ -136,6 +138,33 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
           </span>
         </InvestigationFact>
       </div>
+
+      <div>
+        <InvestigationFact label={t('common:premises.verksamhetsbeskrivning')}>
+          <Textarea
+            readOnly
+            data-cy="premises-verksamhetsbeskrivning"
+            rows={6}
+            value={verksamhetsBeskrivning}
+            placeholder={t('common:premises.not_answered')}
+          ></Textarea>
+        </InvestigationFact>
+      </div>
+
+      <FormControl className="w-full">
+        <FormLabel className="text-small font-bold text-dark-secondary">
+          {t('common:premises.previous_business')}
+        </FormLabel>
+        <Textarea
+          className="w-full"
+          rows={3}
+          disabled={!writable}
+          value={examination.previousBusiness}
+          placeholder={t('common:premises.previous_business_placeholder')}
+          onChange={(event) => write('previousBusiness', event.target.value)}
+          data-cy="premises-previous-business"
+        />
+      </FormControl>
 
       <FormControl className="w-full">
         <FormLabel className="text-small font-bold text-dark-secondary">{t('common:premises.serving_area')}</FormLabel>

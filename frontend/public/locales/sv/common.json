@@ -708,6 +708,7 @@
     "seats": "Antal sittplatser",
     "seats_indoor": "{{number}} inne",
     "seats_outdoor": "{{number}} uteservering",
+    "verksamhetsbeskrivning": "Verksamhetsbeskrivning (från ansökan)",
     "not_answered": "Ansökan saknar uppgift.",
     "notes": "Anmärkningar",
     "notes_placeholder": "Notera eventuella anmärkningar om lokal och serveringsställe",
@@ -715,6 +716,8 @@
     "toast": {
       "save_failed": "Anmärkningarna kunde inte sparas"
     },
+    "previous_business": "Tidigare verksamhet",
+    "previous_business_placeholder": "Ange tidigare verksamhet",
     "serving_area": "Serveringsytor",
     "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
     "also_in_decision": "Obs: restaurangnummer och serveringsytor följer inte med till beslutet, utan anges på nytt där."
