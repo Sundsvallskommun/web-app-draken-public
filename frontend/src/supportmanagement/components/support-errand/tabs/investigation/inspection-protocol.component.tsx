@@ -55,22 +55,24 @@ import { useTranslation } from 'react-i18next';
 import { InspectionProtocolActionPoints } from './inspection-protocol-action-points.component';
 import { InspectionProtocolFields } from './inspection-protocol-fields.component';
 import { InspectionProtocolMeasureCard } from './inspection-protocol-measure-card.component';
+import { InspectionProtocolObservations } from './inspection-protocol-observations.component';
 
 // The protocol is what the Utredning tab holds for an inspection errand, so it saves under that tab's key.
 const TAB_KEY = 'investigation';
 
-/** What the errand holds: the measures (control points and action points) and the investigation with the answers. */
+/** What the errand holds: the measures (control points, action points, observations) and the investigation. */
 interface Saved {
   measures: Measure[];
   investigation?: Investigation;
 }
 
-/** The page: the chosen template (none until the handler picks one), its answers, and the two measure lists. */
+/** The page: the chosen template (none until the handler picks one), its answers, and the three measure lists. */
 interface Draft {
   templateKey?: string;
   values: InspectionProtocolValues;
   controlPoints: SupportMeasureRow[];
   actionPoints: SupportMeasureRow[];
+  observations: SupportMeasureRow[];
 }
 
 type Errand = Pick<SupportErrand, 'customer'> | undefined;
@@ -95,6 +97,7 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
       : {},
     controlPoints: rowsOf(saved, 'INTERNAL'),
     actionPoints: rowsOf(saved, 'EXTERNAL'),
+    observations: rowsOf(saved, 'OBSERVATION'),
   };
 };
 
@@ -149,6 +152,7 @@ export const InspectionProtocol: FC<{
       ...current,
       controlPoints: baseline.controlPoints,
       actionPoints: baseline.actionPoints,
+      observations: baseline.observations,
     }));
   };
 
@@ -194,7 +198,7 @@ export const InspectionProtocol: FC<{
     toastMessage(getToastOptions({ status, message: t(key) }));
 
   /**
-   * Writes both measure lists, then the template with its answers on the investigation. The measures are read back
+   * Writes the measure lists, then the template with its answers on the investigation. The measures are read back
    * in between, so a failed investigation save does not have them written again on the next try.
    */
   const save = async (): Promise<boolean> => {
@@ -204,6 +208,7 @@ export const InspectionProtocol: FC<{
       await saveSupportMeasures(errandId, municipalityId, [
         supportMeasureChanges(SupportMeasureType.INTERNAL, draft.controlPoints, baseline.controlPoints),
         supportMeasureChanges(SupportMeasureType.EXTERNAL, draft.actionPoints, baseline.actionPoints),
+        supportMeasureChanges(SupportMeasureType.OBSERVATION, draft.observations, baseline.observations),
       ]);
       receiveMeasures({ ...data, measures: await getSupportMeasures(errandId, municipalityId) });
       if (template) {
@@ -255,7 +260,7 @@ export const InspectionProtocol: FC<{
   const addControlPoint = () =>
     updateDraft((current) => ({
       ...current,
-      controlPoints: [...current.controlPoints, { title: '', result: '', description: '' }],
+      controlPoints: [...current.controlPoints, { title: '', result: '', description: '', resultText: '' }],
     }));
 
   const removeControlPoint = (index: number) =>
@@ -277,11 +282,18 @@ export const InspectionProtocol: FC<{
         }
     );
 
-  /** A new template starts over: its control points, its fields. What was saved goes when the errand is saved. */
+  /**
+   * A new template starts over: its control points, its fields, no observations. What was saved goes when the errand
+   * is saved.
+   */
   const changeTemplate = async (key: string) => {
     const next = inspectionProtocolTemplate(key);
     if (!next || !draft || !saved || next.key === draft.templateKey) return;
-    const hasData = saved.baseline.controlPoints.length > 0 || !!saved.data.investigation || edited;
+    const hasData =
+      saved.baseline.controlPoints.length > 0 ||
+      saved.baseline.observations.length > 0 ||
+      !!saved.data.investigation ||
+      edited;
     if (hasData) {
       const confirmed = await confirm.showConfirmation(
         t('common:inspection_protocol.template_change_title'),
@@ -297,7 +309,8 @@ export const InspectionProtocol: FC<{
       ...current,
       templateKey: next.key,
       values: inspectionProtocolValuesOf(next, useSupportStore.getState().supportErrand, useUserStore.getState().user),
-      controlPoints: next.controlPoints.map((title) => ({ title, result: '', description: '' })),
+      controlPoints: next.controlPoints.map((title) => ({ title, result: '', description: '', resultText: '' })),
+      observations: [],
     }));
   };
 
@@ -336,7 +349,8 @@ export const InspectionProtocol: FC<{
         template,
         supportErrand.errandNumber,
         draft.values,
-        saved.baseline.controlPoints
+        saved.baseline.controlPoints,
+        saved.baseline.observations
       );
       const pdf = await renderInspectionProtocol(template, parameters);
       const file = pdfFileFromBase64(
@@ -411,42 +425,60 @@ export const InspectionProtocol: FC<{
               position="before"
             />
           ) : null}
-          {rows.length > 0 ? (
-            <span className="text-small font-bold self-end" data-cy="measures-assessed">
-              {t('common:inspection_protocol.assessed', { assessed, total: rows.length })}
-              {' - '}
-              {t('common:inspection_protocol.deficient', { count: deficient })}
-            </span>
-          ) : null}
-          {rows.map((row, index) => (
-            <InspectionProtocolMeasureCard
-              key={row.id ?? `new-${index}`}
-              index={index}
-              row={row}
-              attachments={measureById.get(row.id)?.attachments ?? []}
+          {template?.observations ? (
+            <InspectionProtocolObservations
+              observations={template.observations}
+              rows={draft.observations}
               readOnly={readOnly}
-              busy={!!row.id && busyRowId === row.id}
-              onChange={(changed) => setControlPoint(index, changed)}
-              onRemove={() => removeControlPoint(index)}
-              onUpload={(file) => void upload(row, file)}
-              onUnlink={(attachment) => void unlink(row, attachment)}
-              onOpen={(attachment) => void open(attachment)}
+              onChange={(observations) => updateDraft((current) => ({ ...current, observations }))}
             />
-          ))}
-          <div>
-            <Button
-              variant="primary"
-              inverted
-              color="vattjom"
-              size="sm"
-              leftIcon={<Plus size={16} />}
-              disabled={readOnly}
-              onClick={addControlPoint}
-              data-cy="control-point-add"
-            >
-              {t('common:inspection_protocol.add_control_point')}
-            </Button>
-          </div>
+          ) : null}
+          <Disclosure variant="alt" className="w-full" initalOpen data-cy="control-points">
+            <Disclosure.Header>
+              <Disclosure.Title>{t('common:inspection_protocol.control_points')}</Disclosure.Title>
+              {rows.length > 0 ? (
+                <span className="text-small font-bold" data-cy="measures-assessed">
+                  {t('common:inspection_protocol.assessed', { assessed, total: rows.length })}
+                  {' - '}
+                  {t('common:inspection_protocol.deficient', { count: deficient })}
+                </span>
+              ) : null}
+              <Disclosure.Button />
+            </Disclosure.Header>
+            <Disclosure.Content>
+              <div className="flex flex-col gap-16">
+                {rows.map((row, index) => (
+                  <InspectionProtocolMeasureCard
+                    key={row.id ?? `new-${index}`}
+                    index={index}
+                    row={row}
+                    attachments={measureById.get(row.id)?.attachments ?? []}
+                    readOnly={readOnly}
+                    busy={!!row.id && busyRowId === row.id}
+                    onChange={(changed) => setControlPoint(index, changed)}
+                    onRemove={() => removeControlPoint(index)}
+                    onUpload={(file) => void upload(row, file)}
+                    onUnlink={(attachment) => void unlink(row, attachment)}
+                    onOpen={(attachment) => void open(attachment)}
+                  />
+                ))}
+                <div>
+                  <Button
+                    variant="primary"
+                    inverted
+                    color="vattjom"
+                    size="sm"
+                    leftIcon={<Plus size={16} />}
+                    disabled={readOnly}
+                    onClick={addControlPoint}
+                    data-cy="control-point-add"
+                  >
+                    {t('common:inspection_protocol.add_control_point')}
+                  </Button>
+                </div>
+              </div>
+            </Disclosure.Content>
+          </Disclosure>
           {template ? (
             <>
               <InspectionProtocolFields

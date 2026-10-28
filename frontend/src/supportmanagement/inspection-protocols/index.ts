@@ -2,7 +2,13 @@ import { INTERNAL_INSPECTION_TEMPLATE } from './internal-inspection';
 import { SERVING_PERMIT_TEMPLATE } from './serving-permit';
 import type { InspectionProtocolTemplate } from './types';
 
-export type { InspectionProtocolTemplate, ProtocolField, ProtocolOption, ProtocolSection } from './types';
+export type {
+  InspectionProtocolTemplate,
+  ProtocolField,
+  ProtocolObservations,
+  ProtocolOption,
+  ProtocolSection,
+} from './types';
 
 /** The protocols a handler can pick, in dropdown order. None is chosen until the handler picks one. */
 export const INSPECTION_PROTOCOL_TEMPLATES: InspectionProtocolTemplate[] = [

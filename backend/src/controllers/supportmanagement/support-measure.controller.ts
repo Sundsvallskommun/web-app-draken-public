@@ -36,6 +36,11 @@ export class CreateSupportMeasureDto {
   @IsOptional()
   @IsIn(MEASURE_RESULTS)
   result?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  resultText?: string;
 }
 
 export class UpdateSupportMeasureDto {
@@ -53,6 +58,11 @@ export class UpdateSupportMeasureDto {
   @IsOptional()
   @IsIn(MEASURE_RESULTS)
   result?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  resultText?: string;
 }
 
 const ADDED_BY_ROLE = 'PRIMARY';

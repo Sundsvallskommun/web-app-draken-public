@@ -118,9 +118,13 @@ test('choices become "true" for the template\'s box macro, one per option, and u
     summaryActionRequiredText: 'Åtgärda entrén',
   };
 
-  const parameters = toInspectionProtocolRenderParameters(serving, 'AOT-26100063', values, [
-    { title: 'Nykterhet', result: 'COMPLETED' },
-  ]);
+  const parameters = toInspectionProtocolRenderParameters(
+    serving,
+    'AOT-26100063',
+    values,
+    [{ title: 'Nykterhet', result: 'COMPLETED' }],
+    []
+  );
 
   expect(parameters).toMatchObject({
     caseNumber: 'AOT-26100063',
@@ -142,6 +146,41 @@ test('choices become "true" for the template\'s box macro, one per option, and u
   expect(Object.values(parameters).every((value) => typeof value === 'string' || Array.isArray(value))).toBe(true);
 });
 
+test('an observed item is marked under its area only while the area is deficient', () => {
+  const parameters = toInspectionProtocolRenderParameters(
+    serving,
+    'X',
+    inspectionProtocolValuesOf(serving, undefined, undefined),
+    [],
+    [
+      { title: 'Uteservering', result: 'NOT_COMPLETED', resultText: 'CrowdedTables|Littering' },
+      { title: 'Toaletter', result: 'COMPLETED', resultText: 'Vomit' },
+    ]
+  );
+
+  expect(parameters).toMatchObject({
+    orderWithoutRemarks: '',
+    orderWithRemarks: 'true',
+    observationCrowdedTablesOutdoor: 'X',
+    observationLitteringOutdoor: 'X',
+    observationGlassBreakageOutdoor: '',
+    observationCrowdedTablesIndoor: '',
+    observationVomitToilets: '',
+  });
+});
+
+test('the order is without remarks while no area is deficient', () => {
+  const parameters = toInspectionProtocolRenderParameters(
+    serving,
+    'X',
+    inspectionProtocolValuesOf(serving, undefined, undefined),
+    [],
+    [{ title: 'Toaletter', result: 'COMPLETED' }]
+  );
+
+  expect(parameters).toMatchObject({ orderWithoutRemarks: 'true', orderWithRemarks: '' });
+});
+
 test.each(INSPECTION_PROTOCOL_TEMPLATES)(
   'every key $key sends is in its sample data, so the HTML knows it',
   (template) => {
@@ -150,6 +189,7 @@ test.each(INSPECTION_PROTOCOL_TEMPLATES)(
         template,
         'X',
         inspectionProtocolValuesOf(template, undefined, undefined),
+        [],
         []
       )
     );

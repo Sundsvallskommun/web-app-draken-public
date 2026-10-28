@@ -351,21 +351,24 @@ export const INTERNAL_INSPECTION_HTML = `{% macro box(checked) %}<span class="bo
     <div class="block-title">Vid tillsyn utfördes kontroll</div>
     <table class="plain paginate">
       <colgroup>
-        <col style="width: 40%" />
-        <col style="width: 10%" />
-        <col style="width: 50%" />
+        <col style="width: 32%" />
+        <col style="width: 8%" />
+        <col style="width: 8%" />
+        <col style="width: 52%" />
       </colgroup>
       <thead>
       <tr>
         <th class="c colhead colhead-left">Kontroll</th>
-        <th class="c colhead">Utförd</th>
-        <th class="c colhead colhead-left">Anmärkning</th>
+        <th class="c colhead">U.A</th>
+        <th class="c colhead">A</th>
+        <th class="c colhead colhead-left">Kommentar</th>
       </tr>
       </thead>
       {% for m in measures %}
       <tr>
         <th class="c rowlabel">{{ m.title | escape }}</th>
         <td class="c mark">{{ m.noRemark | default("") | escape }}</td>
+        <td class="c mark">{{ m.remark | default("") | escape }}</td>
         <td class="c">
           <div class="value">{{ m.comment | default("") | escape }}</div>
         </td>

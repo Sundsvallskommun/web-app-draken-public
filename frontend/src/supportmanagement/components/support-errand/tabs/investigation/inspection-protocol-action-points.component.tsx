@@ -4,7 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const emptyRow = (): SupportMeasureRow => ({ title: '', result: '', description: '' });
+const emptyRow = (): SupportMeasureRow => ({ title: '', result: '', description: '', resultText: '' });
 
 /** The action points the permit holder gets to address: a list of titles, held in the protocol's draft. */
 export const InspectionProtocolActionPoints: FC<{

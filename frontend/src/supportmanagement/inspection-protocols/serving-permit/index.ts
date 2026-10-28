@@ -25,6 +25,30 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
     'Brandskydd (8:16)',
     'För många gäster',
   ],
+  observations: {
+    areas: [
+      { key: 'Indoor', label: 'Serveringsyta inomhus' },
+      { key: 'Outdoor', label: 'Uteservering' },
+      { key: 'Entrance', label: 'Utanför (entré)' },
+      { key: 'Toilets', label: 'Toaletter' },
+    ],
+    items: [
+      { key: 'GlassBreakage', label: 'Glaskross' },
+      { key: 'CrowdedTables', label: 'Överbelamrade bord' },
+      { key: 'Littering', label: 'Skräpigt' },
+      { key: 'Vomit', label: 'Spyor' },
+      { key: 'StickyFloor', label: 'Klibbigt på golvet' },
+      { key: 'Disorder', label: 'Bråk, slagsmål eller stökigt' },
+      { key: 'TooManyGuests', label: 'För många gäster' },
+      { key: 'DancingOnFurniture', label: 'Dans på möbler' },
+      { key: 'InadequateBoundary', label: 'Bristfällig avgränsning' },
+      { key: 'MissingSeating', label: 'Sittplatser saknas' },
+      { key: 'AlcoholOutsideServingArea', label: 'Alkohol utanför serveringsytan' },
+      { key: 'Smoking', label: 'Rökning' },
+      { key: 'HighNoiseLevel', label: 'Hög ljudnivå' },
+    ],
+    remarks: { without: 'orderWithoutRemarks', with: 'orderWithRemarks' },
+  },
   sections: [
     {
       key: 'premises',
@@ -107,15 +131,6 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
           options: [
             { value: 'present', label: 'Ja', parameter: 'responsiblePersonPresent' },
             { value: 'absent', label: 'Ingen serveringsansvarig på plats', parameter: 'responsiblePersonAbsent' },
-          ],
-        },
-        {
-          kind: 'choice',
-          key: 'order',
-          label: 'Ordning (3:5, 8:20)',
-          options: [
-            { value: 'withoutRemarks', label: 'Ordningen utan anmärkning', parameter: 'orderWithoutRemarks' },
-            { value: 'withRemarks', label: 'Ordningen har brister', parameter: 'orderWithRemarks' },
           ],
         },
       ],

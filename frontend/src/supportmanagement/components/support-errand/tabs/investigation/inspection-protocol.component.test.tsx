@@ -14,7 +14,7 @@ import {
   unlinkSupportMeasureAttachment,
   uploadSupportMeasureAttachment,
 } from '@supportmanagement/services/support-measure-service';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -97,6 +97,7 @@ const mount = () => render(<InspectionProtocol writable={true} setHasContent={vi
 const state = () => useSupportStore.getState();
 const saver = () => state().tabSavers.investigation;
 const template = () => screen.getByLabelText('Protokollmall') as HTMLSelectElement;
+const card = (dataCy: string) => within(document.querySelector<HTMLElement>(`[data-cy="${dataCy}"]`)!);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -188,6 +189,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
       remove: [],
     },
     nothing,
+    nothing,
   ]);
   expect(startSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'Inre tillsyn', [], {
     type: 'internal_inspection',
@@ -216,7 +218,7 @@ test('a result marks the tab unsaved, and the save patches only the measures tha
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
 
-  fireEvent.click(screen.getAllByRole('button', { name: 'Brist' })[0]);
+  fireEvent.click(card('measure-m1').getByRole('button', { name: 'Brist' }));
   fireEvent.change(screen.getAllByPlaceholderText('Notering om Ålderskontroll…')[0], {
     target: { value: 'Ingen legitimation begärdes' },
   });
@@ -233,6 +235,7 @@ test('a result marks the tab unsaved, and the save patches only the measures tha
       update: [{ id: 'm1', patch: { result: 'NOT_COMPLETED', description: 'Ingen legitimation begärdes' } }],
       remove: [],
     },
+    nothing,
     nothing,
   ]);
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
@@ -257,8 +260,66 @@ test('the action points are listed in their own accordion and written as EXTERNA
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
     nothing,
     { create: [{ type: 'EXTERNAL', title: 'Byt ut prislistan' }], update: [], remove: [] },
+    nothing,
   ]);
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
+});
+
+test('an area is assessed in its own card, observations are picked on a deficiency and written as OBSERVATION measures', async () => {
+  const outdoor = {
+    id: 'o1',
+    type: 'OBSERVATION',
+    title: 'Uteservering',
+    result: 'NOT_COMPLETED',
+    resultText: 'CrowdedTables',
+    attachments: [],
+  };
+  vi.mocked(getSupportMeasures).mockResolvedValue([...measures, outdoor]);
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(screen.getByText('1 av 4 områden bedömda · 1 observation')).toBeTruthy();
+  expect(card('observation-Outdoor').getByRole('button', { name: 'Överbelamrade bord', pressed: true })).toBeTruthy();
+  expect(card('observation-Indoor').queryByText('Vad observerades?')).toBeNull();
+
+  fireEvent.click(card('observation-Indoor').getByRole('button', { name: 'Brist' }));
+  expect(card('observation-Indoor').getByText('Välj minst en observation, eller ändra bedömningen.')).toBeTruthy();
+  fireEvent.click(card('observation-Indoor').getByRole('button', { name: 'Glaskross' }));
+  fireEvent.click(card('observation-Indoor').getByRole('button', { name: 'Spyor' }));
+  expect(card('observation-Indoor').queryByText('Välj minst en observation, eller ändra bedömningen.')).toBeNull();
+  fireEvent.click(card('observation-Outdoor').getByRole('button', { name: 'Godkänt' }));
+  expect(card('observation-Outdoor').queryByText('Vad observerades?')).toBeNull();
+  expect(screen.getByText('2 av 4 områden bedömda · 2 observationer')).toBeTruthy();
+  expect(state().unsavedTabs.investigation).toBe(true);
+
+  await act(async () => {
+    expect(await saver()()).toBe(true);
+  });
+
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
+    nothing,
+    nothing,
+    {
+      create: [
+        {
+          type: 'OBSERVATION',
+          title: 'Serveringsyta inomhus',
+          result: 'NOT_COMPLETED',
+          resultText: 'GlassBreakage|Vomit',
+        },
+      ],
+      update: [{ id: 'o1', patch: { result: 'COMPLETED', resultText: '' } }],
+      remove: [],
+    },
+  ]);
+});
+
+test('a template without observations shows no areas', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({ ...investigation, type: 'internal_inspection' });
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(screen.queryByText('Observationer')).toBeNull();
 });
 
 test('a control point can be added beyond the template, and a saved one removed, by the same save', async () => {
@@ -268,7 +329,7 @@ test('a control point can be added beyond the template, and a saved one removed,
   fireEvent.click(screen.getByRole('button', { name: 'Lägg till kontrollpunkt' }));
   expect(screen.getByText('1 av 3 bedömda - 0 brister')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('Kontrollpunkt 3'), { target: { value: 'Brandsläckare på plats' } });
-  fireEvent.click(screen.getAllByRole('button', { name: 'Brist' })[2]);
+  fireEvent.click(card('measure-new-2').getByRole('button', { name: 'Brist' }));
   fireEvent.click(screen.getByRole('button', { name: 'Ta bort kontrollpunkt 2' }));
   expect(screen.queryByDisplayValue('Serveringstider följs')).toBeNull();
   expect(screen.getByText('1 av 2 bedömda - 1 brist')).toBeTruthy();
@@ -285,6 +346,7 @@ test('a control point can be added beyond the template, and a saved one removed,
       remove: ['m2'],
     },
     nothing,
+    nothing,
   ]);
 });
 
@@ -300,7 +362,7 @@ test('a changed answer is saved on the investigation with the version that was r
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing]);
+  expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
   expect(saveSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', {
     version: 3,
     type: 'serving_permit',
@@ -353,6 +415,7 @@ test('another template is taken only after the handler confirms, and replaces co
       create: expect.arrayContaining([{ type: 'INTERNAL', title: 'Kronofogden' }]),
       remove: ['m1', 'm2'],
     }),
+    nothing,
     nothing,
   ]);
   expect(saveSupportInvestigation).toHaveBeenCalledWith(
@@ -410,6 +473,7 @@ test('a failed investigation save does not write the measures again', async () =
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
     { create: [{ type: 'INTERNAL', title: 'Ny punkt' }], update: [], remove: [] },
     nothing,
+    nothing,
   ]);
   expect(screen.getAllByDisplayValue('Ny punkt')).toHaveLength(1);
   expect(screen.getByDisplayValue('120')).toBeTruthy();
@@ -419,7 +483,7 @@ test('a failed investigation save does not write the measures again', async () =
     expect(await saver()()).toBe(true);
   });
 
-  expect(saveSupportMeasures).toHaveBeenLastCalledWith(ERRAND_ID, '2281', [nothing, nothing]);
+  expect(saveSupportMeasures).toHaveBeenLastCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
   expect(saveSupportInvestigation).toHaveBeenCalledTimes(2);
   expect(screen.getAllByDisplayValue('Ny punkt')).toHaveLength(1);
 });
@@ -489,6 +553,26 @@ test('the protocol is rendered from the saved answers and control points, and fi
     /^Tillsynsprotokoll AOT-26100063 \d{4}-\d{2}-\d{2}\.pdf$/
   );
   expect(getSupportAttachments).toHaveBeenCalled();
+});
+
+test('the observations of a deficient area are marked under it in the protocol', async () => {
+  vi.mocked(getSupportMeasures).mockResolvedValue([
+    ...measures,
+    { id: 'o1', type: 'OBSERVATION', title: 'Toaletter', result: 'NOT_COMPLETED', resultText: 'Vomit|Smoking' },
+  ]);
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Skapa tillsynsprotokoll' }));
+  });
+
+  expect(vi.mocked(renderTemplatePdfDirect).mock.calls[0][1]).toMatchObject({
+    observationVomitToilets: 'X',
+    observationSmokingToilets: 'X',
+    observationVomitIndoor: '',
+    observationGlassBreakageToilets: '',
+  });
 });
 
 test('the protocol cannot be generated while a result, a note, an answer or an action point is unsaved', async () => {
