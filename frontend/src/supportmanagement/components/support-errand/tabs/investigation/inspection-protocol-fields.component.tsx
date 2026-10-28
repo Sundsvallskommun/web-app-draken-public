@@ -1,4 +1,4 @@
-import { Checkbox, FormControl, FormLabel, Input, RadioButton, Textarea } from '@sk-web-gui/react';
+import { Checkbox, Disclosure, FormControl, FormLabel, Input, RadioButton, Textarea } from '@sk-web-gui/react';
 import type {
   InspectionProtocolTemplate,
   ProtocolField,
@@ -21,7 +21,7 @@ const VALUE_MAX_LENGTH = 3000;
 
 const isText = (field: ProtocolField): field is TextField => field.kind !== 'choice' && field.kind !== 'multi';
 
-/** The template's sections as a form: text fields in a grid, each choice on a row of its own with its follow-ups. */
+/** The template's sections, an accordion each: text fields in a grid, each choice on a row of its own with its follow-ups. */
 export const InspectionProtocolFields: FC<{
   template: InspectionProtocolTemplate;
   values: InspectionProtocolValues;
@@ -127,16 +127,17 @@ export const InspectionProtocolFields: FC<{
       {template.sections
         .filter((section) => section.position === position)
         .map((section) => (
-          <section
-            key={section.key}
-            className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12"
-            data-cy={`protocol-${section.key}`}
-          >
-            <h3 className="text-h4-md m-0">{section.title}</h3>
-            <div className={`grid gap-16 ${COLUMNS[section.columns ?? 1]}`}>
-              {section.fields.map((field) => (isText(field) ? text(field) : choice(field)))}
-            </div>
-          </section>
+          <Disclosure key={section.key} variant="alt" className="w-full" initalOpen data-cy={`protocol-${section.key}`}>
+            <Disclosure.Header>
+              <Disclosure.Title>{section.title}</Disclosure.Title>
+              <Disclosure.Button />
+            </Disclosure.Header>
+            <Disclosure.Content>
+              <div className={`grid gap-16 ${COLUMNS[section.columns ?? 1]}`}>
+                {section.fields.map((field) => (isText(field) ? text(field) : choice(field)))}
+              </div>
+            </Disclosure.Content>
+          </Disclosure>
         ))}
     </>
   );

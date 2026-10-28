@@ -1,4 +1,11 @@
-import { SupportMeasureController } from '@/controllers/supportmanagement/support-measure.controller';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+
+import {
+  CreateSupportMeasureDto,
+  SupportMeasureController,
+  UpdateSupportMeasureDto,
+} from '@/controllers/supportmanagement/support-measure.controller';
 
 import { mockReq, mockRes } from './helpers/http';
 import { mockAdUsername, mockMunicipalityId } from './helpers/mock-data';
@@ -136,6 +143,20 @@ describe('the inspection protocol on a measure', () => {
       status: 502,
     });
     expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('lets the observations of an area through as the result text', async () => {
+    const options = { whitelist: true, forbidNonWhitelisted: true };
+    const create = plainToInstance(CreateSupportMeasureDto, {
+      type: 'OBSERVATION',
+      title: 'Uteservering',
+      result: 'NOT_COMPLETED',
+      resultText: 'CrowdedTables|Littering',
+    });
+    const update = plainToInstance(UpdateSupportMeasureDto, { resultText: '' });
+
+    await expect(validate(create, options)).resolves.toEqual([]);
+    await expect(validate(update, options)).resolves.toEqual([]);
   });
 
   it('unlinks an attachment from the measure and answers 204', async () => {

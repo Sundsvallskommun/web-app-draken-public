@@ -3,10 +3,14 @@ import { apiService } from '@common/services/api-service';
 
 import type { SupportErrand } from './support-errand-service';
 
-/** Control points are INTERNAL measures; the action points the permit holder gets to address are EXTERNAL ones. */
+/**
+ * Control points are INTERNAL measures; the action points the permit holder gets to address are EXTERNAL ones;
+ * an assessed area of the premises is an OBSERVATION.
+ */
 export const SupportMeasureType = {
   INTERNAL: 'INTERNAL',
   EXTERNAL: 'EXTERNAL',
+  OBSERVATION: 'OBSERVATION',
 } as const;
 
 export type SupportMeasureTypeName = (typeof SupportMeasureType)[keyof typeof SupportMeasureType];
@@ -32,6 +36,8 @@ export interface SupportMeasureRow {
   title: string;
   result: SupportMeasureResultName | '';
   description: string;
+  /** The observations of an area, as keys joined by '|'. */
+  resultText: string;
 }
 
 /** What a changed row is patched with; whatever is left out stays as it is. A result cannot be cleared. */
@@ -39,10 +45,17 @@ interface SupportMeasurePatch {
   title?: string;
   result?: SupportMeasureResultName;
   description?: string;
+  resultText?: string;
 }
 
 export interface SupportMeasureChanges {
-  create: { type: SupportMeasureTypeName; title: string; result?: SupportMeasureResultName; description?: string }[];
+  create: {
+    type: SupportMeasureTypeName;
+    title: string;
+    result?: SupportMeasureResultName;
+    description?: string;
+    resultText?: string;
+  }[];
   update: { id: string; patch: SupportMeasurePatch }[];
   remove: string[];
 }
@@ -68,12 +81,14 @@ export const supportMeasureRow = (measure: Measure): SupportMeasureRow => ({
   title: measure.title ?? '',
   result: isMeasureResult(measure.result) ? measure.result : '',
   description: measure.description ?? '',
+  resultText: measure.resultText ?? '',
 });
 
 const patchOf = (before: SupportMeasureRow, row: SupportMeasureRow): SupportMeasurePatch => ({
   ...(row.title !== before.title && { title: row.title }),
   ...(row.result && row.result !== before.result && { result: row.result }),
   ...(row.description !== before.description && { description: row.description }),
+  ...(row.resultText !== before.resultText && { resultText: row.resultText }),
 });
 
 /** Blank rows are dropped; a saved row that was blanked or removed is deleted; a saved row is patched with what differs. */
@@ -88,11 +103,12 @@ export const supportMeasureChanges = (
   return {
     create: kept
       .filter((row) => !row.id)
-      .map(({ title, result, description }) => ({
+      .map(({ title, result, description, resultText }) => ({
         type,
         title,
         ...(result && { result }),
         ...(description && { description }),
+        ...(resultText && { resultText }),
       })),
     update: kept.flatMap((row) => {
       const before = row.id ? savedById.get(row.id) : undefined;

@@ -10,7 +10,7 @@ const ACCEPT = ACCEPTED_UPLOAD_FILETYPES.map((extension) => `.${extension}`).joi
 // What Support Management takes as a measure description.
 const NOTE_MAX_LENGTH = 3000;
 
-const RESULT_COLOR: Record<string, 'gronsta' | 'error' | 'primary'> = {
+export const RESULT_COLOR: Record<string, 'gronsta' | 'error' | 'primary'> = {
   COMPLETED: 'gronsta',
   NOT_COMPLETED: 'error',
   NOT_APPLICABLE: 'primary',

@@ -41,8 +41,15 @@ test('a row reads the title, result and note, and treats a result Draken does no
     title: 'Nykterhet',
     result: 'COMPLETED',
     description: 'ok',
+    resultText: '',
   });
-  expect(supportMeasureRow({ id: 'm1', result: 'DONE' })).toEqual({ id: 'm1', title: '', result: '', description: '' });
+  expect(supportMeasureRow({ id: 'm1', result: 'DONE' })).toEqual({
+    id: 'm1',
+    title: '',
+    result: '',
+    description: '',
+    resultText: '',
+  });
   expect(supportMeasureRow({ id: 'm1', result: null })).toMatchObject({ result: '' });
 });
 
@@ -51,6 +58,7 @@ const row = (id: string | undefined, title: string, rest: Partial<SupportMeasure
   title,
   result: '',
   description: '',
+  resultText: '',
   ...rest,
 });
 
@@ -118,5 +126,24 @@ test('surrounding whitespace is neither saved nor counted as a change', () => {
     create: [{ type: 'INTERNAL', title: 'Prislista' }],
     update: [],
     remove: ['m2'],
+  });
+});
+
+test('the observations of an area are written as the result text, and cleared with an empty one', () => {
+  const area = row('m3', 'Uteservering', { result: 'NOT_COMPLETED', resultText: 'CrowdedTables|Littering' });
+
+  expect(
+    supportMeasureChanges(
+      'OBSERVATION',
+      [
+        row(undefined, 'Toaletter', { result: 'NOT_COMPLETED', resultText: 'Vomit' }),
+        { ...area, result: 'COMPLETED', resultText: '' },
+      ],
+      [area]
+    )
+  ).toEqual({
+    create: [{ type: 'OBSERVATION', title: 'Toaletter', result: 'NOT_COMPLETED', resultText: 'Vomit' }],
+    update: [{ id: 'm3', patch: { result: 'COMPLETED', resultText: '' } }],
+    remove: [],
   });
 });

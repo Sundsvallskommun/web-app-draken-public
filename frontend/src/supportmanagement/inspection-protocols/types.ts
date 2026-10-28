@@ -40,6 +40,23 @@ export interface ProtocolSection {
   fields: ProtocolField[];
 }
 
+/** An area or an item that can be observed on it; `key` is part of the template's parameter name. */
+interface ProtocolObservationOption {
+  key: string;
+  label: string;
+}
+
+/**
+ * The observation table, one OBSERVATION measure per assessed area: the area's label as title, the result, and on
+ * a deficiency the observed items' keys in resultText. The template reads them as `observation<item><area>`.
+ */
+export interface ProtocolObservations {
+  areas: ProtocolObservationOption[];
+  items: ProtocolObservationOption[];
+  /** The template's box() parameters for no deficient area and for at least one. */
+  remarks: { without: string; with: string };
+}
+
 /** One inspection protocol: the control points, the fields and the PDF template. Add a folder to add one. */
 export interface InspectionProtocolTemplate {
   /** Saved as investigation.type. */
@@ -52,5 +69,6 @@ export interface InspectionProtocolTemplate {
   html?: string;
   /** The standard control points, saved as INTERNAL measures. */
   controlPoints: string[];
+  observations?: ProtocolObservations;
   sections: ProtocolSection[];
 }

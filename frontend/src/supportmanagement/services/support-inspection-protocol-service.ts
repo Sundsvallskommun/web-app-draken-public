@@ -91,12 +91,21 @@ export const toInspectionProtocolInvestigationParameters = (
   });
 
 type MeasureFields = Pick<Measure, 'title' | 'result' | 'description'>;
+type ObservationFields = Pick<Measure, 'title' | 'result' | 'resultText'>;
+
+/** The items marked on a deficient area, by the keys in its result text. */
+export const observedItems = (measure: ObservationFields | undefined): string[] =>
+  measure?.result === SupportMeasureResult.NOT_COMPLETED ? (measure.resultText ?? '').split('|').filter(Boolean) : [];
 
 export const inspectionProtocolMeasureRow = (measure: MeasureFields): InspectionProtocolMeasureRow => ({
   title: measure.title ?? '',
   noRemark: measure.result === SupportMeasureResult.COMPLETED ? 'X' : '',
   remark: measure.result === SupportMeasureResult.NOT_COMPLETED ? 'X' : '',
-  comment: measure.description ?? '',
+  comment: measure.description
+    ? measure.description
+    : measure.result === SupportMeasureResult.NOT_APPLICABLE
+    ? 'N/A'
+    : '',
 });
 
 /** The template's box() macro prints a cross for the value "true"; the table marks are printed as they are. */
@@ -105,12 +114,17 @@ const box = (checked: boolean): string => (checked ? 'true' : '');
 const chosen = (value: string | string[] | undefined, option: string): boolean =>
   Array.isArray(value) ? value.includes(option) : value === option;
 
-/** The flat keys the template reads, plus `measures` for its loop. Every box is sent, checked or not. */
+/**
+ * The flat keys the template reads, plus `measures` for its loop. Every box is sent, checked or not, and so is
+ * every observation cell, marked X where the area is deficient and the item was observed. The order boxes follow
+ * from whether any area is deficient.
+ */
 export const toInspectionProtocolRenderParameters = (
   template: InspectionProtocolTemplate,
   caseNumber: string | undefined,
   values: InspectionProtocolValues,
-  measures: MeasureFields[]
+  measures: MeasureFields[],
+  observations: ObservationFields[]
 ): Record<string, string | InspectionProtocolMeasureRow[]> => {
   const parameters: Record<string, string | InspectionProtocolMeasureRow[]> = { caseNumber: caseNumber ?? '' };
   for (const field of fieldsOf(template)) {
@@ -119,6 +133,18 @@ export const toInspectionProtocolRenderParameters = (
     } else {
       for (const option of field.options) {
         parameters[option.parameter] = box(chosen(values[field.key], option.value));
+      }
+    }
+  }
+  if (template.observations) {
+    const { areas, items, remarks } = template.observations;
+    const deficient = observations.some((observation) => observation.result === SupportMeasureResult.NOT_COMPLETED);
+    parameters[remarks.without] = box(!deficient);
+    parameters[remarks.with] = box(deficient);
+    for (const area of areas) {
+      const observed = observedItems(observations.find((observation) => observation.title === area.label));
+      for (const item of items) {
+        parameters[`observation${item.key}${area.key}`] = observed.includes(item.key) ? 'X' : '';
       }
     }
   }
