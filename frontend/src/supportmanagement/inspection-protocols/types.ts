@@ -41,7 +41,7 @@ export interface ProtocolSection {
 }
 
 /** An area or an item that can be observed on it; `key` is part of the template's parameter name. */
-export interface ProtocolObservationOption {
+interface ProtocolObservationOption {
   key: string;
   label: string;
 }
