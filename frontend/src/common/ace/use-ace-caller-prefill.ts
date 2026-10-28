@@ -62,7 +62,8 @@ export const useAceCallerPrefill = (
     }
     const { personNumber, phoneNumber } = lookup.caller;
     let active = true;
-    lookup.person
+    // The lookup's failure is handled by mapping it to no person, so the chain cannot reject.
+    void lookup.person
       .catch(() => undefined)
       .then((person) => {
         if (!active) {
