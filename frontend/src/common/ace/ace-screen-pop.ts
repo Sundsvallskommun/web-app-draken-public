@@ -1,5 +1,6 @@
 import { luhnCheck } from '@common/services/helper-service';
 import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
+import dayjs from 'dayjs';
 
 import { AceScreenPopMessage } from './ace-jsapi.types';
 
@@ -16,37 +17,26 @@ const PERSON_NUMBER_KEY = 'eidUserPnr';
 /** ACE contact data key holding the calling number (A-number). */
 const PHONE_NUMBER_KEY = 'Ani';
 
-const toDateString = (date: Date): string =>
-  `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+/**
+ * The century of a 10-digit personal number, as Skatteverket counts it: the latest one in which the
+ * person is already born, one more back for "+" (aged 100 or more).
+ */
+const centuryOf = (birthDate: string, isAged100OrMore: boolean, today: Date): number => {
+  const bornLastCentury = birthDate > dayjs(today).format('YYMMDD');
+  return Math.floor(today.getFullYear() / 100) - Number(bornLastCentury) - Number(isAged100OrMore);
+};
 
 /**
  * Returns the personal number as 12 digits (YYYYMMDDNNNN), the format Citizen is searched with, or
- * undefined when it is not a valid personal or coordination number. Takes 12 digits as well as 10
- * (YYMMDDNNNN), with or without "-" or "+". The century of a 10-digit number follows Skatteverket:
- * the latest century in which the person is already born, and one more back with "+" (100 or older).
+ * undefined when it is not one. Takes 12 or 10 digits, with or without "-" or "+".
  */
 export const toPersonNumber = (value: string, today = new Date()): string | undefined => {
-  const match = /^(\d{2})?(\d{2})(\d{2})(\d{2})([-+]?)(\d{4})$/.exec(value.replace(/\s/g, ''));
+  const match = /^(\d{2})?(\d{6})([-+]?)(\d{4})$/.exec(value.trim());
   if (!match) {
     return undefined;
   }
-  const [, century, year, month, day, separator, lastDigits] = match;
-  // Coordination numbers add 60 to the day of birth.
-  const dayOfMonth = Number(day) > 60 ? Number(day) - 60 : Number(day);
-  if (Number(month) < 1 || Number(month) > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
-    return undefined;
-  }
-  let fullYear = Number(`${century ?? ''}${year}`);
-  if (!century) {
-    fullYear += Math.floor(today.getFullYear() / 100) * 100;
-    if (`${fullYear}${month}${String(dayOfMonth).padStart(2, '0')}` > toDateString(today)) {
-      fullYear -= 100;
-    }
-    if (separator === '+') {
-      fullYear -= 100;
-    }
-  }
-  const personNumber = `${fullYear}${month}${day}${lastDigits}`;
+  const [, century, birthDate, separator, lastDigits] = match;
+  const personNumber = `${century ?? centuryOf(birthDate, separator === '+', today)}${birthDate}${lastDigits}`;
   return luhnCheck(personNumber) ? personNumber : undefined;
 };
 
