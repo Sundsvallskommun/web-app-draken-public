@@ -1,4 +1,5 @@
 import { luhnCheck } from '@common/services/helper-service';
+import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
 
 import { AceScreenPopMessage } from './ace-jsapi.types';
 
@@ -18,12 +19,12 @@ const PHONE_NUMBER_KEY = 'Ani';
 const isPersonNumber = (value: string): boolean => /^\d{12}$/.test(value) && luhnCheck(value);
 
 /**
- * Returns the calling number in the format the contact form accepts (see phonePattern), or
- * undefined for a hidden or unusable number.
+ * Returns the calling number formatted like numbers the case worker enters (+46...), or undefined
+ * for a hidden or unusable number.
  */
 const toPhoneNumber = (value: string): string | undefined => {
-  const phoneNumber = value.replace(/[\s()-]/g, '').replace(/^00/, '+');
-  return /^\+?\d{7,11}$/.test(phoneNumber) ? phoneNumber : undefined;
+  const phoneNumber = phoneNumberFormatter(value.replace(/[()]/g, ''));
+  return /^\+\d{7,11}$/.test(phoneNumber) ? phoneNumber : undefined;
 };
 
 /**
@@ -50,32 +51,28 @@ export const parseScreenPop = (message: AceScreenPopMessage | undefined): AceCal
   };
 };
 
-const REDACTED = '[dolt]';
-const PERSONAL_DATA_KEYS = new Set([PERSON_NUMBER_KEY, PHONE_NUMBER_KEY].map((key) => key.toLowerCase()));
-/** Keys whose numeric values identify the contact in ACE, not a person. */
-const ID_KEYS = new Set(['contactid']);
-
-const looksLikePersonalNumber = (value: string | number): boolean =>
-  /\d{7,}/.test(value.toString().replace(/[\s()+-]/g, ''));
+const HIDDEN = '[dolt]';
+/** Contact fields that describe the contact, not the person, and may be logged as they are. */
+const LOGGABLE_CONTACT_KEYS = ['contactId', 'contactStatus', 'currentContactsType', 'isActiveContact'] as const;
+/** Contact data keys whose values describe the contact, not the person, and may be logged. */
+const LOGGABLE_CONTACT_DATA_KEYS = new Set(['contactSourceType', 'direction', 'media']);
 
 /**
- * Copies an ACE event for logging, with personal numbers and phone numbers hidden: the known keys
- * always, and any other value with seven or more digits, since ACE passes on whatever the IVR
- * collected.
+ * The screen pop as it may be logged: only the fields listed above keep their values. Every other
+ * contact data key is logged by name with its value hidden, so the log shows what ACE sends without
+ * the caller's personal number, phone number, name or messages.
  */
-export const redactAceEvent = (value: unknown, key = ''): unknown => {
-  if (Array.isArray(value)) {
-    return value.map((item) => redactAceEvent(item));
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, redactAceEvent(v, k)]));
-  }
-  const lowerKey = key.toLowerCase();
-  // Empty values are kept, so the log shows that ACE sent the key without a value.
-  if ((typeof value === 'string' || typeof value === 'number') && value !== '' && !ID_KEYS.has(lowerKey)) {
-    if (PERSONAL_DATA_KEYS.has(lowerKey) || looksLikePersonalNumber(value)) {
-      return REDACTED;
-    }
-  }
-  return value;
+export const loggableScreenPop = (message: AceScreenPopMessage | undefined) => {
+  const contact = message?.contact;
+  const contactData = Object.entries(contact?.contactData ?? {}).map(([key, value]) => [
+    key,
+    LOGGABLE_CONTACT_DATA_KEYS.has(key) || value === '' || value === undefined ? value : HIDDEN,
+  ]);
+  return {
+    popEvent: message?.popEvent,
+    contact: contact && {
+      ...Object.fromEntries(LOGGABLE_CONTACT_KEYS.map((key) => [key, contact[key]])),
+      contactData: Object.fromEntries(contactData),
+    },
+  };
 };

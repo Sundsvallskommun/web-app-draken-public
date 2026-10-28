@@ -17,7 +17,7 @@ import {
   removePendingCaller,
   storePendingCaller,
 } from './ace-pending-caller';
-import { AceCaller, parseScreenPop, redactAceEvent } from './ace-screen-pop';
+import { AceCaller, loggableScreenPop, parseScreenPop } from './ace-screen-pop';
 import { AceStatus, useAceStore } from './ace-store';
 
 const LOCK_NAME = 'draken-ace-jsapi';
@@ -31,28 +31,32 @@ type ChannelMessage =
 let jsApiPromise: Promise<AceJSApi> | null = null;
 
 /**
- * Logs every event ACE sends, in every environment, so the integration can be followed in the
- * browser console. Personal and phone numbers are hidden (see redactAceEvent).
+ * Logs an event from ACE in every environment, so the integration can be followed in the browser
+ * console. The payload is built inside the guard: logging must never stop an event from being handled.
  */
-const logAceEvent = (event: string, payload?: unknown) => {
-  if (payload === undefined) {
-    console.info(`[ACE] ${event}`);
-  } else {
-    console.info(`[ACE] ${event}`, redactAceEvent(payload));
+const logAceEvent = (text: string, payload?: () => unknown) => {
+  try {
+    if (payload) {
+      console.info(`[ACE] ${text}`, payload());
+    } else {
+      console.info(`[ACE] ${text}`);
+    }
+  } catch {
+    // Ignore: the event is handled anyway.
   }
 };
 
-/** Registers the event log once per loaded JS API, so remounts do not log each event twice. */
-const logEvents = (jsApi: AceJSApi): AceJSApi => {
-  jsApi.onConnected(() => logAceEvent('onConnected'));
-  jsApi.onLoggedIn(() => logAceEvent('onLoggedIn'));
-  jsApi.onDisconnected(() => logAceEvent('onDisconnected'));
-  jsApi.onLoggedOut((reason) => logAceEvent('onLoggedOut', { reason }));
-  jsApi.onServerConnectionDown(() => logAceEvent('onServerConnectionDown'));
-  jsApi.onPopupDisconnected?.(() => logAceEvent('onPopupDisconnected'));
-  jsApi.onOperationFailed((message) => logAceEvent('onOperationFailed', message));
-  jsApi.onScreenPop((message) => logAceEvent('onScreenPop', message));
-  return jsApi;
+const screenPopOutcome = (caller: AceCaller | null, isNewContact: boolean): string => {
+  if (!caller) {
+    return 'ignorerad';
+  }
+  if (!isNewContact) {
+    return 'ignorerad, kontakten har redan ett ärende';
+  }
+  if (caller.personNumber) {
+    return 'skapar ärende för legitimerad uppringare';
+  }
+  return caller.phoneNumber ? 'skapar ärende med telefonnumret' : 'skapar tomt ärende, dolt nummer';
 };
 
 /**
@@ -103,7 +107,6 @@ const loadJsApi = (config: AceConfig): Promise<AceJSApi> => {
     script.onerror = () => reject(new Error('ACE JS API could not be loaded'));
     document.head.appendChild(script);
   })
-    .then(logEvents)
     .then(trackConnection)
     .catch((e) => {
       // Allow a later mount (e.g. after a reload of the leading tab) to try again.
@@ -249,34 +252,50 @@ export const AceConnector: React.FC = () => {
       }
       // The JS API may have connected before this mount, e.g. when the effect runs again.
       updateStatus(jsApiConnection);
-      const connected = () => updateStatus('connected');
-      const disconnected = () => updateStatus('disconnected');
+      const connected = (event: string) => () => {
+        logAceEvent(event);
+        updateStatus('connected');
+      };
+      const disconnected = (event: string) => () => {
+        logAceEvent(event);
+        updateStatus('disconnected');
+      };
       removeListeners.push(
-        jsApi.onConnected(connected),
-        jsApi.onLoggedIn(connected),
-        jsApi.onDisconnected(disconnected),
-        jsApi.onLoggedOut(disconnected),
-        jsApi.onServerConnectionDown(disconnected),
+        jsApi.onConnected(connected('onConnected')),
+        jsApi.onLoggedIn(connected('onLoggedIn')),
+        jsApi.onDisconnected(disconnected('onDisconnected')),
+        jsApi.onLoggedOut((reason) => {
+          logAceEvent('onLoggedOut', () => ({ reason }));
+          updateStatus('disconnected');
+        }),
+        jsApi.onServerConnectionDown(disconnected('onServerConnectionDown')),
+        jsApi.onOperationFailed((failure) =>
+          logAceEvent('onOperationFailed', () => ({
+            function: failure?.function,
+            reason: failure?.reason,
+            severity: failure?.severity,
+            errorId: failure?.errorId,
+          }))
+        ),
         jsApi.onScreenPop((message) => {
           const caller = parseScreenPop(message);
           // ACE may repeat the pop for the same contact; handle each contact once.
-          if (!caller || handledContactIds.has(caller.contactId) || !markContactHandled(caller.contactId)) {
-            console.info(`[ACE] Screen pop ignorerad (${message?.popEvent ?? 'okänd händelse'}).`);
+          const isNewContact =
+            !!caller && !handledContactIds.has(caller.contactId) && markContactHandled(caller.contactId);
+          logAceEvent(`onScreenPop: ${screenPopOutcome(caller, isNewContact)}`, () => loggableScreenPop(message));
+          if (!caller || !isNewContact) {
             return;
-          }
-          if (caller.personNumber) {
-            console.info('[ACE] Inkommande samtal från legitimerad uppringare, skapar ärende.');
-          } else if (caller.phoneNumber) {
-            console.info('[ACE] Inkommande samtal utan legitimering, skapar ärende med telefonnumret.');
-          } else {
-            console.info('[ACE] Inkommande samtal från dolt nummer, skapar ett tomt ärende.');
           }
           handledContactIds.add(caller.contactId);
           void openErrandForCaller(caller);
         })
       );
       if (jsApi.onPopupDisconnected) {
-        removeListeners.push(jsApi.onPopupDisconnected(disconnected));
+        removeListeners.push(jsApi.onPopupDisconnected(disconnected('onPopupDisconnected')));
+      }
+      if (config.mode === 'mock') {
+        // The development mock plays ACE Interact logging in, now that this tab listens.
+        window.drakenAceMock?.connect();
       }
     };
 

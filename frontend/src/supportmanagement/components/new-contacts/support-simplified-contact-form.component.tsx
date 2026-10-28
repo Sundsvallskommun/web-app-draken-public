@@ -41,6 +41,8 @@ export const SupportSimplifiedContactForm: FC<{
   onClose?: () => void;
   label: string;
   id: string;
+  /** Starts the search with this value, e.g. a personal number from ACE that could not be looked up. */
+  initialQuery?: string;
 }> = (props) => {
   const {
     contact = emptyContact,
@@ -153,7 +155,7 @@ export const SupportSimplifiedContactForm: FC<{
   const [loading, setIsLoading] = useState(false);
   const [searchResultArray, setSearchResultArray] = useState<AddressResult[]>([]);
   const [selectedUser, setSelectedUser] = useState<AddressResult>();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(props.initialQuery ?? '');
   const [searchFieldKey, setSearchFieldKey] = useState(0);
 
   const searchProps = {

@@ -4,12 +4,11 @@ import { useEffect, useRef } from 'react';
 
 import { HandedOverCaller, takePendingCaller } from './ace-pending-caller';
 
-/** The caller as the errand form gets it: the looked-up person when identified, and the phone number when known. */
-export interface AceCallerPrefill {
-  personNumber?: string;
-  phoneNumber?: string;
-  person?: AddressResult;
-}
+/**
+ * The caller as the errand form gets it: what ACE knew, plus the looked-up person when the caller
+ * was identified. A personal number without a person means the lookup failed.
+ */
+export type AceCallerPrefill = HandedOverCaller & { person?: AddressResult };
 
 interface CallerLookup {
   caller: HandedOverCaller;
@@ -41,7 +40,7 @@ const getCallerLookup = (errandNumber: string): CallerLookup | null => {
 /**
  * When this errand was opened for a caller in ACE (see AceConnector), hands the caller to onCaller,
  * once, so the form can be pre-filled: an identified caller is looked up via the BFF/Citizen, and
- * the phone number is passed on whenever ACE had one, also when the lookup fails.
+ * what ACE knew is passed on also when the lookup fails.
  */
 export const useAceCallerPrefill = (
   errandNumber: string | undefined,
@@ -64,29 +63,22 @@ export const useAceCallerPrefill = (
     const { personNumber, phoneNumber } = lookup.caller;
     let active = true;
     lookup.person
+      .catch(() => undefined)
       .then((person) => {
         if (!active) {
           return;
         }
-        if (personNumber && !person) {
-          throw new Error('Caller not found');
-        }
+        // Without the person, hand over what ACE knew so the case worker can search with it.
         latest.current.onCaller({ personNumber, phoneNumber, person });
-      })
-      .catch(() => {
-        if (!active) {
-          return;
+        if (personNumber && !person) {
+          latest.current.toastMessage({
+            position: 'bottom',
+            closeable: true,
+            message:
+              'Personuppgifterna för den som ringer kunde inte hämtas. Personnumret är ifyllt under Ärendeägare, sök igen eller lägg till ärendeägaren manuellt.',
+            status: 'error',
+          });
         }
-        // Keep what is known without the lookup, so the case worker only adds the person.
-        if (phoneNumber) {
-          latest.current.onCaller({ phoneNumber });
-        }
-        latest.current.toastMessage({
-          position: 'bottom',
-          closeable: true,
-          message: 'Personuppgifterna för den som ringer kunde inte hämtas. Lägg till ärendeägaren manuellt.',
-          status: 'error',
-        });
       });
     return () => {
       active = false;

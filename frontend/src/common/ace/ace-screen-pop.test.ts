@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import { AceScreenPopMessage } from './ace-jsapi.types';
-import { parseScreenPop, redactAceEvent } from './ace-screen-pop';
+import { loggableScreenPop, parseScreenPop } from './ace-screen-pop';
 
 // Test person number from Skatteverket, not a real person.
 const personNumber = '199001012385';
@@ -66,10 +66,11 @@ describe('parseScreenPop', () => {
     });
   });
 
-  test('accepts the calling number in the formats the contact form takes', () => {
+  test('formats the calling number like numbers entered by the case worker', () => {
     const withAni = (Ani: string) => parseScreenPop(acceptedIvrCall({ Ani }))?.phoneNumber;
     expect(withAni('0046701740635')).toBe(phoneNumber);
-    expect(withAni('070-174 06 35')).toBe('0701740635');
+    expect(withAni('070-174 06 35')).toBe(phoneNumber);
+    expect(withAni('(070) 174 06 35')).toBe(phoneNumber);
   });
 
   test('returns a caller without details when neither personal number nor calling number is usable', () => {
@@ -96,14 +97,15 @@ describe('parseScreenPop', () => {
   });
 });
 
-describe('redactAceEvent', () => {
-  test('hides personal and phone numbers but keeps the rest of the event', () => {
-    expect(redactAceEvent(acceptedIvrCall())).toEqual({
+describe('loggableScreenPop', () => {
+  test('keeps the fields that describe the contact and hides the rest by key', () => {
+    expect(loggableScreenPop(acceptedIvrCall())).toEqual({
       popEvent: 'afterNormalAccept',
       contact: {
         contactId: 264218330,
         contactStatus: 'active',
         currentContactsType: 'ivr',
+        isActiveContact: undefined,
         contactData: {
           Ani: '[dolt]',
           contactSourceType: 'ivr',
@@ -115,15 +117,21 @@ describe('redactAceEvent', () => {
     });
   });
 
-  test('hides numbers that look personal under any key', () => {
-    expect(redactAceEvent({ contactData: { pnr: '19900101-2385', callback: 701740635, queue: 'Q12' } })).toEqual({
-      contactData: { pnr: '[dolt]', callback: '[dolt]', queue: 'Q12' },
+  test('hides values under keys it does not know, whatever they look like', () => {
+    const message = acceptedIvrCall({ customerName: 'Anna Andersson', email: 'anna@example.com', queue: 'Q12' });
+    expect(loggableScreenPop(message).contact?.contactData).toMatchObject({
+      customerName: '[dolt]',
+      email: '[dolt]',
+      queue: '[dolt]',
     });
   });
 
-  test('keeps empty values and events without a payload as they are', () => {
-    expect(redactAceEvent({ eidUserPnr: '' })).toEqual({ eidUserPnr: '' });
-    expect(redactAceEvent(undefined)).toBeUndefined();
-    expect(redactAceEvent({ reason: 'timeout' })).toEqual({ reason: 'timeout' });
+  test('keeps empty values, so the log shows that ACE sent the key without a value', () => {
+    expect(loggableScreenPop(acceptedIvrCall({ eidUserPnr: '' })).contact?.contactData?.eidUserPnr).toBe('');
+  });
+
+  test('handles a missing or empty message', () => {
+    expect(loggableScreenPop(undefined)).toEqual({ popEvent: undefined, contact: undefined });
+    expect(loggableScreenPop({ popEvent: 'manual' })).toEqual({ popEvent: 'manual', contact: undefined });
   });
 });

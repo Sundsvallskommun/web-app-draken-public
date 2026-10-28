@@ -78,5 +78,6 @@ export const installAceMock = (): void => {
     disconnect: () => dispatch('disconnected'),
   };
 
-  setTimeout(() => window.drakenAceMock?.connect(), 0);
+  // Connected by the tab that runs the integration once it listens (see AceConnector), since the
+  // fake, like ACE, does not repeat events to listeners that register later.
 };
