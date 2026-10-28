@@ -5,7 +5,7 @@ import { AceScreenPopMessage } from './ace-jsapi.types';
 
 export interface AceCaller {
   contactId: string;
-  /** Personal number of a caller identified with BankID/eID in the IVR, format YYYYMMDDNNNN. */
+  /** Personal number of a caller identified with BankID/eID in the IVR, always YYYYMMDDNNNN. */
   personNumber?: string;
   /** The number the call came from, e.g. +46701740635; missing when the number is hidden. */
   phoneNumber?: string;
@@ -16,7 +16,39 @@ const PERSON_NUMBER_KEY = 'eidUserPnr';
 /** ACE contact data key holding the calling number (A-number). */
 const PHONE_NUMBER_KEY = 'Ani';
 
-const isPersonNumber = (value: string): boolean => /^\d{12}$/.test(value) && luhnCheck(value);
+const toDateString = (date: Date): string =>
+  `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+
+/**
+ * Returns the personal number as 12 digits (YYYYMMDDNNNN), the format Citizen is searched with, or
+ * undefined when it is not a valid personal or coordination number. Takes 12 digits as well as 10
+ * (YYMMDDNNNN), with or without "-" or "+". The century of a 10-digit number follows Skatteverket:
+ * the latest century in which the person is already born, and one more back with "+" (100 or older).
+ */
+export const toPersonNumber = (value: string, today = new Date()): string | undefined => {
+  const match = /^(\d{2})?(\d{2})(\d{2})(\d{2})([-+]?)(\d{4})$/.exec(value.replace(/\s/g, ''));
+  if (!match) {
+    return undefined;
+  }
+  const [, century, year, month, day, separator, lastDigits] = match;
+  // Coordination numbers add 60 to the day of birth.
+  const dayOfMonth = Number(day) > 60 ? Number(day) - 60 : Number(day);
+  if (Number(month) < 1 || Number(month) > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
+    return undefined;
+  }
+  let fullYear = Number(`${century ?? ''}${year}`);
+  if (!century) {
+    fullYear += Math.floor(today.getFullYear() / 100) * 100;
+    if (`${fullYear}${month}${String(dayOfMonth).padStart(2, '0')}` > toDateString(today)) {
+      fullYear -= 100;
+    }
+    if (separator === '+') {
+      fullYear -= 100;
+    }
+  }
+  const personNumber = `${fullYear}${month}${day}${lastDigits}`;
+  return luhnCheck(personNumber) ? personNumber : undefined;
+};
 
 /**
  * Returns the calling number formatted like numbers the case worker enters (+46...), or undefined
@@ -39,14 +71,14 @@ export const parseScreenPop = (message: AceScreenPopMessage | undefined): AceCal
     return null;
   }
   const contactId = contact.contactId?.toString() ?? '';
-  const personNumber = contact.contactData?.[PERSON_NUMBER_KEY]?.toString().trim() ?? '';
+  const personNumber = toPersonNumber(contact.contactData?.[PERSON_NUMBER_KEY]?.toString() ?? '');
   const phoneNumber = toPhoneNumber(contact.contactData?.[PHONE_NUMBER_KEY]?.toString() ?? '');
   if (!contactId) {
     return null;
   }
   return {
     contactId,
-    ...(isPersonNumber(personNumber) && { personNumber }),
+    ...(personNumber && { personNumber }),
     ...(phoneNumber && { phoneNumber }),
   };
 };

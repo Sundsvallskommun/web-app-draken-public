@@ -89,6 +89,17 @@ test.describe('ACE screen pop', () => {
       await expect(owner.phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
     });
 
+    test('looks up a caller whose personal number ACE sends with 10 digits by all 12', async ({ page, ace }) => {
+      const lookup = page
+        .context()
+        .waitForEvent('request', (r) => r.method() === 'POST' && r.url().endsWith('/address'));
+
+      const errandPage = await ace.acceptCall({ personNumber: mockEnv.mockPersonNumber.slice(2) });
+
+      expect((await lookup).postDataJSON()).toEqual({ ssn: mockEnv.mockPersonNumber });
+      await expect(errandOwner(errandPage).personNumber).toHaveText(mockEnv.mockPersonNumber);
+    });
+
     test('saves the caller as errand owner only when the case worker saves', async ({ page, ace }) => {
       const patches: string[] = [];
       page.context().on('request', (r) => r.method() === 'PATCH' && patches.push(r.url()));
