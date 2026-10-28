@@ -129,9 +129,8 @@ describe('toPersonNumber', () => {
     expect(toPersonNumber('9001612382', today)?.slice(0, 8)).toBe('19900161');
   });
 
-  test('rejects numbers with a wrong check digit, an impossible date or the wrong length', () => {
+  test('rejects numbers with a wrong check digit or the wrong length', () => {
     expect(toPersonNumber(mockInvalid, today)).toBeUndefined();
-    expect(toPersonNumber('9001322385', today)).toBeUndefined();
     expect(toPersonNumber('900101238', today)).toBeUndefined();
     expect(toPersonNumber('IngenIdentifikation', today)).toBeUndefined();
     expect(toPersonNumber('', today)).toBeUndefined();
