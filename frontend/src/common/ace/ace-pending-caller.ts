@@ -1,7 +1,10 @@
+import type { AceCaller } from './ace-screen-pop';
+
 /**
- * Hands the caller's personal number over from the tab that received the ACE screen pop to the
- * tab that opens the new errand. The value never travels in a URL: it is kept in localStorage
- * under the errand number for at most PENDING_CALLER_TTL_MS and removed as soon as it is read.
+ * Hands the caller's personal number or phone number over from the tab that received the ACE screen
+ * pop to the tab that opens the new errand. The values never travel in a URL: they are kept in
+ * localStorage under the errand number for at most PENDING_CALLER_TTL_MS and removed as soon as
+ * they are read.
  */
 
 const KEY_PREFIX = 'draken-ace-caller:';
@@ -9,10 +12,14 @@ export const PENDING_CALLER_TTL_MS = 2 * 60 * 1000;
 
 type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
-interface PendingCaller {
-  personNumber: string;
+/** What the new errand's tab gets to know about the caller. */
+export type HandedOverCaller = Pick<AceCaller, 'personNumber' | 'phoneNumber'>;
+
+interface PendingCaller extends HandedOverCaller {
   expiresAt: number;
 }
+
+const optionalString = (value: unknown): boolean => value === undefined || typeof value === 'string';
 
 const browserStorage = (): KeyValueStorage | null => {
   try {
@@ -25,7 +32,12 @@ const browserStorage = (): KeyValueStorage | null => {
 const readEntry = (storage: KeyValueStorage, key: string): PendingCaller | null => {
   try {
     const entry = JSON.parse(storage.getItem(key) ?? 'null');
-    return typeof entry?.personNumber === 'string' && typeof entry?.expiresAt === 'number' ? entry : null;
+    const valid =
+      typeof entry?.expiresAt === 'number' &&
+      (!!entry.personNumber || !!entry.phoneNumber) &&
+      optionalString(entry.personNumber) &&
+      optionalString(entry.phoneNumber);
+    return valid ? entry : null;
   } catch {
     return null;
   }
@@ -53,14 +65,14 @@ export const removeExpiredPendingCallers = (storage = browserStorage(), now = Da
 
 export const storePendingCaller = (
   errandNumber: string,
-  personNumber: string,
+  { personNumber, phoneNumber }: HandedOverCaller,
   storage = browserStorage(),
   now = Date.now()
 ): void => {
   try {
     storage?.setItem(
       `${KEY_PREFIX}${errandNumber}`,
-      JSON.stringify({ personNumber, expiresAt: now + PENDING_CALLER_TTL_MS } satisfies PendingCaller)
+      JSON.stringify({ personNumber, phoneNumber, expiresAt: now + PENDING_CALLER_TTL_MS } satisfies PendingCaller)
     );
   } catch {
     // Storage unavailable or full: the errand still opens, just without a pre-filled customer.
@@ -76,12 +88,12 @@ export const removePendingCaller = (errandNumber: string, storage = browserStora
   }
 };
 
-/** Returns the caller's personal number handed over for this errand, at most once. */
+/** Returns the caller handed over for this errand, at most once. */
 export const takePendingCaller = (
   errandNumber: string,
   storage = browserStorage(),
   now = Date.now()
-): string | null => {
+): HandedOverCaller | null => {
   if (!storage || !errandNumber) {
     return null;
   }
@@ -92,5 +104,5 @@ export const takePendingCaller = (
   } catch {
     // Ignore: the entry expires anyway.
   }
-  return entry && entry.expiresAt > now ? entry.personNumber : null;
+  return entry && entry.expiresAt > now ? { personNumber: entry.personNumber, phoneNumber: entry.phoneNumber } : null;
 };
