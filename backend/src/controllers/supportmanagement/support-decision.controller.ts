@@ -93,10 +93,11 @@ class SupportDecisionFieldsDto {
 }
 
 export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(128)
-  outcome!: string;
+  outcome?: string;
 
   @IsString()
   @MinLength(1)

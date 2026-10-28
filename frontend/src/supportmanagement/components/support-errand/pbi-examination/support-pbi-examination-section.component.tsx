@@ -6,7 +6,6 @@ import {
   isOrganizationExternalIdType,
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
-import { supportInvestigationTextKeys } from '@supportmanagement/services/support-investigation-sections';
 import {
   emptyKnowledgeTest,
   hyphenatedIdentity,
@@ -27,7 +26,6 @@ import { FC, ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
-import { type InvestigationSectionProps, InvestigationSectionText } from '../investigation-section-text.component';
 import { AddPbiButton } from '../pbi/support-add-pbi-button.component';
 import { SupportPbiAddDialog } from '../pbi/support-pbi-add-dialog.component';
 import { useSupportPbi } from '../tabs/use-support-pbi';
@@ -211,13 +209,11 @@ const PersonCard: FC<BlockProps & { engagements: LegalEntityEngagement[] }> = ({
 );
 
 /**
- * The ownership of the company, and one card per person marked on the errand carrying the motivation, the personal
- * suitability and the knowledge test, since all three are about the same person. The cards are written onto the
- * stakeholders in the form and saved by Spara ärende, so they have no state of their own: what they show is what
- * the form holds. The ownership is the text of the section itself.
+ * One card per person marked on the errand carrying the motivation, the personal suitability and the knowledge test,
+ * since all three are about the same person. The cards are written onto the stakeholders in the form and saved by
+ * Spara ärende, so they have no state of their own: what they show is what the form holds.
  */
-export const SupportPbiExaminationSection: FC<InvestigationSectionProps> = (props) => {
-  const { writable } = props;
+export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writable }) => {
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const [adding, setAdding] = useState(false);
@@ -230,12 +226,6 @@ export const SupportPbiExaminationSection: FC<InvestigationSectionProps> = (prop
 
   return (
     <div className="flex flex-col gap-24" data-cy="pbi-examination-section">
-      <InvestigationSectionText
-        {...props}
-        name="persons_of_influence"
-        {...supportInvestigationTextKeys('persons_of_influence')}
-      />
-
       <div className="flex flex-col gap-16">
         {pbi.people.length === 0 ? (
           <Alert type="info" data-cy="pbi-examination-empty">

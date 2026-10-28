@@ -195,7 +195,10 @@ export const SupportErrandDecisionTab: FC<{
       <div>
         <h2 className="text-h2-md mb-8">{t('common:decision.heading')}</h2>
         {!isLoading && !error && editable ? (
-          <p className="m-0 text-dark-secondary">{t('common:decision.intro')}</p>
+          <>
+            <p className="m-0 text-dark-secondary">{t('common:decision.intro')}</p>
+            <p className="m-0 text-dark-secondary">{t('common:decision.required_hint')}</p>
+          </>
         ) : null}
       </div>
 

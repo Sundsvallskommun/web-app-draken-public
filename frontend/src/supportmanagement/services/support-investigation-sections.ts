@@ -16,31 +16,34 @@ type SectionSpec = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number];
  */
 export const SUPPORT_INVESTIGATION_SECTIONS = [
   { sectionKey: 'statements', headingKey: 'common:investigation.sections.statements', sortOrder: 1 },
+  { sectionKey: 'ownership', headingKey: 'common:investigation.sections.ownership', sortOrder: 2 },
   {
     sectionKey: 'persons_of_influence',
     headingKey: 'common:investigation.sections.persons_of_influence',
-    sortOrder: 2,
+    sortOrder: 3,
   },
   {
     sectionKey: 'financial_suitability',
     headingKey: 'common:investigation.sections.financial_suitability',
-    sortOrder: 3,
+    sortOrder: 4,
   },
-  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 4 },
-  { sectionKey: 'lease', headingKey: 'common:investigation.sections.lease', sortOrder: 5 },
-  { sectionKey: 'fire_safety', headingKey: 'common:investigation.sections.fire_safety', sortOrder: 6 },
+  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 5 },
+  { sectionKey: 'lease', headingKey: 'common:investigation.sections.lease', sortOrder: 6 },
+  { sectionKey: 'fire_safety', headingKey: 'common:investigation.sections.fire_safety', sortOrder: 7 },
   {
     sectionKey: 'food_and_beverages',
     headingKey: 'common:investigation.sections.food_and_beverages',
-    sortOrder: 7,
+    sortOrder: 8,
   },
-  { sectionKey: 'staffing', headingKey: 'common:investigation.sections.staffing', sortOrder: 8 },
-  { sectionKey: 'communication', headingKey: 'common:investigation.sections.communication', sortOrder: 9 },
+  { sectionKey: 'staffing', headingKey: 'common:investigation.sections.staffing', sortOrder: 9 },
+  { sectionKey: 'communication', headingKey: 'common:investigation.sections.communication', sortOrder: 10 },
   {
     sectionKey: 'child_perspective',
     headingKey: 'common:investigation.sections.child_perspective',
-    sortOrder: 10,
+    sortOrder: 11,
   },
+  { sectionKey: 'marketing', headingKey: 'common:investigation.sections.marketing', sortOrder: 12 },
+  { sectionKey: 'legal_basis', headingKey: 'common:investigation.sections.legal_basis', sortOrder: 13 },
 ] as const satisfies readonly { sectionKey: string; headingKey: string; sortOrder: number }[];
 
 /**

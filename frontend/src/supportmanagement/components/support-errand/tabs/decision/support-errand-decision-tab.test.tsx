@@ -146,32 +146,16 @@ test('the decision maker starts as handläggare, and the tab is saved from the s
   expect(createSupportDecision).not.toHaveBeenCalled();
 });
 
-test('a permit is not saved until it carries what the certificate prints', async () => {
+test('a draft is saved however incomplete, without an outcome too', async () => {
   await renderTab();
 
-  fireEvent.change(select('outcome'), { target: { value: APPROVAL } });
+  fireEvent.change(select('role'), { target: { value: UTSKOTTET } });
   expect(unsavedHint()).toBeTruthy();
 
-  await expect(saveTheTab()).resolves.toBe(false);
-  expect(createSupportDecision).not.toHaveBeenCalled();
-  expect(toast).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
-
-  fireEvent.change(select('issued-on'), { target: { value: '2026-10-20' } });
-  fireEvent.change(select('premises-phone'), { target: { value: mockEnv.mockPhoneNumber } });
-  fireEvent.change(select('serving-area'), { target: { value: 'Matsalen' } });
-
-  // The day the permit starts is as strict on the certificate as the day it was issued.
-  await expect(saveTheTab()).resolves.toBe(false);
-  expect(createSupportDecision).not.toHaveBeenCalled();
-
-  fireEvent.change(select('valid-from'), { target: { value: '2026-11-01' } });
-
   await expect(saveTheTab()).resolves.toBe(true);
-  expect(createSupportDecision).toHaveBeenCalledWith(
-    'errand-id',
-    '2281',
-    expect.objectContaining({ outcome: APPROVAL })
-  );
+  const sent = vi.mocked(createSupportDecision).mock.calls[0][2];
+  expect(sent).toMatchObject({ decidedByRole: UTSKOTTET });
+  expect(sent).not.toHaveProperty('outcome');
 });
 
 test('another decision maker is an unsaved change', async () => {

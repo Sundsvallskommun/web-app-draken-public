@@ -43,7 +43,7 @@ export const SectionDisclosure: React.FC<{
 
   const sectionContent: Partial<Record<Sections, JSX.Element>> = {
     statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} />,
-    persons_of_influence: <SupportPbiExaminationSection {...props} />,
+    persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: <SupportFinancialSuitabilitySection {...props} />,
     premises: <SupportPremisesSection {...props} />,
     lease: writtenSection('lease', props),
@@ -52,6 +52,9 @@ export const SectionDisclosure: React.FC<{
     staffing: writtenSection('staffing', props),
     communication: <SupportCommunicationSection {...props} />,
     child_perspective: writtenSection('child_perspective', props),
+    legal_basis: writtenSection('legal_basis', props),
+    marketing: writtenSection('marketing', props),
+    ownership: writtenSection('ownership', props),
   };
 
   const spec = supportInvestigationSectionSpec(section);

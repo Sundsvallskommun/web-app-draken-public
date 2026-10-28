@@ -28,12 +28,39 @@ const apiTokenService = new ApiTokenService();
  */
 const describeRequestBody = (data: unknown): string => {
   if (typeof data === 'string') {
-    return data.slice(0, 1500);
+    return data.slice(0, 3500);
   }
   if (data === undefined || data === null) {
     return '';
   }
   return `[${data.constructor?.name ?? typeof data} body, not logged]`;
+};
+
+// Log each dept44 constraint violation together with the value that was sent for that field.
+const logConstraintViolations = (responseData: unknown, requestData: unknown): void => {
+  try {
+    const problem = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+    const violations = (problem as { violations?: unknown })?.violations;
+    if (!Array.isArray(violations)) {
+      return;
+    }
+    let body = requestData;
+    try {
+      body = typeof requestData === 'string' ? JSON.parse(requestData) : requestData;
+    } catch {
+      body = undefined;
+    }
+    violations.forEach(({ field, message }: { field?: string; message?: string }) => {
+      const value = String(field ?? '')
+        .split(/[.[\]]/)
+        .filter(Boolean)
+        .reduce<any>((obj, key) => (obj && typeof obj === 'object' ? obj[key] : undefined), body);
+      const rendered = typeof value === 'string' ? value : JSON.stringify(value);
+      logger.error(`In other words: field '${field}' ${message}, but it was: ${field}: ${rendered}`);
+    });
+  } catch {
+    // Unparseable bodies are already logged as error details/data
+  }
 };
 
 class ApiService {
@@ -121,28 +148,29 @@ class ApiService {
       const location = axiosConfig.followLocation === false ? (res.headers?.location as string | undefined) : undefined;
       return { data: res.data, message: 'success', ...(location ? { location } : {}) };
     } catch (error: unknown | AxiosError) {
-      if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
+      if (axios.isAxiosError(error)) {
+        const h = (error as AxiosError).response!.config.headers.toJSON();
+        const xreqid = h['X-Request-Id'] ?? '';
+        delete h.Authorization;
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
+        logger.debug(`Error X-Request-ID: ${xreqid}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
+        logConstraintViolations(error.response!.data, error.response!.config.data);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
+        logger.debug(`Error data: ${describeRequestBody(error.response!.config.data)}`);
         logger.error(`Error method: ${error.response!.config.method}`);
-        logger.error(`Error headers: ${error.response!.config.headers}`);
-        throw new HttpException(404, 'Not found');
-      } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
-        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
-        logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
-        logger.error(`Error method: ${error.response!.config.method}`);
-        logger.error(`Error headers: ${error.response!.config.headers}`);
-        // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
-        // context instead of an opaque 500. Server/network errors still become 500 below.
-        const status = error.response!.status;
-        if (propagateClientError && status >= 400 && status < 500) {
-          const data = error.response!.data as { detail?: string; message?: string; title?: string };
-          const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
-          throw new HttpException(status, message);
+        logger.debug(`Error headers: ${JSON.stringify(h)}`);
+        if (error.response?.status === 404) {
+          throw new HttpException(404, 'Not found');
+        } else if (error.response?.data) {
+          // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
+          // context instead of an opaque 500. Server/network errors still become 500 below.
+          const status = error.response!.status;
+          if (propagateClientError && status >= 400 && status < 500) {
+            const data = error.response!.data as { detail?: string; message?: string; title?: string };
+            const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
+            throw new HttpException(status, message);
+          }
         }
       } else {
         logger.error(`Unknown error: ${error}`);

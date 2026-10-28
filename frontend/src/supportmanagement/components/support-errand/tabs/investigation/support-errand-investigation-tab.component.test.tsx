@@ -111,14 +111,17 @@ test('an investigation that lacks an examination is completed with it, once, and
 
   expect(completeSupportInvestigationSections).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation-1', [
     { sectionKey: 'statements', heading: 'common:investigation.sections.statements', sortOrder: 1 },
-    { sectionKey: 'persons_of_influence', heading: 'common:investigation.sections.persons_of_influence', sortOrder: 2 },
-    { sectionKey: 'premises', heading: 'common:investigation.sections.premises', sortOrder: 4 },
-    { sectionKey: 'lease', heading: 'common:investigation.sections.lease', sortOrder: 5 },
-    { sectionKey: 'fire_safety', heading: 'common:investigation.sections.fire_safety', sortOrder: 6 },
-    { sectionKey: 'food_and_beverages', heading: 'common:investigation.sections.food_and_beverages', sortOrder: 7 },
-    { sectionKey: 'staffing', heading: 'common:investigation.sections.staffing', sortOrder: 8 },
-    { sectionKey: 'communication', heading: 'common:investigation.sections.communication', sortOrder: 9 },
-    { sectionKey: 'child_perspective', heading: 'common:investigation.sections.child_perspective', sortOrder: 10 },
+    { sectionKey: 'ownership', heading: 'common:investigation.sections.ownership', sortOrder: 2 },
+    { sectionKey: 'persons_of_influence', heading: 'common:investigation.sections.persons_of_influence', sortOrder: 3 },
+    { sectionKey: 'premises', heading: 'common:investigation.sections.premises', sortOrder: 5 },
+    { sectionKey: 'lease', heading: 'common:investigation.sections.lease', sortOrder: 6 },
+    { sectionKey: 'fire_safety', heading: 'common:investigation.sections.fire_safety', sortOrder: 7 },
+    { sectionKey: 'food_and_beverages', heading: 'common:investigation.sections.food_and_beverages', sortOrder: 8 },
+    { sectionKey: 'staffing', heading: 'common:investigation.sections.staffing', sortOrder: 9 },
+    { sectionKey: 'communication', heading: 'common:investigation.sections.communication', sortOrder: 10 },
+    { sectionKey: 'child_perspective', heading: 'common:investigation.sections.child_perspective', sortOrder: 11 },
+    { sectionKey: 'marketing', heading: 'common:investigation.sections.marketing', sortOrder: 12 },
+    { sectionKey: 'legal_basis', heading: 'common:investigation.sections.legal_basis', sortOrder: 13 },
   ]);
 });
 

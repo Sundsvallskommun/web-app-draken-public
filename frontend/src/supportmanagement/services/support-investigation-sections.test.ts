@@ -14,6 +14,7 @@ import {
 
 const CATALOGUED = [
   'statements',
+  'ownership',
   'persons_of_influence',
   'financial_suitability',
   'premises',
@@ -23,17 +24,21 @@ const CATALOGUED = [
   'staffing',
   'communication',
   'child_perspective',
+  'marketing',
+  'legal_basis',
 ];
 
 /** The examinations that carry a written text, whether or not they carry anything else. */
 const WRITTEN: Sections[] = [
-  'persons_of_influence',
   'lease',
   'fire_safety',
   'food_and_beverages',
   'staffing',
   'communication',
   'child_perspective',
+  'marketing',
+  'legal_basis',
+  'ownership',
 ];
 
 const swedish = (key: string): unknown =>
@@ -51,7 +56,9 @@ const keysOf = (sections: { sectionKey?: string }[]) => sections.map((section) =
 
 test('the examinations are catalogued in the order the business examines them', () => {
   expect(keysOf([...SUPPORT_INVESTIGATION_SECTIONS])).toEqual(CATALOGUED);
-  expect(SUPPORT_INVESTIGATION_SECTIONS.map((section) => section.sortOrder)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  expect(SUPPORT_INVESTIGATION_SECTIONS.map((section) => section.sortOrder)).toEqual([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+  ]);
 });
 
 test('a section is shown in order, and a retired examination is not shown at all', () => {
@@ -92,6 +99,7 @@ test('the examinations that are missing are the ones no row stands for, by the n
   const started = investigationOf(sectionOf('statements', 1), sectionOf('personal_suitability', 2));
 
   expect(keysOf(missingSupportInvestigationSections(started))).toEqual([
+    'ownership',
     'financial_suitability',
     'premises',
     'lease',
@@ -100,6 +108,8 @@ test('the examinations that are missing are the ones no row stands for, by the n
     'staffing',
     'communication',
     'child_perspective',
+    'marketing',
+    'legal_basis',
   ]);
   expect(missingSupportInvestigationSections(investigationOf(...SUPPORT_INVESTIGATION_SECTIONS))).toEqual([]);
   expect(keysOf(missingSupportInvestigationSections(undefined))).toEqual(CATALOGUED);
@@ -110,8 +120,8 @@ test('the catalogue is handed to the service with its headings translated', () =
 
   expect(supportInvestigationSectionInputs(translate, [SUPPORT_INVESTIGATION_SECTIONS[1]])).toEqual([
     {
-      sectionKey: 'persons_of_influence',
-      heading: 'översatt:common:investigation.sections.persons_of_influence',
+      sectionKey: 'ownership',
+      heading: 'översatt:common:investigation.sections.ownership',
       sortOrder: 2,
     },
   ]);

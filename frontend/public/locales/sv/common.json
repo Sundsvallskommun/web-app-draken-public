@@ -134,13 +134,12 @@
       "food_and_beverages": "Mat och dryckesutbud",
       "staffing": "Personal",
       "communication": "Handläggning och kommunicering",
-      "child_perspective": "Barnperspektivet"
+      "child_perspective": "Barnperspektivet",
+      "legal_basis": "Lagrum",
+      "marketing": "Marknadsföring",
+      "ownership": "Ägarförhållande"
     },
     "section_texts": {
-      "persons_of_influence": {
-        "label": "Ägarförhållanden",
-        "placeholder": "Beskriv ägarförhållandena i bolaget, till exempel ägarandelar och hur inflytandet är fördelat"
-      },
       "lease": {
         "label": "Utredning av nyttjanderätten",
         "placeholder": "Beskriv nyttjanderätten till lokalen och vad hyresavtalet säger"
@@ -164,6 +163,18 @@
       "child_perspective": {
         "label": "Utredning av barnperspektivet",
         "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
+      },
+      "legal_basis": {
+        "label": "Tillämpliga lagrum",
+        "placeholder": "Ange de lagrum som ärendet prövas mot"
+      },
+      "marketing": {
+        "label": "Utredning av marknadsföringen",
+        "placeholder": "Beskriv hur serveringsstället marknadsför sig och om marknadsföringen är måttfull"
+      },
+      "ownership": {
+        "label": "Utredning av ägarförhållandet",
+        "placeholder": "Beskriv vem som äger verksamheten och hur ägandet är fördelat"
       }
     },
     "decision_basis": {
@@ -251,11 +262,11 @@
         "confirm_yes": "Ja"
       },
       "start_follow_up": {
-        "label": "Inled uppföljning",
-        "confirm_title": "Ta ärendet till uppföljning?",
-        "confirm_text": "När du tar ärendet vidare till uppföljning innebär det att beslutet är fattat och expedierat.",
-        "done": "Ärendet är taget till uppföljning.",
-        "error": "Ärendet kunde inte tas till uppföljning.",
+        "label": "Skicka beslut",
+        "confirm_title": "Skicka beslut och ta ärende till uppföljning?",
+        "confirm_text": "När du skickar beslutet tas ärendet vidare till uppföljning, vilket innebär det att beslutet är fattat och expedierat.",
+        "done": "Beslutet har skickats.",
+        "error": "Beslutet kunde inte skickas.",
         "confirm_yes": "Ja"
       },
       "close_errand": {
@@ -338,6 +349,7 @@
   "decision": {
     "heading": "Beslut",
     "intro": "Fatta beslutet utifrån underlaget ovan.",
+    "required_hint": "Fält markerade med * måste vara ifyllda innan ärendet kan gå vidare till uppföljning.",
     "loading": "Hämtar beslut",
     "error": "Beslutet kunde inte hämtas.",
     "locked": "Låst",
@@ -375,9 +387,8 @@
     "valid_from": "Gäller från",
     "valid_to": "Gäller till (lämna tomt för tills vidare)",
     "issued_on": "Datum för utfärdande",
-    "issued_on_help": "Datumet som trycks på tillståndsbeviset. Beslutet kan inte sparas utan det.",
+    "issued_on_help": "Datumet som trycks på tillståndsbeviset.",
     "empty_value": "—",
-    "incomplete": "Beslutet kan inte sparas förrän {{inputs}} är ifyllt.",
     "unsaved_hint": "Beslutet har ändringar som inte är sparade. De sparas med Spara ärende.",
     "unsaved": "Osparade ändringar",
     "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
