@@ -110,3 +110,20 @@ export const saveSupportInvestigation = (
       console.error('Something went wrong when saving the investigation');
       throw e;
     });
+
+/** Sets status COMPLETED; the inspection process builds its protocol only from a completed investigation. */
+export const completeSupportInvestigation = (
+  errandId: string,
+  municipalityId: string,
+  investigation: Investigation
+): Promise<Investigation> =>
+  apiService
+    .patch<Investigation, SupportInvestigationInput>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigation.id}/complete`,
+      { version: investigation.version ?? 0 }
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when completing the investigation');
+      throw e;
+    });

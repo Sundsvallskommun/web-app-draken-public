@@ -20,6 +20,7 @@ export interface ProcessAction {
   /** What the permit certificate prints has to be on the errand before the process needs it. */
   requiresPermitInputs?: boolean;
   completesDecision?: boolean;
+  completesInvestigation?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
   resolution?: Resolution;
@@ -66,6 +67,7 @@ export const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>
     needsSignal: true,
     tabKey: 'decision',
     requiresAnsweredStatements: true,
+    completesInvestigation: true,
   },
   [SupportProcessStep.DECISION]: {
     key: 'start_follow_up',
