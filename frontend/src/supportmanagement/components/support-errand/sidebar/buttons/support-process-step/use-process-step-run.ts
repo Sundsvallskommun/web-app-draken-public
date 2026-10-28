@@ -14,6 +14,11 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import {
+  completeSupportInvestigation,
+  getSupportInvestigation,
+  isSupportInvestigationCompleted,
+} from '@supportmanagement/services/support-investigation-service';
+import {
   awaitedGateOfStep,
   getSupportErrandProcess,
   getSupportErrandProcessState,
@@ -145,15 +150,19 @@ export const useProcessStepRun = ({
     return (await getSupportErrandById(errandId, municipalityId)).errand;
   };
 
-  const concludeAnyDraftDecision = async (
-    action: ProcessAction,
-    decisionsInHand: Decision[] | undefined
-  ): Promise<boolean> => {
-    const draft = action.completesDecision ? decisionsInHand?.find(isSupportDecisionDraft) : undefined;
+  const concludeAnyDraftDecision = async (decisionsInHand: Decision[] | undefined): Promise<boolean> => {
+    const draft = decisionsInHand?.find(isSupportDecisionDraft);
     if (!draft?.id) return false;
 
     await completeSupportDecision(errandId, municipalityId, draft.id);
     return true;
+  };
+
+  const completeAnyOpenInvestigation = async () => {
+    const investigation = await getSupportInvestigation(errandId, municipalityId);
+    if (!investigation?.id || isSupportInvestigationCompleted(investigation)) return;
+
+    await completeSupportInvestigation(errandId, municipalityId, investigation);
   };
 
   const leaveTheStep = async (action: ProcessAction): Promise<boolean | typeof NO_GATE_TO_LEAVE_BY> => {
@@ -206,7 +215,15 @@ export const useProcessStepRun = ({
         await takeErrand();
       }
 
-      const decisionWasConcluded = await concludeAnyDraftDecision(action, decisionsInHand);
+      if (action.completesInvestigation) {
+        await completeAnyOpenInvestigation();
+      }
+
+      let decisionWasConcluded = false;
+      if (action.completesDecision) {
+        decisionWasConcluded = await concludeAnyDraftDecision(decisionsInHand);
+      }
+
       const signalWasSent = await leaveTheStep(action);
       if (signalWasSent === NO_GATE_TO_LEAVE_BY) {
         tellTheHandler(t('common:process.actions.not_ready'), 'error');

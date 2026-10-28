@@ -8,6 +8,10 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import {
+  completeSupportInvestigation,
+  getSupportInvestigation,
+} from '@supportmanagement/services/support-investigation-service';
+import {
   getSupportErrandProcessState,
   sendSupportProcessSignal,
   startSupportProcess,
@@ -48,6 +52,11 @@ vi.mock('@supportmanagement/services/support-statement-service', () => ({
   getSupportStatements: vi.fn().mockResolvedValue([]),
   isSupportStatementAwaitingAnswer: (statement: { status?: string }) => statement.status === 'ACTIVE',
   isSupportStatementUnsent: (statement: { status?: string }) => !statement.status || statement.status === 'DRAFT',
+}));
+vi.mock('@supportmanagement/services/support-investigation-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getSupportInvestigation: vi.fn(),
+  completeSupportInvestigation: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-process-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -126,6 +135,12 @@ beforeEach(() => {
   vi.mocked(completeSupportDecision)
     .mockReset()
     .mockResolvedValue(true as never);
+  vi.mocked(getSupportInvestigation)
+    .mockReset()
+    .mockResolvedValue({ id: 'investigation-1', status: 'ACTIVE', version: 3 } as never);
+  vi.mocked(completeSupportInvestigation)
+    .mockReset()
+    .mockResolvedValue({ id: 'investigation-1', status: 'COMPLETED' } as never);
   vi.mocked(sendSupportProcessSignal).mockReset().mockResolvedValue(undefined);
   vi.mocked(startSupportProcess).mockReset().mockResolvedValue(undefined);
   vi.mocked(getSupportErrandProcessState).mockReset();
@@ -179,6 +194,62 @@ test('the decision is read again for the gate, so one saved after the list was r
 
   await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
+});
+
+test('ready for decision completes the investigation before the signal, since the protocol is built from it', async () => {
+  useSupportStore.setState({
+    supportErrand: errandAt('investigation_phase', ['investigation_completed', 'process_cancelled']),
+  });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'investigation_phase',
+      awaitingSignals: [{ name: 'investigation_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton('ready_for_decision');
+  button.click();
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation_completed')
+  );
+  expect(completeSupportInvestigation).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    expect.objectContaining({ id: 'investigation-1', version: 3 })
+  );
+  expect(vi.mocked(completeSupportInvestigation).mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(sendSupportProcessSignal).mock.invocationCallOrder[0]
+  );
+});
+
+test('an investigation already completed is not completed again', async () => {
+  useSupportStore.setState({
+    supportErrand: errandAt('investigation_phase', ['investigation_completed', 'process_cancelled']),
+  });
+  vi.mocked(getSupportInvestigation).mockResolvedValue({ id: 'investigation-1', status: 'COMPLETED' } as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'investigation_phase',
+      awaitingSignals: [{ name: 'investigation_completed' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton('ready_for_decision');
+  button.click();
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation_completed')
+  );
+  expect(completeSupportInvestigation).not.toHaveBeenCalled();
 });
 
 test('a phase whose gate the process no longer offers says so instead of saying it is done', async () => {
