@@ -133,36 +133,13 @@ export const useDecisionSave = ({
     errandForm?.setValue('parameters', parameters, { shouldDirty: false });
   };
 
-  /**
-   * What a decision that will be printed cannot be saved without, named in the order the fields stand
-   * on the tab. The premises are left to the step that concludes the decision: they are picked in a
-   * card of their own, which says for itself when nothing is chosen.
-   */
-  const missingBeforeSaving = (): string[] =>
-    [
-      !values.outcome && 'decisionText',
-      permit.certificate && !values.validFrom && 'validFrom',
-      permit.certificate && !values.issuedOn && 'executionDate',
-      permit.serving && !values.premisesPhone.trim() && 'premisesPhone',
-      permit.serving && !values.servingArea.trim() && 'servingAreaDescription',
-    ].filter((key): key is string => !!key);
-
   const tell = (message: string, status: 'success' | 'error') =>
     toastMessage({ position: 'bottom', closeable: false, message, status });
 
+  // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
     if (!supportErrand?.id || !editable || !edited) return true;
 
-    const missing = missingBeforeSaving();
-    if (missing.length) {
-      tell(
-        t('common:decision.incomplete', {
-          inputs: missing.map((key) => t(`common:process.actions.permit_inputs.${key}`)).join(', '),
-        }),
-        'error'
-      );
-      return false;
-    }
     if (hasInvalidServingHours(values.scope)) {
       tell(t('common:decision.scope.serving_hours.half_filled'), 'error');
       return false;

@@ -334,6 +334,14 @@ describe('what the permit needs of the errand', () => {
     ).toEqual(['validFrom', 'servingAreaDescription']);
   });
 
+  test('a tobacco permit waits for the outcome and the dates it prints', () => {
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', undefined)).toEqual([
+      'decisionText',
+      'validFrom',
+      'executionDate',
+    ]);
+  });
+
   test('a permit that issues no certificate has nothing to wait for', () => {
     expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual([]);
     expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({

@@ -305,6 +305,7 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
     'premisesPhone',
     'servingAreaDescription',
   ],
+  TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate'],
 };
 
 export const missingDecisionInputs = (permitType: string, parameters: Parameter[] | undefined): string[] =>

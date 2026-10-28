@@ -56,7 +56,7 @@ const makeController = () => {
 };
 
 describe('CreateSupportDecisionDto', () => {
-  it('requires an outcome and accepts the fields the decision carries', async () => {
+  it('refuses a blank outcome and accepts the fields the decision carries', async () => {
     const valid = plainToInstance(CreateSupportDecisionDto, {
       outcome: 'APPROVAL',
       type: 'SERVERINGSTILLSTAND',
@@ -88,6 +88,12 @@ describe('CreateSupportDecisionDto', () => {
     expect(await errorsOf([{ key: '', values: [mockStreet] }])).toMatch(/key/);
     expect(await errorsOf([{ key: 'street', values: mockStreet }])).toMatch(/values/);
     expect(await errorsOf([{ key: 'street', values: [mockStreet], version: 1 }])).toMatch(/version/);
+  });
+
+  it('accepts a draft without an outcome, which is required only when the decision is concluded', async () => {
+    const withoutOutcome = plainToInstance(CreateSupportDecisionDto, { type: 'SERVERINGSTILLSTAND' });
+
+    await expect(validate(withoutOutcome, { whitelist: true, forbidNonWhitelisted: true })).resolves.toEqual([]);
   });
 
   it('refuses a decision without the kind of permit it issues, which PartyAssets needs', async () => {
