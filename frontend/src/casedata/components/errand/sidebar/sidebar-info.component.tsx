@@ -20,6 +20,7 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
+import { compareByDisplayName } from '@common/utils/ad-display-name';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -254,11 +255,9 @@ export const SidebarInfo: React.FC<{}> = () => {
                 aria-label="Tilldela handläggare"
               >
                 {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-                {administrators
-                  .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                  .map((a) => (
-                    <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-                  ))}
+                {administrators.sort(compareByDisplayName).map((a) => (
+                  <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
+                ))}
               </Select>
             </FormControl>
             <FormControl

@@ -1,5 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { compareByDisplayName } from '@common/utils/ad-display-name';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -400,13 +401,11 @@ export const SidebarInfo: FC<{
               value={admin}
             >
               {!supportErrand?.assignedUserId ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-              {administrators
-                .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                .map((a) => (
-                  <Select.Option key={a.adAccount}>
-                    {/* TODO Avatar */} {a.displayName}
-                  </Select.Option>
-                ))}
+              {administrators.sort(compareByDisplayName).map((a) => (
+                <Select.Option key={a.adAccount}>
+                  {/* TODO Avatar */} {a.displayName}
+                </Select.Option>
+              ))}
             </Select>
           </FormControl>
 
