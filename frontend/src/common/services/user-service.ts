@@ -100,6 +100,9 @@ export const getAdminUsers: () => Promise<Admin[]> = () => {
     });
 };
 
+export const getDisplayNameFromADUsername = (username: string | undefined, admins: Admin[]): string | undefined =>
+  admins.find((a) => a.adAccount === username)?.displayName;
+
 export const getInitialsFromADUsername: (username: string, admins: Admin[]) => string | undefined = (
   username,
   admins
