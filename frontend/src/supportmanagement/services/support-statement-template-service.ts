@@ -60,6 +60,7 @@ export interface SupportStatementTemplate {
 interface SupportReferralTemplate extends SupportStatementTemplate {
   counterpartyKey?: string;
   permitKinds?: PermitKindName[];
+  companies?: boolean;
 }
 
 const GENERAL_TEMPLATE = 'referral-general';
@@ -95,6 +96,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'TAX_AGENCY',
     permitKinds: [PermitKind.SERVING],
     persons: SupportReferralPersons.LISTED,
+    companies: true,
   },
   {
     identifier: 'tax-agency-request-serving-inspection',
@@ -102,6 +104,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'TAX_AGENCY',
     permitKinds: [PermitKind.INSPECTION],
     persons: SupportReferralPersons.LISTED,
+    companies: true,
   },
   {
     identifier: 'tax-agency-request-tobacco-company',
@@ -148,6 +151,9 @@ export const supportStatementTemplateOfQuestion = (question: string): SupportSta
 
 export const supportStatementTemplatePersons = (identifier: string): SupportReferralPersonsName =>
   supportStatementTemplateNamed(identifier)?.persons ?? SupportReferralPersons.NONE;
+
+export const supportStatementTemplateAsksForCompanies = (identifier: string): boolean =>
+  !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.companies;
 
 export interface SupportReferralPerson {
   partyId: string;

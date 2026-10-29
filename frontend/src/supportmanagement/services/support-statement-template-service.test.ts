@@ -11,6 +11,7 @@ import {
   chosenReferralPartyIds,
   supportReferralPeople,
   SupportReferralPersons,
+  supportStatementTemplateAsksForCompanies,
   supportStatementTemplateOfQuestion,
   supportStatementTemplateParameters,
   supportStatementTemplatePersons,
@@ -559,6 +560,23 @@ test('a representative the handler ticked no company for is listed without any',
   expect(sent.representatives).toEqual([
     { personalNumber: hyphenatedIdentity(robotNumber), name: 'Erik Exempelsson', companies: [] },
   ]);
+});
+
+test('only the tax agency templates that list the companies ask for them', () => {
+  expect(supportStatementTemplateAsksForCompanies('tax-agency-request-serving')).toBe(true);
+  expect(supportStatementTemplateAsksForCompanies('tax-agency-request-serving-inspection')).toBe(true);
+
+  for (const identifier of [
+    'referral-police',
+    'criminal-record-request',
+    'referral-enforcement-authority',
+    'referral-rescue-service',
+    'tax-agency-request-tobacco-company',
+    'tax-agency-request-tobacco-pbi',
+    'referral-general',
+    'a-template-nobody-has-written',
+  ])
+    expect(supportStatementTemplateAsksForCompanies(identifier)).toBe(false);
 });
 
 const municipalityCodeOf = (code: string) => ({ parameters: [{ key: 'premisesMunicipality', values: [code] }] });

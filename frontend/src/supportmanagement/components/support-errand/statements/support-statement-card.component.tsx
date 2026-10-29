@@ -49,6 +49,7 @@ import {
   type SupportReferralPersonsName,
   type SupportStatementTemplate,
   supportStatementTemplateAsksForADeadline,
+  supportStatementTemplateAsksForCompanies,
   supportStatementTemplateNamed,
   supportStatementTemplateOfQuestion,
   supportStatementTemplateParameters,
@@ -117,11 +118,12 @@ const PeopleChoice: FC<{
   peopleNeeded: SupportReferralPersonsName;
   people: SupportReferralPerson[];
   chosenPartyIds: string[];
+  companiesNeeded: boolean;
   companies: Record<string, ChosenCompany[]>;
   editable: boolean;
   onToggle: (partyId: string) => void;
   onCompanies: (partyId: string, companies: ChosenCompany[]) => void;
-}> = ({ peopleNeeded, people, chosenPartyIds, companies, editable, onToggle, onCompanies }) => {
+}> = ({ peopleNeeded, people, chosenPartyIds, companiesNeeded, companies, editable, onToggle, onCompanies }) => {
   const { t } = useTranslation();
 
   if (peopleNeeded === SupportReferralPersons.NONE) return null;
@@ -150,7 +152,7 @@ const PeopleChoice: FC<{
                 {[person.name, person.roles].filter(Boolean).join(' - ')}
               </Checkbox>
 
-              {chosenPartyIds.includes(person.partyId) ? (
+              {companiesNeeded && chosenPartyIds.includes(person.partyId) ? (
                 <div className="flex gap-8 pl-9">
                   <CornerDownRight size={18} className="mt-8 shrink-0 text-dark-secondary" />
                   <CompanyEngagementChoice
@@ -302,6 +304,7 @@ export const SupportStatementCard: FC<{
   const counterpartyChosen = form.counterpartyName.length > 0;
   const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
   const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
+  const companiesNeeded = supportStatementTemplateAsksForCompanies(templateIdentifier);
   const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
   const asksForADeadline = supportStatementTemplateAsksForADeadline(templateIdentifier);
   const templateProblem = supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople);
@@ -585,6 +588,7 @@ export const SupportStatementCard: FC<{
             peopleNeeded={peopleNeeded}
             people={people}
             chosenPartyIds={chosenPartyIds}
+            companiesNeeded={companiesNeeded}
             companies={companies}
             editable={editable}
             onToggle={togglePerson}

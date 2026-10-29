@@ -84,11 +84,11 @@ const statementForm = {
   outcome: '',
 };
 
-const mountCard = (writable = true) =>
+const mountCard = (writable = true, counterpartyName = 'Skatteverket') =>
   render(
     <SupportStatementCard
       statement={{ id: 'st-1', type: 'REFERRAL', status: 'DRAFT', attachments: [] }}
-      form={statementForm as never}
+      form={{ ...statementForm, counterpartyName } as never}
       problem={undefined}
       errandId="errand-1"
       errandNumber="AOT-26100216"
@@ -103,10 +103,10 @@ const mountCard = (writable = true) =>
 const findOf = (name: string) => document.querySelector(`[data-cy="${name}"]`);
 
 /** The people are only asked for once a template that lists them is chosen. */
-const chooseTheTaxAgencyTemplate = () =>
-  fireEvent.change(findOf('statement-template') as HTMLSelectElement, {
-    target: { value: 'tax-agency-request-serving' },
-  });
+const chooseTemplate = (identifier: string) =>
+  fireEvent.change(findOf('statement-template') as HTMLSelectElement, { target: { value: identifier } });
+
+const chooseTheTaxAgencyTemplate = () => chooseTemplate('tax-agency-request-serving');
 const checkboxOf = (name: string) =>
   [...document.querySelectorAll('[data-cy="statement-people"] input[type="checkbox"]')].find((box) =>
     box.closest('label')?.textContent?.includes(name)
@@ -144,6 +144,17 @@ test('a person the errand knows is offered their companies, and loses the offer 
   fireEvent.click(checkboxOf('Erica Fritz'));
 
   await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-select`)).toBeNull());
+});
+
+test('a template that names the people alone is not asked about their companies', async () => {
+  mountCard(true, 'Polismyndigheten');
+  chooseTemplate('referral-police');
+
+  await waitFor(() => expect(checkboxOf('Erica Fritz')).toBeTruthy());
+
+  expect(checkboxOf('Erica Fritz').checked).toBe(true);
+  expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-select`)).toBeNull();
+  expect(getLegalEntityPersonEngagements).not.toHaveBeenCalled();
 });
 
 test('a person the errand does not know is looked up by their personal number instead', async () => {
