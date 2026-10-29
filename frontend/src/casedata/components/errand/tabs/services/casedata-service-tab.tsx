@@ -14,6 +14,7 @@ import { ServiceListComponent } from '@common/components/services/service-list.c
 import { useErrandAssetServices, usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { getErrandServiceAssetById } from '@common/services/service-assets-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { getUserErrorMessage } from '@common/utils/user-error-message';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import {
   Badge,
@@ -30,6 +31,8 @@ import {
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
 import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+
+import { ServicesMissingPartyAlert } from './services-missing-party-alert.component';
 
 type DateErrors = { startDate?: string; endDate?: string };
 
@@ -100,6 +103,7 @@ export const CasedataServicesTab: FC = () => {
   const assetTypes = useMemo(() => [assetType], [assetType]);
   const errandId = String(errand?.id ?? '');
   const partyId = errand ? getOwnerStakeholder(errand)?.personId ?? '' : '';
+  const errandLocked = errand ? isErrandLocked(errand) : false;
   const serviceAssetParams = useMemo(
     () => ({ municipalityId, partyId, errandId, assetType }),
     [municipalityId, partyId, errandId, assetType]
@@ -172,7 +176,10 @@ export const CasedataServicesTab: FC = () => {
         toast(getToastOptions({ message: 'Insatsen togs bort.', status: 'success' }));
       } catch (e: any) {
         toast(
-          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle tas bort.', status: 'error' })
+          getToastOptions({
+            message: getUserErrorMessage(e, 'Något gick fel när insatsen skulle tas bort.'),
+            status: 'error',
+          })
         );
       } finally {
         setDeletingId(null);
@@ -205,7 +212,10 @@ export const CasedataServicesTab: FC = () => {
         setDateErrors({});
       } catch (e: any) {
         toast(
-          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle sparas.', status: 'error' })
+          getToastOptions({
+            message: getUserErrorMessage(e, 'Något gick fel när insatsen skulle sparas.'),
+            status: 'error',
+          })
         );
       } finally {
         setSubmitting(false);
@@ -306,7 +316,10 @@ export const CasedataServicesTab: FC = () => {
         );
       } catch (e: any) {
         toast(
-          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle uppdateras.', status: 'error' })
+          getToastOptions({
+            message: getUserErrorMessage(e, 'Något gick fel när insatsen skulle uppdateras.'),
+            status: 'error',
+          })
         );
       } finally {
         setEditSubmitting(false);
@@ -334,7 +347,9 @@ export const CasedataServicesTab: FC = () => {
         service kunden har rätt till vid sina resor.
       </p>
 
-      {!(errand ? isErrandLocked(errand) : false) && (
+      {!errandLocked && !partyId && <ServicesMissingPartyAlert />}
+
+      {!errandLocked && !!partyId && (
         <div data-cy="services-form" className="mt-24 max-w-full">
           {uiSchema && schema && (
             <SchemaForm
@@ -428,7 +443,7 @@ export const CasedataServicesTab: FC = () => {
                 services={errandCasedataServices}
                 onRemove={removeService}
                 onEdit={startEdit}
-                readOnly={errand ? isErrandLocked(errand) : false}
+                readOnly={errandLocked}
                 removingId={deletingId}
               />
             )}

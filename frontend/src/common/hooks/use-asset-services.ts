@@ -7,6 +7,7 @@ import {
   mapAssetsToServices,
   Service,
 } from '@common/services/service-assets-service';
+import { getUserErrorMessage } from '@common/utils/user-error-message';
 import type { RJSFSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -65,7 +66,7 @@ function useAssetServices({ municipalityId, partyId, errandId, assetTypes, schem
         setPartyServices(await mapAssetsToServices(municipalityId, assets, schema ?? null));
       }
     } catch (e: any) {
-      setError(e?.message ?? (errandId ? 'Kunde inte hämta insatser' : 'Kunde inte hämta personens insatser'));
+      setError(getUserErrorMessage(e, errandId ? 'Kunde inte hämta insatser' : 'Kunde inte hämta personens insatser'));
     } finally {
       setLoading(false);
     }
