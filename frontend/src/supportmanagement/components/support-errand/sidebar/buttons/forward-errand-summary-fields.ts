@@ -1,12 +1,12 @@
+import { sanitizedInline } from '@common/services/sanitizer-service';
+
 const swedishList = new Intl.ListFormat('sv', { style: 'long', type: 'conjunction' });
 
-/** Whether rich text holds any visible text; an emptied editor leaves markup such as `<p><br></p>`. */
-export const hasVisibleText = (html?: string): boolean =>
-  !!html &&
-  html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .trim().length > 0;
+/**
+ * Whether rich text holds any visible text; an emptied editor leaves markup such as `<p><br></p>`. The text
+ * comes from the HTML sanitizer, which also turns `&nbsp;` into a space that `trim` removes.
+ */
+export const hasVisibleText = (html?: string): boolean => !!html && sanitizedInline(html).trim().length > 0;
 
 /**
  * The note telling which fields are not carried over because the errand lacks them, e.g. "Ärendebeskrivning
