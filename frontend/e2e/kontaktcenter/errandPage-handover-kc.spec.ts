@@ -131,6 +131,49 @@ test.describe('errand handover to another namespace', () => {
     await expect(closeModal).toBeHidden();
   });
 
+  test('names the fields the errand lacks instead of showing them empty', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, description: '<p><br></p>', stakeholders: [] },
+      { method: 'GET' }
+    );
+
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+
+    const summary = page.locator('[data-cy="handover-autocopy"]');
+    const missingFields = summary.locator('[data-cy="forward-missing-fields"]');
+    await expect(missingFields).toContainText('Uppgifter som saknas');
+    await expect(missingFields).toContainText(
+      'Ärendebeskrivning och parter saknas i detta ärende och kommer därför inte att överlämnas.'
+    );
+    await expect(summary.getByText('Ärendebeskrivning', { exact: true })).toHaveCount(0);
+    await expect(summary.getByText('Parter', { exact: true })).toHaveCount(0);
+    await expect(summary.getByText('Ärendenummer', { exact: true })).toBeVisible();
+  });
+
+  test('shows no missing-fields note when the errand has every field', async ({ page, dismissCookieConsent }) => {
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+
+    const summary = page.locator('[data-cy="handover-autocopy"]');
+    await expect(summary.getByText('Parter', { exact: true })).toBeVisible();
+    await expect(summary.locator('[data-cy="forward-missing-fields"]')).toHaveCount(0);
+  });
+
   /** Hands the KC errand over to the label target, given the preview it gets; returns the sent mapping. */
   const handOverToLabelTarget = async (
     {
