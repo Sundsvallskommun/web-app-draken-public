@@ -21,7 +21,7 @@ import ApiService from '@/services/api.service';
 import {
   getAllowedHandoverTargets,
   getCasedataForwardTarget,
-  getLabelTarget,
+  getCategorizationRoot,
   isAllowedHandoverTarget,
   isCasedataForwardTarget,
 } from '@/services/handover-targets.service';
@@ -115,7 +115,7 @@ export class SupportHandoverController {
   ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${namespace}/metadata`;
     const res = await this.apiService.get<MetadataResponse>({ url }, req.user);
-    return response.status(200).send(withCategorizationLabels(res.data, getLabelTarget(namespace)?.categorizationRoot));
+    return response.status(200).send(withCategorizationLabels(res.data, getCategorizationRoot(namespace)));
   }
 
   @Post('/supporterrands/:municipalityId/:id/handover/preview')
@@ -153,11 +153,7 @@ export class SupportHandoverController {
       return this.rejectTarget(data.target?.namespace, response);
     }
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
-    const { message, ...rest } = data;
-    // SupportManagement requires a classification; a label target gets its new-errand placeholder.
-    const placeholder = getLabelTarget(data.target?.namespace)?.classification;
-    const handoverRequest =
-      placeholder && !rest.mapping?.classification ? { ...rest, mapping: { ...rest.mapping, classification: placeholder } } : rest;
+    const { message, ...handoverRequest } = data;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;
     const res = await this.apiService.post<HandoverErrand, HandoverErrandRequest>(
       {

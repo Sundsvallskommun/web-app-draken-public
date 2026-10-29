@@ -11,7 +11,7 @@ type AutoFixtures = {
   blockAceJsApi: void;
 };
 
-type BaseFixtures = {
+export type BaseFixtures = {
   mockRoute: (
     pattern: string | RegExp,
     response: unknown,
