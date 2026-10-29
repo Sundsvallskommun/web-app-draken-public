@@ -195,22 +195,29 @@ describe('support-errand.service', () => {
   });
 
   describe('getNewErrandDefaults', () => {
-    it('returns the classification configured for each drake', () => {
-      expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
-      expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
-      expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
+    it('gives a classification only to ROB and KA', () => {
+      const withClassification = Object.entries(NEW_ERRAND_DEFAULTS)
+        .filter(([, defaults]) => defaults.classification)
+        .map(([application]) => application);
+      expect(withClassification.sort()).toEqual(['KA', 'ROB']);
+      expect(getNewErrandDefaults('KA')?.classification).toEqual({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' });
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'ROB', 'SE']);
+    });
+
+    it('gives the label drakes their default labels and no classification', () => {
+      expect(getNewErrandDefaults('KC')).toEqual({ labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' } });
+      expect(getNewErrandDefaults('LOP')?.classification).toBeUndefined();
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
     });
 
-    it('returns undefined for an unknown or missing application', () => {
+    it('returns undefined for an unknown or missing application, and for MSVA which has no defaults', () => {
+      expect(getNewErrandDefaults('MSVA')).toBeUndefined();
       expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
       expect(getNewErrandDefaults(undefined)).toBeUndefined();
     });

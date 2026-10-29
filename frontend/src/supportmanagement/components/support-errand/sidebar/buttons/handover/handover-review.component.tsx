@@ -7,10 +7,12 @@ import { SupportHandoverState } from './use-support-handover';
 
 const warningText = (warning: Warning): string => {
   if (warning.type === WarningType.PARAMETER_SCHEMA_MISMATCH) {
-    return `Parametern "${warning.key}" kan inte mappas: ${warning.detail ?? 'schema saknas i målnamespace'}`;
+    return `Parametern "${warning.key}" kan inte mappas: ${
+      warning.detail ?? 'schemat saknas hos den mottagande draken'
+    }`;
   }
   if (warning.type === WarningType.ROLE_NOT_IN_TARGET) {
-    return `Rollen "${warning.value}" finns inte i målnamespace och kommer inte att kopieras.`;
+    return `Rollen "${warning.value}" finns inte hos den mottagande draken och kommer inte att kopieras.`;
   }
   return warning.detail ?? 'Varning';
 };
@@ -83,6 +85,8 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ h
   const classificationMapping = mappingRequired?.classification;
   const contactReasonMapping = mappingRequired?.contactReason;
   const typeCandidates = classificationMapping?.candidates?.[handover.mapping.category] ?? [];
+  // Category and type are required when the target offers categories, as `requiredMappingsAnswered` checks.
+  const classificationRequiredMark = Object.keys(classificationMapping?.candidates ?? {}).length > 0 ? '*' : '';
 
   let classification: React.ReactNode;
   if (handover.targetUsesLabels) {
@@ -109,7 +113,7 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ h
       <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
         <FormControl id="handover-category" className="w-full">
           <div className="flex items-center gap-8">
-            <FormLabel className="font-semibold">Kategori</FormLabel>
+            <FormLabel className="font-semibold">Kategori{classificationRequiredMark}</FormLabel>
             {classificationMapping.suggestedCategory &&
               handover.mapping.category === classificationMapping.suggestedCategory && <HandoverAutoSuggestIndicator />}
           </div>
@@ -132,7 +136,7 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ h
           </Select>
         </FormControl>
         <FormControl id="handover-type" className="w-full">
-          <FormLabel className="font-semibold">Ärendetyp</FormLabel>
+          <FormLabel className="font-semibold">Ärendetyp{classificationRequiredMark}</FormLabel>
           <Select
             className="w-full"
             data-cy="handover-type-select"
@@ -164,7 +168,8 @@ export const HandoverReview: React.FC<{ handover: SupportHandoverState }> = ({ h
       {contactReasonMapping && contactReasonMapping.candidates.length > 0 && (
         <FormControl id="handover-contactreason" className="w-full md:w-1/2 md:pr-12">
           <div className="flex items-center gap-8">
-            <FormLabel className="font-semibold">Kontaktorsak</FormLabel>
+            {/* Shown only when there are candidates, which is exactly when an answer is required. */}
+            <FormLabel className="font-semibold">Kontaktorsak*</FormLabel>
             {contactReasonMapping.suggested && handover.mapping.contactReason === contactReasonMapping.suggested && (
               <HandoverAutoSuggestIndicator />
             )}

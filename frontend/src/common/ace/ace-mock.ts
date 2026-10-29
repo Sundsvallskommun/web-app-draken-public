@@ -3,10 +3,12 @@ import { AceScreenPopMessage } from './ace-jsapi.types';
 
 // Test person number from Skatteverket, not a real person (same as backend/src/tests/helpers/mock-data.ts).
 const MOCK_PERSON_NUMBER = '199001012385';
+// In the range PTS reserves for fiction, like the number in Telia's example.
+const MOCK_PHONE_NUMBER = '+46701740635';
 const CHANNEL_NAME = 'draken-ace-mock';
 
 interface AceMockControls {
-  screenPop: (personNumber?: string) => void;
+  screenPop: (personNumber?: string, phoneNumber?: string) => void;
   connect: () => void;
   disconnect: () => void;
 }
@@ -22,6 +24,7 @@ declare global {
  * Enable with NEXT_PUBLIC_ACE_MOCK=true and trigger a call from the browser console of any Draken tab:
  *   drakenAceMock.screenPop()            // Skatteverket test person
  *   drakenAceMock.screenPop('19YYMMDDNNNN')
+ *   drakenAceMock.screenPop('')           // caller who did not identify, known by phone number
  *   drakenAceMock.disconnect() / drakenAceMock.connect()
  * Events are shared between tabs, like a single ACE Interact session, so the tab that runs the
  * integration receives them wherever they are triggered.
@@ -45,8 +48,8 @@ export const installAceMock = (): void => {
 
   window.drakenAceMock = {
     // Shaped after Telia's afterNormalAccept example, with the identity replaced by a test person.
-    screenPop: (personNumber = MOCK_PERSON_NUMBER) => {
-      if (!/^\d{12}$/.test(personNumber)) {
+    screenPop: (personNumber = MOCK_PERSON_NUMBER, phoneNumber = MOCK_PHONE_NUMBER) => {
+      if (personNumber && !/^\d{12}$/.test(personNumber)) {
         console.warn('[ACE-mock] ACE skickar personnumret som 12 siffror utan bindestreck (YYYYMMDDNNNN).');
       }
       console.info(
@@ -61,10 +64,11 @@ export const installAceMock = (): void => {
           contactStatus: 'active',
           currentContactsType: 'ivr',
           contactData: {
+            Ani: phoneNumber,
             contactSourceType: 'ivr',
             direction: 'incoming',
             media: 'call',
-            eidUserPnr: personNumber,
+            ...(personNumber && { eidUserPnr: personNumber }),
           },
         },
       };
@@ -74,5 +78,6 @@ export const installAceMock = (): void => {
     disconnect: () => dispatch('disconnected'),
   };
 
-  setTimeout(() => window.drakenAceMock?.connect(), 0);
+  // Connected by the tab that runs the integration once it listens (see AceConnector), since the
+  // fake, like ACE, does not repeat events to listeners that register later.
 };

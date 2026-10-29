@@ -15,6 +15,16 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
+const errandWithAdministrator = (adAccount: string, firstName: string, lastName: string) => ({
+  ...mockMexErrand_base,
+  data: {
+    ...mockMexErrand_base.data,
+    stakeholders: mockMexErrand_base.data.stakeholders.map((stakeholder) =>
+      stakeholder.roles?.includes('ADMINISTRATOR') ? { ...stakeholder, adAccount, firstName, lastName } : stakeholder
+    ),
+  },
+});
+
 test.describe('Errand page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' }, { method: 'GET' });
@@ -87,6 +97,91 @@ test.describe('Errand page', () => {
     );
     const body = request.postDataJSON();
     expect(body.adAccount).toBe('TESTADMIN1');
+  });
+
+  test('refetches the errand only after a slow administrator assignment has finished', async ({ page, mockRoute }) => {
+    await mockRoute('**/errands/*', mockMexErrand_base, { method: 'PATCH' });
+    const reassignedErrand = errandWithAdministrator('TESTADMIN1', 'Katarina', 'Testhandläggare');
+    let assignmentFinished = false;
+    let lastErrandFetchSawAssignment = false;
+
+    await page.route('**/errands/*/stakeholders', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      assignmentFinished = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockMexErrand_base.data.stakeholders),
+      });
+    });
+    await page.route(/\/errand\/\d+(\?.*)?$/, async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      lastErrandFetchSawAssignment = assignmentFinished;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(assignmentFinished ? reassignedErrand : mockMexErrand_base),
+      });
+    });
+
+    await page.locator('[data-cy="admin-input"]').selectOption('Testhandläggare Katarina');
+    await page.locator('[data-cy="save-and-continue-button"]').filter({ hasText: 'Spara ärende' }).click();
+
+    await expect(page.getByText('Ärendet sparades').first()).toBeVisible();
+    expect(lastErrandFetchSawAssignment).toBe(true);
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('Testhandläggare Katarina');
+  });
+
+  test('shows the self-assigned administrator without a reload', async ({ page, mockRoute }) => {
+    const errandOfOtherAdministrator = errandWithAdministrator('TESTADMIN2', 'Gunilla', 'Testhandläggare');
+    let assignmentFinished = false;
+
+    await mockRoute('**/errand/errandNumber/*', errandOfOtherAdministrator, { method: 'GET' });
+    await page.route('**/errands/*/stakeholders', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      assignmentFinished = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockMexErrand_base.data.stakeholders),
+      });
+    });
+    await page.route(/\/errand\/\d+(\?.*)?$/, async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(assignmentFinished ? mockMexErrand_base : errandOfOtherAdministrator),
+      });
+    });
+    await page.reload();
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('Testhandläggare Gunilla');
+
+    await page.getByRole('button', { name: 'Ta ärende', exact: true }).click();
+
+    await expect(page.getByText('Handläggare sparades').first()).toBeVisible();
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('My Testsson');
+  });
+
+  test('keeps the saved administrator in the assigned text until the errand is saved', async ({ page, mockRoute }) => {
+    const assignedErrand = {
+      ...mockMexErrand_base,
+      data: { ...mockMexErrand_base.data, status: { ...mockMexErrand_base.data.status, statusType: 'Tilldelat' } },
+    };
+    await mockRoute('**/errand/errandNumber/*', assignedErrand, { method: 'GET' });
+    await page.route(/\/errand\/\d+(\?.*)?$/, async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(assignedErrand) });
+    });
+    await page.reload();
+
+    const assignedText = page.locator('p', { hasText: 'tilldelades ärendet' });
+    await expect(assignedText).toContainText('My Testsson');
+
+    await page.locator('[data-cy="admin-input"]').selectOption('Testhandläggare Katarina');
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('Testhandläggare Katarina');
+    await expect(assignedText).toContainText('My Testsson');
   });
 
   test('manages Status', async ({ page, mockRoute }) => {

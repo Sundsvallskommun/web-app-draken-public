@@ -1,5 +1,7 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { getDisplayNameFromADUsername } from '@common/services/user-service';
+import { compareByDisplayName } from '@common/utils/ad-display-name';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -101,6 +103,11 @@ export const SidebarInfo: FC<{
   const formIsNotValid = useMemo(() => !formState.isValid, [formState.isValid]);
 
   const { admin, status, priority } = watch();
+  // The saved administrator, unlike admin which follows the select before the errand is saved.
+  const savedAdminName = useMemo(
+    () => getDisplayNameFromADUsername(supportErrand?.assignedUserId, administrators) || '',
+    [supportErrand, administrators]
+  );
 
   const onSubmit = async () => {
     setError(false);
@@ -172,11 +179,7 @@ export const SidebarInfo: FC<{
 
   useEffect(() => {
     if (administrators && supportErrand?.assignedUserId) {
-      const match =
-        administrators.filter((a) => {
-          return a.adAccount === supportErrand.assignedUserId;
-        })?.[0]?.displayName || '';
-      setValue('admin', match);
+      setValue('admin', savedAdminName);
     } else {
       setValue('admin', 'Välj handläggare');
     }
@@ -251,7 +254,7 @@ export const SidebarInfo: FC<{
         <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
       </div>
       <p className="text-small">
-        <strong>{getValues('admin')}</strong> {info}
+        <strong>{savedAdminName}</strong> {info}
       </p>
     </>
   );
@@ -400,13 +403,11 @@ export const SidebarInfo: FC<{
               value={admin}
             >
               {!supportErrand?.assignedUserId ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-              {administrators
-                .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                .map((a) => (
-                  <Select.Option key={a.adAccount}>
-                    {/* TODO Avatar */} {a.displayName}
-                  </Select.Option>
-                ))}
+              {administrators.sort(compareByDisplayName).map((a) => (
+                <Select.Option key={a.adAccount}>
+                  {/* TODO Avatar */} {a.displayName}
+                </Select.Option>
+              ))}
             </Select>
           </FormControl>
 
@@ -496,11 +497,11 @@ export const SidebarInfo: FC<{
                   <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
                 </div>
                 <p className="text-small">
-                  {getValues('admin') === 'Välj handläggare' ? (
+                  {!supportErrand?.assignedUserId ? (
                     <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
                   ) : (
                     <span className="mb-24">
-                      <strong>{getValues('admin')}</strong>
+                      <strong>{savedAdminName}</strong>
                       {supportErrand?.status === Status.SUSPENDED
                         ? ' parkerade ärendet med en påminnelse '
                         : ' tilldelades ärendet'}{' '}

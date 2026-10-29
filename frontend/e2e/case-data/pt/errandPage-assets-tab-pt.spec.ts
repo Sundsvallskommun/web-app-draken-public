@@ -1,7 +1,8 @@
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
+import { Role } from '@casedata/interfaces/role';
 import { MODAL_DIALOG } from '../../utils/modal';
 
-import { expect,test } from '../../fixtures/base.fixture';
+import { expect, test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockAttachmentsPT } from '../fixtures/mockAttachments';
@@ -132,6 +133,17 @@ const mockFTErrandLocked = {
       description: 'Ärendet är beslutat',
       created: '2025-01-01T00:00:00.000+01:00',
     },
+  },
+  message: 'success',
+};
+
+// An owner added manually (without a person lookup) has no personId, so there is no partyId for assets.
+const mockFTErrandWithManualOwner = {
+  data: {
+    ...mockFTErrand.data,
+    stakeholders: mockFTErrand.data.stakeholders.map((stakeholder) =>
+      stakeholder.roles.includes(Role.APPLICANT) ? { ...stakeholder, personId: undefined } : stakeholder
+    ),
   },
   message: 'success',
 };
@@ -485,9 +497,7 @@ test.describe('Errand page Insatser tab', () => {
   test('calls the draft asset endpoint when removing a service', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/asset-drafts/*', { data: 'ok', message: 'ok' }, { method: 'DELETE' });
     await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
-    const deleteRequest = page.waitForRequest(
-      (req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'DELETE'
-    );
+    const deleteRequest = page.waitForRequest((req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'DELETE');
     await page.locator('[data-cy="remove-service-button"]').first().click();
     await deleteRequest;
   });
@@ -497,9 +507,7 @@ test.describe('Errand page Insatser tab', () => {
     await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
     await page.locator('[data-cy="edit-service-button"]').first().click();
     await expect(page.locator(MODAL_DIALOG)).toBeVisible();
-    const patchRequest = page.waitForRequest(
-      (req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'PATCH'
-    );
+    const patchRequest = page.waitForRequest((req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'PATCH');
     await page.locator("[data-cy='schema-submit-button']").filter({ hasText: 'Spara' }).click();
     await patchRequest;
   });
@@ -511,11 +519,21 @@ test.describe('Errand page Insatser tab', () => {
     await page.locator('select#root_type').selectOption('privat_fritid');
     await page.locator('input#root_validFrom').fill('2023-01-01');
     await page.locator('[data-cy="service-start-date"]').fill('2023-01-01');
-    const postRequest = page.waitForRequest(
-      (req) => /\/asset-drafts/.test(req.url()) && req.method() === 'POST'
-    );
+    const postRequest = page.waitForRequest((req) => /\/asset-drafts/.test(req.url()) && req.method() === 'POST');
     await page.locator("[data-cy='schema-submit-button']").filter({ hasText: 'Lägg till' }).click();
     await postRequest;
+  });
+
+  test.describe('when the owner has no person lookup', () => {
+    test.beforeEach(async ({ mockRoute }) => {
+      await mockRoute('**/errand/errandNumber/*', mockFTErrandWithManualOwner);
+    });
+
+    test('hides the add form and explains why', async ({ page, mockRoute, dismissCookieConsent }) => {
+      await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAssetEmpty);
+      await expect(page.locator('[data-cy="services-missing-party-alert"]')).toBeVisible();
+      await expect(page.locator('[data-cy="services-form"]')).toHaveCount(0);
+    });
   });
 
   test.describe('when errand is locked', () => {
