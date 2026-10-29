@@ -146,17 +146,18 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       dataToSave = dirtyData as Partial<IErrand> & { municipalityId: string };
     }
 
-    if (formState.dirtyFields['administratorName']) {
-      const admin = administrators.find((a: any) => a.displayName === getValues().administratorName);
-      if (!!admin) {
-        setAdministrator(municipalityId, errand!, admin);
-        if (admin.adAccount !== user.username) {
-          updateErrandStatus(municipalityId, errand!.id.toString(), ErrandStatus.Tilldelat);
+    try {
+      // Awaited so the errand fetched at the end of the save already has the new administrator and status.
+      if (formState.dirtyFields['administratorName']) {
+        const admin = administrators.find((a: any) => a.displayName === getValues().administratorName);
+        if (!!admin) {
+          await setAdministrator(municipalityId, errand!, admin);
+          if (admin.adAccount !== user.username) {
+            await updateErrandStatus(municipalityId, errand!.id.toString(), ErrandStatus.Tilldelat);
+          }
         }
       }
-    }
 
-    try {
       if (dataToSave.stakeholders) {
         for (const stakeholder of dataToSave.stakeholders) {
           if (stakeholder.id && !stakeholder.removed && stakeholder.newRole !== 'ADMINISTRATOR') {
