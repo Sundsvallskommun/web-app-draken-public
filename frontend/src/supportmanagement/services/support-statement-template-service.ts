@@ -1,9 +1,11 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { formatOrgNr, OrgNumberFormat } from '@common/services/helper-service';
 import { engagementRoles } from '@common/services/legal-entity-service';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
+import type { ChosenCompany } from '../components/support-errand/company-engagements/company-engagement-choice.component';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
-import { getStakeholderOrganizationNumber } from './support-errand-service';
+import { getErrandParameterValue, getStakeholderOrganizationNumber } from './support-errand-service';
 import {
   engagementIsPerson,
   hyphenatedIdentity,
@@ -155,6 +157,7 @@ export interface SupportReferralPerson {
   personalNumber: string;
   roles: string;
   marked: boolean;
+  onTheErrand: boolean;
 }
 
 const splitName = (name: string): { firstName: string; lastName: string } => {
@@ -175,6 +178,7 @@ const peopleOfTheCompany = (candidates: SupportPbiCandidate[]): SupportReferralP
     personalNumber: hyphenatedIdentity(engagement.identity?.code),
     roles: engagementRoles(engagement),
     marked,
+    onTheErrand: !!stakeholder?.externalId,
   }));
 
 const referralPersonOfStakeholder = (stakeholder: SupportStakeholderFormModel): SupportReferralPerson => ({
@@ -185,6 +189,7 @@ const referralPersonOfStakeholder = (stakeholder: SupportStakeholderFormModel): 
   personalNumber: hyphenatedIdentity(stakeholder.personNumber),
   roles: pbiOf(stakeholder).role,
   marked: true,
+  onTheErrand: !!stakeholder.externalId,
 });
 
 const peopleMarkedApartFromTheCompany = (
@@ -268,6 +273,27 @@ const caseTypeOfErrand = (errand: SupportErrand | undefined): string => {
   return label?.displayName?.toLocaleLowerCase('sv-SE') ?? '';
 };
 
+/**
+ * The municipality the permit is decided for, worded as the tax agency templates word it. The
+ * e-service writes the applicant's choice as a municipality code on the errand; the two codes it
+ * offers are the ones below.
+ */
+const MUNICIPALITY_OF_CODE: Record<string, string> = {
+  '2281': 'Sundsvalls kommun',
+  '2262': 'Timrå kommun',
+};
+
+/** Errands registered before the e-service asked carry no code, and were all Sundsvall's own. */
+const MUNICIPALITY_WITHOUT_A_CODE = 'Sundsvalls kommun';
+
+const municipalityOfErrand = (errand: SupportErrand | undefined): string =>
+  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, 'premisesMunicipality')] ??
+  MUNICIPALITY_WITHOUT_A_CODE;
+
+/**
+ * The authority asking, which is the alcohol and tobacco unit itself. It handles the permits of
+ * every municipality the e-service offers, so it is the same whichever one the errand names.
+ */
 const REQUESTER = {
   requesterAuthority: 'Sundsvalls kommun, Individ- och arbetsmarknadsförvaltningen, Alkohol- och tobaksenheten',
   requesterAddress: 'Sundsvalls kommun',
@@ -284,6 +310,7 @@ export interface SupportStatementTemplateFacts {
   dueAt: string;
   people?: SupportReferralPerson[];
   person?: SupportReferralPerson;
+  companies?: Record<string, ChosenCompany[]>;
 }
 
 const listedPeople = (people: SupportReferralPerson[] | undefined) =>
@@ -293,8 +320,18 @@ const listedPeople = (people: SupportReferralPerson[] | undefined) =>
     roles: person.roles,
   }));
 
-const listedRepresentatives = (people: SupportReferralPerson[] | undefined) =>
-  (people ?? []).map((person) => ({ personalNumber: person.personalNumber, name: person.name }));
+const listedRepresentatives = (
+  people: SupportReferralPerson[] | undefined,
+  companies: Record<string, ChosenCompany[]> | undefined
+) =>
+  (people ?? []).map((person) => ({
+    personalNumber: person.personalNumber,
+    name: person.name,
+    companies: (companies?.[person.partyId] ?? []).map((company) => ({
+      name: company.name,
+      orgNumber: formatOrgNr(company.organizationNumber, OrgNumberFormat.DASH) || company.organizationNumber,
+    })),
+  }));
 
 export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
   const premises = supportStatementPremises(facts.errand);
@@ -304,6 +341,7 @@ export const supportStatementTemplateParameters = (facts: SupportStatementTempla
   const applicantOrgNumber = organizationNumberOf(owner);
   const caseNumber = facts.errand?.errandNumber ?? '';
   const documentDate = new Date().toISOString().slice(0, 10);
+  const municipality = municipalityOfErrand(facts.errand);
   const premisesFields = {
     premisesName: premises.name,
     premisesStreet: premises.street,
@@ -340,11 +378,12 @@ export const supportStatementTemplateParameters = (facts: SupportStatementTempla
     return {
       handlerName: facts.handlerName,
       handlerEmail: facts.handlerEmail,
+      municipality,
       documentDate,
       ...premisesFields,
       permitHolderName: applicantName,
       permitHolderOrgNumber: applicantOrgNumber,
-      representatives: listedRepresentatives(facts.people),
+      representatives: listedRepresentatives(facts.people, facts.companies),
     };
   }
 
@@ -352,12 +391,13 @@ export const supportStatementTemplateParameters = (facts: SupportStatementTempla
     return {
       handlerName: facts.handlerName,
       handlerEmail: facts.handlerEmail,
+      municipality,
       documentDate,
       caseType: caseTypeOfErrand(facts.errand),
       ...premisesFields,
       applicantName,
       applicantOrgNumber,
-      representatives: listedRepresentatives(facts.people),
+      representatives: listedRepresentatives(facts.people, facts.companies),
     };
   }
 

@@ -13,6 +13,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+const searchPerson = vi.fn();
+vi.mock('@common/services/adress-service', () => ({ searchPerson: (...args: unknown[]) => searchPerson(...args) }));
+
 const getLegalEntityPersonEngagements = vi.fn();
 vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -20,6 +23,7 @@ vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
 }));
 
 const EDWIN = 'edwin';
+const FOUND_PARTY_ID = 'd1eda732-5aec-45e2-a673-4debd42b2f04';
 const EDWIN_PARTY_ID = 'b1f3a0a6-6a61-4a7e-9d3a-9a1f2e0c8a11';
 // The company data writes organization numbers without a hyphen; the mock keeps the one users type.
 const DRIVEN = mockEnv.mockSecondaryOrganizationNumber.replace('-', '');
@@ -49,17 +53,18 @@ const mountBlock = (person: SupportStakeholderFormModel = edwin, writable = true
   render(<EngagementsBlock person={person} writable={writable} onChange={onChange} />);
 
 const searchFieldOf = () =>
-  document.querySelector(`[data-cy="pbi-engagements-select-${EDWIN}"] input`) as HTMLInputElement;
+  document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-select"] input`) as HTMLInputElement;
 
 const chipFor = (organizationNumber: string) =>
-  document.querySelector(`[data-cy="pbi-engagement-chosen-${EDWIN}-${organizationNumber}"]`) as HTMLButtonElement;
+  document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-chip-${organizationNumber}"]`) as HTMLButtonElement;
 
 const boxFor = (organizationNumber: string) =>
-  document.querySelector(`[data-cy="pbi-engagement-${EDWIN}-${organizationNumber}"]`) as HTMLInputElement;
+  document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-option-${organizationNumber}"]`) as HTMLInputElement;
 
 beforeEach(() => {
   vi.clearAllMocks();
   getLegalEntityPersonEngagements.mockResolvedValue(ENGAGEMENTS);
+  searchPerson.mockResolvedValue({ personId: FOUND_PARTY_ID });
 });
 
 afterEach(cleanup);
@@ -107,21 +112,22 @@ test('a person without engagements is told so, and a failure is told apart from 
   getLegalEntityPersonEngagements.mockResolvedValue([]);
   const { unmount } = mountBlock();
 
-  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-empty-${EDWIN}"]`)).toBeTruthy());
+  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-empty"]`)).toBeTruthy());
   unmount();
 
   getLegalEntityPersonEngagements.mockRejectedValue(new Error('no answer'));
   mountBlock();
 
-  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-error-${EDWIN}"]`)).toBeTruthy());
+  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-error"]`)).toBeTruthy());
 });
 
-test('the personal number is never what the company data is asked for, since the errand does not carry one', async () => {
+test('the personal number is never what the company data is asked for, only what the party id is found by', async () => {
   mountBlock({ ...edwin, externalId: undefined } as SupportStakeholderFormModel);
 
-  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-${EDWIN}"]`)).toBeTruthy());
+  await waitFor(() => expect(getLegalEntityPersonEngagements).toHaveBeenCalled());
 
-  expect(getLegalEntityPersonEngagements).not.toHaveBeenCalled();
+  expect(getLegalEntityPersonEngagements).toHaveBeenCalledWith(FOUND_PARTY_ID);
+  expect(getLegalEntityPersonEngagements).not.toHaveBeenCalledWith(mockEnv.mockPersonNumber);
 });
 
 test('the chosen companies stand under the combobox as chips, named and nothing more', async () => {
@@ -151,4 +157,24 @@ test('a passed step leaves the choice as it is', async () => {
   await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
   expect(searchFieldOf().disabled).toBe(true);
+});
+
+test('a person marked before the errand knew them is looked up by their personal number', async () => {
+  const withoutPartyId = { ...edwin, externalId: undefined, personNumber: mockEnv.mockSecondaryPersonNumberDashed };
+
+  mountBlock(withoutPartyId as SupportStakeholderFormModel);
+
+  await waitFor(() => expect(searchPerson).toHaveBeenCalledWith(mockEnv.mockSecondaryPersonNumberDashed));
+  await waitFor(() => expect(getLegalEntityPersonEngagements).toHaveBeenCalledWith(FOUND_PARTY_ID));
+  await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
+});
+
+test('a person nobody can look up is told so, rather than shown an empty list', async () => {
+  vi.mocked(searchPerson).mockResolvedValue(undefined);
+  const withoutPartyId = { ...edwin, externalId: undefined, personNumber: mockEnv.mockSecondaryPersonNumberDashed };
+
+  mountBlock(withoutPartyId as SupportStakeholderFormModel);
+
+  await waitFor(() => expect(document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-unknown"]`)).toBeTruthy());
+  expect(getLegalEntityPersonEngagements).not.toHaveBeenCalled();
 });

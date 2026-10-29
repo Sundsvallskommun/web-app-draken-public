@@ -621,7 +621,17 @@
     "people_empty": "Inga personer med engagemang i bolaget kunde hämtas.",
     "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf",
     "locked_to_underlay": "Remissinstans och mall är låsta till det underlag som redan skapats. Behöver du remittera till någon annan, lägg till en ny remiss.",
-    "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen."
+    "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen.",
+    "companies": {
+      "choose": "Bolag som ska undersökas i begäran",
+      "placeholder": "Välj bolag",
+      "search": "Sök bolag",
+      "remove": "Ta bort {{company}} från begäran",
+      "loading": "Hämtar bolagsengagemang",
+      "empty": "Inga bolagsengagemang hittades för {{person}}.",
+      "error": "Bolagsengagemangen kunde inte hämtas.",
+      "unknown": "Bolagsengagemang kan inte hämtas för {{person}}, personen kunde inte slås upp."
+    }
   },
   "personal_suitability": {
     "label": "Personlig lämplighet",
@@ -660,7 +670,8 @@
     "remove": "Ta bort {{company}} från underlaget",
     "loading": "Hämtar bolagsengagemang",
     "empty": "Inga bolagsengagemang hittades för {{person}}.",
-    "error": "Bolagsengagemangen kunde inte hämtas."
+    "error": "Bolagsengagemangen kunde inte hämtas.",
+    "unknown": "Bolagsengagemang kan inte hämtas för {{person}}, personen kunde inte slås upp."
   },
   "pbi_motivation": {
     "label": "Motivering",

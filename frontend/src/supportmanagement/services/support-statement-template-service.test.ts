@@ -54,6 +54,7 @@ const people = [
     personalNumber: hyphenatedIdentity(robotNumber),
     roles: 'Styrelseledamot',
     marked: true,
+    onTheErrand: true,
   },
 ];
 
@@ -273,6 +274,7 @@ const mariaAsReferralPerson = {
   personalNumber: hyphenatedIdentity(androidNumber),
   roles: 'VD, Styrelsesuppleant',
   marked: true,
+  onTheErrand: true,
 };
 
 const erikByHand = {
@@ -324,6 +326,7 @@ test('a person marked by hand is offered beside the ones the company data names'
       personalNumber: hyphenatedIdentity(robotNumber),
       roles: 'Firmatecknare',
       marked: true,
+      onTheErrand: true,
     },
   ]);
 });
@@ -466,6 +469,7 @@ test('every parameter the templates require of us is sent, the rest they default
       'documentDate',
       'handlerName',
       'handlerEmail',
+      'municipality',
       'representatives',
       ...PREMISES,
     ],
@@ -473,6 +477,7 @@ test('every parameter the templates require of us is sent, the rest they default
       'documentDate',
       'handlerName',
       'handlerEmail',
+      'municipality',
       'permitHolderName',
       'permitHolderOrgNumber',
       'representatives',
@@ -512,4 +517,90 @@ test('the template of an underlay is found again from the question it was writte
 test('a question nobody wrote from a template leaves the card without one', () => {
   expect(supportStatementTemplateOfQuestion('')).toBeUndefined();
   expect(supportStatementTemplateOfQuestion('Något handläggaren skrev själv')).toBeUndefined();
+});
+
+test('the companies the handler ticked stand under the representative they belong to', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'tax-agency-request-serving',
+    counterpartyName: 'Skatteverket',
+    errand: errandOf(),
+    people,
+    companies: {
+      [people[0].partyId]: [
+        { organizationNumber: mockEnv.mockOrganizationNumber.replace('-', ''), name: 'Drivet AB' },
+        { organizationNumber: '5569999999', name: 'Ogiltigt nummer AB' },
+      ],
+    },
+  });
+
+  expect(sent.representatives).toEqual([
+    {
+      personalNumber: hyphenatedIdentity(robotNumber),
+      name: 'Erik Exempelsson',
+      companies: [
+        { name: 'Drivet AB', orgNumber: mockEnv.mockOrganizationNumber },
+        // A number the register gives that fails the check is printed as it stands.
+        { name: 'Ogiltigt nummer AB', orgNumber: '5569999999' },
+      ],
+    },
+  ]);
+});
+
+test('a representative the handler ticked no company for is listed without any', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'tax-agency-request-serving',
+    counterpartyName: 'Skatteverket',
+    errand: errandOf(),
+    people,
+  });
+
+  expect(sent.representatives).toEqual([
+    { personalNumber: hyphenatedIdentity(robotNumber), name: 'Erik Exempelsson', companies: [] },
+  ]);
+});
+
+const municipalityCodeOf = (code: string) => ({ parameters: [{ key: 'premisesMunicipality', values: [code] }] });
+
+test('the municipality asking is the one the errand names, worded as the tax agency templates word it', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'tax-agency-request-serving',
+    counterpartyName: 'Skatteverket',
+    errand: errandOf(municipalityCodeOf('2262')),
+    people,
+  });
+
+  expect(sent.municipality).toBe('Timrå kommun');
+
+  // The telephone is the templates own, answered for by a default value; sending an empty one would blank it.
+  expect(Object.keys(sent)).not.toContain('handlerPhone');
+});
+
+test('an errand with no municipality on it, or one nobody knows, is taken for Sundsvalls own', () => {
+  const askFor = (errand: unknown) =>
+    supportStatementTemplateParameters({
+      ...facts,
+      identifier: 'tax-agency-request-serving',
+      counterpartyName: 'Skatteverket',
+      errand: errand as never,
+      people,
+    });
+
+  expect(askFor(errandOf()).municipality).toBe('Sundsvalls kommun');
+  expect(askFor(errandOf(municipalityCodeOf('2281'))).municipality).toBe('Sundsvalls kommun');
+  expect(askFor(errandOf(municipalityCodeOf('1480'))).municipality).toBe('Sundsvalls kommun');
+});
+
+test('the inner inspection is told the municipality too, so its own default cannot name the wrong one', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'tax-agency-request-serving-inspection',
+    counterpartyName: 'Skatteverket',
+    errand: errandOf(municipalityCodeOf('2262')),
+    people,
+  });
+
+  expect(sent.municipality).toBe('Timrå kommun');
 });

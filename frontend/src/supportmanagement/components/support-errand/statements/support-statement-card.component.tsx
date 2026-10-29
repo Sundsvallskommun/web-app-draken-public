@@ -56,11 +56,16 @@ import {
   supportStatementTemplateProblem,
   supportStatementTemplates,
 } from '@supportmanagement/services/support-statement-template-service';
-import { Mail, Trash2, Upload } from 'lucide-react';
+import { CornerDownRight, Mail, Trash2, Upload } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
+
+import {
+  type ChosenCompany,
+  CompanyEngagementChoice,
+} from '../company-engagements/company-engagement-choice.component';
 
 const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
   name,
@@ -112,9 +117,11 @@ const PeopleChoice: FC<{
   peopleNeeded: SupportReferralPersonsName;
   people: SupportReferralPerson[];
   chosenPartyIds: string[];
+  companies: Record<string, ChosenCompany[]>;
   editable: boolean;
   onToggle: (partyId: string) => void;
-}> = ({ peopleNeeded, people, chosenPartyIds, editable, onToggle }) => {
+  onCompanies: (partyId: string, companies: ChosenCompany[]) => void;
+}> = ({ peopleNeeded, people, chosenPartyIds, companies, editable, onToggle, onCompanies }) => {
   const { t } = useTranslation();
 
   if (peopleNeeded === SupportReferralPersons.NONE) return null;
@@ -133,15 +140,32 @@ const PeopleChoice: FC<{
       ) : (
         <div className="flex flex-col gap-12" data-cy="statement-people">
           {people.map((person) => (
-            <Checkbox
-              size="sm"
-              key={person.partyId}
-              checked={chosenPartyIds.includes(person.partyId)}
-              disabled={!editable}
-              onChange={() => onToggle(person.partyId)}
-            >
-              {[person.name, person.roles].filter(Boolean).join(' - ')}
-            </Checkbox>
+            <div key={person.partyId} className="flex flex-col gap-8">
+              <Checkbox
+                size="sm"
+                checked={chosenPartyIds.includes(person.partyId)}
+                disabled={!editable}
+                onChange={() => onToggle(person.partyId)}
+              >
+                {[person.name, person.roles].filter(Boolean).join(' - ')}
+              </Checkbox>
+
+              {chosenPartyIds.includes(person.partyId) ? (
+                <div className="flex gap-8 pl-9">
+                  <CornerDownRight size={18} className="mt-8 shrink-0 text-dark-secondary" />
+                  <CompanyEngagementChoice
+                    partyId={person.onTheErrand ? person.partyId : undefined}
+                    personalNumber={person.personalNumber}
+                    personName={person.name}
+                    chosen={(companies[person.partyId] ?? []).map((company) => company.organizationNumber)}
+                    writable={editable}
+                    onChange={(picked) => onCompanies(person.partyId, picked)}
+                    textKey="common:statements.companies"
+                    dataCy={`statement-companies-${person.partyId}`}
+                  />
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       )}
@@ -254,6 +278,7 @@ export const SupportStatementCard: FC<{
   const [chosenTemplate, setChosenTemplate] = useState('');
   const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
   const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
+  const [companies, setCompanies] = useState<Record<string, ChosenCompany[]>>({});
 
   const watchedCustomer = watch('customer');
   const watchedContacts = watch('contacts');
@@ -315,6 +340,7 @@ export const SupportStatementCard: FC<{
     dueAt: form.dueAt,
     people: chosenPeople,
     person: person ?? chosenPeople[0],
+    companies,
   });
 
   const chooseTemplate = (identifier: string) => {
@@ -350,6 +376,9 @@ export const SupportStatementCard: FC<{
     setChosenPartyIds((chosen) => chosenReferralPartyIds(people, chosen, partyIdsAlreadySeen.current));
     partyIdsAlreadySeen.current = people.map((person) => person.partyId);
   }, [people]);
+
+  const rememberCompanies = (partyId: string, chosen: ChosenCompany[]) =>
+    setCompanies((current) => ({ ...current, [partyId]: chosen }));
 
   const togglePerson = (partyId: string) =>
     setChosenPartyIds((current) =>
@@ -556,8 +585,10 @@ export const SupportStatementCard: FC<{
             peopleNeeded={peopleNeeded}
             people={people}
             chosenPartyIds={chosenPartyIds}
+            companies={companies}
             editable={editable}
             onToggle={togglePerson}
+            onCompanies={rememberCompanies}
           />
 
           {!underlayExists && templateIdentifier && !templateProblem ? (
