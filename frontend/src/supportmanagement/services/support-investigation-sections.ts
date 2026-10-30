@@ -73,7 +73,7 @@ const SERVING_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
 const TOBACCO_SALES_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
   sections: TOBACCO_SALES_PERMIT_SECTIONS,
   introKey: 'common:investigation.intro_tobacco',
-  basisTemplate: 'tobacco-decision-basis',
+  basisTemplate: 'tobacco-sales-decision-basis',
 };
 
 const SUPPORT_INVESTIGATION_VARIANTS: Record<string, SupportInvestigationVariant> = {

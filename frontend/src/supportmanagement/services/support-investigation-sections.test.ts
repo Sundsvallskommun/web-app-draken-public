@@ -86,7 +86,7 @@ test('a serving permit is examined as it always has been, underlay and all', () 
 
 test('a tobacco sales permit is examined by the headings the business writes, and has an underlay of its own', () => {
   expect([...tobaccoVariant.sections]).toEqual(TOBACCO);
-  expect(tobaccoVariant.basisTemplate).toBe('tobacco-decision-basis');
+  expect(tobaccoVariant.basisTemplate).toBe('tobacco-sales-decision-basis');
 });
 
 test('the most specific level that names the examinations wins, and the category answers for the rest', () => {
