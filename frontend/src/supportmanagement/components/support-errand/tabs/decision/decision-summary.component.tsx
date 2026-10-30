@@ -1,5 +1,6 @@
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Label } from '@sk-web-gui/react';
+import { decisionParameterValue } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import {
   scopeFromDecision,
@@ -43,8 +44,10 @@ export const DecisionSummary: FC<{
         <dd className="m-0">{decision.decidedAt ? dayjs(decision.decidedAt).format('YYYY-MM-DD HH:mm') : empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.legal_basis')}</dt>
         <dd className="m-0">{decision.legalBasis || empty}</dd>
-        <dt className="text-dark-secondary">{t('common:decision.delegation')}</dt>
-        <dd className="m-0">{decision.delegationReference || empty}</dd>
+        <dt className="text-dark-secondary">{t('common:decision.case_number')}</dt>
+        <dd className="m-0">{decisionParameterValue(decision.parameters, 'decisionCaseNumber') ?? empty}</dd>
+        <dt className="text-dark-secondary">{t('common:decision.other_case_number')}</dt>
+        <dd className="m-0">{decisionParameterValue(decision.parameters, 'otherCaseNumber') ?? empty}</dd>
         {premises ? (
           <>
             <dt className="text-dark-secondary">{t('common:decision.premises.label')}</dt>

@@ -1,6 +1,6 @@
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Spinner, Table } from '@sk-web-gui/react';
+import { Disclosure, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   BASIS_SECTION_IDS,
@@ -224,57 +224,64 @@ export const SupportErrandDecisionBasis: FC<{
   ];
 
   return (
-    <div className="flex flex-col gap-16" data-cy="decision-basis">
-      <div>
-        <h2 className="text-h2-md mb-8">{t('common:decision.basis.heading')}</h2>
-        <p className="m-0 text-dark-secondary">{t('common:decision.basis.intro')}</p>
-      </div>
+    <Disclosure variant="alt" className="w-full" initalOpen data-cy="decision-basis">
+      <Disclosure.Header>
+        <Disclosure.Title>{t('common:decision.basis.heading')}</Disclosure.Title>
+        <Disclosure.Button />
+      </Disclosure.Header>
+      <Disclosure.Content>
+        <div className="flex flex-col gap-16">
+          <p className="m-0 text-dark-secondary">{t('common:decision.basis.intro')}</p>
 
-      <BasisSection id="errand" heading={t('common:decision.basis.errand.heading')}>
-        <BasisRows section="errand" rows={errandRows} />
-      </BasisSection>
+          <BasisSection id="errand" heading={t('common:decision.basis.errand.heading')}>
+            <BasisRows section="errand" rows={errandRows} />
+          </BasisSection>
 
-      <BasisSection id="holder" heading={t('common:decision.basis.holder.heading')}>
-        {owner ? (
-          <BasisRows section="holder" rows={holderRows} />
-        ) : (
-          <BasisNote>{t('common:decision.basis.holder.missing')}</BasisNote>
-        )}
-      </BasisSection>
+          <BasisSection id="holder" heading={t('common:decision.basis.holder.heading')}>
+            {owner ? (
+              <BasisRows section="holder" rows={holderRows} />
+            ) : (
+              <BasisNote>{t('common:decision.basis.holder.missing')}</BasisNote>
+            )}
+          </BasisSection>
 
-      {!form ? <BasisNote>{t('common:decision.basis.no_form')}</BasisNote> : null}
+          {!form ? <BasisNote>{t('common:decision.basis.no_form')}</BasisNote> : null}
 
-      {form && loading ? (
-        <div className="flex items-center gap-8 text-small text-dark-secondary" data-cy="decision-basis-loading">
-          <Spinner size={2} aria-hidden />
-          {t('common:decision.basis.loading')}
+          {form && loading ? (
+            <div className="flex items-center gap-8 text-small text-dark-secondary" data-cy="decision-basis-loading">
+              <Spinner size={2} aria-hidden />
+              {t('common:decision.basis.loading')}
+            </div>
+          ) : null}
+
+          {formSections.map((section) => (
+            <BasisSection key={section.id} id={section.id} heading={t(`common:decision.basis.${section.id}.heading`)}>
+              {section.rows.length > 0 ? (
+                <BasisRows section={section.id} rows={section.rows.map(toDisplayRow)} />
+              ) : null}
+              {handling[section.id]}
+            </BasisSection>
+          ))}
+
+          {serving ? (
+            <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
+              <BasisRows section="premises" rows={premisesRows} />
+              {premisesHandling}
+            </BasisSection>
+          ) : null}
+
+          <BasisSection id="referrals" heading={t('common:decision.basis.referrals')}>
+            <BasisNote>{t('common:decision.basis.not_built')}</BasisNote>
+          </BasisSection>
+
+          <p
+            className="text-small text-dark-secondary border-1 border-dashed rounded-12 p-16 m-0"
+            data-cy="decision-basis-investigation"
+          >
+            {t('common:decision.basis.investigation')}
+          </p>
         </div>
-      ) : null}
-
-      {formSections.map((section) => (
-        <BasisSection key={section.id} id={section.id} heading={t(`common:decision.basis.${section.id}.heading`)}>
-          {section.rows.length > 0 ? <BasisRows section={section.id} rows={section.rows.map(toDisplayRow)} /> : null}
-          {handling[section.id]}
-        </BasisSection>
-      ))}
-
-      {serving ? (
-        <BasisSection id="premises" heading={t('common:decision.basis.premises.heading')}>
-          <BasisRows section="premises" rows={premisesRows} />
-          {premisesHandling}
-        </BasisSection>
-      ) : null}
-
-      <BasisSection id="referrals" heading={t('common:decision.basis.referrals')}>
-        <BasisNote>{t('common:decision.basis.not_built')}</BasisNote>
-      </BasisSection>
-
-      <p
-        className="text-small text-dark-secondary border-1 border-dashed rounded-12 p-16 m-0"
-        data-cy="decision-basis-investigation"
-      >
-        {t('common:decision.basis.investigation')}
-      </p>
-    </div>
+      </Disclosure.Content>
+    </Disclosure>
   );
 };

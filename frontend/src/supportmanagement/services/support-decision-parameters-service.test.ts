@@ -22,6 +22,7 @@ const EXISTING = { kind: 'EXISTING', restaurantNumber: mockEnv.mockRestaurantNum
 const NEW = { kind: 'NEW' } as const;
 const TODAY = '2026-10-07';
 const ISSUED = '2026-10-09';
+const DECISION_CASE_NUMBER = 'KS 2026/123';
 const DECISION = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
 
 const errand = () =>
@@ -46,6 +47,7 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
   errand: errand(),
   premises: { ...PREMISES, choice: EXISTING },
   issuedOn: ISSUED,
+  decisionCaseNumber: DECISION_CASE_NUMBER,
   user: { name: 'Test Testsson' },
   today: TODAY,
   ...overrides,
@@ -162,9 +164,9 @@ describe('a serving permit', () => {
     });
   });
 
-  test('composes the case number and the decision date with it, and names the issuing handler', () => {
+  test('prints the errand number, dates the decision with its own case number, and names the issuing handler', () => {
     expect(parameters.caseNumber).toBe(mockEnv.mockErrandNumber);
-    expect(parameters.decisionDateAndCaseNumber).toBe(`${TODAY}, ${mockEnv.mockErrandNumber}`);
+    expect(parameters.decisionDateAndCaseNumber).toBe(`${TODAY}, ${DECISION_CASE_NUMBER}`);
     expect(parameters.issuedByNameAndTitle).toBe('Test Testsson, handläggare');
   });
 
@@ -248,8 +250,8 @@ describe('a tobacco permit', () => {
     });
   });
 
-  test('names the officer with the case number, and as the issuing handler', () => {
-    expect(parameters.decisionOfficerAndCaseNumber).toBe(`Test Testsson, ${mockEnv.mockErrandNumber}`);
+  test('names the officer with the decision case number, and as the issuing handler', () => {
+    expect(parameters.decisionOfficerAndCaseNumber).toBe(`Test Testsson, ${DECISION_CASE_NUMBER}`);
     expect(parameters.issuedByNameAndTitle).toBe('Test Testsson, handläggare');
   });
 
@@ -325,6 +327,7 @@ describe('what the permit needs of the errand', () => {
       'premisesPostalAddress',
       'premisesPhone',
       'servingAreaDescription',
+      'decisionCaseNumber',
     ]);
     expect(
       missingDecisionInputs(
@@ -334,16 +337,27 @@ describe('what the permit needs of the errand', () => {
     ).toEqual(['validFrom', 'servingAreaDescription']);
   });
 
+  test('the decision saves both case numbers, and only the decision case number is waited for', () => {
+    const saved = toDecisionParameters('FOLKOLSANMALAN', input({ otherCaseNumber: ' 2026/42 ' }), DECISION);
+
+    expect(asObject(saved)).toMatchObject({ decisionCaseNumber: DECISION_CASE_NUMBER, otherCaseNumber: '2026/42' });
+    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', toDecisionParameters('FOLKOLSANMALAN', input(), DECISION))).toEqual(
+      []
+    );
+  });
+
   test('a tobacco permit waits for the outcome and the dates it prints', () => {
     expect(missingDecisionInputs('TOBAKSFORSALJNING', undefined)).toEqual([
       'decisionText',
       'validFrom',
       'executionDate',
+      'decisionCaseNumber',
     ]);
   });
 
-  test('a permit that issues no certificate has nothing to wait for', () => {
-    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual([]);
+  test('a permit that issues no certificate waits for the decision case number alone', () => {
+    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual(['decisionCaseNumber']);
     expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],
@@ -381,6 +395,7 @@ describe('every permit', () => {
       'premisesStreet',
       'premisesPostalAddress',
       'premisesPhone',
+      'decisionCaseNumber',
       'decisionText',
       'decisionMaker',
       'decisionDate',
