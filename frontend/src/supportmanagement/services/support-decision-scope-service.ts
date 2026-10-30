@@ -14,8 +14,8 @@ import { type FormValue, servesPrivate, servesPublic, timeRangeClocks } from './
 
 export const DECIDED_GROUP = 'DECIDED';
 
-/** The beverage constants of the schemas' `alkoholdrycker`, in the schemas' order. */
-export const BEVERAGES = ['STARKOL', 'VIN', 'SPRITDRYCKER', 'CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER'] as const;
+/** The beverage constants of the schemas' `beverages`, in the schemas' order. */
+export const BEVERAGES = ['STRONG_BEER', 'WINE', 'SPIRITS', 'OTHER_FERMENTED_BEVERAGES'] as const;
 
 export type ServingHoursSlot = 'indoorPublic' | 'outdoorPublic' | 'indoorPrivate' | 'outdoorPrivate' | 'single';
 
@@ -55,7 +55,7 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
     key: 'decidedServingHoursIndoorPublic',
     labelKey: label('indoor_public'),
     errandTypes: [PERMANENT],
-    field: { [PERMANENT]: 'serveringstiderInomhusAllmanheten' },
+    field: { [PERMANENT]: 'publicServingHoursIndoor' },
     when: servesPublic,
   },
   {
@@ -63,7 +63,7 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
     key: 'decidedServingHoursOutdoorPublic',
     labelKey: label('outdoor_public'),
     errandTypes: [PERMANENT],
-    field: { [PERMANENT]: 'serveringstiderUtomhusAllmanheten' },
+    field: { [PERMANENT]: 'publicServingHoursOutdoor' },
     when: servesPublic,
   },
   {
@@ -71,7 +71,7 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
     key: 'decidedServingHoursIndoorPrivate',
     labelKey: label('indoor_private'),
     errandTypes: [PERMANENT],
-    field: { [PERMANENT]: 'serveringstiderInomhusSlutetSallskap' },
+    field: { [PERMANENT]: 'closedCompanyServingHoursIndoor' },
     when: servesPrivate,
   },
   {
@@ -79,7 +79,7 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
     key: 'decidedServingHoursOutdoorPrivate',
     labelKey: label('outdoor_private'),
     errandTypes: [PERMANENT],
-    field: { [PERMANENT]: 'serveringstiderUtomhusSlutetSallskap' },
+    field: { [PERMANENT]: 'closedCompanyServingHoursOutdoor' },
     when: servesPrivate,
   },
   {
@@ -88,9 +88,9 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
     labelKey: label('single'),
     errandTypes: SINGLE_SLOT_TYPES,
     field: {
-      TEMPORARY_SERVING_PUBLIC: 'klockslagForServeringen',
-      TEMPORARY_SERVING_PRIVATE: 'klockslagForServeringen',
-      FARM_SALES: 'forsaljningstider',
+      TEMPORARY_SERVING_PUBLIC: 'dailyServingHours',
+      TEMPORARY_SERVING_PRIVATE: 'dailyServingHours',
+      FARM_SALES: 'salesHours',
     },
   },
 ];
@@ -122,7 +122,7 @@ export const scopeFromForm = (
   errandType: string | undefined,
   slots: SlotSpec[]
 ): DecisionScope => ({
-  beverages: Array.isArray(form?.alkoholdrycker) ? form.alkoholdrycker.map(String) : [],
+  beverages: Array.isArray(form?.beverages) ? form.beverages.map(String) : [],
   servingHours: Object.fromEntries(
     slots.map((spec) => [
       spec.slot,

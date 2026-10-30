@@ -131,45 +131,44 @@ const errand = {
 } as unknown as SupportErrand;
 
 const FORM = {
-  serveringsstalletsNamn: mockEnv.mockPremisesName,
-  serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_ALLMANHETEN',
-  alkoholdrycker: ['STARKOL', 'VIN'],
-  verksamhetensInriktning: ['RESTAURANG'],
-  serveringsperiodForAllmanheten: 'ARET_RUNT',
-  serveringstiderInomhusAllmanheten: { startTime: '11:00:00', endTime: '23:00:00' },
-  serveringstiderUtomhusAllmanheten: { startTime: '11:00:00', endTime: '23:00:00' },
-  serverasMat: 'JA',
-  forfoganderattLokal: ['HYRESAVTAL'],
-  beskrivVerksamhetensInriktning: '<p>Social mötesplats för bygden.</p>',
-  ordningOchNykterhet: '<p>Inga spelningar.</p>',
-  serveringsansvarigPersonal: [
-    { namn: 'Erica Fritz', personnummer: ERICA_IDENTITY },
-    // Written the short way, as a form lets one; it is passed on as written.
-    { namn: 'Axel Hellman', personnummer: mockEnv.mockPersonNumberDashed.slice(2) },
+  premisesName: mockEnv.mockPremisesName,
+  servingAudience: 'PUBLIC',
+  beverages: ['STRONG_BEER', 'WINE'],
+  businessOrientationTypes: ['RESTAURANT'],
+  publicServingPeriod: 'ALL_YEAR',
+  publicServingHoursIndoor: { from: '11:00:00', to: '23:00:00' },
+  publicServingHoursOutdoor: { from: '11:00:00', to: '23:00:00' },
+  servesFood: 'YES',
+  premisesRightOfUseDocuments: ['LEASE_AGREEMENT'],
+  businessOrientationDescription: '<p>Social mötesplats för bygden.</p>',
+  orderAndSobriety: '<p>Inga spelningar.</p>',
+  responsibleServingStaff: [
+    { firstName: 'Erica', lastName: 'Fritz', dateOfBirth: '1985-04-12', fromDate: '2026-11-01' },
+    { firstName: 'Axel', lastName: 'Hellman', dateOfBirth: '1990-09-30' },
   ],
-  sittplatserILokalen: { antalSittplatserInomhus: '32', antalSittplatserUteservering: '100' },
-  maximaltAntalPersonerILokalen: { antalPersoner: '50' },
-  banklan: [{ langivare: 'Testbanken', beloppKronor: '25000' }],
-  ovrigaUpplysningarFinansiering: '<p>Aktieägartillskott vid behov.</p>',
+  seating: { seatsIndoor: '32', seatsOutdoor: '100' },
+  maxPersonsInPremises: { maxPersons: '50' },
+  bankLoans: [{ lender: 'Testbanken', amountSek: '25000' }],
+  financingNotes: '<p>Aktieägartillskott vid behov.</p>',
 };
 
 const SCHEMA = {
   properties: {
-    serveringTillAllmanhetenEllerSlutetSallskap: {
-      oneOf: [{ const: 'ENBART_TILL_ALLMANHETEN', title: 'Enbart till allmänheten' }],
+    servingAudience: {
+      oneOf: [{ const: 'PUBLIC', title: 'Enbart till allmänheten' }],
     },
-    alkoholdrycker: {
+    beverages: {
       items: {
         oneOf: [
-          { const: 'STARKOL', title: 'Starköl' },
-          { const: 'VIN', title: 'Vin' },
+          { const: 'STRONG_BEER', title: 'Starköl' },
+          { const: 'WINE', title: 'Vin' },
         ],
       },
     },
-    verksamhetensInriktning: { items: { oneOf: [{ const: 'RESTAURANG', title: 'Restaurang' }] } },
-    serveringsperiodForAllmanheten: { oneOf: [{ const: 'ARET_RUNT', title: 'Året runt' }] },
-    serverasMat: { oneOf: [{ const: 'JA', title: 'Ja' }] },
-    forfoganderattLokal: { items: { oneOf: [{ const: 'HYRESAVTAL', title: 'Hyresavtal' }] } },
+    businessOrientationTypes: { items: { oneOf: [{ const: 'RESTAURANT', title: 'Restaurang' }] } },
+    publicServingPeriod: { oneOf: [{ const: 'ALL_YEAR', title: 'Året runt' }] },
+    servesFood: { oneOf: [{ const: 'YES', title: 'Ja' }] },
+    premisesRightOfUseDocuments: { items: { oneOf: [{ const: 'LEASE_AGREEMENT', title: 'Hyresavtal' }] } },
   },
 } as unknown as RJSFSchema;
 
@@ -384,10 +383,10 @@ test('the application is read with the texts of the schema version it was filed 
   expect(application.drinksMenuFiles).toEqual(['dryckesmeny-testkrogen.pdf']);
 });
 
-test('the staff of the application is read by the shape of the row, the columns being named differently between schemas', () => {
+test('the staff of the application is read with date of birth and start date', () => {
   expect(built().application.responsibleStaff).toEqual([
-    { name: 'Erica Fritz', personalNumber: mockEnv.mockSecondaryPersonNumberDashed },
-    { name: 'Axel Hellman', personalNumber: mockEnv.mockPersonNumberDashed.slice(2) },
+    { name: 'Erica Fritz', dateOfBirth: '1985-04-12', fromDate: '2026-11-01', personalNumber: '' },
+    { name: 'Axel Hellman', dateOfBirth: '1990-09-30', fromDate: '', personalNumber: '' },
   ]);
 });
 

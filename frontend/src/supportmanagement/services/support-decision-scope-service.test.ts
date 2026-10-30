@@ -18,11 +18,11 @@ const slotNames = (errandType: string | undefined, form?: Record<string, unknown
   servingHoursSlotsFor(errandType, form).map((spec) => spec.slot);
 
 const permanentForm = {
-  serveringTillAllmanhetenEllerSlutetSallskap: 'BADE_TILL_ALLMANHETEN_OCH_TILL',
-  serveringstiderInomhusAllmanheten: { startTime: '11:00:00', endTime: '01:00:00' },
-  serveringstiderUtomhusAllmanheten: { startTime: '11:00', endTime: '23:00' },
-  serveringstiderInomhusSlutetSallskap: { startTime: '18:00' },
-  alkoholdrycker: ['STARKOL', 'VIN'],
+  servingAudience: 'PUBLIC_AND_CLOSED_COMPANY',
+  publicServingHoursIndoor: { from: '11:00:00', to: '01:00:00' },
+  publicServingHoursOutdoor: { from: '11:00', to: '23:00' },
+  closedCompanyServingHoursIndoor: { from: '18:00' },
+  beverages: ['STRONG_BEER', 'WINE'],
 };
 
 describe('which slots an errand type gets', () => {
@@ -33,13 +33,8 @@ describe('which slots an errand type gets', () => {
       'indoorPrivate',
       'outdoorPrivate',
     ]);
-    expect(slotNames(PERMANENT, { serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_ALLMANHETEN' })).toEqual([
-      'indoorPublic',
-      'outdoorPublic',
-    ]);
-    expect(
-      slotNames(PERMANENT, { serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_SLUTET_SALLSKAP' })
-    ).toEqual(['indoorPrivate', 'outdoorPrivate']);
+    expect(slotNames(PERMANENT, { servingAudience: 'PUBLIC' })).toEqual(['indoorPublic', 'outdoorPublic']);
+    expect(slotNames(PERMANENT, { servingAudience: 'CLOSED_COMPANY' })).toEqual(['indoorPrivate', 'outdoorPrivate']);
   });
 
   test('without an application every slot of the type is offered', () => {
@@ -69,7 +64,7 @@ describe('the application as the starting point', () => {
     const slots = servingHoursSlotsFor(PERMANENT, permanentForm);
 
     expect(scopeFromForm(permanentForm, PERMANENT, slots)).toEqual({
-      beverages: ['STARKOL', 'VIN'],
+      beverages: ['STRONG_BEER', 'WINE'],
       servingHours: {
         indoorPublic: { from: '11:00', to: '01:00' },
         outdoorPublic: { from: '11:00', to: '23:00' },
@@ -80,8 +75,8 @@ describe('the application as the starting point', () => {
   });
 
   test('the single slot reads the field of its errand type', () => {
-    const temporary = { klockslagForServeringen: { startTime: '12:00', endTime: '22:00' } };
-    const farm = { forsaljningstider: { startTime: '10:00', endTime: '18:00' } };
+    const temporary = { dailyServingHours: { from: '12:00', to: '22:00' } };
+    const farm = { salesHours: { from: '10:00', to: '18:00' } };
 
     expect(
       scopeFromForm(temporary, 'TEMPORARY_SERVING_PUBLIC', servingHoursSlotsFor('TEMPORARY_SERVING_PUBLIC', temporary))
@@ -146,7 +141,7 @@ describe('what the decision carries', () => {
         key: BEVERAGES_KEY,
         displayName: 'label:common:decision.scope.beverages.label',
         group: DECIDED_GROUP,
-        values: ['STARKOL', 'VIN'],
+        values: ['STRONG_BEER', 'WINE'],
       },
       {
         key: 'decidedServingHoursIndoorPublic',
@@ -180,7 +175,7 @@ describe('what the decision carries', () => {
   test('a permit that does not decide beverages writes only its hours', () => {
     const farmSlots = servingHoursSlotsFor('FARM_SALES', undefined);
     const written = toScopeParameters(
-      { beverages: ['VIN'], servingHours: { single: { from: '10:00', to: '18:00' } } },
+      { beverages: ['WINE'], servingHours: { single: { from: '10:00', to: '18:00' } } },
       farmSlots,
       'TOBAKSFORSALJNING',
       (key) => key

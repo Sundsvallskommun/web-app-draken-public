@@ -40,8 +40,8 @@ vi.mock('react-hook-form', () => ({
 const PERMANENT_SERVING = 'aot_alcohol_serving_permit_application_permanent_serving';
 
 const ANSWERS = {
-  sittplatserILokalen: { antalSittplatserInomhus: '50', antalSittplatserPaEventuellUteserver: '10' },
-  maximaltAntalPersonerILokalen: { antalPersoner: '50' },
+  seating: { seatsIndoor: '50', seatsOutdoor: '10' },
+  maxPersonsInPremises: { maxPersons: '50' },
 };
 
 const errandWith = (answers: Record<string, unknown> | undefined) => ({

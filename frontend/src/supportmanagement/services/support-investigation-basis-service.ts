@@ -28,7 +28,15 @@ import {
   type SupportFinancingSource,
   supportFinancingSourcesOf,
 } from './support-financial-suitability-service';
-import { AUDIENCE, dateRangeText, type FormValue, isRecord, text, timeRangeText } from './support-form-value-service';
+import {
+  AUDIENCE,
+  dateRangeText,
+  type FormValue,
+  isRecord,
+  premisesValue,
+  text,
+  timeRangeText,
+} from './support-form-value-service';
 import { supportApplicationCompleteAt } from './support-investigation-processing-service';
 import { sectionKeyOf } from './support-investigation-sections';
 import type { SupportMetadata } from './support-metadata-service';
@@ -117,6 +125,9 @@ interface InvestigationBasisStatement {
 
 interface InvestigationBasisStaff {
   name: string;
+  dateOfBirth: string;
+  fromDate: string;
+  /** No longer asked, but the template still prints it. */
   personalNumber: string;
 }
 
@@ -462,12 +473,12 @@ const associatedCompanies = (
 
 // One line per serving time the form asks for, labelled where it asks for more than one.
 const SERVING_HOURS: [label: string, field: string][] = [
-  ['Inomhus, allmänheten', 'serveringstiderInomhusAllmanheten'],
-  ['Utomhus, allmänheten', 'serveringstiderUtomhusAllmanheten'],
-  ['Inomhus, slutet sällskap', 'serveringstiderInomhusSlutetSallskap'],
-  ['Utomhus, slutet sällskap', 'serveringstiderUtomhusSlutetSallskap'],
-  ['', 'klockslagForServeringen'],
-  ['', 'forsaljningstider'],
+  ['Inomhus, allmänheten', 'publicServingHoursIndoor'],
+  ['Utomhus, allmänheten', 'publicServingHoursOutdoor'],
+  ['Inomhus, slutet sällskap', 'closedCompanyServingHoursIndoor'],
+  ['Utomhus, slutet sällskap', 'closedCompanyServingHoursOutdoor'],
+  ['', 'dailyServingHours'],
+  ['', 'salesHours'],
 ];
 
 const servingHours = (form: FormValue | undefined): string[] =>
@@ -480,9 +491,9 @@ const servingHours = (form: FormValue | undefined): string[] =>
 
 // The period is asked per audience for a permanent permit, and once for a temporary one or farm sales.
 const SERVING_PERIODS: [choice: string, dates: string][] = [
-  ['serveringsperiodForAllmanheten', 'periodServeringAllmanheten'],
-  ['serveringsperiodForSlutetSallskap', 'periodServeringSlutetSallskap'],
-  ['forsaljningsperiod', 'angePeriodForForsaljning'],
+  ['publicServingPeriod', 'publicServingPeriodDates'],
+  ['closedCompanyServingPeriod', 'closedCompanyServingPeriodDates'],
+  ['salesPeriod', 'salesPeriodDates'],
 ];
 
 const servingPeriod = (form: FormValue | undefined, schema: RJSFSchema | null): string => {
@@ -490,33 +501,22 @@ const servingPeriod = (form: FormValue | undefined, schema: RJSFSchema | null): 
   const periods = SERVING_PERIODS.map(([choice, dates]) =>
     [formChoiceLabel(form, schema, choice), dateRangeText(form, dates)].filter(Boolean).join(', ')
   );
-  return [...periods, dateRangeText(form, 'angeMellanVilkaDatumDetTillfalliga')].filter(Boolean).join('. ');
+  return [...periods, dateRangeText(form, 'permitPeriodDates')].filter(Boolean).join('. ');
 };
 
 const servingTo = (form: FormValue | undefined, schema: RJSFSchema | null): string =>
   (form && formChoiceLabel(form, schema, AUDIENCE)) ?? '';
 
-const PERSONAL_NUMBER = /^\d{6,8}[-\s]?\d{4}$/;
-
-/**
- * The staff table of the application. Katla has named its columns differently between schema
- * versions, so a row is read by the shape of its values: the one that looks like a personal number
- * is one, and the first that does not is the name.
- */
 const responsibleStaff = (form: FormValue | undefined): InvestigationBasisStaff[] => {
-  const rows = form?.serveringsansvarigPersonal;
+  const rows = form?.responsibleServingStaff;
   if (!Array.isArray(rows)) return [];
 
-  return rows.filter(isRecord).map((row) => {
-    const values = Object.values(row)
-      .map(text)
-      .filter((value): value is string => !!value);
-    const identity = values.find((value) => PERSONAL_NUMBER.test(value.replace(/\s/g, '')));
-    return {
-      name: values.find((value) => value !== identity) ?? '',
-      personalNumber: identity ? hyphenatedIdentity(identity) : '',
-    };
-  });
+  return rows.filter(isRecord).map((row) => ({
+    name: [text(row.firstName), text(row.lastName)].filter(Boolean).join(' '),
+    dateOfBirth: text(row.dateOfBirth) ?? '',
+    fromDate: text(row.fromDate) ?? '',
+    personalNumber: '',
+  }));
 };
 
 const rightOfDisposalLabel = (rightOfDisposal: string, translate: (key: string) => string): string => {
@@ -559,10 +559,8 @@ const proposalPoints = (investigation: Investigation | undefined, metadata: Supp
   return recommendation ? [recommendation] : [];
 };
 
-const premisesName = (form: FormValue | undefined, errand: SupportErrand | undefined): string => {
-  const named = form?.serveringsstalletsNamn;
-  return text(named) ?? (isRecord(named) ? text(named.namn) : undefined) ?? applicantOf(errand)?.organizationName ?? '';
-};
+const premisesName = (form: FormValue | undefined, errand: SupportErrand | undefined): string =>
+  text(premisesValue(form, 'Name')) ?? applicantOf(errand)?.organizationName ?? '';
 
 /** What the underlay says where the handler has written no examination at all. */
 const MISSING_INFORMATION = 'Information saknas';
@@ -637,18 +635,18 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       receivedAt: asDate(errand?.created),
       completeAt: supportApplicationCompleteAt(errand?.parameters),
       servingTo: servingTo(form, schema),
-      beverages: form ? formMultiChoiceLabels(form, schema, 'alkoholdrycker').join(', ') : '',
+      beverages: form ? formMultiChoiceLabels(form, schema, 'beverages').join(', ') : '',
       period: servingPeriod(form, schema),
       servingHours: servingHours(form),
-      orientation: form ? formMultiChoiceLabels(form, schema, 'verksamhetensInriktning').join(', ') : '',
-      orientationHtml: htmlOf(text(form?.beskrivVerksamhetensInriktning)),
-      businessDescriptionHtml: htmlOf(text(form?.verksamhetsbeskrivning)),
-      orderAndSobrietyHtml: htmlOf(text(form?.ordningOchNykterhet)),
-      rightOfDisposal: form ? formMultiChoiceLabels(form, schema, 'forfoganderattLokal').join(', ') : '',
+      orientation: form ? formMultiChoiceLabels(form, schema, 'businessOrientationTypes').join(', ') : '',
+      orientationHtml: htmlOf(text(form?.businessOrientationDescription)),
+      businessDescriptionHtml: htmlOf(text(form?.businessDescription)),
+      orderAndSobrietyHtml: htmlOf(text(form?.orderAndSobriety)),
+      rightOfDisposal: form ? formMultiChoiceLabels(form, schema, 'premisesRightOfUseDocuments').join(', ') : '',
       knowledgeBasis: knowledgeBasisOf(errand),
       responsibleStaff: responsibleStaff(form),
       staffingHtml: texts.staffing ?? '',
-      servesFood: (form && formChoiceLabel(form, schema, 'serverasMat')) ?? '',
+      servesFood: (form && formChoiceLabel(form, schema, 'servesFood')) ?? '',
       menuFiles: fileNames(input.attachments, ['MENU']),
       drinksMenuFiles: fileNames(input.attachments, ['DRINKS_MENU']),
       foodAndBeveragesHtml: texts.food_and_beverages ?? '',

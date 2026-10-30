@@ -406,10 +406,10 @@
       "beverages": {
         "heading": "Beslutade alkoholdrycker",
         "label": "Alkoholdrycker som får serveras",
-        "STARKOL": "Starköl",
-        "VIN": "Vin",
-        "SPRITDRYCKER": "Spritdrycker",
-        "CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER": "Cider eller andra jästa alkoholdrycker"
+        "STRONG_BEER": "Starköl",
+        "WINE": "Vin",
+        "SPIRITS": "Spritdrycker",
+        "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker"
       },
       "serving_hours": {
         "heading": "Beslutade serveringstider",

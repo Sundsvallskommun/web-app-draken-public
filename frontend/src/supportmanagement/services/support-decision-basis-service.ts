@@ -8,6 +8,9 @@ import {
   dateRangeText,
   type FormValue,
   isRecord,
+  PREMISES_PREFIXES,
+  type PremisesField,
+  premisesValue,
   servesPrivate,
   servesPublic,
   text,
@@ -206,10 +209,10 @@ const attached =
   () => ({ kind: 'attachment', purpose });
 
 const contact: Reader = (value) => {
-  const details = value.kontaktuppgifterTillServeringsstallet;
-  const parts = isRecord(details) ? [details.telefonnummer, details.ePostadress, details.hemsida] : [];
+  const details = premisesValue(value, 'Contact');
+  const parts = isRecord(details) ? [details.phoneNumber, details.emailAddress, details.website] : [];
   // Tobacco keeps the website at the root; it is only asked with distance sales.
-  return cell([...parts, value.hemsida].map(text).filter(Boolean).join(', ') || undefined);
+  return cell([...parts, value.distanceSellingWebsite].map(text).filter(Boolean).join(', ') || undefined);
 };
 
 /** With one audience the plain labels suffice; with both, each group says whose hours they are. */
@@ -219,6 +222,10 @@ const audienceLabel = (plainKey: string, audienceKey: string) => (value: FormVal
 const label = (section: BasisSectionId, row: string) => `common:decision.basis.${section}.${row}`;
 
 const asksRootProperty: Asks = (schema, value, field) => (schema ? !!propertySchema(schema, field) : field in value);
+
+/** The row's field is the premises suffix; the schema asks it under either prefix. */
+const asksPremises: Asks = (schema, value, field, uploaded) =>
+  PREMISES_PREFIXES.some((prefix) => asksRootProperty(schema, value, `${prefix}${field}`, uploaded));
 
 /**
  * The schema's `x-attachments` name the uploads it asks for by purpose; the row's field is the purpose.
@@ -234,10 +241,10 @@ const asksAttachment: Asks = (schema, _value, purpose, uploaded) => {
 
 /** Only the schemas that ask about an outdoor area have the child under the seats object. */
 const asksOutdoorSeats: Asks = (schema, value) => {
-  const seats = propertySchema(schema, 'sittplatserILokalen');
-  if (seats) return isRecord(seats.properties) && 'antalSittplatserUteservering' in seats.properties;
-  const filed = value.sittplatserILokalen;
-  return isRecord(filed) && 'antalSittplatserUteservering' in filed;
+  const seats = propertySchema(schema, 'seating');
+  if (seats) return isRecord(seats.properties) && 'seatsOutdoor' in seats.properties;
+  const filed = value.seating;
+  return isRecord(filed) && 'seatsOutdoor' in filed;
 };
 
 const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
@@ -246,82 +253,82 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     rows: [
       {
         key: 'focus',
-        field: 'verksamhetensInriktning',
+        field: 'businessOrientationTypes',
         labelKey: label('operation', 'focus'),
-        read: multiChoice('verksamhetensInriktning'),
+        read: multiChoice('businessOrientationTypes'),
       },
       {
         key: 'hotel-service',
-        field: 'harNi',
+        field: 'additionalScopes',
         labelKey: label('operation', 'hotel_service'),
-        read: multiChoice('harNi'),
+        read: multiChoice('additionalScopes'),
       },
       {
         key: 'description',
-        field: 'verksamhetsbeskrivningsval',
+        field: 'businessDescriptionChoice',
         labelKey: label('operation', 'description'),
-        read: writtenOrAttached(
-          'verksamhetsbeskrivningsval',
-          'JAG_VILL_SKRIVA_VERKSAMHETSBESKRIVNINGEN_I',
-          'verksamhetsbeskrivning',
-          'BUSINESS_DESCRIPTION'
-        ),
+        read: writtenOrAttached('businessDescriptionChoice', 'DESCRIBE', 'businessDescription', 'BUSINESS_DESCRIPTION'),
       },
       {
         key: 'focus-description',
-        field: 'beskrivVerksamhetensInriktning',
+        field: 'businessOrientationDescription',
         labelKey: label('operation', 'focus_description'),
-        read: html('beskrivVerksamhetensInriktning'),
+        read: html('businessOrientationDescription'),
       },
       { key: 'serving-to', field: AUDIENCE, labelKey: label('operation', 'serving_to'), read: choice(AUDIENCE) },
-      { key: 'fair', field: 'arrangeraMassa', labelKey: label('operation', 'fair'), read: choice('arrangeraMassa') },
+      {
+        key: 'fair',
+        field: 'arrangesTradeFair',
+        labelKey: label('operation', 'fair'),
+        read: choice('arrangesTradeFair'),
+      },
       {
         key: 'order',
-        field: 'ordningOchNykterhet',
+        field: 'orderAndSobriety',
         labelKey: label('operation', 'order'),
-        read: html('ordningOchNykterhet'),
+        read: html('orderAndSobriety'),
       },
       {
         key: 'food-sales',
-        field: 'stadigvarandeForsaljningAvLivsmedel',
+        field: 'hasPermanentFoodSales',
         labelKey: label('operation', 'food_sales'),
-        read: choice('stadigvarandeForsaljningAvLivsmedel'),
+        read: choice('hasPermanentFoodSales'),
       },
       {
         key: 'brews-on-site',
-        field: 'tillverkarFolkolPaForsaljningsstallet',
+        field: 'producesLowAlcoholBeerOnPremises',
         labelKey: label('operation', 'brews_on_site'),
-        read: choice('tillverkarFolkolPaForsaljningsstallet'),
+        read: choice('producesLowAlcoholBeerOnPremises'),
       },
       {
         key: 'food-registered',
-        field: 'livsmedelsregistrerad',
+        field: 'isFoodRegistered',
         labelKey: label('operation', 'food_registered'),
-        read: choice('livsmedelsregistrerad'),
+        read: choice('isFoodRegistered'),
       },
       {
         key: 'self-monitoring',
-        field: 'egenkontrollprogramFolkol',
+        field: 'selfMonitoringProgram',
         labelKey: label('operation', 'self_monitoring'),
-        read: choice('egenkontrollprogramFolkol'),
+        read: choice('selfMonitoringProgram'),
       },
       {
         key: 'distance-sales',
-        field: 'bedriverAvenDistansforsaljning',
+        field: 'includesDistanceSelling',
         labelKey: label('operation', 'distance_sales'),
-        read: choice('bedriverAvenDistansforsaljning'),
+        read: choice('includesDistanceSelling'),
       },
       {
         key: 'supplier-agreement',
-        field: 'avtalMedTillverkareEllerPartihandlare',
+        field: 'hasSupplierAgreement',
         labelKey: label('operation', 'supplier_agreement'),
-        read: choice('avtalMedTillverkareEllerPartihandlare'),
+        read: choice('hasSupplierAgreement'),
       },
       {
         key: 'hazardous-products',
-        field: 'omfattarSarskiltFarligaProdukter',
+        field: 'includesParticularlyDangerousProducts',
         labelKey: label('operation', 'hazardous_products'),
-        read: choice('omfattarSarskiltFarligaProdukter'),
+        read: choice('includesParticularlyDangerousProducts'),
       },
     ],
   },
@@ -330,50 +337,52 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     rows: [
       {
         key: 'name',
-        field: 'serveringsstalletsNamn',
+        field: 'Name' satisfies PremisesField,
         labelKey: label('premises', 'name'),
-        read: plain('serveringsstalletsNamn'),
+        read: (value) => cell(text(premisesValue(value, 'Name'))),
+        asks: asksPremises,
       },
       {
         key: 'contact',
-        field: 'kontaktuppgifterTillServeringsstallet',
+        field: 'Contact' satisfies PremisesField,
         labelKey: label('premises', 'contact'),
         read: contact,
+        asks: asksPremises,
       },
       {
         key: 'responsible',
-        field: 'serveringsansvarigPersonal',
+        field: 'responsibleServingStaff',
         labelKey: label('premises', 'responsible'),
-        read: table('serveringsansvarigPersonal'),
+        read: table('responsibleServingStaff'),
       },
       {
         key: 'right-of-disposal',
-        field: 'forfoganderattLokal',
+        field: 'premisesRightOfUseDocuments',
         labelKey: label('premises', 'right_of_disposal'),
-        read: multiChoice('forfoganderattLokal'),
+        read: multiChoice('premisesRightOfUseDocuments'),
       },
       {
         key: 'cooperation-agreement',
-        field: 'harSamarbetsavtal',
+        field: 'hasCooperationAgreement',
         labelKey: label('premises', 'cooperation_agreement'),
-        read: choice('harSamarbetsavtal'),
+        read: choice('hasCooperationAgreement'),
       },
       {
         key: 'visitor-arrangement',
-        field: 'besoksarrangemang',
+        field: 'visitorArrangementsChoice',
         labelKey: label('premises', 'visitor_arrangement'),
         read: writtenOrAttached(
-          'besoksarrangemang',
-          'JAG_VILL_BESKRIVA_BESOKSARRANGEMANGET',
-          'beskrivBesoksarrangemanget',
+          'visitorArrangementsChoice',
+          'DESCRIBE',
+          'visitorArrangementsDescription',
           'VISITOR_ARRANGEMENT_DESCRIPTION'
         ),
       },
       {
         key: 'sales-site',
-        field: 'beskrivForsaljningsplats',
+        field: 'salesAreaDescription',
         labelKey: label('premises', 'sales_site'),
-        read: html('beskrivForsaljningsplats'),
+        read: html('salesAreaDescription'),
       },
     ],
   },
@@ -396,22 +405,22 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
       },
       {
         key: 'seats',
-        field: 'sittplatserILokalen',
+        field: 'seating',
         labelKey: label('serving_premises', 'seats'),
-        read: child('sittplatserILokalen', 'antalSittplatserInomhus'),
+        read: child('seating', 'seatsIndoor'),
       },
       {
         key: 'outdoor-seats',
-        field: 'sittplatserILokalen',
+        field: 'seating',
         labelKey: label('serving_premises', 'outdoor_seats'),
-        read: child('sittplatserILokalen', 'antalSittplatserUteservering'),
+        read: child('seating', 'seatsOutdoor'),
         asks: asksOutdoorSeats,
       },
       {
         key: 'max-persons',
-        field: 'maximaltAntalPersonerILokalen',
+        field: 'maxPersonsInPremises',
         labelKey: label('serving_premises', 'max_persons'),
-        read: child('maximaltAntalPersonerILokalen', 'antalPersoner'),
+        read: child('maxPersonsInPremises', 'maxPersons'),
       },
     ],
   },
@@ -421,89 +430,89 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
       // Permanent serving asks per audience; the groups follow what the applicant chose.
       {
         key: 'period-public',
-        field: 'serveringsperiodForAllmanheten',
+        field: 'publicServingPeriod',
         labelKey: audienceLabel(label('serving_hours', 'period'), label('serving_hours', 'period_public')),
-        read: periodWithDates('serveringsperiodForAllmanheten', 'periodServeringAllmanheten'),
+        read: periodWithDates('publicServingPeriod', 'publicServingPeriodDates'),
         when: servesPublic,
       },
       {
         key: 'indoor-public',
-        field: 'serveringstiderInomhusAllmanheten',
+        field: 'publicServingHoursIndoor',
         labelKey: audienceLabel(label('serving_hours', 'indoor'), label('serving_hours', 'indoor_public')),
-        read: timeRange('serveringstiderInomhusAllmanheten'),
+        read: timeRange('publicServingHoursIndoor'),
         when: servesPublic,
       },
       {
         key: 'outdoor-public',
-        field: 'serveringstiderUtomhusAllmanheten',
+        field: 'publicServingHoursOutdoor',
         labelKey: audienceLabel(label('serving_hours', 'outdoor'), label('serving_hours', 'outdoor_public')),
-        read: timeRange('serveringstiderUtomhusAllmanheten'),
+        read: timeRange('publicServingHoursOutdoor'),
         when: servesPublic,
       },
       {
         key: 'period-private',
-        field: 'serveringsperiodForSlutetSallskap',
+        field: 'closedCompanyServingPeriod',
         labelKey: audienceLabel(label('serving_hours', 'period'), label('serving_hours', 'period_private')),
-        read: periodWithDates('serveringsperiodForSlutetSallskap', 'periodServeringSlutetSallskap'),
+        read: periodWithDates('closedCompanyServingPeriod', 'closedCompanyServingPeriodDates'),
         when: servesPrivate,
       },
       {
         key: 'indoor-private',
-        field: 'serveringstiderInomhusSlutetSallskap',
+        field: 'closedCompanyServingHoursIndoor',
         labelKey: audienceLabel(label('serving_hours', 'indoor'), label('serving_hours', 'indoor_private')),
-        read: timeRange('serveringstiderInomhusSlutetSallskap'),
+        read: timeRange('closedCompanyServingHoursIndoor'),
         when: servesPrivate,
       },
       {
         key: 'outdoor-private',
-        field: 'serveringstiderUtomhusSlutetSallskap',
+        field: 'closedCompanyServingHoursOutdoor',
         labelKey: audienceLabel(label('serving_hours', 'outdoor'), label('serving_hours', 'outdoor_private')),
-        read: timeRange('serveringstiderUtomhusSlutetSallskap'),
+        read: timeRange('closedCompanyServingHoursOutdoor'),
         when: servesPrivate,
       },
       // Temporary permits: the permit's dates and one serving time.
       {
         key: 'period',
-        field: 'angeMellanVilkaDatumDetTillfalliga',
+        field: 'permitPeriodDates',
         labelKey: label('serving_hours', 'period'),
-        read: dateRange('angeMellanVilkaDatumDetTillfalliga'),
+        read: dateRange('permitPeriodDates'),
       },
       {
         key: 'dates-note',
-        field: 'ovrigaUppgifterGallandeDatum',
+        field: 'permitPeriodNotes',
         labelKey: label('serving_hours', 'dates_note'),
-        read: plain('ovrigaUppgifterGallandeDatum'),
+        read: plain('permitPeriodNotes'),
       },
       {
         key: 'time',
-        field: 'klockslagForServeringen',
+        field: 'dailyServingHours',
         labelKey: label('serving_hours', 'time'),
-        read: timeRange('klockslagForServeringen'),
+        read: timeRange('dailyServingHours'),
       },
       // Farm sales.
       {
         key: 'sales-period',
-        field: 'forsaljningsperiod',
+        field: 'salesPeriod',
         labelKey: label('serving_hours', 'period'),
-        read: periodWithDates('forsaljningsperiod', 'angePeriodForForsaljning'),
+        read: periodWithDates('salesPeriod', 'salesPeriodDates'),
       },
       {
         key: 'sales-time',
-        field: 'forsaljningstider',
+        field: 'salesHours',
         labelKey: label('serving_hours', 'sales_time'),
-        read: timeRange('forsaljningstider'),
+        read: timeRange('salesHours'),
       },
       // Tobacco: open-ended from a date, or a limited period.
       {
         key: 'tobacco-period',
-        field: 'tidsperiodForForsaljningen',
+        field: 'salesPeriod',
         labelKey: label('serving_hours', 'period'),
         read: (value, schema) =>
           cell(
             [
-              choiceText(value, schema, 'tidsperiodForForsaljningen'),
-              text(value.startdatumForsaljning),
-              dateRangeText(value, 'periodTidsbegransadForsaljning'),
+              choiceText(value, schema, 'salesPeriod'),
+              text(value.salesStartDate),
+              dateRangeText(value, 'salesPeriodDates'),
             ]
               .filter(Boolean)
               .join(', ') || undefined
@@ -516,63 +525,73 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     rows: [
       {
         key: 'drinks',
-        field: 'alkoholdrycker',
+        field: 'beverages',
         labelKey: label('serving', 'drinks'),
-        read: multiChoice('alkoholdrycker'),
+        read: multiChoice('beverages'),
       },
-      { key: 'food', field: 'serverasMat', labelKey: label('serving', 'food'), read: choice('serverasMat') },
+      { key: 'food', field: 'servesFood', labelKey: label('serving', 'food'), read: choice('servesFood') },
       {
         key: 'menu',
-        field: 'menyval',
+        field: 'menuChoice',
         labelKey: label('serving', 'menu'),
-        read: writtenOrAttached('menyval', 'JAG_VILL_BESKRIVA', 'menyBeskrivning', 'MENU'),
+        read: writtenOrAttached('menuChoice', 'DESCRIBE', 'menuDescription', 'MENU'),
       },
       {
         key: 'drinks-menu',
-        field: 'dryckesmenyval',
+        field: 'drinksMenuChoice',
         labelKey: label('serving', 'drinks_menu'),
-        read: writtenOrAttached('dryckesmenyval', 'JAG_VILL_BESKRIVA', 'dryckesmeny', 'DRINKS_MENU'),
+        read: writtenOrAttached('drinksMenuChoice', 'DESCRIBE', 'drinksMenuDescription', 'DRINKS_MENU'),
       },
     ],
   },
   {
     id: 'production',
     rows: [
-      { key: 'beer', field: 'literStarkol', labelKey: label('production', 'beer'), read: plain('literStarkol') },
-      { key: 'wine', field: 'literVin', labelKey: label('production', 'wine'), read: plain('literVin') },
+      {
+        key: 'beer',
+        field: 'strongBeerLiters',
+        labelKey: label('production', 'beer'),
+        read: plain('strongBeerLiters'),
+      },
+      { key: 'wine', field: 'wineLiters', labelKey: label('production', 'wine'), read: plain('wineLiters') },
       {
         key: 'spirits',
-        field: 'literSpritdrycker',
+        field: 'spiritsLiters',
         labelKey: label('production', 'spirits'),
-        read: plain('literSpritdrycker'),
+        read: plain('spiritsLiters'),
       },
-      { key: 'cider', field: 'literCider', labelKey: label('production', 'cider'), read: plain('literCider') },
+      {
+        key: 'cider',
+        field: 'otherFermentedBeveragesLiters',
+        labelKey: label('production', 'cider'),
+        read: plain('otherFermentedBeveragesLiters'),
+      },
       {
         key: 'started',
-        field: 'produktionenStartade',
+        field: 'productionStartDate',
         labelKey: label('production', 'started'),
-        read: plain('produktionenStartade'),
+        read: plain('productionStartDate'),
       },
       {
         key: 'dependency',
-        field: 'beroendeTillAnnanTillverkare',
+        field: 'dependsOnOtherProducer',
         labelKey: label('production', 'dependency'),
-        read: choice('beroendeTillAnnanTillverkare'),
+        read: choice('dependsOnOtherProducer'),
       },
       {
         key: 'dependency-description',
-        field: 'beskrivBeroende',
+        field: 'dependencyDescription',
         labelKey: label('production', 'dependency_description'),
-        read: html('beskrivBeroende'),
+        read: html('dependencyDescription'),
       },
       {
         key: 'description',
-        field: 'produktionsbeskrivningsval',
+        field: 'productionDescriptionChoice',
         labelKey: label('production', 'description'),
         read: writtenOrAttached(
-          'produktionsbeskrivningsval',
-          'JAG_VILL_BESKRIVA',
-          'produktionsbeskrivning',
+          'productionDescriptionChoice',
+          'DESCRIBE',
+          'productionDescription',
           'PRODUCTION_DESCRIPTION'
         ),
       },
@@ -583,28 +602,33 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     rows: [
       {
         key: 'type',
-        field: 'vadArDetForTypAvTillstallning',
+        field: 'eventType',
         labelKey: label('event', 'type'),
-        read: plain('vadArDetForTypAvTillstallning'),
+        read: plain('eventType'),
       },
       {
         key: 'guests',
-        field: 'beraknatAntalGaster',
+        field: 'expectedGuests',
         labelKey: label('event', 'guests'),
-        read: child('beraknatAntalGaster', 'antal'),
+        read: child('expectedGuests', 'count'),
       },
-      { key: 'guest-kind', field: 'gaster', labelKey: label('event', 'guest_kind'), read: multiChoice('gaster') },
+      {
+        key: 'guest-kind',
+        field: 'guestTypes',
+        labelKey: label('event', 'guest_kind'),
+        read: multiChoice('guestTypes'),
+      },
       {
         key: 'invitation',
-        field: 'hurHarGasternaBjuditsIn',
+        field: 'guestInvitationMethod',
         labelKey: label('event', 'invitation'),
-        read: html('hurHarGasternaBjuditsIn'),
+        read: html('guestInvitationMethod'),
       },
       {
         key: 'police-permit',
-        field: 'finnsPolistillstand',
+        field: 'hasAppliedForPolicePermit',
         labelKey: label('event', 'police_permit'),
-        read: choice('finnsPolistillstand'),
+        read: choice('hasAppliedForPolicePermit'),
       },
     ],
   },
@@ -613,29 +637,29 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
     rows: [
       {
         key: 'sources',
-        field: 'finansiering',
+        field: 'financing',
         labelKey: label('financing', 'sources'),
-        read: multiChoice('finansiering'),
+        read: multiChoice('financing'),
       },
-      { key: 'own-funds', field: 'egnaMedel', labelKey: label('financing', 'own_funds'), read: table('egnaMedel') },
-      { key: 'bank-loan', field: 'banklan', labelKey: label('financing', 'bank_loan'), read: table('banklan') },
+      { key: 'own-funds', field: 'ownFunds', labelKey: label('financing', 'own_funds'), read: table('ownFunds') },
+      { key: 'bank-loan', field: 'bankLoans', labelKey: label('financing', 'bank_loan'), read: table('bankLoans') },
       {
         key: 'private-loan',
-        field: 'privatlan',
+        field: 'privateLoans',
         labelKey: label('financing', 'private_loan'),
-        read: table('privatlan'),
+        read: table('privateLoans'),
       },
       {
         key: 'other',
-        field: 'annanFinansiering',
+        field: 'otherFinancing',
         labelKey: label('financing', 'other'),
-        read: table('annanFinansiering'),
+        read: table('otherFinancing'),
       },
       {
         key: 'notes',
-        field: 'ovrigaUpplysningarFinansiering',
+        field: 'financingNotes',
         labelKey: label('financing', 'notes'),
-        read: html('ovrigaUpplysningarFinansiering'),
+        read: html('financingNotes'),
       },
     ],
   },
