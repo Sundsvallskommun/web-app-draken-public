@@ -6,6 +6,10 @@ import {
   supportInvestigationSectionSpec,
   supportInvestigationTextKeys,
 } from '@supportmanagement/services/support-investigation-sections';
+import {
+  TOBACCO_RECORD_PURPOSES,
+  TOBACCO_SELF_MONITORING_PURPOSES,
+} from '@supportmanagement/services/support-tobacco-application-service';
 import { JSX, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +19,9 @@ import { type InvestigationSectionProps, InvestigationSectionText } from '../../
 import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
 import { SupportPremisesSection } from '../../premises/support-premises-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
+import { SupportFiledDocumentsSection } from '../../tobacco/support-filed-documents-section.component';
+import { SupportTobaccoSalesPeriodSection } from '../../tobacco/support-tobacco-sales-period-section.component';
+import { SupportTobaccoSalesPointSection } from '../../tobacco/support-tobacco-sales-point-section.component';
 
 const writtenSection = (sectionKey: Sections, props: InvestigationSectionProps): JSX.Element => (
   <InvestigationSectionText {...props} name={sectionKey} {...supportInvestigationTextKeys(sectionKey)} />
@@ -55,12 +62,26 @@ export const SectionDisclosure: React.FC<{
     legal_basis: writtenSection('legal_basis', props),
     marketing: writtenSection('marketing', props),
     ownership: writtenSection('ownership', props),
-    self_submitted_records: writtenSection('self_submitted_records', props),
-    sales_point: writtenSection('sales_point', props),
+    self_submitted_records: (
+      <SupportFiledDocumentsSection
+        {...props}
+        sectionKey="self_submitted_records"
+        purposes={TOBACCO_RECORD_PURPOSES}
+        factKey="common:investigation.self_submitted_records.filed"
+      />
+    ),
+    sales_point: <SupportTobaccoSalesPointSection {...props} />,
     sales_premises: writtenSection('sales_premises', props),
     sales_premises_location: writtenSection('sales_premises_location', props),
-    opening_hours: writtenSection('opening_hours', props),
-    self_monitoring: writtenSection('self_monitoring', props),
+    opening_hours: <SupportTobaccoSalesPeriodSection {...props} />,
+    self_monitoring: (
+      <SupportFiledDocumentsSection
+        {...props}
+        sectionKey="self_monitoring"
+        purposes={TOBACCO_SELF_MONITORING_PURPOSES}
+        factKey="common:investigation.self_monitoring.filed"
+      />
+    ),
     excise_duty: writtenSection('excise_duty', props),
   };
 
