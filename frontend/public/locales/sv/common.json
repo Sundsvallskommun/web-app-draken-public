@@ -137,7 +137,14 @@
       "child_perspective": "Barnperspektivet",
       "legal_basis": "Lagrum",
       "marketing": "Marknadsföring",
-      "ownership": "Ägarförhållande"
+      "ownership": "Ägarförhållande",
+      "self_submitted_records": "Egeninlämnade uppgifter",
+      "sales_point": "Definition av försäljningsstället",
+      "sales_premises": "Försäljningslokalen",
+      "sales_premises_location": "Försäljningslokalens läge",
+      "opening_hours": "Öppettider",
+      "self_monitoring": "Egenkontroll",
+      "excise_duty": "Punktskatt"
     },
     "section_texts": {
       "lease": {
@@ -175,6 +182,34 @@
       "ownership": {
         "label": "Utredning av ägarförhållandet",
         "placeholder": "Beskriv vem som äger verksamheten och hur ägandet är fördelat"
+      },
+      "self_submitted_records": {
+        "label": "Utredning av egeninlämnade uppgifter",
+        "placeholder": "Sammanfatta de uppgifter sökanden själv lämnat in från Skatteverket, Brottsregistret och Kronofogdemyndigheten"
+      },
+      "sales_point": {
+        "label": "Utredning av försäljningsstället",
+        "placeholder": "Beskriv om försäljningen avser detaljhandel, partihandel eller distansförsäljning, och vilka produkter den omfattar"
+      },
+      "sales_premises": {
+        "label": "Utredning av försäljningslokalen",
+        "placeholder": "Beskriv lokalen, hur tobaken förvaras, eventuell tobaksautomat, leverantör, övriga produkter och åldersdekaler"
+      },
+      "sales_premises_location": {
+        "label": "Utredning av försäljningslokalens läge",
+        "placeholder": "Beskriv försäljningsområdet och närheten till skola, idrottsanläggning, lekpark eller vänthall"
+      },
+      "opening_hours": {
+        "label": "Utredning av öppettiderna",
+        "placeholder": "Ange öppettiderna och vad som gäller för skyltning om rökförbud vid entrén"
+      },
+      "self_monitoring": {
+        "label": "Utredning av egenkontrollen",
+        "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
+      },
+      "excise_duty": {
+        "label": "Utredning av punktskatt",
+        "placeholder": "Beskriv dialogen med sökanden om punktskatt på de produkter som säljs"
       }
     },
     "decision_basis": {

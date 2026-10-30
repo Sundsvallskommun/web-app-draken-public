@@ -55,6 +55,13 @@ export const SectionDisclosure: React.FC<{
     legal_basis: writtenSection('legal_basis', props),
     marketing: writtenSection('marketing', props),
     ownership: writtenSection('ownership', props),
+    self_submitted_records: writtenSection('self_submitted_records', props),
+    sales_point: writtenSection('sales_point', props),
+    sales_premises: writtenSection('sales_premises', props),
+    sales_premises_location: writtenSection('sales_premises_location', props),
+    opening_hours: writtenSection('opening_hours', props),
+    self_monitoring: writtenSection('self_monitoring', props),
+    excise_duty: writtenSection('excise_duty', props),
   };
 
   const spec = supportInvestigationSectionSpec(section);

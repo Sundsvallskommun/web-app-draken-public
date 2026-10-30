@@ -125,6 +125,55 @@ test('an investigation that lacks an examination is completed with it, once, and
   ]);
 });
 
+const tobaccoErrand = {
+  id: ERRAND_ID,
+  labels: [
+    { classification: 'CATEGORY', resourceName: 'TOBACCO' },
+    { classification: 'TYPE', resourceName: 'SALES_PERMIT_APPLICATION' },
+  ],
+};
+
+test('a tobacco permit is completed with the examinations its own type asks for', async () => {
+  useSupportStore.setState({ supportErrand: tobaccoErrand as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalledTimes(1));
+
+  const asked = vi.mocked(completeSupportInvestigationSections).mock.calls[0][3];
+  expect(asked.map((section) => section.sectionKey)).toEqual([
+    'statements',
+    'ownership',
+    'persons_of_influence',
+    'self_submitted_records',
+    'sales_point',
+    'lease',
+    'sales_premises',
+    'sales_premises_location',
+    'opening_hours',
+    'self_monitoring',
+    'marketing',
+    'excise_duty',
+    'communication',
+    'legal_basis',
+  ]);
+  expect(asked.map((section) => section.sortOrder)).toEqual([1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+});
+
+test('a tobacco permit is not offered an underlay, since no template is written for it', async () => {
+  useSupportStore.setState({ supportErrand: tobaccoErrand as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  expect(document.querySelector('[data-cy="investigation-basis"]')).toBeNull();
+});
+
+test('a serving permit is offered its underlay', async () => {
+  mountTab();
+
+  await waitFor(() => expect(document.querySelector('[data-cy="investigation-basis"]')).toBeTruthy());
+});
+
 test('a concluded investigation is left as it stands, however many examinations it lacks', async () => {
   vi.mocked(getSupportInvestigation).mockResolvedValue({ ...investigation, status: 'COMPLETED' } as never);
   mountTab();

@@ -6,7 +6,6 @@ import { Button, Icon } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   collectInvestigationBasisParameters,
-  INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER,
   investigationBasisHandlerName,
   renderInvestigationBasisPreview,
 } from '@supportmanagement/services/support-investigation-basis-service';
@@ -22,10 +21,11 @@ const reasonOf = (failure: unknown): string => {
 
 interface InvestigationBasisProps {
   investigation: Investigation;
+  template: string;
   unsaved: boolean;
 }
 
-export const InvestigationBasis: FC<InvestigationBasisProps> = ({ investigation, unsaved }) => {
+export const InvestigationBasis: FC<InvestigationBasisProps> = ({ investigation, template, unsaved }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -56,7 +56,7 @@ export const InvestigationBasis: FC<InvestigationBasisProps> = ({ investigation,
     setRendering(true);
     setFailed(false);
     try {
-      setPdf(await renderInvestigationBasisPreview(await readTheFacts()));
+      setPdf(await renderInvestigationBasisPreview(template, await readTheFacts()));
     } catch (failure) {
       setFailed(true);
       setReason(reasonOf(failure));
@@ -72,9 +72,7 @@ export const InvestigationBasis: FC<InvestigationBasisProps> = ({ investigation,
     : t('common:investigation.decision_basis.button_label');
 
   const pdfError = failed
-    ? [t('common:investigation.decision_basis.error', { template: INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER }), reason]
-        .filter(Boolean)
-        .join(' ')
+    ? [t('common:investigation.decision_basis.error', { template }), reason].filter(Boolean).join(' ')
     : '';
 
   return (

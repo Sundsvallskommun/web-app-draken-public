@@ -6,6 +6,7 @@ import {
   missingSupportInvestigationSections,
   sectionKeyOf,
   supportInvestigationSectionInputs,
+  supportInvestigationVariant,
   visibleSupportInvestigationSections,
 } from '@supportmanagement/services/support-investigation-sections';
 import {
@@ -87,6 +88,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   }, [saver, setTabSaver]);
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
+  const variant = useMemo(() => supportInvestigationVariant(supportErrand), [supportErrand]);
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
@@ -186,7 +188,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
       errandId,
       municipalityId,
       t('common:investigation.title'),
-      supportInvestigationSectionInputs(t)
+      supportInvestigationSectionInputs(t, variant)
     )
       .then((result) => {
         receive(result);
@@ -207,14 +209,14 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   }, [isLoading, error, investigation, inStep, canEdit]);
 
   const completeTheExaminations = (): Promise<void> => {
-    const missing = missingSupportInvestigationSections(investigation);
+    const missing = missingSupportInvestigationSections(investigation, variant);
     if (!errandId || !investigation?.id || missing.length === 0) return Promise.resolve();
 
     return completeSupportInvestigationSections(
       errandId,
       municipalityId,
       investigation.id,
-      supportInvestigationSectionInputs(t, missing)
+      supportInvestigationSectionInputs(t, variant, missing)
     )
       .then(receiveKeepingUnsavedEdits)
       .catch(() => {
@@ -273,7 +275,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   // The saver is registered once; the ref keeps it pointing at the current fields.
   saveLatest.current = save;
 
-  const sections = useMemo(() => visibleSupportInvestigationSections(investigation), [investigation]);
+  const sections = useMemo(() => visibleSupportInvestigationSections(investigation, variant), [investigation, variant]);
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
@@ -334,7 +336,13 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
-            <InvestigationBasis investigation={investigation} unsaved={edited || someSectionEdited} />
+            {variant.basisTemplate ? (
+              <InvestigationBasis
+                investigation={investigation}
+                template={variant.basisTemplate}
+                unsaved={edited || someSectionEdited}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

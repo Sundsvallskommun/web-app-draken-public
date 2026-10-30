@@ -61,10 +61,9 @@ import { getSupportStatements } from './support-statement-service';
  * from what the errand, the application and the investigation hold. The keys below are the template's
  * own, nested as its example call nests them, and nothing else reaches it.
  *
- * The identifier is the one the serving template was uploaded under. A template the preview cannot
- * find answers 404, and the preview names the identifier it asked for.
+ * The identifier belongs to the errand type and comes from its investigation variant. A template the
+ * preview cannot find answers 404, and the preview names the identifier it asked for.
  */
-export const INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER = 'serving-permit-decision-basis';
 
 const ISSUER = {
   issuedByUnit: 'Alkohol- och tobaksenheten',
@@ -690,8 +689,10 @@ const asTemplateParameters = (parameters: InvestigationBasisParameters): { [key:
   parameters as unknown as { [key: string]: string | Object };
 
 /** Watermarked, since the underlay the handler looks at is not the document the decision is taken on. */
-export const renderInvestigationBasisPreview = (parameters: InvestigationBasisParameters): Promise<string> =>
-  renderTemplatePdfPreview(INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER, asTemplateParameters(parameters));
+export const renderInvestigationBasisPreview = (
+  template: string,
+  parameters: InvestigationBasisParameters
+): Promise<string> => renderTemplatePdfPreview(template, asTemplateParameters(parameters));
 
 export const investigationBasisHandlerName = (admin: Admin | undefined): string =>
   [admin?.firstName, admin?.lastName].filter(Boolean).join(' ') || admin?.displayName || '';

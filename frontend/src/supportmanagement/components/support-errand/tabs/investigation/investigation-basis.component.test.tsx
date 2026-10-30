@@ -5,10 +5,7 @@ import {
   getLegalEntityPersonEngagements,
 } from '@common/services/legal-entity-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import {
-  INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER,
-  renderInvestigationBasisPreview,
-} from '@supportmanagement/services/support-investigation-basis-service';
+import { renderInvestigationBasisPreview } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -61,7 +58,10 @@ const investigation = {
   sections: [{ id: 's1', sectionKey: 'lease', text: '<p>Hyresavtal till 2029.</p>', sortOrder: 5 }],
 };
 
-const mount = (unsaved = false) => render(<InvestigationBasis investigation={investigation} unsaved={unsaved} />);
+const TEMPLATE = 'serving-permit-decision-basis';
+
+const mount = (unsaved = false) =>
+  render(<InvestigationBasis investigation={investigation} template={TEMPLATE} unsaved={unsaved} />);
 
 const button = () => document.querySelector('[data-cy="investigation-basis-render"]') as HTMLButtonElement;
 const preview = () => document.querySelector('[data-cy="investigation-basis-preview-content"]') as HTMLIFrameElement;
@@ -111,7 +111,8 @@ test('the underlay is rendered from what the errand holds, and the button then o
   expect(preview().getAttribute('src')).toContain(window.btoa('%PDF-1.7'));
   expect(button().textContent).toBe('Uppdatera');
 
-  const parameters = vi.mocked(renderInvestigationBasisPreview).mock.calls[0][0];
+  const [template, parameters] = vi.mocked(renderInvestigationBasisPreview).mock.calls[0];
+  expect(template).toBe(TEMPLATE);
   expect(parameters.caseNumber).toBe('AOT-26100216');
   expect(parameters.handlerName).toBe('Annika Jansson');
   expect(parameters.premises.leaseHtml).toBe('<p>Hyresavtal till 2029.</p>');
@@ -139,7 +140,7 @@ test('a template that cannot be rendered is told to the handler, named', async (
   const failure = () => document.querySelector('[data-cy="investigation-basis-preview-error"]');
   await waitFor(() => expect(failure()).toBeTruthy());
 
-  expect(failure()?.textContent).toContain(INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER);
+  expect(failure()?.textContent).toContain(TEMPLATE);
   expect(preview()).toBeNull();
 });
 
@@ -161,6 +162,6 @@ test('what the service objected to is told along with the template name', async 
   const failure = () => document.querySelector('[data-cy="investigation-basis-preview-error"]');
   await waitFor(() => expect(failure()).toBeTruthy());
 
-  expect(failure()?.textContent).toContain(INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER);
+  expect(failure()?.textContent).toContain(TEMPLATE);
   expect(failure()?.textContent).toContain("Missing parameter 'premises.name'");
 });
