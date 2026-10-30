@@ -28,8 +28,8 @@ export const childText = (value: FormValue, field: string, name: string): string
 export const dateRangeText = (value: FormValue, field: string): string | undefined => {
   const range = value[field];
   if (!isRecord(range)) return undefined;
-  const from = text(range.startDate);
-  const to = text(range.endDate);
+  const from = text(range.fromDate);
+  const to = text(range.toDate);
   return from || to ? `${from ?? ''} – ${to ?? ''}` : undefined;
 };
 
@@ -48,8 +48,8 @@ const clock = (value: unknown): string | undefined => {
 export const timeRangeClocks = (value: FormValue, field: string): { from?: string; to?: string } | undefined => {
   const range = value[field];
   if (!isRecord(range)) return undefined;
-  const from = clock(range.startTime);
-  const to = clock(range.endTime);
+  const from = clock(range.from);
+  const to = clock(range.to);
   return from || to ? { from, to } : undefined;
 };
 
@@ -58,9 +58,17 @@ export const timeRangeText = (value: FormValue, field: string): string | undefin
   return range && `${range.from ?? ''}–${range.to ?? ''}`;
 };
 
-export const AUDIENCE = 'serveringTillAllmanhetenEllerSlutetSallskap';
-export const BOTH_AUDIENCES = 'BADE_TILL_ALLMANHETEN_OCH_TILL';
+export const AUDIENCE = 'servingAudience';
+export const BOTH_AUDIENCES = 'PUBLIC_AND_CLOSED_COMPANY';
 export const servesPublic = (value: FormValue): boolean =>
-  value[AUDIENCE] === 'ENBART_TILL_ALLMANHETEN' || value[AUDIENCE] === BOTH_AUDIENCES;
+  value[AUDIENCE] === 'PUBLIC' || value[AUDIENCE] === BOTH_AUDIENCES;
 export const servesPrivate = (value: FormValue): boolean =>
-  value[AUDIENCE] === 'ENBART_TILL_SLUTET_SALLSKAP' || value[AUDIENCE] === BOTH_AUDIENCES;
+  value[AUDIENCE] === 'CLOSED_COMPANY' || value[AUDIENCE] === BOTH_AUDIENCES;
+
+/** Alcohol schemas name the premises `premises*`, tobacco schemas `pointOfSale*`. */
+export const PREMISES_PREFIXES = ['premises', 'pointOfSale'] as const;
+
+export type PremisesField = 'Name' | 'Address' | 'Contact' | 'AddressSameAsCompany';
+
+export const premisesValue = (value: FormValue | undefined, field: PremisesField): unknown =>
+  value && PREMISES_PREFIXES.map((prefix) => value[`${prefix}${field}`]).find((answer) => answer !== undefined);

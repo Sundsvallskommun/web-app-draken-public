@@ -36,7 +36,7 @@ const errandOf = (extra: Record<string, unknown> = {}) =>
   ({
     errandNumber: 'AOT-26100008',
     stakeholders: [owner],
-    jsonParameters: [{ value: { besoksadressSammaSomForetaget: 'JA' } }],
+    jsonParameters: [{ value: { premisesAddressSameAsCompany: 'YES' } }],
     ...extra,
   } as never);
 
@@ -377,7 +377,7 @@ test('the premises are read from the errand, and the owner stands in when they s
     jsonParameters: [
       {
         value: {
-          serveringsstalletsBesoksadress: { gatuadress: 'Kyrkogatan 6', postnummer: '852 31', postort: 'Sundsvall' },
+          premisesAddress: { street: 'Kyrkogatan 6', postalCode: '852 31', city: 'Sundsvall' },
         },
       },
     ],
@@ -393,31 +393,31 @@ test('the premises are read from the errand, and the owner stands in when they s
   ).toMatchObject({ premisesStreet: 'Kyrkogatan 6', premisesPostalAddress: '852 31 Sundsvall' });
 });
 
-test('the premises name is read whether the form wrote it plainly or as a field of its own', () => {
-  const named = (serveringsstalletsNamn: unknown) =>
+test('the premises name is read under either prefix, the owner standing in without one', () => {
+  const named = (value: Record<string, unknown>) =>
     supportStatementTemplateParameters({
       ...facts,
       identifier: 'referral-general',
       counterpartyName: 'Kronofogden',
-      errand: errandOf({ jsonParameters: [{ value: { serveringsstalletsNamn } }] }),
+      errand: errandOf({ jsonParameters: [{ value }] }),
     }).premisesName;
 
-  expect(named({ namn: 'Testrestaurangen' })).toBe('Testrestaurangen');
-  expect(named('Testrestaurangen')).toBe('Testrestaurangen');
-  expect(named(undefined)).toBe('Krogen Exempel AB');
+  expect(named({ premisesName: 'Testrestaurangen' })).toBe('Testrestaurangen');
+  expect(named({ pointOfSaleName: 'Testkiosken' })).toBe('Testkiosken');
+  expect(named({})).toBe('Krogen Exempel AB');
 });
 
-test('the premises are the owner’s under either name the question has had', () => {
+test('the premises are the owner’s under either prefix', () => {
   const asked = (question: string) =>
     supportStatementTemplateParameters({
       ...facts,
       identifier: 'referral-general',
       counterpartyName: 'Kronofogden',
-      errand: errandOf({ jsonParameters: [{ value: { [question]: 'JA' } }] }),
+      errand: errandOf({ jsonParameters: [{ value: { [question]: 'YES' } }] }),
     }).premisesStreet;
 
-  expect(asked('besoksadressSammaSomForetaget')).toBe('Storgatan 1');
-  expect(asked('besoksadressSammaSomArendeagare')).toBe('Storgatan 1');
+  expect(asked('pointOfSaleAddressSameAsCompany')).toBe('Storgatan 1');
+  expect(asked('premisesAddressSameAsCompany')).toBe('Storgatan 1');
 });
 
 test('every parameter the templates require of us is sent, the rest they default themselves', () => {

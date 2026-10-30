@@ -81,9 +81,9 @@ const permanentErrand = (): SupportErrand =>
         key: SCHEMA_NAME,
         schemaId: `${SCHEMA_NAME}-id`,
         value: {
-          serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_ALLMANHETEN',
-          serveringstiderInomhusAllmanheten: { startTime: '11:00:00', endTime: '01:00:00' },
-          alkoholdrycker: ['STARKOL', 'VIN'],
+          servingAudience: 'PUBLIC',
+          publicServingHoursIndoor: { from: '11:00:00', to: '01:00:00' },
+          beverages: ['STRONG_BEER', 'WINE'],
         },
       },
     ],
@@ -172,8 +172,8 @@ test('the decided beverages and hours start from the application, and an edit is
   useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
   const setUnsaved = await renderTab();
 
-  expect(input('beverages-STARKOL').checked).toBe(true);
-  expect(input('beverages-SPRITDRYCKER').checked).toBe(false);
+  expect(input('beverages-STRONG_BEER').checked).toBe(true);
+  expect(input('beverages-SPIRITS').checked).toBe(false);
   expect(input('serving-hours-indoorPublic-from').value).toBe('11:00');
   expect(input('serving-hours-indoorPublic-to').value).toBe('01:00');
   expect(input('serving-hours-outdoorPublic-from').value).toBe('');
@@ -181,9 +181,9 @@ test('the decided beverages and hours start from the application, and an edit is
   expect(input('serving-hours-indoorPrivate-from')).toBeNull();
   expect(setUnsaved).toHaveBeenLastCalledWith(false);
 
-  fireEvent.click(input('beverages-STARKOL'));
+  fireEvent.click(input('beverages-STRONG_BEER'));
 
-  expect(input('beverages-STARKOL').checked).toBe(false);
+  expect(input('beverages-STRONG_BEER').checked).toBe(false);
   expect(unsavedHint()).toBeTruthy();
   expect(setUnsaved).toHaveBeenLastCalledWith(true);
 });
@@ -213,14 +213,14 @@ test('saving writes what was decided beside what the certificate reads', async (
   useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
   await renderTab();
   fillWhatTheCertificatePrints();
-  fireEvent.click(input('beverages-VIN'));
+  fireEvent.click(input('beverages-WINE'));
   fireEvent.change(input('serving-hours-indoorPublic-to'), { target: { value: '00:00' } });
 
   await expect(saveTheTab()).resolves.toBe(true);
 
   const parameters = sentParameters(vi.mocked(createSupportDecision).mock.calls[0]);
   const byKey = Object.fromEntries(parameters.map((parameter) => [parameter.key, parameter]));
-  expect(byKey.decidedBeverages).toMatchObject({ group: 'DECIDED', values: ['STARKOL'] });
+  expect(byKey.decidedBeverages).toMatchObject({ group: 'DECIDED', values: ['STRONG_BEER'] });
   expect(byKey.decidedServingHoursIndoorPublic).toMatchObject({ group: 'DECIDED', values: ['11:00', '00:00'] });
   expect(byKey.decidedServingHoursOutdoorPublic).toMatchObject({ group: 'DECIDED', values: [] });
   expect(byKey).not.toHaveProperty('decidedServingHoursIndoorPrivate');
@@ -246,8 +246,8 @@ test('a saved decision fills the fields instead of the application, an empty val
   const setUnsaved = await renderTab();
 
   await waitFor(() => expect(input('serving-hours-indoorPublic-from').value).toBe('10:00'));
-  expect(input('beverages-STARKOL').checked).toBe(false);
-  expect(input('beverages-VIN').checked).toBe(false);
+  expect(input('beverages-STRONG_BEER').checked).toBe(false);
+  expect(input('beverages-WINE').checked).toBe(false);
   expect(input('serving-hours-indoorPublic-to').value).toBe('23:00');
   // Not saved on the decision, so the application still fills it (and it is empty there).
   expect(input('serving-hours-outdoorPublic-from').value).toBe('');

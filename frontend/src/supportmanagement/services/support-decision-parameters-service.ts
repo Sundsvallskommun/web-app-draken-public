@@ -14,6 +14,8 @@ import {
   childText,
   dateRangeText,
   type FormValue,
+  isRecord,
+  premisesValue,
   servesPrivate,
   servesPublic,
   text,
@@ -88,8 +90,10 @@ const permitHolderParameters = (holder: SupportStakeholderFormModel | undefined)
 });
 
 /** The telephone to the premises the application gave, which the handler's field starts from. */
-export const applicationPremisesPhone = (form: FormValue | undefined): string =>
-  (form && childText(form, 'kontaktuppgifterTillServeringsstallet', 'telefonnummer')) ?? '';
+export const applicationPremisesPhone = (form: FormValue | undefined): string => {
+  const contact = premisesValue(form, 'Contact');
+  return (isRecord(contact) ? text(contact.phoneNumber) : undefined) ?? '';
+};
 
 /**
  * The restaurant number is left out: the process resolves it and puts the one it assigned on the
@@ -100,7 +104,7 @@ const premisesParameters = (
   premises: DecisionPremises | undefined,
   premisesPhone: string | undefined
 ): Parameters => ({
-  premisesName: form && text(form.serveringsstalletsNamn),
+  premisesName: text(premisesValue(form, 'Name')),
   premisesStreet: premises?.street,
   premisesPostalAddress: postalAddress(premises?.postalCode, premises?.city),
   premisesPhone: text(premisesPhone) ?? text(applicationPremisesPhone(form)),
@@ -119,16 +123,12 @@ const issuingParameters = ({
 });
 
 // Permanent serving asks the period per audience; temporary and farm sales ask it once.
-const SERVING_PERIOD_CHOICES = [
-  'serveringsperiodForAllmanheten',
-  'serveringsperiodForSlutetSallskap',
-  'forsaljningsperiod',
-];
+const SERVING_PERIOD_CHOICES = ['publicServingPeriod', 'closedCompanyServingPeriod', 'salesPeriod'];
 const SERVING_PERIOD_DATES = [
-  'periodServeringAllmanheten',
-  'periodServeringSlutetSallskap',
-  'angePeriodForForsaljning',
-  'angeMellanVilkaDatumDetTillfalliga',
+  'publicServingPeriodDates',
+  'closedCompanyServingPeriodDates',
+  'salesPeriodDates',
+  'permitPeriodDates',
 ];
 const servingPeriods = (form: FormValue): string[] =>
   SERVING_PERIOD_CHOICES.map((field) => text(form[field])).filter((period): period is string => !!period);
@@ -174,18 +174,18 @@ export const servingPermitParameters = ({
   ...premisesParameters(form, premises, premisesPhone),
   servingToPublic: form && String(servesPublic(form)),
   servingToClosedCompany: form && String(servesPrivate(form)),
-  scopeAllYear: form && String(servingPeriods(form).includes('ARET_RUNT')),
-  scopeAnnualPeriod: form && String(servingPeriods(form).includes('ARLIGEN_UNDER_VISS_PERIOD')),
+  scopeAllYear: form && String(servingPeriods(form).includes('ALL_YEAR')),
+  scopeAnnualPeriod: form && String(servingPeriods(form).includes('ANNUAL_PERIOD')),
   scopeTasting: String(errandType === 'TASTING'),
   scopePeriodFromTo: form && servingPeriodDates(form),
-  beverageSpirits: decided(scope, 'SPRITDRYCKER'),
-  beverageWine: decided(scope, 'VIN'),
-  beverageBeer: decided(scope, 'STARKOL'),
-  beverageOtherFermented: decided(scope, 'CIDER_ELLER_ANDRA_JASTA_ALKOHOLDRYCKER'),
+  beverageSpirits: decided(scope, 'SPIRITS'),
+  beverageWine: decided(scope, 'WINE'),
+  beverageBeer: decided(scope, 'STRONG_BEER'),
+  beverageOtherFermented: decided(scope, 'OTHER_FERMENTED_BEVERAGES'),
   servingAreaDescription: text(servingArea),
   servingAreaDrawingReference: drawingReference(attachments),
-  servingAreaSeats: form && childText(form, 'sittplatserILokalen', 'antalSittplatserInomhus'),
-  servingAreaMaxPersons: form && childText(form, 'maximaltAntalPersonerILokalen', 'antalPersoner'),
+  servingAreaSeats: form && childText(form, 'seating', 'seatsIndoor'),
+  servingAreaMaxPersons: form && childText(form, 'maxPersonsInPremises', 'maxPersons'),
   servingHours: scope && servingHours(scope),
   ...issuingParameters({ errand, user, issuedOn }),
   decisionDateAndCaseNumber: join(today, errand.errandNumber),
@@ -205,10 +205,10 @@ export const tobaccoPermitParameters = ({
   premisesPropertyDesignation: undefined, // fastighetsbeteckning is not asked for anywhere yet
   salesRetail: undefined, // the form does not ask whether the sales are retail
   salesWholesale: undefined, // the form does not ask whether the sales are wholesale
-  salesOnline: form && String(form.bedriverAvenDistansforsaljning === 'JA'),
-  validityIndefinite: form && String(form.tidsperiodForForsaljningen === 'TILLSVIDARE'),
-  validityTemporary: form && String(form.tidsperiodForForsaljningen === 'TIDSBEGRANSAD_FORSALJNING'),
-  temporaryPeriod: form && dateRangeText(form, 'periodTidsbegransadForsaljning'),
+  salesOnline: form && String(form.includesDistanceSelling === 'YES'),
+  validityIndefinite: form && String(form.salesPeriod === 'INDEFINITE'),
+  validityTemporary: form && String(form.salesPeriod === 'TEMPORARY'),
+  temporaryPeriod: form && dateRangeText(form, 'salesPeriodDates'),
   ...issuingParameters({ errand, user, issuedOn }),
   decisionOfficerAndCaseNumber: join(user.name, errand.errandNumber),
 });

@@ -6,6 +6,7 @@ import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts
 import type { ChosenCompany } from '../components/support-errand/company-engagements/company-engagement-choice.component';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { getErrandParameterValue, getStakeholderOrganizationNumber } from './support-errand-service';
+import { premisesValue } from './support-form-value-service';
 import {
   engagementIsPerson,
   hyphenatedIdentity,
@@ -239,12 +240,6 @@ interface SupportStatementPremises {
   postalAddress: string;
 }
 
-const textOf = (value: unknown, key: string): string => {
-  if (typeof value === 'string') return value;
-  const field = (value as Record<string, unknown> | undefined)?.[key];
-  return typeof field === 'string' ? field : '';
-};
-
 const organizationNumberOf = (owner: SupportStakeholder | undefined): string =>
   (owner && getStakeholderOrganizationNumber(owner)) || '';
 
@@ -254,18 +249,16 @@ const supportStatementPremises = (errand: SupportErrand | undefined): SupportSta
     | undefined;
   const owner = errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
 
-  const atTheCompany =
-    document?.besoksadressSammaSomForetaget === 'JA' || document?.besoksadressSammaSomArendeagare === 'JA';
-  const address = (document?.besoksadress ?? document?.serveringsstalletsBesoksadress) as
-    | Record<string, string>
-    | undefined;
+  const atTheCompany = premisesValue(document, 'AddressSameAsCompany') === 'YES';
+  const address = premisesValue(document, 'Address') as Record<string, string> | undefined;
 
-  const street = atTheCompany ? owner?.address ?? '' : address?.gatuadress ?? '';
-  const postalCode = atTheCompany ? owner?.zipCode ?? '' : address?.postnummer ?? '';
-  const city = atTheCompany ? owner?.city ?? '' : address?.postort ?? '';
+  const street = atTheCompany ? owner?.address ?? '' : address?.street ?? '';
+  const postalCode = atTheCompany ? owner?.zipCode ?? '' : address?.postalCode ?? '';
+  const city = atTheCompany ? owner?.city ?? '' : address?.city ?? '';
 
+  const name = premisesValue(document, 'Name');
   return {
-    name: textOf(document?.serveringsstalletsNamn, 'namn') || owner?.organizationName || '',
+    name: (typeof name === 'string' && name) || owner?.organizationName || '',
     street,
     postalAddress: [postalCode, city].filter(Boolean).join(' '),
   };
