@@ -1000,6 +1000,17 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-city"]').fill('Teststaden');
 
     await expect(page.locator('[data-cy="submit-contact-button"]')).toBeEnabled();
+
+    // A half-typed phone number is only checked when it is added, it never blocks saving the contact
+    await page.locator('[data-cy="newPhoneNumber"]').fill(mockEnv.mockPhoneNumber.slice(0, 3));
+    await expect(page.locator('[data-cy="newPhoneNumber-error"]')).not.toBeVisible();
+    await expect(page.locator('[data-cy="submit-contact-button"]')).toBeEnabled();
+    await page.locator('[data-cy="newPhoneNumber-button"]').click();
+    await expect(page.locator('[data-cy="newPhoneNumber-error"]').getByText('Ej giltigt telefonnummer')).toBeVisible();
+    await expect(page.locator('[data-cy^="phone-tag-"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="submit-contact-button"]')).toBeEnabled();
+    await page.locator('[data-cy="newPhoneNumber"]').clear();
+
     await page.locator('[data-cy="submit-contact-button"]').click();
 
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })).toBeVisible();

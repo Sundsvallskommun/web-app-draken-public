@@ -4,6 +4,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { sanitized } from '@common/services/sanitizer-service';
+import { emailSchema } from '@common/utils/contact-validation-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -45,15 +46,6 @@ import { isCasedataForwardTarget, useSupportHandover } from './handover/use-supp
 const yupForwardForm = yup.object().shape(
   {
     recipient: yup.string().required('Mottagare är obligatoriskt'),
-    newEmail: yup
-      .string()
-      .email('E-postadress har fel format')
-      .when(['emails', 'recipient'], {
-        is: (emails: [], recipient: string) => {
-          return !emails.length && recipient === 'EMAIL';
-        },
-        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
-      }),
     department: yup.string().when('recipient', {
       is: 'DEPARTMENT',
       then: (schema) => schema.required('Verksamhet är obligatoriskt'),
@@ -73,11 +65,15 @@ const yupForwardForm = yup.object().shape(
       .of(
         yup
           .object({
-            value: yup.string().email('Ogiltig e-postadress').required('E-postadress krävs'),
+            value: emailSchema().required('E-postadress krävs'),
           })
           .required()
       )
-      .required('Minst en e-postadress krävs'),
+      .required('Minst en e-postadress krävs')
+      .when('recipient', {
+        is: 'EMAIL',
+        then: (schema) => schema.min(1, 'Ange minst en e-postadress'),
+      }),
   },
   [
     ['emails', 'recipient'],

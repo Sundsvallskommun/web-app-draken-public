@@ -1,5 +1,7 @@
+import { invalidPhoneMessage, isValidPhoneNumber } from '@common/utils/contact-validation-utils';
 import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
+import { useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
 
 type size = 'sm' | 'md' | 'lg';
@@ -7,8 +9,8 @@ type size = 'sm' | 'md' | 'lg';
 interface CommonNestedPhoneArrayV2Props {
   control: any;
   register: any;
-  errors: any;
   watch: any;
+  setValue: any;
   trigger: any;
   disabled?: boolean;
   required?: boolean;
@@ -20,8 +22,8 @@ interface CommonNestedPhoneArrayV2Props {
 const CommonNestedPhoneArrayV2 = ({
   control,
   register,
-  errors,
   watch,
+  setValue,
   trigger,
   disabled = false,
   required = false,
@@ -34,6 +36,8 @@ const CommonNestedPhoneArrayV2 = ({
   });
 
   const { newPhoneNumber } = watch();
+  // The number is checked when Add is clicked, so typing never shows an error or blocks saving the form
+  const [showNewPhoneNumberError, setShowNewPhoneNumberError] = useState(false);
 
   return (
     <FormControl id={`phoneNumbers`} className="w-full" size={size as size}>
@@ -44,8 +48,8 @@ const CommonNestedPhoneArrayV2 = ({
             disabled={disabled}
             data-cy={`newPhoneNumber`}
             placeholder="Till exempel 0701740605 eller +46701740605."
-            className={cx(error ? 'border-error' : null, 'w-full mr-16')}
-            {...register(`newPhoneNumber`)}
+            className={cx(error || showNewPhoneNumberError ? 'border-error' : null, 'w-full mr-16')}
+            {...register(`newPhoneNumber`, { onChange: () => setShowNewPhoneNumberError(false) })}
           />
         </div>
 
@@ -56,17 +60,24 @@ const CommonNestedPhoneArrayV2 = ({
           data-cy={`newPhoneNumber-button`}
           color="primary"
           onClick={() => {
+            if (!isValidPhoneNumber(newPhoneNumber)) {
+              setShowNewPhoneNumberError(true);
+              return;
+            }
             append({ value: phoneNumberFormatter(newPhoneNumber) });
+            setValue('newPhoneNumber', '');
             trigger();
           }}
-          disabled={newPhoneNumber === '' || (errors && !!errors.newPhoneNumber)}
+          disabled={disabled || !newPhoneNumber}
           className="rounded-button"
         >
           Lägg till
         </Button>
       </div>
-      {errors?.newPhoneNumber?.message && (
-        <FormErrorMessage className="text-error">{errors?.newPhoneNumber?.message}</FormErrorMessage>
+      {showNewPhoneNumberError && (
+        <FormErrorMessage data-cy="newPhoneNumber-error" className="text-error">
+          {invalidPhoneMessage}
+        </FormErrorMessage>
       )}
       {fields.length > 0 ? (
         <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">

@@ -13,6 +13,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
 import { base64ToFile } from '@common/services/attachment-service';
 import { base64Decode } from '@common/services/helper-service';
+import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
 import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
@@ -145,7 +146,7 @@ export const sendSms: (
 ) => Promise<boolean> = async (municipalityId, errand, data) => {
   const msgPromises = [...data.phoneNumbers].map(async (target) => {
     const messageData: { errandId: string; municipalityId: string; phonenumber: string; text: string } = {
-      phonenumber: Object(target).value.replace('-', ''),
+      phonenumber: phoneNumberFormatter(Object(target).value),
       text: data.messageBodyPlaintext,
       errandId: errand.id.toString(),
       municipalityId: municipalityId,

@@ -1,5 +1,6 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { sanitized } from '@common/services/sanitizer-service';
+import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
@@ -149,7 +150,7 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
       if (data.contactMeans === 'email') {
         messageFormData.append('recipientEmail', Object(target).value);
       } else if (data.contactMeans === 'sms') {
-        messageFormData.append('recipientPhone', Object(target).value.replace('-', ''));
+        messageFormData.append('recipientPhone', phoneNumberFormatter(Object(target).value));
       }
       messageFormData.append('plaintextMessage', data.plaintextMessage);
       messageFormData.append(
