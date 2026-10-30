@@ -30,7 +30,7 @@ export const SUPPORT_PREMISES_RIGHT_OF_DISPOSALS: {
 
 /**
  * What the handler establishes about the premises. Neither the inspection nor the right of disposal is
- * answered anywhere in the application, so both are written on the errand and saved by Spara ärende.
+ * answered anywhere in the application, so both are written as parameters of the premises section.
  */
 export interface SupportPremisesExamination {
   inspectedAt: string;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import type { InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import type { CParameter } from 'src/data-contracts/backend/data-contracts';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportPremisesSection } from './support-premises-section.component';
@@ -25,16 +25,10 @@ vi.mock('@supportmanagement/services/support-statement-service', () => ({
   getSupportStatements: (...args: unknown[]) => getSupportStatements(...args),
 }));
 
-const form: { parameters: CParameter[] } = { parameters: [] };
-const setValue = vi.fn((name: 'parameters', value: CParameter[], _options?: { shouldDirty?: boolean }) => {
-  form[name] = value;
-});
-vi.mock('react-hook-form', () => ({
-  useFormContext: () => ({
-    watch: (name: 'parameters') => form[name],
-    getValues: (name: 'parameters') => form[name],
-    setValue,
-  }),
+const saveSupportInvestigationSection = vi.fn();
+vi.mock('@supportmanagement/services/support-investigation-service', () => ({
+  saveSupportInvestigationSection: (...args: unknown[]) => saveSupportInvestigationSection(...args),
+  SUPPORT_INVESTIGATION_TEXT_MAX_LENGTH: 8192,
 }));
 
 const PERMANENT_SERVING = 'aot_alcohol_serving_permit_application_permanent_serving';
@@ -56,10 +50,13 @@ const errandWith = (answers: Record<string, unknown> | undefined) => ({
 
 const saveRef: { current: (() => Promise<boolean>) | undefined } = { current: undefined };
 
-const mountSection = (writable = true) =>
+const mountSection = (
+  writable = true,
+  section: InvestigationSection = { id: 's1', sectionKey: 'premises', text: '' }
+) =>
   render(
     <SupportPremisesSection
-      section={{ id: 's1', sectionKey: 'premises', text: '' }}
+      section={section}
       investigationId="i1"
       writable={writable}
       onEdited={vi.fn()}
@@ -72,7 +69,7 @@ const fieldOf = (name: string) => document.querySelector(`[data-cy="${name}"]`) 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  form.parameters = [];
+  saveSupportInvestigationSection.mockResolvedValue({ id: 'i1' });
   getSupportStatements.mockResolvedValue([]);
   useConfigStore.setState({ municipalityId: '2281' });
   useMetadataStore.setState({
@@ -126,29 +123,45 @@ test('no answer from the rescue service is said plainly', async () => {
   await waitFor(() => expect(fieldOf('premises-fire-safety').textContent).toBe('common:premises.fire_safety_pending'));
 });
 
-test('the inspection date and the right of disposal are written onto the errand', () => {
-  const { rerender } = mountSection();
+const savedParameters = (): { key: string; values?: string[] }[] =>
+  saveSupportInvestigationSection.mock.calls[0][4].parameters;
+
+const savedValues = (key: string) => savedParameters().find((parameter) => parameter.key === key)?.values;
+
+test('the inspection date and the right of disposal are saved on the premises section', async () => {
+  mountSection();
 
   fireEvent.change(fieldOf('premises-inspected-at'), { target: { value: '2026-04-10' } });
-  rerender(
-    <SupportPremisesSection
-      section={{ id: 's1', sectionKey: 'premises', text: '' }}
-      investigationId="i1"
-      writable={true}
-      onEdited={vi.fn()}
-      onSaved={vi.fn()}
-      saveRef={saveRef}
-    />
-  );
   fireEvent.change(fieldOf('premises-right-of-disposal'), { target: { value: 'PROVEN' } });
 
-  expect(setValue).toHaveBeenCalledWith('parameters', expect.anything(), { shouldDirty: true });
-  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_INSPECTED_AT')?.values).toEqual([
-    '2026-04-10',
-  ]);
-  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_RIGHT_OF_DISPOSAL')?.values).toEqual([
-    'PROVEN',
-  ]);
+  await expect(saveRef.current?.()).resolves.toBe(true);
+
+  expect(saveSupportInvestigationSection).toHaveBeenCalledWith('e1', '2281', 'i1', 's1', {
+    parameters: expect.any(Array),
+  });
+  expect(savedValues('PREMISES_INSPECTED_AT')).toEqual(['2026-04-10']);
+  expect(savedValues('PREMISES_RIGHT_OF_DISPOSAL')).toEqual(['PROVEN']);
+});
+
+test('what the section holds is shown, and an edit keeps the other parameters', async () => {
+  mountSection(true, {
+    id: 's1',
+    sectionKey: 'premises',
+    text: '',
+    parameters: [
+      { key: 'PREMISES_INSPECTED_AT', values: ['2026-03-01'] },
+      { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PENDING'] },
+    ],
+  });
+
+  expect(fieldOf('premises-inspected-at').value).toBe('2026-03-01');
+  expect(fieldOf('premises-right-of-disposal').value).toBe('PENDING');
+
+  fireEvent.change(fieldOf('premises-right-of-disposal'), { target: { value: 'PROVEN' } });
+  await expect(saveRef.current?.()).resolves.toBe(true);
+
+  expect(savedValues('PREMISES_INSPECTED_AT')).toEqual(['2026-03-01']);
+  expect(savedValues('PREMISES_RIGHT_OF_DISPOSAL')).toEqual(['PROVEN']);
 });
 
 test('a space typed in the note survives the re-render', () => {
@@ -197,15 +210,13 @@ test('a passed step leaves nothing to change', () => {
   expect(fieldOf('premises-right-of-disposal-note').disabled).toBe(true);
 });
 
-test('the serving areas are written onto the errand', () => {
+test('the serving areas are saved on the premises section', async () => {
   mountSection();
 
   fireEvent.change(fieldOf('premises-serving-area'), { target: { value: 'Matsalen och bryggan' } });
+  await expect(saveRef.current?.()).resolves.toBe(true);
 
-  expect(form.parameters.find((parameter) => parameter.key === 'PREMISES_SERVING_AREA')?.values).toEqual([
-    'Matsalen och bryggan',
-  ]);
-  expect(setValue.mock.calls.every((call) => call[2]?.shouldDirty)).toBe(true);
+  expect(savedValues('PREMISES_SERVING_AREA')).toEqual(['Matsalen och bryggan']);
 });
 
 test('a passed step leaves the new fields as they are', () => {

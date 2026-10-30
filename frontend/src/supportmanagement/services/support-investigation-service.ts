@@ -74,17 +74,30 @@ export const completeSupportInvestigationSections = (
       throw e;
     });
 
+export interface SupportInvestigationSectionUpdate {
+  text?: string;
+  assessment?: string;
+  /** Replaces the whole list. */
+  parameters?: Parameter[];
+}
+
 export const saveSupportInvestigationSection = (
   errandId: string,
   municipalityId: string,
   investigationId: string,
   sectionId: string,
-  section: { text?: string; assessment?: string }
+  { parameters, ...section }: SupportInvestigationSectionUpdate
 ): Promise<Investigation> =>
   apiService
-    .patch<Investigation, { text?: string; assessment?: string }>(
+    .patch<Investigation, SupportInvestigationSectionUpdate>(
       `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections/${sectionId}`,
-      section
+      {
+        ...section,
+        // The BFF takes only what a handler writes, not the version or group read back.
+        ...(parameters && {
+          parameters: parameters.map(({ key, displayName, values }) => ({ key, displayName, values })),
+        }),
+      }
     )
     .then((res) => res.data)
     .catch((e) => {

@@ -1,5 +1,6 @@
 'use client';
 
+import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
@@ -10,13 +11,25 @@ import { useTranslation } from 'react-i18next';
 import type { InvestigationSectionProps } from './investigation-section-text.component';
 
 /** The fields of a section the backend lets a handler write. */
-const SECTION_FIELDS = ['text', 'assessment'] as const;
+const SECTION_FIELDS = ['text', 'assessment', 'parameters'] as const;
 
 type SectionField = (typeof SECTION_FIELDS)[number];
-type SectionValues = Record<SectionField, string>;
+interface SectionValues {
+  text: string;
+  assessment: string;
+  parameters: Parameter[];
+}
 
 const pick = (values: SectionValues, fields: SectionField[]): Partial<SectionValues> =>
-  Object.fromEntries(fields.map((field) => [field, values[field]]));
+  Object.fromEntries(fields.map((field) => [field, values[field]])) as Partial<SectionValues>;
+
+const comparable = (value: SectionValues[SectionField]): string =>
+  typeof value === 'string'
+    ? value
+    : JSON.stringify(value.map(({ key, values }) => ({ key, values })).sort((a, b) => a.key.localeCompare(b.key)));
+
+const differs = (a: SectionValues, b: SectionValues, field: SectionField): boolean =>
+  comparable(a[field]) !== comparable(b[field]);
 
 /** Holds the writable fields of a section and registers the save the tab runs for it; only changed fields are sent. */
 export const useInvestigationSectionSave = (
@@ -29,8 +42,8 @@ export const useInvestigationSectionSave = (
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const written = useMemo<SectionValues>(
-    () => ({ text: section.text ?? '', assessment: section.assessment ?? '' }),
-    [section.text, section.assessment]
+    () => ({ text: section.text ?? '', assessment: section.assessment ?? '', parameters: section.parameters ?? [] }),
+    [section.text, section.assessment, section.parameters]
   );
   const [values, setValues] = useState(written);
   const [loaded, setLoaded] = useState(written);
@@ -38,20 +51,20 @@ export const useInvestigationSectionSave = (
 
   const errandId = supportErrand?.id;
   const changedFields = useCallback(
-    () => SECTION_FIELDS.filter((field) => values[field] !== loaded[field]),
+    () => SECTION_FIELDS.filter((field) => differs(values, loaded, field)),
     [values, loaded]
   );
   const edited = changedFields().length > 0;
 
   // A reread replaces each field that has no unsaved edit of its own.
   useEffect(() => {
-    const reread = SECTION_FIELDS.filter((field) => written[field] !== loaded[field]);
+    const reread = SECTION_FIELDS.filter((field) => differs(written, loaded, field));
     if (reread.length === 0) return;
     setValues((current) => ({
       ...current,
       ...pick(
         written,
-        reread.filter((field) => current[field] === loaded[field])
+        reread.filter((field) => !differs(current, loaded, field))
       ),
     }));
     setLoaded((current) => ({ ...current, ...pick(written, reread) }));
@@ -95,7 +108,8 @@ export const useInvestigationSectionSave = (
   }, [save, saveRef]);
 
   const set = useCallback(
-    (field: SectionField, value: string) => setValues((current) => ({ ...current, [field]: value })),
+    <F extends SectionField>(field: F, value: SectionValues[F]) =>
+      setValues((current) => ({ ...current, [field]: value })),
     []
   );
 
