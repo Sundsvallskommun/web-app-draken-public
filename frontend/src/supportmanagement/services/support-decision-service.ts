@@ -12,7 +12,6 @@ export interface SupportDecisionInput {
   title?: string;
   decidedByRole?: string;
   legalBasis?: string;
-  delegationReference?: string;
   justification?: string;
   validFrom?: string;
   validTo?: string;

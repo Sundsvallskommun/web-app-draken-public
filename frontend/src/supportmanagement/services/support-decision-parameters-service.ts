@@ -47,6 +47,10 @@ export interface DecisionParameterInput {
   attachments?: { fileName: string; purpose?: { name?: string } }[];
   /** The day the permit is issued, as the handler set it on the decision. */
   issuedOn?: string;
+  /** The decision's own registry number, e.g. from Public 360 or Timrå. */
+  decisionCaseNumber?: string;
+  /** Any further registry number the handler wants on the decision. */
+  otherCaseNumber?: string;
   /** The telephone to the premises as the handler has it, which starts as the application's answer. */
   premisesPhone?: string;
   /** The handler saving the decision. */
@@ -166,6 +170,7 @@ export const servingPermitParameters = ({
   attachments,
   issuedOn,
   premisesPhone,
+  decisionCaseNumber,
   user,
   today,
 }: DecisionParameterInput): Parameters => ({
@@ -188,7 +193,7 @@ export const servingPermitParameters = ({
   servingAreaMaxPersons: form && childText(form, 'maxPersonsInPremises', 'maxPersons'),
   servingHours: scope && servingHours(scope),
   ...issuingParameters({ errand, user, issuedOn }),
-  decisionDateAndCaseNumber: join(today, errand.errandNumber),
+  decisionDateAndCaseNumber: join(today, text(decisionCaseNumber)),
 });
 
 export const tobaccoPermitParameters = ({
@@ -197,6 +202,7 @@ export const tobaccoPermitParameters = ({
   premises,
   issuedOn,
   premisesPhone,
+  decisionCaseNumber,
   user,
 }: DecisionParameterInput): Parameters => ({
   ...permitHolderParameters(errand.customer?.[0]),
@@ -210,7 +216,7 @@ export const tobaccoPermitParameters = ({
   validityTemporary: form && String(form.salesPeriod === 'TEMPORARY'),
   temporaryPeriod: form && dateRangeText(form, 'salesPeriodDates'),
   ...issuingParameters({ errand, user, issuedOn }),
-  decisionOfficerAndCaseNumber: join(user.name, errand.errandNumber),
+  decisionOfficerAndCaseNumber: join(user.name, text(decisionCaseNumber)),
 });
 
 /** By the decision's `type` (see supportDecisionPermitType); any other permit gets the premises alone. */
@@ -241,6 +247,8 @@ const decisionParameters = (
   decision: CertificateDecision
 ): Parameters => ({
   ...parametersFor(permitType, input),
+  decisionCaseNumber: text(input.decisionCaseNumber),
+  otherCaseNumber: text(input.otherCaseNumber),
   decisionText: decision.decisionText,
   decisionMaker: decision.decisionMaker,
   decisionDate: input.today,
@@ -308,8 +316,13 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
   TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate'],
 };
 
+// Every decision is registered under a number of its own, whether a permit is printed or not.
+const INPUTS_OF_EVERY_DECISION = ['decisionCaseNumber'];
+
 export const missingDecisionInputs = (permitType: string, parameters: Parameter[] | undefined): string[] =>
-  (PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []).filter((key) => !decisionParameterValue(parameters, key));
+  [...(PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []), ...INPUTS_OF_EVERY_DECISION].filter(
+    (key) => !decisionParameterValue(parameters, key)
+  );
 
 export interface MissingPermitInputs {
   /** Template keys the handler fills on the errand itself. */
