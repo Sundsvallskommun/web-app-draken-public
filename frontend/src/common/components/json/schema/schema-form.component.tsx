@@ -18,16 +18,12 @@ import type {
   RJSFSchema,
   UiSchema,
 } from '@rjsf/utils';
-import { customizeValidator } from '@rjsf/validator-ajv8';
-import Ajv2020 from 'ajv/dist/2020';
 import { ComponentType, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import createJsonErrorTransformer, { type SchemaFormError } from '../utils/schema-form-error-handling';
+import { schemaFormValidator } from '../utils/schema-form-validator';
 import { type SchemaErrorNavigation, SchemaFormErrorSummary } from './schema-form-error-summary.component';
 import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
-
-// Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
-const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 const widgets: RegistryWidgetsType = jsonWidgets;
 
@@ -167,7 +163,7 @@ export default function SchemaForm({
     onChange: handleChange,
     onSubmit: handleSubmit,
     onError,
-    validator,
+    validator: schemaFormValidator,
     fields,
     widgets,
     templates,

@@ -15,5 +15,8 @@ export const mockEnv = {
   // Distinct from mockPhoneNumber so two stakeholders in the same view don't share a number
   // (avoids strict-mode collisions when asserting per-stakeholder phone). PTS test range.
   mockSecondaryPhoneNumber: '0701740636',
+  // Landlines from the PTS test ranges 08-46500400–46500499 and 0980-319200–319299 (shortest and longest area code)
+  mockLandlinePhoneNumber: '0846500456',
+  mockLongAreaCodeLandlinePhoneNumber: '0980319247',
   mockAdUsername: 'abc01abc',
 } as const;

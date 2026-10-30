@@ -24,11 +24,6 @@ import { MessageWrapper } from '@common/components/message/message-wrapper.compo
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isMEX } from '@common/services/application-service';
 import {
-  invalidPhoneMessage,
-  phonePattern,
-  supportManagementPhonePatternOrCountryCode,
-} from '@common/services/helper-service';
-import {
   buildMessageTemplateBody,
   getDefaultMessageBody,
   getDefaultTemplateId,
@@ -37,6 +32,7 @@ import {
   supportsSelectableTemplates,
 } from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
+import { emailSchema, phoneNumberSchema } from '@common/utils/contact-validation-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -110,15 +106,10 @@ let formSchema = yup
         schema
           .of(
             yup.object().shape({
-              value: yup.string().email('E-postadress har fel format'),
+              value: emailSchema(),
             })
           )
           .min(1, 'Ange minst en E-postadress'),
-      otherwise: (schema) => schema,
-    }),
-    newEmail: yup.string().when('contactMeans', {
-      is: (means: string) => means === 'email',
-      then: (schema) => schema.email('E-postadressen har fel format'),
       otherwise: (schema) => schema,
     }),
     phoneNumbers: yup.array().when('contactMeans', {
@@ -127,23 +118,13 @@ let formSchema = yup
         schema
           .of(
             yup.object().shape({
-              value: yup
-                .string()
-                .required('Telefonnummer måste anges för sms-meddelande')
-                .trim()
-                .transform((val) => val && val.replace('-', ''))
-                .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+              value: phoneNumberSchema().required('Telefonnummer måste anges för sms-meddelande'),
             })
           )
           .min(1, 'Ange minst ett telefonnummer')
           .required('Ange minst ett telefonnummer'),
       otherwise: (schema) => schema,
     }),
-    newPhoneNumber: yup
-      .string()
-      .trim()
-      .transform((val) => val && val.replace('-', ''))
-      .matches(phonePattern, invalidPhoneMessage),
     messageBody: yup.string().required('Text måste anges'),
     messageBodyPlaintext: yup.string(),
     attachUtredning: yup.bool(),
@@ -711,12 +692,6 @@ export const MessageComposer: FC<{
                   {...{ control, register, errors, watch, setValue, trigger }}
                 />
               </FormControl>
-
-              {errors?.newPhoneNumber && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage data-cy="messagePhone-error">{errors?.newPhoneNumber?.message}</FormErrorMessage>
-                </div>
-              )}
             </>
           ) : null}
 

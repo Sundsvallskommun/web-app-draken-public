@@ -33,6 +33,7 @@ import {
 } from '@/data-contracts/messaging/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
+import { phoneNumberFormatter } from '@/utils/phone-number-formatter';
 import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
@@ -280,7 +281,7 @@ const buildSms = (applicant: StakeholderDTO, contact: StakeholderDTO, message: s
       partyId: applicant.personId!,
       externalReferences: [],
     },
-    mobileNumber: contact.contactInformation?.find(c => c.contactType === 'PHONE')?.value ?? '',
+    mobileNumber: phoneNumberFormatter(contact.contactInformation?.find(c => c.contactType === 'PHONE')?.value),
     message: message,
   };
   return sms;
