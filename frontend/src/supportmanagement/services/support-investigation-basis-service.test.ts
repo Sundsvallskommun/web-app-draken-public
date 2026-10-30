@@ -97,6 +97,13 @@ const investigation = {
     sectionKey,
     text,
     sortOrder: index + 1,
+    ...(sectionKey === 'premises' && {
+      parameters: [
+        { key: 'PREMISES_INSPECTED_AT', values: ['2026-05-21'] },
+        { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PROVEN'] },
+        { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', values: ['Hyresavtal 2026-05-01'] },
+      ],
+    }),
   })),
 };
 
@@ -111,9 +118,8 @@ const errand = {
   ],
   parameters: [
     { key: 'APPLICATION_COMPLETE_AT', values: ['2026-05-04'] },
-    { key: 'PREMISES_INSPECTED_AT', values: ['2026-05-21'] },
-    { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PROVEN'] },
-    { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', values: ['Hyresavtal 2026-05-01'] },
+    // Left behind on an errand from before the move; the underlay reads the section's.
+    { key: 'PREMISES_INSPECTED_AT', values: ['2026-01-01'] },
   ],
   customer: [
     {
@@ -666,13 +672,20 @@ test('the verdict on each person of influence travels with them', () => {
 test('what the handler established about the premises for the underlay travels with it', () => {
   const parameters = investigationBasisParameters(
     input({
-      errand: {
-        ...errand,
-        parameters: [
-          ...(errand.parameters ?? []),
-          { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
-        ],
-      } as SupportErrand,
+      investigation: {
+        ...investigation,
+        sections: investigation.sections.map((section) =>
+          section.sectionKey === 'premises'
+            ? {
+                ...section,
+                parameters: [
+                  ...(section.parameters ?? []),
+                  { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
+                ],
+              }
+            : section
+        ),
+      },
     })
   );
 

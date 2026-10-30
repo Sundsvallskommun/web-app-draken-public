@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '17.2',
+    version: '18.1',
   },
   {
     name: 'supportmanagement-sprint',

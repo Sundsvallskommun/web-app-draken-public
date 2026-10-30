@@ -8,3 +8,7 @@ frontend/public/deploy-info.json
 .claude
 .playwright-mcp
 screenshots
+docs/jira
+docs/plans
+docs/testing
+docs/templates

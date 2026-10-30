@@ -3,7 +3,6 @@
 import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
-import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
   supportPremisesCapacity,
@@ -15,7 +14,6 @@ import {
 } from '@supportmanagement/services/support-premises-examination-service';
 import { getSupportStatements } from '@supportmanagement/services/support-statement-service';
 import { FC, useEffect, useMemo, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { InvestigationFact } from '../investigation-fact.component';
@@ -27,12 +25,11 @@ const APPROVED = 'APPROVED';
 const PENDING = 'PENDING';
 
 export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => {
-  const { section, writable } = props;
+  const { section } = props;
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const { getValues, setValue, watch } = useFormContext<SupportErrand>();
 
   const [statements, setStatements] = useState<Statement[]>([]);
   const sectionSave = useInvestigationSectionSave(props, 'common:premises.toast.save_failed');
@@ -50,7 +47,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     () => supportPremisesFireSafety(statements, supportMetadata),
     [statements, supportMetadata]
   );
-  const examination = supportPremisesExamination(watch('parameters'));
+  const examination = supportPremisesExamination(sectionSave.values.parameters);
 
   useEffect(() => {
     if (!errandId || !municipalityId) return undefined;
@@ -70,9 +67,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   }, [errandId, municipalityId, modified]);
 
   const write = (field: keyof SupportPremisesExamination, value: string) =>
-    setValue('parameters', withSupportPremisesExamination(getValues('parameters'), field, value), {
-      shouldDirty: true,
-    });
+    sectionSave.set('parameters', withSupportPremisesExamination(sectionSave.values.parameters, field, value));
 
   const seats = [
     capacity.indoorSeats ? t('common:premises.seats_indoor', { number: capacity.indoorSeats }) : undefined,
@@ -93,7 +88,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
           <div className="flex items-center gap-16">
             <Input
               type="date"
-              disabled={!writable}
+              disabled={sectionSave.readOnly}
               value={examination.inspectedAt}
               onChange={(event) => write('inspectedAt', event.target.value)}
               data-cy="premises-inspected-at"
@@ -116,7 +111,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
           </FormLabel>
           <div className="flex gap-8">
             <Select
-              disabled={!writable}
+              disabled={sectionSave.readOnly}
               value={examination.rightOfDisposal}
               onChange={(event) => write('rightOfDisposal', event.target.value)}
               data-cy="premises-right-of-disposal"
@@ -131,7 +126,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
             <Input
               id="premises-right-of-disposal-note"
               aria-label={t('common:premises.right_of_disposal.note')}
-              disabled={!writable}
+              disabled={sectionSave.readOnly}
               value={examination.rightOfDisposalNote}
               placeholder={t('common:premises.right_of_disposal.note_placeholder')}
               onChange={(event) => write('rightOfDisposalNote', event.target.value)}
@@ -178,7 +173,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         <Textarea
           className="w-full"
           rows={3}
-          disabled={!writable}
+          disabled={sectionSave.readOnly}
           value={examination.previousBusiness}
           placeholder={t('common:premises.previous_business_placeholder')}
           onChange={(event) => write('previousBusiness', event.target.value)}
@@ -191,7 +186,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
         <Textarea
           className="w-full"
           rows={3}
-          disabled={!writable}
+          disabled={sectionSave.readOnly}
           value={examination.servingArea}
           placeholder={t('common:premises.serving_area_placeholder')}
           onChange={(event) => write('servingArea', event.target.value)}
