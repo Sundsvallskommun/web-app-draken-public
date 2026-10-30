@@ -6,7 +6,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { type InvestigationSectionProps } from '../investigation-section-text.component';
 import { SupportFiledDocumentsSection } from './support-filed-documents-section.component';
-import { SupportTobaccoSalesPeriodSection } from './support-tobacco-sales-period-section.component';
 import { SupportTobaccoSalesPointSection } from './support-tobacco-sales-point-section.component';
 
 vi.mock('@common/components/dynamic-text-editor', () => ({
@@ -61,6 +60,8 @@ test('the point of sale shows what the application says, and a dash for what it 
       pointOfSaleAddress: { street: 'Bergsåkersvägen 1', postalCode: '85640', city: 'Sundsvall' },
       includesDistanceSelling: 'YES',
       distanceSellingWebsite: 'https://kiosken.se',
+      salesPeriod: 'TEMPORARY',
+      salesPeriodDates: { fromDate: '2026-11-01', toDate: '2027-02-28' },
     }) as never,
   });
 
@@ -68,24 +69,23 @@ test('the point of sale shows what the application says, and a dash for what it 
 
   expect(fieldOf('sales-point-name').textContent).toBe('Kiosken i Bergsåker');
   expect(fieldOf('sales-point-address').textContent).toBe('Bergsåkersvägen 1, 856 40 Sundsvall');
+  expect(fieldOf('sales-point-period').textContent).toBe(
+    'common:investigation.sales_point.temporary, 2026-11-01 - 2027-02-28'
+  );
   expect(fieldOf('sales-point-distance-selling').textContent).toBe(
     'common:investigation.answer_yes, https://kiosken.se'
   );
   expect(fieldOf('sales-point-supplier-agreement').textContent).toBe('-');
 });
 
-test('the sales period is the dates the applicant gave, or that the permit is asked for indefinitely', () => {
+test('a permit asked for indefinitely says so, with the date the sales start', () => {
   useSupportStore.setState({
-    supportErrand: errandWith({
-      salesPeriod: 'TEMPORARY',
-      salesPeriodDates: { fromDate: '2026-11-01', toDate: '2027-02-28' },
-    }) as never,
+    supportErrand: errandWith({ salesPeriod: 'INDEFINITE', salesStartDate: '2026-11-01' }) as never,
   });
 
-  render(<SupportTobaccoSalesPeriodSection {...sectionProps('opening_hours')} />);
+  render(<SupportTobaccoSalesPointSection {...sectionProps('sales_point')} />);
 
-  expect(fieldOf('sales-period').textContent).toBe('common:investigation.opening_hours.temporary');
-  expect(fieldOf('sales-period-dates').textContent).toBe('2026-11-01 - 2027-02-28');
+  expect(fieldOf('sales-point-period').textContent).toBe('common:investigation.sales_point.indefinite, 2026-11-01');
 });
 
 test('a filed document is named by its purpose, and nothing filed is said out loud', () => {

@@ -138,13 +138,8 @@
       "legal_basis": "Lagrum",
       "marketing": "Marknadsföring",
       "ownership": "Ägarförhållande",
-      "self_submitted_records": "Egeninlämnade uppgifter",
-      "sales_point": "Definition av försäljningsstället",
-      "sales_premises": "Försäljningslokalen",
-      "sales_premises_location": "Försäljningslokalens läge",
-      "opening_hours": "Öppettider",
-      "self_monitoring": "Egenkontroll",
-      "excise_duty": "Punktskatt"
+      "sales_point": "Försäljningsstället",
+      "self_monitoring": "Egenkontroll"
     },
     "section_texts": {
       "lease": {
@@ -183,33 +178,13 @@
         "label": "Utredning av ägarförhållandet",
         "placeholder": "Beskriv vem som äger verksamheten och hur ägandet är fördelat"
       },
-      "self_submitted_records": {
-        "label": "Utredning av egeninlämnade uppgifter",
-        "placeholder": "Sammanfatta de uppgifter sökanden själv lämnat in från Skatteverket, Brottsregistret och Kronofogdemyndigheten"
-      },
       "sales_point": {
         "label": "Utredning av försäljningsstället",
-        "placeholder": "Beskriv om försäljningen avser detaljhandel, partihandel eller distansförsäljning, och vilka produkter den omfattar"
-      },
-      "sales_premises": {
-        "label": "Utredning av försäljningslokalen",
-        "placeholder": "Beskriv lokalen, hur tobaken förvaras, eventuell tobaksautomat, leverantör, övriga produkter och åldersdekaler"
-      },
-      "sales_premises_location": {
-        "label": "Utredning av försäljningslokalens läge",
-        "placeholder": "Beskriv försäljningsområdet och närheten till skola, idrottsanläggning, lekpark eller vänthall"
-      },
-      "opening_hours": {
-        "label": "Utredning av öppettiderna",
-        "placeholder": "Ange öppettiderna och vad som gäller för skyltning om rökförbud vid entrén"
+        "placeholder": "Beskriv försäljningsstället, lokalen och dess läge, och om försäljningen avser detaljhandel, partihandel eller distansförsäljning"
       },
       "self_monitoring": {
         "label": "Utredning av egenkontrollen",
         "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
-      },
-      "excise_duty": {
-        "label": "Utredning av punktskatt",
-        "placeholder": "Beskriv dialogen med sökanden om punktskatt på de produkter som säljs"
       }
     },
     "decision_basis": {
@@ -231,16 +206,10 @@
       "address": "Besöksadress",
       "distance_selling": "Distansförsäljning",
       "dangerous_products": "Särskilt farliga produkter",
-      "supplier_agreement": "Avtal med tillverkare eller partihandlare"
-    },
-    "opening_hours": {
+      "supplier_agreement": "Avtal med tillverkare eller partihandlare",
       "sales_period": "Tidsperiod för försäljningen",
-      "dates": "Datum enligt ansökan",
       "indefinite": "Tillsvidare",
       "temporary": "Tidsbegränsad försäljning"
-    },
-    "self_submitted_records": {
-      "filed": "Inlämnade handlingar om bolaget"
     },
     "self_monitoring": {
       "filed": "Inlämnat egenkontrollprogram"
@@ -254,7 +223,8 @@
     "section_not_built": "Den här delen av utredningen är inte byggd än.",
     "unsaved": "Osparade ändringar",
     "saving": "Sparar",
-    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här."
+    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
+    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll."
   },
   "process": {
     "steps": {

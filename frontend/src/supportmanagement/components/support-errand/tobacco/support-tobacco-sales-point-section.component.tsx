@@ -6,7 +6,10 @@ import {
   formatPremisesAddress,
   getPremisesAddress,
 } from '@supportmanagement/services/support-premises-address-service';
-import { supportTobaccoSalesPoint } from '@supportmanagement/services/support-tobacco-application-service';
+import {
+  supportTobaccoSalesPeriod,
+  supportTobaccoSalesPoint,
+} from '@supportmanagement/services/support-tobacco-application-service';
 import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,11 +22,20 @@ export const SupportTobaccoSalesPointSection: FC<InvestigationSectionProps> = (p
   const namespace = useMetadataStore((s) => s.supportMetadata?.namespace);
 
   const salesPoint = useMemo(() => supportTobaccoSalesPoint(supportErrand, namespace), [supportErrand, namespace]);
+  const salesPeriod = useMemo(() => supportTobaccoSalesPeriod(supportErrand, namespace), [supportErrand, namespace]);
   const address = useMemo(() => getPremisesAddress(supportErrand, namespace), [supportErrand, namespace]);
 
   const answer = (given: boolean | undefined) => {
     if (given === undefined) return '-';
     return t(given ? 'common:investigation.answer_yes' : 'common:investigation.answer_no');
+  };
+
+  const period = () => {
+    if (salesPeriod.indefinite === undefined) return '-';
+    if (salesPeriod.indefinite) {
+      return [t('common:investigation.sales_point.indefinite'), salesPeriod.startDate].filter(Boolean).join(', ');
+    }
+    return [t('common:investigation.sales_point.temporary'), salesPeriod.period].filter(Boolean).join(', ');
   };
 
   const distanceSelling = [answer(salesPoint.distanceSelling), salesPoint.website].filter(Boolean).join(', ');
@@ -37,6 +49,10 @@ export const SupportTobaccoSalesPointSection: FC<InvestigationSectionProps> = (p
 
         <InvestigationFact label={t('common:investigation.sales_point.address')}>
           <span data-cy="sales-point-address">{address ? formatPremisesAddress(address) : '-'}</span>
+        </InvestigationFact>
+
+        <InvestigationFact label={t('common:investigation.sales_point.sales_period')}>
+          <span data-cy="sales-point-period">{period()}</span>
         </InvestigationFact>
 
         <InvestigationFact label={t('common:investigation.sales_point.distance_selling')}>

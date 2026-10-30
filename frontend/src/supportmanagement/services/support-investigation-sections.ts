@@ -22,13 +22,8 @@ export const SUPPORT_INVESTIGATION_SECTIONS = [
   { sectionKey: 'child_perspective', headingKey: 'common:investigation.sections.child_perspective' },
   { sectionKey: 'marketing', headingKey: 'common:investigation.sections.marketing' },
   { sectionKey: 'legal_basis', headingKey: 'common:investigation.sections.legal_basis' },
-  { sectionKey: 'self_submitted_records', headingKey: 'common:investigation.sections.self_submitted_records' },
   { sectionKey: 'sales_point', headingKey: 'common:investigation.sections.sales_point' },
-  { sectionKey: 'sales_premises', headingKey: 'common:investigation.sections.sales_premises' },
-  { sectionKey: 'sales_premises_location', headingKey: 'common:investigation.sections.sales_premises_location' },
-  { sectionKey: 'opening_hours', headingKey: 'common:investigation.sections.opening_hours' },
   { sectionKey: 'self_monitoring', headingKey: 'common:investigation.sections.self_monitoring' },
-  { sectionKey: 'excise_duty', headingKey: 'common:investigation.sections.excise_duty' },
 ] as const satisfies readonly { sectionKey: string; headingKey: string }[];
 
 export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];
@@ -37,6 +32,7 @@ type SectionSpec = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number];
 
 export interface SupportInvestigationVariant {
   sections: readonly Sections[];
+  introKey: string;
   basisTemplate?: string;
 }
 
@@ -60,27 +56,24 @@ const TOBACCO_SALES_PERMIT_SECTIONS = [
   'statements',
   'ownership',
   'persons_of_influence',
-  'self_submitted_records',
   'financial_suitability',
   'sales_point',
   'lease',
-  'sales_premises',
-  'sales_premises_location',
-  'opening_hours',
   'self_monitoring',
-  'marketing',
-  'excise_duty',
   'communication',
   'legal_basis',
 ] as const;
 
 const SERVING_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
   sections: SERVING_PERMIT_SECTIONS,
+  introKey: 'common:investigation.intro',
   basisTemplate: 'serving-permit-decision-basis',
 };
 
 const TOBACCO_SALES_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
   sections: TOBACCO_SALES_PERMIT_SECTIONS,
+  introKey: 'common:investigation.intro_tobacco',
+  basisTemplate: 'tobacco-decision-basis',
 };
 
 const SUPPORT_INVESTIGATION_VARIANTS: Record<string, SupportInvestigationVariant> = {

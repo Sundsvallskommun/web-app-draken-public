@@ -281,7 +281,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <div>
         <h2 className="text-h2-md mb-8">{t('common:investigation.heading')}</h2>
-        <p className="m-0">{t('common:investigation.intro')}</p>
+        <p className="m-0">{t(variant.introKey)}</p>
       </div>
 
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}

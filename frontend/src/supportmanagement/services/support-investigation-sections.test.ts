@@ -33,16 +33,10 @@ const TOBACCO = [
   'statements',
   'ownership',
   'persons_of_influence',
-  'self_submitted_records',
   'financial_suitability',
   'sales_point',
   'lease',
-  'sales_premises',
-  'sales_premises_location',
-  'opening_hours',
   'self_monitoring',
-  'marketing',
-  'excise_duty',
   'communication',
   'legal_basis',
 ];
@@ -58,13 +52,8 @@ const WRITTEN: Sections[] = [
   'marketing',
   'legal_basis',
   'ownership',
-  'self_submitted_records',
   'sales_point',
-  'sales_premises',
-  'sales_premises_location',
-  'opening_hours',
   'self_monitoring',
-  'excise_duty',
 ];
 
 const swedish = (key: string): unknown =>
@@ -95,9 +84,9 @@ test('a serving permit is examined as it always has been, underlay and all', () 
   expect(servingVariant.basisTemplate).toBe('serving-permit-decision-basis');
 });
 
-test('a tobacco sales permit is examined by the headings the business writes, and has no underlay template yet', () => {
+test('a tobacco sales permit is examined by the headings the business writes, and has an underlay of its own', () => {
   expect([...tobaccoVariant.sections]).toEqual(TOBACCO);
-  expect(tobaccoVariant.basisTemplate).toBeUndefined();
+  expect(tobaccoVariant.basisTemplate).toBe('tobacco-decision-basis');
 });
 
 test('the most specific level that names the examinations wins, and the category answers for the rest', () => {
@@ -144,7 +133,7 @@ test('the rows the errand type does not examine are left out, written or not', (
 test('the rows are ordered by the errand type, not by the sort order the service holds', () => {
   const numberedByAnotherVariant = investigationOf(
     sectionOf('lease', 6),
-    sectionOf('excise_duty', 6),
+    sectionOf('self_monitoring', 6),
     sectionOf('statements', 1),
     sectionOf('sales_point', 4)
   );
@@ -153,7 +142,7 @@ test('the rows are ordered by the errand type, not by the sort order the service
     'statements',
     'sales_point',
     'lease',
-    'excise_duty',
+    'self_monitoring',
   ]);
 });
 
@@ -211,24 +200,19 @@ test('an examination of another errand type is not missing from this one', () =>
 
   expect(missingSupportInvestigationSections(startedAsServing, servingVariant)).toEqual([]);
   expect(missingSupportInvestigationSections(startedAsServing, tobaccoVariant)).toEqual([
-    'self_submitted_records',
     'sales_point',
-    'sales_premises',
-    'sales_premises_location',
-    'opening_hours',
     'self_monitoring',
-    'excise_duty',
   ]);
 });
 
 test('the examinations are handed to the service with their headings translated and numbered by the type', () => {
   const translate = (key: string) => `översatt:${key}`;
 
-  expect(supportInvestigationSectionInputs(translate, tobaccoVariant, ['excise_duty'])).toEqual([
+  expect(supportInvestigationSectionInputs(translate, tobaccoVariant, ['self_monitoring'])).toEqual([
     {
-      sectionKey: 'excise_duty',
-      heading: 'översatt:common:investigation.sections.excise_duty',
-      sortOrder: 13,
+      sectionKey: 'self_monitoring',
+      heading: 'översatt:common:investigation.sections.self_monitoring',
+      sortOrder: 7,
     },
   ]);
   expect(supportInvestigationSectionInputs(translate, servingVariant)).toHaveLength(SERVING.length);
@@ -262,4 +246,12 @@ test('every examination an errand type asks for is in the register', () => {
   const registered = SUPPORT_INVESTIGATION_SECTIONS.map((section) => section.sectionKey);
 
   for (const sectionKey of [...SERVING, ...TOBACCO]) expect(registered, sectionKey).toContain(sectionKey);
+});
+
+test('the tab tells the handler which law the suitability is examined against', () => {
+  expect(servingVariant.introKey).toBe('common:investigation.intro');
+  expect(swedish(servingVariant.introKey)).toContain('alkohollagen');
+
+  expect(tobaccoVariant.introKey).toBe('common:investigation.intro_tobacco');
+  expect(swedish(tobaccoVariant.introKey)).toContain('lagen om tobak och liknande produkter');
 });

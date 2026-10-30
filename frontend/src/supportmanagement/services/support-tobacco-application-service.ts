@@ -25,7 +25,7 @@ export interface SupportTobaccoSalesPoint {
   supplierAgreement?: boolean;
 }
 
-const supportTobaccoSalesPointOf = (answers: FormValue | undefined): SupportTobaccoSalesPoint => {
+export const supportTobaccoSalesPointOf = (answers: FormValue | undefined): SupportTobaccoSalesPoint => {
   if (!answers) return {};
 
   return {

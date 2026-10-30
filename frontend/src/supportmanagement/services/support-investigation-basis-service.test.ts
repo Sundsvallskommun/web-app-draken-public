@@ -718,3 +718,66 @@ test('what the preview is made of is read from the services, each failure leavin
   ]);
   expect(parameters.caseNumber).toBe(mockEnv.mockErrandNumber);
 });
+
+const TOBACCO_LABELS = [
+  { classification: 'CATEGORY', resourceName: 'TOBACCO', displayName: 'Tobak' },
+  {
+    classification: 'TYPE',
+    resourceName: 'SALES_PERMIT_APPLICATION',
+    displayName: 'Ansökan om försäljning av tobaksvaror',
+  },
+];
+
+const tobaccoParameters = (sections: { sectionKey: string; text: string }[]) =>
+  investigationBasisParameters(
+    input({
+      errand: { ...errand, labels: TOBACCO_LABELS } as never,
+      form: {
+        pointOfSaleName: 'Kiosken i Bergsåker',
+        includesDistanceSelling: 'YES',
+        distanceSellingWebsite: 'https://kiosken.se',
+        includesParticularlyDangerousProducts: 'NO',
+      },
+      investigation: { ...investigation, sections } as never,
+    })
+  );
+
+test('the tobacco underlay is handed the examinations the tobacco template prints', () => {
+  const parameters = tobaccoParameters([
+    { sectionKey: 'self_monitoring', text: '<p>Programmet är daterat 2026-01-10.</p>' },
+    { sectionKey: 'sales_point', text: '<p>Butiken är en kiosk.</p>' },
+  ]);
+
+  expect(parameters.selfMonitoringHtml).toBe('<p>Programmet är daterat 2026-01-10.</p>');
+  expect(parameters.investigation.premisesRemarksHtml).toBe('<p>Butiken är en kiosk.</p>');
+  expect(parameters.exciseTaxHtml).toBe('');
+});
+
+test('the application answers about the point of sale reach the tobacco underlay', () => {
+  const parameters = tobaccoParameters([]);
+
+  expect(parameters.application.distanceSelling).toBe('common:investigation.answer_yes');
+  expect(parameters.application.distanceSellingWebsite).toBe('https://kiosken.se');
+  expect(parameters.application.particularlyDangerousProducts).toBe('common:investigation.answer_no');
+  expect(parameters.application.supplierAgreement).toBe('');
+});
+
+test('an examination the errand type does not have is not reported as missing information', () => {
+  const parameters = tobaccoParameters([]);
+
+  expect(parameters.childPerspectiveHtml).toBe('');
+  expect(parameters.premises.fireSafetyHtml).toBe('');
+  expect(parameters.application.staffingHtml).toBe('');
+  expect(parameters.selfMonitoringHtml).toBe('Information saknas');
+  expect(parameters.company.ownershipHtml).toBe('Information saknas');
+});
+
+test('a serving permit still has every examination of its own noted when it is unwritten', () => {
+  const parameters = investigationBasisParameters(
+    input({ investigation: { ...investigation, sections: [] } as never })
+  );
+
+  expect(parameters.childPerspectiveHtml).toBe('Information saknas');
+  expect(parameters.premises.fireSafetyHtml).toBe('Information saknas');
+  expect(parameters.selfMonitoringHtml).toBe('');
+});

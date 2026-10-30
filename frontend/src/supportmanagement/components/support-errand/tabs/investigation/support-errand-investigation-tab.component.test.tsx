@@ -144,31 +144,23 @@ test('a tobacco permit is completed with the examinations its own type asks for'
     'statements',
     'ownership',
     'persons_of_influence',
-    'self_submitted_records',
     'sales_point',
     'lease',
-    'sales_premises',
-    'sales_premises_location',
-    'opening_hours',
     'self_monitoring',
-    'marketing',
-    'excise_duty',
     'communication',
     'legal_basis',
   ]);
-  expect(asked.map((section) => section.sortOrder)).toEqual([1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  expect(asked.map((section) => section.sortOrder)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
 });
 
-test('a tobacco permit is not offered an underlay, since no template is written for it', async () => {
+test('both errand types are offered the underlay their own template renders', async () => {
   useSupportStore.setState({ supportErrand: tobaccoErrand as never, tabSavers: {} });
-  mountTab();
+  const { unmount } = mountTab();
 
-  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+  await waitFor(() => expect(document.querySelector('[data-cy="investigation-basis"]')).toBeTruthy());
+  unmount();
 
-  expect(document.querySelector('[data-cy="investigation-basis"]')).toBeNull();
-});
-
-test('a serving permit is offered its underlay', async () => {
+  useSupportStore.setState({ supportErrand: { id: ERRAND_ID } as never, tabSavers: {} });
   mountTab();
 
   await waitFor(() => expect(document.querySelector('[data-cy="investigation-basis"]')).toBeTruthy());
