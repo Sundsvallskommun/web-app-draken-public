@@ -40,8 +40,8 @@ const rescueService = (statement: Partial<Statement>): Statement => ({
 describe('capacity read from the application', () => {
   test('reads seats and the highest number of people', () => {
     const answers = {
-      sittplatserILokalen: { antalSittplatserInomhus: '50', antalSittplatserPaEventuellUteserver: '10' },
-      maximaltAntalPersonerILokalen: { antalPersoner: '50' },
+      seating: { seatsIndoor: '50', seatsOutdoor: '10' },
+      maxPersonsInPremises: { maxPersons: '50' },
     };
 
     expect(supportPremisesCapacity(errand(answers), NAMESPACE)).toEqual({
@@ -52,15 +52,17 @@ describe('capacity read from the application', () => {
   });
 
   test('reads the outdoor count under the name an older schema gave it', () => {
-    const answers = { sittplatserILokalen: { antalSittplatserUteservering: '10' } };
+    const answers = { seating: { seatsOutdoor: '10' } };
 
     expect(supportPremisesCapacity(errand(answers), NAMESPACE).outdoorSeats).toBe('10');
   });
 
   test('an unanswered question is no value, not an empty string', () => {
-    expect(
-      supportPremisesCapacity(errand({ sittplatserILokalen: { antalSittplatserInomhus: '50' } }), NAMESPACE)
-    ).toEqual({ indoorSeats: '50', outdoorSeats: undefined, maxPersons: undefined });
+    expect(supportPremisesCapacity(errand({ seating: { seatsIndoor: '50' } }), NAMESPACE)).toEqual({
+      indoorSeats: '50',
+      outdoorSeats: undefined,
+      maxPersons: undefined,
+    });
   });
 
   test('an errand without answers reads as nothing at all', () => {

@@ -74,9 +74,6 @@ export interface SupportPremisesCapacity {
   maxPersons?: string;
 }
 
-/** Katla has renamed the outdoor count between schema versions, and an errand keeps the name it was filed under. */
-const OUTDOOR_SEAT_FIELDS = ['antalSittplatserPaEventuellUteserver', 'antalSittplatserUteservering'];
-
 const answersOf = (errand: PremisesErrand | undefined, namespace: string | undefined): FormValue | undefined => {
   const value = jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value;
   return isRecord(value) ? value : undefined;
@@ -86,9 +83,9 @@ export const supportPremisesCapacityOf = (answers: FormValue | undefined): Suppo
   if (!answers) return {};
 
   return {
-    indoorSeats: childText(answers, 'sittplatserILokalen', 'antalSittplatserInomhus'),
-    outdoorSeats: OUTDOOR_SEAT_FIELDS.map((field) => childText(answers, 'sittplatserILokalen', field)).find(Boolean),
-    maxPersons: childText(answers, 'maximaltAntalPersonerILokalen', 'antalPersoner'),
+    indoorSeats: childText(answers, 'seating', 'seatsIndoor'),
+    outdoorSeats: childText(answers, 'seating', 'seatsOutdoor'),
+    maxPersons: childText(answers, 'maxPersonsInPremises', 'maxPersons'),
   };
 };
 
@@ -103,7 +100,7 @@ export const supportPremisesVerksamhetsbeskrivning = (
 ): string => {
   const answers = answersOf(errand, namespace);
   if (answers) {
-    const s = answers.verksamhetsbeskrivning;
+    const s = answers.businessDescription;
     if (typeof s !== 'string') return '';
     const html = s.replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '\n');
     return (new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '').trim();

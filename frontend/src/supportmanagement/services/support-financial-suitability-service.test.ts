@@ -14,8 +14,8 @@ const errandWith = (application: Record<string, unknown>) => ({ jsonParameters: 
 test('the financing is read in the order the form asks for it, with lender and amount', () => {
   const sources = supportFinancingSources(
     errandWith({
-      banklan: [{ langivare: 'Almi', beloppKronor: '1500000' }],
-      egnaMedel: [{ bank: 'Handelsbanken', kontonummer: '12345678', beloppKronor: '500000' }],
+      bankLoans: [{ lender: 'Almi', amountSek: '1500000' }],
+      ownFunds: [{ bank: 'Handelsbanken', accountNumber: '12345678', amountSek: '500000' }],
     })
   );
 
@@ -27,7 +27,7 @@ test('the financing is read in the order the form asks for it, with lender and a
 
 test('the account number an applicant gives for their own means is left out', () => {
   const sources = supportFinancingSources(
-    errandWith({ egnaMedel: [{ bank: 'Handelsbanken', kontonummer: '12345678', beloppKronor: '500000' }] })
+    errandWith({ ownFunds: [{ bank: 'Handelsbanken', accountNumber: '12345678', amountSek: '500000' }] })
   );
 
   expect(JSON.stringify(sources)).not.toContain('12345678');
@@ -36,13 +36,13 @@ test('the account number an applicant gives for their own means is left out', ()
 test('other financing is named by the loan type the applicant wrote, not by its heading', () => {
   expect(
     supportFinancingSources(
-      errandWith({ annanFinansiering: [{ lanetyp: 'Bryggerilån', langivare: 'Spendrups', beloppKronor: '250000' }] })
+      errandWith({ otherFinancing: [{ loanType: 'Bryggerilån', lender: 'Spendrups', amountSek: '250000' }] })
     ).map(supportFinancingSourceLine)
   ).toEqual([`Bryggerilån 250${GROUP}000 kr (Spendrups)`]);
 });
 
 test('an application that asks nothing about financing leaves the section with nothing to show', () => {
-  expect(supportFinancingSources(errandWith({ serveringsstalletsNamn: 'Krogen' }))).toEqual([]);
+  expect(supportFinancingSources(errandWith({ premisesName: 'Krogen' }))).toEqual([]);
   expect(supportFinancingSources(undefined)).toEqual([]);
   expect(supportFinancingNotes(undefined)).toBe('');
 });
@@ -61,7 +61,7 @@ test('a source without a lender is still worth showing', () => {
 });
 
 test('the notes the applicant added about the financing are carried as written', () => {
-  expect(supportFinancingNotes(errandWith({ ovrigaUpplysningarFinansiering: '  Lånet betalas av 2027.  ' }))).toBe(
+  expect(supportFinancingNotes(errandWith({ financingNotes: '  Lånet betalas av 2027.  ' }))).toBe(
     'Lånet betalas av 2027.'
   );
 });

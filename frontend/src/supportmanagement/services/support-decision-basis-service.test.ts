@@ -12,23 +12,23 @@ import type { SupportErrand } from './support-errand-service';
 const yesNo: RJSFSchema = {
   type: 'string',
   oneOf: [
-    { const: 'JA', title: 'Ja' },
-    { const: 'NEJ', title: 'Nej' },
+    { const: 'YES', title: 'Ja' },
+    { const: 'NO', title: 'Nej' },
   ],
 };
 const timeRange: RJSFSchema = {
   type: 'object',
-  properties: { startTime: { type: 'string' }, endTime: { type: 'string' } },
+  properties: { from: { type: 'string' }, to: { type: 'string' } },
 };
 const dateRange: RJSFSchema = {
   type: 'object',
-  properties: { startDate: { type: 'string' }, endDate: { type: 'string' } },
+  properties: { fromDate: { type: 'string' }, toDate: { type: 'string' } },
 };
 const period: RJSFSchema = {
   type: 'string',
   oneOf: [
-    { const: 'ARET_RUNT', title: 'Året runt' },
-    { const: 'ARLIGEN_UNDER_VISS_PERIOD', title: 'Årligen under viss period' },
+    { const: 'ALL_YEAR', title: 'Året runt' },
+    { const: 'ANNUAL_PERIOD', title: 'Årligen under viss period' },
   ],
 };
 
@@ -36,123 +36,123 @@ const period: RJSFSchema = {
 const PERMANENT: RJSFSchema = {
   type: 'object',
   properties: {
-    verksamhetsbeskrivningsval: {
+    businessDescriptionChoice: {
       type: 'string',
       oneOf: [
-        { const: 'JAG_VILL_SKRIVA_VERKSAMHETSBESKRIVNINGEN_I', title: 'Skriva' },
-        { const: 'JAG_VILL_BIFOGA_VERKSAMHETSBESKRIVNINGEN_SOM', title: 'Bifoga' },
+        { const: 'DESCRIBE', title: 'Skriva' },
+        { const: 'UPLOAD', title: 'Bifoga' },
       ],
     },
-    verksamhetsbeskrivning: { type: 'string' },
-    verksamhetensInriktning: {
+    businessDescription: { type: 'string' },
+    businessOrientationTypes: {
       type: 'array',
       items: {
         type: 'string',
         oneOf: [
-          { const: 'RESTAURANG', title: 'Restaurang' },
-          { const: 'HOTELL', title: 'Hotell' },
+          { const: 'RESTAURANT', title: 'Restaurang' },
+          { const: 'HOTEL', title: 'Hotell' },
         ],
       },
     },
-    serveringTillAllmanhetenEllerSlutetSallskap: {
+    servingAudience: {
       type: 'string',
       oneOf: [
-        { const: 'ENBART_TILL_ALLMANHETEN', title: 'Enbart till allmänheten' },
-        { const: 'ENBART_TILL_SLUTET_SALLSKAP', title: 'Enbart till slutet sällskap' },
-        { const: 'BADE_TILL_ALLMANHETEN_OCH_TILL', title: 'Både och' },
+        { const: 'PUBLIC', title: 'Enbart till allmänheten' },
+        { const: 'CLOSED_COMPANY', title: 'Enbart till slutet sällskap' },
+        { const: 'PUBLIC_AND_CLOSED_COMPANY', title: 'Både och' },
       ],
     },
-    serveringsperiodForAllmanheten: period,
-    periodServeringAllmanheten: dateRange,
-    serveringstiderInomhusAllmanheten: timeRange,
-    serveringstiderUtomhusAllmanheten: timeRange,
-    serveringsperiodForSlutetSallskap: period,
-    periodServeringSlutetSallskap: dateRange,
-    serveringstiderInomhusSlutetSallskap: timeRange,
-    serveringstiderUtomhusSlutetSallskap: timeRange,
-    alkoholdrycker: {
+    publicServingPeriod: period,
+    publicServingPeriodDates: dateRange,
+    publicServingHoursIndoor: timeRange,
+    publicServingHoursOutdoor: timeRange,
+    closedCompanyServingPeriod: period,
+    closedCompanyServingPeriodDates: dateRange,
+    closedCompanyServingHoursIndoor: timeRange,
+    closedCompanyServingHoursOutdoor: timeRange,
+    beverages: {
       type: 'array',
       items: {
         type: 'string',
         oneOf: [
-          { const: 'STARKOL', title: 'Starköl' },
-          { const: 'VIN', title: 'Vin' },
+          { const: 'STRONG_BEER', title: 'Starköl' },
+          { const: 'WINE', title: 'Vin' },
         ],
       },
     },
-    menyval: {
+    menuChoice: {
       type: 'string',
       oneOf: [
-        { const: 'JAG_VILL_BESKRIVA', title: 'Beskriva' },
-        { const: 'JAG_VILL_LADDA_UPP', title: 'Ladda upp' },
+        { const: 'DESCRIBE', title: 'Beskriva' },
+        { const: 'UPLOAD', title: 'Ladda upp' },
       ],
     },
-    menyBeskrivning: { type: 'string' },
-    finansiering: {
+    menuDescription: { type: 'string' },
+    financing: {
       type: 'array',
       items: {
         type: 'string',
         oneOf: [
-          { const: 'EGNA_MEDEL', title: 'Egna medel' },
-          { const: 'BANKLAN', title: 'Banklån' },
+          { const: 'OWN_FUNDS', title: 'Egna medel' },
+          { const: 'BANK_LOAN', title: 'Banklån' },
         ],
       },
     },
-    egnaMedel: {
+    ownFunds: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
           bank: { type: 'string', title: 'Bank' },
-          kontonummer: { type: 'string', title: 'Kontonummer' },
-          beloppKronor: { type: 'string', title: 'Belopp (kronor)' },
+          accountNumber: { type: 'string', title: 'Kontonummer' },
+          amountSek: { type: 'string', title: 'Belopp (kronor)' },
         },
       },
     },
-    banklan: {
+    bankLoans: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          langivare: { type: 'string', title: 'Långivare' },
-          beloppKronor: { type: 'string', title: 'Belopp (kronor)' },
+          lender: { type: 'string', title: 'Långivare' },
+          amountSek: { type: 'string', title: 'Belopp (kronor)' },
         },
       },
     },
-    serveringsstalletsNamn: { type: 'string', title: 'Serveringsställets namn' },
-    kontaktuppgifterTillServeringsstallet: {
+    premisesName: { type: 'string', title: 'Serveringsställets namn' },
+    premisesContact: {
       type: 'object',
-      properties: { telefonnummer: { type: 'string' }, ePostadress: { type: 'string' }, hemsida: { type: 'string' } },
+      properties: { phoneNumber: { type: 'string' }, emailAddress: { type: 'string' }, website: { type: 'string' } },
     },
-    sittplatserILokalen: {
+    seating: {
       type: 'object',
-      properties: { antalSittplatserInomhus: { type: 'string' }, antalSittplatserUteservering: { type: 'string' } },
+      properties: { seatsIndoor: { type: 'string' }, seatsOutdoor: { type: 'string' } },
     },
-    maximaltAntalPersonerILokalen: { type: 'object', properties: { antalPersoner: { type: 'string' } } },
-    harSamarbetsavtal: yesNo,
+    maxPersonsInPremises: { type: 'object', properties: { maxPersons: { type: 'string' } } },
+    hasCooperationAgreement: yesNo,
   },
   'x-attachments': [{ key: 'FLOOR_PLAN', label: 'Planritning' }],
 };
 
 const ANSWERS: FormValue = {
-  verksamhetsbeskrivningsval: 'JAG_VILL_SKRIVA_VERKSAMHETSBESKRIVNINGEN_I',
-  verksamhetsbeskrivning: '<p>Havsnära restaurang</p>',
-  verksamhetensInriktning: ['RESTAURANG'],
-  serveringTillAllmanhetenEllerSlutetSallskap: 'ENBART_TILL_ALLMANHETEN',
-  serveringsperiodForAllmanheten: 'ARET_RUNT',
-  serveringstiderInomhusAllmanheten: { startTime: '11:00:00', endTime: '01:00+01:00' },
-  serveringstiderUtomhusAllmanheten: { startTime: '11:00', endTime: '23:00' },
-  alkoholdrycker: ['STARKOL', 'VIN'],
-  menyval: 'JAG_VILL_BESKRIVA',
-  menyBeskrivning: '<p>Toast skagen</p>',
-  finansiering: ['EGNA_MEDEL', 'BANKLAN'],
-  egnaMedel: [{ bank: 'Swedbank', kontonummer: '8327-9 412 663 1', beloppKronor: '600000' }],
-  banklan: [{ langivare: 'Sundsvalls Sparbank', beloppKronor: '1200000' }],
-  serveringsstalletsNamn: 'Kustbryggan',
-  kontaktuppgifterTillServeringsstallet: { telefonnummer: '060-15 40 20', ePostadress: 'info@kustbryggan.se' },
-  sittplatserILokalen: { antalSittplatserInomhus: '72' },
-  maximaltAntalPersonerILokalen: { antalPersoner: '110' },
-  harSamarbetsavtal: 'NEJ',
+  businessDescriptionChoice: 'DESCRIBE',
+  businessDescription: '<p>Havsnära restaurang</p>',
+  businessOrientationTypes: ['RESTAURANT'],
+  servingAudience: 'PUBLIC',
+  publicServingPeriod: 'ALL_YEAR',
+  publicServingHoursIndoor: { from: '11:00:00', to: '01:00+01:00' },
+  publicServingHoursOutdoor: { from: '11:00', to: '23:00' },
+  beverages: ['STRONG_BEER', 'WINE'],
+  menuChoice: 'DESCRIBE',
+  menuDescription: '<p>Toast skagen</p>',
+  financing: ['OWN_FUNDS', 'BANK_LOAN'],
+  ownFunds: [{ bank: 'Swedbank', accountNumber: '8327-9 412 663 1', amountSek: '600000' }],
+  bankLoans: [{ lender: 'Sundsvalls Sparbank', amountSek: '1200000' }],
+  premisesName: 'Kustbryggan',
+  premisesContact: { phoneNumber: '060-15 40 20', emailAddress: 'info@kustbryggan.se' },
+  seating: { seatsIndoor: '72' },
+  maxPersonsInPremises: { maxPersons: '110' },
+  hasCooperationAgreement: 'NO',
 };
 
 const section = (sections: BasisSection[], id: BasisSection['id']) =>
@@ -175,7 +175,7 @@ describe('getDecisionBasisForm', () => {
       {
         key: 'aot_alcohol_folkol_serving_notification',
         schemaId: 'folkol-id',
-        value: { serveringsstalletsNamn: 'Kiosken' },
+        value: { premisesName: 'Kiosken' },
       },
     ],
   } as unknown as Pick<SupportErrand, 'labels' | 'classification' | 'jsonParameters'>;
@@ -183,7 +183,7 @@ describe('getDecisionBasisForm', () => {
   test('picks the answers filed under the schema name of the errand type', () => {
     expect(getDecisionBasisForm(errand, 'AOT')).toEqual({
       schemaId: 'folkol-id',
-      value: { serveringsstalletsNamn: 'Kiosken' },
+      value: { premisesName: 'Kiosken' },
     });
   });
 
@@ -220,7 +220,7 @@ describe('buildDecisionBasisSections', () => {
     });
     expect(row(sections, 'serving', 'menu')?.cell).toEqual({ kind: 'html', html: '<p>Toast skagen</p>' });
 
-    const uploaded = buildDecisionBasisSections({ ...ANSWERS, menyval: 'JAG_VILL_LADDA_UPP' }, PERMANENT);
+    const uploaded = buildDecisionBasisSections({ ...ANSWERS, menuChoice: 'UPLOAD' }, PERMANENT);
     expect(row(uploaded, 'serving', 'menu')?.cell).toEqual({ kind: 'attachment', purpose: 'MENU' });
   });
 
@@ -241,10 +241,10 @@ describe('buildDecisionBasisSections', () => {
     const both = buildDecisionBasisSections(
       {
         ...ANSWERS,
-        serveringTillAllmanhetenEllerSlutetSallskap: 'BADE_TILL_ALLMANHETEN_OCH_TILL',
-        serveringsperiodForSlutetSallskap: 'ARLIGEN_UNDER_VISS_PERIOD',
-        periodServeringSlutetSallskap: { startDate: '2026-05-01', endDate: '2026-09-30' },
-        serveringstiderInomhusSlutetSallskap: { startTime: '18:00', endTime: '02:00' },
+        servingAudience: 'PUBLIC_AND_CLOSED_COMPANY',
+        closedCompanyServingPeriod: 'ANNUAL_PERIOD',
+        closedCompanyServingPeriodDates: { fromDate: '2026-05-01', toDate: '2026-09-30' },
+        closedCompanyServingHoursIndoor: { from: '18:00', to: '02:00' },
       },
       PERMANENT
     );
@@ -311,7 +311,10 @@ describe('buildDecisionBasisSections', () => {
 
     const hotel = buildDecisionBasisSections(ANSWERS, {
       ...PERMANENT,
-      properties: { ...PERMANENT.properties, harNi: { type: 'array', items: { type: 'string', oneOf: [] } } },
+      properties: {
+        ...PERMANENT.properties,
+        additionalScopes: { type: 'array', items: { type: 'string', oneOf: [] } },
+      },
     });
     expect(row(hotel, 'operation', 'hotel-service')).toEqual({
       key: 'hotel-service',
@@ -324,24 +327,25 @@ describe('buildDecisionBasisSections', () => {
   test('the tobacco website at the root joins the contact row, and the seats row needs the schema to ask', () => {
     const tobacco = buildDecisionBasisSections(
       {
-        serveringsstalletsNamn: 'Kiosken',
-        kontaktuppgifterTillServeringsstallet: { telefonnummer: '060-1', ePostadress: 'kiosk@example.com' },
-        bedriverAvenDistansforsaljning: 'JA',
-        hemsida: 'https://kiosken.example',
-        sittplatserILokalen: { antalSittplatserInomhus: '4' },
+        pointOfSaleName: 'Kiosken',
+        pointOfSaleContact: { phoneNumber: '060-1', emailAddress: 'kiosk@example.com' },
+        includesDistanceSelling: 'YES',
+        distanceSellingWebsite: 'https://kiosken.example',
+        seating: { seatsIndoor: '4' },
       },
       {
         type: 'object',
         properties: {
-          serveringsstalletsNamn: { type: 'string' },
-          kontaktuppgifterTillServeringsstallet: { type: 'object', properties: {} },
-          bedriverAvenDistansforsaljning: yesNo,
-          hemsida: { type: 'string' },
-          sittplatserILokalen: { type: 'object', properties: { antalSittplatserInomhus: { type: 'string' } } },
+          pointOfSaleName: { type: 'string' },
+          pointOfSaleContact: { type: 'object', properties: {} },
+          includesDistanceSelling: yesNo,
+          distanceSellingWebsite: { type: 'string' },
+          seating: { type: 'object', properties: { seatsIndoor: { type: 'string' } } },
         },
       }
     );
 
+    expect(textOf(tobacco, 'premises', 'name')).toBe('Kiosken');
     expect(textOf(tobacco, 'premises', 'contact')).toBe('060-1, kiosk@example.com, https://kiosken.example');
     expect(textOf(tobacco, 'operation', 'distance-sales')).toBe('Ja');
     expect(row(tobacco, 'serving_premises', 'seats')?.cell).toEqual({ kind: 'text', text: '4' });
@@ -352,11 +356,11 @@ describe('buildDecisionBasisSections', () => {
   test('without the schema the answers are still shown, constants and all', () => {
     const bare = buildDecisionBasisSections(ANSWERS, null);
 
-    expect(textOf(bare, 'operation', 'focus')).toBe('RESTAURANG');
-    expect(textOf(bare, 'serving', 'drinks')).toBe('STARKOL, VIN');
+    expect(textOf(bare, 'operation', 'focus')).toBe('RESTAURANT');
+    expect(textOf(bare, 'serving', 'drinks')).toBe('STRONG_BEER, WINE');
     expect(row(bare, 'financing', 'own-funds')?.cell).toEqual({
       kind: 'table',
-      columns: ['bank', 'kontonummer', 'beloppKronor'],
+      columns: ['bank', 'accountNumber', 'amountSek'],
       rows: [['Swedbank', '8327-9 412 663 1', '600000']],
     });
     expect(row(bare, 'serving_premises', 'outdoor-seats')).toBeUndefined();

@@ -63,51 +63,51 @@ const person = {
 const SCHEMA: RJSFSchema = {
   type: 'object',
   properties: {
-    verksamhetsbeskrivningsval: {
+    businessDescriptionChoice: {
       type: 'string',
-      oneOf: [{ const: 'JAG_VILL_BIFOGA_VERKSAMHETSBESKRIVNINGEN_SOM', title: 'Bifoga' }],
+      oneOf: [{ const: 'UPLOAD', title: 'Bifoga' }],
     },
-    verksamhetsbeskrivning: { type: 'string' },
-    alkoholdrycker: {
+    businessDescription: { type: 'string' },
+    beverages: {
       type: 'array',
       items: {
         type: 'string',
         oneOf: [
-          { const: 'STARKOL', title: 'Starköl' },
-          { const: 'VIN', title: 'Vin' },
+          { const: 'STRONG_BEER', title: 'Starköl' },
+          { const: 'WINE', title: 'Vin' },
         ],
       },
     },
-    finansiering: { type: 'array', items: { type: 'string', oneOf: [{ const: 'EGNA_MEDEL', title: 'Egna medel' }] } },
-    egnaMedel: {
+    financing: { type: 'array', items: { type: 'string', oneOf: [{ const: 'OWN_FUNDS', title: 'Egna medel' }] } },
+    ownFunds: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
           bank: { type: 'string', title: 'Bank' },
-          beloppKronor: { type: 'string', title: 'Belopp (kronor)' },
+          amountSek: { type: 'string', title: 'Belopp (kronor)' },
         },
       },
     },
-    ovrigaUpplysningarFinansiering: { type: 'string' },
-    serveringsstalletsNamn: { type: 'string' },
-    besoksadressSammaSomArendeagare: { type: 'string' },
-    besoksadress: { type: 'object', properties: {} },
-    kontaktuppgifterTillServeringsstallet: { type: 'object', properties: {} },
-    sittplatserILokalen: { type: 'object', properties: { antalSittplatserInomhus: { type: 'string' } } },
+    financingNotes: { type: 'string' },
+    premisesName: { type: 'string' },
+    premisesAddressSameAsCompany: { type: 'string' },
+    premisesAddress: { type: 'object', properties: {} },
+    premisesContact: { type: 'object', properties: {} },
+    seating: { type: 'object', properties: { seatsIndoor: { type: 'string' } } },
   },
 };
 
 const ANSWERS = {
-  verksamhetsbeskrivningsval: 'JAG_VILL_BIFOGA_VERKSAMHETSBESKRIVNINGEN_SOM',
-  alkoholdrycker: ['STARKOL', 'VIN'],
-  finansiering: ['EGNA_MEDEL'],
-  egnaMedel: [{ bank: 'Testbanken', beloppKronor: '600000' }],
-  ovrigaUpplysningarFinansiering: '<p>Egna medel kommer från <b>ägarna</b></p><script>alert(1)</script>',
-  serveringsstalletsNamn: mockEnv.mockPremisesName,
-  besoksadress: { gatuadress: PREMISES.street, postnummer: PREMISES.postalCode, postort: PREMISES.city },
-  kontaktuppgifterTillServeringsstallet: { telefonnummer: mockEnv.mockPhoneNumber },
-  sittplatserILokalen: { antalSittplatserInomhus: '72' },
+  businessDescriptionChoice: 'UPLOAD',
+  beverages: ['STRONG_BEER', 'WINE'],
+  financing: ['OWN_FUNDS'],
+  ownFunds: [{ bank: 'Testbanken', amountSek: '600000' }],
+  financingNotes: '<p>Egna medel kommer från <b>ägarna</b></p><script>alert(1)</script>',
+  premisesName: mockEnv.mockPremisesName,
+  premisesAddress: { street: PREMISES.street, postalCode: PREMISES.postalCode, city: PREMISES.city },
+  premisesContact: { phoneNumber: mockEnv.mockPhoneNumber },
+  seating: { seatsIndoor: '72' },
 };
 
 /** An errand as the store holds it: the owner both as `customer` and among the raw `stakeholders`. */
@@ -182,7 +182,7 @@ test('shows the premises address filled in on the form', () => {
 });
 
 test('premises at the owner address are marked as such', () => {
-  renderBasis(errand(company, { besoksadressSammaSomArendeagare: 'JA' }));
+  renderBasis(errand(company, { premisesAddressSameAsCompany: 'YES' }));
 
   expect(value('premises-address')).toBe(`${COMPANY.street}, ${COMPANY.postalCode} ${COMPANY.city}`);
   expect(label('premises-address')).toBe('common:decision.basis.premises.address_from.OWNER');

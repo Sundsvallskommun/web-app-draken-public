@@ -32,7 +32,7 @@ import {
   saveSupportErrandParameters,
   type SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { type FormValue, text } from '@supportmanagement/services/support-form-value-service';
+import { type FormValue, premisesValue, text } from '@supportmanagement/services/support-form-value-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -123,7 +123,7 @@ export const useDecisionSave = ({
     const parameters = withPremisesProcessParameters(
       onErrand,
       premisesToSend,
-      text(applicationForm?.serveringsstalletsNamn) ?? ''
+      text(premisesValue(applicationForm, 'Name')) ?? ''
     );
     if (JSON.stringify(parameters) === JSON.stringify(onErrand)) return;
 

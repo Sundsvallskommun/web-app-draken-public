@@ -53,7 +53,7 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
 
 /** What the handler decided, as the tab prefills it from the serving form below. */
 const servingScope = {
-  beverages: ['STARKOL', 'VIN', 'SPRITDRYCKER'],
+  beverages: ['STRONG_BEER', 'WINE', 'SPIRITS'],
   servingHours: {
     indoorPublic: { from: '11:00', to: '01:00' },
     outdoorPublic: { from: '11:00', to: '23:00' },
@@ -69,19 +69,19 @@ const sent = (permitType: string, overrides: Partial<DecisionParameterInput> = {
   asObject(toDecisionParameters(permitType, input(overrides), DECISION));
 
 const servingForm = {
-  serveringsstalletsNamn: mockEnv.mockPremisesName,
-  kontaktuppgifterTillServeringsstallet: { telefonnummer: mockEnv.mockPhoneNumber, ePostadress: 'a@b.se' },
-  serveringTillAllmanhetenEllerSlutetSallskap: 'BADE_TILL_ALLMANHETEN_OCH_TILL',
-  serveringsperiodForAllmanheten: 'ARET_RUNT',
-  serveringstiderInomhusAllmanheten: { startTime: '11:00:00', endTime: '01:00:00' },
-  serveringstiderUtomhusAllmanheten: { startTime: '11:00', endTime: '23:00' },
-  serveringsperiodForSlutetSallskap: 'ARLIGEN_UNDER_VISS_PERIOD',
-  periodServeringSlutetSallskap: { startDate: '2026-05-01', endDate: '2026-09-30' },
+  premisesName: mockEnv.mockPremisesName,
+  premisesContact: { phoneNumber: mockEnv.mockPhoneNumber, emailAddress: 'a@b.se' },
+  servingAudience: 'PUBLIC_AND_CLOSED_COMPANY',
+  publicServingPeriod: 'ALL_YEAR',
+  publicServingHoursIndoor: { from: '11:00:00', to: '01:00:00' },
+  publicServingHoursOutdoor: { from: '11:00', to: '23:00' },
+  closedCompanyServingPeriod: 'ANNUAL_PERIOD',
+  closedCompanyServingPeriodDates: { fromDate: '2026-05-01', toDate: '2026-09-30' },
   // The schema asks for an RFC 3339 time, so an application carries the offset; the hours read the same.
-  serveringstiderInomhusSlutetSallskap: { startTime: '18:00:00+02:00', endTime: '02:00:00+02:00' },
-  alkoholdrycker: ['STARKOL', 'VIN', 'SPRITDRYCKER'],
-  sittplatserILokalen: { antalSittplatserInomhus: '60', antalSittplatserUteservering: '30' },
-  maximaltAntalPersonerILokalen: { antalPersoner: '90' },
+  closedCompanyServingHoursIndoor: { from: '18:00:00+02:00', to: '02:00:00+02:00' },
+  beverages: ['STRONG_BEER', 'WINE', 'SPIRITS'],
+  seating: { seatsIndoor: '60', seatsOutdoor: '30' },
+  maxPersonsInPremises: { maxPersons: '90' },
 };
 
 describe('a serving permit', () => {
@@ -181,7 +181,7 @@ describe('a serving permit', () => {
   test('the beverages and hours follow the decision even where the form says otherwise', () => {
     const decidedLess = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
-      scope: { beverages: ['VIN'], servingHours: { single: { from: '12:00', to: '22:00' } } },
+      scope: { beverages: ['WINE'], servingHours: { single: { from: '12:00', to: '22:00' } } },
     });
 
     expect(decidedLess).toMatchObject({
@@ -212,11 +212,11 @@ describe('a serving permit', () => {
 
 describe('a tobacco permit', () => {
   const form = {
-    serveringsstalletsNamn: mockEnv.mockPremisesName,
-    kontaktuppgifterTillServeringsstallet: { telefonnummer: mockEnv.mockPhoneNumber },
-    bedriverAvenDistansforsaljning: 'JA',
-    tidsperiodForForsaljningen: 'TIDSBEGRANSAD_FORSALJNING',
-    periodTidsbegransadForsaljning: { startDate: '2026-11-01', endDate: '2027-10-31' },
+    premisesName: mockEnv.mockPremisesName,
+    premisesContact: { phoneNumber: mockEnv.mockPhoneNumber },
+    includesDistanceSelling: 'YES',
+    salesPeriod: 'TEMPORARY',
+    salesPeriodDates: { fromDate: '2026-11-01', toDate: '2027-10-31' },
   };
   const parameters = sent('TOBAKSFORSALJNING', { form });
 
@@ -301,7 +301,7 @@ describe('what the permit needs of the errand', () => {
   });
 
   test('the telephone to the premises is the handler’s, so the review does not wait for it', () => {
-    const withoutPhone = { ...servingForm, kontaktuppgifterTillServeringsstallet: {} };
+    const withoutPhone = { ...servingForm, premisesContact: {} };
 
     expect(
       missingPermitInputs('SERVERINGSTILLSTAND', PERMANENT, errand(), withoutPhone, drawing).fromTheApplication

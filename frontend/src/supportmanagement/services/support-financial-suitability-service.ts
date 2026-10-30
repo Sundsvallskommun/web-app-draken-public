@@ -8,9 +8,9 @@ export interface SupportFinancingSource {
 
 interface FinancingEntry {
   bank?: string;
-  langivare?: string;
-  lanetyp?: string;
-  beloppKronor?: string;
+  lender?: string;
+  loanType?: string;
+  amountSek?: string;
 }
 
 const applicationOf = (errand: SupportErrand | undefined): Record<string, unknown> | undefined =>
@@ -21,8 +21,8 @@ const applicationOf = (errand: SupportErrand | undefined): Record<string, unknow
 const entriesUnder = (application: Record<string, unknown> | undefined, key: string): FinancingEntry[] =>
   Array.isArray(application?.[key]) ? (application[key] as FinancingEntry[]) : [];
 
-export const supportFinancingAmount = (beloppKronor: string | undefined): string => {
-  const given = (beloppKronor ?? '').trim();
+export const supportFinancingAmount = (amountSek: string | undefined): string => {
+  const given = (amountSek ?? '').trim();
   const digits = given.replace(/\s/g, '');
   if (!given) return '';
   return /^\d+$/.test(digits) ? `${Number(digits).toLocaleString('sv-SE')} kr` : given;
@@ -33,16 +33,16 @@ export const supportFinancingSourcesOf = (
 ): SupportFinancingSource[] => {
   const sourcesOf = (key: string, kind: string): SupportFinancingSource[] =>
     entriesUnder(application, key).map((entry) => ({
-      kind: entry.lanetyp?.trim() || kind,
-      amount: supportFinancingAmount(entry.beloppKronor),
-      lender: (entry.bank ?? entry.langivare ?? '').trim(),
+      kind: entry.loanType?.trim() || kind,
+      amount: supportFinancingAmount(entry.amountSek),
+      lender: (entry.bank ?? entry.lender ?? '').trim(),
     }));
 
   return [
-    ...sourcesOf('egnaMedel', 'Egna medel'),
-    ...sourcesOf('banklan', 'Banklån'),
-    ...sourcesOf('privatlan', 'Privatlån'),
-    ...sourcesOf('annanFinansiering', 'Annan finansiering'),
+    ...sourcesOf('ownFunds', 'Egna medel'),
+    ...sourcesOf('bankLoans', 'Banklån'),
+    ...sourcesOf('privateLoans', 'Privatlån'),
+    ...sourcesOf('otherFinancing', 'Annan finansiering'),
   ];
 };
 
@@ -50,7 +50,7 @@ export const supportFinancingSources = (errand: SupportErrand | undefined): Supp
   supportFinancingSourcesOf(applicationOf(errand));
 
 export const supportFinancingNotesOf = (application: Record<string, unknown> | undefined): string =>
-  ((application?.ovrigaUpplysningarFinansiering as string) ?? '').trim();
+  ((application?.financingNotes as string) ?? '').trim();
 
 export const supportFinancingNotes = (errand: SupportErrand | undefined): string =>
   supportFinancingNotesOf(applicationOf(errand));

@@ -1,5 +1,6 @@
 import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-schema-service';
 import type { SupportErrand } from './support-errand-service';
+import { premisesValue } from './support-form-value-service';
 
 /** Where the premises address was read from: the errand form, or the owner (PRIMARY) stakeholder. */
 type PremisesAddressSource = 'FORM' | 'OWNER';
@@ -39,11 +40,11 @@ const toPremisesAddress = (
 };
 
 const fromForm = (formData: Record<string, unknown> | undefined): PremisesAddress | undefined => {
-  const besoksadress = formData?.besoksadress;
-  if (!besoksadress || typeof besoksadress !== 'object') return undefined;
+  const address = premisesValue(formData, 'Address');
+  if (!address || typeof address !== 'object') return undefined;
 
-  const { gatuadress, postnummer, postort } = besoksadress as Record<string, unknown>;
-  return toPremisesAddress(gatuadress, postnummer, postort, 'FORM');
+  const { street, postalCode, city } = address as Record<string, unknown>;
+  return toPremisesAddress(street, postalCode, city, 'FORM');
 };
 
 const fromOwner = (errand: PremisesAddressErrand): PremisesAddress | undefined => {
@@ -54,10 +55,10 @@ const fromOwner = (errand: PremisesAddressErrand): PremisesAddress | undefined =
 /**
  * The address of the serving/sales premises (besöksadress) of an AoT errand.
  *
- * `besoksadressSammaSomArendeagare: "JA"` means the premises are at the owner's address; anything else,
- * including the question being absent, means the form's own `besoksadress`. The chosen source is
- * final: when it holds no usable address the result is undefined, never the other source — a stale
- * `besoksadress` left behind after answering JA is not the premises.
+ * `premisesAddressSameAsCompany: "YES"` (`pointOfSale*` for tobacco) means the premises are at the owner's
+ * address; anything else, including the question being absent, means the form's own `premisesAddress`. The
+ * chosen source is final: when it holds no usable address the result is undefined, never the other source — a
+ * stale `premisesAddress` left behind after answering YES is not the premises.
  */
 export const getPremisesAddress = (
   errand: PremisesAddressErrand | undefined,
@@ -68,7 +69,7 @@ export const getPremisesAddress = (
   const value = jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value;
   const formData = value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
 
-  return formData?.besoksadressSammaSomArendeagare === 'JA' ? fromOwner(errand) : fromForm(formData);
+  return premisesValue(formData, 'AddressSameAsCompany') === 'YES' ? fromOwner(errand) : fromForm(formData);
 };
 
 // The premises address arrives with the space stripped from its postal code; show it as written in Sweden.
