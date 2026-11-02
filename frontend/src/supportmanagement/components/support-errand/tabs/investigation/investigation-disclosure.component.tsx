@@ -44,7 +44,7 @@ export const SectionDisclosure: React.FC<{
     saveRef,
   };
 
-  const sectionContent: Partial<Record<Sections, JSX.Element>> = {
+  const sectionContent: Record<Sections, JSX.Element> = {
     statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} />,
     persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: <SupportFinancialSuitabilitySection {...props} />,

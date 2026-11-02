@@ -1,7 +1,5 @@
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import type { SupportErrand } from './support-errand-service';
-
 export interface SupportInvestigationSectionInput {
   sectionKey: string;
   heading: string;
@@ -30,72 +28,6 @@ export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionK
 
 type SectionSpec = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number];
 
-export interface SupportInvestigationVariant {
-  sections: readonly Sections[];
-  introKey: string;
-  basisTemplate?: string;
-}
-
-const SERVING_PERMIT_SECTIONS = [
-  'statements',
-  'ownership',
-  'persons_of_influence',
-  'financial_suitability',
-  'premises',
-  'lease',
-  'fire_safety',
-  'food_and_beverages',
-  'staffing',
-  'communication',
-  'child_perspective',
-  'marketing',
-  'legal_basis',
-] as const;
-
-const TOBACCO_SALES_PERMIT_SECTIONS = [
-  'statements',
-  'ownership',
-  'persons_of_influence',
-  'financial_suitability',
-  'sales_point',
-  'lease',
-  'self_monitoring',
-  'communication',
-  'legal_basis',
-] as const;
-
-const SERVING_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
-  sections: SERVING_PERMIT_SECTIONS,
-  introKey: 'common:investigation.intro',
-  basisTemplate: 'serving-permit-decision-basis',
-};
-
-const TOBACCO_SALES_PERMIT_INVESTIGATION: SupportInvestigationVariant = {
-  sections: TOBACCO_SALES_PERMIT_SECTIONS,
-  introKey: 'common:investigation.intro_tobacco',
-  basisTemplate: 'tobacco-sales-decision-basis',
-};
-
-const SUPPORT_INVESTIGATION_VARIANTS: Record<string, SupportInvestigationVariant> = {
-  ALCOHOL: SERVING_PERMIT_INVESTIGATION,
-  TOBACCO: TOBACCO_SALES_PERMIT_INVESTIGATION,
-  SALES_PERMIT_APPLICATION: TOBACCO_SALES_PERMIT_INVESTIGATION,
-};
-
-const CLASSIFICATIONS_FROM_THE_MOST_SPECIFIC = ['SUBTYPE', 'TYPE', 'CATEGORY'] as const;
-
-type VariantErrand = Pick<SupportErrand, 'labels'>;
-
-const resourceNamesOf = (errand: VariantErrand | undefined): string[] =>
-  CLASSIFICATIONS_FROM_THE_MOST_SPECIFIC.map(
-    (classification) => (errand?.labels ?? []).find((label) => label.classification === classification)?.resourceName
-  ).filter((resourceName): resourceName is string => !!resourceName);
-
-export const supportInvestigationVariant = (errand: VariantErrand | undefined): SupportInvestigationVariant =>
-  resourceNamesOf(errand)
-    .map((resourceName) => SUPPORT_INVESTIGATION_VARIANTS[resourceName])
-    .find(Boolean) ?? SERVING_PERMIT_INVESTIGATION;
-
 const SECTION_KEYS_OF_AN_EARLIER_NAME: Record<string, Sections> = {
   personal_suitability: 'persons_of_influence',
 };
@@ -114,28 +46,27 @@ const isSupersededByItsNewName = (section: InvestigationSection, sections: Inves
   !!SECTION_KEYS_OF_AN_EARLIER_NAME[section.sectionKey ?? ''] &&
   sections.some((candidate) => candidate.sectionKey === sectionKeyOf(section));
 
-const isExaminedBy = (variant: SupportInvestigationVariant, section: InvestigationSection): boolean =>
-  (variant.sections as readonly string[]).includes(sectionKeyOf(section));
+const isExaminedIn = (examined: readonly Sections[], section: InvestigationSection): boolean =>
+  (examined as readonly string[]).includes(sectionKeyOf(section));
 
 export const visibleSupportInvestigationSections = (
   investigation: Investigation | undefined,
-  variant: SupportInvestigationVariant
+  examined: readonly Sections[]
 ): InvestigationSection[] => {
   const sections = investigation?.sections ?? [];
-  const positionOf = (section: InvestigationSection) =>
-    (variant.sections as readonly string[]).indexOf(sectionKeyOf(section));
+  const positionOf = (section: InvestigationSection) => (examined as readonly string[]).indexOf(sectionKeyOf(section));
 
   return sections
-    .filter((section) => isExaminedBy(variant, section) && !isSupersededByItsNewName(section, sections))
+    .filter((section) => isExaminedIn(examined, section) && !isSupersededByItsNewName(section, sections))
     .sort((a, b) => positionOf(a) - positionOf(b));
 };
 
 export const missingSupportInvestigationSections = (
   investigation: Investigation | undefined,
-  variant: SupportInvestigationVariant
+  examined: readonly Sections[]
 ): Sections[] => {
   const written = (investigation?.sections ?? []).map(sectionKeyOf);
-  return variant.sections.filter((sectionKey) => !written.includes(sectionKey));
+  return examined.filter((sectionKey) => !written.includes(sectionKey));
 };
 
 export interface SupportInvestigationTextKeys {
@@ -155,11 +86,11 @@ const headingKeyOf = (sectionKey: Sections): string =>
 
 export const supportInvestigationSectionInputs = (
   translate: (key: string) => string,
-  variant: SupportInvestigationVariant,
-  sections: readonly Sections[] = variant.sections
+  examined: readonly Sections[],
+  chosen: readonly Sections[] = examined
 ): SupportInvestigationSectionInput[] =>
-  sections.map((sectionKey) => ({
+  chosen.map((sectionKey) => ({
     sectionKey,
     heading: translate(headingKeyOf(sectionKey)),
-    sortOrder: variant.sections.indexOf(sectionKey) + 1,
+    sortOrder: examined.indexOf(sectionKey) + 1,
   }));

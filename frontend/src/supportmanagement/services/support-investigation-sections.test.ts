@@ -9,11 +9,10 @@ import {
   supportInvestigationSectionInputs,
   supportInvestigationSectionSpec,
   supportInvestigationTextKeys,
-  supportInvestigationVariant,
   visibleSupportInvestigationSections,
 } from './support-investigation-sections';
 
-const SERVING = [
+const SERVING: Sections[] = [
   'statements',
   'ownership',
   'persons_of_influence',
@@ -29,7 +28,7 @@ const SERVING = [
   'legal_basis',
 ];
 
-const TOBACCO = [
+const TOBACCO: Sections[] = [
   'statements',
   'ownership',
   'persons_of_influence',
@@ -62,16 +61,6 @@ const swedish = (key: string): unknown =>
     .split('.')
     .reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], sv);
 
-const label = (classification: string, resourceName: string) => ({ classification, resourceName });
-
-const errandOf = (...labels: { classification: string; resourceName: string }[]) => ({ labels } as never);
-
-const servingErrand = errandOf(label('CATEGORY', 'ALCOHOL'), label('TYPE', 'SERVING_PERMIT_APPLICATION'));
-const tobaccoErrand = errandOf(label('CATEGORY', 'TOBACCO'), label('TYPE', 'SALES_PERMIT_APPLICATION'));
-
-const servingVariant = supportInvestigationVariant(servingErrand);
-const tobaccoVariant = supportInvestigationVariant(tobaccoErrand);
-
 const sectionOf = (sectionKey: string, sortOrder: number, heading = sectionKey) =>
   ({ id: `section-${sectionKey}`, sectionKey, heading, sortOrder } as never);
 
@@ -79,38 +68,10 @@ const investigationOf = (...sections: unknown[]) => ({ id: 'investigation-1', se
 
 const keysOf = (sections: { sectionKey?: string }[]) => sections.map((section) => section.sectionKey);
 
-test('a serving permit is examined as it always has been, underlay and all', () => {
-  expect([...servingVariant.sections]).toEqual(SERVING);
-  expect(servingVariant.basisTemplate).toBe('serving-permit-decision-basis');
-});
-
-test('a tobacco sales permit is examined by the headings the business writes, and has an underlay of its own', () => {
-  expect([...tobaccoVariant.sections]).toEqual(TOBACCO);
-  expect(tobaccoVariant.basisTemplate).toBe('tobacco-sales-decision-basis');
-});
-
-test('the most specific level that names the examinations wins, and the category answers for the rest', () => {
-  const permanentServing = errandOf(
-    label('CATEGORY', 'ALCOHOL'),
-    label('TYPE', 'SERVING_PERMIT_APPLICATION'),
-    label('SUBTYPE', 'PERMANENT_SERVING')
-  );
-  const tobaccoChange = errandOf(label('CATEGORY', 'TOBACCO'), label('TYPE', 'SALES_PERMIT_CHANGE'));
-
-  expect([...supportInvestigationVariant(permanentServing).sections]).toEqual(SERVING);
-  expect([...supportInvestigationVariant(tobaccoChange).sections]).toEqual(TOBACCO);
-});
-
-test('an errand whose type says nothing is examined as a serving permit, as every errand was before', () => {
-  expect([...supportInvestigationVariant(undefined).sections]).toEqual(SERVING);
-  expect([...supportInvestigationVariant(errandOf()).sections]).toEqual(SERVING);
-  expect([...supportInvestigationVariant(errandOf(label('CATEGORY', 'DOCUMENTATION'))).sections]).toEqual(SERVING);
-});
-
 test('a section is shown in order, and a retired examination is not shown at all', () => {
   const shown = visibleSupportInvestigationSections(
     investigationOf(sectionOf('premises', 4), sectionOf('knowledge_test', 9), sectionOf('statements', 1)),
-    servingVariant
+    SERVING
   );
 
   expect(keysOf(shown)).toEqual(['statements', 'premises']);
@@ -124,10 +85,7 @@ test('the rows the errand type does not examine are left out, written or not', (
     sectionOf('lease', 6)
   );
 
-  expect(keysOf(visibleSupportInvestigationSections(startedAsServing, tobaccoVariant))).toEqual([
-    'statements',
-    'lease',
-  ]);
+  expect(keysOf(visibleSupportInvestigationSections(startedAsServing, TOBACCO))).toEqual(['statements', 'lease']);
 });
 
 test('the rows are ordered by the errand type, not by the sort order the service holds', () => {
@@ -138,7 +96,7 @@ test('the rows are ordered by the errand type, not by the sort order the service
     sectionOf('sales_point', 4)
   );
 
-  expect(keysOf(visibleSupportInvestigationSections(numberedByAnotherVariant, tobaccoVariant))).toEqual([
+  expect(keysOf(visibleSupportInvestigationSections(numberedByAnotherVariant, TOBACCO))).toEqual([
     'statements',
     'sales_point',
     'lease',
@@ -149,7 +107,7 @@ test('the rows are ordered by the errand type, not by the sort order the service
 test('a row written under an earlier name is shown until the row it became is there', () => {
   const underTheOldName = investigationOf(sectionOf('personal_suitability', 2), sectionOf('premises', 4));
 
-  expect(keysOf(visibleSupportInvestigationSections(underTheOldName, servingVariant))).toEqual([
+  expect(keysOf(visibleSupportInvestigationSections(underTheOldName, SERVING))).toEqual([
     'personal_suitability',
     'premises',
   ]);
@@ -157,7 +115,7 @@ test('a row written under an earlier name is shown until the row it became is th
     keysOf(
       visibleSupportInvestigationSections(
         investigationOf(sectionOf('personal_suitability', 2), sectionOf('persons_of_influence', 2)),
-        servingVariant
+        SERVING
       )
     )
   ).toEqual(['persons_of_influence']);
@@ -179,7 +137,7 @@ test('a row carries the heading the register gives its examination, whatever nam
 test('the examinations that are missing are the ones no row stands for, by the name they carry today', () => {
   const started = investigationOf(sectionOf('statements', 1), sectionOf('personal_suitability', 2));
 
-  expect(missingSupportInvestigationSections(started, servingVariant)).toEqual([
+  expect(missingSupportInvestigationSections(started, SERVING)).toEqual([
     'ownership',
     'financial_suitability',
     'premises',
@@ -192,31 +150,28 @@ test('the examinations that are missing are the ones no row stands for, by the n
     'marketing',
     'legal_basis',
   ]);
-  expect(missingSupportInvestigationSections(undefined, tobaccoVariant)).toEqual(TOBACCO);
+  expect(missingSupportInvestigationSections(undefined, TOBACCO)).toEqual(TOBACCO);
 });
 
 test('an examination of another errand type is not missing from this one', () => {
   const startedAsServing = investigationOf(...SERVING.map((sectionKey, index) => sectionOf(sectionKey, index + 1)));
 
-  expect(missingSupportInvestigationSections(startedAsServing, servingVariant)).toEqual([]);
-  expect(missingSupportInvestigationSections(startedAsServing, tobaccoVariant)).toEqual([
-    'sales_point',
-    'self_monitoring',
-  ]);
+  expect(missingSupportInvestigationSections(startedAsServing, SERVING)).toEqual([]);
+  expect(missingSupportInvestigationSections(startedAsServing, TOBACCO)).toEqual(['sales_point', 'self_monitoring']);
 });
 
 test('the examinations are handed to the service with their headings translated and numbered by the type', () => {
   const translate = (key: string) => `översatt:${key}`;
 
-  expect(supportInvestigationSectionInputs(translate, tobaccoVariant, ['self_monitoring'])).toEqual([
+  expect(supportInvestigationSectionInputs(translate, TOBACCO, ['self_monitoring'])).toEqual([
     {
       sectionKey: 'self_monitoring',
       heading: 'översatt:common:investigation.sections.self_monitoring',
       sortOrder: 7,
     },
   ]);
-  expect(supportInvestigationSectionInputs(translate, servingVariant)).toHaveLength(SERVING.length);
-  expect(supportInvestigationSectionInputs(translate, tobaccoVariant).map((input) => input.sortOrder)).toEqual(
+  expect(supportInvestigationSectionInputs(translate, SERVING)).toHaveLength(SERVING.length);
+  expect(supportInvestigationSectionInputs(translate, TOBACCO).map((input) => input.sortOrder)).toEqual(
     TOBACCO.map((_, index) => index + 1)
   );
 });
@@ -240,18 +195,4 @@ test('every examination the handler sees is named in Swedish, and every written 
     expect(swedish(keys.placeholderKey), sectionKey).toBeTypeOf('string');
     expect(swedish(keys.saveFailedKey), sectionKey).toBeTypeOf('string');
   }
-});
-
-test('every examination an errand type asks for is in the register', () => {
-  const registered = SUPPORT_INVESTIGATION_SECTIONS.map((section) => section.sectionKey);
-
-  for (const sectionKey of [...SERVING, ...TOBACCO]) expect(registered, sectionKey).toContain(sectionKey);
-});
-
-test('the tab tells the handler which law the suitability is examined against', () => {
-  expect(servingVariant.introKey).toBe('common:investigation.intro');
-  expect(swedish(servingVariant.introKey)).toContain('alkohollagen');
-
-  expect(tobaccoVariant.introKey).toBe('common:investigation.intro_tobacco');
-  expect(swedish(tobaccoVariant.introKey)).toContain('lagen om tobak och liknande produkter');
 });

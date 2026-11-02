@@ -12,6 +12,7 @@ import { sanitized, sanitizedInline } from '@common/services/sanitizer-service';
 import { renderTemplatePdfPreview } from '@common/services/template-render-service';
 import type { Admin } from '@common/services/user-service';
 import type { RJSFSchema } from '@rjsf/utils';
+import { examinedSections, investigationVariantFor } from '@supportmanagement/investigations';
 import dayjs from 'dayjs';
 import type { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
@@ -38,7 +39,7 @@ import {
   timeRangeText,
 } from './support-form-value-service';
 import { supportApplicationCompleteAt } from './support-investigation-processing-service';
-import { sectionKeyOf, type Sections, supportInvestigationVariant } from './support-investigation-sections';
+import { sectionKeyOf, type Sections } from './support-investigation-sections';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   engagementIsPerson,
@@ -631,7 +632,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
   const examination = supportPremisesExamination(errand?.parameters);
   const people = personsOfInfluence(errand, input.companyEngagements, translate);
   const salesPoint = supportTobaccoSalesPointOf(form);
-  const examined = supportInvestigationVariant(errand).sections;
+  const examined = examinedSections(investigationVariantFor(errand));
 
   const yesOrNo = (given: boolean | undefined): string => {
     if (given === undefined) return '';
