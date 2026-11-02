@@ -5,6 +5,7 @@ import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { hyphenatedIdentity } from '@supportmanagement/services/support-pbi-service';
 import { supportStatementTemplateParameters } from '@supportmanagement/services/support-statement-template-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { type FC, useState } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../../../tests/mock-env';
@@ -83,7 +84,7 @@ const statementForm = {
   status: 'DRAFT',
   dueAt: '2026-12-01',
   counterpartyName: 'Skatteverket',
-  question: 'Begäran Skatteverket, serveringstillstånd',
+  question: '',
   freeText: '',
   responseText: '',
   outcome: '',
@@ -91,21 +92,35 @@ const statementForm = {
 
 const formChanged = vi.fn();
 
-const mountCard = (writable = true, counterpartyName = 'Skatteverket', written: Record<string, string> = {}) =>
-  render(
+/** The section owns the form, so the card is mounted in something that writes its changes back. */
+const Harness: FC<{ written: Record<string, string>; writable: boolean; counterpartyName: string }> = ({
+  written,
+  writable,
+  counterpartyName,
+}) => {
+  const [form, setForm] = useState({ ...statementForm, counterpartyName, ...written });
+
+  return (
     <SupportStatementCard
       statement={{ id: 'st-1', type: 'REFERRAL', status: 'DRAFT', attachments: [] }}
-      form={{ ...statementForm, counterpartyName, ...written } as never}
+      form={form as never}
       problem={undefined}
       errandId="errand-1"
       errandNumber="AOT-26100216"
       municipalityId="2281"
       writable={writable}
-      onFormChange={formChanged}
+      onFormChange={(changes) => {
+        formChanged(changes);
+        setForm((current) => ({ ...current, ...changes }));
+      }}
       onChanged={vi.fn()}
       onRemoved={vi.fn()}
     />
   );
+};
+
+const mountCard = (writable = true, counterpartyName = 'Skatteverket', written: Record<string, string> = {}) =>
+  render(<Harness written={written} writable={writable} counterpartyName={counterpartyName} />);
 
 const findOf = (name: string) => document.querySelector(`[data-cy="${name}"]`);
 
@@ -232,9 +247,27 @@ test('a company ticked for a person reaches the template under that person', asy
   ]);
 });
 
-test('the free text is written back under its own name, as another field of the referral', () => {
+// A template that names no people, so the card is not busy reading company data while this is tried.
+const chooseTheGeneralTemplate = () => chooseTemplate('referral-general');
+
+test('a referral saved before it was sent opens with the template it was written from', () => {
+  // The question of a statement that is saved but has no document written from it yet.
+  mountCard(true, 'Skatteverket', { question: 'Begäran Skatteverket, serveringstillstånd' });
+
+  expect((findOf('statement-template') as HTMLSelectElement).value).toBe('tax-agency-request-serving');
+});
+
+test('a form the counterparty fills in by hand is offered no free text at all', () => {
   mountCard();
   chooseTheTaxAgencyTemplate();
+
+  expect(findOf('statement-free-text')).toBeNull();
+  expect(findOf('statement-apply-free-text')).toBeNull();
+});
+
+test('the free text is written back under its own name, as another field of the referral', () => {
+  mountCard();
+  chooseTheGeneralTemplate();
 
   fireEvent.change(findOf('statement-free-text') as HTMLTextAreaElement, {
     target: { value: 'Lokalen är nybyggd.' },
@@ -243,9 +276,18 @@ test('the free text is written back under its own name, as another field of the 
   expect(formChanged).toHaveBeenLastCalledWith({ freeText: 'Lokalen är nybyggd.' });
 });
 
-test('the free text is part of what the preview renders, which is what the referral document prints', () => {
+test('the preview renders the free text that was applied, not every keystroke on the way there', () => {
   mountCard(true, 'Skatteverket', { freeText: 'Lokalen är nybyggd.' });
-  chooseTheTaxAgencyTemplate();
+  chooseTheGeneralTemplate();
 
-  expect(preview.parameters?.freeText).toBe('Lokalen är nybyggd.');
+  // What the referral was saved with is what it previews as, without a click of its own.
+  expect(preview.parameters?.additionalText).toBe('Lokalen är nybyggd.');
+
+  fireEvent.change(findOf('statement-free-text') as HTMLTextAreaElement, {
+    target: { value: 'Lokalen är ombyggd.' },
+  });
+  expect(preview.parameters?.additionalText).toBe('Lokalen är nybyggd.');
+
+  fireEvent.click(findOf('statement-apply-free-text') as HTMLButtonElement);
+  expect(preview.parameters?.additionalText).toBe('Lokalen är ombyggd.');
 });

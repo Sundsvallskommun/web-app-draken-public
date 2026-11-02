@@ -614,6 +614,7 @@
     "outcome": "Utfall",
     "outcome_placeholder": "Välj utfall...",
     "free_text": "Fritext",
+    "apply_free_text": "Applicera fritext",
     "free_text_placeholder": "Text som följer med i remissen, till exempel en upplysning till mottagaren",
     "response_text": "Yttrande / kommentar",
     "response_text_placeholder": "Sammanfatta vad instansen anfört i sitt yttrande...",

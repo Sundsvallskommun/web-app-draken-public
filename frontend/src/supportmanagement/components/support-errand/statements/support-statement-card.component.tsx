@@ -56,8 +56,9 @@ import {
   supportStatementTemplatePersons,
   supportStatementTemplateProblem,
   supportStatementTemplates,
+  supportStatementTemplateTakesAFreeText,
 } from '@supportmanagement/services/support-statement-template-service';
-import { CornerDownRight, Mail, Trash2, Upload } from 'lucide-react';
+import { CornerDownRight, Mail, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -277,10 +278,11 @@ export const SupportStatementCard: FC<{
 
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [chosenTemplate, setChosenTemplate] = useState('');
   const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
   const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
   const [companies, setCompanies] = useState<Record<string, ChosenCompany[]>>({});
+  // The preview costs a render of its own, so the free text reaches it when the handler says so.
+  const [appliedFreeText, setAppliedFreeText] = useState(form.freeText);
 
   const watchedCustomer = watch('customer');
   const watchedContacts = watch('contacts');
@@ -299,14 +301,14 @@ export const SupportStatementCard: FC<{
     SupportStatementAttachmentKind.RESPONSE
   );
   const underlayExists = requests.length > 0;
-  const templateOfUnderlay = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
-  const templateIdentifier = underlayExists ? templateOfUnderlay : chosenTemplate;
+  const templateIdentifier = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
   const counterpartyChosen = form.counterpartyName.length > 0;
   const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
   const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
   const companiesNeeded = supportStatementTemplateAsksForCompanies(templateIdentifier);
   const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
   const asksForADeadline = supportStatementTemplateAsksForADeadline(templateIdentifier);
+  const takesAFreeText = supportStatementTemplateTakesAFreeText(templateIdentifier);
   const templateProblem = supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople);
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
@@ -334,7 +336,7 @@ export const SupportStatementCard: FC<{
     onFormChange(changes);
   };
 
-  const factsFor = (person: SupportReferralPerson | undefined) => ({
+  const factsFor = (person: SupportReferralPerson | undefined, freeText = appliedFreeText) => ({
     identifier: templateIdentifier,
     errand: supportErrand,
     handlerName: `${user.firstName} ${user.lastName}`.trim(),
@@ -344,13 +346,11 @@ export const SupportStatementCard: FC<{
     people: chosenPeople,
     person: person ?? chosenPeople[0],
     companies,
-    freeText: form.freeText,
+    freeText,
   });
 
-  const chooseTemplate = (identifier: string) => {
-    setChosenTemplate(identifier);
+  const chooseTemplate = (identifier: string) =>
     set({ question: identifier ? supportStatementTemplateNamed(identifier)?.name ?? identifier : '' });
-  };
 
   useEffect(() => {
     if (peopleNeeded === SupportReferralPersons.NONE || engagementsAskedFor.current) return;
@@ -422,6 +422,7 @@ export const SupportStatementCard: FC<{
   const generate = async () => {
     if (!statementId || supportStatementUnderlayProblem(form) || templateProblem) return;
 
+    setAppliedFreeText(form.freeText);
     setBusy(true);
     try {
       await updateSupportStatement(
@@ -437,7 +438,10 @@ export const SupportStatementCard: FC<{
       const documents = await Promise.all(
         oneForEach.map(async (person) =>
           pdfFileFromBase64(
-            await renderSupportStatementPdf(templateIdentifier, supportStatementTemplateParameters(factsFor(person))),
+            await renderSupportStatementPdf(
+              templateIdentifier,
+              supportStatementTemplateParameters(factsFor(person, form.freeText))
+            ),
             filenameFor(person)
           )
         )
@@ -596,18 +600,35 @@ export const SupportStatementCard: FC<{
             onCompanies={rememberCompanies}
           />
 
-          <FormControl className="w-full">
-            <FormLabel>{t('common:statements.free_text')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={4}
-              value={form.freeText}
-              disabled={!editable || underlayExists}
-              placeholder={t('common:statements.free_text_placeholder')}
-              data-cy="statement-free-text"
-              onChange={(e) => set({ freeText: e.currentTarget.value })}
-            />
-          </FormControl>
+          {takesAFreeText ? (
+            <>
+              <FormControl className="w-full">
+                <FormLabel>{t('common:statements.free_text')}</FormLabel>
+                <Textarea
+                  className="w-full"
+                  rows={4}
+                  value={form.freeText}
+                  disabled={!editable || underlayExists}
+                  placeholder={t('common:statements.free_text_placeholder')}
+                  data-cy="statement-free-text"
+                  onChange={(e) => set({ freeText: e.currentTarget.value })}
+                />
+              </FormControl>
+
+              <div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!editable || underlayExists || appliedFreeText === form.freeText}
+                  data-cy="statement-apply-free-text"
+                  leftIcon={<RefreshCw size={18} />}
+                  onClick={() => setAppliedFreeText(form.freeText)}
+                >
+                  {t('common:statements.apply_free_text')}
+                </Button>
+              </div>
+            </>
+          ) : null}
 
           {!underlayExists && templateIdentifier && !templateProblem ? (
             <TemplatePdfPreview
