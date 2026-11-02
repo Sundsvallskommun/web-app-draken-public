@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Attachment as CasedataAttachment, Errand as ErrandDTO, ErrandChannelEnum } from '@/data-contracts/case-data/data-contracts';
+import { EmailRequest } from '@/data-contracts/messaging/data-contracts';
+import { MessageClassification } from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
+import { RequestWithUser } from '@/interfaces/auth.interface';
 import { Role } from '@/interfaces/role';
 import { User } from '@/interfaces/users.interface';
+import { ApiResponse } from '@/services/api.service';
 import { getDecisionAttachmentAsBase64 } from '@/services/casedata-attachment.service';
-import { sendDecisionToDigitalMail, sendDecisionToKatla } from '@/services/message.service';
+import { sendDecisionToDigitalMail, sendDecisionToKatla, sendEmail } from '@/services/message.service';
 
 import {
   mockAdUsername,
@@ -15,12 +19,15 @@ import {
   mockConversationId,
   mockDecisionAttachmentId,
   mockDecisionId,
+  mockEmail,
   mockFileContent,
   mockFileName,
   mockFirstName,
   mockLastName,
   mockMessageId,
   mockMimeType,
+  mockMunicipalityId,
+  mockRecipientEmail,
 } from './helpers/mock-data';
 
 // Shared by every ApiService instance the service constructs. vi.hoisted so the mock factory,
@@ -54,6 +61,47 @@ const errand = (overrides: Partial<ErrandDTO> = {}): ErrandDTO =>
 
 const letterSent = () => ({ data: { messages: [{ messageId: mockMessageId }] } });
 const messageMetadata = () => ({ data: [{ timestamp: '2026-01-01T00:00:00.000Z', content: {} }] });
+
+describe('message.service sendEmail', () => {
+  const email = (overrides: Partial<EmailRequest> = {}) => ({ subject: 'Ärende', message: 'Hej', ...overrides }) as EmailRequest;
+
+  const send = (message: EmailRequest) =>
+    sendEmail(
+      mockMunicipalityId,
+      message,
+      { user } as RequestWithUser,
+      { data: errand() } as ApiResponse<ErrandDTO>,
+      MessageClassification.Informationsmeddelande,
+    );
+
+  const savedMessage = () => post.mock.calls.find(([request]) => request.url.endsWith('/messages'))?.[0].data;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    get.mockResolvedValue(messageMetadata());
+    post.mockResolvedValue({ data: { messageId: mockMessageId } });
+    put.mockResolvedValue({ data: {} });
+  });
+
+  it('sends one email and saves one message with all recipients and copies', async () => {
+    await send(email({ recipients: [mockEmail, mockRecipientEmail], cc: [mockRecipientEmail] }));
+
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post.mock.calls[0][0].url).toContain('/email');
+    expect(post.mock.calls[0][0].data).toMatchObject({ recipients: [mockEmail, mockRecipientEmail], cc: [mockRecipientEmail] });
+    expect(savedMessage()).toMatchObject({
+      messageId: mockMessageId,
+      recipients: [mockEmail, mockRecipientEmail],
+      ccRecipients: [mockRecipientEmail],
+    });
+  });
+
+  it('saves a single recipient with no copies', async () => {
+    await send(email({ recipients: [mockEmail] }));
+
+    expect(savedMessage()).toMatchObject({ recipients: [mockEmail], ccRecipients: [] });
+  });
+});
 
 describe('message.service decision channels', () => {
   beforeEach(() => {

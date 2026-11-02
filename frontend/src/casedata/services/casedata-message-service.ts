@@ -40,6 +40,12 @@ export const sendDecisionMessage: (
     });
 };
 
+const appendEmailAddresses = (formData: FormData, fieldName: string, addresses: { value: string }[]) => {
+  new Set(addresses.map((address) => address.value)).forEach((address) => {
+    formData.append(`${fieldName}[]`, address);
+  });
+};
+
 // Use multipart/form-data
 export const sendMessage: (
   municipalityId: string,
@@ -49,93 +55,89 @@ export const sendMessage: (
   const url =
     data.contactMeans === 'webmessage' ? `casedata/${municipalityId}/webmessage` : `casedata/${municipalityId}/email`;
 
-  const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
-  const msgPromises = targets.map(async (target) => {
-    const messageFormData = new FormData();
+  const messageFormData = new FormData();
 
-    // Newly picked files are already in hand; only the mime type needs correcting, since
-    // the browser does not detect msg files properly.
-    (data.messageAttachments ?? []).forEach((f) => {
-      const fileItem = f.file?.[0];
-      if (!fileItem) {
-        return;
-      }
-      const mimeType = fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type;
-      messageFormData.append(`files`, new Blob([fileItem], { type: mimeType }), fileItem.name);
-    });
-
-    // Attachments already on the errand carry metadata only, so their content has to
-    // be fetched one by one before it can be attached to the message.
-    const existingAttachmentPromises = (data.existingAttachments ?? []).map(async (existingAttachment) => {
-      if (!existingAttachment.id) {
-        throw new Error('Existing attachment does not have an id');
-      }
-      const fetched = existingAttachment.decisionId
-        ? await fetchDecisionAttachment(municipalityId, errand.id, existingAttachment.decisionId, existingAttachment)
-        : await fetchAttachment(municipalityId, errand.id, existingAttachment);
-      return base64ToFile(fetched.base64EncodedString, existingAttachment.name, existingAttachment.mimeType);
-    });
-
-    return Promise.allSettled(existingAttachmentPromises)
-      .then((results) => {
-        results.forEach((result) => {
-          if (result.status === 'fulfilled') {
-            messageFormData.append(`files`, result.value, result.value.name);
-          } else {
-            console.error(`Error: attachment could not be processed for the following reason: ${result.reason}`);
-          }
-        });
-      })
-      .then(() => {
-        messageFormData.append('email', Object(target).value);
-        messageFormData.append('contactMeans', data.contactMeans);
-        messageFormData.append('subject', `Ärende #${errand.errandNumber}`);
-        messageFormData.append(
-          'text',
-          data.contactMeans === 'webmessage' ? data.messageBodyPlaintext : data.messageBody
-        );
-        messageFormData.append('attachUtredning', data.attachUtredning ? 'true' : 'false');
-        messageFormData.append('errandId', errand.id.toString());
-        messageFormData.append('municipalityId', municipalityId);
-        messageFormData.append('messageClassification', data.messageClassification || '');
-        messageFormData.append('reply_to', data.headerReplyTo || '');
-        messageFormData.append('references', data.headerReferences || '');
-
-        return apiService
-          .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
-          .then(() => {
-            if (data.newAttachments.length) {
-              const uploadFiles: UploadFile[] = data.newAttachments.reduce<UploadFile[]>((acc, fObj) => {
-                if (!fObj.file || fObj.file.length === 0) return acc;
-                const file = fObj.file[0];
-                const parts = file.name.split('.');
-                const ending = parts.length > 1 ? parts.pop() : '';
-                const name = parts.join('.');
-                acc.push({
-                  id: '',
-                  file,
-                  meta: {
-                    name: name,
-                    ending: ending ?? '',
-                    category: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
-                  },
-                });
-                return acc;
-              }, []);
-
-              sendAttachments(municipalityId, errand.id, errand.errandNumber, uploadFiles);
-            }
-            data.newAttachments = [];
-
-            return true;
-          })
-          .catch((e) => {
-            console.error('Something went wrong when sending message for errand:', errand);
-            throw new Error('Något gick fel när beslutet skulle skickas');
-          });
-      });
+  // Newly picked files are already in hand; only the mime type needs correcting, since
+  // the browser does not detect msg files properly.
+  (data.messageAttachments ?? []).forEach((f) => {
+    const fileItem = f.file?.[0];
+    if (!fileItem) {
+      return;
+    }
+    const mimeType = fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type;
+    messageFormData.append(`files`, new Blob([fileItem], { type: mimeType }), fileItem.name);
   });
-  return Promise.all(msgPromises).then((results) => results.every((r) => r));
+
+  // Attachments already on the errand carry metadata only, so their content has to
+  // be fetched one by one before it can be attached to the message.
+  const existingAttachmentPromises = (data.existingAttachments ?? []).map(async (existingAttachment) => {
+    if (!existingAttachment.id) {
+      throw new Error('Existing attachment does not have an id');
+    }
+    const fetched = existingAttachment.decisionId
+      ? await fetchDecisionAttachment(municipalityId, errand.id, existingAttachment.decisionId, existingAttachment)
+      : await fetchAttachment(municipalityId, errand.id, existingAttachment);
+    return base64ToFile(fetched.base64EncodedString, existingAttachment.name, existingAttachment.mimeType);
+  });
+
+  return Promise.allSettled(existingAttachmentPromises)
+    .then((results) => {
+      results.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          messageFormData.append(`files`, result.value, result.value.name);
+        } else {
+          console.error(`Error: attachment could not be processed for the following reason: ${result.reason}`);
+        }
+      });
+    })
+    .then(() => {
+      if (data.contactMeans === 'email') {
+        appendEmailAddresses(messageFormData, 'recipients', data.emails);
+        appendEmailAddresses(messageFormData, 'ccRecipients', data.ccEmails);
+      }
+      messageFormData.append('contactMeans', data.contactMeans);
+      messageFormData.append('subject', `Ärende #${errand.errandNumber}`);
+      messageFormData.append('text', data.contactMeans === 'webmessage' ? data.messageBodyPlaintext : data.messageBody);
+      messageFormData.append('attachUtredning', data.attachUtredning ? 'true' : 'false');
+      messageFormData.append('errandId', errand.id.toString());
+      messageFormData.append('municipalityId', municipalityId);
+      messageFormData.append('messageClassification', data.messageClassification || '');
+      messageFormData.append('reply_to', data.headerReplyTo || '');
+      messageFormData.append('references', data.headerReferences || '');
+
+      return apiService
+        .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then(() => {
+          if (data.newAttachments.length) {
+            const uploadFiles: UploadFile[] = data.newAttachments.reduce<UploadFile[]>((acc, fObj) => {
+              if (!fObj.file || fObj.file.length === 0) return acc;
+              const file = fObj.file[0];
+              const parts = file.name.split('.');
+              const ending = parts.length > 1 ? parts.pop() : '';
+              const name = parts.join('.');
+              acc.push({
+                id: '',
+                file,
+                meta: {
+                  name: name,
+                  ending: ending ?? '',
+                  category: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
+                },
+              });
+              return acc;
+            }, []);
+
+            sendAttachments(municipalityId, errand.id, errand.errandNumber, uploadFiles);
+          }
+          data.newAttachments = [];
+
+          return true;
+        })
+        .catch((e) => {
+          console.error('Something went wrong when sending message for errand:', errand);
+          throw new Error('Något gick fel när beslutet skulle skickas');
+        });
+    });
 };
 
 export const sendSms: (

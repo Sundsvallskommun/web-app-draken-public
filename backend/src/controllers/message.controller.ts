@@ -142,13 +142,13 @@ export class MessageController {
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     const MESSAGE_ID = generateMessageId();
 
-    let recipientEmail = messageDto.email;
-    if (!recipientEmail) {
+    let recipients = messageDto.recipients ?? [];
+    if (recipients.length === 0) {
       const ownerEmail = getOwnerStakeholderEmail(errandData.data);
       if (!ownerEmail || ownerEmail === '') {
         throw new HttpException(400, `Email address for applicant not found`);
       }
-      recipientEmail = ownerEmail;
+      recipients = [ownerEmail];
     }
     const attachments = files.map(file => {
       return {
@@ -162,7 +162,8 @@ export class MessageController {
         // Fake uuid since Messaging demands one
         partyId: uuidv4(),
       },
-      emailAddress: recipientEmail,
+      recipients,
+      cc: messageDto.ccRecipients,
       subject: messageDto.subject || decisionMessageSubject(errandData.data),
       message: messageDto.text.replace(/<p><br \/><\/p>/g, ''),
       htmlMessage: base64Encode(messageDto.text.replace(/<p><br \/><\/p>/g, '')),

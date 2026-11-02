@@ -16,7 +16,7 @@ import {
   sendSms,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
+import CommonNestedEmailArrayV2, { NestedEmailFieldNames } from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
@@ -66,6 +66,8 @@ export interface CasedataMessageTabFormModel {
   messageTemplate?: string;
   emails: { value: string }[];
   newEmail: string;
+  ccEmails: { value: string }[];
+  newCcEmail: string;
   phoneNumbers: string[];
   newPhoneNumber: string;
   messageBody: string;
@@ -84,6 +86,8 @@ const defaultMessage: Partial<CasedataMessageTabFormModel> = {
   contactMeans: 'email' as const,
   emails: [] as { value: string }[],
   newEmail: '',
+  ccEmails: [] as { value: string }[],
+  newCcEmail: '',
   phoneNumbers: [] as string[],
   newPhoneNumber: '',
   messageBody: '',
@@ -117,6 +121,21 @@ let formSchema = yup
       otherwise: (schema) => schema,
     }),
     newEmail: yup.string().when('contactMeans', {
+      is: (means: string) => means === 'email',
+      then: (schema) => schema.email('E-postadressen har fel format'),
+      otherwise: (schema) => schema,
+    }),
+    ccEmails: yup.array().when('contactMeans', {
+      is: (val: string) => val === 'email',
+      then: (schema) =>
+        schema.of(
+          yup.object().shape({
+            value: yup.string().email('E-postadress har fel format'),
+          })
+        ),
+      otherwise: (schema) => schema,
+    }),
+    newCcEmail: yup.string().when('contactMeans', {
       is: (means: string) => means === 'email',
       then: (schema) => schema.email('E-postadressen har fel format'),
       otherwise: (schema) => schema,
@@ -163,6 +182,14 @@ let formSchema = yup
     addNew: yup.mixed(),
   })
   .required();
+
+const ccEmailFieldNames: NestedEmailFieldNames = {
+  emails: 'ccEmails',
+  newEmail: 'newCcEmail',
+  existingEmail: 'existingCcEmail',
+};
+
+const ccCountLabel = (count: number) => `Ditt meddelande har ${count} ${count === 1 ? 'kopia' : 'kopior'}`;
 
 export const MessageComposer: FC<{
   message?: MessageNode;
@@ -252,6 +279,7 @@ export const MessageComposer: FC<{
       setValue('messageBody', defaultBody, { shouldDirty: false });
       setValue('messageBodyPlaintext', defaultBody, { shouldDirty: false });
       setValue('emails', [], { shouldDirty: false });
+      setValue('ccEmails', [], { shouldDirty: false });
       removeNewAttachment();
       remove();
       props.closeHandler();
@@ -683,6 +711,7 @@ export const MessageComposer: FC<{
           ) : null}
           {contactMeans === 'email' ? (
             <>
+              <strong className="text-md">Till</strong>
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
                   errand={errand!}
@@ -698,6 +727,19 @@ export const MessageComposer: FC<{
                   <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
                 </div>
               ) : null}
+
+              <strong className="text-md pt-16">Kopia</strong>
+              <FormControl id="messageCcEmail" className="w-full">
+                <CommonNestedEmailArrayV2
+                  errand={errand!}
+                  disabled={errand ? isMessagesLocked(errand) : false}
+                  fieldNames={ccEmailFieldNames}
+                  dataCyPrefix="cc-"
+                  countLabel={ccCountLabel}
+                  key={`nested-cc-email-array`}
+                  {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+                />
+              </FormControl>
             </>
           ) : contactMeans === 'sms' ? (
             <>

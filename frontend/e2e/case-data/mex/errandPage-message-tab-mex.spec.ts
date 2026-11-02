@@ -245,6 +245,83 @@ test.describe('Message tab', () => {
     expect(sendEmailResponse.status()).toBe(200);
   });
 
+  test('sends one email to all recipients and copies', async ({ page, mockRoute, dismissCookieConsent, env }) => {
+    await mockRoute('**/render', mockMessageRenderRequest, { method: 'POST' });
+    await mockRoute('**/email', mockMessages, { method: 'POST' }); // @sendEmail
+
+    const secondRecipient = env.mockEmail.replace('a@', 'b@');
+    const ccRecipient = env.mockEmail.replace('a@', 'cc@');
+
+    const emailRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/email') && request.method() === 'POST') {
+        emailRequests.push(request.postData() ?? '');
+      }
+    });
+
+    await goToMessageTab(page, dismissCookieConsent);
+    await page.locator('[data-cy="new-message-button"]').click();
+    await page.locator('[data-cy="useEmail-radiobutton-true"]').first().click({ force: true });
+
+    const emailEditor = page.locator('[data-cy="decision-richtext-wrapper"]:visible').first().locator('.ql-editor');
+    await expect(emailEditor).toBeVisible();
+    await emailEditor.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type('Mock message');
+
+    for (const recipient of [env.mockEmail, secondRecipient]) {
+      await page.locator('[data-cy="new-email-input"]').first().fill(recipient);
+      await page.locator('[data-cy="add-new-email-button"]').first().click();
+    }
+    await page.locator('[data-cy="cc-new-email-input"]').first().fill(env.mockEmail.replace('@', '.'));
+    await expect(page.locator('[data-cy="cc-add-new-email-button"]').first()).toBeDisabled();
+    await page.locator('[data-cy="cc-new-email-input"]').first().fill(ccRecipient);
+    await page.locator('[data-cy="cc-add-new-email-button"]').first().click();
+
+    await expect(page.getByText('Ditt meddelande har 2 mottagare')).toBeVisible();
+    await expect(page.getByText('Ditt meddelande har 1 kopia')).toBeVisible();
+    await expect(page.locator('[data-cy="email-tag-1"]').getByText(secondRecipient)).toBeVisible();
+    await expect(page.locator('[data-cy="cc-email-tag-0"]').getByText(ccRecipient)).toBeVisible();
+
+    const sendEmailResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/email') && resp.request().method() === 'POST'
+    );
+    await page.locator('[data-cy="send-message-button"]:visible').first().click();
+    await sendEmailResponsePromise;
+
+    await expect(page.locator('.sk-snackbar-text', { hasText: 'E-postmeddelandet skickades' })).toBeVisible();
+    expect(emailRequests).toHaveLength(1);
+    const body = emailRequests[0].replace(/[\n\r\s]/g, '');
+    expect(body).toContain(`name="recipients[]"${env.mockEmail}`);
+    expect(body).toContain(`name="recipients[]"${secondRecipient}`);
+    expect(body).toContain(`name="ccRecipients[]"${ccRecipient}`);
+  });
+
+  test('shows all recipients and copies on a shared email', async ({ page, mockRoute, dismissCookieConsent, env }) => {
+    await mockRoute('**/messages/*/viewed/*', mockMessages, { method: 'PUT' });
+    const [sharedMessage] = mockMessages.data;
+    const address = (localPart: string) => env.mockEmail.replace('a@', `${localPart}@`);
+    const recipients = ['to1', 'to2', 'to3', 'to4', 'to5'].map(address);
+    const ccRecipients = [address('cc1')];
+    await page.route(/\/errand\/\d+\/messages$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...mockMessages, data: [{ ...sharedMessage, recipients, ccRecipients }] }),
+      });
+    });
+
+    await goToMessageTab(page, dismissCookieConsent);
+
+    const node = page.locator(`[data-cy="node-${sharedMessage.emailHeaders[0].values}"]`);
+    await expect(node).toContainText(`Till: ${recipients.slice(0, 3).join(', ')}`);
+    await expect(node.getByRole('button', { name: '+ 2 andra' })).toBeVisible();
+    await expect(node).toContainText(`Kopia: ${ccRecipients[0]}`);
+
+    await node.getByRole('button', { name: '+ 2 andra' }).click();
+    await expect(node).toContainText(recipients.join(', '));
+  });
+
   test('answers inbound email message by email', async ({ page, mockRoute, dismissCookieConsent, env }) => {
     await mockRoute('**/messages/*/viewed/*', mockMessages, { method: 'PUT' });
     await mockRoute('**/render', mockMessageRenderRequest, { method: 'POST' });

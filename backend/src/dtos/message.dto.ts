@@ -18,9 +18,14 @@ export enum MessageClassification {
 }
 
 export class MessageDto {
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  email!: string;
+  recipients?: string[];
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  ccRecipients?: string[];
   @IsString()
   @IsOptional()
   contactMeans!: string;

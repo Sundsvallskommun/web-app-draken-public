@@ -161,7 +161,8 @@ export const sendEmail = (
           header_message_Id: message.headers?.['MESSAGE_ID']?.[0] ?? '',
           header_reply_to: message.headers?.['IN_REPLY_TO']?.[0] ?? '',
           header_references: message.headers?.['REFERENCES']?.join(',') ?? '',
-          email: message.emailAddress,
+          recipients: message.recipients,
+          ccRecipients: message.cc,
         },
         req.user,
       )
@@ -202,7 +203,8 @@ const saveMessageOnErrand: (
     header_reply_to: string;
     header_references: string;
     mobileNumber?: string;
-    email?: string;
+    recipients?: string[];
+    ccRecipients?: string[];
   },
   user: User,
 ) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
@@ -242,7 +244,8 @@ const saveMessageOnErrand: (
     firstName: user.firstName,
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
-    recipients: message.email ? [message.email] : [],
+    recipients: message.recipients ?? [],
+    ccRecipients: message.ccRecipients ?? [],
     email: CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
@@ -603,7 +606,7 @@ export const sendDecisionForMex = async (
         // Fake uuid since Messaging demands one
         partyId: uuidv4(),
       },
-      emailAddress: ownerEmail,
+      recipients: [ownerEmail],
       subject: `Ärende #${errand.errandNumber}`,
       message: cleanedBody,
       htmlMessage: base64Encode(cleanedBody),
