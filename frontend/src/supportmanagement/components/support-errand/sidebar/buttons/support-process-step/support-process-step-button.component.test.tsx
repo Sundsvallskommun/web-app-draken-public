@@ -76,6 +76,7 @@ const CERTIFICATE_PARAMETERS = [
   'premisesPostalAddress',
   'premisesPhone',
   'servingAreaDescription',
+  'decisionCaseNumber',
 ].map((key) => ({ key, values: ['ifyllt'] }));
 
 const aDecision = (parameters = CERTIFICATE_PARAMETERS) => [

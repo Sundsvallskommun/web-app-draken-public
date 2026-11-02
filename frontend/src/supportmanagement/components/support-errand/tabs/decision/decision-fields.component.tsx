@@ -47,6 +47,30 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+          <DecisionField id="decision-case-number" label={t('common:decision.case_number')} required>
+            <Input
+              className="w-full"
+              value={values.decisionCaseNumber}
+              onChange={(event) => set('decisionCaseNumber', event.target.value)}
+              disabled={disabled}
+              data-cy="decision-case-number"
+            />
+          </DecisionField>
+
+          <DecisionField id="decision-other-case-number" label={t('common:decision.other_case_number')}>
+            <Input
+              className="w-full"
+              value={values.otherCaseNumber}
+              onChange={(event) => set('otherCaseNumber', event.target.value)}
+              disabled={disabled}
+              data-cy="decision-other-case-number"
+            />
+          </DecisionField>
+        </div>
+      </DecisionCard>
+
+      <DecisionCard>
         <DecisionField
           id="decision-justification"
           label={t('common:decision.justification')}
@@ -65,25 +89,14 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-          <DecisionField id="decision-legal-basis" label={t('common:decision.legal_basis')}>
-            <Input
-              className="w-full"
-              value={values.legalBasis}
-              onChange={(event) => set('legalBasis', event.target.value)}
-              disabled={disabled}
-            />
-          </DecisionField>
-
-          <DecisionField id="decision-delegation" label={t('common:decision.delegation')}>
-            <Input
-              className="w-full"
-              value={values.delegationReference}
-              onChange={(event) => set('delegationReference', event.target.value)}
-              disabled={disabled}
-            />
-          </DecisionField>
-        </div>
+        <DecisionField id="decision-legal-basis" label={t('common:decision.legal_basis')}>
+          <Input
+            className="w-full max-w-[28rem]"
+            value={values.legalBasis}
+            onChange={(event) => set('legalBasis', event.target.value)}
+            disabled={disabled}
+          />
+        </DecisionField>
       </DecisionCard>
 
       <DecisionCard>
