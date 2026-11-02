@@ -60,6 +60,11 @@ class SupportStatementFieldsDto {
   @IsOptional()
   @IsString()
   @MaxLength(65535)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(65535)
   responseText?: string;
 
   @IsOptional()

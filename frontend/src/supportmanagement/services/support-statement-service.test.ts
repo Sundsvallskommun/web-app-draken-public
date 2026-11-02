@@ -10,6 +10,7 @@ import {
   supportStatementAttachmentIds,
   supportStatementAttachmentPurpose,
   supportStatementEdited,
+  supportStatementFields,
   type SupportStatementForm,
   supportStatementForm,
   supportStatementProblem,
@@ -26,6 +27,7 @@ const filledIn = (changes: Partial<SupportStatementForm> = {}): SupportStatement
   counterpartyName: 'Polismyndigheten',
   dueAt: '2026-10-22',
   question: '<p>Yttrande begärs.</p>',
+  freeText: '',
   responseText: '',
   sentAt: '2026-10-01',
   respondedAt: '',
@@ -55,6 +57,13 @@ test('a form built from a statement is unchanged until something is typed', () =
 
   expect(supportStatementEdited(supportStatementForm(statement), statement)).toBe(false);
   expect(supportStatementEdited({ ...supportStatementForm(statement), responseText: 'Svar' }, statement)).toBe(true);
+});
+
+test('the free text travels in the description, which Draken asks for nowhere else', () => {
+  expect(supportStatementForm({ description: 'Lokalen är nybyggd.' }).freeText).toBe('Lokalen är nybyggd.');
+  expect(supportStatementFields(filledIn({ freeText: 'Lokalen är nybyggd.' }), 'Remiss').description).toBe(
+    'Lokalen är nybyggd.'
+  );
 });
 
 test('dates are read from the service as the date field writes them', () => {

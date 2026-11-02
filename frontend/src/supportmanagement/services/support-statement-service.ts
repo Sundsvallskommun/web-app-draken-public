@@ -91,6 +91,7 @@ export interface SupportStatementForm {
   counterpartyName: string;
   dueAt: string;
   question: string;
+  freeText: string;
   responseText: string;
   sentAt: string;
   respondedAt: string;
@@ -108,6 +109,8 @@ export const supportStatementForm = (statement: Statement): SupportStatementForm
   counterpartyName: statement.counterpartyName ?? '',
   dueAt: asDateField(statement.dueAt),
   question: statement.question ?? '',
+  // Support Management has no field of its own for the free text, so it travels in the description.
+  freeText: statement.description ?? '',
   responseText: statement.responseText ?? '',
   sentAt: asDateField(statement.sentAt),
   respondedAt: asDateField(statement.respondedAt),
@@ -120,6 +123,7 @@ export const supportStatementFields = (form: SupportStatementForm, title: string
   dueAt: asTimestamp(form.dueAt),
   title,
   question: form.question,
+  description: form.freeText,
   responseText: form.responseText,
   sentAt: asTimestamp(form.sentAt),
   respondedAt: asTimestamp(form.respondedAt),
@@ -199,6 +203,7 @@ export interface SupportStatementFields {
   counterpartyReference?: string;
   title?: string;
   question?: string;
+  description?: string;
   responseText?: string;
   dueAt?: string;
   sentAt?: string;

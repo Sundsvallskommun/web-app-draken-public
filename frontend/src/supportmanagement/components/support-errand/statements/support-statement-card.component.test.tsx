@@ -20,8 +20,12 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useSnackbar: () => vi.fn(),
 }));
+const preview: { parameters?: Record<string, unknown> } = {};
 vi.mock('@common/components/template-preview/template-pdf-preview.component', () => ({
-  TemplatePdfPreview: () => null,
+  TemplatePdfPreview: (props: { parameters?: Record<string, unknown> }) => {
+    preview.parameters = props.parameters;
+    return null;
+  },
 }));
 vi.mock('@common/services/adress-service', () => ({ searchPerson: vi.fn() }));
 vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
@@ -80,21 +84,24 @@ const statementForm = {
   dueAt: '2026-12-01',
   counterpartyName: 'Skatteverket',
   question: 'Begäran Skatteverket, serveringstillstånd',
+  freeText: '',
   responseText: '',
   outcome: '',
 };
 
-const mountCard = (writable = true, counterpartyName = 'Skatteverket') =>
+const formChanged = vi.fn();
+
+const mountCard = (writable = true, counterpartyName = 'Skatteverket', written: Record<string, string> = {}) =>
   render(
     <SupportStatementCard
       statement={{ id: 'st-1', type: 'REFERRAL', status: 'DRAFT', attachments: [] }}
-      form={{ ...statementForm, counterpartyName } as never}
+      form={{ ...statementForm, counterpartyName, ...written } as never}
       problem={undefined}
       errandId="errand-1"
       errandNumber="AOT-26100216"
       municipalityId="2281"
       writable={writable}
-      onFormChange={vi.fn()}
+      onFormChange={formChanged}
       onChanged={vi.fn()}
       onRemoved={vi.fn()}
     />
@@ -223,4 +230,22 @@ test('a company ticked for a person reaches the template under that person', asy
       companies: [{ name: 'Drivet AB', orgNumber: mockEnv.mockOrganizationNumber }],
     },
   ]);
+});
+
+test('the free text is written back under its own name, as another field of the referral', () => {
+  mountCard();
+  chooseTheTaxAgencyTemplate();
+
+  fireEvent.change(findOf('statement-free-text') as HTMLTextAreaElement, {
+    target: { value: 'Lokalen är nybyggd.' },
+  });
+
+  expect(formChanged).toHaveBeenLastCalledWith({ freeText: 'Lokalen är nybyggd.' });
+});
+
+test('the free text is part of what the preview renders, which is what the referral document prints', () => {
+  mountCard(true, 'Skatteverket', { freeText: 'Lokalen är nybyggd.' });
+  chooseTheTaxAgencyTemplate();
+
+  expect(preview.parameters?.freeText).toBe('Lokalen är nybyggd.');
 });

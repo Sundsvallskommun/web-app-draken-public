@@ -532,6 +532,33 @@ test('every parameter the templates require of us is sent, the rest they default
   }
 });
 
+test('every referral carries the free text, since each of the templates is written to print it', () => {
+  for (const [identifier, counterpartyName] of Object.entries(counterpartyOfTemplate)) {
+    const sent = supportStatementTemplateParameters({
+      ...facts,
+      identifier,
+      counterpartyName,
+      errand: errandOf(),
+      people,
+      person: people[0],
+      freeText: 'Lokalen är nybyggd.',
+    });
+
+    expect(sent.freeText, identifier).toBe('Lokalen är nybyggd.');
+  }
+});
+
+test('a referral nobody wrote a free text for sends an empty one, since a template objects to what it never got', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'referral-general',
+    counterpartyName: 'Kronofogden',
+    errand: errandOf(),
+  });
+
+  expect(sent.freeText).toBe('');
+});
+
 test('the template of an underlay is found again from the question it was written as', () => {
   expect(supportStatementTemplateOfQuestion('Remiss Polismyndigheten')?.identifier).toBe('referral-police');
   expect(supportStatementTemplateOfQuestion('  Remiss Polismyndigheten  ')?.identifier).toBe('referral-police');

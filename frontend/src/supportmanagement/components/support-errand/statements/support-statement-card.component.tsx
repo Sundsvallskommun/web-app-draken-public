@@ -344,6 +344,7 @@ export const SupportStatementCard: FC<{
     people: chosenPeople,
     person: person ?? chosenPeople[0],
     companies,
+    freeText: form.freeText,
   });
 
   const chooseTemplate = (identifier: string) => {
@@ -594,6 +595,19 @@ export const SupportStatementCard: FC<{
             onToggle={togglePerson}
             onCompanies={rememberCompanies}
           />
+
+          <FormControl className="w-full">
+            <FormLabel>{t('common:statements.free_text')}</FormLabel>
+            <Textarea
+              className="w-full"
+              rows={4}
+              value={form.freeText}
+              disabled={!editable || underlayExists}
+              placeholder={t('common:statements.free_text_placeholder')}
+              data-cy="statement-free-text"
+              onChange={(e) => set({ freeText: e.currentTarget.value })}
+            />
+          </FormControl>
 
           {!underlayExists && templateIdentifier && !templateProblem ? (
             <TemplatePdfPreview

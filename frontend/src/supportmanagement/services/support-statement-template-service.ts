@@ -317,6 +317,7 @@ export interface SupportStatementTemplateFacts {
   people?: SupportReferralPerson[];
   person?: SupportReferralPerson;
   companies?: Record<string, ChosenCompany[]>;
+  freeText?: string;
 }
 
 const listedPeople = (people: SupportReferralPerson[] | undefined) =>
@@ -339,7 +340,12 @@ const listedRepresentatives = (
     })),
   }));
 
-export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
+export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => ({
+  freeText: facts.freeText ?? '',
+  ...parametersOfTemplate(facts),
+});
+
+const parametersOfTemplate = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
   const premises = supportStatementPremises(facts.errand);
   const owner = facts.errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
   const counterparty = supportStatementCounterparty(facts.counterpartyName);
