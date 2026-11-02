@@ -10,6 +10,15 @@ export const mockEnv = {
   mockInvalidOrganizationNumber: '556026-9987',
   mockEmail: 'a@example.com',
   mockRecipientEmail: ' mail@example.com',
+  // A message to several recipients with a copy. example.com is reserved, so these cannot reach a real person.
+  mockSharedRecipientEmails: [
+    'to1@example.com',
+    'to2@example.com',
+    'to3@example.com',
+    'to4@example.com',
+    'to5@example.com',
+  ],
+  mockCcEmail: 'cc@example.com',
   mockPhoneNumber: '0701740635',
   mockPhoneNumberCountryCode: '+46701740635',
   // Distinct from mockPhoneNumber so two stakeholders in the same view don't share a number

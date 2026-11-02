@@ -262,8 +262,8 @@ test.describe('Message tab', () => {
     await mockRoute('**/render', mockMessageRenderRequest, { method: 'POST' });
     await mockRoute('**/email', mockMessages, { method: 'POST' }); // @sendEmail
 
-    const secondRecipient = env.mockEmail.replace('a@', 'b@');
-    const ccRecipient = env.mockEmail.replace('a@', 'cc@');
+    const [firstRecipient, secondRecipient] = env.mockSharedRecipientEmails;
+    const ccRecipient = env.mockCcEmail;
 
     const emailRequests: string[] = [];
     page.on('request', (request) => {
@@ -282,7 +282,7 @@ test.describe('Message tab', () => {
     await page.keyboard.press('ControlOrMeta+A');
     await page.keyboard.type('Mock message');
 
-    for (const recipient of [env.mockEmail, secondRecipient]) {
+    for (const recipient of [firstRecipient, secondRecipient]) {
       await page.locator('[data-cy="new-email-input"]').first().fill(recipient);
       await page.locator('[data-cy="add-new-email-button"]').first().click();
     }
@@ -311,7 +311,7 @@ test.describe('Message tab', () => {
     await expect(page.locator('.sk-snackbar-text', { hasText: 'E-postmeddelandet skickades' })).toBeVisible();
     expect(emailRequests).toHaveLength(1);
     const body = emailRequests[0].replace(/[\n\r\s]/g, '');
-    expect(body).toContain(`name="recipients[]"${env.mockEmail}`);
+    expect(body).toContain(`name="recipients[]"${firstRecipient}`);
     expect(body).toContain(`name="recipients[]"${secondRecipient}`);
     expect(body).toContain(`name="ccRecipients[]"${ccRecipient}`);
   });
@@ -319,9 +319,8 @@ test.describe('Message tab', () => {
   test('shows all recipients and copies on a shared email', async ({ page, mockRoute, dismissCookieConsent, env }) => {
     await mockRoute('**/messages/*/viewed/*', mockMessages, { method: 'PUT' });
     const [sharedMessage] = mockMessages.data;
-    const address = (localPart: string) => env.mockEmail.replace('a@', `${localPart}@`);
-    const recipients = ['to1', 'to2', 'to3', 'to4', 'to5'].map(address);
-    const ccRecipients = [address('cc1')];
+    const recipients = env.mockSharedRecipientEmails;
+    const ccRecipients = [env.mockCcEmail];
     await page.route(/\/errand\/\d+\/messages$/, async (route) => {
       await route.fulfill({
         status: 200,

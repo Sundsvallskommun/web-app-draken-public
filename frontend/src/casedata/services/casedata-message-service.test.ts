@@ -12,7 +12,7 @@ const errand = { id: 1, errandNumber: 'MEX-1' } as IErrand;
 const municipalityId = '2281';
 const firstRecipient = mockEnv.mockEmail;
 const secondRecipient = mockEnv.mockRecipientEmail.trim();
-const ccRecipient = mockEnv.mockEmail.replace('a@', 'cc@');
+const ccRecipient = mockEnv.mockCcEmail;
 
 const formData = (overrides: Partial<CasedataMessageTabFormModel> = {}) =>
   ({

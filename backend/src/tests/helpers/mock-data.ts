@@ -32,6 +32,8 @@ export const mockSecondaryPhoneNumber = '0701740636';
 // The values below are test emails, they are not real emails
 export const mockEmail = 'a@example.com';
 export const mockRecipientEmail = 'mail@example.com';
+export const mockCcEmail = 'cc@example.com';
+export const mockOwnerEmail = 'owner@example.com';
 
 // The value below is a test username, it is not a real username
 export const mockAdUsername = 'abc01abc';

@@ -10,11 +10,13 @@ import {
   mockAdUsername,
   mockCasedataErrandId,
   mockCasedataErrandNumber,
+  mockCcEmail,
   mockEmail,
   mockFirstName,
   mockLastName,
   mockMessageId,
   mockMunicipalityId,
+  mockOwnerEmail,
   mockRecipientEmail,
 } from './helpers/mock-data';
 
@@ -33,11 +35,10 @@ vi.mock('@/services/api.service', () => ({
 
 const req = { user: { username: mockAdUsername, firstName: mockFirstName, lastName: mockLastName } as User } as RequestWithUser;
 
-const ownerEmail = mockEmail.replace('a@', 'owner@');
 const errand = {
   id: mockCasedataErrandId,
   errandNumber: mockCasedataErrandNumber,
-  stakeholders: [{ roles: [Role.APPLICANT], contactInformation: [{ contactType: 'EMAIL', value: ownerEmail }] }],
+  stakeholders: [{ roles: [Role.APPLICANT], contactInformation: [{ contactType: 'EMAIL', value: mockOwnerEmail }] }],
 };
 
 const messageDto = (overrides: Partial<MessageDto> = {}) =>
@@ -67,16 +68,16 @@ describe('MessageController email', () => {
   });
 
   it('sends one email to all recipients with copies and saves one message', async () => {
-    await sendEmail(messageDto({ recipients: [mockEmail, mockRecipientEmail], ccRecipients: [ownerEmail] }));
+    await sendEmail(messageDto({ recipients: [mockEmail, mockRecipientEmail], ccRecipients: [mockCcEmail] }));
 
     const emails = postedTo('/email');
     expect(emails).toHaveLength(1);
-    expect(emails[0]).toMatchObject({ recipients: [mockEmail, mockRecipientEmail], cc: [ownerEmail] });
+    expect(emails[0]).toMatchObject({ recipients: [mockEmail, mockRecipientEmail], cc: [mockCcEmail] });
     expect(emails[0].emailAddress).toBeUndefined();
 
     const savedMessages = postedTo('/messages');
     expect(savedMessages).toHaveLength(1);
-    expect(savedMessages[0]).toMatchObject({ recipients: [mockEmail, mockRecipientEmail], ccRecipients: [ownerEmail] });
+    expect(savedMessages[0]).toMatchObject({ recipients: [mockEmail, mockRecipientEmail], ccRecipients: [mockCcEmail] });
   });
 
   it('sends to a single recipient without copies', async () => {
@@ -90,8 +91,8 @@ describe('MessageController email', () => {
   it('falls back to the errand owner when no recipient is given', async () => {
     await sendEmail(messageDto());
 
-    expect(postedTo('/email')[0].recipients).toEqual([ownerEmail]);
-    expect(postedTo('/messages')[0].recipients).toEqual([ownerEmail]);
+    expect(postedTo('/email')[0].recipients).toEqual([mockOwnerEmail]);
+    expect(postedTo('/messages')[0].recipients).toEqual([mockOwnerEmail]);
   });
 
   it('rejects recipients that are not a list without sending anything', async () => {
