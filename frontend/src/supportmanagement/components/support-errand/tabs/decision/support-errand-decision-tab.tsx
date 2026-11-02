@@ -236,6 +236,12 @@ export const SupportErrandDecisionTab: FC<{
             </p>
           ) : null}
 
+          {!decision?.id && !form.values.outcome ? (
+            <p className="text-small text-dark-secondary m-0" data-cy="decision-awaits-outcome">
+              {t('common:decision.awaits_outcome')}
+            </p>
+          ) : null}
+
           {form.edited ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-unsaved">
               {t('common:decision.unsaved_hint')}

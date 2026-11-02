@@ -572,7 +572,8 @@
       "attachment_missing": "Bilaga saknas",
       "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
       "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
-    }
+    },
+    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet."
   },
   "attachments": {
     "edit": "Ändra",

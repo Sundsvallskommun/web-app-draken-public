@@ -147,9 +147,16 @@ export const useDecisionSave = ({
       return false;
     }
 
+    const outcome = outcomeForTerms(values.outcome, writtenTerms, outcomes);
+
+    if (!decision?.id && !outcome) {
+      await savePremisesOnErrand();
+      return true;
+    }
+
     const permitName = getLabelType(supportErrand)?.displayName;
     const written = supportDecisionWithoutBlanks({
-      outcome: outcomeForTerms(values.outcome, writtenTerms, outcomes),
+      outcome,
       type: permit.type,
       title: permitName ? t('common:decision.title_for', { permit: permitName.toLocaleLowerCase('sv-SE') }) : undefined,
       decidedByRole: values.decidedByRole,
