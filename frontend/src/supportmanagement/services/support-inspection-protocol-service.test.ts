@@ -8,10 +8,10 @@ import type { SupportErrand } from './support-errand-service';
 import {
   inspectionProtocolFileName,
   inspectionProtocolMeasureRow,
-  inspectionProtocolValuesFromParameters,
+  inspectionProtocolValuesFromJson,
   inspectionProtocolValuesOf,
   renderInspectionProtocol,
-  toInspectionProtocolInvestigationParameters,
+  toInspectionProtocolJson,
   toInspectionProtocolRenderParameters,
 } from './support-inspection-protocol-service';
 
@@ -54,7 +54,7 @@ test('a private permit holder is named by first and last name', () => {
   expect(values.inspector1NameAndTitle).toBe('');
 });
 
-test('answers are saved as one parameter per answered field, named after the field, and read back', () => {
+test('answers are saved as one property per answered field, under the field key, and read back', () => {
   const values = {
     ...inspectionProtocolValuesOf(serving, errand, undefined),
     visit: 'closed',
@@ -63,20 +63,14 @@ test('answers are saved as one parameter per answered field, named after the fie
     additionalRemarks: '  ',
   };
 
-  const parameters = toInspectionProtocolInvestigationParameters(serving, values);
+  const json = toInspectionProtocolJson(serving, values);
 
-  expect(parameters).toContainEqual({ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] });
-  expect(parameters).toContainEqual({
-    key: 'coordinatedWith',
-    displayName: 'Samordnad tillsyn tillsammans med',
-    values: ['police', 'other'],
-  });
-  expect(parameters).toContainEqual({ key: 'coordinatedOtherText', displayName: 'Vilken', values: ['Tullen'] });
-  expect(parameters.find((parameter) => parameter.key === 'additionalRemarks')).toBeUndefined();
-  expect(parameters.find((parameter) => parameter.key === 'summary')).toBeUndefined();
+  expect(json).toMatchObject({ visit: 'closed', coordinatedWith: ['police', 'other'], coordinatedOtherText: 'Tullen' });
+  expect(json).not.toHaveProperty('additionalRemarks');
+  expect(json).not.toHaveProperty('summary');
 
   const fallback = inspectionProtocolValuesOf(serving, undefined, { name: 'Anna' });
-  const read = inspectionProtocolValuesFromParameters(serving, parameters, fallback);
+  const read = inspectionProtocolValuesFromJson(serving, json, fallback);
   expect(read.visit).toBe('closed');
   expect(read.coordinatedWith).toEqual(['police', 'other']);
   expect(read.permitHolderName).toBe('Exempel AB');

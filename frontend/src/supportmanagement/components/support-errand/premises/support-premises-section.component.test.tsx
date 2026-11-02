@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import type { SupportInvestigationSection } from '@supportmanagement/services/support-investigation-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -26,8 +26,11 @@ vi.mock('@supportmanagement/services/support-statement-service', () => ({
 }));
 
 const saveSupportInvestigationSection = vi.fn();
+const saveSupportInvestigationSectionJsonParameter = vi.fn();
 vi.mock('@supportmanagement/services/support-investigation-service', () => ({
   saveSupportInvestigationSection: (...args: unknown[]) => saveSupportInvestigationSection(...args),
+  saveSupportInvestigationSectionJsonParameter: (...args: unknown[]) =>
+    saveSupportInvestigationSectionJsonParameter(...args),
   SUPPORT_INVESTIGATION_TEXT_MAX_LENGTH: 8192,
 }));
 
@@ -52,7 +55,7 @@ const saveRef: { current: (() => Promise<boolean>) | undefined } = { current: un
 
 const mountSection = (
   writable = true,
-  section: InvestigationSection = { id: 's1', sectionKey: 'premises', text: '' }
+  section: SupportInvestigationSection = { id: 's1', sectionKey: 'premises', text: '' }
 ) =>
   render(
     <SupportPremisesSection
@@ -70,6 +73,7 @@ const fieldOf = (name: string) => document.querySelector(`[data-cy="${name}"]`) 
 beforeEach(() => {
   vi.clearAllMocks();
   saveSupportInvestigationSection.mockResolvedValue({ id: 'i1' });
+  saveSupportInvestigationSectionJsonParameter.mockResolvedValue({ id: 'i1' });
   getSupportStatements.mockResolvedValue([]);
   useConfigStore.setState({ municipalityId: '2281' });
   useMetadataStore.setState({
@@ -123,12 +127,9 @@ test('no answer from the rescue service is said plainly', async () => {
   await waitFor(() => expect(fieldOf('premises-fire-safety').textContent).toBe('common:premises.fire_safety_pending'));
 });
 
-const savedParameters = (): { key: string; values?: string[] }[] =>
-  saveSupportInvestigationSection.mock.calls[0][4].parameters;
+const savedJson = () => saveSupportInvestigationSectionJsonParameter.mock.calls[0][5].value;
 
-const savedValues = (key: string) => savedParameters().find((parameter) => parameter.key === key)?.values;
-
-test('the inspection date and the right of disposal are saved on the premises section', async () => {
+test('the inspection date and the right of disposal are saved in the JSON of the premises section', async () => {
   mountSection();
 
   fireEvent.change(fieldOf('premises-inspected-at'), { target: { value: '2026-04-10' } });
@@ -136,21 +137,24 @@ test('the inspection date and the right of disposal are saved on the premises se
 
   await expect(saveRef.current?.()).resolves.toBe(true);
 
-  expect(saveSupportInvestigationSection).toHaveBeenCalledWith('e1', '2281', 'i1', 's1', {
-    parameters: expect.any(Array),
+  expect(saveSupportInvestigationSectionJsonParameter).toHaveBeenCalledWith('e1', '2281', 'i1', 's1', 'premises', {
+    schemaId: '2281_aot_investigation_premises_section_1.0',
+    value: { inspectedAt: '2026-04-10', rightOfDisposal: { status: 'PROVEN' } },
   });
-  expect(savedValues('PREMISES_INSPECTED_AT')).toEqual(['2026-04-10']);
-  expect(savedValues('PREMISES_RIGHT_OF_DISPOSAL')).toEqual(['PROVEN']);
+  expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
 });
 
-test('what the section holds is shown, and an edit keeps the other parameters', async () => {
+test('what the section holds is shown, and an edit keeps the other fields', async () => {
   mountSection(true, {
     id: 's1',
     sectionKey: 'premises',
     text: '',
-    parameters: [
-      { key: 'PREMISES_INSPECTED_AT', values: ['2026-03-01'] },
-      { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PENDING'] },
+    jsonParameters: [
+      {
+        key: 'premises',
+        schemaId: '2281_aot_investigation_premises_section_1.0',
+        value: { inspectedAt: '2026-03-01', rightOfDisposal: { status: 'PENDING' } },
+      },
     ],
   });
 
@@ -160,8 +164,7 @@ test('what the section holds is shown, and an edit keeps the other parameters', 
   fireEvent.change(fieldOf('premises-right-of-disposal'), { target: { value: 'PROVEN' } });
   await expect(saveRef.current?.()).resolves.toBe(true);
 
-  expect(savedValues('PREMISES_INSPECTED_AT')).toEqual(['2026-03-01']);
-  expect(savedValues('PREMISES_RIGHT_OF_DISPOSAL')).toEqual(['PROVEN']);
+  expect(savedJson()).toEqual({ inspectedAt: '2026-03-01', rightOfDisposal: { status: 'PROVEN' } });
 });
 
 test('a space typed in the note survives the re-render', () => {
@@ -216,7 +219,7 @@ test('the serving areas are saved on the premises section', async () => {
   fireEvent.change(fieldOf('premises-serving-area'), { target: { value: 'Matsalen och bryggan' } });
   await expect(saveRef.current?.()).resolves.toBe(true);
 
-  expect(savedValues('PREMISES_SERVING_AREA')).toEqual(['Matsalen och bryggan']);
+  expect(savedJson()).toEqual({ servingArea: { description: 'Matsalen och bryggan' } });
 });
 
 test('a passed step leaves the new fields as they are', () => {

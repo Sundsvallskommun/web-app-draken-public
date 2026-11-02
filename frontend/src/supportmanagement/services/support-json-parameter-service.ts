@@ -1,0 +1,71 @@
+import { isRecord } from './support-form-value-service';
+
+export type JsonObject = Record<string, unknown>;
+
+/** A JSON parameter as the BFF answers it; the generated contract types the value as Jackson's JsonNode. */
+export interface SupportJsonParameter {
+  key: string;
+  schemaId: string;
+  value: unknown;
+  version?: number;
+}
+
+/** A schema in Jsonschema; the version is the one the code writes, so a new version is a code change. */
+export interface SupportJsonSchema {
+  name: string;
+  version: string;
+}
+
+/** Where a JSON parameter is filed and the schema it is written against. */
+export interface SupportJsonParameterSpec {
+  key: string;
+  schema: SupportJsonSchema;
+}
+
+/** What a JSON parameter is written with. */
+export interface SupportJsonParameterWrite {
+  schemaId: string;
+  value: JsonObject;
+}
+
+/** Jsonschema names a schema `<municipality>_<name>_<version>`. */
+export const supportSchemaId = (municipalityId: string, schema: SupportJsonSchema): string =>
+  `${municipalityId}_${schema.name}_${schema.version}`;
+
+/** The object filed under the key; undefined when there is none. */
+export const jsonParameterObject = (
+  parameters: SupportJsonParameter[] | undefined,
+  key: string
+): JsonObject | undefined => {
+  const value = parameters?.find((parameter) => parameter.key === key)?.value;
+  return isRecord(value) ? value : undefined;
+};
+
+const isBlank = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  value === '' ||
+  (Array.isArray(value) && value.length === 0) ||
+  (isRecord(value) && Object.keys(value).length === 0);
+
+/** Leaves out what has no value, at every level: the schemas want a missing value omitted, and '' fails their patterns. */
+export const withoutBlanks = (value: JsonObject): JsonObject =>
+  Object.fromEntries(
+    Object.entries(value)
+      .map(([key, entry]): [string, unknown] => [key, isRecord(entry) ? withoutBlanks(entry) : entry])
+      .filter(([, entry]) => !isBlank(entry))
+  );
+
+const sortedKeys = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(sortedKeys);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, sortedKeys(value[key])])
+  );
+};
+
+/** Equal regardless of key order, since the service need not hand the keys back in the order they were written. */
+export const sameJson = (a: unknown, b: unknown): boolean =>
+  JSON.stringify(sortedKeys(a)) === JSON.stringify(sortedKeys(b));

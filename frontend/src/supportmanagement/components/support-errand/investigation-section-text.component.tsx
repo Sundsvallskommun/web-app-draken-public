@@ -1,6 +1,7 @@
 'use client';
 
-import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { SupportInvestigationSection } from '@supportmanagement/services/support-investigation-service';
 import { FC, MutableRefObject } from 'react';
 
 import { InvestigationTextEditor } from './investigation-text-editor.component';
@@ -8,7 +9,7 @@ import { useInvestigationSectionSave } from './use-investigation-section-save';
 
 /** What the investigation tab hands every section so the section can save itself when the tab saves. */
 export interface InvestigationSectionProps {
-  section: InvestigationSection;
+  section: SupportInvestigationSection;
   investigationId: string | undefined;
   writable: boolean;
   onEdited: (edited: boolean) => void;

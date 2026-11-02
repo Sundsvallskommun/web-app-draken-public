@@ -5,6 +5,7 @@ import { Checkbox, FormControl, FormLabel, Input, Select, Textarea } from '@sk-w
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
+  SUPPORT_PREMISES_SECTION_JSON,
   supportPremisesCapacity,
   type SupportPremisesExamination,
   supportPremisesExamination,
@@ -32,7 +33,11 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const [statements, setStatements] = useState<Statement[]>([]);
-  const sectionSave = useInvestigationSectionSave(props, 'common:premises.toast.save_failed');
+  const sectionSave = useInvestigationSectionSave(
+    props,
+    'common:premises.toast.save_failed',
+    SUPPORT_PREMISES_SECTION_JSON
+  );
   const knownBefore = sectionSave.values.assessment === APPROVED;
   // Unchecking only takes back an approval; any other assessment is left as it is.
   const uncheckedAssessment = section.assessment === APPROVED ? PENDING : section.assessment ?? '';
@@ -47,7 +52,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
     () => supportPremisesFireSafety(statements, supportMetadata),
     [statements, supportMetadata]
   );
-  const examination = supportPremisesExamination(sectionSave.values.parameters);
+  const examination = supportPremisesExamination(sectionSave.values.json);
 
   useEffect(() => {
     if (!errandId || !municipalityId) return undefined;
@@ -67,7 +72,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   }, [errandId, municipalityId, modified]);
 
   const write = (field: keyof SupportPremisesExamination, value: string) =>
-    sectionSave.set('parameters', withSupportPremisesExamination(sectionSave.values.parameters, field, value));
+    sectionSave.set('json', withSupportPremisesExamination(sectionSave.values.json, field, value));
 
   const seats = [
     capacity.indoorSeats ? t('common:premises.seats_indoor', { number: capacity.indoorSeats }) : undefined,

@@ -98,10 +98,12 @@ const investigation = {
     text,
     sortOrder: index + 1,
     ...(sectionKey === 'premises' && {
-      parameters: [
-        { key: 'PREMISES_INSPECTED_AT', values: ['2026-05-21'] },
-        { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PROVEN'] },
-        { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', values: ['Hyresavtal 2026-05-01'] },
+      jsonParameters: [
+        {
+          key: 'premises',
+          schemaId: '2281_aot_investigation_premises_section_1.0',
+          value: { inspectedAt: '2026-05-21', rightOfDisposal: { status: 'PROVEN', note: 'Hyresavtal 2026-05-01' } },
+        },
       ],
     }),
   })),
@@ -677,9 +679,12 @@ test('what the handler established about the premises for the underlay travels w
           section.sectionKey === 'premises'
             ? {
                 ...section,
-                parameters: [
-                  ...(section.parameters ?? []),
-                  { key: 'PREMISES_SERVING_AREA', values: ['Matsalen, uteserveringen och bryggan'] },
+                jsonParameters: [
+                  {
+                    key: 'premises',
+                    schemaId: '2281_aot_investigation_premises_section_1.0',
+                    value: { servingArea: { description: 'Matsalen, uteserveringen och bryggan' } },
+                  },
                 ],
               }
             : section

@@ -1,4 +1,4 @@
-import type { ErrandAttachment, Investigation, Measure } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { ErrandAttachment, Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
@@ -20,20 +20,24 @@ import {
 } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
+  INSPECTION_PROTOCOL_JSON_KEY,
   inspectionProtocolFileName,
   type InspectionProtocolValues,
-  inspectionProtocolValuesFromParameters,
+  inspectionProtocolValuesFromJson,
   inspectionProtocolValuesOf,
   renderInspectionProtocol,
-  toInspectionProtocolInvestigationParameters,
+  toInspectionProtocolJson,
   toInspectionProtocolRenderParameters,
 } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
   getSupportInvestigation,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
+  saveSupportInvestigationJsonParameter,
   startSupportInvestigation,
+  type SupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
+import { jsonParameterObject, supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import {
   getSupportMeasures,
   saveSupportMeasures,
@@ -63,7 +67,7 @@ const TAB_KEY = 'investigation';
 /** What the errand holds: the measures (control points, action points, observations) and the investigation. */
 interface Saved {
   measures: Measure[];
-  investigation?: Investigation;
+  investigation?: SupportInvestigation;
 }
 
 /** The page: the chosen template (none until the handler picks one), its answers, and the three measure lists. */
@@ -89,9 +93,9 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
   return {
     templateKey: template?.key,
     values: template
-      ? inspectionProtocolValuesFromParameters(
+      ? inspectionProtocolValuesFromJson(
           template,
-          saved.investigation?.parameters,
+          jsonParameterObject(saved.investigation?.jsonParameters, INSPECTION_PROTOCOL_JSON_KEY),
           inspectionProtocolValuesOf(template, errand, user)
         )
       : {},
@@ -212,19 +216,31 @@ export const InspectionProtocol: FC<{
       ]);
       receiveMeasures({ ...data, measures: await getSupportMeasures(errandId, municipalityId) });
       if (template) {
-        const parameters = toInspectionProtocolInvestigationParameters(template, draft.values);
-        if (!data.investigation?.id) {
-          await startSupportInvestigation(errandId, municipalityId, template.label, [], {
-            type: template.key,
-            parameters,
-          });
-        } else if (template.key !== baseline.templateKey || !same(draft.values, baseline.values)) {
-          await saveSupportInvestigation(errandId, municipalityId, data.investigation.id, {
-            version: data.investigation.version ?? 0,
+        const answers = {
+          schemaId: supportSchemaId(municipalityId, template.schema),
+          value: toInspectionProtocolJson(template, draft.values),
+        };
+        const templateChanged = template.key !== baseline.templateKey;
+        let investigationId = data.investigation?.id;
+        if (!investigationId) {
+          investigationId = (
+            await startSupportInvestigation(errandId, municipalityId, template.label, [], { type: template.key })
+          ).id;
+        } else if (templateChanged) {
+          await saveSupportInvestigation(errandId, municipalityId, investigationId, {
+            version: data.investigation?.version ?? 0,
             type: template.key,
             title: template.label,
-            parameters,
           });
+        }
+        if (investigationId && (!data.investigation?.id || templateChanged || !same(draft.values, baseline.values))) {
+          await saveSupportInvestigationJsonParameter(
+            errandId,
+            municipalityId,
+            investigationId,
+            INSPECTION_PROTOCOL_JSON_KEY,
+            answers
+          );
         }
       }
       receive(await load(errandId, municipalityId));

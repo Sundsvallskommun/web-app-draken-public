@@ -6,6 +6,7 @@ export const INTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
   key: 'internal_inspection',
   label: 'Inre tillsyn',
   identifier: 'internal-inspection-protocol',
+  schema: { name: 'aot_inspection_internal', version: '1.0' },
   html: INTERNAL_INSPECTION_HTML,
   controlPoints: [
     'Granskning via upplysningstjänsten Syna/Svensk faktakontroll',
