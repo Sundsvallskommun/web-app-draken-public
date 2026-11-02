@@ -17,6 +17,7 @@ import {
   ResolutionLabelLOK,
   ResolutionLabelLOP,
   ResolutionLabelROB,
+  ResolutionLabelSE,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
@@ -35,7 +36,8 @@ const HANDOVER_DESCRIPTION =
 
 const getResolutionLabels = (): Record<string, string> => {
   if (isLOP()) return ResolutionLabelLOP;
-  if (isIK() || isSE()) return ResolutionLabelIK;
+  if (isIK()) return ResolutionLabelIK;
+  if (isSE()) return ResolutionLabelSE;
   if (isKA()) return ResolutionLabelKA;
   if (isROB()) return ResolutionLabelROB;
   if (isBOU()) return ResolutionLabelBOU;

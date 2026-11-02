@@ -345,6 +345,12 @@ export const SidebarInfo: FC<{
       case Resolution.HANDED_OVER: {
         return solutionComponent('Överlämnat', 'överlämnade ärendet.', 'split');
       }
+      case Resolution.SOLVED_FEEDBACK_VIA_PHONE: {
+        return solutionComponent('Löst', 'löste ärendet och återkopplade via telefon.', 'check');
+      }
+      case Resolution.SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX: {
+        return solutionComponent('Löst', 'löste ärendet och återkopplade via funktionsbrevlåda.', 'check');
+      }
       default: {
         // An unmapped code still gets a label instead of nothing.
         return solutionComponent(resolution, 'avslutade ärendet.', 'check');
