@@ -58,14 +58,21 @@ vi.mock('./investigation-conclusion-disclosure.component', () => ({
     values,
     set,
   }: {
-    values: { conclusion: string };
+    values: { proposal: string; conclusion: string };
     set: (key: string, value: string) => void;
   }) => (
-    <textarea
-      data-testid="conclusion"
-      value={values.conclusion}
-      onChange={(e) => set('conclusion', e.currentTarget.value)}
-    />
+    <>
+      <textarea
+        data-testid="proposal"
+        value={values.proposal}
+        onChange={(e) => set('proposal', e.currentTarget.value)}
+      />
+      <textarea
+        data-testid="conclusion"
+        value={values.conclusion}
+        onChange={(e) => set('conclusion', e.currentTarget.value)}
+      />
+    </>
   ),
 }));
 
@@ -75,6 +82,7 @@ const investigation = {
   id: 'investigation-1',
   version: 3,
   status: 'ACTIVE',
+  summary: 'ursprungligt forslag',
   conclusion: 'ursprunglig text',
   recommendation: '',
   recommendationMotivation: '',
@@ -220,6 +228,21 @@ test('the save that was handed over writes what the field holds now, not what it
   expect(vi.mocked(saveSupportInvestigation).mock.calls[0][3]).toMatchObject({
     conclusion: 'det handlaggaren skrev sist',
     version: 3,
+  });
+});
+
+test('the proposal is read from and written back to the summary, which is the field it travels in', async () => {
+  mountTab();
+  await waitFor(() => expect(useSupportStore.getState().tabSavers.investigation).toBeTypeOf('function'));
+
+  const field = (await screen.findByTestId('proposal')) as HTMLTextAreaElement;
+  expect(field.value).toBe('ursprungligt forslag');
+
+  fireEvent.change(field, { target: { value: '<ol><li>bevilja ansokan</li></ol>' } });
+  await useSupportStore.getState().tabSavers.investigation();
+
+  expect(vi.mocked(saveSupportInvestigation).mock.calls[0][3]).toMatchObject({
+    summary: '<ol><li>bevilja ansokan</li></ol>',
   });
 });
 

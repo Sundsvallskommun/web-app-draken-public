@@ -36,6 +36,13 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
+const conclusionEditsOf = (investigation: Investigation | undefined) => ({
+  proposal: investigation?.summary ?? '',
+  conclusion: investigation?.conclusion ?? '',
+  recommendation: investigation?.recommendation ?? '',
+  recommendationMotivation: investigation?.recommendationMotivation ?? '',
+});
+
 type SectionSave = React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 
 interface InvestigationTabProps {
@@ -78,11 +85,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { values, set, load, merge, edited } = useUnsavedEdits({
-    conclusion: '',
-    recommendation: '',
-    recommendationMotivation: '',
-  });
+  const { values, set, load, merge, edited } = useUnsavedEdits(conclusionEditsOf(undefined));
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
@@ -100,13 +103,13 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
 
   const receive = (result: Investigation | undefined) => {
     setInvestigation(result);
-    load(result);
+    load(conclusionEditsOf(result));
   };
 
   const receiveKeepingUnsavedEdits = useCallback(
     (result: Investigation | undefined) => {
       setInvestigation(result);
-      merge(result);
+      merge(conclusionEditsOf(result));
     },
     [merge]
   );
@@ -261,6 +264,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       receive(
         await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
           version: latest?.version ?? 0,
+          summary: values.proposal,
           conclusion: values.conclusion,
           recommendation: values.recommendation || undefined,
           recommendationMotivation: values.recommendationMotivation,

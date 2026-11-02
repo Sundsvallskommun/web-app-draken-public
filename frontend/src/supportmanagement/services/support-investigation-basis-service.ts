@@ -145,7 +145,7 @@ export interface InvestigationBasisParameters {
   marketingHtml: string;
   selfMonitoringHtml: string;
   exciseTaxHtml: string;
-  proposal: { points: string[] };
+  proposal: { html: string; points: string[] };
   applicant: { name: string; orgNumber: string; street: string; postalAddress: string };
   company: {
     form: string;
@@ -560,16 +560,10 @@ const basisStatements = (
     responseText: plainTextOf(statement.responseText),
   }));
 
-/**
- * The points of the proposal are the motivation of the recommendation, one per line, so the handler
- * writes them as a list. Without a motivation the proposed decision stands as the only point.
- */
-const proposalPoints = (investigation: Investigation | undefined, metadata: SupportMetadata | undefined): string[] => {
-  const points = linesOf(investigation?.recommendationMotivation);
-  if (points.length > 0) return points;
-  const recommendation = outcomeLabelOf(investigation?.recommendation, metadata);
-  return recommendation ? [recommendation] : [];
-};
+const proposalParameters = (investigation: Investigation | undefined): { html: string; points: string[] } => ({
+  html: htmlOf(investigation?.summary),
+  points: linesOf(investigation?.summary),
+});
 
 const premisesName = (form: FormValue | undefined, errand: SupportErrand | undefined): string =>
   text(premisesValue(form, 'Name')) ?? applicantOf(errand)?.organizationName ?? '';
@@ -654,7 +648,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     marketingHtml: texts.marketing ?? '',
     selfMonitoringHtml: texts.self_monitoring ?? '',
     exciseTaxHtml: '',
-    proposal: { points: proposalPoints(investigation, metadata) },
+    proposal: proposalParameters(investigation),
     applicant: applicantParameters(errand),
     company: {
       form: input.companyProfile?.form ?? '',

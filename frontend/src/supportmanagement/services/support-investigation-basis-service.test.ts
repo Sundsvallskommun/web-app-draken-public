@@ -89,6 +89,7 @@ const SECTION_TEXTS: [key: string, text: string][] = [
 
 const investigation = {
   id: 'inv-1',
+  summary: '<ol><li>bevilja ansökan</li><li>förena tillståndet med villkor om ordningsvakter</li></ol>',
   conclusion: '<p>Kraven är uppfyllda.</p>',
   recommendation: 'APPROVAL',
   recommendationMotivation: '<p>Bevilja stadigvarande tillstånd.</p><p>Serveringstiden är 11.00-23.00.</p>',
@@ -452,16 +453,21 @@ test('a referral card opened but never sent is not a row at all', () => {
   expect(built().statements.map((statement) => statement.counterparty)).not.toContain('Miljökontoret');
 });
 
-test('the proposal is the motivation of the recommendation, one point per line', () => {
-  expect(built().proposal.points).toEqual(['Bevilja stadigvarande tillstånd.', 'Serveringstiden är 11.00-23.00.']);
+test('the proposal is the att-list the handler wrote, as markup and as one line per point', () => {
+  expect(built().proposal.html).toBe(
+    '<ol><li>bevilja ansökan</li><li>förena tillståndet med villkor om ordningsvakter</li></ol>'
+  );
+  expect(built().proposal.points).toEqual(['bevilja ansökan', 'förena tillståndet med villkor om ordningsvakter']);
 });
 
-test('without a motivation the proposed decision stands as the only point', () => {
-  const parameters = investigationBasisParameters(
-    input({ investigation: { ...investigation, recommendationMotivation: '' } })
-  );
+test('the motivation is no part of the proposal, since the document prints it under the assessment', () => {
+  const parameters = investigationBasisParameters(input({ investigation: { ...investigation, summary: undefined } }));
 
-  expect(parameters.proposal.points).toEqual(['Bevilja']);
+  expect(parameters.proposal.html).toBe('');
+  expect(parameters.proposal.points).toEqual([]);
+  expect(parameters.investigation.recommendationMotivationHtml).toBe(
+    '<p>Bevilja stadigvarande tillstånd.</p><p>Serveringstiden är 11.00-23.00.</p>'
+  );
   expect(parameters.investigation.recommendationLabel).toBe('Bevilja');
 });
 
@@ -497,6 +503,7 @@ test('an investigation that has only been started says what is missing instead o
   expect(parameters.childPerspectiveHtml).toBe('Information saknas');
 
   expect(parameters.personsOfInfluence).toEqual([]);
+  expect(parameters.proposal.html).toBe('');
   expect(parameters.proposal.points).toEqual([]);
   expect(parameters.premises.previousPermits).toEqual([]);
 });
@@ -547,6 +554,7 @@ const TEMPLATE_FIELDS = [
   'issuedByAuthority',
   'communication',
   'childPerspectiveHtml',
+  'proposal.html',
   'proposal.points',
   'applicant.name',
   'applicant.orgNumber',

@@ -13,8 +13,9 @@ export const InvestigationTextEditor: FC<{
   placeholderKey: string;
   value: string;
   readOnly: boolean;
+  description?: string;
   onChange: (markup: string) => void;
-}> = ({ name, labelKey, placeholderKey, value, readOnly, onChange }) => {
+}> = ({ name, labelKey, placeholderKey, value, readOnly, description, onChange }) => {
   const { t } = useTranslation();
 
   const editorHost = useRef<HTMLDivElement>(null);
@@ -24,6 +25,7 @@ export const InvestigationTextEditor: FC<{
     <FormControl className="w-full">
       <FormLabel>{t(labelKey)}</FormLabel>
       <div ref={editorHost} data-cy={`${name}-text`}>
+        {description ? <p className="text-small text-dark-secondary italic mb-8">{t(description)}</p> : null}
         <DynamicTextEditor
           name={name}
           className="investigation-text-editor w-full min-w-0 max-w-full"
