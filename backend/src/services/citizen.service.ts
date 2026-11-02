@@ -6,8 +6,8 @@ import { PersonGuidBatch } from '@/data-contracts/citizen/data-contracts';
 import ApiService from './api.service';
 
 export class CitizenService {
-  private apiService = new ApiService();
-  private CITIZEN_SERVICE = apiServiceName('citizen');
+  private readonly apiService = new ApiService();
+  private readonly CITIZEN_SERVICE = apiServiceName('citizen');
 
   /**
    * Returns the party id of the person with this personal number, or '' when there is none. Uses the

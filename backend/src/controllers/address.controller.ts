@@ -42,8 +42,10 @@ const personLookupLimiter = rateLimit({
 });
 
 /** Records who looked up whom (by party id, never by personal number) and with what outcome. */
-const auditPersonLookup = (user: RequestWithUser['user'], outcome: 'found' | 'not found' | 'failed', partyId = '') =>
-  logger.info(`AUDIT person lookup: user=${user?.username ?? 'unknown'} outcome=${outcome}${partyId ? ` partyId=${partyId}` : ''}`);
+const auditPersonLookup = (user: RequestWithUser['user'], outcome: 'found' | 'not found' | 'failed', partyId = '') => {
+  const fields = [`user=${user?.username ?? 'unknown'}`, `outcome=${outcome}`, ...(partyId ? [`partyId=${partyId}`] : [])];
+  logger.info(`AUDIT person lookup: ${fields.join(' ')}`);
+};
 
 class OrgNrPayload {
   @IsString()
