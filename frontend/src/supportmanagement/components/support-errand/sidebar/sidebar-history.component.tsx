@@ -15,6 +15,7 @@ import {
   ResolutionLabelKSLegacy,
   ResolutionLabelLOK,
   ResolutionLabelLOP,
+  ResolutionLabelSE,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents, groupSupportEvents } from '@supportmanagement/services/support-history-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
@@ -69,6 +70,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       ...Object.entries(ResolutionLabelIK),
       ...Object.entries(ResolutionLabelLOK),
       ...Object.entries(ResolutionLabelBOU),
+      ...Object.entries(ResolutionLabelSE),
     ].forEach((e) => {
       _km[e[0]] = e[1];
     });
