@@ -85,6 +85,7 @@ const SECTION_TEXTS: [key: string, text: string][] = [
   ['communication', '<p>Remissvaren skickades</p><p>2026-05-29 via e-post.</p>'],
   ['child_perspective', '<p>Ingen skola i närheten.</p>'],
   ['ownership', '<p>Bolaget ägs av två fysiska personer.</p>'],
+  ['legal_basis', '<h3>Alkohollag (2010:1622)</h3><h4>8 kap. 12 §</h4>'],
 ];
 
 const investigation = {
@@ -453,6 +454,16 @@ test('a referral card opened but never sent is not a row at all', () => {
   expect(built().statements.map((statement) => statement.counterparty)).not.toContain('Miljökontoret');
 });
 
+test('the laws the permit is examined against are the ones left in Lagrum', () => {
+  expect(built().legislationHtml).toBe('<h3>Alkohollag (2010:1622)</h3><h4>8 kap. 12 §</h4>');
+});
+
+test('a Lagrum nobody has written is sent empty, since the template leaves the heading out', () => {
+  const parameters = investigationBasisParameters(input({ investigation: { ...investigation, sections: [] } }));
+
+  expect(parameters.legislationHtml).toBe('');
+});
+
 test('the proposal is the att-list the handler wrote, as markup and as one line per point', () => {
   expect(built().proposal.html).toBe(
     '<ol><li>bevilja ansökan</li><li>förena tillståndet med villkor om ordningsvakter</li></ol>'
@@ -554,6 +565,7 @@ const TEMPLATE_FIELDS = [
   'issuedByAuthority',
   'communication',
   'childPerspectiveHtml',
+  'legislationHtml',
   'proposal.html',
   'proposal.points',
   'applicant.name',
@@ -606,7 +618,6 @@ const TEMPLATE_FIELDS = [
   'personsOfInfluence',
   'statements',
   'investigation.recommendationLabel',
-  'investigation.legalBasisHtml',
   'investigation.financialAssessmentHtml',
   'investigation.premisesRemarksHtml',
   'investigation.conclusionHtml',

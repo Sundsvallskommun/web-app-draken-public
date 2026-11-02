@@ -142,6 +142,7 @@ export interface InvestigationBasisParameters {
   issuedByAuthority: string;
   communication: string;
   childPerspectiveHtml: string;
+  legislationHtml: string;
   marketingHtml: string;
   selfMonitoringHtml: string;
   exciseTaxHtml: string;
@@ -205,7 +206,6 @@ export interface InvestigationBasisParameters {
   statements: InvestigationBasisStatement[];
   investigation: {
     recommendationLabel: string;
-    legalBasisHtml: string;
     financialAssessmentHtml: string;
     premisesRemarksHtml: string;
     conclusionHtml: string;
@@ -646,6 +646,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     ...ISSUER,
     communication: plainTextOf(texts.communication),
     childPerspectiveHtml: texts.child_perspective ?? '',
+    legislationHtml: texts.legal_basis ?? '',
     marketingHtml: texts.marketing ?? '',
     selfMonitoringHtml: texts.self_monitoring ?? '',
     exciseTaxHtml: '',
@@ -711,7 +712,6 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     statements: basisStatements(input.statements, metadata),
     investigation: {
       recommendationLabel: outcomeLabelOf(investigation?.recommendation, metadata),
-      legalBasisHtml: texts.legal_basis ?? '',
       financialAssessmentHtml: texts.financial_suitability ?? '',
       premisesRemarksHtml: premisesRemarksOf(texts),
       conclusionHtml: htmlOf(investigation?.conclusion),
