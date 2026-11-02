@@ -1,4 +1,5 @@
 import { PrettyRole } from '@casedata/interfaces/role';
+import { invalidEmailMessage, isValidEmail } from '@common/utils/contact-validation-utils';
 import { appConfig } from '@config/appconfig';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -25,7 +26,6 @@ const defaultCountLabel = (count: number) => `Ditt meddelande har ${count} motta
 interface CommonNestedEmailArrayV2Props {
   errand: any;
   register: any;
-  errors: any;
   watch: any;
   setValue: any;
   disabled?: boolean;
@@ -44,7 +44,6 @@ interface CommonNestedEmailArrayV2Props {
 const CommonNestedEmailArrayV2 = ({
   errand,
   register,
-  errors,
   watch,
   setValue,
   disabled,
@@ -62,7 +61,6 @@ const CommonNestedEmailArrayV2 = ({
   const emails = formValues[fieldNames.emails];
   const existingEmail = formValues[fieldNames.existingEmail];
   const newEmail = formValues[fieldNames.newEmail];
-  const newEmailError = errors?.[fieldNames.newEmail];
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { fields, remove, append } = useFieldArray<{ emails: { value: string }[] }>({
     control,
@@ -70,6 +68,8 @@ const CommonNestedEmailArrayV2 = ({
   });
 
   const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
+  // The address is checked when Add is clicked, so typing never shows an error or blocks saving the form
+  const [showNewEmailError, setShowNewEmailError] = useState(false);
 
   useEffect(() => {
     const stakeholders: { email: string; role: string[] }[] = [];
@@ -149,8 +149,8 @@ const CommonNestedEmailArrayV2 = ({
         <Input
           data-cy={`${dataCyPrefix}new-email-input`}
           placeholder="Ange e-postadress"
-          {...register(fieldNames.newEmail)}
-          className={cx(error ? 'border-error' : null, `w-full`)}
+          {...register(fieldNames.newEmail, { onChange: () => setShowNewEmailError(false) })}
+          className={cx(error || showNewEmailError ? 'border-error' : null, `w-full`)}
         />
 
         <Button
@@ -159,17 +159,25 @@ const CommonNestedEmailArrayV2 = ({
           variant="tertiary"
           size={size as size}
           onClick={() => {
-            append({ value: newEmail });
+            if (!isValidEmail(newEmail)) {
+              setShowNewEmailError(true);
+              return;
+            }
+            append({ value: newEmail.trim() });
             setValue(fieldNames.newEmail, '');
             trigger();
           }}
           className="rounded-button"
-          disabled={disabled || newEmailError || !newEmail}
+          disabled={disabled || !newEmail}
         >
           Lägg till
         </Button>
       </div>
-      {newEmailError?.message && <FormErrorMessage className="text-error">{newEmailError.message}</FormErrorMessage>}
+      {showNewEmailError && (
+        <FormErrorMessage data-cy={`${dataCyPrefix}new-email-error`} className="text-error">
+          {invalidEmailMessage}
+        </FormErrorMessage>
+      )}
       {fields?.length > 0 ? (
         <>
           {!addingStakeholder && <strong>{countLabel(emails?.length)}</strong>}

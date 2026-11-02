@@ -8,7 +8,6 @@ import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
-import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import {
   buildMessageTemplateBody,
   getDefaultMessageBody,
@@ -19,6 +18,7 @@ import {
 } from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
 import { sanitized } from '@common/services/sanitizer-service';
+import { emailSchema, phoneNumberSchema } from '@common/utils/contact-validation-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -86,40 +86,26 @@ let formSchema = yup
     id: yup.string(),
     messageContact: yup.string(),
     contactMeans: yup.string(),
-    newEmail: yup
-      .string()
-      .email('E-postadress har fel format')
-      .when(['emails', 'contactMeans'], {
-        is: (emails: any[], means: string) => (!emails || emails.length === 0) && means === 'email',
-        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
-        otherwise: (schema) => schema,
-      }),
     emails: yup.array().when('contactMeans', {
       is: (means: string) => means === 'email',
       then: (schema) =>
         schema
           .of(
             yup.object().shape({
-              value: yup.string().email('E-postadress har fel format'),
+              value: emailSchema(),
             })
           )
           .min(1, 'Ange minst en e-postadress')
           .required('Ange minst en e-postadress'),
       otherwise: (schema) => schema,
     }),
-    newPhoneNumber: yup.string(),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
       then: (schema) =>
         schema
           .of(
             yup.object().shape({
-              value: yup
-                .string()
-                .required('Telefonnummer måste anges för sms-meddelande')
-                .trim()
-                .transform((val) => val && val.replace('-', ''))
-                .matches(supportManagementPhonePattern, invalidPhoneMessage),
+              value: phoneNumberSchema().required('Telefonnummer måste anges för sms-meddelande'),
             })
           )
           .min(1, 'Ange minst ett telefonnummer')
@@ -814,12 +800,6 @@ export const SupportMessageForm: FC<{
             key={`nested-phone-array`}
             {...{ control, register, errors, watch, setValue, trigger }}
           />
-
-          {errors?.newPhoneNumber && (
-            <div className="my-sm text-error">
-              <FormErrorMessage>{errors?.newPhoneNumber?.message}</FormErrorMessage>
-            </div>
-          )}
         </div>
       ) : null}
 
