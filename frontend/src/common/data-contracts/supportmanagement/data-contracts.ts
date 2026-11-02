@@ -64,10 +64,26 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  title?: string;
   detail?: string;
+  title?: string;
   /** @format int32 */
   status?: number;
+}
+
+/** Identifier describing a user or subject (AD-account or party-id) */
+export interface Identifier {
+  /**
+   * Identifier type
+   * @minLength 1
+   * @pattern ^(adAccount|partyId)$
+   */
+  type: IdentifierTypeEnum;
+  /**
+   * Identifier value (AD-account name or partyId UUID)
+   * @minLength 0
+   * @maxLength 255
+   */
+  value: string;
 }
 
 export interface ConstraintViolationProblem {
@@ -80,19 +96,6 @@ export interface ConstraintViolationProblem {
   /** @format uri */
   instance?: string;
   detail?: string;
-  causeAsProblem?: ThrowableProblem;
-}
-
-export interface ThrowableProblem {
-  /** @format uri */
-  type?: string;
-  title?: string;
-  /** @format int32 */
-  status?: number;
-  detail?: string;
-  /** @format uri */
-  instance?: string;
-  causeAsProblem?: ThrowableProblem;
 }
 
 export interface Violation {
@@ -153,10 +156,36 @@ export interface NamespaceConfig {
   resourceAccessControl?: boolean;
   /** If set to true an errand may hold at most one decision. Leave false where interim decisions, partial decisions or reconsideration occur. If no value is set it defaults to false. */
   singleDecisionPerErrand?: boolean;
+  /** If set to true, errands created or updated via EmailReader are notified to Telia ACE as work items. If no value is set it defaults to false. */
+  teliaAceWorkItemEnabled?: boolean;
+  /**
+   * Base URL used to build the Draken link sent to Telia ACE, e.g. https://draken.sundsvall.se/kontaktsundsvall. Required when teliaAceWorkItemEnabled is true.
+   * @minLength 0
+   * @maxLength 230
+   * @pattern ^https?://\S+$
+   */
+  teliaAceWorkItemBaseUrl?: string;
   /** The process engine running the processes of this namespace, which is also the address its events are delivered to. The only one known is pw-alkt. A namespace has exactly one, and leaving it out means the namespace runs no processes at all. It cannot be combined with access control, as the access mapper only grants access to AD accounts */
   processConsumer?: string;
-  /** The errand changes worth telling the process about. An event whose sub type is not listed here is not published, so a namespace with a process consumer must list ERRAND, for its processes to start, and DECISION, for a process waiting for its decision to learn that it has been made. Commands sent to the process (PROCESS, SIGNAL) are not errand changes, are never filtered by this list and may not be listed */
+  /** The errand changes worth telling the process about. An event whose sub type is not listed here is not published, so a namespace with a process consumer must list ERRAND, for its processes to start, and DECISION, for a process waiting for its decision to learn that it has been made. Commands sent to the process (PROCESS, SIGNAL) are not errand changes, are never filtered by this list and may not be listed. Nor may NOTE and SYSTEM, as no event of theirs is ever published to a process. A change of status or phase is told as STATUS or PHASE apart from the ERRAND event of the change it is part of, as are an assignment (ASSIGNMENT), every label added (LABEL) and a draft being made active (ERRAND_ACTIVATION). Messages are logged by the channel they went through, received and sent alike: MESSAGE_EMAIL_EXTERNAL, MESSAGE_SMS_EXTERNAL, MESSAGE_WEB_MESSAGE_EXTERNAL, and MESSAGE_CONVERSATION_EXTERNAL and MESSAGE_CONVERSATION_INTERNAL for messages in conversations with the outside world and within the organisation respectively */
   processTriggers?: NamespaceConfigProcessTriggersEnum[];
+  /** If set to true emails sent to subscribers only name the errands that were updated, without describing what happened to them. If no value is set it defaults to false. */
+  excludeEventDescriptionsInEmail?: boolean;
+  /** If set to true subscribers may be notified by sms, which only names the errands that were updated and links to them. Events routed to sms in a namespace where it is not enabled are not delivered by sms. If no value is set it defaults to false. */
+  smsNotificationsEnabled?: boolean;
+  /**
+   * Address of an errand in the web application handling errands in this namespace, short of the errand number. Links to errands are made as <baseUrl>/<errandNumber>, a trailing slash on the base url being ignored. Leaving it out means emails carry no links to errands.
+   * @pattern ^https?://\S+$
+   */
+  baseUrl?: string;
+  /** Id of a subscription profile in this namespace. When set, the reporter of an errand is subscribed to the errand with this profile as the errand is created. Leaving it out subscribes no reporter. */
+  reporterProfileId?: string;
+  /**
+   * The channels a subscriber is given when the service creates one for a user, as when a user is assigned an errand without being a subscriber in the namespace. Leaving it out gives such a subscriber the INTERNAL channel alone. Subscribers already present keep their own channels.
+   * @maxItems 2147483647
+   * @minItems 1
+   */
+  newSubscriberChannels?: NamespaceConfigNewSubscriberChannelsEnum[];
   /** What a user whose labels only grant them limited read for an errand may reach on it. Limited read always reaches the errand itself, listing resources here extends it beyond that, up to what read access gives. The fields apply instead of the fields of any role the user holds */
   limitedReadAccess?: LimitedReadAccess;
   /** Access given to the reporter of an errand. Leaving it out means reporters get nothing beyond what their labels already grant */
@@ -218,6 +247,11 @@ export interface Config {
    */
   active?: boolean;
   /**
+   * If set to false, what the action does notifies no one, as a request sent with X-notify: false. The handler of the errand is not notified of what an action does either way, and the process of the errand is told either way. An action run at once, as part of the request that creates or updates the errand, notifies only if that request does too
+   * @default true
+   */
+  notify?: boolean;
+  /**
    * Conditions for when the action should be added to errand. Parameters must match action definition.
    * @minItems 1
    */
@@ -256,7 +290,7 @@ export interface Label {
   /**
    * Resource name
    * @minLength 1
-   * @pattern [A-Z0-9_]+
+   * @pattern [A-Z0-9_-]+
    */
   resourceName: string;
   /**
@@ -265,7 +299,7 @@ export interface Label {
    */
   deprecated?: boolean;
   labels?: Label[];
-  /** Free-form key/value data owned by the client, stored and returned as-is. Duplicate keys per label are rejected, and two keys are read by the service itself. processKey names the process an errand wearing the label runs. processStartMode says whether that process starts by itself when the errand changes (AUTOMATIC, which is also what leaving it out means) or only when a handler starts it (MANUAL); it has to be exactly one of those two, and is allowed only on a label that also has processKey. Both keys are matched exactly as spelled, and a key spelled like either of them in any other way is rejected. Other keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  /** Free-form key/value data owned by the client, stored and returned as-is. Duplicate keys per label are rejected, and three keys are read by the service itself. processKey names the process an errand wearing the label runs. processStartMode says whether that process starts by itself when the errand changes (AUTOMATIC, which is also what leaving it out means) or only when a handler starts it (MANUAL); it has to be exactly one of those two, and is allowed only on a label that also has processKey. processBlocked set to true keeps every process away from an errand wearing the label; it has to be exactly true or false, and needs no processKey. The three keys are matched exactly as spelled, and a key spelled like any of them in any other way is rejected. Other keys are conventions agreed between clients (e.g. 'escalationEmail'). */
   attributes?: LabelAttribute[];
 }
 
@@ -309,12 +343,14 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
-  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -326,8 +362,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -337,7 +371,7 @@ export interface JsonParameter {
    * Parameter key/name
    * @minLength 1
    * @maxLength 255
-   * @pattern [A-Za-z0-9._-]+
+   * @pattern [A-Za-z0-9_-]+
    */
   key: string;
   /**
@@ -634,27 +668,45 @@ export interface EventFilter {
    */
   type: EventFilterTypeEnum;
   /**
-   * Event subtype. If null, all subtypes of the given type match.
+   * Event subtype. If null, all subtypes of the given type match. Messages are matched by the channel they went through, received and sent alike: MESSAGE_EMAIL_EXTERNAL, MESSAGE_SMS_EXTERNAL, MESSAGE_WEB_MESSAGE_EXTERNAL, and MESSAGE_CONVERSATION_EXTERNAL and MESSAGE_CONVERSATION_INTERNAL for messages in conversations with the outside world and within the organisation respectively. ERRAND matches every change to an errand, while STATUS and PHASE match only changes of its status and of its phase respectively. LABEL matches a label being added to an errand, logged once for every label added - as CREATE/LABEL for the labels an errand is created with and as UPDATE/LABEL for those added later. ERRAND_ACTIVATION matches a draft being made active, logged as UPDATE/ERRAND_ACTIVATION alongside the UPDATE/ERRAND of the update that made it active, and is not matched by ERRAND.
    * @minLength 0
    * @maxLength 64
    */
   subtype?: string;
+  /** Optional id of a metadata label, only allowed together with subtype LABEL. When set, only the event of this label being added to the errand matches, the id compared regardless of case. If null, which label was added does not matter. */
+  labelId?: string;
 }
 
-/** Identifier describing a user or subject (AD-account or party-id) */
-export interface Identifier {
+/** A subscription profile is a named set of event filters and the channels the events they match are delivered on. A subscription pointing at a profile delivers the events the profile's filters select, while the subscriber's own event filters do not apply to it. The events are delivered on the profile's channels, or on the subscriber's own channels when the profile has none. */
+export interface SubscriptionProfile {
+  /** Unique identifier of the subscription profile */
+  id?: string;
   /**
-   * Identifier type
-   * @minLength 1
-   * @pattern ^(adAccount|partyId)$
-   */
-  type: IdentifierTypeEnum;
-  /**
-   * Identifier value (AD-account name or partyId UUID)
+   * Name of the profile, unique within the namespace
    * @minLength 0
    * @maxLength 255
    */
-  value: string;
+  name?: string;
+  /**
+   * Optional description of what the profile is for
+   * @minLength 0
+   * @maxLength 255
+   */
+  description?: string;
+  /** Event filters selecting which events the profile delivers. An event matching any of them is delivered. */
+  eventFilters?: EventFilter[];
+  /** Channels the events matched by the profile are delivered on. Leaving it out or empty delivers them on the subscriber's own channels instead, which lets each user choose how they are notified. An update with an empty list clears the profile's channels. */
+  channels?: SubscriptionProfileChannelsEnum[];
+  /**
+   * Timestamp when the profile was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the profile was last modified
+   * @format date-time
+   */
+  modified?: string;
 }
 
 /** Channel a subscriber wants to receive notifications on */
@@ -662,7 +714,7 @@ export interface NotificationChannel {
   /** Channel type */
   type: NotificationChannelTypeEnum;
   /**
-   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used.
+   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used, i.e. the e-mail address or mobile number of the employee. The destination of an SMS channel must be an MSISDN, e.g. +46701234567.
    * @minLength 0
    * @maxLength 255
    */
@@ -720,7 +772,9 @@ export interface Subscription {
   id?: string;
   /** What this subscription targets (an errand or the whole namespace). */
   target?: SubscriptionTarget;
-  /** Optional per-subscription override of the subscriber-level event filters. When set, these filters apply to events matched by this subscription instead of the subscriber's global filters. When null or empty, the subscriber-level filters are used as-is. */
+  /** Optional id of a subscription profile. When set, the profile alone decides which events this subscription delivers, and on which channels unless the profile has none, when the subscriber's own channels are used. The subscriber's event filters do not apply. Cannot be combined with eventFilters. */
+  profileId?: string;
+  /** Optional per-subscription override of the subscriber-level event filters. When set, these filters apply to events matched by this subscription instead of the subscriber's global filters. When null or empty, the subscriber-level filters are used as-is. Cannot be combined with profileId. */
   eventFilters?: EventFilter[];
   /**
    * Optional expiration timestamp. After this point the subscription is eligible for automatic cleanup.
@@ -1024,6 +1078,94 @@ export interface LabelMoveRequest {
   dryRun: boolean;
 }
 
+/** Result of a label merge dry-run — no changes are made */
+export interface LabelMergeDryRunResponse {
+  /**
+   * Number of errands that reference one or more of the source labels
+   * @format int64
+   */
+  affectedErrandCount?: number;
+  /** Actions that have hasLabel conditions referencing one or more of the source labels */
+  affectedActions?: AffectedAction[];
+}
+
+/** Request for merging one or more source labels into a destination label */
+export interface LabelMergeRequest {
+  /**
+   * IDs of the source labels to merge into the destination label
+   * @minItems 1
+   */
+  sourceLabelIds: string[];
+  /** When true, return affected counts without making any changes. When false, starts the merge as an asynchronous job. */
+  dryRun: boolean;
+}
+
+/** Result of a label-tree restructure dry-run — no changes are made */
+export interface LabelRestructureDryRunResponse {
+  /**
+   * Sum of affectedErrandCount across all steps. An errand touched by more than one step is counted once per step that touches it, not deduplicated across steps
+   * @format int64
+   */
+  totalAffectedErrandCount?: number;
+  /** Per-step results, in the same order as the request's steps */
+  steps?: LabelRestructureStepResult[];
+}
+
+/** Dry-run result for one step of a label-tree restructure */
+export interface LabelRestructureStepResult {
+  /**
+   * Index of the step in the request's steps list
+   * @format int32
+   */
+  index?: number;
+  /** The step's type */
+  type?: LabelRestructureStepResultTypeEnum;
+  /** The step's path, as submitted */
+  path?: string[];
+  /**
+   * Number of errands that reference the label or, for MOVE/MERGE, any of its descendants/sources. Always 0 for ADD/RENAME, and for a step whose path was only created by an earlier step in the same request
+   * @format int64
+   */
+  affectedErrandCount?: number;
+  /** Actions that have hasLabel conditions referencing a label this step affects */
+  affectedActions?: AffectedAction[];
+}
+
+/** Request for restructuring the label tree as one ordered sequence of add/rename/delete/move/merge steps */
+export interface LabelRestructureRequest {
+  /**
+   * Steps to apply, in order. A later step may reference a label an earlier step in this same request added or moved
+   * @minItems 1
+   */
+  steps: LabelRestructureStep[];
+  /** When true, return affected counts for every step without making any changes. When false, starts the restructure as an asynchronous job. */
+  dryRun: boolean;
+}
+
+/** One step of a label-tree restructure */
+export interface LabelRestructureStep {
+  /** The kind of change this step makes */
+  type: LabelRestructureStepTypeEnum;
+  /**
+   * Path (resourceName segments from the root) of the label this step acts on. The label added, renamed or deleted for ADD/RENAME/DELETE; the label moved for MOVE; the merge destination for MERGE
+   * @minItems 1
+   */
+  path: string[];
+  /** MOVE only: path of the new parent, or null/absent to move to root */
+  destinationParentPath?: string[];
+  /** MERGE only: paths of the source labels merged into path */
+  sourcePaths?: string[][];
+  /** ADD: display name of the new label. RENAME: the new display name. MOVE: an optional new display name to set at the same time */
+  displayName?: string;
+  /** ADD only: classification of the new label */
+  classification?: string;
+  /**
+   * MOVE only: an optional new resourceName to set at the same time (used for a combined move+rename)
+   * @pattern [A-Z0-9_-]+
+   */
+  newResourceName?: string;
+}
+
 /** Label classification model */
 export interface LabelClassification {
   /** Label classification ID */
@@ -1284,7 +1426,7 @@ export interface Errand {
   classification?: Classification;
   /** Status for the errand */
   status?: string;
-  /** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. An active errand never becomes a draft again. */
+  /** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. Made active, everything on the errand is told of as new: every label on it, the ancestors of its labels included, its assignee, its status and its phase are logged as events, and its actions are created as for a new errand. An active errand never becomes a draft again. */
   lifecycle?: ErrandLifecycleEnum;
   /** Resolution status for closed errands. Value can be set to anything */
   resolution?: string;
@@ -1327,7 +1469,7 @@ export interface Errand {
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
   actions?: ErrandAction[];
-  /** The process driving this errand, and its state. Null for a namespace that runs no processes, and for an errand that never had one. Shows the most recent process rather than a running one, so that a start which failed is visible as a failure instead of as an errand without a process. */
+  /** The process driving this errand, and its state. Null for a namespace that runs no processes, and for an errand that never had one. Shows the live process when the errand has one, and otherwise the most recent, so that a start which failed is visible as a failure instead of as an errand without a process. */
   process?: ErrandProcess;
   /** List of measures for the errand */
   measures?: Measure[];
@@ -1440,6 +1582,8 @@ export interface ErrandLabel {
   resourcePath?: string;
   /** Resource name */
   resourceName?: string;
+  /** Attributes of the label, as registered for the namespace. Changed through the label metadata, never through the errand */
+  attributes?: LabelAttribute[];
 }
 
 /** Errand phase model */
@@ -1932,6 +2076,8 @@ export interface InvestigationSection {
    * @format date-time
    */
   completedAt?: string;
+  /** Parameters of the section, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
 }
 
 /** Request describing which namespace a source errand should be previewed for handover to */
@@ -2168,7 +2314,7 @@ export interface HandoverMapping {
    * @example "NEW_CASE"
    */
   status?: string;
-  /** Classification model */
+  /** Category/type to set on the new errand. Required when the target namespace validates CATEGORY or TYPE, otherwise optional */
   classification?: Classification;
   /** Label UUIDs to apply on the new errand */
   labels?: string[];
@@ -2944,7 +3090,7 @@ export interface ErrandProcessOverview {
 
 /** Whether a process may be started for an errand, and which one */
 export interface ProcessStartable {
-  /** AVAILABLE means a process may be started right now; every other value says why one cannot be. LIVE_INSTANCE - a process is already running for this errand. PROCESS_COMPLETED - a process has already run to its end. An errand has one process life; a new process means a new errand. START_PENDING - a start is already on its way to the process engine, and the process shows up among the processes once the process engine has registered it, normally within seconds. Show that the start is on its way rather than offering it again. NO_PROCESS_KEY - no label on the errand carries a processKey attribute the errand can be started with, so there is nothing to start. Setting the right label is the fix. NO_PROCESS_ENGINE - this namespace does not run processes at all. ERRAND_DRAFT - the errand is a draft. A process is started only once the errand has been made active. The answer is the same whether or not the labels start the process on their own: an errand whose process starts by itself is AVAILABLE too, and starting it by hand is how a start that failed is tried again. Treat any value you do not recognise as not startable - values may be added over time. */
+  /** AVAILABLE means a process may be started right now; every other value says why one cannot be. LIVE_INSTANCE - a process is already running for this errand. PROCESS_COMPLETED - a process has already run to its end. An errand has one process life; a new process means a new errand. START_PENDING - a start is already on its way to the process engine, and the process shows up among the processes once the process engine has registered it, normally within seconds. Show that the start is on its way rather than offering it again. NO_PROCESS_KEY - no label on the errand carries a processKey attribute the errand can be started with, so there is nothing to start. Setting the right label is the fix. NO_PROCESS_ENGINE - this namespace does not run processes at all. ERRAND_DRAFT - the errand is a draft. A process is started only once the errand has been made active. PROCESS_BLOCKED - a label on the errand carries the attribute processBlocked=true. No process is started, signalled or told anything about the errand while it wears that label. An ad account cannot take the label off; a service identity can. The answer is the same whether or not the labels start the process on their own: an errand whose process starts by itself is AVAILABLE too, and starting it by hand is how a start that failed is tried again. Treat any value you do not recognise as not startable - values may be added over time. */
   status?: string;
   /** The process keys that are eligible to start, taken from the processKey attribute on the labels of the errand. One element is the normal case: send it - or send nothing - to POST .../processes/start. Two or more elements mean the errand carries labels pointing at different processes and a person has to choose: ask the user and send the chosen key, otherwise the request is rejected with 400. An errand runs one process for the whole of its life, so once it has had one - a start that failed included - only the key of that process is offered. Empty whenever status is not AVAILABLE. */
   processKeys?: string[];
@@ -3290,9 +3436,69 @@ export interface ErrandResourceAccess {
   level?: ErrandResourceAccessLevelEnum;
 }
 
+/** One value of the column grouped by, and how many errands carry it */
+export interface CountBucket {
+  /**
+   * The value
+   * @example "NEW"
+   */
+  value?: string;
+  /**
+   * How many of the matching errands carry it
+   * @format int64
+   * @example 91
+   */
+  count?: number;
+}
+
+/** How a count divides over one column of the errand. The buckets, withoutValue and withheld together account for the count */
+export interface CountGroup {
+  /**
+   * The property grouped by
+   * @example "status"
+   */
+  property?: string;
+  /** The values and their counts, largest first */
+  buckets?: CountBucket[];
+  /**
+   * How many of the counted errands carry nothing in the column
+   * @format int64
+   * @example 3
+   */
+  withoutValue?: number;
+  /**
+   * How many of the counted errands carry a column this user may not read
+   * @format int64
+   * @example 0
+   */
+  withheld?: number;
+}
+
+/** How many errands a search matches, and optionally how that number divides over one column */
+export interface SearchCountResponse {
+  /**
+   * Number of matching errands
+   * @format int64
+   * @example 137
+   */
+  count?: number;
+  /** The breakdown, absent unless a grouping was asked for */
+  group?: CountGroup;
+}
+
 export interface CountResponse {
   /** @format int64 */
   count?: number;
+}
+
+/**
+ * Identifier type
+ * @minLength 1
+ * @pattern ^(adAccount|partyId)$
+ */
+export enum IdentifierTypeEnum {
+  AdAccount = "adAccount",
+  PartyId = "partyId",
 }
 
 /** What the holder may do with the field, narrowing it below the level the errand itself is held at. Left unset the field simply follows the errand, which is what every grant did before this was added, and a level may only ever restrict further - it can never make a readable errand writable. Only a field holding a keyed collection may carry one, and limited read is not a level a field can be held at */
@@ -3303,17 +3509,33 @@ export enum FieldAccessLevelEnum {
 }
 
 export enum NamespaceConfigProcessTriggersEnum {
+  ASSIGNMENT = "ASSIGNMENT",
   ATTACHMENT = "ATTACHMENT",
   DECISION = "DECISION",
   ERRAND = "ERRAND",
+  ERRAND_ACTIVATION = "ERRAND_ACTIVATION",
   HANDOVER_IN = "HANDOVER_IN",
   HANDOVER_OUT = "HANDOVER_OUT",
-  MESSAGE = "MESSAGE",
+  LABEL = "LABEL",
+  MESSAGE_CONVERSATION_EXTERNAL = "MESSAGE_CONVERSATION_EXTERNAL",
+  MESSAGE_CONVERSATION_INTERNAL = "MESSAGE_CONVERSATION_INTERNAL",
+  MESSAGE_EMAIL_EXTERNAL = "MESSAGE_EMAIL_EXTERNAL",
+  MESSAGE_SMS_EXTERNAL = "MESSAGE_SMS_EXTERNAL",
+  MESSAGE_WEB_MESSAGE_EXTERNAL = "MESSAGE_WEB_MESSAGE_EXTERNAL",
   NOTE = "NOTE",
+  PHASE = "PHASE",
   PROCESS = "PROCESS",
   SIGNAL = "SIGNAL",
+  STATUS = "STATUS",
   SYSTEM = "SYSTEM",
   SUSPENSION = "SUSPENSION",
+}
+
+/** Channel through which a notification is delivered */
+export enum NamespaceConfigNewSubscriberChannelsEnum {
+  INTERNAL = "INTERNAL",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
 }
 
 /** Access level granted for the resource */
@@ -3351,14 +3573,11 @@ export enum EventFilterTypeEnum {
   DROP = "DROP",
 }
 
-/**
- * Identifier type
- * @minLength 1
- * @pattern ^(adAccount|partyId)$
- */
-export enum IdentifierTypeEnum {
-  AdAccount = "adAccount",
-  PartyId = "partyId",
+/** Channel through which a notification is delivered */
+export enum SubscriptionProfileChannelsEnum {
+  INTERNAL = "INTERNAL",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
 }
 
 /** Channel type */
@@ -3377,7 +3596,9 @@ export enum SubscriptionTargetTypeEnum {
 /** Job type */
 export enum JobResponseTypeEnum {
   MOVE_LABEL = "MOVE_LABEL",
+  MERGE_LABELS = "MERGE_LABELS",
   ERRAND_PURGE = "ERRAND_PURGE",
+  RESTRUCTURE_LABEL_TREE = "RESTRUCTURE_LABEL_TREE",
 }
 
 /** Job status */
@@ -3389,7 +3610,25 @@ export enum JobResponseStatusEnum {
   FAILED = "FAILED",
 }
 
-/** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. An active errand never becomes a draft again. */
+/** The step's type */
+export enum LabelRestructureStepResultTypeEnum {
+  ADD = "ADD",
+  RENAME = "RENAME",
+  DELETE = "DELETE",
+  MOVE = "MOVE",
+  MERGE = "MERGE",
+}
+
+/** The kind of change this step makes */
+export enum LabelRestructureStepTypeEnum {
+  ADD = "ADD",
+  RENAME = "RENAME",
+  DELETE = "DELETE",
+  MOVE = "MOVE",
+  MERGE = "MERGE",
+}
+
+/** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. Made active, everything on the errand is told of as new: every label on it, the ancestors of its labels included, its assignee, its status and its phase are logged as events, and its actions are created as for a new errand. An active errand never becomes a draft again. */
 export enum ErrandLifecycleEnum {
   DRAFT = "DRAFT",
   ACTIVE = "ACTIVE",

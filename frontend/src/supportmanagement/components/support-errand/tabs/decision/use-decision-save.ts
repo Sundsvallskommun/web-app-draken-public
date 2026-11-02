@@ -103,6 +103,8 @@ export const useDecisionSave = ({
     attachments: supportAttachments,
     issuedOn: values.issuedOn,
     premisesPhone: values.premisesPhone,
+    decisionCaseNumber: values.decisionCaseNumber,
+    otherCaseNumber: values.otherCaseNumber,
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
@@ -152,7 +154,6 @@ export const useDecisionSave = ({
       title: permitName ? t('common:decision.title_for', { permit: permitName.toLocaleLowerCase('sv-SE') }) : undefined,
       decidedByRole: values.decidedByRole,
       legalBasis: values.legalBasis,
-      delegationReference: values.delegationReference,
       justification: values.justification,
       validFrom: values.validFrom,
       validTo: values.validTo,

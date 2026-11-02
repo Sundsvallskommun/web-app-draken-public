@@ -11,7 +11,9 @@ export interface DecisionFormValues {
   outcome: string;
   decidedByRole: string;
   legalBasis: string;
-  delegationReference: string;
+  /** The decision's own registry number, which the decision cannot be sent without. */
+  decisionCaseNumber: string;
+  otherCaseNumber: string;
   justification: string;
   validFrom: string;
   validTo: string;
@@ -56,7 +58,8 @@ const asSaved = ({
   outcome: outcomeWithoutConditions(decision?.outcome),
   decidedByRole: decision?.decidedByRole || defaultRole,
   legalBasis: decision?.legalBasis ?? '',
-  delegationReference: decision?.delegationReference ?? '',
+  decisionCaseNumber: decisionParameterValue(decision?.parameters, 'decisionCaseNumber') ?? '',
+  otherCaseNumber: decisionParameterValue(decision?.parameters, 'otherCaseNumber') ?? '',
   justification: decision?.justification ?? '',
   validFrom: decision?.validFrom ?? '',
   validTo: decision?.validTo ?? '',

@@ -34,6 +34,8 @@ const saved = (overrides: Partial<Decision> = {}): Decision =>
       { key: 'executionDate', values: ['2026-10-20'] },
       { key: 'servingAreaDescription', values: ['Matsalen'] },
       { key: 'premisesPhone', values: ['060-200200'] },
+      { key: 'decisionCaseNumber', values: ['KS 2026/123'] },
+      { key: 'otherCaseNumber', values: ['2026/42'] },
     ],
     ...overrides,
   } as Decision);
@@ -64,6 +66,8 @@ test('a decision that exists fills the fields, and its conditions come in their 
     issuedOn: '2026-10-20',
     servingArea: 'Matsalen',
     premisesPhone: '060-200200',
+    decisionCaseNumber: 'KS 2026/123',
+    otherCaseNumber: '2026/42',
     terms: ['Villkor A', 'Villkor B'],
   });
   expect(result.current.edited).toBe(false);
