@@ -137,7 +137,9 @@
       "child_perspective": "Barnperspektivet",
       "legal_basis": "Lagrum",
       "marketing": "Marknadsföring",
-      "ownership": "Ägarförhållande"
+      "ownership": "Ägarförhållande",
+      "sales_point": "Försäljningsstället",
+      "self_monitoring": "Egenkontroll"
     },
     "section_texts": {
       "lease": {
@@ -175,6 +177,14 @@
       "ownership": {
         "label": "Utredning av ägarförhållandet",
         "placeholder": "Beskriv vem som äger verksamheten och hur ägandet är fördelat"
+      },
+      "sales_point": {
+        "label": "Utredning av försäljningsstället",
+        "placeholder": "Beskriv försäljningsstället, lokalen och dess läge, och om försäljningen avser detaljhandel, partihandel eller distansförsäljning"
+      },
+      "self_monitoring": {
+        "label": "Utredning av egenkontrollen",
+        "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
       }
     },
     "decision_basis": {
@@ -188,6 +198,22 @@
       "error": "Beslutsunderlaget kunde inte skapas. Mallen som efterfrågades heter {{template}}."
     },
     "section_save_failed": "Utredningstexten kunde inte sparas.",
+    "answer_yes": "Ja",
+    "answer_no": "Nej",
+    "filed_documents_none": "Inga handlingar av det slaget är inlämnade.",
+    "sales_point": {
+      "name": "Försäljningsställets namn",
+      "address": "Besöksadress",
+      "distance_selling": "Distansförsäljning",
+      "dangerous_products": "Särskilt farliga produkter",
+      "supplier_agreement": "Avtal med tillverkare eller partihandlare",
+      "sales_period": "Tidsperiod för försäljningen",
+      "indefinite": "Tillsvidare",
+      "temporary": "Tidsbegränsad försäljning"
+    },
+    "self_monitoring": {
+      "filed": "Inlämnat egenkontrollprogram"
+    },
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",
@@ -197,7 +223,8 @@
     "section_not_built": "Den här delen av utredningen är inte byggd än.",
     "unsaved": "Osparade ändringar",
     "saving": "Sparar",
-    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här."
+    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
+    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll."
   },
   "process": {
     "steps": {
@@ -313,7 +340,8 @@
         "servingAreaSeats": "antal sittplatser inomhus",
         "servingAreaMaxPersons": "maximalt antal personer i lokalen",
         "servingHours": "serveringstider",
-        "servingAreaDrawingReference": "planritning som bilaga"
+        "servingAreaDrawingReference": "planritning som bilaga",
+        "information": "upplysningar och föreskrifter, som skrivs under Villkor"
       },
       "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
       "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",

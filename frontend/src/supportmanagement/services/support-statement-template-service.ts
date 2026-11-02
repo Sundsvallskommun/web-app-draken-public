@@ -66,6 +66,12 @@ interface SupportReferralTemplate extends SupportStatementTemplate {
 
 const GENERAL_TEMPLATE = 'referral-general';
 
+const EVERY_PERMIT_BUT_TOBACCO: PermitKindName[] = [
+  PermitKind.SERVING,
+  PermitKind.LOW_ALCOHOL_BEER,
+  PermitKind.INSPECTION,
+];
+
 const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
   {
     identifier: 'referral-police',
@@ -89,6 +95,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     identifier: 'referral-rescue-service',
     name: 'Remiss räddningstjänsten',
     counterpartyKey: 'RESCUE_SERVICE',
+    permitKinds: EVERY_PERMIT_BUT_TOBACCO,
     persons: SupportReferralPersons.NONE,
   },
   {

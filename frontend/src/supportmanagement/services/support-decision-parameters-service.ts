@@ -313,7 +313,7 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
     'premisesPhone',
     'servingAreaDescription',
   ],
-  TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate'],
+  TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate', 'information'],
 };
 
 // Every decision is registered under a number of its own, whether a permit is printed or not.

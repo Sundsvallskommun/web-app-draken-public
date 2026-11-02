@@ -12,7 +12,7 @@ import {
   visibleSupportInvestigationSections,
 } from './support-investigation-sections';
 
-const CATALOGUED = [
+const SERVING: Sections[] = [
   'statements',
   'ownership',
   'persons_of_influence',
@@ -28,6 +28,18 @@ const CATALOGUED = [
   'legal_basis',
 ];
 
+const TOBACCO: Sections[] = [
+  'statements',
+  'ownership',
+  'persons_of_influence',
+  'financial_suitability',
+  'sales_point',
+  'lease',
+  'self_monitoring',
+  'communication',
+  'legal_basis',
+];
+
 /** The examinations that carry a written text, whether or not they carry anything else. */
 const WRITTEN: Sections[] = [
   'lease',
@@ -39,6 +51,8 @@ const WRITTEN: Sections[] = [
   'marketing',
   'legal_basis',
   'ownership',
+  'sales_point',
+  'self_monitoring',
 ];
 
 const swedish = (key: string): unknown =>
@@ -54,29 +68,54 @@ const investigationOf = (...sections: unknown[]) => ({ id: 'investigation-1', se
 
 const keysOf = (sections: { sectionKey?: string }[]) => sections.map((section) => section.sectionKey);
 
-test('the examinations are catalogued in the order the business examines them', () => {
-  expect(keysOf([...SUPPORT_INVESTIGATION_SECTIONS])).toEqual(CATALOGUED);
-  expect(SUPPORT_INVESTIGATION_SECTIONS.map((section) => section.sortOrder)).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-  ]);
-});
-
 test('a section is shown in order, and a retired examination is not shown at all', () => {
   const shown = visibleSupportInvestigationSections(
-    investigationOf(sectionOf('premises', 4), sectionOf('knowledge_test', 9), sectionOf('statements', 1))
+    investigationOf(sectionOf('premises', 4), sectionOf('knowledge_test', 9), sectionOf('statements', 1)),
+    SERVING
   );
 
   expect(keysOf(shown)).toEqual(['statements', 'premises']);
 });
 
+test('the rows the errand type does not examine are left out, written or not', () => {
+  const startedAsServing = investigationOf(
+    sectionOf('statements', 1),
+    sectionOf('fire_safety', 7),
+    sectionOf('child_perspective', 11, 'Barnperspektivet'),
+    sectionOf('lease', 6)
+  );
+
+  expect(keysOf(visibleSupportInvestigationSections(startedAsServing, TOBACCO))).toEqual(['statements', 'lease']);
+});
+
+test('the rows are ordered by the errand type, not by the sort order the service holds', () => {
+  const numberedByAnotherVariant = investigationOf(
+    sectionOf('lease', 6),
+    sectionOf('self_monitoring', 6),
+    sectionOf('statements', 1),
+    sectionOf('sales_point', 4)
+  );
+
+  expect(keysOf(visibleSupportInvestigationSections(numberedByAnotherVariant, TOBACCO))).toEqual([
+    'statements',
+    'sales_point',
+    'lease',
+    'self_monitoring',
+  ]);
+});
+
 test('a row written under an earlier name is shown until the row it became is there', () => {
   const underTheOldName = investigationOf(sectionOf('personal_suitability', 2), sectionOf('premises', 4));
 
-  expect(keysOf(visibleSupportInvestigationSections(underTheOldName))).toEqual(['personal_suitability', 'premises']);
+  expect(keysOf(visibleSupportInvestigationSections(underTheOldName, SERVING))).toEqual([
+    'personal_suitability',
+    'premises',
+  ]);
   expect(
     keysOf(
       visibleSupportInvestigationSections(
-        investigationOf(sectionOf('personal_suitability', 2), sectionOf('persons_of_influence', 2))
+        investigationOf(sectionOf('personal_suitability', 2), sectionOf('persons_of_influence', 2)),
+        SERVING
       )
     )
   ).toEqual(['persons_of_influence']);
@@ -88,7 +127,7 @@ test('a row written under an earlier name is read as the examination it became',
   expect(sectionKeyOf({ sectionKey: undefined } as never)).toBe('');
 });
 
-test('a row carries the heading the catalogue gives its examination, whatever name it was written under', () => {
+test('a row carries the heading the register gives its examination, whatever name it was written under', () => {
   expect(supportInvestigationSectionSpec(sectionOf('personal_suitability', 2))?.headingKey).toBe(
     'common:investigation.sections.persons_of_influence'
   );
@@ -98,7 +137,7 @@ test('a row carries the heading the catalogue gives its examination, whatever na
 test('the examinations that are missing are the ones no row stands for, by the name they carry today', () => {
   const started = investigationOf(sectionOf('statements', 1), sectionOf('personal_suitability', 2));
 
-  expect(keysOf(missingSupportInvestigationSections(started))).toEqual([
+  expect(missingSupportInvestigationSections(started, SERVING)).toEqual([
     'ownership',
     'financial_suitability',
     'premises',
@@ -111,21 +150,30 @@ test('the examinations that are missing are the ones no row stands for, by the n
     'marketing',
     'legal_basis',
   ]);
-  expect(missingSupportInvestigationSections(investigationOf(...SUPPORT_INVESTIGATION_SECTIONS))).toEqual([]);
-  expect(keysOf(missingSupportInvestigationSections(undefined))).toEqual(CATALOGUED);
+  expect(missingSupportInvestigationSections(undefined, TOBACCO)).toEqual(TOBACCO);
 });
 
-test('the catalogue is handed to the service with its headings translated', () => {
+test('an examination of another errand type is not missing from this one', () => {
+  const startedAsServing = investigationOf(...SERVING.map((sectionKey, index) => sectionOf(sectionKey, index + 1)));
+
+  expect(missingSupportInvestigationSections(startedAsServing, SERVING)).toEqual([]);
+  expect(missingSupportInvestigationSections(startedAsServing, TOBACCO)).toEqual(['sales_point', 'self_monitoring']);
+});
+
+test('the examinations are handed to the service with their headings translated and numbered by the type', () => {
   const translate = (key: string) => `översatt:${key}`;
 
-  expect(supportInvestigationSectionInputs(translate, [SUPPORT_INVESTIGATION_SECTIONS[1]])).toEqual([
+  expect(supportInvestigationSectionInputs(translate, TOBACCO, ['self_monitoring'])).toEqual([
     {
-      sectionKey: 'ownership',
-      heading: 'översatt:common:investigation.sections.ownership',
-      sortOrder: 2,
+      sectionKey: 'self_monitoring',
+      heading: 'översatt:common:investigation.sections.self_monitoring',
+      sortOrder: 7,
     },
   ]);
-  expect(supportInvestigationSectionInputs(translate)).toHaveLength(SUPPORT_INVESTIGATION_SECTIONS.length);
+  expect(supportInvestigationSectionInputs(translate, SERVING)).toHaveLength(SERVING.length);
+  expect(supportInvestigationSectionInputs(translate, TOBACCO).map((input) => input.sortOrder)).toEqual(
+    TOBACCO.map((_, index) => index + 1)
+  );
 });
 
 test('a written examination names its label and its placeholder after its own key', () => {

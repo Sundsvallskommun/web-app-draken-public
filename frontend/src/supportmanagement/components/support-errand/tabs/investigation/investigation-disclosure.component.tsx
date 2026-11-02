@@ -6,6 +6,7 @@ import {
   supportInvestigationSectionSpec,
   supportInvestigationTextKeys,
 } from '@supportmanagement/services/support-investigation-sections';
+import { TOBACCO_SELF_MONITORING_PURPOSES } from '@supportmanagement/services/support-tobacco-application-service';
 import { JSX, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +16,8 @@ import { type InvestigationSectionProps, InvestigationSectionText } from '../../
 import { SupportPbiExaminationSection } from '../../pbi-examination/support-pbi-examination-section.component';
 import { SupportPremisesSection } from '../../premises/support-premises-section.component';
 import { SupportStatementsSection } from '../../statements/support-statements-section.component';
+import { SupportFiledDocumentsSection } from '../../tobacco/support-filed-documents-section.component';
+import { SupportTobaccoSalesPointSection } from '../../tobacco/support-tobacco-sales-point-section.component';
 
 const writtenSection = (sectionKey: Sections, props: InvestigationSectionProps): JSX.Element => (
   <InvestigationSectionText {...props} name={sectionKey} {...supportInvestigationTextKeys(sectionKey)} />
@@ -41,7 +44,7 @@ export const SectionDisclosure: React.FC<{
     saveRef,
   };
 
-  const sectionContent: Partial<Record<Sections, JSX.Element>> = {
+  const sectionContent: Record<Sections, JSX.Element> = {
     statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} />,
     persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: <SupportFinancialSuitabilitySection {...props} />,
@@ -55,6 +58,15 @@ export const SectionDisclosure: React.FC<{
     legal_basis: writtenSection('legal_basis', props),
     marketing: writtenSection('marketing', props),
     ownership: writtenSection('ownership', props),
+    sales_point: <SupportTobaccoSalesPointSection {...props} />,
+    self_monitoring: (
+      <SupportFiledDocumentsSection
+        {...props}
+        sectionKey="self_monitoring"
+        purposes={TOBACCO_SELF_MONITORING_PURPOSES}
+        factKey="common:investigation.self_monitoring.filed"
+      />
+    ),
   };
 
   const spec = supportInvestigationSectionSpec(section);

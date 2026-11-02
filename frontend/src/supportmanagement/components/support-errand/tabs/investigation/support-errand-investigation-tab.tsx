@@ -2,6 +2,7 @@ import type { Investigation } from '@common/data-contracts/supportmanagement/dat
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { type ExaminedInvestigation, investigationVariantFor } from '@supportmanagement/investigations';
 import {
   missingSupportInvestigationSections,
   sectionKeyOf,
@@ -16,7 +17,6 @@ import {
   saveSupportInvestigation,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
-import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,17 +45,24 @@ interface InvestigationTabProps {
   writable: boolean;
 }
 
-/** An inspection errand is examined through its protocol; a permit application through the investigation below. */
 export const SupportErrandInvestigationTab: React.FC<InvestigationTabProps> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  return isSupportInspectionErrand(supportErrand) ? (
+  const variant = useMemo(() => investigationVariantFor(supportErrand), [supportErrand]);
+
+  return variant.body === 'protocol' ? (
     <InspectionProtocol writable={props.writable} setHasContent={props.setHasContent} />
   ) : (
-    <PermitInvestigation {...props} />
+    <ExaminedInvestigationBody {...props} variant={variant} />
   );
 };
 
-const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setHasContent, inStep, writable }) => {
+const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: ExaminedInvestigation }> = ({
+  setUnsaved,
+  setHasContent,
+  inStep,
+  writable,
+  variant,
+}) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -186,7 +193,7 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
       errandId,
       municipalityId,
       t('common:investigation.title'),
-      supportInvestigationSectionInputs(t)
+      supportInvestigationSectionInputs(t, variant.sections)
     )
       .then((result) => {
         receive(result);
@@ -207,14 +214,14 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
   }, [isLoading, error, investigation, inStep, canEdit]);
 
   const completeTheExaminations = (): Promise<void> => {
-    const missing = missingSupportInvestigationSections(investigation);
+    const missing = missingSupportInvestigationSections(investigation, variant.sections);
     if (!errandId || !investigation?.id || missing.length === 0) return Promise.resolve();
 
     return completeSupportInvestigationSections(
       errandId,
       municipalityId,
       investigation.id,
-      supportInvestigationSectionInputs(t, missing)
+      supportInvestigationSectionInputs(t, variant.sections, missing)
     )
       .then(receiveKeepingUnsavedEdits)
       .catch(() => {
@@ -270,16 +277,18 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
     }
   };
 
-  // The saver is registered once; the ref keeps it pointing at the current fields.
   saveLatest.current = save;
 
-  const sections = useMemo(() => visibleSupportInvestigationSections(investigation), [investigation]);
+  const sections = useMemo(
+    () => visibleSupportInvestigationSections(investigation, variant.sections),
+    [investigation, variant]
+  );
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <div>
         <h2 className="text-h2-md mb-8">{t('common:investigation.heading')}</h2>
-        <p className="m-0">{t('common:investigation.intro')}</p>
+        <p className="m-0">{t(variant.introKey)}</p>
       </div>
 
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}
@@ -334,7 +343,13 @@ const PermitInvestigation: React.FC<InvestigationTabProps> = ({ setUnsaved, setH
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />
-            <InvestigationBasis investigation={investigation} unsaved={edited || someSectionEdited} />
+            {variant.basisTemplate ? (
+              <InvestigationBasis
+                investigation={investigation}
+                template={variant.basisTemplate}
+                unsaved={edited || someSectionEdited}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

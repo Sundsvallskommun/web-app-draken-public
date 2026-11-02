@@ -12,6 +12,7 @@ import { sanitized, sanitizedInline } from '@common/services/sanitizer-service';
 import { renderTemplatePdfPreview } from '@common/services/template-render-service';
 import type { Admin } from '@common/services/user-service';
 import type { RJSFSchema } from '@rjsf/utils';
+import { examinedSections, investigationVariantFor } from '@supportmanagement/investigations';
 import dayjs from 'dayjs';
 import type { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
@@ -38,7 +39,7 @@ import {
   timeRangeText,
 } from './support-form-value-service';
 import { supportApplicationCompleteAt } from './support-investigation-processing-service';
-import { sectionKeyOf } from './support-investigation-sections';
+import { sectionKeyOf, type Sections } from './support-investigation-sections';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   engagementIsPerson,
@@ -63,16 +64,16 @@ import {
   supportPremisesFireSafety,
 } from './support-premises-examination-service';
 import { getSupportStatements } from './support-statement-service';
+import { supportTobaccoSalesPointOf } from './support-tobacco-application-service';
 
 /**
  * The underlay the handler shares with the board: the investigation template in Templating rendered
  * from what the errand, the application and the investigation hold. The keys below are the template's
  * own, nested as its example call nests them, and nothing else reaches it.
  *
- * The identifier is the one the serving template was uploaded under. A template the preview cannot
- * find answers 404, and the preview names the identifier it asked for.
+ * The identifier belongs to the errand type and comes from its investigation variant. A template the
+ * preview cannot find answers 404, and the preview names the identifier it asked for.
  */
-export const INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER = 'serving-permit-decision-basis';
 
 const ISSUER = {
   issuedByUnit: 'Alkohol- och tobaksenheten',
@@ -141,6 +142,9 @@ export interface InvestigationBasisParameters {
   issuedByAuthority: string;
   communication: string;
   childPerspectiveHtml: string;
+  marketingHtml: string;
+  selfMonitoringHtml: string;
+  exciseTaxHtml: string;
   proposal: { points: string[] };
   applicant: { name: string; orgNumber: string; street: string; postalAddress: string };
   company: {
@@ -165,6 +169,10 @@ export interface InvestigationBasisParameters {
     businessDescriptionHtml: string;
     orderAndSobrietyHtml: string;
     rightOfDisposal: string;
+    distanceSelling: string;
+    distanceSellingWebsite: string;
+    particularlyDangerousProducts: string;
+    supplierAgreement: string;
     knowledgeBasis: string;
     responsibleStaff: InvestigationBasisStaff[];
     staffingHtml: string;
@@ -186,6 +194,7 @@ export interface InvestigationBasisParameters {
     rightOfDisposalNote: string;
     leaseHtml: string;
     servingAreaDescription: string;
+    salesAreaDescription: string;
     floorPlanFiles: string[];
     /** No longer collected, but the template still iterates it. */
     previousPermits: never[];
@@ -576,30 +585,43 @@ const MISSING_INFORMATION = 'Information saknas';
  * its own word for a gap ("uppgift saknas", "Räddningstjänsten har ännu inte yttrat sig."), and a
  * note put in its place would read as "Lokalinspektion genomfördes Information saknas."
  */
-const WRITTEN_EXAMINATIONS = [
-  'communication',
-  'childPerspectiveHtml',
-  'company.ownershipHtml',
-  'application.staffingHtml',
-  'application.foodAndBeveragesHtml',
-  'premises.leaseHtml',
-  'premises.fireSafetyHtml',
-  'investigation.premisesRemarksHtml',
-  'investigation.financialAssessmentHtml',
-];
+const WRITTEN_EXAMINATIONS: Record<string, Sections> = {
+  communication: 'communication',
+  childPerspectiveHtml: 'child_perspective',
+  marketingHtml: 'marketing',
+  selfMonitoringHtml: 'self_monitoring',
+  'company.ownershipHtml': 'ownership',
+  'application.staffingHtml': 'staffing',
+  'application.foodAndBeveragesHtml': 'food_and_beverages',
+  'premises.leaseHtml': 'lease',
+  'premises.fireSafetyHtml': 'fire_safety',
+  'investigation.premisesRemarksHtml': 'premises',
+  'investigation.financialAssessmentHtml': 'financial_suitability',
+};
 
-const noteMissing = (value: unknown, path: string): unknown => {
+/** What the handler wrote about the premises, under whichever examination the errand type puts it. */
+const premisesRemarksOf = (texts: Record<string, string>): string => texts.premises || texts.sales_point || '';
+
+/** An examination the errand type does not have is not missing; the template prints no heading for it. */
+const isUnwritten = (path: string, examined: readonly Sections[]): boolean => {
+  const examination = WRITTEN_EXAMINATIONS[path];
+  return !!examination && examined.includes(examination);
+};
+
+const noteMissing = (value: unknown, path: string, examined: readonly Sections[]): unknown => {
   if (typeof value === 'string') {
-    return value === '' && WRITTEN_EXAMINATIONS.includes(path) ? MISSING_INFORMATION : value;
+    return value === '' && isUnwritten(path, examined) ? MISSING_INFORMATION : value;
   }
   if (Array.isArray(value) || !isRecord(value)) return value;
   return Object.fromEntries(
-    Object.entries(value).map(([key, inner]) => [key, noteMissing(inner, path ? `${path}.${key}` : key)])
+    Object.entries(value).map(([key, inner]) => [key, noteMissing(inner, path ? `${path}.${key}` : key, examined)])
   );
 };
 
-const noteWhatIsMissing = (parameters: InvestigationBasisParameters): InvestigationBasisParameters =>
-  noteMissing(parameters, '') as InvestigationBasisParameters;
+const noteWhatIsMissingOf =
+  (examined: readonly Sections[]) =>
+  (parameters: InvestigationBasisParameters): InvestigationBasisParameters =>
+    noteMissing(parameters, '', examined) as InvestigationBasisParameters;
 
 /**
  * Everything the underlay prints. Nothing is demanded of the handler: the document is an underlay,
@@ -612,8 +634,15 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
   const capacity = supportPremisesCapacityOf(form);
   const examination = supportPremisesExamination(premisesParameters(investigation));
   const people = personsOfInfluence(errand, input.companyEngagements, translate);
+  const salesPoint = supportTobaccoSalesPointOf(form);
+  const examined = examinedSections(investigationVariantFor(errand));
 
-  return noteWhatIsMissing({
+  const yesOrNo = (given: boolean | undefined): string => {
+    if (given === undefined) return '';
+    return translate(given ? 'common:investigation.answer_yes' : 'common:investigation.answer_no');
+  };
+
+  return noteWhatIsMissingOf(examined)({
     documentDate: input.today,
     caseNumber: errand?.errandNumber ?? '',
     caseType: caseTypeOf(errand),
@@ -622,6 +651,9 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     ...ISSUER,
     communication: plainTextOf(texts.communication),
     childPerspectiveHtml: texts.child_perspective ?? '',
+    marketingHtml: texts.marketing ?? '',
+    selfMonitoringHtml: texts.self_monitoring ?? '',
+    exciseTaxHtml: '',
     proposal: { points: proposalPoints(investigation, metadata) },
     applicant: applicantParameters(errand),
     company: {
@@ -646,6 +678,10 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       businessDescriptionHtml: htmlOf(text(form?.businessDescription)),
       orderAndSobrietyHtml: htmlOf(text(form?.orderAndSobriety)),
       rightOfDisposal: form ? formMultiChoiceLabels(form, schema, 'premisesRightOfUseDocuments').join(', ') : '',
+      distanceSelling: yesOrNo(salesPoint.distanceSelling),
+      distanceSellingWebsite: salesPoint.website ?? '',
+      particularlyDangerousProducts: yesOrNo(salesPoint.dangerousProducts),
+      supplierAgreement: yesOrNo(salesPoint.supplierAgreement),
       knowledgeBasis: knowledgeBasisOf(errand),
       responsibleStaff: responsibleStaff(form),
       staffingHtml: texts.staffing ?? '',
@@ -670,6 +706,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
       rightOfDisposalNote: examination.rightOfDisposalNote,
       leaseHtml: texts.lease ?? '',
       servingAreaDescription: examination.servingArea,
+      salesAreaDescription: '',
       floorPlanFiles: fileNames(input.attachments, FLOOR_PLAN_PURPOSES),
       previousPermits: [],
       fireSafety: fireSafetyLine(input.statements, metadata),
@@ -680,7 +717,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     investigation: {
       recommendationLabel: outcomeLabelOf(investigation?.recommendation, metadata),
       financialAssessmentHtml: texts.financial_suitability ?? '',
-      premisesRemarksHtml: texts.premises ?? '',
+      premisesRemarksHtml: premisesRemarksOf(texts),
       conclusionHtml: htmlOf(investigation?.conclusion),
       recommendationMotivationHtml: htmlOf(investigation?.recommendationMotivation),
     },
@@ -691,8 +728,10 @@ const asTemplateParameters = (parameters: InvestigationBasisParameters): { [key:
   parameters as unknown as { [key: string]: string | Object };
 
 /** Watermarked, since the underlay the handler looks at is not the document the decision is taken on. */
-export const renderInvestigationBasisPreview = (parameters: InvestigationBasisParameters): Promise<string> =>
-  renderTemplatePdfPreview(INVESTIGATION_BASIS_TEMPLATE_IDENTIFIER, asTemplateParameters(parameters));
+export const renderInvestigationBasisPreview = (
+  template: string,
+  parameters: InvestigationBasisParameters
+): Promise<string> => renderTemplatePdfPreview(template, asTemplateParameters(parameters));
 
 export const investigationBasisHandlerName = (admin: Admin | undefined): string =>
   [admin?.firstName, admin?.lastName].filter(Boolean).join(' ') || admin?.displayName || '';

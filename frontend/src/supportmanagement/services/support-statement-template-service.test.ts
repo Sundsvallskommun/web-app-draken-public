@@ -110,6 +110,31 @@ test('the errand decides which of the tax agency forms is on offer', () => {
   ]);
 });
 
+test('a tobacco permit is referred to the police, the enforcement authority and the tax agency, and to no one else', () => {
+  const tobacco = errandOf({ process: { processKey: 'tobacco-sales' } });
+  const offered = (counterparty: string) =>
+    supportStatementTemplates(counterparty, tobacco).map((template) => template.identifier);
+
+  expect(offered('Polismyndigheten')).toEqual(['referral-police', 'criminal-record-request', 'referral-general']);
+  expect(offered('Kronofogden')).toEqual(['referral-enforcement-authority', 'referral-general']);
+  expect(offered('Skatteverket')).toEqual([
+    'tax-agency-request-tobacco-company',
+    'tax-agency-request-tobacco-pbi',
+    'referral-general',
+  ]);
+  expect(offered('Medelpads Räddningstjänstförbund')).toEqual(['referral-general']);
+});
+
+test('a serving permit still asks the rescue service about the premises', () => {
+  const asksTheRescueService = (processKey: string) =>
+    supportStatementTemplates('Medelpads Räddningstjänstförbund', errandOf({ process: { processKey } })).map(
+      (template) => template.identifier
+    );
+
+  expect(asksTheRescueService('alcohol-serving')).toEqual(['referral-rescue-service', 'referral-general']);
+  expect(asksTheRescueService('internal-inspection')).toEqual(['referral-rescue-service', 'referral-general']);
+});
+
 test('a low alcohol beer notification asks the tax agency nothing, since no form is written for it', () => {
   for (const processKey of ['low-alcohol-beer-serving', 'low-alcohol-beer-sales', 'low-alcohol-beer-sales-and-serving'])
     expect(

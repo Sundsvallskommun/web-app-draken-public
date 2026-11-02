@@ -6,51 +6,27 @@ export interface SupportInvestigationSectionInput {
   sortOrder: number;
 }
 
+export const SUPPORT_INVESTIGATION_SECTIONS = [
+  { sectionKey: 'statements', headingKey: 'common:investigation.sections.statements' },
+  { sectionKey: 'ownership', headingKey: 'common:investigation.sections.ownership' },
+  { sectionKey: 'persons_of_influence', headingKey: 'common:investigation.sections.persons_of_influence' },
+  { sectionKey: 'financial_suitability', headingKey: 'common:investigation.sections.financial_suitability' },
+  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises' },
+  { sectionKey: 'lease', headingKey: 'common:investigation.sections.lease' },
+  { sectionKey: 'fire_safety', headingKey: 'common:investigation.sections.fire_safety' },
+  { sectionKey: 'food_and_beverages', headingKey: 'common:investigation.sections.food_and_beverages' },
+  { sectionKey: 'staffing', headingKey: 'common:investigation.sections.staffing' },
+  { sectionKey: 'communication', headingKey: 'common:investigation.sections.communication' },
+  { sectionKey: 'child_perspective', headingKey: 'common:investigation.sections.child_perspective' },
+  { sectionKey: 'marketing', headingKey: 'common:investigation.sections.marketing' },
+  { sectionKey: 'legal_basis', headingKey: 'common:investigation.sections.legal_basis' },
+  { sectionKey: 'sales_point', headingKey: 'common:investigation.sections.sales_point' },
+  { sectionKey: 'self_monitoring', headingKey: 'common:investigation.sections.self_monitoring' },
+] as const satisfies readonly { sectionKey: string; headingKey: string }[];
+
 export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];
 
 type SectionSpec = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number];
-
-/**
- * The examinations an AoT investigation is made of, in the order the business examines them. Support
- * Management holds no list of its own - the sections are written when the investigation starts.
- */
-export const SUPPORT_INVESTIGATION_SECTIONS = [
-  { sectionKey: 'statements', headingKey: 'common:investigation.sections.statements', sortOrder: 1 },
-  { sectionKey: 'ownership', headingKey: 'common:investigation.sections.ownership', sortOrder: 2 },
-  {
-    sectionKey: 'persons_of_influence',
-    headingKey: 'common:investigation.sections.persons_of_influence',
-    sortOrder: 3,
-  },
-  {
-    sectionKey: 'financial_suitability',
-    headingKey: 'common:investigation.sections.financial_suitability',
-    sortOrder: 4,
-  },
-  { sectionKey: 'premises', headingKey: 'common:investigation.sections.premises', sortOrder: 5 },
-  { sectionKey: 'lease', headingKey: 'common:investigation.sections.lease', sortOrder: 6 },
-  { sectionKey: 'fire_safety', headingKey: 'common:investigation.sections.fire_safety', sortOrder: 7 },
-  {
-    sectionKey: 'food_and_beverages',
-    headingKey: 'common:investigation.sections.food_and_beverages',
-    sortOrder: 8,
-  },
-  { sectionKey: 'staffing', headingKey: 'common:investigation.sections.staffing', sortOrder: 9 },
-  { sectionKey: 'communication', headingKey: 'common:investigation.sections.communication', sortOrder: 10 },
-  {
-    sectionKey: 'child_perspective',
-    headingKey: 'common:investigation.sections.child_perspective',
-    sortOrder: 11,
-  },
-  { sectionKey: 'marketing', headingKey: 'common:investigation.sections.marketing', sortOrder: 12 },
-  { sectionKey: 'legal_basis', headingKey: 'common:investigation.sections.legal_basis', sortOrder: 13 },
-] as const satisfies readonly { sectionKey: string; headingKey: string; sortOrder: number }[];
-
-/**
- * Sections that used to be written when an investigation started. The knowledge test is examined on the same card
- * as the personal suitability, so investigations started before the merge still carry an empty section of its own.
- */
-const RETIRED_INVESTIGATION_SECTION_KEYS: string[] = ['knowledge_test'];
 
 const SECTION_KEYS_OF_AN_EARLIER_NAME: Record<string, Sections> = {
   personal_suitability: 'persons_of_influence',
@@ -66,25 +42,31 @@ export const supportInvestigationSectionSpec = (
 ): SectionSpec | undefined =>
   SUPPORT_INVESTIGATION_SECTIONS.find((candidate) => candidate.sectionKey === sectionKeyOf(section));
 
-const isRetired = (section: InvestigationSection): boolean =>
-  RETIRED_INVESTIGATION_SECTION_KEYS.includes(section.sectionKey ?? '');
-
 const isSupersededByItsNewName = (section: InvestigationSection, sections: InvestigationSection[]): boolean =>
   !!SECTION_KEYS_OF_AN_EARLIER_NAME[section.sectionKey ?? ''] &&
   sections.some((candidate) => candidate.sectionKey === sectionKeyOf(section));
 
+const isExaminedIn = (examined: readonly Sections[], section: InvestigationSection): boolean =>
+  (examined as readonly string[]).includes(sectionKeyOf(section));
+
 export const visibleSupportInvestigationSections = (
-  investigation: Investigation | undefined
+  investigation: Investigation | undefined,
+  examined: readonly Sections[]
 ): InvestigationSection[] => {
   const sections = investigation?.sections ?? [];
+  const positionOf = (section: InvestigationSection) => (examined as readonly string[]).indexOf(sectionKeyOf(section));
+
   return sections
-    .filter((section) => !isRetired(section) && !isSupersededByItsNewName(section, sections))
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    .filter((section) => isExaminedIn(examined, section) && !isSupersededByItsNewName(section, sections))
+    .sort((a, b) => positionOf(a) - positionOf(b));
 };
 
-export const missingSupportInvestigationSections = (investigation: Investigation | undefined): SectionSpec[] => {
+export const missingSupportInvestigationSections = (
+  investigation: Investigation | undefined,
+  examined: readonly Sections[]
+): Sections[] => {
   const written = (investigation?.sections ?? []).map(sectionKeyOf);
-  return SUPPORT_INVESTIGATION_SECTIONS.filter((section) => !written.includes(section.sectionKey));
+  return examined.filter((sectionKey) => !written.includes(sectionKey));
 };
 
 export interface SupportInvestigationTextKeys {
@@ -99,12 +81,16 @@ export const supportInvestigationTextKeys = (sectionKey: Sections): SupportInves
   saveFailedKey: 'common:investigation.section_save_failed',
 });
 
+const headingKeyOf = (sectionKey: Sections): string =>
+  SUPPORT_INVESTIGATION_SECTIONS.find((section) => section.sectionKey === sectionKey)?.headingKey ?? '';
+
 export const supportInvestigationSectionInputs = (
   translate: (key: string) => string,
-  sections: readonly SectionSpec[] = SUPPORT_INVESTIGATION_SECTIONS
+  examined: readonly Sections[],
+  chosen: readonly Sections[] = examined
 ): SupportInvestigationSectionInput[] =>
-  sections.map((section) => ({
-    sectionKey: section.sectionKey,
-    heading: translate(section.headingKey),
-    sortOrder: section.sortOrder,
+  chosen.map((sectionKey) => ({
+    sectionKey,
+    heading: translate(headingKeyOf(sectionKey)),
+    sortOrder: examined.indexOf(sectionKey) + 1,
   }));
