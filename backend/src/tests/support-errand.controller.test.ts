@@ -322,11 +322,11 @@ describe('SupportErrandController', () => {
 
       const [config] = api.post.mock.calls[0];
       expect(config.url).toBe(`${MUNICIPALITY_ID}/${NAMESPACE}/errands`);
+      // setup.ts pins APPLICATION to KC: no classification, and the empty label tree resolves no default labels.
+      expect(config.data.classification).toBeUndefined();
       expect(config.data).toEqual({
         reporterUserId: mockAdUsername,
         assignedUserId: mockAdUsername,
-        // setup.ts pins APPLICATION to KC, which configures a classification but no labels.
-        classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' },
         labels: [],
         priority: 'MEDIUM',
         status: 'NEW',

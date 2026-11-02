@@ -1,6 +1,5 @@
 import { SupportHandoverController } from '@/controllers/supportmanagement/support-handover.controller';
 import { Label, NamespaceConfig } from '@/data-contracts/supportmanagement/data-contracts';
-import { getNewErrandDefaults } from '@/services/support-errand.service';
 
 import { mockReq, mockRes } from './helpers/http';
 import {
@@ -211,45 +210,16 @@ describe('SupportHandoverController', () => {
     const sentMapping = (api: ApiStub) => (api.post.mock.calls[0][0] as { data: { mapping: Record<string, unknown> } }).data.mapping;
 
     it.each([
-      [mockLabelCategorizationNamespace, 'KC'],
-      [mockHandoverNamespace, 'LOK'],
-    ])('gives label target %s the classification its own new errands start with', async (namespace, application) => {
-      process.env.HANDOVER_TARGETS = namespace;
+      ['the classification the client sent', { labels: ['label-id'], classification: { category: 'A', type: 'A/B' } }],
+      ['a mapping without classification', { labels: ['label-id'] }],
+    ])('passes %s through to SupportManagement untouched', async (_, mapping) => {
+      process.env.HANDOVER_TARGETS = mockLabelCategorizationNamespace;
       const { controller, api } = makeController();
-      const res = mockRes();
-      const body = { target: { namespace, municipalityId: mockMunicipalityId }, mapping: { labels: ['label-id'] } };
+      const body = { target: { namespace: mockLabelCategorizationNamespace, municipalityId: mockMunicipalityId }, mapping };
 
-      await controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, '', body, res);
+      await controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, '', body, mockRes());
 
-      expect(res.statusCode).toBe(201);
-      expect(sentMapping(api)).toEqual({ labels: ['label-id'], classification: getNewErrandDefaults(application)?.classification });
-    });
-
-    it('keeps a classification the client sent and adds none for a two-level target', async () => {
-      process.env.HANDOVER_TARGETS = `${mockLabelCategorizationNamespace},${mockSecondaryHandoverNamespace}`;
-      const { controller, api } = makeController();
-      const classification = { category: 'A', type: 'A/B' };
-
-      await controller.handoverErrand(
-        mockReq(),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        '',
-        { target: { namespace: mockLabelCategorizationNamespace, municipalityId: mockMunicipalityId }, mapping: { classification } },
-        mockRes(),
-      );
-      expect(sentMapping(api)).toEqual({ classification });
-
-      api.post.mockClear();
-      await controller.handoverErrand(
-        mockReq(),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        '',
-        handoverBody(mockSecondaryHandoverNamespace),
-        mockRes(),
-      );
-      expect(sentMapping(api)).toEqual({});
+      expect(sentMapping(api)).toEqual(mapping);
     });
   });
 });

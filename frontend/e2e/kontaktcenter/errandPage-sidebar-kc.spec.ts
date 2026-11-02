@@ -138,6 +138,28 @@ test.describe('errand page', () => {
     expect(response.status()).toBe(200);
   });
 
+  test('keeps the saved administrator in the assigned text until the errand is saved', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const assignedErrand = { ...mockSupportErrand, status: 'ASSIGNED' };
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, assignedErrand, {
+      method: 'GET',
+    });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, assignedErrand, { method: 'GET' });
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    const assignedText = page.locator('p', { hasText: 'tilldelades ärendet' });
+    await expect(assignedText).toContainText(mockSupportAdminsResponse.data[0].displayName);
+
+    await page.locator('[data-cy="admin-input"]').selectOption(mockSupportAdminsResponse.data[1].displayName);
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue(mockSupportAdminsResponse.data[1].displayName);
+    await expect(assignedText).toContainText(mockSupportAdminsResponse.data[0].displayName);
+  });
+
   test('Can manage status and priority changes', async ({ page, dismissCookieConsent }) => {
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);

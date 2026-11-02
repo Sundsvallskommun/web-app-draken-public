@@ -20,6 +20,8 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
+import { getDisplayNameFromADUsername } from '@common/services/user-service';
+import { compareByDisplayName } from '@common/utils/ad-display-name';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -62,15 +64,19 @@ export const SidebarInfo: React.FC<{}> = () => {
     return validateAction(errand, user);
   }, [user, errand]);
 
-  const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
+  const { setValue, register, getValues, reset, watch }: UseFormReturn<IErrand, any, undefined> = useFormContext();
+  // Watched, not read with getValues, so the selects re-render when the effect below sets them from a refetched errand.
+  const administratorName = watch('administratorName');
+  const statusType = watch('status.statusType');
+  // The saved administrator, unlike administratorName which follows the select before the errand is saved.
+  const savedAdministratorName = useMemo(
+    () => getDisplayNameFromADUsername(errand?.administrator?.adAccount, administrators) || '',
+    [errand, administrators]
+  );
 
   useEffect(() => {
     if (administrators && errand?.administrator?.adAccount) {
-      const match =
-        administrators.filter((a) => {
-          return a.adAccount === errand.administrator.adAccount;
-        })?.[0]?.displayName || '';
-      setValue('administratorName', match);
+      setValue('administratorName', savedAdministratorName);
     } else {
       setValue('administratorName', 'Välj handläggare');
     }
@@ -246,7 +252,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               </div>
               <Select
                 {...register('administratorName')}
-                value={getValues().administratorName}
+                value={administratorName}
                 className="w-full"
                 size="sm"
                 data-cy="admin-input"
@@ -254,11 +260,9 @@ export const SidebarInfo: React.FC<{}> = () => {
                 aria-label="Tilldela handläggare"
               >
                 {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-                {administrators
-                  .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                  .map((a) => (
-                    <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-                  ))}
+                {administrators.sort(compareByDisplayName).map((a) => (
+                  <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
+                ))}
               </Select>
             </FormControl>
             <FormControl
@@ -276,7 +280,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               <FormLabel className="text-small">Ärendestatus</FormLabel>
               <Select
                 {...register('status.statusType')}
-                value={getValues().status?.statusType}
+                value={statusType}
                 className="w-full"
                 size="sm"
                 data-cy="status-input"
@@ -314,11 +318,11 @@ export const SidebarInfo: React.FC<{}> = () => {
               <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
             </div>
             <p className="text-small">
-              {getValues('administratorName') === 'Välj handläggare' ? (
+              {!errand?.administrator?.adAccount ? (
                 <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
               ) : (
                 <span className="mb-24">
-                  <strong>{getValues('administratorName')}</strong>
+                  <strong>{savedAdministratorName}</strong>
                   {errand?.status?.statusType === ErrandStatus.Parkerad
                     ? ' parkerade ärendet med en påminnelse '
                     : ' tilldelades ärendet'}{' '}

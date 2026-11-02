@@ -28,6 +28,7 @@ import {
   leaseTypes,
   saveContract,
   saveContractToErrand,
+  YEARLY_BILLING_MONTHS,
 } from '@casedata/services/contract-service';
 import { resolvePartyId } from '@common/services/adress-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -50,6 +51,8 @@ import * as yup from 'yup';
 
 import { ContractForm } from './contract-form';
 import { ContractNavigation } from './contract-navigation';
+
+const LESSEE_BILLING_PARTY_MESSAGE = 'En arrendator måste också vara fakturamottagare';
 
 interface CasedataContractProps {
   update: () => void;
@@ -152,6 +155,16 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .mixed<string>()
               .oneOf(Object.keys(InvoicedIn), 'Välj förskott eller efterskott')
               .required('Förskott eller efterskott måste väljas'),
+            yearlyBillingMonth: yup.number().when('invoiceInterval', {
+              is: IntervalType.YEARLY,
+              then: (monthSchema) =>
+                monthSchema
+                  .oneOf(
+                    YEARLY_BILLING_MONTHS.map(({ month }) => month),
+                    'Välj när fakturaunderlaget ska skapas'
+                  )
+                  .required('Välj när fakturaunderlaget ska skapas'),
+            }),
           }),
       }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
@@ -180,17 +193,19 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         .when(['type', 'leaseType', 'status', 'invoicing'], ([type, leaseType, status, invoicing], schema) => {
           const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
             stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+          // The fakturamottagare must be one of the arrendatorer, also when the contract is not billed.
+          const hasLesseeBillingParty = (stakeholders: any[] | undefined) =>
+            stakeholders?.some(
+              (s) =>
+                s.roles?.includes(StakeholderRole.LESSEE) && s.roles?.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+            ) ?? false;
 
           const requireBillingParty =
             hasRecurringFee(type, leaseType) && !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
 
           if (status !== Status.ACTIVE) {
             return requireBillingParty
-              ? schema.test(
-                  'has-primary-billing-party',
-                  'Fakturamottagare måste anges',
-                  hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
-                )
+              ? schema.test('has-lessee-billing-party', LESSEE_BILLING_PARTY_MESSAGE, hasLesseeBillingParty)
               : schema;
           }
 
@@ -205,9 +220,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
           if (requireBillingParty) {
             baseSchema = baseSchema.test(
-              'has-primary-billing-party',
-              'Fakturamottagare måste anges',
-              hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+              'has-lessee-billing-party',
+              LESSEE_BILLING_PARTY_MESSAGE,
+              hasLesseeBillingParty
             );
           }
 

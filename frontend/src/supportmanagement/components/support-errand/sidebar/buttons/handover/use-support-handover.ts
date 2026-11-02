@@ -36,7 +36,7 @@ export const isCasedataForwardTarget = (namespace?: string): boolean =>
  * These namespaces still use TWO-level categorization (category/type) in the handover modal:
  *   - CONTACTCENTER     (Kontaktcenter)
  *   - ROB
- * Every other target is categorized in its label tree; the BFF gives those errands their classification.
+ * Every other target is categorized in its label tree and gets the classification the preview suggests.
  *
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
@@ -250,9 +250,10 @@ export const useSupportHandover = ({
 
   const buildRequest = useCallback(
     (target: NamespaceConfig): HandoverErrandRequest => {
-      // Label targets get their classification from the BFF (the placeholder their new errands start with).
+      // The category/type picked in the modal (two-level targets), otherwise the preview's suggestion. Left out
+      // when there is neither: SupportManagement only requires one where the target validates CATEGORY or TYPE.
       const classification =
-        !targetUsesLabels && (mappingCategory || mappingType)
+        mappingCategory || mappingType
           ? { category: mappingCategory || undefined, type: mappingType || undefined }
           : undefined;
       const labels = targetUsesLabels ? targetLabels.map((label) => label.id).filter((id): id is string => !!id) : [];
