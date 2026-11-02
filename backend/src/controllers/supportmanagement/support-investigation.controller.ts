@@ -133,6 +133,12 @@ export class UpdateSupportInvestigationSectionDto {
   @IsOptional()
   @IsIn(ASSESSMENTS)
   assessment?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationParameterDto)
+  parameters?: SupportInvestigationParameterDto[];
 }
 
 @Controller()

@@ -261,6 +261,9 @@ const sectionTexts = (investigation: Investigation | undefined): Record<string, 
     (investigation?.sections ?? []).map((section) => [sectionKeyOf(section), htmlOf(section.text ?? '')])
   );
 
+const premisesParameters = (investigation: Investigation | undefined) =>
+  investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.parameters;
+
 const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>
   (errand?.labels ?? []).find((label) => label.classification === classification);
 
@@ -629,7 +632,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
   const texts = sectionTexts(investigation);
   const address = getPremisesAddress(errand, input.namespace);
   const capacity = supportPremisesCapacityOf(form);
-  const examination = supportPremisesExamination(errand?.parameters);
+  const examination = supportPremisesExamination(premisesParameters(investigation));
   const people = personsOfInfluence(errand, input.companyEngagements, translate);
   const salesPoint = supportTobaccoSalesPointOf(form);
   const examined = examinedSections(investigationVariantFor(errand));
