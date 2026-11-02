@@ -188,13 +188,12 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
     });
 
-    test('logs the events from ACE without personal or phone numbers', async ({ page, ace }) => {
-      // The arguments as logged: the text of a console message only shows the top level of an object.
-      const logs: { text: string; payload?: unknown }[] = [];
+    test('logs what happened with the events from ACE, but not their data', async ({ page, ace }) => {
+      // Every argument as logged: the text of a console message only shows the top level of an object.
+      const logs: unknown[][] = [];
       page.on('console', async (message) => {
         if (message.text().startsWith('[ACE]')) {
-          const [text, payload] = await Promise.all(message.args().map((arg) => arg.jsonValue()));
-          logs.push({ text, payload });
+          logs.push(await Promise.all(message.args().map((arg) => arg.jsonValue())));
         }
       });
 
@@ -203,17 +202,34 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).card).toBeVisible();
 
       await expect
-        .poll(() => logs.find((log) => log.text.startsWith('[ACE] onScreenPop'))?.payload)
-        .toMatchObject({
-          popEvent: 'afterNormalAccept',
-          contact: { currentContactsType: 'ivr', contactData: { eidUserPnr: '[dolt]', Ani: '[dolt]' } },
-        });
-      expect(logs.map((log) => log.text)).toEqual(
-        expect.arrayContaining(['[ACE] onConnected', '[ACE] onScreenPop: skapar ärende för legitimerad uppringare'])
-      );
+        .poll(() => logs.map(([text]) => text))
+        .toEqual(
+          expect.arrayContaining([
+            '[ACE] onConnected',
+            '[ACE] onScreenPop afterNormalAccept (ivr): skapar ärende för legitimerad uppringare',
+          ])
+        );
+      // One argument per line: no event objects.
+      expect(logs.every((args) => args.length === 1)).toBe(true);
       const logged = JSON.stringify(logs);
       expect(logged).not.toContain(mockEnv.mockPersonNumber);
       expect(logged).not.toContain(mockEnv.mockPhoneNumberCountryCode);
+    });
+
+    test('leaves out the address of a caller with protected personal data', async ({ page, ace }) => {
+      await mockPersonLookup(page.context(), {
+        ...mockAdressResponse,
+        data: { ...mockAdressResponse.data, classified: 'J', protectedNR: 'J' },
+      });
+
+      const errandPage = await ace.acceptCall();
+
+      const owner = errandOwner(errandPage);
+      await expect(owner.name).toHaveText(`${mockAdressResponse.data.givenname} ${mockAdressResponse.data.lastname}`);
+      await expect(owner.address).not.toContainText(mockAdressResponse.data.addresses[0].address);
+      await expect(
+        errandPage.locator('.sk-snackbar-text', { hasText: 'Den som ringer har skyddade personuppgifter' })
+      ).toBeVisible();
     });
 
     test('opens an empty errand when the caller did not identify and the number is hidden', async ({ ace }) => {

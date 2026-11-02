@@ -34,6 +34,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { CitizenService } from '@/services/citizen.service';
 import { getCasedataForwardTarget, isAllowedHandoverTarget } from '@/services/handover-targets.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
@@ -355,6 +356,7 @@ class ForwardFormDto {
 export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
+  private citizenService = new CitizenService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -371,11 +373,7 @@ export class SupportErrandController {
       return this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
     }
     if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
-      const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
-      return this.apiService
-        .get<string>({ url: guidUrl }, req.user)
-        .then(response => response.data)
-        .catch(() => '');
+      return this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
     }
     return '';
   }

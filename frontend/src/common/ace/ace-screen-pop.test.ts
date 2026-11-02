@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import { AceScreenPopMessage } from './ace-jsapi.types';
-import { loggableScreenPop, parseScreenPop, toPersonNumber } from './ace-screen-pop';
+import { parseScreenPop, toPersonNumber } from './ace-screen-pop';
 
 // Test person number from Skatteverket, not a real person.
 const personNumber = '199001012385';
@@ -134,44 +134,5 @@ describe('toPersonNumber', () => {
     expect(toPersonNumber('900101238', today)).toBeUndefined();
     expect(toPersonNumber('IngenIdentifikation', today)).toBeUndefined();
     expect(toPersonNumber('', today)).toBeUndefined();
-  });
-});
-
-describe('loggableScreenPop', () => {
-  test('keeps the fields that describe the contact and hides the rest by key', () => {
-    expect(loggableScreenPop(acceptedIvrCall())).toEqual({
-      popEvent: 'afterNormalAccept',
-      contact: {
-        contactId: 264218330,
-        contactStatus: 'active',
-        currentContactsType: 'ivr',
-        isActiveContact: undefined,
-        contactData: {
-          Ani: '[dolt]',
-          contactSourceType: 'ivr',
-          direction: 'incoming',
-          media: 'call',
-          eidUserPnr: '[dolt]',
-        },
-      },
-    });
-  });
-
-  test('hides values under keys it does not know, whatever they look like', () => {
-    const message = acceptedIvrCall({ customerName: 'Anna Andersson', email: 'anna@example.com', queue: 'Q12' });
-    expect(loggableScreenPop(message).contact?.contactData).toMatchObject({
-      customerName: '[dolt]',
-      email: '[dolt]',
-      queue: '[dolt]',
-    });
-  });
-
-  test('keeps empty values, so the log shows that ACE sent the key without a value', () => {
-    expect(loggableScreenPop(acceptedIvrCall({ eidUserPnr: '' })).contact?.contactData?.eidUserPnr).toBe('');
-  });
-
-  test('handles a missing or empty message', () => {
-    expect(loggableScreenPop(undefined)).toEqual({ popEvent: undefined, contact: undefined });
-    expect(loggableScreenPop({ popEvent: 'manual' })).toEqual({ popEvent: 'manual', contact: undefined });
   });
 });

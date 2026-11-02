@@ -6,6 +6,8 @@ interface CitizenAddressData extends Data {
   personId: string;
   givenname: string;
   lastname: string;
+  classified?: string | null;
+  protectedNR?: string | null;
   addresses: {
     realEstateDescription: string;
     co: string;
@@ -22,6 +24,8 @@ interface CitizenAddressData extends Data {
 
 export interface AddressResult {
   personId: string;
+  /** The person has protected personal data (skyddade personuppgifter); see isProtectedIdentity. */
+  protectedIdentity?: boolean;
   firstName: string;
   lastName: string;
   organizationName: string;
@@ -132,6 +136,15 @@ export const isValidOrgNumber: (ssn: string) => boolean = (ssn) => {
   return passingLuhn && passingDigitTest;
 };
 
+const NOT_PROTECTED = new Set(['', 'N', 'NEJ', 'FALSE', '0']);
+
+/**
+ * Whether Citizen marks the person's data as protected (classified or protectedNR). Their values
+ * are not specified, so anything but an explicit no counts as protected.
+ */
+const isProtectedIdentity = (citizen: CitizenAddressData): boolean =>
+  [citizen.classified, citizen.protectedNR].some((value) => !NOT_PROTECTED.has((value ?? '').trim().toUpperCase()));
+
 export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> = (ssn: string) => {
   ssn = ssn.replace(/\D/g, '');
   return !isValidPersonalNumber(ssn)
@@ -148,6 +161,7 @@ export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> =
             const addressItem = res.addresses?.[0];
             return {
               personId: res.personId,
+              protectedIdentity: isProtectedIdentity(res),
               firstName: res.givenname,
               lastName: res.lastname,
               organizationName: '',
@@ -222,7 +236,8 @@ export const searchADUserByPersonNumber: (personalNumber: string) => Promise<Add
   return !isValidPersonalNumber(personalNumber)
     ? Promise.resolve([])
     : await apiService
-        .get<ApiResponse<EmployedPersonData[]>>(`employed/${personalNumber}/loginname`)
+        // The personal number goes in the body: request URLs end up in logs.
+        .post<ApiResponse<EmployedPersonData[]>, { ssn: string }>('employed/loginname', { ssn: personalNumber })
         .then((res) => res.data.data)
         .then((res) => {
           if (res.length > 1) {

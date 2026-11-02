@@ -1,9 +1,14 @@
+import { HttpException } from '@exceptions/HttpException';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
+import { hasAnyPermission } from '@middlewares/permissions.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
+import { CitizenService } from '@services/citizen.service';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsString, ValidateNested } from 'class-validator';
+import { NextFunction, Request, Response } from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
@@ -17,6 +22,28 @@ class SsnPayload {
   @IsString()
   ssn!: string;
 }
+
+/**
+ * Person lookups per case worker and minute. Well above what a case worker does by hand or with
+ * ACE screen pops, but it stops a script from walking through the population register.
+ */
+const PERSON_LOOKUPS_PER_MINUTE = 30;
+
+const personLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: PERSON_LOOKUPS_PER_MINUTE,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req as RequestWithUser).user?.username ?? ipKeyGenerator(req.ip ?? ''),
+  handler: (req: Request, res: Response, _next: NextFunction) => {
+    logger.warn(`AUDIT person lookup rate limited: user=${(req as RequestWithUser).user?.username ?? 'unknown'}`);
+    res.status(429).send({ message: 'Too many person lookups' });
+  },
+});
+
+/** Records who looked up whom (by party id, never by personal number) and with what outcome. */
+const auditPersonLookup = (user: RequestWithUser['user'], outcome: 'found' | 'not found' | 'failed', partyId = '') =>
+  logger.info(`AUDIT person lookup: user=${user?.username ?? 'unknown'} outcome=${outcome}${partyId ? ` partyId=${partyId}` : ''}`);
 
 class OrgNrPayload {
   @IsString()
@@ -142,6 +169,7 @@ interface ResponseData {
 @Controller()
 export class AddressController {
   private apiService = new ApiService();
+  private citizenService = new CitizenService();
   CITIZEN_SERVICE = apiServiceName('citizen');
   EMPLOYEE_SERVICE = apiServiceName('employee');
   LEGALENTITY_SERVICE = apiServiceName('legalentity');
@@ -149,14 +177,27 @@ export class AddressController {
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
-  @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
+  @UseBefore(
+    authMiddleware,
+    hasAnyPermission(['canEditSupportManagement', 'canEditCasedata']),
+    personLookupLimiter,
+    validationMiddleware(SsnPayload, 'body'),
+  )
   async cases(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<ResponseData> {
-    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
-    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
-
-    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${guidRes.data}`;
-    const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
-
+    const partyId = await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, ssnPayload.ssn, req.user).catch(e => {
+      auditPersonLookup(req.user, 'failed');
+      throw e;
+    });
+    if (!partyId) {
+      auditPersonLookup(req.user, 'not found');
+      throw new HttpException(404, 'Person not found');
+    }
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${partyId}`;
+    const res = await this.apiService.get<Citizenaddress>({ url }, req.user).catch(e => {
+      auditPersonLookup(req.user, 'failed', partyId);
+      throw e;
+    });
+    auditPersonLookup(req.user, 'found', partyId);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
@@ -214,20 +255,19 @@ export class AddressController {
     }
   }
 
-  @Get('/employed/:personalNumber/loginname')
+  @Post('/employed/loginname')
   @OpenAPI({ summary: 'Fetch employed user information' })
-  @UseBefore(authMiddleware)
+  @UseBefore(authMiddleware, personLookupLimiter, validationMiddleware(SsnPayload, 'body'))
   async employed(
     @Req() req: RequestWithUser,
-    @Param('personalNumber') personalNumber: string,
+    @Body() ssnPayload: SsnPayload,
     @Res() _response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
-    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${personalNumber}/guid`;
-    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
-    if (!guidRes.data) {
+    const partyId = await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, ssnPayload.ssn, req.user);
+    if (!partyId) {
       throw new Error('No data found for the given personal number');
     }
-    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${partyId}/accounts`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
       throw e;

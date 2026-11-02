@@ -11,13 +11,8 @@ import { AceConfig, getAceConfig } from './ace-config';
 import { markContactHandled } from './ace-handled-contacts';
 import { AceJSApi } from './ace-jsapi.types';
 import { installAceMock } from './ace-mock';
-import {
-  PENDING_CALLER_TTL_MS,
-  removeExpiredPendingCallers,
-  removePendingCaller,
-  storePendingCaller,
-} from './ace-pending-caller';
-import { AceCaller, loggableScreenPop, parseScreenPop } from './ace-screen-pop';
+import { createPendingCallers } from './ace-pending-caller';
+import { AceCaller, parseScreenPop } from './ace-screen-pop';
 import { AceStatus, useAceStore } from './ace-store';
 
 const LOCK_NAME = 'draken-ace-jsapi';
@@ -32,15 +27,12 @@ let jsApiPromise: Promise<AceJSApi> | null = null;
 
 /**
  * Logs an event from ACE in every environment, so the integration can be followed in the browser
- * console. The payload is built inside the guard: logging must never stop an event from being handled.
+ * console. Only what happened is logged, never the event's data. Logging must never stop an event
+ * from being handled.
  */
-const logAceEvent = (text: string, payload?: () => unknown) => {
+const logAceEvent = (text: string) => {
   try {
-    if (payload) {
-      console.info(`[ACE] ${text}`, payload());
-    } else {
-      console.info(`[ACE] ${text}`);
-    }
+    console.info(`[ACE] ${text}`);
   } catch {
     // Ignore: the event is handled anyway.
   }
@@ -148,7 +140,6 @@ export const AceConnector: React.FC = () => {
       return;
     }
 
-    removeExpiredPendingCallers();
     setStatus('connecting');
     if (config.mode === 'mock' && process.env.NODE_ENV === 'development') {
       // Every tab gets drakenAceMock in its console; the mock forwards events to the leading tab.
@@ -160,7 +151,7 @@ export const AceConnector: React.FC = () => {
     const removeListeners: (() => void)[] = [];
     // In-memory fallback for when storage is unavailable; markContactHandled covers reloads and other tabs.
     const handledContactIds = new Set<string>();
-    const pendingCallerCleanups: ReturnType<typeof setTimeout>[] = [];
+    const pendingCallers = createPendingCallers();
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
 
     const updateStatus = (status: AceStatus) => {
@@ -198,9 +189,7 @@ export const AceConnector: React.FC = () => {
           throw new Error('No errand number for new errand');
         }
         if (caller.personNumber || caller.phoneNumber) {
-          storePendingCaller(errandNumber, { personNumber: caller.personNumber, phoneNumber: caller.phoneNumber });
-          // Hand-overs nobody picks up (the new tab was closed at once) are removed when they expire.
-          pendingCallerCleanups.push(setTimeout(() => removeExpiredPendingCallers(), PENDING_CALLER_TTL_MS + 1000));
+          pendingCallers.add(errandNumber, { personNumber: caller.personNumber, phoneNumber: caller.phoneNumber });
         }
         // ACE's own JS API popup already requires popups to be allowed for Draken, so this normally
         // opens a new tab even though it does not follow a click.
@@ -217,7 +206,7 @@ export const AceConnector: React.FC = () => {
         try {
           await router.push(`/arende/${errandNumber}`);
         } catch {
-          removePendingCaller(errandNumber);
+          pendingCallers.remove(errandNumber);
           toastMessage({
             position: 'bottom',
             closeable: true,
@@ -264,25 +253,21 @@ export const AceConnector: React.FC = () => {
         jsApi.onConnected(connected('onConnected')),
         jsApi.onLoggedIn(connected('onLoggedIn')),
         jsApi.onDisconnected(disconnected('onDisconnected')),
-        jsApi.onLoggedOut((reason) => {
-          logAceEvent('onLoggedOut', () => ({ reason }));
-          updateStatus('disconnected');
-        }),
+        jsApi.onLoggedOut(disconnected('onLoggedOut')),
         jsApi.onServerConnectionDown(disconnected('onServerConnectionDown')),
         jsApi.onOperationFailed((failure) =>
-          logAceEvent('onOperationFailed', () => ({
-            function: failure?.function,
-            reason: failure?.reason,
-            severity: failure?.severity,
-            errorId: failure?.errorId,
-          }))
+          logAceEvent(`onOperationFailed: ${failure?.function ?? 'okänd funktion'} (fel ${failure?.errorId ?? '?'})`)
         ),
         jsApi.onScreenPop((message) => {
           const caller = parseScreenPop(message);
           // ACE may repeat the pop for the same contact; handle each contact once.
           const isNewContact =
             !!caller && !handledContactIds.has(caller.contactId) && markContactHandled(caller.contactId);
-          logAceEvent(`onScreenPop: ${screenPopOutcome(caller, isNewContact)}`, () => loggableScreenPop(message));
+          logAceEvent(
+            `onScreenPop ${message?.popEvent ?? '?'} (${
+              message?.contact?.currentContactsType ?? '?'
+            }): ${screenPopOutcome(caller, isNewContact)}`
+          );
           if (!caller || !isNewContact) {
             return;
           }
@@ -328,7 +313,7 @@ export const AceConnector: React.FC = () => {
     return () => {
       disposed = true;
       removeListeners.forEach((remove) => remove());
-      pendingCallerCleanups.forEach(clearTimeout);
+      pendingCallers.close();
       releaseLock();
       channel?.close();
     };
