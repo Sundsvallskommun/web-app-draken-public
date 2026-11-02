@@ -46,6 +46,8 @@
 +46701740605
 +46701740635
 +46701740636
+# 0046701740635 (testnumret ovan med 00-prefix, frontend/src/common/ace/ace-screen-pop.test.ts)
+0467017406
 # Falska träffar: substrängar av test-ärendenummer/datum som telefon-regexen plockar
 015-0000000
 016-0000000

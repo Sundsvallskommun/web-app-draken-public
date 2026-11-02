@@ -260,6 +260,8 @@ export enum Resolution {
   PREPARED = 'PREPARED',
   REFERRED = 'REFERRED',
   HANDED_OVER = 'HANDED_OVER',
+  SOLVED_FEEDBACK_VIA_PHONE = 'SOLVED_FEEDBACK_VIA_PHONE',
+  SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX',
 }
 
 export enum ResolutionLabelLOP {
@@ -335,6 +337,13 @@ export enum ResolutionLabelROB {
 
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
+  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelSE {
+  SOLVED = 'Löst',
+  SOLVED_FEEDBACK_VIA_PHONE = 'Löst och återkopplat via telefon',
+  SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'Löst och återkopplat via funktionsbrevlåda',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
 }
 

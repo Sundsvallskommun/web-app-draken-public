@@ -181,15 +181,15 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
 export type LabelSpec = { department?: string; category: string; type?: string; subType?: string };
 
 export interface NewErrandDefaults {
-  classification: { category: string; type: string };
+  classification?: { category: string; type: string };
   labels?: LabelSpec;
 }
 
 // Default classification and labels applied to a new empty errand, per application (drake).
+// Only ROB and KA still set a classification; the others are categorized by labels alone.
 // Applications without a `labels` entry get no default labels.
 export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
   KC: {
-    classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' },
     labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' },
   },
   KA: {
@@ -197,25 +197,19 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
     labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
   },
   LOP: {
-    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
     labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
   },
   IK: {
-    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
     labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
   },
-  MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
   ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
   SE: {
-    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
     labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
   },
   BOU: {
-    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
     labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
   },
   LOK: {
-    classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
     labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
   },
 };

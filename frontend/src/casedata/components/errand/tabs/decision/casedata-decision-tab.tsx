@@ -48,7 +48,7 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { useErrandAssetServices } from '@common/hooks/use-asset-services';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
-import { deleteDraftAsset, getDraftAssets, updateAsset } from '@common/services/asset-service';
+import { deleteDraftAsset, getDraftAssets, updateDraftAsset } from '@common/services/asset-service';
 import { base64Decode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -388,7 +388,8 @@ export const CasedataDecisionTab: FC<{
       });
       const draftAssets = drafts?.data ?? [];
       if (isApprovingOutcome(data.outcome)) {
-        await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+        // Partyassets rejects status changes on DRAFT assets through /assets, so activate via /asset-drafts.
+        await Promise.all(draftAssets.map((a) => updateDraftAsset(municipalityId, a.id, { status: 'ACTIVE' })));
       } else {
         await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }

@@ -13,7 +13,8 @@ import { mockKcErrandPage, mockKcNewErrand, mockKcOverview, mockKcSession, mockP
  * against any KC build: no ACE configuration and no ACE environment needed.
  */
 
-const LOOKUP_FAILED = 'Personuppgifterna för den som ringer kunde inte hämtas. Lägg till ärendeägaren manuellt.';
+const LOOKUP_FAILED =
+  'Personuppgifterna för den som ringer kunde inte hämtas. Personnumret är ifyllt under Ärendeägare';
 
 /** Collects the requests that initiate a new errand, in every tab of the context. */
 const recordNewErrandRequests = (context: BrowserContext): string[] => {
@@ -85,6 +86,7 @@ test.describe('ACE screen pop', () => {
       await expect(owner.name).toHaveText(`${mockAdressResponse.data.givenname} ${mockAdressResponse.data.lastname}`);
       await expect(owner.personNumber).toHaveText(mockEnv.mockPersonNumber);
       await expect(owner.address).toContainText(mockAdressResponse.data.addresses[0].address);
+      await expect(owner.phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
     });
 
     test('saves the caller as errand owner only when the case worker saves', async ({ page, ace }) => {
@@ -106,6 +108,7 @@ test.describe('ACE screen pop', () => {
             externalId: mockAdressResponse.data.personId,
             firstName: mockAdressResponse.data.givenname,
             lastName: mockAdressResponse.data.lastname,
+            contactChannels: [{ type: 'PHONE', value: mockEnv.mockPhoneNumberCountryCode }],
           }),
         ])
       );
@@ -143,15 +146,79 @@ test.describe('ACE screen pop', () => {
       expect(newErrands).toHaveLength(2);
     });
 
-    test('ignores events that are not an accepted call from an identified caller', async ({ page, ace }) => {
+    test('opens a new errand with the calling number when the caller did not identify', async ({ page, ace }) => {
+      const lookups: string[] = [];
+      page
+        .context()
+        .on('request', (r) => r.method() === 'POST' && r.url().endsWith('/address') && lookups.push(r.url()));
+
+      const errandPage = await ace.acceptCall({ personNumber: null });
+
+      const owner = errandOwner(errandPage);
+      await expect(owner.phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
+      await expect(owner.personNumber).toHaveText('(personnummer saknas)');
+      expect(lookups).toEqual([]);
+
+      await fillRequiredErrandFields(errandPage);
+      const request = await saveErrand(errandPage, mockEmptySupportErrand.id);
+      expect(request.postDataJSON().stakeholders).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: 'PRIMARY',
+            contactChannels: [{ type: 'PHONE', value: mockEnv.mockPhoneNumberCountryCode }],
+          }),
+        ])
+      );
+    });
+
+    test('uses the calling number when the identity is not a valid personal number', async ({ ace }) => {
+      const errandPage = await ace.acceptCall({ personNumber: mockEnv.mockInvalidPersonNumber });
+
+      await expect(errandOwner(errandPage).phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
+    });
+
+    test('logs the events from ACE without personal or phone numbers', async ({ page, ace }) => {
+      // The arguments as logged: the text of a console message only shows the top level of an object.
+      const logs: { text: string; payload?: unknown }[] = [];
+      page.on('console', async (message) => {
+        if (message.text().startsWith('[ACE]')) {
+          const [text, payload] = await Promise.all(message.args().map((arg) => arg.jsonValue()));
+          logs.push({ text, payload });
+        }
+      });
+
+      await ace.connect();
+      const errandPage = await ace.acceptCall();
+      await expect(errandOwner(errandPage).card).toBeVisible();
+
+      await expect
+        .poll(() => logs.find((log) => log.text.startsWith('[ACE] onScreenPop'))?.payload)
+        .toMatchObject({
+          popEvent: 'afterNormalAccept',
+          contact: { currentContactsType: 'ivr', contactData: { eidUserPnr: '[dolt]', Ani: '[dolt]' } },
+        });
+      expect(logs.map((log) => log.text)).toEqual(
+        expect.arrayContaining(['[ACE] onConnected', '[ACE] onScreenPop: skapar ärende för legitimerad uppringare'])
+      );
+      const logged = JSON.stringify(logs);
+      expect(logged).not.toContain(mockEnv.mockPersonNumber);
+      expect(logged).not.toContain(mockEnv.mockPhoneNumberCountryCode);
+    });
+
+    test('opens an empty errand when the caller did not identify and the number is hidden', async ({ ace }) => {
+      const errandPage = await ace.acceptCall({ personNumber: null, phoneNumber: 'anonymous' });
+
+      await expect(errandPage).toHaveURL(new RegExp(`/arende/${mockEmptySupportErrand.errandNumber}$`));
+      await expect(errandPage.locator('[data-cy="search-person-form-PRIMARY"]')).toBeVisible();
+      await expect(errandOwner(errandPage).card).toHaveCount(0);
+    });
+
+    test('ignores events that are not an accepted call', async ({ page, ace }) => {
       const newErrands = recordNewErrandRequests(page.context());
 
       await ace.screenPop({ popEvent: 'beforeNormalAccept' });
       await ace.screenPop({ popEvent: 'endOfContact' });
       await ace.screenPop({ contactType: 'chat' });
-      await ace.screenPop({ personNumber: null });
-      await ace.screenPop({ personNumber: mockEnv.mockInvalidPersonNumber });
-      await ace.screenPop({ personNumber: '19900101-2385' });
       // Pops are handled in order: once this call has opened its errand, the ones above were ignored.
       const errandPage = await ace.acceptCall();
       await expect(errandOwner(errandPage).card).toBeVisible();
@@ -159,7 +226,7 @@ test.describe('ACE screen pop', () => {
       expect(newErrands).toHaveLength(1);
     });
 
-    test('lets the case worker add the owner manually when the caller cannot be looked up', async ({ page, ace }) => {
+    test('fills in the owner search when the identified caller cannot be looked up', async ({ page, ace }) => {
       await mockPersonLookup(page.context(), { message: 'Not found' }, 404);
 
       const errandPage = await ace.acceptCall();
@@ -167,6 +234,7 @@ test.describe('ACE screen pop', () => {
       await expect(errandPage.locator('.sk-snackbar-text', { hasText: LOOKUP_FAILED })).toBeVisible();
       await expect(errandOwner(errandPage).card).toHaveCount(0);
       await expect(errandPage.locator('[data-cy="search-person-form-PRIMARY"]')).toBeVisible();
+      await expect(errandPage.locator('[data-cy="contact-personNumber-owner"]')).toHaveValue(mockEnv.mockPersonNumber);
     });
   });
 

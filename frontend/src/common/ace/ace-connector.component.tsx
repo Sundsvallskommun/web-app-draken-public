@@ -17,7 +17,7 @@ import {
   removePendingCaller,
   storePendingCaller,
 } from './ace-pending-caller';
-import { AceCaller, parseScreenPop } from './ace-screen-pop';
+import { AceCaller, loggableScreenPop, parseScreenPop } from './ace-screen-pop';
 import { AceStatus, useAceStore } from './ace-store';
 
 const LOCK_NAME = 'draken-ace-jsapi';
@@ -29,6 +29,35 @@ type ChannelMessage =
   | { type: 'errand-opened-in-leader'; errandNumber: string };
 
 let jsApiPromise: Promise<AceJSApi> | null = null;
+
+/**
+ * Logs an event from ACE in every environment, so the integration can be followed in the browser
+ * console. The payload is built inside the guard: logging must never stop an event from being handled.
+ */
+const logAceEvent = (text: string, payload?: () => unknown) => {
+  try {
+    if (payload) {
+      console.info(`[ACE] ${text}`, payload());
+    } else {
+      console.info(`[ACE] ${text}`);
+    }
+  } catch {
+    // Ignore: the event is handled anyway.
+  }
+};
+
+const screenPopOutcome = (caller: AceCaller | null, isNewContact: boolean): string => {
+  if (!caller) {
+    return 'ignorerad';
+  }
+  if (!isNewContact) {
+    return 'ignorerad, kontakten har redan ett ärende';
+  }
+  if (caller.personNumber) {
+    return 'skapar ärende för legitimerad uppringare';
+  }
+  return caller.phoneNumber ? 'skapar ärende med telefonnumret' : 'skapar tomt ärende, dolt nummer';
+};
 
 /**
  * Connection state of the loaded JS API, tracked for the life of the tab. The real bundle reports
@@ -89,9 +118,10 @@ const loadJsApi = (config: AceConfig): Promise<AceJSApi> => {
 
 /**
  * Runs the ACE Agent Interface integration in an instance that configures ACE (only Kontakt
- * Sundsvall sets NEXT_PUBLIC_ACE_ORIGIN/COMPANY): when an identified caller is
- * accepted in ACE Interact, a new errand is created and opened in a new tab with the caller
- * pre-filled as customer (see useAceCallerPrefill).
+ * Sundsvall sets NEXT_PUBLIC_ACE_ORIGIN/COMPANY): when a call is accepted in ACE Interact, a new
+ * errand is created and opened in a new tab with the caller pre-filled as customer - by personal
+ * number when identified in the IVR, otherwise by phone number, or left empty when the number is
+ * hidden (see useAceCallerPrefill).
  *
  * Only one Draken tab at a time loads the JS API (Web Locks); the other tabs mirror its status.
  * Draken works as usual whenever ACE is not configured, cannot be loaded or is disconnected.
@@ -167,9 +197,11 @@ export const AceConnector: React.FC = () => {
         if (!errandNumber) {
           throw new Error('No errand number for new errand');
         }
-        storePendingCaller(errandNumber, caller.personNumber);
-        // Hand-overs nobody picks up (the new tab was closed at once) are removed when they expire.
-        pendingCallerCleanups.push(setTimeout(() => removeExpiredPendingCallers(), PENDING_CALLER_TTL_MS + 1000));
+        if (caller.personNumber || caller.phoneNumber) {
+          storePendingCaller(errandNumber, { personNumber: caller.personNumber, phoneNumber: caller.phoneNumber });
+          // Hand-overs nobody picks up (the new tab was closed at once) are removed when they expire.
+          pendingCallerCleanups.push(setTimeout(() => removeExpiredPendingCallers(), PENDING_CALLER_TTL_MS + 1000));
+        }
         // ACE's own JS API popup already requires popups to be allowed for Draken, so this normally
         // opens a new tab even though it does not follow a click.
         const newTab = window.open(appURL(`/arende/${errandNumber}`), '_blank');
@@ -220,32 +252,50 @@ export const AceConnector: React.FC = () => {
       }
       // The JS API may have connected before this mount, e.g. when the effect runs again.
       updateStatus(jsApiConnection);
-      const connected = () => updateStatus('connected');
-      const disconnected = () => updateStatus('disconnected');
+      const connected = (event: string) => () => {
+        logAceEvent(event);
+        updateStatus('connected');
+      };
+      const disconnected = (event: string) => () => {
+        logAceEvent(event);
+        updateStatus('disconnected');
+      };
       removeListeners.push(
-        jsApi.onConnected(connected),
-        jsApi.onLoggedIn(connected),
-        jsApi.onDisconnected(disconnected),
-        jsApi.onLoggedOut(disconnected),
-        jsApi.onServerConnectionDown(disconnected),
+        jsApi.onConnected(connected('onConnected')),
+        jsApi.onLoggedIn(connected('onLoggedIn')),
+        jsApi.onDisconnected(disconnected('onDisconnected')),
+        jsApi.onLoggedOut((reason) => {
+          logAceEvent('onLoggedOut', () => ({ reason }));
+          updateStatus('disconnected');
+        }),
+        jsApi.onServerConnectionDown(disconnected('onServerConnectionDown')),
+        jsApi.onOperationFailed((failure) =>
+          logAceEvent('onOperationFailed', () => ({
+            function: failure?.function,
+            reason: failure?.reason,
+            severity: failure?.severity,
+            errorId: failure?.errorId,
+          }))
+        ),
         jsApi.onScreenPop((message) => {
           const caller = parseScreenPop(message);
           // ACE may repeat the pop for the same contact; handle each contact once.
-          if (!caller || handledContactIds.has(caller.contactId) || !markContactHandled(caller.contactId)) {
-            if (process.env.NODE_ENV === 'development') {
-              console.info(`[ACE] Screen pop ignorerad (${message?.popEvent ?? 'okänd händelse'}).`);
-            }
+          const isNewContact =
+            !!caller && !handledContactIds.has(caller.contactId) && markContactHandled(caller.contactId);
+          logAceEvent(`onScreenPop: ${screenPopOutcome(caller, isNewContact)}`, () => loggableScreenPop(message));
+          if (!caller || !isNewContact) {
             return;
-          }
-          if (process.env.NODE_ENV === 'development') {
-            console.info('[ACE] Inkommande samtal, skapar ärende.');
           }
           handledContactIds.add(caller.contactId);
           void openErrandForCaller(caller);
         })
       );
       if (jsApi.onPopupDisconnected) {
-        removeListeners.push(jsApi.onPopupDisconnected(disconnected));
+        removeListeners.push(jsApi.onPopupDisconnected(disconnected('onPopupDisconnected')));
+      }
+      if (config.mode === 'mock') {
+        // The development mock plays ACE Interact logging in, now that this tab listens.
+        window.drakenAceMock?.connect();
       }
     };
 
