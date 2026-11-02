@@ -347,13 +347,22 @@ describe('what the permit needs of the errand', () => {
     );
   });
 
-  test('a tobacco permit waits for the outcome and the dates it prints', () => {
+  test('a tobacco permit waits for the outcome, the dates and the information it prints', () => {
     expect(missingDecisionInputs('TOBAKSFORSALJNING', undefined)).toEqual([
       'decisionText',
       'validFrom',
       'executionDate',
+      'information',
       'decisionCaseNumber',
     ]);
+  });
+
+  test('a tobacco decision without terms is held back, since the certificate prints them without a default', () => {
+    const withTerms = toDecisionParameters('TOBAKSFORSALJNING', input(), DECISION);
+    const withoutTerms = toDecisionParameters('TOBAKSFORSALJNING', input(), { ...DECISION, terms: [] });
+
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', withTerms)).toEqual([]);
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', withoutTerms)).toEqual(['information']);
   });
 
   test('a permit that issues no certificate waits for the decision case number alone', () => {

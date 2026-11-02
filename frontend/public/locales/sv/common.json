@@ -340,7 +340,8 @@
         "servingAreaSeats": "antal sittplatser inomhus",
         "servingAreaMaxPersons": "maximalt antal personer i lokalen",
         "servingHours": "serveringstider",
-        "servingAreaDrawingReference": "planritning som bilaga"
+        "servingAreaDrawingReference": "planritning som bilaga",
+        "information": "upplysningar och föreskrifter, som skrivs under Villkor"
       },
       "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
       "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",
