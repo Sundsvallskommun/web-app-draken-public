@@ -16,4 +16,5 @@ export const TOBACCO_SALES_INVESTIGATION: ExaminedInvestigation = {
     'legal_basis',
   ],
   basisTemplate: 'tobacco-sales-decision-basis',
+  legalBasisTemplate: 'tobacco-sales-legal-basis',
 };

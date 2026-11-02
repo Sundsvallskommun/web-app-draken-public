@@ -20,4 +20,5 @@ export const SERVING_PERMIT_INVESTIGATION: ExaminedInvestigation = {
     'legal_basis',
   ],
   basisTemplate: 'serving-permit-decision-basis',
+  legalBasisTemplate: 'serving-permit-legal-basis',
 };

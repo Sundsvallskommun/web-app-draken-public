@@ -9,6 +9,7 @@ export interface ExaminedInvestigation extends InvestigationOfItsOwn {
   introKey: string;
   sections: readonly Sections[];
   basisTemplate?: string;
+  legalBasisTemplate?: string;
 }
 
 export interface ProtocolInvestigation extends InvestigationOfItsOwn {

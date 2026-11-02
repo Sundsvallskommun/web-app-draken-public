@@ -606,6 +606,7 @@ const TEMPLATE_FIELDS = [
   'personsOfInfluence',
   'statements',
   'investigation.recommendationLabel',
+  'investigation.legalBasisHtml',
   'investigation.financialAssessmentHtml',
   'investigation.premisesRemarksHtml',
   'investigation.conclusionHtml',

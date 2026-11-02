@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+import { renderTemplateHtml } from '@common/services/template-render-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   completeSupportInvestigationSections,
   getSupportInvestigation,
   saveSupportInvestigation,
+  saveSupportInvestigationSection,
 } from '@supportmanagement/services/support-investigation-service';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
@@ -22,7 +24,9 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   saveSupportInvestigation: vi.fn(),
   startSupportInvestigation: vi.fn(),
   completeSupportInvestigationSections: vi.fn(),
+  saveSupportInvestigationSection: vi.fn(),
 }));
+vi.mock('@common/services/template-render-service', () => ({ renderTemplateHtml: vi.fn() }));
 const sectionStub = vi.hoisted(() => ({
   handsBack: null as object | null,
   saved: [] as string[],
@@ -108,6 +112,8 @@ beforeEach(() => {
   vi.mocked(getSupportInvestigation).mockResolvedValue(investigation as never);
   vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...investigation, version: 4 } as never);
   vi.mocked(completeSupportInvestigationSections).mockResolvedValue(investigation as never);
+  vi.mocked(saveSupportInvestigationSection).mockResolvedValue(investigation as never);
+  vi.mocked(renderTemplateHtml).mockResolvedValue('<h3>Alkohollag (2010:1622)</h3>');
 });
 
 afterEach(cleanup);
@@ -306,4 +312,34 @@ test('an inspection errand gets the protocol instead of the investigation', asyn
 
   expect(await screen.findByTestId('inspection-protocol')).toBeTruthy();
   expect(getSupportInvestigation).not.toHaveBeenCalled();
+});
+
+const withLegalBasis = (text?: string) => ({
+  ...investigation,
+  sections: [
+    ...investigation.sections,
+    { id: 'section-legal', sectionKey: 'legal_basis', heading: 'Lagrum', sortOrder: 13, text },
+  ],
+});
+
+test('the laws are written into Lagrum from the template that holds them', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(withLegalBasis() as never);
+  mountTab();
+
+  await waitFor(() => expect(saveSupportInvestigationSection).toHaveBeenCalledTimes(1));
+
+  expect(renderTemplateHtml).toHaveBeenCalledWith('serving-permit-legal-basis');
+  expect(vi.mocked(saveSupportInvestigationSection).mock.calls[0][4]).toEqual({
+    text: '<h3>Alkohollag (2010:1622)</h3>',
+  });
+});
+
+test('a Lagrum somebody has written in is left as it stands', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(withLegalBasis('<p>Handläggarens egen text.</p>') as never);
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalled());
+
+  expect(renderTemplateHtml).not.toHaveBeenCalled();
+  expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
 });

@@ -205,6 +205,7 @@ export interface InvestigationBasisParameters {
   statements: InvestigationBasisStatement[];
   investigation: {
     recommendationLabel: string;
+    legalBasisHtml: string;
     financialAssessmentHtml: string;
     premisesRemarksHtml: string;
     conclusionHtml: string;
@@ -710,6 +711,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     statements: basisStatements(input.statements, metadata),
     investigation: {
       recommendationLabel: outcomeLabelOf(investigation?.recommendation, metadata),
+      legalBasisHtml: texts.legal_basis ?? '',
       financialAssessmentHtml: texts.financial_suitability ?? '',
       premisesRemarksHtml: premisesRemarksOf(texts),
       conclusionHtml: htmlOf(investigation?.conclusion),

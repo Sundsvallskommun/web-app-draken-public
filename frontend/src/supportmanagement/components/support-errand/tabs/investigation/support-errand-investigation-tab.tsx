@@ -1,5 +1,6 @@
-import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
+import { renderTemplateHtml } from '@common/services/template-render-service';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { type ExaminedInvestigation, investigationVariantFor } from '@supportmanagement/investigations';
@@ -15,6 +16,7 @@ import {
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
+  saveSupportInvestigationSection,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
 import dayjs from 'dayjs';
@@ -99,6 +101,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
+  const legalBasisFilled = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   const receive = (result: Investigation | undefined) => {
@@ -236,6 +239,29 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     if (isLoading || error || !investigation || readOnly || examinationsCompleted.current) return;
     examinationsCompleted.current = true;
     void completeTheExaminations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, error, investigation, readOnly]);
+
+  const fillTheLegalBasis = async (section: InvestigationSection): Promise<void> => {
+    if (!errandId || !investigation?.id || !section.id || !variant.legalBasisTemplate) return;
+
+    const text = await renderTemplateHtml(variant.legalBasisTemplate).catch(() => '');
+    if (!text.trim()) return;
+
+    await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, { text })
+      .then(receiveFromSection)
+      .catch(() => undefined);
+  };
+
+  useEffect(() => {
+    if (isLoading || error || !investigation || readOnly || legalBasisFilled.current) return;
+
+    const section = (investigation.sections ?? []).find((candidate) => sectionKeyOf(candidate) === 'legal_basis');
+    if (!section) return;
+
+    legalBasisFilled.current = true;
+    if ((section.text ?? '').trim()) return;
+    void fillTheLegalBasis(section);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, readOnly]);
 
