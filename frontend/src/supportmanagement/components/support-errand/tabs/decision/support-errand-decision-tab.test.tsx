@@ -95,6 +95,7 @@ const sentParameters = (call: unknown[]) =>
 
 const select = (name: string) => document.querySelector(`[data-cy="decision-${name}"]`) as HTMLSelectElement;
 const unsavedHint = () => document.querySelector('[data-cy="decision-unsaved"]');
+const awaitsOutcomeHint = () => document.querySelector('[data-cy="decision-awaits-outcome"]');
 const saveTheTab = () => useSupportStore.getState().tabSavers['decision']();
 
 /** What a printed permit is not saved without (see the test on it below). */
@@ -146,16 +147,27 @@ test('the decision maker starts as handläggare, and the tab is saved from the s
   expect(createSupportDecision).not.toHaveBeenCalled();
 });
 
-test('a draft is saved however incomplete, without an outcome too', async () => {
+test('a draft without an outcome is kept in the form, since the service cannot create one', async () => {
   await renderTab();
 
   fireEvent.change(select('role'), { target: { value: UTSKOTTET } });
   expect(unsavedHint()).toBeTruthy();
+  expect(awaitsOutcomeHint()).toBeTruthy();
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(createSupportDecision).not.toHaveBeenCalled();
+});
+
+test('a draft is saved as soon as an outcome is chosen, however incomplete it is otherwise', async () => {
+  await renderTab();
+
+  fireEvent.change(select('role'), { target: { value: UTSKOTTET } });
+  fireEvent.change(select('outcome'), { target: { value: APPROVAL } });
+  expect(awaitsOutcomeHint()).toBeNull();
 
   await expect(saveTheTab()).resolves.toBe(true);
   const sent = vi.mocked(createSupportDecision).mock.calls[0][2];
-  expect(sent).toMatchObject({ decidedByRole: UTSKOTTET });
-  expect(sent).not.toHaveProperty('outcome');
+  expect(sent).toMatchObject({ decidedByRole: UTSKOTTET, outcome: APPROVAL });
 });
 
 test('another decision maker is an unsaved change', async () => {
