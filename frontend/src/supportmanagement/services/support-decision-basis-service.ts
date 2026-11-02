@@ -60,7 +60,12 @@ export type BasisSectionId =
   | 'premises';
 
 /** The attachment purposes of the drawings of the serving area; a schema lists the ones it asks for. */
-export const FLOOR_PLAN_PURPOSES = ['FLOOR_PLAN', 'KITCHEN_FLOOR_PLAN'];
+export const FLOOR_PLAN_PURPOSES = [
+  'FLOOR_PLAN',
+  'KITCHEN_FLOOR_PLAN',
+  'SALES_PREMISES_DRAWING',
+  'SERVING_AREA_DRAWING',
+];
 
 export interface BasisSection {
   id: BasisSectionId;
@@ -401,6 +406,20 @@ const SECTIONS: { id: BasisSectionId; rows: RowSpec[] }[] = [
         field: 'KITCHEN_FLOOR_PLAN',
         labelKey: label('serving_premises', 'kitchen_drawing'),
         read: attached('KITCHEN_FLOOR_PLAN'),
+        asks: asksAttachment,
+      },
+      {
+        key: 'sales-drawing',
+        field: 'SALES_PREMISES_DRAWING',
+        labelKey: label('serving_premises', 'sales_drawing'),
+        read: attached('SALES_PREMISES_DRAWING'),
+        asks: asksAttachment,
+      },
+      {
+        key: 'area-drawing',
+        field: 'SERVING_AREA_DRAWING',
+        labelKey: label('serving_premises', 'area_drawing'),
+        read: attached('SERVING_AREA_DRAWING'),
         asks: asksAttachment,
       },
       {
