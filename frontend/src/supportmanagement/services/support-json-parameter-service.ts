@@ -41,12 +41,15 @@ export const jsonParameterObject = (
   return isRecord(value) ? value : undefined;
 };
 
+/** The object under a JSON value, or an empty one. */
+export const objectAt = (value: unknown): JsonObject => (isRecord(value) ? value : {});
+
+/** The string a JSON value holds, if it is one. */
+export const stringAt = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
+
+// A list is kept even when empty: an empty list is an answer, such as no beverages decided.
 const isBlank = (value: unknown): boolean =>
-  value === undefined ||
-  value === null ||
-  value === '' ||
-  (Array.isArray(value) && value.length === 0) ||
-  (isRecord(value) && Object.keys(value).length === 0);
+  value === undefined || value === null || value === '' || (isRecord(value) && Object.keys(value).length === 0);
 
 /** Leaves out what has no value, at every level: the schemas want a missing value omitted, and '' fails their patterns. */
 export const withoutBlanks = (value: JsonObject): JsonObject =>

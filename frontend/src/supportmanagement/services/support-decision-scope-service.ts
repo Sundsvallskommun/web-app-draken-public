@@ -1,18 +1,14 @@
-import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
-
-import { type FormValue, servesPrivate, servesPublic, timeRangeClocks } from './support-form-value-service';
+import { type FormValue, isRecord, servesPrivate, servesPublic, timeRangeClocks } from './support-form-value-service';
+import { type JsonObject, stringAt } from './support-json-parameter-service';
 
 /**
  * What the handler decides on top of the application: the beverages and the serving hours the
  * permit grants. The application (errand.jsonParameters) is never written; the decided values live
- * as parameters on the decision under the group DECIDED, prefilled from the application. A key the
- * decision carries wins over the application even when its values are empty, so a handler can clear
- * a field; a key it lacks (no decision yet, or one saved before these existed) falls back to the
- * application. Support Management rejects blank values, so a time range is written with both ends
- * or with none.
+ * in the decision's JSON as `beverages` and `servingHours`, prefilled from the application. A list
+ * the decision carries wins over the application even when it is empty, so a handler can clear a
+ * field; a decision without the list falls back to the application. A time range is written with
+ * both ends or not at all.
  */
-
-export const DECIDED_GROUP = 'DECIDED';
 
 /** The beverage constants of the schemas' `beverages`, in the schemas' order. */
 export const BEVERAGES = ['STRONG_BEER', 'WINE', 'SPIRITS', 'OTHER_FERMENTED_BEVERAGES'] as const;
@@ -32,8 +28,7 @@ export interface DecisionScope {
 
 export interface SlotSpec {
   slot: ServingHoursSlot;
-  key: string;
-  /** Translation key of the field label; also the parameter's display name. */
+  /** Translation key of the field label. */
   labelKey: string;
   /** The errand types (most specific label resourceName) that get the slot. */
   errandTypes: string[];
@@ -52,7 +47,6 @@ const label = (name: string) => `common:decision.scope.serving_hours.${name}`;
 export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   {
     slot: 'indoorPublic',
-    key: 'decidedServingHoursIndoorPublic',
     labelKey: label('indoor_public'),
     errandTypes: [PERMANENT],
     field: { [PERMANENT]: 'publicServingHoursIndoor' },
@@ -60,7 +54,6 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   },
   {
     slot: 'outdoorPublic',
-    key: 'decidedServingHoursOutdoorPublic',
     labelKey: label('outdoor_public'),
     errandTypes: [PERMANENT],
     field: { [PERMANENT]: 'publicServingHoursOutdoor' },
@@ -68,7 +61,6 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   },
   {
     slot: 'indoorPrivate',
-    key: 'decidedServingHoursIndoorPrivate',
     labelKey: label('indoor_private'),
     errandTypes: [PERMANENT],
     field: { [PERMANENT]: 'closedCompanyServingHoursIndoor' },
@@ -76,7 +68,6 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   },
   {
     slot: 'outdoorPrivate',
-    key: 'decidedServingHoursOutdoorPrivate',
     labelKey: label('outdoor_private'),
     errandTypes: [PERMANENT],
     field: { [PERMANENT]: 'closedCompanyServingHoursOutdoor' },
@@ -84,7 +75,6 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   },
   {
     slot: 'single',
-    key: 'decidedServingHours',
     labelKey: label('single'),
     errandTypes: SINGLE_SLOT_TYPES,
     field: {
@@ -95,8 +85,22 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
   },
 ];
 
-export const BEVERAGES_KEY = 'decidedBeverages';
 export const BEVERAGES_LABEL_KEY = 'common:decision.scope.beverages.label';
+
+/** Where on the premises and for whom each slot's hours apply, as the permit's servingHours say it. */
+const SLOT_PLACES: Record<ServingHoursSlot, { audience?: string; location?: string }> = {
+  indoorPublic: { audience: 'PUBLIC', location: 'INDOOR' },
+  outdoorPublic: { audience: 'PUBLIC', location: 'OUTDOOR' },
+  indoorPrivate: { audience: 'CLOSED_COMPANY', location: 'INDOOR' },
+  outdoorPrivate: { audience: 'CLOSED_COMPANY', location: 'OUTDOOR' },
+  single: {},
+};
+
+const SLOTS = Object.keys(SLOT_PLACES) as ServingHoursSlot[];
+
+/** The slot a servingHours entry of the decision stands for. */
+export const servingHoursSlotOf = (entry: JsonObject): ServingHoursSlot | undefined =>
+  SLOTS.find((slot) => SLOT_PLACES[slot].audience === entry.audience && SLOT_PLACES[slot].location === entry.location);
 
 const EMPTY_TIME_RANGE: TimeRange = { from: '', to: '' };
 
@@ -131,23 +135,21 @@ export const scopeFromForm = (
   ),
 });
 
-const savedValues = (parameters: Parameter[] | undefined, key: string): string[] | undefined => {
-  const parameter = parameters?.find((candidate) => candidate.key === key);
-  return parameter ? parameter.values ?? [] : undefined;
-};
-
-/** What a saved decision carries, key by key; a key it lacks is left undefined. */
+/** What a saved decision's JSON carries; a list it lacks is left undefined, and a slot it lacks has no hours. */
 export const scopeFromDecision = (
-  parameters: Parameter[] | undefined,
-  slots: SlotSpec[]
-): { beverages?: string[]; servingHours: Partial<Record<ServingHoursSlot, TimeRange>> } => ({
-  beverages: savedValues(parameters, BEVERAGES_KEY),
-  servingHours: Object.fromEntries(
-    slots.flatMap((spec) => {
-      const values = savedValues(parameters, spec.key);
-      return values ? [[spec.slot, { from: values[0] ?? '', to: values[1] ?? '' }]] : [];
-    })
-  ),
+  json: JsonObject | undefined
+): { beverages?: string[]; servingHours?: Partial<Record<ServingHoursSlot, TimeRange>> } => ({
+  beverages: Array.isArray(json?.beverages)
+    ? json.beverages.filter((beverage): beverage is string => typeof beverage === 'string')
+    : undefined,
+  servingHours: Array.isArray(json?.servingHours)
+    ? Object.fromEntries(
+        json.servingHours.filter(isRecord).flatMap((entry) => {
+          const slot = servingHoursSlotOf(entry);
+          return slot ? [[slot, { from: stringAt(entry.from) ?? '', to: stringAt(entry.to) ?? '' }]] : [];
+        })
+      )
+    : undefined,
 });
 
 /** The saved value where the decision has one, the application's elsewhere. */
@@ -160,7 +162,7 @@ export const resolveScope = (
   servingHours: Object.fromEntries(
     slots.map((spec) => [
       spec.slot,
-      saved.servingHours[spec.slot] ?? defaults.servingHours[spec.slot] ?? EMPTY_TIME_RANGE,
+      (saved.servingHours ? saved.servingHours[spec.slot] : defaults.servingHours[spec.slot]) ?? EMPTY_TIME_RANGE,
     ])
   ),
 });
@@ -174,30 +176,21 @@ export const hasInvalidServingHours = (scope: DecisionScope): boolean =>
 export const servingHoursText = (range: TimeRange | undefined): string | undefined =>
   range?.from && range.to ? `${range.from}–${range.to}` : undefined;
 
-/** What the decision carries for the handler's choices; every shown slot is written, empty as []. */
-export const toScopeParameters = (
+const CLOCK_TIME = /^(([01][0-9]|2[0-3]):[0-5][0-9]|24:00)$/;
+
+/** What the decision's JSON carries for the handler's choices; a shown slot without both ends is left out. */
+export const toScopeJson = (
   scope: DecisionScope,
-  slots: SlotSpec[],
-  permitType: string,
-  displayName: (labelKey: string) => string
-): Parameter[] => [
-  ...(decidesBeverages(permitType)
-    ? [
-        {
-          key: BEVERAGES_KEY,
-          displayName: displayName(BEVERAGES_LABEL_KEY),
-          group: DECIDED_GROUP,
-          values: scope.beverages,
-        },
-      ]
-    : []),
-  ...slots.map((spec) => {
-    const range = scope.servingHours[spec.slot];
-    return {
-      key: spec.key,
-      displayName: displayName(spec.labelKey),
-      group: DECIDED_GROUP,
-      values: range?.from && range.to ? [range.from, range.to] : [],
-    };
-  }),
-];
+  permitType: string
+): { beverages?: string[]; servingHours?: JsonObject[] } => ({
+  beverages: decidesBeverages(permitType) ? scope.beverages : undefined,
+  servingHours:
+    Object.keys(scope.servingHours).length > 0
+      ? SLOTS.flatMap((slot) => {
+          const range = scope.servingHours[slot];
+          return range && CLOCK_TIME.test(range.from) && CLOCK_TIME.test(range.to)
+            ? [{ ...SLOT_PLACES[slot], from: range.from, to: range.to }]
+            : [];
+        })
+      : undefined,
+});

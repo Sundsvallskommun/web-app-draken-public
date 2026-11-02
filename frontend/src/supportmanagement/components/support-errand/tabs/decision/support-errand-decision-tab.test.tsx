@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { emptyUser } from '@common/services/user-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   createSupportDecision,
   getSupportDecisions,
+  saveSupportDecisionJsonParameter,
   SUPPORT_DECISION_ROLE_KEYS,
+  type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -46,6 +47,7 @@ vi.mock('@supportmanagement/services/support-decision-service', async (importOri
   getSupportDecisions: vi.fn(),
   createSupportDecision: vi.fn(),
   updateSupportDecision: vi.fn(),
+  saveSupportDecisionJsonParameter: vi.fn(),
 }));
 
 const toast = vi.hoisted(() => vi.fn());
@@ -90,8 +92,7 @@ const permanentErrand = (): SupportErrand =>
   } as unknown as SupportErrand);
 
 const input = (name: string) => document.querySelector(`[data-cy="decision-${name}"]`) as HTMLInputElement;
-const sentParameters = (call: unknown[]) =>
-  (call.at(-1) as { parameters: { key: string; values: string[]; group?: string }[] }).parameters;
+const sentJson = () => vi.mocked(saveSupportDecisionJsonParameter).mock.calls[0][4];
 
 const select = (name: string) => document.querySelector(`[data-cy="decision-${name}"]`) as HTMLSelectElement;
 const unsavedHint = () => document.querySelector('[data-cy="decision-unsaved"]');
@@ -118,6 +119,9 @@ beforeEach(() => {
   toast.mockReset();
   vi.mocked(getSupportDecisions).mockReset().mockResolvedValue([]);
   vi.mocked(createSupportDecision)
+    .mockReset()
+    .mockResolvedValue({ id: 'decision-1', status: 'DRAFT' } as never);
+  vi.mocked(saveSupportDecisionJsonParameter)
     .mockReset()
     .mockResolvedValue({ id: 'decision-1', status: 'DRAFT' } as never);
   useConfigStore.setState({ municipalityId: '2281' });
@@ -221,7 +225,7 @@ test('a half-filled serving time is not saved', async () => {
   await expect(saveTheTab()).resolves.toBe(true);
 });
 
-test('saving writes what was decided beside what the certificate reads', async () => {
+test('saving writes the decision, then what it says of the permit as its JSON', async () => {
   useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
   await renderTab();
   fillWhatTheCertificatePrints();
@@ -230,15 +234,17 @@ test('saving writes what was decided beside what the certificate reads', async (
 
   await expect(saveTheTab()).resolves.toBe(true);
 
-  const parameters = sentParameters(vi.mocked(createSupportDecision).mock.calls[0]);
-  const byKey = Object.fromEntries(parameters.map((parameter) => [parameter.key, parameter]));
-  expect(byKey.decidedBeverages).toMatchObject({ group: 'DECIDED', values: ['STRONG_BEER'] });
-  expect(byKey.decidedServingHoursIndoorPublic).toMatchObject({ group: 'DECIDED', values: ['11:00', '00:00'] });
-  expect(byKey.decidedServingHoursOutdoorPublic).toMatchObject({ group: 'DECIDED', values: [] });
-  expect(byKey).not.toHaveProperty('decidedServingHoursIndoorPrivate');
-  expect(byKey.beverageBeer.values).toEqual(['true']);
-  expect(byKey.beverageWine.values).toEqual(['false']);
-  expect(byKey.servingHours.values).toEqual(['Inomhus, allmänheten 11:00–00:00']);
+  expect(vi.mocked(createSupportDecision).mock.calls[0][2]).not.toHaveProperty('parameters');
+  expect(saveSupportDecisionJsonParameter).toHaveBeenCalledWith('errand-id', '2281', 'decision-1', 'permit', {
+    schemaId: '2281_aot_alcohol_decision_1.0',
+    value: expect.objectContaining({
+      servingPermitType: 'PERMANENT_SERVING',
+      beverages: ['STRONG_BEER'],
+      servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '11:00', to: '00:00' }],
+      servingArea: { description: 'Matsalen' },
+    }),
+  });
+  expect(sentJson().value).toMatchObject({ decision: { executionDate: '2026-10-20', validFrom: '2026-11-01' } });
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {
@@ -249,11 +255,17 @@ test('a saved decision fills the fields instead of the application, an empty val
       status: 'DRAFT',
       outcome: APPROVAL,
       version: 1,
-      parameters: [
-        { key: 'decidedBeverages', values: [] },
-        { key: 'decidedServingHoursIndoorPublic', values: ['10:00', '23:00'] },
+      jsonParameters: [
+        {
+          key: 'permit',
+          schemaId: '2281_aot_alcohol_decision_1.0',
+          value: {
+            beverages: [],
+            servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '10:00', to: '23:00' }],
+          },
+        },
       ],
-    } as Decision,
+    } as SupportDecision,
   ]);
   const setUnsaved = await renderTab();
 
@@ -261,7 +273,7 @@ test('a saved decision fills the fields instead of the application, an empty val
   expect(input('beverages-STRONG_BEER').checked).toBe(false);
   expect(input('beverages-WINE').checked).toBe(false);
   expect(input('serving-hours-indoorPublic-to').value).toBe('23:00');
-  // Not saved on the decision, so the application still fills it (and it is empty there).
+  // The decision has hours, and none for this slot.
   expect(input('serving-hours-outdoorPublic-from').value).toBe('');
   expect(setUnsaved).toHaveBeenLastCalledWith(false);
 });

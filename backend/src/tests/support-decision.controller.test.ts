@@ -8,15 +8,7 @@ import {
 } from '@/controllers/supportmanagement/support-decision.controller';
 
 import { mockReq, mockRes } from './helpers/http';
-import {
-  mockCity,
-  mockMunicipalityId,
-  mockRestaurantNumber,
-  mockStreet,
-  mockSupportErrandId,
-  mockSupportNamespace,
-  mockZipCode,
-} from './helpers/mock-data';
+import { mockMunicipalityId, mockRestaurantNumber, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 const MUNICIPALITY_ID = mockMunicipalityId;
 const NAMESPACE = mockSupportNamespace;
@@ -27,29 +19,31 @@ interface ApiStub {
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
 }
 
 // What the decision says about the premises, for the process to act on.
-const PREMISES_PARAMETERS = [
-  { key: 'restaurantNumber', values: [mockRestaurantNumber] },
-  { key: 'street', values: [mockStreet] },
-  { key: 'postalCode', values: [mockZipCode] },
-  { key: 'city', values: [mockCity] },
-];
+const PERMIT_JSON = {
+  key: 'permit',
+  schemaId: `${mockMunicipalityId}_aot_alcohol_decision_1.0`,
+  value: { premises: { restaurantNumber: mockRestaurantNumber } },
+};
 
 const decisionsUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}/decisions`;
 
 const makeController = () => {
   const controller = new SupportDecisionController();
   const api: ApiStub = {
-    get: vi.fn(async (config: { url?: string }) =>
-      config.url === decisionsUrl
+    get: vi.fn(async (config: { url?: string }) => {
+      if (config.url?.endsWith('/json-parameters')) return { data: [PERMIT_JSON], message: 'success' };
+      return config.url === decisionsUrl
         ? { data: [{ id: DECISION_ID, created: '2026-09-18T10:00:00+02:00', status: 'DRAFT' }], message: 'success' }
-        : { data: { id: DECISION_ID, status: 'DRAFT', version: 3 }, message: 'success' },
-    ),
+        : { data: { id: DECISION_ID, status: 'DRAFT', version: 3 }, message: 'success' };
+    }),
     post: vi.fn(async () => ({ data: {}, message: 'success' })),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
     delete: vi.fn(async () => ({ data: undefined, message: 'success' })),
+    put: vi.fn(async () => ({ data: {}, message: 'success' })),
   };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
   return { controller, api };
@@ -75,19 +69,6 @@ describe('CreateSupportDecisionDto', () => {
     // The status, method and decider are the controller's to set, never the client's.
     expect(serializedErrors).toMatch(/status/);
     expect(serializedErrors).toMatch(/decidedBy/);
-  });
-
-  it('accepts parameters as keys with lists of values, and nothing else in them', async () => {
-    const options = { whitelist: true, forbidNonWhitelisted: true };
-    const withParameters = (parameters: unknown) =>
-      plainToInstance(CreateSupportDecisionDto, { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters });
-    await expect(validate(withParameters(PREMISES_PARAMETERS), options)).resolves.toEqual([]);
-    await expect(validate(withParameters([]), options)).resolves.toEqual([]);
-
-    const errorsOf = async (parameters: unknown) => JSON.stringify(await validate(withParameters(parameters), options));
-    expect(await errorsOf([{ key: '', values: [mockStreet] }])).toMatch(/key/);
-    expect(await errorsOf([{ key: 'street', values: mockStreet }])).toMatch(/values/);
-    expect(await errorsOf([{ key: 'street', values: [mockStreet], version: 1 }])).toMatch(/version/);
   });
 
   it('accepts a draft without an outcome, which is required only when the decision is concluded', async () => {
@@ -152,21 +133,6 @@ describe('createDecision', () => {
 
     expect(api.patch).not.toHaveBeenCalled();
     expect(api.delete).not.toHaveBeenCalled();
-  });
-
-  it('writes the parameters with the draft, so they are in place when the decision is concluded', async () => {
-    const { controller, api } = makeController();
-
-    await controller.createDecision(
-      mockReq(),
-      mockSupportErrandId,
-      MUNICIPALITY_ID,
-      { outcome: 'APPROVAL', type: 'SERVERINGSTILLSTAND', parameters: PREMISES_PARAMETERS },
-      mockRes(),
-    );
-
-    const [createConfig] = api.post.mock.calls[0];
-    expect(createConfig.data).toMatchObject({ status: 'DRAFT', parameters: PREMISES_PARAMETERS });
   });
 
   it('removes the draft when a term cannot be written, and reports the failure', async () => {
@@ -274,17 +240,6 @@ describe('updateDecision', () => {
     );
   });
 
-  it('writes the parameters sent with an update, and sends none when there are none to change', async () => {
-    const { controller, api } = makeController();
-
-    await controller.updateDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, { parameters: PREMISES_PARAMETERS }, mockRes());
-    await controller.updateDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, { justification: 'Ny motivering' }, mockRes());
-
-    expect(api.patch.mock.calls[0][0].data).toMatchObject({ parameters: PREMISES_PARAMETERS });
-    // Support Management leaves the stored parameters as they are when the list is omitted.
-    expect(api.patch.mock.calls[1][0].data).not.toHaveProperty('parameters');
-  });
-
   it('leaves the terms alone when none are sent', async () => {
     const { controller, api } = makeController();
 
@@ -329,5 +284,53 @@ describe('completeDecision', () => {
     await controller.completeDecision(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, mockRes());
 
     expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('the JSON parameters', () => {
+  const decisionUrl = `${decisionsUrl}/${DECISION_ID}`;
+  const write = { schemaId: PERMIT_JSON.schemaId, value: PERMIT_JSON.value };
+
+  it('answers with each decision and the JSON parameters kept beside it', async () => {
+    const { controller } = makeController();
+    const res = mockRes();
+
+    await controller.fetchDecisions(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect(res.body).toMatchObject([{ id: DECISION_ID, jsonParameters: [PERMIT_JSON] }]);
+  });
+
+  it('writes a JSON parameter of a draft under its key', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.writeDecisionJsonParameter(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, 'permit', write, res);
+
+    const [config] = api.put.mock.calls[0];
+    expect(config.url).toBe(`${decisionUrl}/json-parameters/permit`);
+    expect(config.data).toEqual({ key: 'permit', ...write });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ id: DECISION_ID, jsonParameters: [PERMIT_JSON] });
+  });
+
+  it('writes nothing on a decision that is no longer a draft', async () => {
+    const { controller, api } = makeController();
+    api.get.mockImplementation(async () => ({ data: { id: DECISION_ID, status: 'COMPLETED', version: 4 }, message: 'success' }));
+    const res = mockRes();
+
+    await controller.writeDecisionJsonParameter(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, DECISION_ID, 'permit', write, res);
+
+    expect(res.statusCode).toBe(409);
+    expect(api.put).not.toHaveBeenCalled();
+  });
+
+  it('rejects a municipality id other than the configured one and writes nothing', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.writeDecisionJsonParameter(mockReq(), mockSupportErrandId, '9999', DECISION_ID, 'permit', write, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(api.put).not.toHaveBeenCalled();
   });
 });

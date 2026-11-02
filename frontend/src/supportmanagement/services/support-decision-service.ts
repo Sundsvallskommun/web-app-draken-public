@@ -1,10 +1,10 @@
-import type {
-  Decision,
-  DecisionOutcome,
-  Label,
-  Parameter,
-} from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Decision, DecisionOutcome, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+
+import type { SupportJsonParameter, SupportJsonParameterWrite } from './support-json-parameter-service';
+
+/** A decision as the BFF answers it: with the JSON parameters Support Management keeps beside it. */
+export type SupportDecision = Decision & { jsonParameters?: SupportJsonParameter[] };
 
 export interface SupportDecisionInput {
   outcome: string;
@@ -16,8 +16,6 @@ export interface SupportDecisionInput {
   validFrom?: string;
   validTo?: string;
   terms?: string[];
-  /** Metadata for the process, e.g. the premises, and what the handler decided (see support-decision-scope-service). */
-  parameters?: Pick<Parameter, 'key' | 'values' | 'displayName' | 'group'>[];
 }
 
 const PERMIT_TYPE_ATTRIBUTE = 'permitType';
@@ -96,9 +94,9 @@ export const outcomeForTerms = (outcome: string, terms: string[], outcomes: Deci
 export const isSupportDecisionLockedError = (error: unknown): boolean =>
   (error as { response?: { status?: number } })?.response?.status === 409;
 
-export const getSupportDecisions = (errandId: string, municipalityId: string): Promise<Decision[]> =>
+export const getSupportDecisions = (errandId: string, municipalityId: string): Promise<SupportDecision[]> =>
   apiService
-    .get<Decision[]>(`supportdecisions/${municipalityId}/${errandId}`)
+    .get<SupportDecision[]>(`supportdecisions/${municipalityId}/${errandId}`)
     .then((res) => res.data ?? [])
     .catch((e) => {
       console.error('Something went wrong when fetching errand decisions');
@@ -109,9 +107,9 @@ export const createSupportDecision = (
   errandId: string,
   municipalityId: string,
   decision: SupportDecisionInput
-): Promise<Decision> =>
+): Promise<SupportDecision> =>
   apiService
-    .post<Decision, SupportDecisionInput>(`supportdecisions/${municipalityId}/${errandId}`, decision)
+    .post<SupportDecision, SupportDecisionInput>(`supportdecisions/${municipalityId}/${errandId}`, decision)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when recording the decision');
@@ -123,9 +121,12 @@ export const updateSupportDecision = (
   municipalityId: string,
   decisionId: string,
   decision: SupportDecisionInput
-): Promise<Decision> =>
+): Promise<SupportDecision> =>
   apiService
-    .patch<Decision, SupportDecisionInput>(`supportdecisions/${municipalityId}/${errandId}/${decisionId}`, decision)
+    .patch<SupportDecision, SupportDecisionInput>(
+      `supportdecisions/${municipalityId}/${errandId}/${decisionId}`,
+      decision
+    )
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when updating the decision');
@@ -136,9 +137,12 @@ export const completeSupportDecision = (
   errandId: string,
   municipalityId: string,
   decisionId: string
-): Promise<Decision> =>
+): Promise<SupportDecision> =>
   apiService
-    .post<Decision, undefined>(`supportdecisions/${municipalityId}/${errandId}/${decisionId}/complete`, undefined)
+    .post<SupportDecision, undefined>(
+      `supportdecisions/${municipalityId}/${errandId}/${decisionId}/complete`,
+      undefined
+    )
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when concluding the decision');
@@ -150,3 +154,22 @@ export const isSupportDecisionLocked = (decision: Decision | undefined): boolean
   decision?.status === 'COMPLETED' || decision?.status === 'CANCELLED';
 
 export const isSupportDecisionDraft = (decision: Decision | undefined): boolean => decision?.status === 'DRAFT';
+
+/** Creates or replaces the JSON parameter of a draft decision under the key. */
+export const saveSupportDecisionJsonParameter = (
+  errandId: string,
+  municipalityId: string,
+  decisionId: string,
+  key: string,
+  parameter: SupportJsonParameterWrite
+): Promise<SupportDecision> =>
+  apiService
+    .put<SupportDecision, SupportJsonParameterWrite>(
+      `supportdecisions/${municipalityId}/${errandId}/${decisionId}/json-parameters/${key}`,
+      parameter
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when saving what the decision says of the permit');
+      throw e;
+    });

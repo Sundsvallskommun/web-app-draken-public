@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import type { SupportDecision } from '@supportmanagement/services/support-decision-service';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 
@@ -18,7 +18,7 @@ const PREMISES: DecisionPremises = {
 
 const NOTHING_DECIDED = { beverages: [], servingHours: {} };
 
-const saved = (overrides: Partial<Decision> = {}): Decision =>
+const saved = (overrides: Partial<SupportDecision> = {}): SupportDecision =>
   ({
     id: 'decision-1',
     version: 1,
@@ -30,15 +30,21 @@ const saved = (overrides: Partial<Decision> = {}): Decision =>
       { text: 'Villkor B', sortOrder: 2 },
       { text: 'Villkor A', sortOrder: 1 },
     ],
-    parameters: [
-      { key: 'executionDate', values: ['2026-10-20'] },
-      { key: 'servingAreaDescription', values: ['Matsalen'] },
-      { key: 'premisesPhone', values: ['060-200200'] },
-      { key: 'decisionCaseNumber', values: ['KS 2026/123'] },
-      { key: 'otherCaseNumber', values: ['2026/42'] },
+    jsonParameters: [
+      {
+        key: 'permit',
+        schemaId: '2281_aot_alcohol_decision_1.0',
+        value: {
+          caseRegistrationNumber: 'KS 2026/123',
+          externalCaseRegistrationNumber: '2026/42',
+          premises: { phoneNumber: mockEnv.mockSecondaryPhoneNumber },
+          servingArea: { description: 'Matsalen' },
+          decision: { executionDate: '2026-10-20' },
+        },
+      },
     ],
     ...overrides,
-  } as Decision);
+  } as SupportDecision);
 
 const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
   renderHook((props: Parameters<typeof useDecisionForm>[0]) => useDecisionForm(props), {
@@ -65,7 +71,7 @@ test('a decision that exists fills the fields, and its conditions come in their 
     validFrom: '2026-11-01',
     issuedOn: '2026-10-20',
     servingArea: 'Matsalen',
-    premisesPhone: '060-200200',
+    premisesPhone: mockEnv.mockSecondaryPhoneNumber,
     decisionCaseNumber: 'KS 2026/123',
     otherCaseNumber: '2026/42',
     terms: ['Villkor A', 'Villkor B'],

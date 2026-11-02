@@ -1,10 +1,16 @@
 'use client';
 
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
-import { decisionParameterValue } from '@supportmanagement/services/support-decision-parameters-service';
+import {
+  flattenDecisionJson,
+  savedDecisionJson,
+} from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import type { DecisionScope } from '@supportmanagement/services/support-decision-scope-service';
-import { decisionTermTexts, outcomeWithoutConditions } from '@supportmanagement/services/support-decision-service';
+import {
+  decisionTermTexts,
+  outcomeWithoutConditions,
+  type SupportDecision,
+} from '@supportmanagement/services/support-decision-service';
 import { useCallback, useState } from 'react';
 
 export interface DecisionFormValues {
@@ -29,7 +35,7 @@ export interface DecisionFormValues {
 }
 
 interface DecisionFormInput {
-  decision: Decision | undefined;
+  decision: SupportDecision | undefined;
   /** A concluded decision is read, not written, and then nothing counts as edited. */
   editable: boolean;
   /** The premises the errand carries, and the ones the handler has settled on. */
@@ -54,21 +60,24 @@ const asSaved = ({
   applicationPremisesPhone,
   scopeAsSaved,
   defaultRole,
-}: DecisionFormInput): DecisionFormValues => ({
-  outcome: outcomeWithoutConditions(decision?.outcome),
-  decidedByRole: decision?.decidedByRole || defaultRole,
-  legalBasis: decision?.legalBasis ?? '',
-  decisionCaseNumber: decisionParameterValue(decision?.parameters, 'decisionCaseNumber') ?? '',
-  otherCaseNumber: decisionParameterValue(decision?.parameters, 'otherCaseNumber') ?? '',
-  justification: decision?.justification ?? '',
-  validFrom: decision?.validFrom ?? '',
-  validTo: decision?.validTo ?? '',
-  issuedOn: decisionParameterValue(decision?.parameters, 'executionDate') ?? '',
-  servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
-  premisesPhone: decisionParameterValue(decision?.parameters, 'premisesPhone') ?? applicationPremisesPhone,
-  terms: decisionTermTexts(decision),
-  scope: scopeAsSaved,
-});
+}: DecisionFormInput): DecisionFormValues => {
+  const saved = flattenDecisionJson(savedDecisionJson(decision));
+  return {
+    outcome: outcomeWithoutConditions(decision?.outcome),
+    decidedByRole: decision?.decidedByRole || defaultRole,
+    legalBasis: decision?.legalBasis ?? '',
+    decisionCaseNumber: saved.decisionCaseNumber ?? '',
+    otherCaseNumber: saved.otherCaseNumber ?? '',
+    justification: decision?.justification ?? '',
+    validFrom: decision?.validFrom ?? '',
+    validTo: decision?.validTo ?? '',
+    issuedOn: saved.executionDate ?? '',
+    servingArea: saved.servingAreaDescription ?? '',
+    premisesPhone: saved.premisesPhone ?? applicationPremisesPhone,
+    terms: decisionTermTexts(decision),
+    scope: scopeAsSaved,
+  };
+};
 
 const comparable = (values: DecisionFormValues, premises: DecisionPremises | undefined) =>
   JSON.stringify({ ...values, terms: values.terms.filter(Boolean), premises: premises ?? null });

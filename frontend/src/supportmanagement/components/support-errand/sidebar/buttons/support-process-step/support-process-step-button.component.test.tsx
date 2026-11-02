@@ -67,20 +67,21 @@ vi.mock('@supportmanagement/services/support-process-service', async (importOrig
 
 const ERRAND_ID = 'errand-1';
 
-const CERTIFICATE_PARAMETERS = [
-  'decisionText',
-  'decisionMaker',
-  'validFrom',
-  'executionDate',
-  'premisesStreet',
-  'premisesPostalAddress',
-  'premisesPhone',
-  'servingAreaDescription',
-  'decisionCaseNumber',
-].map((key) => ({ key, values: ['ifyllt'] }));
+// What the certificate needs of the decision, as its JSON carries it.
+const CERTIFICATE_JSON = {
+  caseRegistrationNumber: 'ifyllt',
+  premises: { address: { street: 'ifyllt', postalCode: '000 01', city: 'ifyllt' }, phoneNumber: 'ifyllt' },
+  servingArea: { description: 'ifyllt' },
+  decision: { decisionText: 'ifyllt', decisionMaker: 'ifyllt', validFrom: '2026-11-01', executionDate: '2026-11-01' },
+};
 
-const aDecision = (parameters = CERTIFICATE_PARAMETERS) => [
-  { id: 'decision-1', decisionType: 'PROPOSED', outcome: 'APPROVAL', parameters },
+const aDecision = (value: object = CERTIFICATE_JSON) => [
+  {
+    id: 'decision-1',
+    decisionType: 'PROPOSED',
+    outcome: 'APPROVAL',
+    jsonParameters: [{ key: 'permit', schemaId: '2281_aot_alcohol_decision_1.0', value }],
+  },
 ];
 
 const errandAt = (currentActivityId: string, awaitingSignals: string[]): SupportErrand =>
@@ -175,7 +176,7 @@ test('the gate is taken from the process as it stands, not from the errand the d
 });
 
 test('the decision is read again for the gate, so one saved after the list was read is judged as it stands', async () => {
-  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  const withoutValidFrom = { ...CERTIFICATE_JSON, decision: { ...CERTIFICATE_JSON.decision, validFrom: undefined } };
   vi.mocked(getSupportDecisions)
     .mockResolvedValueOnce(aDecision(withoutValidFrom) as never)
     .mockResolvedValue(aDecision() as never);
@@ -450,7 +451,7 @@ test('what only the applicant can complete is said out loud and then left to the
 });
 
 test('a decision is not concluded while the certificate lacks something, since its parameters then freeze', async () => {
-  const withoutValidFrom = CERTIFICATE_PARAMETERS.filter((parameter) => parameter.key !== 'validFrom');
+  const withoutValidFrom = { ...CERTIFICATE_JSON, decision: { ...CERTIFICATE_JSON.decision, validFrom: undefined } };
   vi.mocked(getSupportDecisions).mockResolvedValue(aDecision(withoutValidFrom) as never);
   vi.mocked(getSupportErrandProcessState).mockResolvedValue({
     process: {

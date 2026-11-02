@@ -1,13 +1,13 @@
 'use client';
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   missingDecisionInputs,
   missingPermitInputs,
+  savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import { supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
+import { type SupportDecision, supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
 import { getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportStatements,
@@ -125,7 +125,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
     return true;
   };
 
-  const decisionCarriesWhatThePermitNeeds = async (decisions: Decision[]): Promise<boolean> => {
+  const decisionCarriesWhatThePermitNeeds = async (decisions: SupportDecision[]): Promise<boolean> => {
     if (!supportErrand) return true;
 
     const permitType = supportDecisionPermitType(
@@ -133,7 +133,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
       supportErrand.process?.processKey
     );
     const decided = decisions.find((decision) => !!decision.outcome);
-    const missing = missingDecisionInputs(permitType, decided?.parameters);
+    const missing = missingDecisionInputs(permitType, savedDecisionJson(decided));
     if (!missing.length) return true;
 
     const goToTheDecision = await confirm.showConfirmation(
