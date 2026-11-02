@@ -19,6 +19,11 @@ export const SUPPORT_STATEMENT_COUNTERPARTIES: SupportStatementCounterparty[] = 
   { name: 'Kreditupplysning (Syna)', key: 'CREDIT_REPORT' },
 ];
 
+export const SUPPORT_STATEMENT_OTHER_COUNTERPARTY = 'Annan instans';
+
+export const isSupportStatementOtherCounterparty = (counterpartyName: string | undefined): boolean =>
+  counterpartyName === SUPPORT_STATEMENT_OTHER_COUNTERPARTY;
+
 export const supportStatementCounterparty = (
   counterpartyName: string | undefined
 ): SupportStatementCounterparty | undefined =>

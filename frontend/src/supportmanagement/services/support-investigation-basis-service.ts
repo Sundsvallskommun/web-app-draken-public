@@ -63,6 +63,7 @@ import {
   supportPremisesExamination,
   supportPremisesFireSafety,
 } from './support-premises-examination-service';
+import { isSupportStatementOtherCounterparty } from './support-statement-counterparties';
 import { getSupportStatements } from './support-statement-service';
 import { supportTobaccoSalesPointOf } from './support-tobacco-application-service';
 
@@ -547,14 +548,23 @@ const fireSafetyLine = (statements: Statement[], metadata: SupportMetadata | und
  * prints "svar saknas, skickad ..." for one still out, so a referral is a row once it has gone out.
  */
 const isAsked = (statement: Statement): boolean =>
-  !!statement.sentAt || !!statement.outcome || !!statement.respondedAt || !!statement.responseText?.trim();
+  !!statement.sentAt ||
+  !!statement.outcome ||
+  !!statement.respondedAt ||
+  !!statement.responseText?.trim() ||
+  (statement.attachments ?? []).length > 0;
+
+const counterpartyOf = (statement: Statement): string =>
+  isSupportStatementOtherCounterparty(statement.counterpartyName)
+    ? statement.title || statement.counterpartyName || ''
+    : statement.counterpartyName ?? '';
 
 const basisStatements = (
   statements: Statement[],
   metadata: SupportMetadata | undefined
 ): InvestigationBasisStatement[] =>
   statements.filter(isAsked).map((statement) => ({
-    counterparty: statement.counterpartyName ?? '',
+    counterparty: counterpartyOf(statement),
     sentAt: asDate(statement.sentAt),
     respondedAt: asDate(statement.respondedAt),
     outcomeLabel: statementOutcomeLabelOf(statement.outcome, metadata),

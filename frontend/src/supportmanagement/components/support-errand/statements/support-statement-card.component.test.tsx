@@ -85,6 +85,7 @@ const statementForm = {
   dueAt: '2026-12-01',
   counterpartyName: 'Skatteverket',
   question: '',
+  label: '',
   freeText: '',
   responseText: '',
   outcome: '',
@@ -121,6 +122,22 @@ const Harness: FC<{ written: Record<string, string>; writable: boolean; counterp
 
 const mountCard = (writable = true, counterpartyName = 'Skatteverket', written: Record<string, string> = {}) =>
   render(<Harness written={written} writable={writable} counterpartyName={counterpartyName} />);
+
+const withAnUnderlay = (statement: object) =>
+  render(
+    <SupportStatementCard
+      statement={statement as never}
+      form={{ ...statementForm, counterpartyName: 'Annan instans', label: 'Yttrande' } as never}
+      problem={undefined}
+      errandId="errand-1"
+      errandNumber="AOT-26100216"
+      municipalityId="2281"
+      writable
+      onFormChange={formChanged}
+      onChanged={vi.fn()}
+      onRemoved={vi.fn()}
+    />
+  );
 
 const findOf = (name: string) => document.querySelector(`[data-cy="${name}"]`);
 
@@ -290,4 +307,67 @@ test('the preview renders the free text that was applied, not every keystroke on
 
   fireEvent.click(findOf('statement-apply-free-text') as HTMLButtonElement);
   expect(preview.parameters?.additionalText).toBe('Lokalen är ombyggd.');
+});
+
+test('a referral of its own is named instead of templated, and has no document to generate', () => {
+  mountCard(true, 'Annan instans');
+
+  expect(findOf('statement-document-name')).toBeTruthy();
+  expect(findOf('statement-template')).toBeNull();
+  expect(findOf('statement-generate')).toBeNull();
+  expect(findOf('statement-free-text')).toBeNull();
+
+  // The fields every referral carries are the same ones.
+  expect(findOf('statement-upload')).toBeTruthy();
+  expect(findOf('statement-sent-at')).toBeTruthy();
+  expect(findOf('statement-responded-at')).toBeTruthy();
+  expect(findOf('statement-outcome')).toBeTruthy();
+  expect(findOf('statement-response-text')).toBeTruthy();
+});
+
+test('what the handler calls the document is written back as the name of the referral', () => {
+  mountCard(true, 'Annan instans');
+
+  fireEvent.change(findOf('statement-document-name') as HTMLInputElement, {
+    target: { value: 'Yttrande från fastighetsägaren' },
+  });
+
+  expect(formChanged).toHaveBeenLastCalledWith({ label: 'Yttrande från fastighetsägaren' });
+});
+
+test('a referral of its own files what the handler says the file is', () => {
+  mountCard(true, 'Annan instans');
+
+  expect((findOf('statement-upload') as HTMLElement).textContent).toBe('common:statements.upload_attachment');
+  expect((findOf('statement-upload-kind-request') as HTMLInputElement).checked).toBe(true);
+
+  fireEvent.click(findOf('statement-upload-kind-response') as HTMLInputElement);
+
+  expect((findOf('statement-upload-kind-response') as HTMLInputElement).checked).toBe(true);
+});
+
+test('a referral of its own that carries a document is named once and for all', () => {
+  withAnUnderlay({
+    id: 'st-1',
+    type: 'REFERRAL',
+    status: 'DRAFT',
+    attachments: [{ id: 'a1', fileName: 'Yttrande.pdf', purpose: { name: 'STATEMENT_REQUEST' } }],
+  });
+
+  expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
+  expect((findOf('statement-counterparty') as HTMLSelectElement).disabled).toBe(true);
+  // Nothing has answered it yet, so it is still a referral the handler can take back.
+  expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(false);
+});
+
+test('a referral of its own that has been answered cannot be taken back', () => {
+  withAnUnderlay({
+    id: 'st-1',
+    type: 'REFERRAL',
+    status: 'COMPLETED',
+    attachments: [{ id: 'a2', fileName: 'Svar.pdf', purpose: { name: 'STATEMENT_RESPONSE' } }],
+  });
+
+  expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
+  expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(true);
 });

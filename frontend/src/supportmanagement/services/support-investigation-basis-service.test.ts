@@ -450,6 +450,20 @@ test('a referral still waiting is sent without an answer, which the template rep
   });
 });
 
+test('a referral of its own stands under the name the handler gave its document', () => {
+  const ofItsOwn = {
+    counterpartyName: 'Annan instans',
+    title: 'Yttrande från fastighetsägaren',
+    attachments: [{ id: 'a1' }],
+  };
+  const parameters = investigationBasisParameters(input({ statements: [ofItsOwn] as never }));
+
+  // A document is all it has: no date, no outcome, and still a row, since the document is the point.
+  expect(parameters.statements).toEqual([
+    { counterparty: 'Yttrande från fastighetsägaren', sentAt: '', respondedAt: '', outcomeLabel: '', responseText: '' },
+  ]);
+});
+
 test('a referral card opened but never sent is not a row at all', () => {
   expect(built().statements.map((statement) => statement.counterparty)).not.toContain('Miljökontoret');
 });

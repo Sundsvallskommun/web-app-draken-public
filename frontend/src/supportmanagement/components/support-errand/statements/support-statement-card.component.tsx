@@ -11,6 +11,7 @@ import {
   FormControl,
   FormLabel,
   Input,
+  RadioButton,
   Select,
   Spinner,
   Textarea,
@@ -19,7 +20,11 @@ import {
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { isOrganizationExternalIdType, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { SUPPORT_STATEMENT_COUNTERPARTIES } from '@supportmanagement/services/support-statement-counterparties';
+import {
+  isSupportStatementOtherCounterparty,
+  SUPPORT_STATEMENT_COUNTERPARTIES,
+  SUPPORT_STATEMENT_OTHER_COUNTERPARTY,
+} from '@supportmanagement/services/support-statement-counterparties';
 import {
   attachmentsOfKind,
   createSupportStatement,
@@ -31,6 +36,7 @@ import {
   SUPPORT_STATEMENT_STATUSES,
   SUPPORT_STATEMENT_TYPE,
   SupportStatementAttachmentKind,
+  type SupportStatementAttachmentKindName,
   supportStatementAttachmentPurpose,
   supportStatementFields,
   type SupportStatementForm,
@@ -281,6 +287,9 @@ export const SupportStatementCard: FC<{
   const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
   const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
   const [companies, setCompanies] = useState<Record<string, ChosenCompany[]>>({});
+  const [uploadKind, setUploadKind] = useState<SupportStatementAttachmentKindName>(
+    SupportStatementAttachmentKind.REQUEST
+  );
   // The preview costs a render of its own, so the free text reaches it when the handler says so.
   const [appliedFreeText, setAppliedFreeText] = useState(form.freeText);
 
@@ -303,6 +312,7 @@ export const SupportStatementCard: FC<{
   const underlayExists = requests.length > 0;
   const templateIdentifier = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
   const counterpartyChosen = form.counterpartyName.length > 0;
+  const ofItsOwn = isSupportStatementOtherCounterparty(form.counterpartyName);
   const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
   const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
   const companiesNeeded = supportStatementTemplateAsksForCompanies(templateIdentifier);
@@ -316,7 +326,7 @@ export const SupportStatementCard: FC<{
 
   const noteOfAttachment = (attachment: ErrandAttachment) => {
     const kind = requests.includes(attachment)
-      ? t('common:statements.attachment_request')
+      ? t(ofItsOwn ? 'common:statements.attachment_filed' : 'common:statements.attachment_request')
       : t('common:statements.attachment_response');
     return `${kind} · ${supportStatementPurposeDisplayName(attachment.purpose?.name ?? '', supportMetadata)}`;
   };
@@ -399,7 +409,9 @@ export const SupportStatementCard: FC<{
         await createSupportStatement(errandId, municipalityId, {
           type: SUPPORT_STATEMENT_TYPE,
           counterpartyName,
-          title: t('common:statements.attachment_title', { counterparty: counterpartyName, errandNumber }),
+          title: isSupportStatementOtherCounterparty(counterpartyName)
+            ? counterpartyName
+            : t('common:statements.attachment_title', { counterparty: counterpartyName, errandNumber }),
         })
       );
     } catch {
@@ -465,6 +477,13 @@ export const SupportStatementCard: FC<{
     }
   };
 
+  const filesAnUnderlay = ofItsOwn && uploadKind === SupportStatementAttachmentKind.REQUEST;
+  const uploadPurpose = filesAnUnderlay
+    ? supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST)
+    : responsePurpose;
+
+  const settled = underlayExists || responses.length > 0;
+
   /** An answer that has arrived is what makes the statement answered, so the status follows the file. */
   const upload = async (file: File | undefined) => {
     if (!file || !statementId) return;
@@ -477,8 +496,8 @@ export const SupportStatementCard: FC<{
         statementId,
         supportStatementFields(form, titleOfStatement)
       );
-      onChanged(await uploadSupportStatementAttachment(errandId, municipalityId, statementId, file, responsePurpose));
-      onFormChange({ status: SupportStatementStatus.COMPLETED });
+      onChanged(await uploadSupportStatementAttachment(errandId, municipalityId, statementId, file, uploadPurpose));
+      if (!filesAnUnderlay) onFormChange({ status: SupportStatementStatus.COMPLETED });
       await refreshAttachments();
     } catch {
       toastMessage(getToastOptions({ message: t('common:statements.toast.upload_failed'), status: 'error' }));
@@ -533,7 +552,7 @@ export const SupportStatementCard: FC<{
           <FormLabel>{t('common:statements.counterparty')}</FormLabel>
           <Select
             value={form.counterpartyName}
-            disabled={!editable || underlayExists}
+            disabled={!editable || settled}
             data-cy="statement-counterparty"
             onChange={(e) => void chooseCounterparty(e.currentTarget.value)}
           >
@@ -543,6 +562,9 @@ export const SupportStatementCard: FC<{
                 {counterparty.name}
               </Select.Option>
             ))}
+            <Select.Option value={SUPPORT_STATEMENT_OTHER_COUNTERPARTY}>
+              {SUPPORT_STATEMENT_OTHER_COUNTERPARTY}
+            </Select.Option>
           </Select>
         </FormControl>
         <Button
@@ -562,97 +584,114 @@ export const SupportStatementCard: FC<{
 
       {counterpartyChosen ? (
         <div className="flex flex-col gap-12">
-          <div className="flex flex-wrap items-end gap-16">
-            <FormControl className="grow">
-              <FormLabel>{t('common:statements.template')}</FormLabel>
-              <Select
-                value={templateIdentifier}
-                disabled={!editable || underlayExists}
-                data-cy="statement-template"
-                onChange={(e) => chooseTemplate(e.currentTarget.value)}
-              >
-                <TemplateOptions
-                  locked={underlayExists}
-                  identifier={templateIdentifier}
-                  question={form.question}
-                  templates={templates}
-                />
-              </Select>
+          {ofItsOwn ? (
+            <FormControl className="w-full">
+              <FormLabel>{t('common:statements.document_name')}</FormLabel>
+              <Input
+                value={form.label}
+                disabled={!editable || settled}
+                placeholder={t('common:statements.document_name_placeholder')}
+                data-cy="statement-document-name"
+                onChange={(e) => set({ label: e.currentTarget.value })}
+              />
             </FormControl>
-            <DeadlineField
-              asked={asksForADeadline}
-              value={form.dueAt}
-              editable={editable}
-              onChange={(dueAt) => set({ dueAt })}
-            />
-          </div>
-
-          <LockedNote shown={underlayExists} />
-
-          <PeopleChoice
-            peopleNeeded={peopleNeeded}
-            people={people}
-            chosenPartyIds={chosenPartyIds}
-            companiesNeeded={companiesNeeded}
-            companies={companies}
-            editable={editable}
-            onToggle={togglePerson}
-            onCompanies={rememberCompanies}
-          />
-
-          {takesAFreeText ? (
+          ) : (
             <>
-              <FormControl className="w-full">
-                <FormLabel>{t('common:statements.free_text')}</FormLabel>
-                <Textarea
-                  className="w-full"
-                  rows={4}
-                  value={form.freeText}
-                  disabled={!editable || underlayExists}
-                  placeholder={t('common:statements.free_text_placeholder')}
-                  data-cy="statement-free-text"
-                  onChange={(e) => set({ freeText: e.currentTarget.value })}
+              <div className="flex flex-wrap items-end gap-16">
+                <FormControl className="grow">
+                  <FormLabel>{t('common:statements.template')}</FormLabel>
+                  <Select
+                    value={templateIdentifier}
+                    disabled={!editable || underlayExists}
+                    data-cy="statement-template"
+                    onChange={(e) => chooseTemplate(e.currentTarget.value)}
+                  >
+                    <TemplateOptions
+                      locked={underlayExists}
+                      identifier={templateIdentifier}
+                      question={form.question}
+                      templates={templates}
+                    />
+                  </Select>
+                </FormControl>
+                <DeadlineField
+                  asked={asksForADeadline}
+                  value={form.dueAt}
+                  editable={editable}
+                  onChange={(dueAt) => set({ dueAt })}
                 />
-              </FormControl>
+              </div>
 
-              <div>
+              <LockedNote shown={underlayExists} />
+
+              <PeopleChoice
+                peopleNeeded={peopleNeeded}
+                people={people}
+                chosenPartyIds={chosenPartyIds}
+                companiesNeeded={companiesNeeded}
+                companies={companies}
+                editable={editable}
+                onToggle={togglePerson}
+                onCompanies={rememberCompanies}
+              />
+
+              {takesAFreeText ? (
+                <>
+                  <FormControl className="w-full">
+                    <FormLabel>{t('common:statements.free_text')}</FormLabel>
+                    <Textarea
+                      className="w-full"
+                      rows={4}
+                      value={form.freeText}
+                      disabled={!editable || underlayExists}
+                      placeholder={t('common:statements.free_text_placeholder')}
+                      data-cy="statement-free-text"
+                      onChange={(e) => set({ freeText: e.currentTarget.value })}
+                    />
+                  </FormControl>
+
+                  <div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!editable || underlayExists || appliedFreeText === form.freeText}
+                      data-cy="statement-apply-free-text"
+                      leftIcon={<RefreshCw size={18} />}
+                      onClick={() => setAppliedFreeText(form.freeText)}
+                    >
+                      {t('common:statements.apply_free_text')}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+
+              {!underlayExists && templateIdentifier && !templateProblem ? (
+                <TemplatePdfPreview
+                  identifier={templateIdentifier}
+                  parameters={
+                    supportStatementTemplateParameters(factsFor(undefined)) as { [key: string]: string | Object }
+                  }
+                  watermarked
+                  title={t('common:statements.preview')}
+                />
+              ) : null}
+
+              <TemplateProblem problem={templateProblem} identifier={templateIdentifier} />
+
+              <div className="flex justify-end">
                 <Button
                   type="button"
-                  variant="secondary"
-                  disabled={!editable || underlayExists || appliedFreeText === form.freeText}
-                  data-cy="statement-apply-free-text"
-                  leftIcon={<RefreshCw size={18} />}
-                  onClick={() => setAppliedFreeText(form.freeText)}
+                  variant="primary"
+                  disabled={!editable || !!templateProblem}
+                  data-cy="statement-generate"
+                  leftIcon={busy ? <Spinner size={2} /> : <Mail size={18} />}
+                  onClick={() => void generate()}
                 >
-                  {t('common:statements.apply_free_text')}
+                  {t('common:statements.generate')}
                 </Button>
               </div>
             </>
-          ) : null}
-
-          {!underlayExists && templateIdentifier && !templateProblem ? (
-            <TemplatePdfPreview
-              identifier={templateIdentifier}
-              parameters={supportStatementTemplateParameters(factsFor(undefined)) as { [key: string]: string | Object }}
-              watermarked
-              title={t('common:statements.preview')}
-            />
-          ) : null}
-
-          <TemplateProblem problem={templateProblem} identifier={templateIdentifier} />
-
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="primary"
-              disabled={!editable || !!templateProblem}
-              data-cy="statement-generate"
-              leftIcon={busy ? <Spinner size={2} /> : <Mail size={18} />}
-              onClick={() => void generate()}
-            >
-              {t('common:statements.generate')}
-            </Button>
-          </div>
+          )}
         </div>
       ) : (
         <p className="text-small text-dark-secondary italic m-0" data-cy="statement-choose-counterparty">
@@ -672,6 +711,33 @@ export const SupportStatementCard: FC<{
         />
       ))}
 
+      {ofItsOwn ? (
+        <RadioButton.Group inline data-cy="statement-upload-kind">
+          <RadioButton
+            size="sm"
+            name={`statement-upload-kind-${statementId ?? 'new'}`}
+            value={SupportStatementAttachmentKind.REQUEST}
+            checked={uploadKind === SupportStatementAttachmentKind.REQUEST}
+            disabled={!editable}
+            data-cy="statement-upload-kind-request"
+            onChange={() => setUploadKind(SupportStatementAttachmentKind.REQUEST)}
+          >
+            {t('common:statements.upload_kind_request')}
+          </RadioButton>
+          <RadioButton
+            size="sm"
+            name={`statement-upload-kind-${statementId ?? 'new'}`}
+            value={SupportStatementAttachmentKind.RESPONSE}
+            checked={uploadKind === SupportStatementAttachmentKind.RESPONSE}
+            disabled={!editable}
+            data-cy="statement-upload-kind-response"
+            onChange={() => setUploadKind(SupportStatementAttachmentKind.RESPONSE)}
+          >
+            {t('common:statements.upload_kind_response')}
+          </RadioButton>
+        </RadioButton.Group>
+      ) : null}
+
       <div className="flex items-center gap-16">
         <Button
           type="button"
@@ -681,12 +747,12 @@ export const SupportStatementCard: FC<{
           leftIcon={<Upload size={18} />}
           onClick={() => fileInput.current?.click()}
         >
-          {t('common:statements.upload')}
+          {t(ofItsOwn ? 'common:statements.upload_attachment' : 'common:statements.upload')}
         </Button>
         <span className="text-small text-dark-secondary">
           {statementId
             ? t('common:statements.tagged_as', {
-                purpose: supportStatementPurposeDisplayName(responsePurpose, supportMetadata),
+                purpose: supportStatementPurposeDisplayName(uploadPurpose, supportMetadata),
               })
             : t('common:statements.choose_counterparty_first_short')}
         </span>
