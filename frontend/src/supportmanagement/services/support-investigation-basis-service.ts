@@ -40,6 +40,8 @@ import {
 } from './support-form-value-service';
 import { supportApplicationCompleteAt } from './support-investigation-processing-service';
 import { sectionKeyOf, type Sections } from './support-investigation-sections';
+import type { SupportInvestigation } from './support-investigation-service';
+import { jsonParameterObject } from './support-json-parameter-service';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   engagementIsPerson,
@@ -59,6 +61,7 @@ import {
 import { getPremisesAddress } from './support-premises-address-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
+  SUPPORT_PREMISES_SECTION_JSON,
   supportPremisesCapacityOf,
   supportPremisesExamination,
   supportPremisesFireSafety,
@@ -218,7 +221,7 @@ export interface InvestigationBasisInput {
   /** The answers the application was filed with, and the schema version they were filed against. */
   form: FormValue | undefined;
   schema: RJSFSchema | null;
-  investigation: Investigation | undefined;
+  investigation: SupportInvestigation | undefined;
   statements: Statement[];
   attachments: SupportAttachment[];
   companyProfile: LegalEntityProfile | undefined;
@@ -261,8 +264,11 @@ const sectionTexts = (investigation: Investigation | undefined): Record<string, 
     (investigation?.sections ?? []).map((section) => [sectionKeyOf(section), htmlOf(section.text ?? '')])
   );
 
-const premisesParameters = (investigation: Investigation | undefined) =>
-  investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.parameters;
+const premisesJson = (investigation: SupportInvestigation | undefined) =>
+  jsonParameterObject(
+    investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.jsonParameters,
+    SUPPORT_PREMISES_SECTION_JSON.key
+  );
 
 const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>
   (errand?.labels ?? []).find((label) => label.classification === classification);
@@ -632,7 +638,7 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
   const texts = sectionTexts(investigation);
   const address = getPremisesAddress(errand, input.namespace);
   const capacity = supportPremisesCapacityOf(form);
-  const examination = supportPremisesExamination(premisesParameters(investigation));
+  const examination = supportPremisesExamination(premisesJson(investigation));
   const people = personsOfInfluence(errand, input.companyEngagements, translate);
   const salesPoint = supportTobaccoSalesPointOf(form);
   const examined = examinedSections(investigationVariantFor(errand));
@@ -741,7 +747,7 @@ export interface InvestigationBasisFacts {
   municipalityId: string;
   metadata: SupportMetadata | undefined;
   attachments: SupportAttachment[];
-  investigation: Investigation | undefined;
+  investigation: SupportInvestigation | undefined;
   handlerName: string;
   today: string;
   translate: (key: string) => string;

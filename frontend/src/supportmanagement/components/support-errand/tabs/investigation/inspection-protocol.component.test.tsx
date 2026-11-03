@@ -6,6 +6,7 @@ import { getSupportAttachments, saveSupportAttachments } from '@supportmanagemen
 import {
   getSupportInvestigation,
   saveSupportInvestigation,
+  saveSupportInvestigationJsonParameter,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
 import {
@@ -59,6 +60,7 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   getSupportInvestigation: vi.fn(),
   startSupportInvestigation: vi.fn(),
   saveSupportInvestigation: vi.fn(),
+  saveSupportInvestigationJsonParameter: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-measure-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -87,9 +89,12 @@ const investigation = {
   type: 'serving_permit',
   title: 'Serveringstillstånd – tillsyn',
   version: 3,
-  parameters: [
-    { key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] },
-    { key: 'guestCount', displayName: 'Antal gäster', values: ['80'] },
+  jsonParameters: [
+    {
+      key: 'inspectionProtocol',
+      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      value: { visit: 'closed', guestCount: '80' },
+    },
   ],
 };
 
@@ -122,6 +127,7 @@ beforeEach(() => {
   vi.mocked(saveSupportMeasures).mockResolvedValue(undefined);
   vi.mocked(startSupportInvestigation).mockResolvedValue({ ...investigation, id: 'inv-new' });
   vi.mocked(saveSupportInvestigation).mockResolvedValue(investigation);
+  vi.mocked(saveSupportInvestigationJsonParameter).mockResolvedValue(investigation);
   vi.mocked(unlinkSupportMeasureAttachment).mockResolvedValue(undefined);
 });
 
@@ -193,10 +199,17 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
   ]);
   expect(startSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'Inre tillsyn', [], {
     type: 'internal_inspection',
-    parameters: expect.arrayContaining([
-      { key: 'businessName', displayName: 'Verksamhetens namn', values: ['Exempel AB'] },
-    ]),
   });
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-new',
+    'inspectionProtocol',
+    {
+      schemaId: '2281_aot_inspection_internal_1.0',
+      value: expect.objectContaining({ businessName: 'Exempel AB' }),
+    }
+  );
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 
   // After the save the page shows what was written: each point once, now saved, so photos can be added.
@@ -350,7 +363,7 @@ test('a control point can be added beyond the template, and a saved one removed,
   ]);
 });
 
-test('a changed answer is saved on the investigation with the version that was read', async () => {
+test("a changed answer is saved in the JSON of the investigation, against the template's schema", async () => {
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
 
@@ -363,16 +376,11 @@ test('a changed answer is saved on the investigation with the version that was r
   });
 
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
-  expect(saveSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', {
-    version: 3,
-    type: 'serving_permit',
-    title: 'Serveringstillstånd – tillsyn',
-    parameters: expect.arrayContaining([
-      { key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] },
-      { key: 'coordinatedWith', displayName: 'Samordnad tillsyn tillsammans med', values: ['police'] },
-      { key: 'guestCount', displayName: 'Antal gäster', values: ['120'] },
-    ]),
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', 'inspectionProtocol', {
+    schemaId: '2281_aot_inspection_serving_permit_1.0',
+    value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
   });
+  expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
 test('another template is taken only after the handler confirms, and replaces control points and answers', async () => {
@@ -424,6 +432,13 @@ test('another template is taken only after the handler confirms, and replaces co
     'inv-1',
     expect.objectContaining({ version: 3, type: 'internal_inspection', title: 'Inre tillsyn' })
   );
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'inspectionProtocol',
+    expect.objectContaining({ schemaId: '2281_aot_inspection_internal_1.0' })
+  );
 });
 
 test('clicking the chosen result again keeps it, since a result cannot be taken back', async () => {
@@ -454,7 +469,7 @@ test('a failed save keeps what the handler wrote and answers false', async () =>
 });
 
 test('a failed investigation save does not write the measures again', async () => {
-  vi.mocked(saveSupportInvestigation).mockRejectedValueOnce(new Error('nope'));
+  vi.mocked(saveSupportInvestigationJsonParameter).mockRejectedValueOnce(new Error('nope'));
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
   fireEvent.click(screen.getByRole('button', { name: 'Lägg till kontrollpunkt' }));
@@ -484,7 +499,7 @@ test('a failed investigation save does not write the measures again', async () =
   });
 
   expect(saveSupportMeasures).toHaveBeenLastCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
-  expect(saveSupportInvestigation).toHaveBeenCalledTimes(2);
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledTimes(2);
   expect(screen.getAllByDisplayValue('Ny punkt')).toHaveLength(1);
 });
 

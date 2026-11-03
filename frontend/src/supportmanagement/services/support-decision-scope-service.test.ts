@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  BEVERAGES_KEY,
-  DECIDED_GROUP,
   decidesBeverages,
   hasInvalidServingHours,
   resolveScope,
@@ -10,7 +8,7 @@ import {
   scopeFromForm,
   servingHoursSlotsFor,
   servingHoursText,
-  toScopeParameters,
+  toScopeJson,
 } from './support-decision-scope-service';
 
 const PERMANENT = 'PERMANENT_SERVING';
@@ -105,88 +103,53 @@ describe('what the decision carries', () => {
   const slots = servingHoursSlotsFor(PERMANENT, permanentForm);
   const defaults = scopeFromForm(permanentForm, PERMANENT, slots);
 
-  test('a saved key wins over the application, even when it is empty', () => {
-    const saved = scopeFromDecision(
-      [
-        { key: BEVERAGES_KEY, values: [] },
-        { key: 'decidedServingHoursIndoorPublic', values: ['10:00', '00:00'] },
-        { key: 'decidedServingHoursOutdoorPublic', values: [] },
-      ],
-      slots
-    );
+  test('a saved list wins over the application, even when it is empty, and a slot it lacks has no hours', () => {
+    const saved = scopeFromDecision({
+      beverages: [],
+      servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '10:00', to: '00:00' }],
+    });
 
     expect(resolveScope(saved, defaults, slots)).toEqual({
       beverages: [],
       servingHours: {
         indoorPublic: { from: '10:00', to: '00:00' },
         outdoorPublic: { from: '', to: '' },
-        indoorPrivate: { from: '18:00', to: '' },
+        indoorPrivate: { from: '', to: '' },
         outdoorPrivate: { from: '', to: '' },
       },
     });
   });
 
-  test('a decision without the keys falls back to the application', () => {
-    expect(resolveScope(scopeFromDecision(undefined, slots), defaults, slots)).toEqual(defaults);
-    expect(resolveScope(scopeFromDecision([{ key: 'premisesName', values: ['x'] }], slots), defaults, slots)).toEqual(
-      defaults
-    );
+  test('a decision without the lists falls back to the application', () => {
+    expect(resolveScope(scopeFromDecision(undefined), defaults, slots)).toEqual(defaults);
+    expect(resolveScope(scopeFromDecision({ premises: { name: 'x' } }), defaults, slots)).toEqual(defaults);
   });
 
-  test('every shown slot is written, with both ends or none, under the DECIDED group with a display name', () => {
-    const written = toScopeParameters(defaults, slots, 'SERVERINGSTILLSTAND', (key) => `label:${key}`);
-
-    expect(written).toEqual([
-      {
-        key: BEVERAGES_KEY,
-        displayName: 'label:common:decision.scope.beverages.label',
-        group: DECIDED_GROUP,
-        values: ['STRONG_BEER', 'WINE'],
-      },
-      {
-        key: 'decidedServingHoursIndoorPublic',
-        displayName: 'label:common:decision.scope.serving_hours.indoor_public',
-        group: DECIDED_GROUP,
-        values: ['11:00', '01:00'],
-      },
-      {
-        key: 'decidedServingHoursOutdoorPublic',
-        displayName: 'label:common:decision.scope.serving_hours.outdoor_public',
-        group: DECIDED_GROUP,
-        values: ['11:00', '23:00'],
-      },
-      {
-        key: 'decidedServingHoursIndoorPrivate',
-        displayName: 'label:common:decision.scope.serving_hours.indoor_private',
-        group: DECIDED_GROUP,
-        values: [],
-      },
-      {
-        key: 'decidedServingHoursOutdoorPrivate',
-        displayName: 'label:common:decision.scope.serving_hours.outdoor_private',
-        group: DECIDED_GROUP,
-        values: [],
-      },
-    ]);
-    // Nothing blank is ever sent: Support Management rejects it.
-    expect(written.flatMap((parameter) => parameter.values ?? [])).not.toContain('');
+  test('the hours are written as the permit has them, a slot without both ends left out', () => {
+    expect(toScopeJson(defaults, 'SERVERINGSTILLSTAND')).toEqual({
+      beverages: ['STRONG_BEER', 'WINE'],
+      servingHours: [
+        { audience: 'PUBLIC', location: 'INDOOR', from: '11:00', to: '01:00' },
+        { audience: 'PUBLIC', location: 'OUTDOOR', from: '11:00', to: '23:00' },
+      ],
+    });
   });
 
-  test('a permit that does not decide beverages writes only its hours', () => {
-    const farmSlots = servingHoursSlotsFor('FARM_SALES', undefined);
-    const written = toScopeParameters(
-      { beverages: ['WINE'], servingHours: { single: { from: '10:00', to: '18:00' } } },
-      farmSlots,
-      'TOBAKSFORSALJNING',
-      (key) => key
-    );
-
-    expect(written.map((parameter) => parameter.key)).toEqual(['decidedServingHours']);
+  test('a permit that does not decide beverages writes only its hours, a single slot with no place', () => {
+    expect(
+      toScopeJson(
+        { beverages: ['WINE'], servingHours: { single: { from: '10:00', to: '18:00' } } },
+        'TOBAKSFORSALJNING'
+      )
+    ).toEqual({ beverages: undefined, servingHours: [{ from: '10:00', to: '18:00' }] });
   });
 
   test('what was written reads back as it was', () => {
-    const written = toScopeParameters(defaults, slots, 'SERVERINGSTILLSTAND', (key) => key);
-    const readBack = resolveScope(scopeFromDecision(written, slots), { beverages: [], servingHours: {} }, slots);
+    const readBack = resolveScope(
+      scopeFromDecision(toScopeJson(defaults, 'SERVERINGSTILLSTAND')),
+      { beverages: [], servingHours: {} },
+      slots
+    );
 
     expect(readBack).toEqual({
       ...defaults,

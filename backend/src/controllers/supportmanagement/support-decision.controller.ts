@@ -1,6 +1,5 @@
-import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { IsArray, IsBoolean, IsDateString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
@@ -12,35 +11,13 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { readJsonParameters, WithJsonParameters, writeJsonParameter, WriteSupportJsonParameterDto } from '@/services/support-json-parameter.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
 const MANUAL_METHOD = 'MANUAL';
 const DRAFT_STATUS = 'DRAFT';
 const COMPLETED_STATUS = 'COMPLETED';
-
-/** Metadata read by the process that acts on the decision. */
-class SupportDecisionParameterDto {
-  @IsString()
-  @MinLength(1)
-  @MaxLength(255)
-  key!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  displayName?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  group?: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  @MaxLength(3000, { each: true })
-  values!: string[];
-}
 
 class SupportDecisionFieldsDto {
   @IsOptional()
@@ -79,12 +56,6 @@ class SupportDecisionFieldsDto {
   @IsArray()
   @IsString({ each: true })
   terms?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => SupportDecisionParameterDto)
-  parameters?: SupportDecisionParameterDto[];
 }
 
 export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {
@@ -139,6 +110,15 @@ export class SupportDecisionController {
   private readonly newestDecision = (decisions: Decision[]): Decision | undefined =>
     [...decisions].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
 
+  // The JSON parameters are kept beside the decision, so they are read for what is answered to the frontend.
+  private async withJsonParameters(ref: DecisionRef, decision: Decision, user: RequestWithUser['user']): Promise<WithJsonParameters<Decision>> {
+    return { ...decision, jsonParameters: await readJsonParameters(this.apiService, this.decisionUrl(ref), user) };
+  }
+
+  private async answered(ref: DecisionRef, user: RequestWithUser['user']): Promise<WithJsonParameters<Decision>> {
+    return this.withJsonParameters(ref, await this.readDecision(ref, user), user);
+  }
+
   private async readDecisions(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<Decision[]> {
     const res = await this.apiService.get<Decision[]>(
       { url: this.decisionsUrl(municipalityId, errandId), baseURL: apiURL(this.SERVICE), propagateClientError: true },
@@ -152,12 +132,7 @@ export class SupportDecisionController {
     return res.data;
   }
 
-  private async patchDecision(
-    ref: DecisionRef,
-    version: number | undefined,
-    data: Partial<Decision>,
-    user: RequestWithUser['user'],
-  ): Promise<Decision> {
+  private async patchDecision(ref: DecisionRef, version: number | undefined, data: Partial<Decision>, user: RequestWithUser['user']): Promise<void> {
     await this.apiService.patch<Decision, Partial<Decision>>(
       {
         url: this.decisionUrl(ref),
@@ -168,8 +143,6 @@ export class SupportDecisionController {
       },
       user,
     );
-
-    return this.readDecision(ref, user);
   }
 
   private async discardDecision(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
@@ -232,7 +205,13 @@ export class SupportDecisionController {
       return response.status(400).send('Invalid municipality id');
     }
     const decisions = await this.readDecisions(municipalityId, id, req.user);
-    return response.status(200).send(decisions);
+    return response
+      .status(200)
+      .send(
+        await Promise.all(
+          decisions.map(decision => this.withJsonParameters({ municipalityId, errandId: id, decisionId: decision.id ?? '' }, decision, req.user)),
+        ),
+      );
   }
 
   @Post('/supportdecisions/:municipalityId/:id')
@@ -277,7 +256,7 @@ export class SupportDecisionController {
       throw error;
     }
 
-    return response.status(201).send(await this.readDecision(ref, req.user));
+    return response.status(201).send(await this.answered(ref, req.user));
   }
 
   @Patch('/supportdecisions/:municipalityId/:id/:decisionId')
@@ -302,14 +281,12 @@ export class SupportDecisionController {
     if (current.status !== DRAFT_STATUS) {
       return response.status(409).send('Only a draft decision can be updated');
     }
-    const written = await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
+    await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
 
-    if (!terms) {
-      return response.status(200).send(written);
+    if (terms) {
+      await this.replaceTerms(ref, terms, req.user);
     }
-
-    await this.replaceTerms(ref, terms, req.user);
-    return response.status(200).send(await this.readDecision(ref, req.user));
+    return response.status(200).send(await this.answered(ref, req.user));
   }
 
   @Post('/supportdecisions/:municipalityId/:id/:decisionId/complete')
@@ -330,13 +307,40 @@ export class SupportDecisionController {
     const current = await this.readDecision(ref, req.user);
 
     if (current.status === COMPLETED_STATUS) {
-      return response.status(200).send(current);
+      return response.status(200).send(await this.withJsonParameters(ref, current, req.user));
     }
 
     if (current.status !== DRAFT_STATUS) {
       return response.status(409).send('Only a draft decision can be completed');
     }
 
-    return response.status(200).send(await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user));
+    await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user);
+    return response.status(200).send(await this.answered(ref, req.user));
+  }
+
+  @Put('/supportdecisions/:municipalityId/:id/:decisionId/json-parameters/:key')
+  @OpenAPI({ summary: 'Write a JSON parameter of a draft decision, such as what the permit is to say' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(WriteSupportJsonParameterDto, 'body'))
+  async writeDecisionJsonParameter(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('decisionId') decisionId: string,
+    @Param('key') key: string,
+    @Body() data: WriteSupportJsonParameterDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
+    const current = await this.readDecision(ref, req.user);
+    if (current.status !== DRAFT_STATUS) {
+      return response.status(409).send('Only a draft decision can be updated');
+    }
+
+    await writeJsonParameter(this.apiService, this.decisionUrl(ref), key, data, req.user);
+    return response.status(200).send(await this.answered(ref, req.user));
   }
 }

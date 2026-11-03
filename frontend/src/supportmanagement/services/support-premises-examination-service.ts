@@ -1,10 +1,10 @@
 import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
 import dayjs from 'dayjs';
-import type { CParameter } from 'src/data-contracts/backend/data-contracts';
 
 import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-schema-service';
-import { getErrandParameterValue, type SupportErrand, upsertErrandParameter } from './support-errand-service';
+import type { SupportErrand } from './support-errand-service';
 import { childText, type FormValue, isRecord } from './support-form-value-service';
+import { type JsonObject, type SupportJsonParameterSpec, withoutBlanks } from './support-json-parameter-service';
 import type { SupportMetadata } from './support-metadata-service';
 import { supportStatementCounterpartyKey } from './support-statement-counterparties';
 
@@ -30,7 +30,7 @@ export const SUPPORT_PREMISES_RIGHT_OF_DISPOSALS: {
 
 /**
  * What the handler establishes about the premises. Neither the inspection nor the right of disposal is
- * answered anywhere in the application, so both are written as parameters of the premises section.
+ * answered anywhere in the application, so both are written in the JSON parameter of the premises section.
  */
 export interface SupportPremisesExamination {
   inspectedAt: string;
@@ -40,33 +40,38 @@ export interface SupportPremisesExamination {
   previousBusiness: string;
 }
 
-const EXAMINATION_PARAMETERS: Record<keyof SupportPremisesExamination, { key: string; displayName: string }> = {
-  inspectedAt: { key: 'PREMISES_INSPECTED_AT', displayName: 'Lokalinspektion genomförd' },
-  rightOfDisposal: { key: 'PREMISES_RIGHT_OF_DISPOSAL', displayName: 'Dispositionsrätt styrkt' },
-  rightOfDisposalNote: { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', displayName: 'Dispositionsrätt, underlag' },
-  servingArea: { key: 'PREMISES_SERVING_AREA', displayName: 'Serveringsytor' },
-  previousBusiness: { key: 'PREMISES_PREVIOUS_BUSINESS', displayName: 'Tidigare verksamhet' },
+/** The premises section keeps the examination in one JSON parameter. */
+export const SUPPORT_PREMISES_SECTION_JSON: SupportJsonParameterSpec = {
+  key: 'premises',
+  schema: { name: 'aot_investigation_premises_section', version: '1.0' },
 };
 
-export const supportPremisesExamination = (parameters: CParameter[] | undefined): SupportPremisesExamination => ({
-  inspectedAt: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.inspectedAt.key),
-  rightOfDisposal: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposal.key),
-  rightOfDisposalNote: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.rightOfDisposalNote.key),
-  servingArea: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.servingArea.key),
-  previousBusiness: getErrandParameterValue(parameters, EXAMINATION_PARAMETERS.previousBusiness.key),
+const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+const recordOf = (value: unknown): JsonObject => (isRecord(value) ? value : {});
+
+export const supportPremisesExamination = (json: JsonObject | undefined): SupportPremisesExamination => ({
+  inspectedAt: stringOf(json?.inspectedAt),
+  rightOfDisposal: stringOf(recordOf(json?.rightOfDisposal).status),
+  rightOfDisposalNote: stringOf(recordOf(json?.rightOfDisposal).note),
+  servingArea: stringOf(recordOf(json?.servingArea).description),
+  previousBusiness: stringOf(json?.previousBusiness),
 });
 
+/** The section's JSON with the field changed; an emptied field is left out. */
 export const withSupportPremisesExamination = (
-  parameters: CParameter[] | undefined,
+  json: JsonObject | undefined,
   field: keyof SupportPremisesExamination,
   value: string
-): CParameter[] =>
-  upsertErrandParameter(
-    parameters,
-    EXAMINATION_PARAMETERS[field].key,
-    value,
-    EXAMINATION_PARAMETERS[field].displayName
-  );
+): JsonObject => {
+  const examination = { ...supportPremisesExamination(json), [field]: value };
+  return withoutBlanks({
+    inspectedAt: examination.inspectedAt,
+    rightOfDisposal: { status: examination.rightOfDisposal, note: examination.rightOfDisposalNote },
+    servingArea: { description: examination.servingArea },
+    previousBusiness: examination.previousBusiness,
+  });
+};
 
 export interface SupportPremisesCapacity {
   indoorSeats?: string;

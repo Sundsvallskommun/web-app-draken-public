@@ -1,13 +1,15 @@
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { Divider, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
-import { applicationPremisesPhone } from '@supportmanagement/services/support-decision-parameters-service';
-import { premisesFromErrandParameters } from '@supportmanagement/services/support-decision-premises-service';
+import {
+  applicationPremisesPhone,
+  savedDecisionJson,
+} from '@supportmanagement/services/support-decision-parameters-service';
+import { premisesFromDecisionJson } from '@supportmanagement/services/support-decision-premises-service';
 import {
   resolveScope,
   scopeFromDecision,
@@ -18,6 +20,7 @@ import {
   getSupportDecisions,
   isSupportDecisionDraft,
   SUPPORT_DECISION_ROLE_KEYS,
+  type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -46,7 +49,7 @@ export const SupportErrandDecisionTab: FC<{
   const canEdit = useUserStore((s) => s.user.permissions.canEditSupportManagement);
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
 
-  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [decisions, setDecisions] = useState<SupportDecision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   // The premises lookup costs a request, so it waits until the tab has been opened once.
@@ -61,10 +64,9 @@ export const SupportErrandDecisionTab: FC<{
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
     [supportErrand, supportMetadata?.namespace]
   );
-  const savedPremises = useMemo(
-    () => premisesFromErrandParameters(supportErrand?.parameters),
-    [supportErrand?.parameters]
-  );
+  const decision = decisions[0];
+  const decisionJson = useMemo(() => savedDecisionJson(decision), [decision]);
+  const savedPremises = useMemo(() => premisesFromDecisionJson(decisionJson), [decisionJson]);
   const decisionPremisesState = useDecisionPremises(
     handlesPremises && opened ? municipalityId : undefined,
     premises,
@@ -102,18 +104,17 @@ export const SupportErrandDecisionTab: FC<{
     };
   }, [supportErrand?.id, municipalityId, supportErrand?.process?.currentActivityId]);
 
-  const decision = decisions[0];
   const editable = writable && (!decision || isSupportDecisionDraft(decision));
 
   // The saved decision where it has a key, the application elsewhere; the fields start from this.
   const scopeAsSaved = useMemo(
     () =>
       resolveScope(
-        scopeFromDecision(decision?.parameters, servingHoursSlots),
+        scopeFromDecision(decisionJson),
         scopeFromForm(applicationForm, permit.errandType, servingHoursSlots),
         servingHoursSlots
       ),
-    [decision?.parameters, servingHoursSlots, applicationForm, permit.errandType]
+    [decisionJson, servingHoursSlots, applicationForm, permit.errandType]
   );
 
   const form = useDecisionForm({
@@ -134,7 +135,6 @@ export const SupportErrandDecisionTab: FC<{
     permit,
     premisesToSend,
     applicationForm,
-    servingHoursSlots,
     onSaved: setDecisions,
   });
 

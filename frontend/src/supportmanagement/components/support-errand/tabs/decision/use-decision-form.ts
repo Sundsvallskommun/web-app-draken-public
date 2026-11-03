@@ -1,10 +1,14 @@
 'use client';
 
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
-import { decisionParameterValue } from '@supportmanagement/services/support-decision-parameters-service';
+import { savedDecisionJson } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import type { DecisionScope } from '@supportmanagement/services/support-decision-scope-service';
-import { decisionTermTexts, outcomeWithoutConditions } from '@supportmanagement/services/support-decision-service';
+import {
+  decisionTermTexts,
+  outcomeWithoutConditions,
+  type SupportDecision,
+} from '@supportmanagement/services/support-decision-service';
+import { objectAt, stringAt } from '@supportmanagement/services/support-json-parameter-service';
 import { useCallback, useState } from 'react';
 
 export interface DecisionFormValues {
@@ -12,24 +16,24 @@ export interface DecisionFormValues {
   decidedByRole: string;
   legalBasis: string;
   /** The decision's own registry number, which the decision cannot be sent without. */
-  decisionCaseNumber: string;
-  otherCaseNumber: string;
+  caseRegistrationNumber: string;
+  externalCaseRegistrationNumber: string;
   justification: string;
   validFrom: string;
   validTo: string;
   /** The day the permit is issued, printed in the certificate's signature block. */
-  issuedOn: string;
+  executionDate: string;
   /** The premises within which serving is allowed, as the handler writes it. */
-  servingArea: string;
+  servingAreaDescription: string;
   /** Starts as the telephone the application gave, which it often does not. */
-  premisesPhone: string;
+  premisesPhoneNumber: string;
   terms: string[];
   /** The beverages and serving hours the permit grants, which start as the application asked. */
   scope: DecisionScope;
 }
 
 interface DecisionFormInput {
-  decision: Decision | undefined;
+  decision: SupportDecision | undefined;
   /** A concluded decision is read, not written, and then nothing counts as edited. */
   editable: boolean;
   /** The premises the errand carries, and the ones the handler has settled on. */
@@ -54,21 +58,25 @@ const asSaved = ({
   applicationPremisesPhone,
   scopeAsSaved,
   defaultRole,
-}: DecisionFormInput): DecisionFormValues => ({
-  outcome: outcomeWithoutConditions(decision?.outcome),
-  decidedByRole: decision?.decidedByRole || defaultRole,
-  legalBasis: decision?.legalBasis ?? '',
-  decisionCaseNumber: decisionParameterValue(decision?.parameters, 'decisionCaseNumber') ?? '',
-  otherCaseNumber: decisionParameterValue(decision?.parameters, 'otherCaseNumber') ?? '',
-  justification: decision?.justification ?? '',
-  validFrom: decision?.validFrom ?? '',
-  validTo: decision?.validTo ?? '',
-  issuedOn: decisionParameterValue(decision?.parameters, 'executionDate') ?? '',
-  servingArea: decisionParameterValue(decision?.parameters, 'servingAreaDescription') ?? '',
-  premisesPhone: decisionParameterValue(decision?.parameters, 'premisesPhone') ?? applicationPremisesPhone,
-  terms: decisionTermTexts(decision),
-  scope: scopeAsSaved,
-});
+}: DecisionFormInput): DecisionFormValues => {
+  const json = savedDecisionJson(decision);
+  return {
+    outcome: outcomeWithoutConditions(decision?.outcome),
+    decidedByRole: decision?.decidedByRole || defaultRole,
+    legalBasis: decision?.legalBasis ?? '',
+    caseRegistrationNumber: stringAt(json?.caseRegistrationNumber) ?? '',
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
+    justification: decision?.justification ?? '',
+    validFrom: decision?.validFrom ?? '',
+    validTo: decision?.validTo ?? '',
+    executionDate: stringAt(objectAt(json?.decision).executionDate) ?? '',
+    servingAreaDescription: stringAt(objectAt(json?.servingArea).description) ?? '',
+    premisesPhoneNumber:
+      stringAt(objectAt(json?.premises ?? json?.pointOfSale).phoneNumber) ?? applicationPremisesPhone,
+    terms: decisionTermTexts(decision),
+    scope: scopeAsSaved,
+  };
+};
 
 const comparable = (values: DecisionFormValues, premises: DecisionPremises | undefined) =>
   JSON.stringify({ ...values, terms: values.terms.filter(Boolean), premises: premises ?? null });

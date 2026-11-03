@@ -5,9 +5,9 @@ import {
   CompleteSupportInvestigationSectionsDto,
   CreateSupportInvestigationDto,
   SupportInvestigationController,
-  UpdateSupportInvestigationDto,
   UpdateSupportInvestigationSectionDto,
 } from '@/controllers/supportmanagement/support-investigation.controller';
+import { WriteSupportJsonParameterDto } from '@/services/support-json-parameter.service';
 
 import { mockReq, mockRes } from './helpers/http';
 import { mockAdUsername, mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
@@ -26,18 +26,21 @@ interface ApiStub {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
 }
 
 const anInvestigation = { id: INVESTIGATION_ID, version: 4, status: 'ACTIVE', sections: [] as object[] };
 
-const makeController = (existing: object[] = [], investigation: object = anInvestigation) => {
+const makeController = (existing: object[] = [], investigation: object = anInvestigation, jsonParameters: Record<string, object[]> = {}) => {
   const controller = new SupportInvestigationController();
   const api: ApiStub = {
-    get: vi.fn(async (config: { url?: string }) =>
-      config.url === investigationsUrl ? { data: existing, message: 'success' } : { data: investigation, message: 'success' },
-    ),
+    get: vi.fn(async (config: { url?: string }) => {
+      if (config.url?.endsWith('/json-parameters')) return { data: jsonParameters[config.url] ?? [], message: 'success' };
+      return config.url === investigationsUrl ? { data: existing, message: 'success' } : { data: investigation, message: 'success' };
+    }),
     post: vi.fn(async () => ({ data: { id: INVESTIGATION_ID }, message: 'success' })),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
+    put: vi.fn(async () => ({ data: {}, message: 'success' })),
   };
   Object.assign(controller as object, { apiService: api });
   return { controller, api };
@@ -52,18 +55,14 @@ describe('the investigation payloads', () => {
     expect(JSON.stringify(await validate(invalid))).toMatch(/heading|sortOrder/);
   });
 
-  it('takes protocol answers as parameters with a key and non-blank values', async () => {
-    const valid = plainToInstance(UpdateSupportInvestigationDto, {
-      version: 1,
-      type: 'serving_permit',
-      parameters: [{ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] }],
-    });
-    const blank = plainToInstance(UpdateSupportInvestigationDto, { version: 1, parameters: [{ key: 'visit', values: [''] }] });
-    const noKey = plainToInstance(UpdateSupportInvestigationDto, { version: 1, parameters: [{ values: ['x'] }] });
+  it('takes a JSON parameter as a schema id and an object', async () => {
+    const valid = plainToInstance(WriteSupportJsonParameterDto, { schemaId: 'aot_inspection_internal', value: { summary: 'approved' } });
+    const noSchema = plainToInstance(WriteSupportJsonParameterDto, { value: {} });
+    const notAnObject = plainToInstance(WriteSupportJsonParameterDto, { schemaId: 'aot_inspection_internal', value: 'approved' });
 
     await expect(validate(valid)).resolves.toEqual([]);
-    expect(JSON.stringify(await validate(blank))).toMatch(/values/);
-    expect(JSON.stringify(await validate(noKey))).toMatch(/key/);
+    expect(JSON.stringify(await validate(noSchema))).toMatch(/schemaId/);
+    expect(JSON.stringify(await validate(notAnObject))).toMatch(/value/);
   });
 
   it('requires the examinations to complete an investigation with to carry the same fields', async () => {
@@ -114,20 +113,19 @@ describe('createInvestigation', () => {
     expect(api.post.mock.calls[2][0].data).toMatchObject({ sectionKey: 'knowledge_test', assessment: 'PENDING' });
   });
 
-  it('starts an inspection protocol with its template as type and its answers, and no sections', async () => {
+  it('starts an inspection protocol with its template as type, and no sections', async () => {
     const { controller, api } = makeController();
-    const parameters = [{ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] }];
 
     await controller.createInvestigation(
       mockReq(),
       mockSupportErrandId,
       MUNICIPALITY_ID,
-      { title: 'Serveringstillstånd – tillsyn', type: 'serving_permit', sections: [], parameters },
+      { title: 'Serveringstillstånd – tillsyn', type: 'serving_permit', sections: [] },
       mockRes(),
     );
 
     expect(api.post).toHaveBeenCalledTimes(1);
-    expect(api.post.mock.calls[0][0].data).toMatchObject({ status: 'ACTIVE', type: 'serving_permit', parameters });
+    expect(api.post.mock.calls[0][0].data).toMatchObject({ status: 'ACTIVE', type: 'serving_permit' });
   });
 
   it('answers with the investigation the errand already has, and writes no second one', async () => {
@@ -142,16 +140,15 @@ describe('createInvestigation', () => {
     expect(api.patch).not.toHaveBeenCalled();
   });
 
-  it('writes the protocol template and answers onto an investigation someone else already started', async () => {
+  it('writes the protocol template onto an investigation someone else already started', async () => {
     const { controller, api } = makeController([{ id: INVESTIGATION_ID, status: 'ACTIVE', version: 2 }]);
-    const parameters = [{ key: 'visit', displayName: 'Besök i lokalen', values: ['closed'] }];
     const res = mockRes();
 
     await controller.createInvestigation(
       mockReq(),
       mockSupportErrandId,
       MUNICIPALITY_ID,
-      { title: 'Inre tillsyn', type: 'internal_inspection', sections: [], parameters },
+      { title: 'Inre tillsyn', type: 'internal_inspection', sections: [] },
       res,
     );
 
@@ -160,7 +157,7 @@ describe('createInvestigation', () => {
     const config = api.patch.mock.calls[0][0] as { url?: string; headers?: object; data?: object };
     expect(config.url).toContain(`investigations/${INVESTIGATION_ID}`);
     expect(config.headers).toEqual({ 'If-Match': '"2"' });
-    expect(config.data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn', parameters });
+    expect(config.data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn' });
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
   });
@@ -196,7 +193,8 @@ describe('completeInvestigationSections', () => {
     await controller.completeInvestigationSections(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, INVESTIGATION_ID, { sections }, res);
 
     expect(api.post).not.toHaveBeenCalled();
-    expect(api.get).toHaveBeenCalledTimes(1);
+    // One read of the investigation; the rest are its JSON parameters.
+    expect(api.get.mock.calls.filter(([config]) => !config.url.endsWith('/json-parameters'))).toHaveLength(1);
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
   });
@@ -232,20 +230,19 @@ describe('updateInvestigation', () => {
     expect(config.data).toEqual({ summary: 'Prövningarna är klara', recommendation: 'APPROVAL' });
   });
 
-  it('writes a changed protocol template and its answers as they are', async () => {
+  it('writes a changed protocol template as it is', async () => {
     const { controller, api } = makeController();
-    const parameters = [{ key: 'summary', displayName: 'Summering', values: ['approved'] }];
 
     await controller.updateInvestigation(
       mockReq(),
       mockSupportErrandId,
       MUNICIPALITY_ID,
       INVESTIGATION_ID,
-      { version: 4, type: 'internal_inspection', title: 'Inre tillsyn', parameters },
+      { version: 4, type: 'internal_inspection', title: 'Inre tillsyn' },
       mockRes(),
     );
 
-    expect(api.patch.mock.calls[0][0].data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn', parameters });
+    expect(api.patch.mock.calls[0][0].data).toEqual({ type: 'internal_inspection', title: 'Inre tillsyn' });
   });
 });
 
@@ -314,5 +311,80 @@ describe('updateSection', () => {
 
     expect(res.statusCode).toBe(400);
     expect(api.patch).not.toHaveBeenCalled();
+  });
+});
+
+describe('the JSON parameters', () => {
+  const investigationUrl = `${investigationsUrl}/${INVESTIGATION_ID}`;
+  const sectionUrl = `${investigationUrl}/sections/${SECTION_ID}`;
+  const withSection = { ...anInvestigation, sections: [{ id: SECTION_ID, sectionKey: 'premises' }] };
+
+  it('answers with the JSON parameters of the investigation and of each section', async () => {
+    const protocol = { key: 'inspectionProtocol', schemaId: 'aot_inspection_internal', value: { summary: 'approved' } };
+    const premises = { key: 'premises', schemaId: 'aot_investigation_premises_section', value: { inspectedAt: '2026-11-02' } };
+    const { controller } = makeController([withSection], withSection, {
+      [`${investigationUrl}/json-parameters`]: [protocol],
+      [`${sectionUrl}/json-parameters`]: [premises],
+    });
+    const res = mockRes();
+
+    await controller.fetchInvestigations(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect(res.body).toMatchObject([{ jsonParameters: [protocol], sections: [{ id: SECTION_ID, jsonParameters: [premises] }] }]);
+  });
+
+  it('writes a JSON parameter of the investigation under its key', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.writeInvestigationJsonParameter(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      INVESTIGATION_ID,
+      'inspectionProtocol',
+      { schemaId: 'aot_inspection_internal', value: { summary: 'approved' } },
+      res,
+    );
+
+    const [config] = api.put.mock.calls[0];
+    expect(config.url).toBe(`${investigationUrl}/json-parameters/inspectionProtocol`);
+    expect(config.data).toEqual({ key: 'inspectionProtocol', schemaId: 'aot_inspection_internal', value: { summary: 'approved' } });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('writes a JSON parameter of a section under its key', async () => {
+    const { controller, api } = makeController();
+
+    await controller.writeSectionJsonParameter(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      INVESTIGATION_ID,
+      SECTION_ID,
+      'premises',
+      { schemaId: 'aot_investigation_premises_section', value: { inspectedAt: '2026-11-02' } },
+      mockRes(),
+    );
+
+    expect(api.put.mock.calls[0][0].url).toBe(`${sectionUrl}/json-parameters/premises`);
+  });
+
+  it('rejects a municipality id other than the configured one and writes nothing', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.writeInvestigationJsonParameter(
+      mockReq(),
+      mockSupportErrandId,
+      '9999',
+      INVESTIGATION_ID,
+      'inspectionProtocol',
+      { schemaId: 'aot_inspection_internal', value: {} },
+      res,
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(api.put).not.toHaveBeenCalled();
   });
 });

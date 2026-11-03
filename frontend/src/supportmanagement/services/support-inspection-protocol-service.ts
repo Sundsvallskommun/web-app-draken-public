@@ -1,4 +1,4 @@
-import type { Measure, Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { User } from '@common/interfaces/user';
 import { renderTemplatePdf, renderTemplatePdfDirect } from '@common/services/template-render-service';
 import type {
@@ -10,6 +10,7 @@ import type {
 import dayjs from 'dayjs';
 
 import type { SupportErrand } from './support-errand-service';
+import type { JsonObject } from './support-json-parameter-service';
 import { SupportMeasureResult } from './support-measure-service';
 
 /** The handler's answers by field key; a 'multi' field holds the chosen option values, '' means not chosen. */
@@ -65,30 +66,39 @@ export const inspectionProtocolValuesOf = (
   return Object.fromEntries(fieldsOf(template).map((field) => [field.key, initialValueOf(field, prefills)]));
 };
 
-/** The saved answers; a field the investigation has no parameter for keeps its fallback value. */
-export const inspectionProtocolValuesFromParameters = (
+/** The investigation keeps the answers in one JSON parameter, against the template's schema. */
+export const INSPECTION_PROTOCOL_JSON_KEY = 'inspectionProtocol';
+
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((candidate): candidate is string => typeof candidate === 'string') : [];
+
+/** The saved answers; a field the JSON has no answer for keeps its fallback value. */
+export const inspectionProtocolValuesFromJson = (
   template: InspectionProtocolTemplate,
-  parameters: Parameter[] | undefined,
+  json: JsonObject | undefined,
   fallback: InspectionProtocolValues
 ): InspectionProtocolValues =>
   Object.fromEntries(
     fieldsOf(template).map((field) => {
-      const values = parameters?.find((parameter) => parameter.key === field.key)?.values;
-      if (!values) return [field.key, fallback[field.key] ?? (field.kind === 'multi' ? [] : '')];
-      return [field.key, field.kind === 'multi' ? values : values[0] ?? ''];
+      const value = json?.[field.key];
+      if (value === undefined) return [field.key, fallback[field.key] ?? (field.kind === 'multi' ? [] : '')];
+      return [field.key, field.kind === 'multi' ? strings(value) : typeof value === 'string' ? value : ''];
     })
   );
 
-/** One parameter per answered field, named after the field so the list reads well in Support Management. */
-export const toInspectionProtocolInvestigationParameters = (
+/** One property per answered field, under the field's key; a 'multi' field as a list. */
+export const toInspectionProtocolJson = (
   template: InspectionProtocolTemplate,
   values: InspectionProtocolValues
-): Parameter[] =>
-  fieldsOf(template).flatMap((field) => {
-    const value = values[field.key];
-    const kept = (Array.isArray(value) ? value : [value ?? '']).filter((candidate) => candidate.trim() !== '');
-    return kept.length > 0 ? [{ key: field.key, displayName: field.label, values: kept }] : [];
-  });
+): JsonObject =>
+  Object.fromEntries(
+    fieldsOf(template).flatMap((field) => {
+      const value = values[field.key];
+      const kept = (Array.isArray(value) ? value : [value ?? '']).filter((candidate) => candidate.trim() !== '');
+      if (kept.length === 0) return [];
+      return [[field.key, field.kind === 'multi' ? kept : kept[0]]];
+    })
+  );
 
 type MeasureFields = Pick<Measure, 'title' | 'result' | 'description'>;
 type ObservationFields = Pick<Measure, 'title' | 'result' | 'resultText'>;

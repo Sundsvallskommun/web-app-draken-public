@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsInt, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
@@ -12,6 +12,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { readJsonParameters, WithJsonParameters, writeJsonParameter, WriteSupportJsonParameterDto } from '@/services/support-json-parameter.service';
 import { apiURL } from '@/utils/util';
 
 const ACTIVE_STATUS = 'ACTIVE';
@@ -34,25 +35,6 @@ export class CreateSupportInvestigationSectionDto {
   sortOrder!: number;
 }
 
-// A protocol answer: Support Management takes any non-blank value up to 3000 characters.
-export class SupportInvestigationParameterDto {
-  @IsString()
-  @MinLength(1)
-  @MaxLength(255)
-  key!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  displayName?: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  @MinLength(1, { each: true })
-  @MaxLength(3000, { each: true })
-  values!: string[];
-}
-
 export class CreateSupportInvestigationDto {
   @IsOptional()
   @IsString()
@@ -68,12 +50,6 @@ export class CreateSupportInvestigationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSupportInvestigationSectionDto)
   sections!: CreateSupportInvestigationSectionDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationParameterDto)
-  parameters?: SupportInvestigationParameterDto[];
 }
 
 export class UpdateSupportInvestigationDto {
@@ -89,12 +65,6 @@ export class UpdateSupportInvestigationDto {
   @IsString()
   @MaxLength(255)
   title?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationParameterDto)
-  parameters?: SupportInvestigationParameterDto[];
 
   @IsOptional()
   @IsString()
@@ -133,13 +103,11 @@ export class UpdateSupportInvestigationSectionDto {
   @IsOptional()
   @IsIn(ASSESSMENTS)
   assessment?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationParameterDto)
-  parameters?: SupportInvestigationParameterDto[];
 }
+
+type SupportInvestigationResponse = WithJsonParameters<Omit<Investigation, 'sections'>> & {
+  sections: WithJsonParameters<InvestigationSection>[];
+};
 
 @Controller()
 export class SupportInvestigationController {
@@ -150,12 +118,35 @@ export class SupportInvestigationController {
   private readonly investigationsUrl = (municipalityId: string, errandId: string): string =>
     `${municipalityId}/${this.namespace}/errands/${errandId}/investigations`;
 
-  private async readInvestigations(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<Investigation[]> {
+  private readonly investigationUrl = (municipalityId: string, errandId: string, investigationId: string): string =>
+    `${this.investigationsUrl(municipalityId, errandId)}/${investigationId}`;
+
+  // The JSON parameters are kept beside the investigation and each section, so they are read one by one.
+  private async withJsonParameters(
+    municipalityId: string,
+    errandId: string,
+    investigation: Investigation,
+    user: RequestWithUser['user'],
+  ): Promise<SupportInvestigationResponse> {
+    const url = this.investigationUrl(municipalityId, errandId, investigation.id ?? '');
+    const [jsonParameters, sections] = await Promise.all([
+      readJsonParameters(this.apiService, url, user),
+      Promise.all(
+        (investigation.sections ?? []).map(async section => ({
+          ...section,
+          jsonParameters: await readJsonParameters(this.apiService, `${url}/sections/${section.id}`, user),
+        })),
+      ),
+    ]);
+    return { ...investigation, jsonParameters, sections };
+  }
+
+  private async readInvestigations(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<SupportInvestigationResponse[]> {
     const res = await this.apiService.get<Investigation[]>(
       { url: this.investigationsUrl(municipalityId, errandId), baseURL: apiURL(this.SERVICE), propagateClientError: true },
       user,
     );
-    return res.data ?? [];
+    return Promise.all((res.data ?? []).map(investigation => this.withJsonParameters(municipalityId, errandId, investigation, user)));
   }
 
   private async readInvestigation(
@@ -163,16 +154,16 @@ export class SupportInvestigationController {
     errandId: string,
     investigationId: string,
     user: RequestWithUser['user'],
-  ): Promise<Investigation> {
+  ): Promise<SupportInvestigationResponse> {
     const res = await this.apiService.get<Investigation>(
       {
-        url: `${this.investigationsUrl(municipalityId, errandId)}/${investigationId}`,
+        url: this.investigationUrl(municipalityId, errandId, investigationId),
         baseURL: apiURL(this.SERVICE),
         propagateClientError: true,
       },
       user,
     );
-    return res.data;
+    return this.withJsonParameters(municipalityId, errandId, res.data, user);
   }
 
   @Get('/supportinvestigations/:municipalityId/:id')
@@ -210,7 +201,6 @@ export class SupportInvestigationController {
       const protocol = {
         ...(data.type && { type: data.type }),
         ...(data.title && { title: data.title }),
-        ...(data.parameters && { parameters: data.parameters }),
       };
       if (Object.keys(protocol).length === 0) {
         return response.status(200).send(existing);
@@ -239,7 +229,6 @@ export class SupportInvestigationController {
           investigatorUserId: req.user.username,
           ...(data.type && { type: data.type }),
           ...(data.title && { title: data.title }),
-          ...(data.parameters && { parameters: data.parameters }),
         },
         propagateClientError: true,
       },
@@ -394,6 +383,48 @@ export class SupportInvestigationController {
       req.user,
     );
 
+    return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
+  }
+
+  @Put('/supportinvestigations/:municipalityId/:id/:investigationId/json-parameters/:key')
+  @OpenAPI({ summary: 'Write a JSON parameter of the investigation, such as the answers of an inspection protocol' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(WriteSupportJsonParameterDto, 'body'))
+  async writeInvestigationJsonParameter(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('investigationId') investigationId: string,
+    @Param('key') key: string,
+    @Body() data: WriteSupportJsonParameterDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    await writeJsonParameter(this.apiService, this.investigationUrl(municipalityId, id, investigationId), key, data, req.user);
+    return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
+  }
+
+  @Put('/supportinvestigations/:municipalityId/:id/:investigationId/sections/:sectionId/json-parameters/:key')
+  @OpenAPI({ summary: 'Write a JSON parameter of one examination of an investigation' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(WriteSupportJsonParameterDto, 'body'))
+  async writeSectionJsonParameter(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('investigationId') investigationId: string,
+    @Param('sectionId') sectionId: string,
+    @Param('key') key: string,
+    @Body() data: WriteSupportJsonParameterDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    const sectionUrl = `${this.investigationUrl(municipalityId, id, investigationId)}/sections/${sectionId}`;
+    await writeJsonParameter(this.apiService, sectionUrl, key, data, req.user);
     return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
   }
 }

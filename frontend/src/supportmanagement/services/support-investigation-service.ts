@@ -1,14 +1,22 @@
-import type { Investigation, Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
 import type { SupportInvestigationSectionInput } from './support-investigation-sections';
+import type { SupportJsonParameter, SupportJsonParameterWrite } from './support-json-parameter-service';
+
+/** A section as the BFF answers it: with the JSON parameters Support Management keeps beside it. */
+export type SupportInvestigationSection = InvestigationSection & { jsonParameters?: SupportJsonParameter[] };
+
+/** An investigation as the BFF answers it: with its JSON parameters, and those of each section. */
+export type SupportInvestigation = Omit<Investigation, 'sections'> & {
+  sections?: SupportInvestigationSection[];
+  jsonParameters?: SupportJsonParameter[];
+};
 
 export interface SupportInvestigationInput {
   version: number;
   type?: string;
   title?: string;
-  /** Replaces the whole list. */
-  parameters?: Parameter[];
   summary?: string;
   conclusion?: string;
   recommendation?: string;
@@ -21,9 +29,12 @@ export const isSupportInvestigationCompleted = (investigation: Investigation | u
 export const isSupportInvestigationConflict = (error: unknown): boolean =>
   (error as { response?: { status?: number } })?.response?.status === 412;
 
-export const getSupportInvestigation = (errandId: string, municipalityId: string): Promise<Investigation | undefined> =>
+export const getSupportInvestigation = (
+  errandId: string,
+  municipalityId: string
+): Promise<SupportInvestigation | undefined> =>
   apiService
-    .get<Investigation[]>(`supportinvestigations/${municipalityId}/${errandId}`)
+    .get<SupportInvestigation[]>(`supportinvestigations/${municipalityId}/${errandId}`)
     .then((res) => (res.data ?? [])[0])
     .catch((e) => {
       console.error('Something went wrong when fetching the investigation');
@@ -34,7 +45,6 @@ interface SupportInvestigationStart {
   title: string;
   sections: SupportInvestigationSectionInput[];
   type?: string;
-  parameters?: Parameter[];
 }
 
 /** Answers with the investigation the errand already has, if any, instead of starting a second one. */
@@ -43,10 +53,10 @@ export const startSupportInvestigation = (
   municipalityId: string,
   title: string,
   sections: SupportInvestigationSectionInput[],
-  protocol?: Pick<SupportInvestigationStart, 'type' | 'parameters'>
-): Promise<Investigation> =>
+  protocol?: Pick<SupportInvestigationStart, 'type'>
+): Promise<SupportInvestigation> =>
   apiService
-    .post<Investigation, SupportInvestigationStart>(`supportinvestigations/${municipalityId}/${errandId}`, {
+    .post<SupportInvestigation, SupportInvestigationStart>(`supportinvestigations/${municipalityId}/${errandId}`, {
       title,
       sections,
       ...protocol,
@@ -62,9 +72,9 @@ export const completeSupportInvestigationSections = (
   municipalityId: string,
   investigationId: string,
   sections: SupportInvestigationSectionInput[]
-): Promise<Investigation> =>
+): Promise<SupportInvestigation> =>
   apiService
-    .post<Investigation, { sections: SupportInvestigationSectionInput[] }>(
+    .post<SupportInvestigation, { sections: SupportInvestigationSectionInput[] }>(
       `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections`,
       { sections }
     )
@@ -77,8 +87,6 @@ export const completeSupportInvestigationSections = (
 export interface SupportInvestigationSectionUpdate {
   text?: string;
   assessment?: string;
-  /** Replaces the whole list. */
-  parameters?: Parameter[];
 }
 
 export const saveSupportInvestigationSection = (
@@ -86,18 +94,12 @@ export const saveSupportInvestigationSection = (
   municipalityId: string,
   investigationId: string,
   sectionId: string,
-  { parameters, ...section }: SupportInvestigationSectionUpdate
-): Promise<Investigation> =>
+  section: SupportInvestigationSectionUpdate
+): Promise<SupportInvestigation> =>
   apiService
-    .patch<Investigation, SupportInvestigationSectionUpdate>(
+    .patch<SupportInvestigation, SupportInvestigationSectionUpdate>(
       `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections/${sectionId}`,
-      {
-        ...section,
-        // The BFF takes only what a handler writes, not the version or group read back.
-        ...(parameters && {
-          parameters: parameters.map(({ key, displayName, values }) => ({ key, displayName, values })),
-        }),
-      }
+      section
     )
     .then((res) => res.data)
     .catch((e) => {
@@ -112,9 +114,9 @@ export const saveSupportInvestigation = (
   municipalityId: string,
   investigationId: string,
   investigation: SupportInvestigationInput
-): Promise<Investigation> =>
+): Promise<SupportInvestigation> =>
   apiService
-    .patch<Investigation, SupportInvestigationInput>(
+    .patch<SupportInvestigation, SupportInvestigationInput>(
       `supportinvestigations/${municipalityId}/${errandId}/${investigationId}`,
       investigation
     )
@@ -129,14 +131,53 @@ export const completeSupportInvestigation = (
   errandId: string,
   municipalityId: string,
   investigation: Investigation
-): Promise<Investigation> =>
+): Promise<SupportInvestigation> =>
   apiService
-    .patch<Investigation, SupportInvestigationInput>(
+    .patch<SupportInvestigation, SupportInvestigationInput>(
       `supportinvestigations/${municipalityId}/${errandId}/${investigation.id}/complete`,
       { version: investigation.version ?? 0 }
     )
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when completing the investigation');
+      throw e;
+    });
+
+/** Creates or replaces the JSON parameter of the investigation under the key. */
+export const saveSupportInvestigationJsonParameter = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  key: string,
+  parameter: SupportJsonParameterWrite
+): Promise<SupportInvestigation> =>
+  apiService
+    .put<SupportInvestigation, SupportJsonParameterWrite>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/json-parameters/${key}`,
+      parameter
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when saving a JSON parameter of the investigation');
+      throw e;
+    });
+
+/** Creates or replaces the JSON parameter of the section under the key. */
+export const saveSupportInvestigationSectionJsonParameter = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  sectionId: string,
+  key: string,
+  parameter: SupportJsonParameterWrite
+): Promise<SupportInvestigation> =>
+  apiService
+    .put<SupportInvestigation, SupportJsonParameterWrite>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/sections/${sectionId}/json-parameters/${key}`,
+      parameter
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when saving a JSON parameter of an examination');
       throw e;
     });

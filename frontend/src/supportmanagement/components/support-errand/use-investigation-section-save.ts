@@ -1,49 +1,59 @@
 'use client';
 
-import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import { saveSupportInvestigationSection } from '@supportmanagement/services/support-investigation-service';
+import {
+  saveSupportInvestigationSection,
+  saveSupportInvestigationSectionJsonParameter,
+  type SupportInvestigation,
+} from '@supportmanagement/services/support-investigation-service';
+import {
+  type JsonObject,
+  jsonParameterObject,
+  sameJson,
+  type SupportJsonParameterSpec,
+  supportSchemaId,
+} from '@supportmanagement/services/support-json-parameter-service';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { InvestigationSectionProps } from './investigation-section-text.component';
 
-/** The fields of a section the backend lets a handler write. */
-const SECTION_FIELDS = ['text', 'assessment', 'parameters'] as const;
+/** The fields of a section the backend lets a handler write; `json` is the section's JSON parameter. */
+const SECTION_FIELDS = ['text', 'assessment', 'json'] as const;
 
 type SectionField = (typeof SECTION_FIELDS)[number];
 interface SectionValues {
   text: string;
   assessment: string;
-  parameters: Parameter[];
+  json: JsonObject;
 }
 
 const pick = (values: SectionValues, fields: SectionField[]): Partial<SectionValues> =>
   Object.fromEntries(fields.map((field) => [field, values[field]])) as Partial<SectionValues>;
 
-const comparable = (value: SectionValues[SectionField]): string =>
-  typeof value === 'string'
-    ? value
-    : JSON.stringify(value.map(({ key, values }) => ({ key, values })).sort((a, b) => a.key.localeCompare(b.key)));
-
-const differs = (a: SectionValues, b: SectionValues, field: SectionField): boolean =>
-  comparable(a[field]) !== comparable(b[field]);
+const differs = (a: SectionValues, b: SectionValues, field: SectionField): boolean => !sameJson(a[field], b[field]);
 
 /** Holds the writable fields of a section and registers the save the tab runs for it; only changed fields are sent. */
 export const useInvestigationSectionSave = (
   { section, investigationId, writable, onEdited, onSaved, saveRef }: InvestigationSectionProps,
-  saveFailedKey: string
+  saveFailedKey: string,
+  jsonParameter?: SupportJsonParameterSpec
 ) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
+  const jsonKey = jsonParameter?.key;
   const written = useMemo<SectionValues>(
-    () => ({ text: section.text ?? '', assessment: section.assessment ?? '', parameters: section.parameters ?? [] }),
-    [section.text, section.assessment, section.parameters]
+    () => ({
+      text: section.text ?? '',
+      assessment: section.assessment ?? '',
+      json: (jsonKey && jsonParameterObject(section.jsonParameters, jsonKey)) || {},
+    }),
+    [section.text, section.assessment, section.jsonParameters, jsonKey]
   );
   const [values, setValues] = useState(written);
   const [loaded, setLoaded] = useState(written);
@@ -79,9 +89,24 @@ export const useInvestigationSectionSave = (
     if (changed.length === 0 || !errandId || !investigationId || !section.id) return true;
 
     const sent = pick(values, changed);
+    const { json, ...fields } = sent;
     setBusy(true);
     try {
-      onSaved(await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, sent));
+      let saved: SupportInvestigation | undefined;
+      if (Object.keys(fields).length > 0) {
+        saved = await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, fields);
+      }
+      if (json && jsonParameter) {
+        saved = await saveSupportInvestigationSectionJsonParameter(
+          errandId,
+          municipalityId,
+          investigationId,
+          section.id,
+          jsonParameter.key,
+          { schemaId: supportSchemaId(municipalityId, jsonParameter.schema), value: json }
+        );
+      }
+      if (saved) onSaved(saved);
       setLoaded((current) => ({ ...current, ...sent }));
       return true;
     } catch {
@@ -94,6 +119,7 @@ export const useInvestigationSectionSave = (
     changedFields,
     errandId,
     investigationId,
+    jsonParameter,
     municipalityId,
     onSaved,
     saveFailedKey,

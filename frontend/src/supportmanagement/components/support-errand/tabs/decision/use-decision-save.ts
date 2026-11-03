@@ -1,59 +1,49 @@
 'use client';
 
-import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   type CertificateDecision,
+  decisionJsonParameter,
   type DecisionParameterInput,
   toCertificateParameters,
-  toDecisionParameters,
+  toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import {
-  type DecisionPremises,
-  withPremisesProcessParameters,
-} from '@supportmanagement/services/support-decision-premises-service';
-import {
-  hasInvalidServingHours,
-  type SlotSpec,
-  toScopeParameters,
-} from '@supportmanagement/services/support-decision-scope-service';
+import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import { hasInvalidServingHours } from '@supportmanagement/services/support-decision-scope-service';
 import {
   createSupportDecision,
   getSupportDecisions,
   isSupportDecisionLockedError,
+  isSupportDecisionRejectedError,
   outcomeForTerms,
   outcomeLabel,
+  saveSupportDecisionJsonParameter,
+  type SupportDecision,
   supportDecisionWithoutBlanks,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
-import {
-  getLabelType,
-  saveSupportErrandParameters,
-  type SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
-import { type FormValue, premisesValue, text } from '@supportmanagement/services/support-form-value-service';
+import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
+import type { FormValue } from '@supportmanagement/services/support-form-value-service';
+import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import type { DecisionPermit } from './decision-permit';
 import type { DecisionFormValues } from './use-decision-form';
 
 interface DecisionSaveInput {
-  decision: Decision | undefined;
+  decision: SupportDecision | undefined;
   values: DecisionFormValues;
   edited: boolean;
   editable: boolean;
   permit: DecisionPermit;
-  /** The premises the handler has settled on, written on the errand for the process to read. */
+  /** The premises the handler has settled on, written in the decision for the process to read. */
   premisesToSend: DecisionPremises | undefined;
   /** The answers filed under the errand type's schema, which several parameters are read off. */
   applicationForm: FormValue | undefined;
-  /** The serving-hours slots the errand type decides on; every one of them is written on save. */
-  servingHoursSlots: SlotSpec[];
-  onSaved: (decisions: Decision[]) => void;
+  onSaved: (decisions: SupportDecision[]) => void;
 }
 
 export interface DecisionSave {
@@ -62,10 +52,10 @@ export interface DecisionSave {
 }
 
 /**
- * Writing the decision. The fields go on the decision as parameters, since the process adds nothing
- * off its root but the conditions, and the premises go on the errand, where the process reads them to
- * resolve the restaurant number. Spara ärende in the sidebar is what saves the tab, so the save is
- * registered as the tab's saver instead of sitting behind a button of its own.
+ * Writing the decision: its own fields first, then what it says of the permit as its JSON parameter,
+ * the premises and the restaurant number choice included, which the process reads to issue the
+ * permit. Spara ärende in the sidebar is what saves the tab, so the save is registered as the tab's
+ * saver instead of sitting behind a button of its own.
  */
 export const useDecisionSave = ({
   decision,
@@ -75,21 +65,26 @@ export const useDecisionSave = ({
   permit,
   premisesToSend,
   applicationForm,
-  servingHoursSlots,
   onSaved,
 }: DecisionSaveInput): DecisionSave => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
+  const setDecisionJsonWriter = useSupportStore((s) => s.setDecisionJsonWriter);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const outcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
-  const errandForm = useFormContext();
+  // Survives a failed JSON write, so that saving again updates the new decision instead of creating another.
+  const createdId = useRef<string>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
+  const writeJsonLatest = useRef<(decisionId: string) => Promise<SupportDecision | undefined>>(undefined);
+  const jsonWriter = useCallback(
+    (decisionId: string) => writeJsonLatest.current?.(decisionId) ?? Promise.resolve(undefined),
+    []
+  );
 
   const writtenTerms = values.terms.map((term) => term.trim()).filter(Boolean);
 
@@ -99,44 +94,49 @@ export const useDecisionSave = ({
     form: applicationForm,
     premises: premisesToSend,
     scope: values.scope,
-    servingArea: values.servingArea,
+    servingAreaDescription: values.servingAreaDescription,
     attachments: supportAttachments,
-    issuedOn: values.issuedOn,
-    premisesPhone: values.premisesPhone,
-    decisionCaseNumber: values.decisionCaseNumber,
-    otherCaseNumber: values.otherCaseNumber,
+    executionDate: values.executionDate,
+    premisesPhoneNumber: values.premisesPhoneNumber,
+    caseRegistrationNumber: values.caseRegistrationNumber,
+    externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
 
   /** What the certificate says about the decision, outcome and all, whether previewed or sent. */
+  const outcome = outcomeForTerms(values.outcome, writtenTerms, outcomes);
   const certificateDecision: CertificateDecision = {
-    decisionText: outcomeLabel(outcomes, outcomeForTerms(values.outcome, writtenTerms, outcomes)),
+    outcome,
+    decisionText: outcomeLabel(outcomes, outcome),
     decisionMaker: values.decidedByRole,
     validFrom: values.validFrom,
+    legalBasis: values.legalBasis,
+    justification: values.justification,
     terms: writtenTerms,
   };
 
-  const savePremisesOnErrand = async () => {
-    if (!premisesToSend || !supportErrand?.id) return;
+  // The JSON copies errand data, so it is rebuilt from the errand as it is now on every write.
+  const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
+    if (!supportErrand?.id) return undefined;
 
-    // Spara ärende saves the errand before it saves the tabs, so the freshest parameters are the form's.
-    const onErrand = errandForm?.getValues('parameters') ?? supportErrand.parameters;
-    const parameters = withPremisesProcessParameters(
-      onErrand,
-      premisesToSend,
-      text(premisesValue(applicationForm, 'Name')) ?? ''
-    );
-    if (JSON.stringify(parameters) === JSON.stringify(onErrand)) return;
-
-    await saveSupportErrandParameters(supportErrand.id, municipalityId, parameters);
-    const latest = useSupportStore.getState().supportErrand;
-    if (latest) setSupportErrand({ ...latest, parameters });
-    errandForm?.setValue('parameters', parameters, { shouldDirty: false });
+    const jsonParameter = decisionJsonParameter(permit.type);
+    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, jsonParameter.key, {
+      schemaId: supportSchemaId(municipalityId, jsonParameter.schema),
+      value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
+    });
   };
 
   const tell = (message: string, status: 'success' | 'error') =>
     toastMessage({ position: 'bottom', closeable: false, message, status });
+
+  const saveErrorKey = (error: unknown, decisionWasSaved: boolean): string => {
+    if (isSupportDecisionLockedError(error)) return 'common:decision.locked_error';
+    if (!decisionWasSaved) return 'common:decision.save_error';
+    return isSupportDecisionRejectedError(error)
+      ? 'common:decision.permit_json_rejected'
+      : 'common:decision.permit_json_save_error';
+  };
 
   // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
@@ -147,12 +147,8 @@ export const useDecisionSave = ({
       return false;
     }
 
-    const outcome = outcomeForTerms(values.outcome, writtenTerms, outcomes);
-
-    if (!decision?.id && !outcome) {
-      await savePremisesOnErrand();
-      return true;
-    }
+    // The service cannot create a decision without an outcome; until then the fields stay in the form.
+    if (!decision?.id && !outcome) return true;
 
     const permitName = getLabelType(supportErrand)?.displayName;
     const written = supportDecisionWithoutBlanks({
@@ -165,29 +161,26 @@ export const useDecisionSave = ({
       validFrom: values.validFrom,
       validTo: values.validTo,
       terms: writtenTerms,
-      parameters: [
-        ...toDecisionParameters(permit.type, parameterInput(supportErrand), certificateDecision),
-        ...toScopeParameters(values.scope, servingHoursSlots, permit.type, t),
-      ],
     });
-
+    let saved: SupportDecision | undefined;
     try {
-      await savePremisesOnErrand();
-      const saved = decision?.id
-        ? await updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
+      const existingId = decision?.id ?? createdId.current;
+      saved = existingId
+        ? await updateSupportDecision(supportErrand.id, municipalityId, existingId, written)
         : await createSupportDecision(supportErrand.id, municipalityId, written);
+      createdId.current = saved.id;
+      const withJson = await writeDecisionJson(saved.id ?? '');
 
-      onSaved([saved]);
+      onSaved(withJson ? [withJson] : [saved]);
       tell(t('common:decision.saved'), 'success');
       return true;
     } catch (error) {
-      const isLocked = isSupportDecisionLockedError(error);
-      if (isLocked) {
+      if (isSupportDecisionLockedError(error)) {
         const inHand = await getSupportDecisions(supportErrand.id, municipalityId).catch(() => undefined);
         if (inHand) onSaved(inHand);
       }
 
-      tell(t(isLocked ? 'common:decision.locked_error' : 'common:decision.save_error'), 'error');
+      tell(t(saveErrorKey(error, !!saved)), 'error');
       return false;
     }
   };
@@ -195,12 +188,18 @@ export const useDecisionSave = ({
   // The saver is registered once; the ref keeps it pointing at the fields of the latest render.
   useEffect(() => {
     saveLatest.current = save;
+    writeJsonLatest.current = writeDecisionJson;
   });
 
   useEffect(() => {
     setTabSaver('decision', saver);
     return () => setTabSaver('decision', undefined);
   }, [saver, setTabSaver]);
+
+  useEffect(() => {
+    setDecisionJsonWriter(jsonWriter);
+    return () => setDecisionJsonWriter(undefined);
+  }, [jsonWriter, setDecisionJsonWriter]);
 
   return {
     certificateParameters: supportErrand

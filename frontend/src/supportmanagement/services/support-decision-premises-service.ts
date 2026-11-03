@@ -1,8 +1,7 @@
 import type { Address } from '@common/data-contracts/licensed-business/data-contracts';
-import type { CParameter } from 'src/data-contracts/backend/data-contracts';
 
 import type { PremisesAddressMatch, RestaurantNumberWithAssignment } from './licensed-business-service';
-import { getErrandParameterValue, upsertErrandParameter } from './support-errand-service';
+import { type JsonObject, objectAt, stringAt } from './support-json-parameter-service';
 import type { PremisesAddress } from './support-premises-address-service';
 
 /** An existing restaurant number, or a new one. */
@@ -41,69 +40,25 @@ export const decisionPremisesAddress = (
   return registerHasNoMatch ? complete(premises?.street, premises?.postalCode, premises?.city) : undefined;
 };
 
-/** The settled address with the choice; written on the errand (see withPremisesProcessParameters). */
+/** The settled address with the choice; written in the decision's `premises`. */
 export const toDecisionPremises = (address: DecisionPremisesAddress, choice: PremisesChoice): DecisionPremises => ({
   ...address,
   choice,
 });
 
-/**
- * What the process reads to resolve the restaurant number. It reads the errand, not the decision, and
- * wants the address in parts, since LicensedBusiness looks an address up by street and postal code.
- */
-const PREMISES_PROCESS_PARAMETERS: {
-  key: string;
-  displayName: string;
-  valueOf: (premises: DecisionPremises, premisesName: string) => string;
-}[] = [
-  {
-    key: 'premisesStreetAddress',
-    displayName: 'Serveringsställets gatuadress',
-    valueOf: (premises) => premises.street,
-  },
-  {
-    key: 'premisesPostalCode',
-    displayName: 'Serveringsställets postnummer',
-    valueOf: (premises) => premises.postalCode,
-  },
-  { key: 'premisesPostalArea', displayName: 'Serveringsställets postort', valueOf: (premises) => premises.city },
-  { key: 'premisesName', displayName: 'Serveringsställets namn', valueOf: (_premises, premisesName) => premisesName },
-  {
-    key: 'restaurantNumber',
-    displayName: 'Valt restaurangnummer',
-    valueOf: (premises) => (premises.choice.kind === 'EXISTING' ? premises.choice.restaurantNumber : ''),
-  },
-  {
-    key: 'newRestaurantNumber',
-    displayName: 'Nytt restaurangnummer begärt',
-    valueOf: (premises) => (premises.choice.kind === 'NEW' ? 'true' : ''),
-  },
-];
-
-/** The chosen premises on the errand. An empty value removes its key, so a changed choice leaves nothing behind. */
-export const withPremisesProcessParameters = (
-  parameters: CParameter[] | undefined,
-  premises: DecisionPremises,
-  premisesName: string
-): CParameter[] =>
-  PREMISES_PROCESS_PARAMETERS.reduce(
-    (written, parameter) =>
-      upsertErrandParameter(written, parameter.key, parameter.valueOf(premises, premisesName), parameter.displayName),
-    parameters ?? []
-  );
-
-const choiceOf = (restaurantNumber: string, newRestaurantNumber: string): PremisesChoice | undefined => {
+const choiceOf = (restaurantNumber: string | undefined, newRestaurantNumber: unknown): PremisesChoice | undefined => {
   if (restaurantNumber) return { kind: 'EXISTING', restaurantNumber };
-  return newRestaurantNumber === 'true' ? { kind: 'NEW' } : undefined;
+  return newRestaurantNumber === true ? { kind: 'NEW' } : undefined;
 };
 
-/** The premises the errand carries; undefined without a complete address and a choice. */
-export const premisesFromErrandParameters = (parameters: CParameter[] | undefined): DecisionPremises | undefined => {
-  const value = (key: string) => getErrandParameterValue(parameters, key);
-  const address = complete(value('premisesStreetAddress'), value('premisesPostalCode'), value('premisesPostalArea'));
-  const choice = choiceOf(value('restaurantNumber'), value('newRestaurantNumber'));
+/** The premises the decision's JSON carries; undefined without a complete address and a choice. */
+export const premisesFromDecisionJson = (json: JsonObject | undefined): DecisionPremises | undefined => {
+  const premises = objectAt(json?.premises);
+  const address = objectAt(premises.address);
+  const settled = complete(stringAt(address.street), stringAt(address.postalCode), stringAt(address.city));
+  const choice = choiceOf(stringAt(premises.restaurantNumber), premises.newRestaurantNumber);
 
-  return address && choice ? { ...address, choice } : undefined;
+  return settled && choice ? { ...settled, choice } : undefined;
 };
 
 /** What the process does with the choice. */

@@ -1,5 +1,4 @@
 import type { Statement } from '@common/data-contracts/supportmanagement/data-contracts';
-import type { CParameter } from 'src/data-contracts/backend/data-contracts';
 import { describe, expect, test } from 'vitest';
 
 import type { SupportMetadata } from './support-metadata-service';
@@ -116,16 +115,14 @@ describe('fire safety read from the rescue service referral', () => {
   });
 });
 
-describe('what the handler establishes, kept on the errand', () => {
-  const parameters: CParameter[] = [
-    { key: 'object', values: ['Testgatan 1'] },
-    { key: 'PREMISES_INSPECTED_AT', values: ['2026-04-10'] },
-    { key: 'PREMISES_RIGHT_OF_DISPOSAL', values: ['PROVEN'] },
-    { key: 'PREMISES_RIGHT_OF_DISPOSAL_NOTE', values: ['hyresavtal t.o.m. 2029'] },
-  ];
+describe('what the handler establishes, kept in the section JSON', () => {
+  const json = {
+    inspectedAt: '2026-04-10',
+    rightOfDisposal: { status: 'PROVEN', note: 'hyresavtal t.o.m. 2029' },
+  };
 
   test('reads what has been written', () => {
-    expect(supportPremisesExamination(parameters)).toEqual({
+    expect(supportPremisesExamination(json)).toEqual({
       inspectedAt: '2026-04-10',
       rightOfDisposal: 'PROVEN',
       rightOfDisposalNote: 'hyresavtal t.o.m. 2029',
@@ -144,31 +141,30 @@ describe('what the handler establishes, kept on the errand', () => {
     });
   });
 
-  test('a write replaces its own parameter and leaves the others alone', () => {
-    const written = withSupportPremisesExamination(parameters, 'rightOfDisposal', 'PENDING');
+  test('a write changes its own field and leaves the others alone', () => {
+    const written = withSupportPremisesExamination(json, 'rightOfDisposal', 'PENDING');
 
-    expect(supportPremisesExamination(written).rightOfDisposal).toBe('PENDING');
-    expect(supportPremisesExamination(written).rightOfDisposalNote).toBe('hyresavtal t.o.m. 2029');
-    expect(written.find((parameter) => parameter.key === 'object')?.values).toEqual(['Testgatan 1']);
+    expect(written).toEqual({
+      inspectedAt: '2026-04-10',
+      rightOfDisposal: { status: 'PENDING', note: 'hyresavtal t.o.m. 2029' },
+    });
   });
 
   test('a note keeps the space the handler typed', () => {
-    const written = withSupportPremisesExamination(parameters, 'rightOfDisposalNote', 'hyresavtal t.o.m. ');
+    const written = withSupportPremisesExamination(json, 'rightOfDisposalNote', 'hyresavtal t.o.m. ');
 
     expect(supportPremisesExamination(written).rightOfDisposalNote).toBe('hyresavtal t.o.m. ');
   });
 
-  test('clearing a field removes the parameter instead of storing a blank', () => {
-    const written = withSupportPremisesExamination(parameters, 'inspectedAt', '');
+  test('clearing a field leaves it out instead of storing a blank', () => {
+    const written = withSupportPremisesExamination(json, 'inspectedAt', '');
 
-    expect(written.some((parameter) => parameter.key === 'PREMISES_INSPECTED_AT')).toBe(false);
+    expect(written).not.toHaveProperty('inspectedAt');
   });
-});
 
-describe('what the handler establishes for the underlay', () => {
-  test('the serving areas are written onto the errand', () => {
-    const written = withSupportPremisesExamination([], 'servingArea', 'Matsalen och bryggan');
+  test('the serving areas are written as the serving area description', () => {
+    const written = withSupportPremisesExamination(undefined, 'servingArea', 'Matsalen och bryggan');
 
-    expect(supportPremisesExamination(written).servingArea).toBe('Matsalen och bryggan');
+    expect(written).toEqual({ servingArea: { description: 'Matsalen och bryggan' } });
   });
 });
