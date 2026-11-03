@@ -80,6 +80,28 @@ test.describe('Errand page support attachments tab', () => {
     }
   });
 
+  for (const mimeType of ['application/pdf', 'image/jpeg']) {
+    test(`Shows an error toast when a ${mimeType} attachment cannot be fetched`, async ({ page, mockRoute }) => {
+      const attachment = mockSupportAttachments.find((candidate) => candidate.mimeType === mimeType)!;
+      await mockRoute(
+        `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments/${attachment.id}`,
+        {},
+        { method: 'GET', status: 500 }
+      );
+
+      await page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).click();
+      await Promise.all([
+        page.waitForResponse((resp) => resp.url().includes(`/attachments/${attachment.id}`) && resp.status() === 500),
+        page.locator(`[data-cy="open-attachment-${attachment.id}"]`).click(),
+      ]);
+
+      await expect(
+        page.locator('.sk-snackbar-text', { hasText: 'Något gick fel när bilagan skulle hämtas' })
+      ).toBeVisible();
+      await expect(page.locator(MODAL_DIALOG)).toBeHidden();
+    });
+  }
+
   test('Can upload attachment/attachments', async ({ page, mockRoute }) => {
     await mockRoute(
       `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments`,
