@@ -3,7 +3,7 @@
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { ContractData } from '@casedata/interfaces/contract-data';
-import { decisionChannelLabels, DecisionOutcomes } from '@casedata/interfaces/decision';
+import { decisionChannelLabels } from '@casedata/interfaces/decision';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
@@ -14,8 +14,11 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
+  getDecisionLabel,
+  getDecisionOutcomeOptions,
   getFinalDecisonWithHighestId,
   getLawMapping,
+  isApprovingOutcome,
   mapServicesToTemplateParams,
   renderHtml,
   renderPdf,
@@ -45,7 +48,7 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { useErrandAssetServices } from '@common/hooks/use-asset-services';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
-import { deleteDraftAsset, getDraftAssets, updateAsset } from '@common/services/asset-service';
+import { deleteDraftAsset, getDraftAssets, updateDraftAsset } from '@common/services/asset-service';
 import { base64Decode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -110,7 +113,7 @@ let formSchema = yup
     validFrom: isPT()
       ? yup.string().when(['outcome', 'errandCaseType'], (values, schema) => {
           const [outcome, errandCaseType] = values as [string, string];
-          return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
+          return isApprovingOutcome(outcome) && isPTCaseType(errandCaseType)
             ? schema.required('Giltigt datum måste anges')
             : schema.notRequired();
         })
@@ -121,7 +124,7 @@ let formSchema = yup
           .string()
           .when(['outcome', 'errandCaseType'], (values, schema) => {
             const [outcome, errandCaseType] = values as [string, string];
-            return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
+            return isApprovingOutcome(outcome) && isPTCaseType(errandCaseType)
               ? schema.required('Giltigt datum måste anges')
               : schema.notRequired();
           })
@@ -129,7 +132,7 @@ let formSchema = yup
             name: 'validTo-after-validFrom',
             message: 'Slutdatum måste vara efter startdatum',
             test: (value, context) => {
-              if (context.parent.outcome !== DecisionOutcomes.Approval) return true;
+              if (!isApprovingOutcome(context.parent.outcome)) return true;
               if (!isPTCaseType(context.parent.errandCaseType)) return true;
               if (!value || !context.parent.validFrom) return true;
               return Date.parse(context.parent.validFrom) < Date.parse(value);
@@ -189,7 +192,7 @@ export const CasedataDecisionTab: FC<{
 
   useEffect(() => {
     if (!hasFtServices) return;
-    (async () => {
+    void (async () => {
       const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
       setServiceSchema(schema);
     })();
@@ -384,8 +387,9 @@ export const CasedataDecisionTab: FC<{
         type: assetType,
       });
       const draftAssets = drafts?.data ?? [];
-      if (data.outcome === DecisionOutcomes.Approval) {
-        await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      if (isApprovingOutcome(data.outcome)) {
+        // Partyassets rejects status changes on DRAFT assets through /assets, so activate via /asset-drafts.
+        await Promise.all(draftAssets.map((a) => updateDraftAsset(municipalityId, a.id, { status: 'ACTIVE' })));
       } else {
         await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }
@@ -608,7 +612,7 @@ export const CasedataDecisionTab: FC<{
       decisionDate: dayjs().format('YYYY-MM-DD'),
     };
 
-    if (outcome === DecisionOutcomes.Approval) {
+    if (isApprovingOutcome(outcome)) {
       parameters.permitFirstname = owner?.firstName || '';
       parameters.permitLastname = owner?.lastName || '';
       parameters.permitEndDate = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
@@ -679,7 +683,7 @@ export const CasedataDecisionTab: FC<{
     return null;
   }
 
-  const isApproval = outcome === DecisionOutcomes.Approval;
+  const isApproval = isApprovingOutcome(outcome);
   const showApprovedServices = isPT() && isApproval;
   const showNoServicesInfo = isPT() && !!outcome && !isApproval;
 
@@ -739,18 +743,11 @@ export const CasedataDecisionTab: FC<{
               <Select.Option data-cy="outcome-input-item" value={''}>
                 Välj utfall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Approval}>
-                Bifall
-              </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Rejection}>
-                Avslag
-              </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Cancellation}>
-                Ärendet avskrivs
-              </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Dismissal}>
-                Ärendet avvisas
-              </Select.Option>
+              {getDecisionOutcomeOptions(errand).map((decisionOutcome) => (
+                <Select.Option key={decisionOutcome} data-cy="outcome-input-item" value={decisionOutcome}>
+                  {getDecisionLabel(decisionOutcome)}
+                </Select.Option>
+              ))}
             </Select>
             {errors.outcome && <FormErrorMessage className="text-error">{errors.outcome.message}</FormErrorMessage>}
           </FormControl>
@@ -823,7 +820,7 @@ export const CasedataDecisionTab: FC<{
                     type="date"
                     {...register('validFrom')}
                     size="sm"
-                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    disabled={isErrandLocked(errand) || isSent() || !isApproval}
                     invalid={!!errors.validFrom}
                     placeholder="Välj datum"
                     data-cy="validFrom-input"
@@ -839,7 +836,7 @@ export const CasedataDecisionTab: FC<{
                     type="date"
                     {...register('validTo')}
                     size="sm"
-                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    disabled={isErrandLocked(errand) || isSent() || !isApproval}
                     invalid={!!errors.validTo}
                     placeholder="Välj datum"
                     data-cy="validTo-input"

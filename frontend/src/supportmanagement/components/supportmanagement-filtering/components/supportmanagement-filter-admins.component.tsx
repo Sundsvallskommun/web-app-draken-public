@@ -1,4 +1,5 @@
 import { Admin } from '@common/services/user-service';
+import { compareByDisplayName, displayNameMatchesQuery } from '@common/utils/ad-display-name';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
 import { FC, useState } from 'react';
@@ -44,12 +45,8 @@ export const SupportManagementFilterAdmins: FC<SupportManagementFilterAdminsProp
           />
           <PopupMenu.Items autoFocus={false}>
             {administrators
-              .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-              .filter(
-                (admin) =>
-                  admin.firstName.toLowerCase().includes(query.toLowerCase()) ||
-                  admin.lastName.toLowerCase().includes(query.toLowerCase())
-              )
+              .sort(compareByDisplayName)
+              .filter((admin) => displayNameMatchesQuery(admin, query))
               .map((admin, idx) => (
                 <PopupMenu.Item key={`adminitem-${idx}`}>
                   <Checkbox
@@ -58,7 +55,7 @@ export const SupportManagementFilterAdmins: FC<SupportManagementFilterAdminsProp
                     value={admin.adAccount?.toString() || admin.id.toString()}
                     {...register('admins')}
                   >
-                    {admin.lastName} {admin.firstName}
+                    {admin.displayName}
                   </Checkbox>
                 </PopupMenu.Item>
               ))}

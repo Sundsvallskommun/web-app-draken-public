@@ -10,6 +10,7 @@ import { SingleSupportAttachment } from './support-attachment-service';
 import { SupportCommunicationType } from './support-communication-types';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
+import { ensureErrandSubscription } from './support-subscription-service';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -186,7 +187,14 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
       throw error;
     }
   });
-  return Promise.all(msgPromises).then((results) => (results.every((r) => r) ? true : false));
+  return Promise.all(msgPromises).then((results) => {
+    const sent = results.every((r) => r);
+    if (sent) {
+      // Replying to an errand is taken as "keep me posted on this one".
+      void ensureErrandSubscription(data.municipalityId, data.errandId);
+    }
+    return sent;
+  });
 };
 
 export const fetchSupportMessages: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (

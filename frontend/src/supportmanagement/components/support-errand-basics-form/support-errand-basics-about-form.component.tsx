@@ -17,7 +17,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { LabelCategorization } from './LabelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
 export const SupportErrandBasicsAboutForm: FC<{
@@ -28,7 +28,7 @@ export const SupportErrandBasicsAboutForm: FC<{
   const { supportErrand } = props;
   const { t } = useTranslation();
 
-  const contactReasonList = supportMetadata?.contactReasons;
+  const contactReasonList = (supportMetadata?.contactReasons ?? []).filter((c) => !c.deprecated);
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
@@ -67,9 +67,9 @@ export const SupportErrandBasicsAboutForm: FC<{
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization ? (
+      {appConfig.features.useLabelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          <LabelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
         </div>
       ) : null}
 
@@ -154,7 +154,7 @@ export const SupportErrandBasicsAboutForm: FC<{
                   .map((reason: ContactReason) => {
                     return (
                       <Select.Option value={reason.reason} key={`reason-${reason.reason}`}>
-                        {reason.reason}
+                        {reason.displayName}
                       </Select.Option>
                     );
                   })}

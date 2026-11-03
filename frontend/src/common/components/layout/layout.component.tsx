@@ -1,10 +1,12 @@
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
+import { AceStatusIndicator } from '@common/ace/ace-status.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu } from '@sk-web-gui/react';
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { getLabelCategorizationHeading } from '@supportmanagement/services/support-errand-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -68,8 +70,8 @@ export default function Layout({ title, children }: { title: string; children: R
               actions={supportErrand?.actions ?? []}
             />
             <span className="font-bold ml-8">
-              {appConfig.features.useThreeLevelCategorization
-                ? supportErrand?.labels?.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
+              {appConfig.features.useLabelCategorization
+                ? supportErrand && getLabelCategorizationHeading(supportErrand, supportMetadata)
                 : supportMetadata?.categories
                     ?.find((t) => t.name === supportErrand?.category)
                     ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||
@@ -111,6 +113,7 @@ export default function Layout({ title, children }: { title: string; children: R
           logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
           userMenu={
             <div className="flex items-center h-fit">
+              <AceStatusIndicator className="mr-24" />
               <span data-cy="usermenu">
                 <UserMenu
                   initials={`${user.firstName[0]}${user.lastName[0]}`}
