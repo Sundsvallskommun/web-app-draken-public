@@ -1,6 +1,8 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { apiService } from '@common/services/api-service';
 
+import { ensureErrandSubscription } from './support-subscription-service';
+
 interface SupportNoteDto {
   context: string;
   role?: string;
@@ -80,6 +82,8 @@ export const saveSupportNote: (
   return apiService
     .post<boolean, Partial<SupportNoteDto>>(`supportnotes/${municipalityId}/${errandId}`, { body, partyId, noteType })
     .then((res) => {
+      // Commenting on an errand is taken as "keep me posted on this one".
+      void ensureErrandSubscription(municipalityId, errandId);
       return true;
     })
     .catch((e) => {

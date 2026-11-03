@@ -60,8 +60,10 @@ test.describe('Decisions tab', () => {
     await mockRoute('**/estateInfo/**1:1', mockEstateInfo11, { method: 'GET' }); // @getEstateInfo
     await mockRoute('**/estateInfo/**1:2', mockEstateInfo12, { method: 'GET' }); // @getEstateInfo
 
-    await page.goto(`arende/${mockMexErrand_base.data.errandNumber}`);
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200),
+      page.goto(`arende/${mockMexErrand_base.data.errandNumber}`),
+    ]);
     await dismissCookieConsent();
     const tab = page.getByRole('tab', { name: 'Beslut', exact: true });
     await expect(tab).toBeVisible();
@@ -70,6 +72,14 @@ test.describe('Decisions tab', () => {
 
   test('displays the correct fields', async ({ page }) => {
     await expect(page.locator('[data-cy="decision-outcome-select"]')).toBeVisible();
+    // The PT-only outcomes (Bifall / Avslag, Återkallelse) are not offered in MEX.
+    await expect(page.locator('[data-cy="decision-outcome-select"] option')).toHaveText([
+      'Välj utfall',
+      'Bifall',
+      'Avslag',
+      'Ärendet avskrivs',
+      'Ärendet avvisas',
+    ]);
     await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="validTo-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toBeVisible();

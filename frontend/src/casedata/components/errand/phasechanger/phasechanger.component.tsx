@@ -1,5 +1,6 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -21,7 +22,7 @@ import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
@@ -33,6 +34,9 @@ export const PhaseChanger = () => {
   const administrators = useUserStore((s) => s.administrators);
   const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [isLoading, setIsLoading] = useState(false);
+  // The process often discards the first COMPLETE and only moves on once it is resent, so for a few seconds the
+  // errand itself can look as if nothing happened. The start counts as in progress until the polling is done.
+  const [isStartingHandling, setIsStartingHandling] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
@@ -44,6 +48,8 @@ export const PhaseChanger = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<{ admin: string }, any, undefined> = useForm();
+  const { watch: watchErrandForm } = useFormContext<IErrand>();
+  const formStakeholders = watchErrandForm('stakeholders');
 
   const [phaseChangeText, setPhaseChangeText] = useState<{
     icon: IconName;
@@ -143,6 +149,16 @@ export const PhaseChanger = () => {
       status: 'error',
     });
     setIsLoading(false);
+    setIsStartingHandling(false);
+  };
+
+  const showPhaseChangeError = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när fasbytet inleddes',
+      status: 'error',
+    });
   };
 
   const onSave = () => {
@@ -161,10 +177,21 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        triggerErrandPhaseChange(municipalityId, errand!);
-        pollDisplayPhase();
+        // Poll only once COMPLETE is saved: from then on, Registrerad with UNKNOWN means the process lost it.
+        void triggerErrandPhaseChange(municipalityId, errand!)
+          .then(() => getErrand(municipalityId, errand!.id.toString()))
+          .then((res) => {
+            setErrand(res.errand);
+            pollDisplayPhase({
+              resendLostComplete: true,
+              onPollingFinished: () => setIsStartingHandling(false),
+            });
+          })
+          .catch(() => {
+            setIsStartingHandling(false);
+            showPhaseChangeError();
+          });
       })
       .catch(() => {
         showSaveError();
@@ -174,6 +201,7 @@ export const PhaseChanger = () => {
 
   const onError = () => {
     console.error('Something went wrong when saving');
+    setIsStartingHandling(false);
   };
 
   const errandSave = useSaveCasedataErrand(false);
@@ -192,13 +220,8 @@ export const PhaseChanger = () => {
           status: 'success',
         })
       );
-    } catch (error) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när fasbytet inleddes',
-        status: 'error',
-      });
+    } catch {
+      showPhaseChangeError();
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +229,12 @@ export const PhaseChanger = () => {
 
   if (!errand) return null;
 
-  return phaseChangeInProgress(errand) ? (
+  // The PT process only leaves Registrerad once the errand has an ärendeägare; without one it silently
+  // keeps waiting. Stakeholders added in the form count, since the errand is saved before the phase change.
+  const activeStakeholders = (formStakeholders ?? errand.stakeholders).filter((stakeholder) => !stakeholder.removed);
+  const ownerMissingForStart = !validateStakeholdersForDecision({ ...errand, stakeholders: activeStakeholders }).valid;
+
+  return phaseChangeInProgress(errand) || isStartingHandling ? (
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>
       Fasbyte pågår
     </Button>
@@ -215,6 +243,16 @@ export const PhaseChanger = () => {
       variant="primary"
       color="vattjom"
       onClick={async () => {
+        if (ownerMissingForStart) {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Ärendet saknar ärendeägare. Lägg till en ärendeägare innan du startar handläggningen.',
+            status: 'error',
+          });
+          return;
+        }
+        setIsStartingHandling(true);
         setValue('admin', user.username);
         await errandSave();
         handleSubmit(onSave, onError)();

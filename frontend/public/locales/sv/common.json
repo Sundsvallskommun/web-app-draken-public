@@ -16,6 +16,7 @@
       "description_KA": "Brist i kunskapsbank"
     },
     "categories": {
+      "KC": "Ärendekategori*",
       "ROB": "Beställningstyp*",
       "IAF": "Avvikelsetyp",
       "default": "Verksamhet*"

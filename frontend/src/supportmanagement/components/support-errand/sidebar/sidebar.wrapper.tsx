@@ -1,4 +1,5 @@
 import { appConfig } from '@config/appconfig';
+import { useSearchParams } from 'next/navigation';
 import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
 
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
@@ -12,6 +13,8 @@ export const SidebarWrapper: FC<{
   setUnsavedFacility?: Dispatch<SetStateAction<boolean>>;
   unsavedFacility: boolean;
 }> = (props) => {
+  const searchParams = useSearchParams();
+
   const buttons: {
     label: string;
     key: SidebarButtonKey;
@@ -54,5 +57,10 @@ export const SidebarWrapper: FC<{
     },
   ];
 
-  return <Sidebar buttons={buttons} />;
+  // Notifications deep link into a specific panel, e.g. /arende/KC-1?tab=history. Only keys that
+  // actually exist here are honoured, so a stale or hand-edited link falls back to the default.
+  const requestedTab = searchParams?.get('tab');
+  const initialKey = buttons.find((button) => button.key === requestedTab)?.key;
+
+  return <Sidebar buttons={buttons} initialKey={initialKey} />;
 };

@@ -73,8 +73,10 @@ test.describe('Message tab', () => {
   });
 
   const goToMessageTab = async (page, dismissCookieConsent) => {
-    await page.goto('arende/PRH-2022-000019');
-    await page.waitForResponse((resp) => resp.url().includes('/errand/') && resp.status() === 200);
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/errand/') && resp.status() === 200),
+      page.goto('arende/PRH-2022-000019'),
+    ]);
     await dismissCookieConsent();
     await page.getByRole('tab', { name: 'Meddelanden' }).click();
   };

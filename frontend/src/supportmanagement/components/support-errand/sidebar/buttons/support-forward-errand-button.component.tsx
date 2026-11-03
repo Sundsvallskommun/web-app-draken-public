@@ -25,6 +25,9 @@ import {
 } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  choosesResolutionAfterForward,
+  closeSupportErrand,
+  forwardResolution,
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
@@ -36,8 +39,8 @@ import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { ForwardErrandSummary } from './forward-errand-summary.component';
-import { HandoverReview } from './handover/handover-review.component';
-import { MEX_DEPARTMENT_VALUE, useSupportHandover } from './handover/use-support-handover';
+import { HandoverClassificationPlaceholder, HandoverReview } from './handover/handover-review.component';
+import { isCasedataForwardTarget, useSupportHandover } from './handover/use-support-handover';
 
 const yupForwardForm = yup.object().shape(
   {
@@ -105,6 +108,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setShowCloseModalAfterHandover = useSupportStore((s) => s.setShowCloseModalAfterHandover);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const confirm = useConfirm();
@@ -136,16 +140,13 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
 
   const { recipient, message, messageBodyPlaintext, emails, department } = watch();
 
-  // Routing: MEX uses the casedata forward flow, every other namespace uses the handover.
   const handoverTarget =
-    appConfig.features.useHandover && recipient === 'DEPARTMENT' && department !== MEX_DEPARTMENT_VALUE
+    appConfig.features.useHandover && recipient === 'DEPARTMENT' && !isCasedataForwardTarget(department)
       ? handover.handoverTargets.find((target) => target.namespace === department)
       : undefined;
   const isHandover = !!handoverTarget;
-  const isMexTarget = recipient === 'DEPARTMENT' && department === MEX_DEPARTMENT_VALUE;
+  const isCasedataForward = recipient === 'DEPARTMENT' && isCasedataForwardTarget(department);
 
-  // Selecting a target namespace immediately fetches the preview and advances to step 2 – no extra
-  // "Nästa" click. Cached previews are reused, so switching back and forth keeps earlier choices.
   useEffect(() => {
     if (handoverTarget) {
       handover.runPreview(handoverTarget);
@@ -173,12 +174,9 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
             status: 'success',
           })
         );
-        setTimeout(() => {
-          window.close();
-        }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        afterForward();
       })
       .catch((e: Error) => {
         toastMessage({
@@ -201,15 +199,36 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       });
   };
 
-  // Mirrors the MEX forward success: toast, close the modal, refresh the (now closed) source errand
-  // and close the tab. No in-modal confirmation view.
-  const handleHandoverSuccess = () => {
+  const afterForward = () => {
+    void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => {
+      setSupportErrand(res.errand);
+      if (choosesResolutionAfterForward()) {
+        setShowCloseModalAfterHandover(true);
+      } else {
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      }
+    });
+  };
+
+  const handleHandoverSuccess = async () => {
     toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
     setShowModal(false);
-    getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-    setTimeout(() => {
-      window.close();
-    }, 2000);
+    try {
+      await closeSupportErrand(supportErrand!.id!, municipalityId, forwardResolution());
+    } catch (e) {
+      console.error('Failed to close errand after handover', e);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Ärendet överlämnades men kunde inte avslutas',
+        status: 'error',
+      });
+      void getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+      return;
+    }
+    afterForward();
   };
 
   useEffect(() => {
@@ -223,14 +242,14 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       setValue('message', '', { shouldValidate: true, shouldDirty: false });
       setValue('messageBodyPlaintext', '');
 
-      getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
+      void getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
       });
 
       if (recipient === 'EMAIL') {
-        getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
+        void getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
           setValue('message', sanitized(text), { shouldValidate: true, shouldDirty: false });
         });
       }
@@ -305,60 +324,102 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 </>
               )}
               {recipient === 'EMAIL' ? (
-                <FormControl id="email" className="w-full mb-md">
-                  <CommonNestedEmailArrayV2
-                    size="md"
-                    errand={supportErrand}
-                    data-cy="email-input"
-                    disabled={disabled}
-                    {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
-                  />
-                  {errors && formState.errors.emails && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+                <>
+                  <FormControl id="email" className="w-full mb-md">
+                    <CommonNestedEmailArrayV2
+                      size="md"
+                      errand={supportErrand}
+                      data-cy="email-input"
+                      disabled={disabled}
+                      {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+                    />
+                    {errors && formState.errors.emails && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                  <Divider />
+                  <h4 className="text-h4-md mt-12">Meddelande*</h4>
+                </>
+              ) : recipient === 'DEPARTMENT' ? (
+                <>
+                  <Divider />
+                  <div className="flex flex-col gap-8 py-12" data-cy="handover-recipient-section">
+                    <h4 className="text-h4-md">Mottagare</h4>
+                    <span>Välj vilken verksamhet som ska ta emot ärendet.</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-24 mt-8">
+                      <FormControl id="department" className="w-full">
+                        <FormLabel className="font-semibold">Verksamhet</FormLabel>
+                        <Select
+                          className="w-full"
+                          size="md"
+                          data-cy="resolution-input"
+                          placeholder="Välj verksamhet"
+                          aria-label="Välj verksamhet"
+                          {...register('department')}
+                        >
+                          <Select.Option value="">Välj verksamhet</Select.Option>
+                          {handover.handoverTargets.map((target) => (
+                            <Select.Option key={target.namespace} value={target.namespace}>
+                              {target.displayName || target.namespace}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                        {handover.targetsLoaded && handover.handoverTargets.length === 0 && (
+                          <small className="text-small" data-cy="handover-no-targets">
+                            Inga verksamheter är konfigurerade för överlämning. Använd e-post.
+                          </small>
+                        )}
+                      </FormControl>
+                    </div>
+                  </div>
+
+                  {!isCasedataForward && (
+                    <div className="flex flex-col gap-8 py-12" data-cy="handover-classification-section">
+                      <h4 className="text-h4-md">Så ska ärendet registreras hos mottagaren</h4>
+                      <span>
+                        Välj den kategori och ärendetyp som ärendet ska ha hos mottagaren. De kan skilja sig från
+                        uppgifterna i det här ärendet.
+                      </span>
+                      <div className="mt-8">
+                        {isHandover ? (
+                          <>
+                            {handover.step === 1 && handover.previewLoading && (
+                              <div className="flex items-center gap-8" data-cy="handover-preview-loading">
+                                <Spinner size={2} /> Hämtar förslag…
+                              </div>
+                            )}
+                            {handover.step === 1 && handover.previewError && (
+                              <Alert type="error" data-cy="handover-preview-error">
+                                <Alert.Icon />
+                                <Alert.Content>
+                                  <Alert.Content.Description>{handover.previewError}</Alert.Content.Description>
+                                </Alert.Content>
+                              </Alert>
+                            )}
+                            {handover.step === 2 && <HandoverReview handover={handover} />}
+                          </>
+                        ) : (
+                          <HandoverClassificationPlaceholder />
+                        )}
+                      </div>
                     </div>
                   )}
-                </FormControl>
-              ) : recipient === 'DEPARTMENT' ? (
-                <FormControl id="resolution" className="w-full py-12">
-                  <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
-                  <Select
-                    className="w-fit"
-                    size="md"
-                    data-cy="resolution-input"
-                    placeholder="Välj verksamhet"
-                    aria-label="Välj verksamhet"
-                    {...register('department')}
-                  >
-                    <Select.Option value="">Välj verksamhet</Select.Option>
-                    {handover.handoverTargets.map((target) => (
-                      <Select.Option key={target.namespace} value={target.namespace}>
-                        {target.displayName || target.namespace}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                  {handover.targetsLoaded && handover.handoverTargets.length === 0 && (
-                    <small className="text-small" data-cy="handover-no-targets">
-                      Inga verksamheter är konfigurerade för överlämning. Använd e-post.
-                    </small>
-                  )}
-                </FormControl>
-              ) : null}
-              {recipient !== '' && <Divider />}
-              {isMexTarget ? (
-                <>
-                  <h4 className="text-h4-md py-12">Uppgifter från ärendet som överlämnas</h4>
-                  <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
+
+                  <Divider />
+                  <div className="flex flex-col gap-8 py-12" data-cy="handover-autocopy">
+                    <h4 className="text-h4-md">Uppgifter från ärendet som överlämnas</h4>
+                    <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
+                  </div>
 
                   <Divider />
                   <h4 className="text-h4-md mt-12">Meddelande</h4>
                   <span>Skriv ett meddelande om du vill skicka med mer information på ärendet.</span>
                 </>
-              ) : recipient === 'EMAIL' ? (
-                <h4 className="text-h4-md mt-12">Meddelande*</h4>
               ) : null}
 
-              {(recipient === 'EMAIL' || isMexTarget) && (
+              {(recipient === 'EMAIL' || recipient === 'DEPARTMENT') && (
                 <FormControl id="comment" className="w-full" required>
                   <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                   <div data-cy="escalation-richtext-wrapper">
@@ -381,31 +442,13 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 </FormControl>
               )}
 
-              {isHandover && (
-                <>
-                  {handover.step === 1 && handover.previewLoading && (
-                    <div className="flex items-center gap-8 mt-12" data-cy="handover-preview-loading">
-                      <Spinner size={2} /> Hämtar förslag…
-                    </div>
-                  )}
-                  {handover.step === 1 && handover.previewError && (
-                    <Alert type="error" className="mt-12" data-cy="handover-preview-error">
-                      <Alert.Icon />
-                      <Alert.Content>
-                        <Alert.Content.Description>{handover.previewError}</Alert.Content.Description>
-                      </Alert.Content>
-                    </Alert>
-                  )}
-                  {handover.step === 2 && <HandoverReview handover={handover} supportErrand={supportErrand!} />}
-                  {handover.step === 2 && handover.handoverError && (
-                    <Alert type="error" className="mt-12" data-cy="handover-error">
-                      <Alert.Icon />
-                      <Alert.Content>
-                        <Alert.Content.Description>{handover.handoverError}</Alert.Content.Description>
-                      </Alert.Content>
-                    </Alert>
-                  )}
-                </>
+              {isHandover && handover.step === 2 && handover.handoverError && (
+                <Alert type="error" className="mt-12" data-cy="handover-error">
+                  <Alert.Icon />
+                  <Alert.Content>
+                    <Alert.Content.Description>{handover.handoverError}</Alert.Content.Description>
+                  </Alert.Content>
+                </Alert>
               )}
             </Modal.Content>
             <Modal.Footer className="flex flex-row">
@@ -428,25 +471,21 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                         loading={handover.handoverLoading}
                         loadingText="Överlämnar ärende"
                         disabled={handover.handoverLoading || !handover.requiredMappingsAnswered}
-                        onClick={() => {
-                          confirm
-                            .showConfirmation(
-                              'Överlämna ärendet',
-                              'Vill du överlämna ärendet?',
-                              'Ja',
-                              'Nej',
-                              'info',
-                              'info'
-                            )
-                            .then((confirmed) => {
-                              if (confirmed && handoverTarget) {
-                                handover.runHandover(handoverTarget).then((result) => {
-                                  if (result) {
-                                    handleHandoverSuccess();
-                                  }
-                                });
-                              }
-                            });
+                        onClick={async () => {
+                          const confirmed = await confirm.showConfirmation(
+                            'Överlämna ärendet',
+                            'Vill du överlämna ärendet?',
+                            'Ja',
+                            'Nej',
+                            'info',
+                            'info'
+                          );
+                          if (confirmed && handoverTarget) {
+                            const result = await handover.runHandover(handoverTarget, getValues('message'));
+                            if (result) {
+                              await handleHandoverSuccess();
+                            }
+                          }
                         }}
                       >
                         Överlämna ärendet
@@ -465,21 +504,18 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                     disabled={isForwardDisabled}
                     loading={isLoading}
                     loadingText="Vidarebefordrar ärende"
-                    onClick={() => {
-                      confirm
-                        .showConfirmation(
-                          'Överlämna ärendet',
-                          'Vill du överlämna ärendet?',
-                          'Ja',
-                          'Nej',
-                          'info',
-                          'info'
-                        )
-                        .then((confirmed) => {
-                          if (confirmed) {
-                            handleForwardErrand(getValues());
-                          }
-                        });
+                    onClick={async () => {
+                      const confirmed = await confirm.showConfirmation(
+                        'Överlämna ärendet',
+                        'Vill du överlämna ärendet?',
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      );
+                      if (confirmed) {
+                        await handleForwardErrand(getValues());
+                      }
                     }}
                   >
                     Överlämna ärendet

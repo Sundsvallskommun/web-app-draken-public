@@ -25,8 +25,10 @@ export type DecisionType = 'PROPOSED' | 'RECOMMENDED' | 'FINAL' | 'UNKNOWN_DECIS
 export enum DecisionOutcomes {
   Approval = 'APPROVAL',
   Rejection = 'REJECTION',
+  ConditionalApproval = 'CONDITIONAL_APPROVAL',
   Cancellation = 'CANCELLATION',
   Dismissal = 'DISMISSAL',
+  Revocation = 'REVOCATION',
   Unknown = 'UNKNOWN_DECISION_OUTCOME',
 }
 
@@ -35,8 +37,10 @@ export type DecisionOutcome = `${DecisionOutcomes}`;
 export enum DecisionOutcomeKey {
   'Bifall' = 'APPROVAL',
   'Avslag' = 'REJECTION',
+  'Bifall/Avslag' = 'CONDITIONAL_APPROVAL',
   'Ärendet avskrivs' = 'CANCELLATION',
   'Ärendet avvisas' = 'DISMISSAL',
+  'Återkallelse av tidigare utfärdat tillstånd' = 'REVOCATION',
   'Okänt' = 'UNKNOWN_DECISION_OUTCOME',
 }
 
