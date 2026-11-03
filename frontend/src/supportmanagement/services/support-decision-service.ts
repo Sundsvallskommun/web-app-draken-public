@@ -94,6 +94,10 @@ export const outcomeForTerms = (outcome: string, terms: string[], outcomes: Deci
 export const isSupportDecisionLockedError = (error: unknown): boolean =>
   (error as { response?: { status?: number } })?.response?.status === 409;
 
+/** Support Management answers 400 when a JSON parameter does not fit its schema. */
+export const isSupportDecisionRejectedError = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === 400;
+
 export const getSupportDecisions = (errandId: string, municipalityId: string): Promise<SupportDecision[]> =>
   apiService
     .get<SupportDecision[]>(`supportdecisions/${municipalityId}/${errandId}`)
@@ -170,6 +174,6 @@ export const saveSupportDecisionJsonParameter = (
     )
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when saving what the decision says of the permit');
+      console.error('Something went wrong when saving what the decision says of the permit', e?.response?.data);
       throw e;
     });

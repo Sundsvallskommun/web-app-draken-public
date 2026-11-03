@@ -412,6 +412,8 @@
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
+    "permit_json_rejected": "Beslutet sparades inte helt: uppgifterna om tillståndet godkändes inte. Kontrollera att datum, adresser, organisations- och restaurangnummer har rätt format och spara igen.",
+    "permit_json_save_error": "Beslutet sparades inte helt: uppgifterna om tillståndet kunde inte sparas. Försök spara igen.",
     "locked_error": "Beslutet kan inte längre ändras. Det är slutfört eller processen har avslutats.",
     "title_for": "Beslut om {{permit}}",
     "valid_from": "Gäller från",

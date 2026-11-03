@@ -175,6 +175,31 @@ test('the gate is taken from the process as it stands, not from the errand the d
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
 });
 
+test('the JSON of the draft decision is rewritten from the errand as it stands before it is concluded', async () => {
+  const order: string[] = [];
+  const writer = vi.fn(async () => order.push('json'));
+  vi.mocked(completeSupportDecision).mockImplementation(async () => order.push('complete') as never);
+  useSupportStore.setState({ decisionJsonWriter: writer });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  expect(writer).toHaveBeenCalledWith('decision-1');
+  expect(order).toEqual(['json', 'complete']);
+  useSupportStore.setState({ decisionJsonWriter: undefined });
+});
+
 test('the decision is read again for the gate, so one saved after the list was read is judged as it stands', async () => {
   const withoutValidFrom = { ...CERTIFICATE_JSON, decision: { ...CERTIFICATE_JSON.decision, validFrom: undefined } };
   vi.mocked(getSupportDecisions)

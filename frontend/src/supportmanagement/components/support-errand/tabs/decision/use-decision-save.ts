@@ -15,6 +15,7 @@ import {
   createSupportDecision,
   getSupportDecisions,
   isSupportDecisionLockedError,
+  isSupportDecisionRejectedError,
   outcomeForTerms,
   outcomeLabel,
   saveSupportDecisionJsonParameter,
@@ -70,12 +71,18 @@ export const useDecisionSave = ({
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
+  const setDecisionJsonWriter = useSupportStore((s) => s.setDecisionJsonWriter);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const outcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
+  const writeJsonLatest = useRef<(decisionId: string) => Promise<SupportDecision | undefined>>(undefined);
+  const jsonWriter = useCallback(
+    (decisionId: string) => writeJsonLatest.current?.(decisionId) ?? Promise.resolve(undefined),
+    []
+  );
 
   const writtenTerms = values.terms.map((term) => term.trim()).filter(Boolean);
 
@@ -107,8 +114,27 @@ export const useDecisionSave = ({
     terms: writtenTerms,
   };
 
+  // The JSON copies errand data, so it is rebuilt from the errand as it is now on every write.
+  const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
+    if (!supportErrand?.id) return undefined;
+
+    const jsonParameter = decisionJsonParameter(permit.type);
+    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, jsonParameter.key, {
+      schemaId: supportSchemaId(municipalityId, jsonParameter.schema),
+      value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
+    });
+  };
+
   const tell = (message: string, status: 'success' | 'error') =>
     toastMessage({ position: 'bottom', closeable: false, message, status });
+
+  const saveErrorKey = (error: unknown, decisionWasSaved: boolean): string => {
+    if (isSupportDecisionLockedError(error)) return 'common:decision.locked_error';
+    if (!decisionWasSaved) return 'common:decision.save_error';
+    return isSupportDecisionRejectedError(error)
+      ? 'common:decision.permit_json_rejected'
+      : 'common:decision.permit_json_save_error';
+  };
 
   // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
@@ -134,34 +160,23 @@ export const useDecisionSave = ({
       validTo: values.validTo,
       terms: writtenTerms,
     });
-    const jsonParameter = decisionJsonParameter(permit.type);
-
+    let saved: SupportDecision | undefined;
     try {
-      const saved = decision?.id
+      saved = decision?.id
         ? await updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
         : await createSupportDecision(supportErrand.id, municipalityId, written);
-      const withJson = await saveSupportDecisionJsonParameter(
-        supportErrand.id,
-        municipalityId,
-        saved.id ?? '',
-        jsonParameter.key,
-        {
-          schemaId: supportSchemaId(municipalityId, jsonParameter.schema),
-          value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
-        }
-      );
+      const withJson = await writeDecisionJson(saved.id ?? '');
 
-      onSaved([withJson]);
+      onSaved(withJson ? [withJson] : [saved]);
       tell(t('common:decision.saved'), 'success');
       return true;
     } catch (error) {
-      const isLocked = isSupportDecisionLockedError(error);
-      if (isLocked) {
+      if (isSupportDecisionLockedError(error)) {
         const inHand = await getSupportDecisions(supportErrand.id, municipalityId).catch(() => undefined);
         if (inHand) onSaved(inHand);
       }
 
-      tell(t(isLocked ? 'common:decision.locked_error' : 'common:decision.save_error'), 'error');
+      tell(t(saveErrorKey(error, !!saved)), 'error');
       return false;
     }
   };
@@ -169,12 +184,18 @@ export const useDecisionSave = ({
   // The saver is registered once; the ref keeps it pointing at the fields of the latest render.
   useEffect(() => {
     saveLatest.current = save;
+    writeJsonLatest.current = writeDecisionJson;
   });
 
   useEffect(() => {
     setTabSaver('decision', saver);
     return () => setTabSaver('decision', undefined);
   }, [saver, setTabSaver]);
+
+  useEffect(() => {
+    setDecisionJsonWriter(jsonWriter);
+    return () => setDecisionJsonWriter(undefined);
+  }, [jsonWriter, setDecisionJsonWriter]);
 
   return {
     certificateParameters: supportErrand
