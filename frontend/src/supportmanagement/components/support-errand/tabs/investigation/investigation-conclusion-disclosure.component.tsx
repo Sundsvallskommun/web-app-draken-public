@@ -7,12 +7,13 @@ import { InvestigationTextEditor } from '../../investigation-text-editor.compone
 
 export const InvestigationConclusionDisclosure: FC<{
   values: {
+    proposal: string;
     conclusion: string;
     recommendation: string;
     recommendationMotivation: string;
   };
   readOnly: boolean;
-  set: (key: 'conclusion' | 'recommendation' | 'recommendationMotivation', value: string) => void;
+  set: (key: 'proposal' | 'conclusion' | 'recommendation' | 'recommendationMotivation', value: string) => void;
   outcomes: DecisionOutcome[];
 }> = ({ values, readOnly, set, outcomes }) => {
   const { t } = useTranslation();
@@ -25,6 +26,16 @@ export const InvestigationConclusionDisclosure: FC<{
       </Disclosure.Header>
       <Disclosure.Content>
         <div className="flex flex-col gap-24">
+          <InvestigationTextEditor
+            name="investigation-proposal"
+            labelKey="common:investigation.proposal"
+            placeholderKey="common:investigation.proposal_placeholder"
+            value={values.proposal}
+            readOnly={readOnly}
+            onChange={(markup) => set('proposal', markup)}
+            description="common:investigation.recommendation_helper"
+          />
+
           <InvestigationTextEditor
             name="investigation-conclusion"
             labelKey="common:investigation.conclusion"

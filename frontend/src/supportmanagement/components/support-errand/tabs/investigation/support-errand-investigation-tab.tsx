@@ -1,5 +1,6 @@
-import type { Investigation } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
+import { renderTemplateHtml } from '@common/services/template-render-service';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { type ExaminedInvestigation, investigationVariantFor } from '@supportmanagement/investigations';
@@ -15,6 +16,7 @@ import {
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
+  saveSupportInvestigationSection,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
 import dayjs from 'dayjs';
@@ -35,6 +37,13 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
     <span>{value}</span>
   </div>
 );
+
+const conclusionEditsOf = (investigation: Investigation | undefined) => ({
+  proposal: investigation?.summary ?? '',
+  conclusion: investigation?.conclusion ?? '',
+  recommendation: investigation?.recommendation ?? '',
+  recommendationMotivation: investigation?.recommendationMotivation ?? '',
+});
 
 type SectionSave = React.MutableRefObject<(() => Promise<boolean>) | undefined>;
 
@@ -78,11 +87,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { values, set, load, merge, edited } = useUnsavedEdits({
-    conclusion: '',
-    recommendation: '',
-    recommendationMotivation: '',
-  });
+  const { values, set, load, merge, edited } = useUnsavedEdits(conclusionEditsOf(undefined));
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
@@ -96,17 +101,18 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
+  const legalBasisFilled = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   const receive = (result: Investigation | undefined) => {
     setInvestigation(result);
-    load(result);
+    load(conclusionEditsOf(result));
   };
 
   const receiveKeepingUnsavedEdits = useCallback(
     (result: Investigation | undefined) => {
       setInvestigation(result);
-      merge(result);
+      merge(conclusionEditsOf(result));
     },
     [merge]
   );
@@ -236,6 +242,29 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, readOnly]);
 
+  const fillTheLegalBasis = async (section: InvestigationSection): Promise<void> => {
+    if (!errandId || !investigation?.id || !section.id || !variant.legalBasisTemplate) return;
+
+    const text = await renderTemplateHtml(variant.legalBasisTemplate).catch(() => '');
+    if (!text.trim()) return;
+
+    await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, { text })
+      .then(receiveFromSection)
+      .catch(() => undefined);
+  };
+
+  useEffect(() => {
+    if (isLoading || error || !investigation || readOnly || legalBasisFilled.current) return;
+
+    const section = (investigation.sections ?? []).find((candidate) => sectionKeyOf(candidate) === 'legal_basis');
+    if (!section) return;
+
+    legalBasisFilled.current = true;
+    if ((section.text ?? '').trim()) return;
+    void fillTheLegalBasis(section);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, error, investigation, readOnly]);
+
   const reportSaved = () =>
     toastMessage({
       position: 'bottom',
@@ -261,6 +290,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       receive(
         await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
           version: latest?.version ?? 0,
+          summary: values.proposal,
           conclusion: values.conclusion,
           recommendation: values.recommendation || undefined,
           recommendationMotivation: values.recommendationMotivation,

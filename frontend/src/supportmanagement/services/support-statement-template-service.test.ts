@@ -17,6 +17,7 @@ import {
   supportStatementTemplatePersons,
   supportStatementTemplateProblem,
   supportStatementTemplates,
+  supportStatementTemplateTakesAFreeText,
 } from './support-statement-template-service';
 
 const robotNumber = mockEnv.mockPersonNumber;
@@ -530,6 +531,51 @@ test('every parameter the templates require of us is sent, the rest they default
     });
     expect(Object.keys(sent).sort(), identifier).toEqual(expect.arrayContaining([...required].sort()));
   }
+});
+
+test('the forms the counterparty fills in by hand are not offered a free text', () => {
+  expect(supportStatementTemplateTakesAFreeText('criminal-record-request')).toBe(false);
+  expect(supportStatementTemplateTakesAFreeText('tax-agency-request-serving')).toBe(false);
+  expect(supportStatementTemplateTakesAFreeText('')).toBe(false);
+
+  const takesOne = Object.keys(counterpartyOfTemplate).filter(supportStatementTemplateTakesAFreeText);
+
+  expect(takesOne).toEqual([
+    'referral-police',
+    'referral-general',
+    'referral-enforcement-authority',
+    'referral-rescue-service',
+    'tax-agency-request-serving-inspection',
+    'tax-agency-request-tobacco-company',
+    'tax-agency-request-tobacco-pbi',
+  ]);
+});
+
+test('every referral carries the free text, under the name the templates print it with', () => {
+  for (const [identifier, counterpartyName] of Object.entries(counterpartyOfTemplate)) {
+    const sent = supportStatementTemplateParameters({
+      ...facts,
+      identifier,
+      counterpartyName,
+      errand: errandOf(),
+      people,
+      person: people[0],
+      freeText: 'Lokalen är nybyggd.',
+    });
+
+    expect(sent.additionalText, identifier).toBe('Lokalen är nybyggd.');
+  }
+});
+
+test('a referral nobody wrote a free text for sends an empty one, since a template objects to what it never got', () => {
+  const sent = supportStatementTemplateParameters({
+    ...facts,
+    identifier: 'referral-general',
+    counterpartyName: 'Kronofogden',
+    errand: errandOf(),
+  });
+
+  expect(sent.additionalText).toBe('');
 });
 
 test('the template of an underlay is found again from the question it was written as', () => {

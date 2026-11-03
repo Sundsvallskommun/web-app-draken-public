@@ -85,10 +85,12 @@ const SECTION_TEXTS: [key: string, text: string][] = [
   ['communication', '<p>Remissvaren skickades</p><p>2026-05-29 via e-post.</p>'],
   ['child_perspective', '<p>Ingen skola i närheten.</p>'],
   ['ownership', '<p>Bolaget ägs av två fysiska personer.</p>'],
+  ['legal_basis', '<h3>Alkohollag (2010:1622)</h3><h4>8 kap. 12 §</h4>'],
 ];
 
 const investigation = {
   id: 'inv-1',
+  summary: '<ol><li>bevilja ansökan</li><li>förena tillståndet med villkor om ordningsvakter</li></ol>',
   conclusion: '<p>Kraven är uppfyllda.</p>',
   recommendation: 'APPROVAL',
   recommendationMotivation: '<p>Bevilja stadigvarande tillstånd.</p><p>Serveringstiden är 11.00-23.00.</p>',
@@ -450,20 +452,56 @@ test('a referral still waiting is sent without an answer, which the template rep
   });
 });
 
+test('a referral of its own stands under the name the handler gave its document', () => {
+  const ofItsOwn = {
+    counterpartyName: 'Annan instans',
+    title: 'Yttrande från fastighetsägaren',
+    attachments: [{ id: 'a1' }],
+  };
+  const parameters = investigationBasisParameters(input({ statements: [ofItsOwn] as never }));
+
+  // A document is all it has: no date, no outcome, and still a row, since the document is the point.
+  expect(parameters.statements).toEqual([
+    { counterparty: 'Yttrande från fastighetsägaren', sentAt: '', respondedAt: '', outcomeLabel: '', responseText: '' },
+  ]);
+});
+
+test('a referral whose underlay was generated but never sent is no row either', () => {
+  const generated = { counterpartyName: 'Skatteverket', attachments: [{ id: 'a1' }] };
+  const parameters = investigationBasisParameters(input({ statements: [generated] as never }));
+
+  expect(parameters.statements).toEqual([]);
+});
+
 test('a referral card opened but never sent is not a row at all', () => {
   expect(built().statements.map((statement) => statement.counterparty)).not.toContain('Miljökontoret');
 });
 
-test('the proposal is the motivation of the recommendation, one point per line', () => {
-  expect(built().proposal.points).toEqual(['Bevilja stadigvarande tillstånd.', 'Serveringstiden är 11.00-23.00.']);
+test('the laws the permit is examined against are the ones left in Lagrum', () => {
+  expect(built().legislationHtml).toBe('<h3>Alkohollag (2010:1622)</h3><h4>8 kap. 12 §</h4>');
 });
 
-test('without a motivation the proposed decision stands as the only point', () => {
-  const parameters = investigationBasisParameters(
-    input({ investigation: { ...investigation, recommendationMotivation: '' } })
-  );
+test('a Lagrum nobody has written is sent empty, since the template leaves the heading out', () => {
+  const parameters = investigationBasisParameters(input({ investigation: { ...investigation, sections: [] } }));
 
-  expect(parameters.proposal.points).toEqual(['Bevilja']);
+  expect(parameters.legislationHtml).toBe('');
+});
+
+test('the proposal is the att-list the handler wrote, as markup and as one line per point', () => {
+  expect(built().proposal.html).toBe(
+    '<ol><li>bevilja ansökan</li><li>förena tillståndet med villkor om ordningsvakter</li></ol>'
+  );
+  expect(built().proposal.points).toEqual(['bevilja ansökan', 'förena tillståndet med villkor om ordningsvakter']);
+});
+
+test('the motivation is no part of the proposal, since the document prints it under the assessment', () => {
+  const parameters = investigationBasisParameters(input({ investigation: { ...investigation, summary: undefined } }));
+
+  expect(parameters.proposal.html).toBe('');
+  expect(parameters.proposal.points).toEqual([]);
+  expect(parameters.investigation.recommendationMotivationHtml).toBe(
+    '<p>Bevilja stadigvarande tillstånd.</p><p>Serveringstiden är 11.00-23.00.</p>'
+  );
   expect(parameters.investigation.recommendationLabel).toBe('Bevilja');
 });
 
@@ -499,6 +537,7 @@ test('an investigation that has only been started says what is missing instead o
   expect(parameters.childPerspectiveHtml).toBe('Information saknas');
 
   expect(parameters.personsOfInfluence).toEqual([]);
+  expect(parameters.proposal.html).toBe('');
   expect(parameters.proposal.points).toEqual([]);
   expect(parameters.premises.previousPermits).toEqual([]);
 });
@@ -549,6 +588,8 @@ const TEMPLATE_FIELDS = [
   'issuedByAuthority',
   'communication',
   'childPerspectiveHtml',
+  'legislationHtml',
+  'proposal.html',
   'proposal.points',
   'applicant.name',
   'applicant.orgNumber',

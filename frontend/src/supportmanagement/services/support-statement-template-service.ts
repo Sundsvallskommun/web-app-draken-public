@@ -62,6 +62,7 @@ interface SupportReferralTemplate extends SupportStatementTemplate {
   counterpartyKey?: string;
   permitKinds?: PermitKindName[];
   companies?: boolean;
+  additionalText?: boolean;
 }
 
 const GENERAL_TEMPLATE = 'referral-general';
@@ -78,6 +79,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     name: 'Remiss Polismyndigheten',
     counterpartyKey: 'POLICE',
     persons: SupportReferralPersons.LISTED,
+    additionalText: true,
   },
   {
     identifier: 'criminal-record-request',
@@ -90,6 +92,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     name: 'Remiss Kronofogden',
     counterpartyKey: 'ENFORCEMENT_AUTHORITY',
     persons: SupportReferralPersons.NONE,
+    additionalText: true,
   },
   {
     identifier: 'referral-rescue-service',
@@ -97,6 +100,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'RESCUE_SERVICE',
     permitKinds: EVERY_PERMIT_BUT_TOBACCO,
     persons: SupportReferralPersons.NONE,
+    additionalText: true,
   },
   {
     identifier: 'tax-agency-request-serving',
@@ -113,6 +117,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     permitKinds: [PermitKind.INSPECTION],
     persons: SupportReferralPersons.LISTED,
     companies: true,
+    additionalText: true,
   },
   {
     identifier: 'tax-agency-request-tobacco-company',
@@ -120,6 +125,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'TAX_AGENCY',
     permitKinds: [PermitKind.TOBACCO],
     persons: SupportReferralPersons.NONE,
+    additionalText: true,
   },
   {
     identifier: 'tax-agency-request-tobacco-pbi',
@@ -127,8 +133,14 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'TAX_AGENCY',
     permitKinds: [PermitKind.TOBACCO],
     persons: SupportReferralPersons.ONE_EACH,
+    additionalText: true,
   },
-  { identifier: GENERAL_TEMPLATE, name: 'Remiss, allmän', persons: SupportReferralPersons.NONE },
+  {
+    identifier: GENERAL_TEMPLATE,
+    name: 'Remiss, allmän',
+    persons: SupportReferralPersons.NONE,
+    additionalText: true,
+  },
 ];
 
 const permitKindOfErrand = (errand: SupportErrand | undefined): PermitKindName | undefined => {
@@ -162,6 +174,9 @@ export const supportStatementTemplatePersons = (identifier: string): SupportRefe
 
 export const supportStatementTemplateAsksForCompanies = (identifier: string): boolean =>
   !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.companies;
+
+export const supportStatementTemplateTakesAFreeText = (identifier: string): boolean =>
+  !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.additionalText;
 
 export interface SupportReferralPerson {
   partyId: string;
@@ -317,6 +332,7 @@ export interface SupportStatementTemplateFacts {
   people?: SupportReferralPerson[];
   person?: SupportReferralPerson;
   companies?: Record<string, ChosenCompany[]>;
+  freeText?: string;
 }
 
 const listedPeople = (people: SupportReferralPerson[] | undefined) =>
@@ -339,7 +355,12 @@ const listedRepresentatives = (
     })),
   }));
 
-export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
+export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => ({
+  additionalText: facts.freeText ?? '',
+  ...parametersOfTemplate(facts),
+});
+
+const parametersOfTemplate = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
   const premises = supportStatementPremises(facts.errand);
   const owner = facts.errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
   const counterparty = supportStatementCounterparty(facts.counterpartyName);

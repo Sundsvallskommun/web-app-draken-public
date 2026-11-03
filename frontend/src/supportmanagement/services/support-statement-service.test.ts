@@ -10,6 +10,7 @@ import {
   supportStatementAttachmentIds,
   supportStatementAttachmentPurpose,
   supportStatementEdited,
+  supportStatementFields,
   type SupportStatementForm,
   supportStatementForm,
   supportStatementProblem,
@@ -24,8 +25,10 @@ const metadata = {
 
 const filledIn = (changes: Partial<SupportStatementForm> = {}): SupportStatementForm => ({
   counterpartyName: 'Polismyndigheten',
+  label: 'Remiss Polismyndigheten',
   dueAt: '2026-10-22',
   question: '<p>Yttrande begärs.</p>',
+  freeText: '',
   responseText: '',
   sentAt: '2026-10-01',
   respondedAt: '',
@@ -46,6 +49,42 @@ test('a statement with no template chosen has nothing to render', () => {
   );
 });
 
+const ofItsOwn = (changes: Partial<SupportStatementForm> = {}): SupportStatementForm =>
+  filledIn({ counterpartyName: 'Annan instans', question: '', label: 'Yttrande från fastighetsägaren', ...changes });
+
+test('a referral of its own is named rather than templated, since there is no template to choose', () => {
+  expect(supportStatementProblem(ofItsOwn(), {}, metadata)).toBeUndefined();
+  expect(supportStatementProblem(ofItsOwn({ label: '  ' }), {}, metadata)).toBe(
+    'common:statements.validation.document_name'
+  );
+});
+
+test('a referral of its own is not asked for an underlay nobody generated', () => {
+  expect(supportStatementProblem(ofItsOwn({ status: 'ACTIVE' }), {}, metadata)).toBeUndefined();
+  expect(supportStatementProblem(filledIn({ status: 'ACTIVE' }), {}, metadata)).toBe(
+    'common:statements.validation.underlay_missing'
+  );
+});
+
+test('the name of a referral of its own is the title it is saved under, whoever saves it', () => {
+  const named = { counterpartyName: 'Annan instans', title: 'Yttrande från fastighetsägaren' };
+
+  expect(supportStatementForm(named).label).toBe('Yttrande från fastighetsägaren');
+
+  expect(supportStatementForm({ counterpartyName: 'Annan instans', title: 'Annan instans' }).label).toBe('');
+  expect(supportStatementForm({ counterpartyName: 'Skatteverket', title: 'Remiss - Skatteverket - AOT-1' }).label).toBe(
+    ''
+  );
+
+  // The section saves every referral with a title built after the authority; the name wins over it.
+  expect(supportStatementFields(ofItsOwn(), 'Remiss - Annan instans - AOT-26100064').title).toBe(
+    'Yttrande från fastighetsägaren'
+  );
+  expect(supportStatementFields(filledIn(), 'Remiss - Polismyndigheten - AOT-26100064').title).toBe(
+    'Remiss - Polismyndigheten - AOT-26100064'
+  );
+});
+
 test('the comment is the one field left optional', () => {
   expect(supportStatementProblem(filledIn({ responseText: '', status: 'DRAFT' }), {}, metadata)).toBeUndefined();
 });
@@ -55,6 +94,13 @@ test('a form built from a statement is unchanged until something is typed', () =
 
   expect(supportStatementEdited(supportStatementForm(statement), statement)).toBe(false);
   expect(supportStatementEdited({ ...supportStatementForm(statement), responseText: 'Svar' }, statement)).toBe(true);
+});
+
+test('the free text travels in the description, which Draken asks for nowhere else', () => {
+  expect(supportStatementForm({ description: 'Lokalen är nybyggd.' }).freeText).toBe('Lokalen är nybyggd.');
+  expect(supportStatementFields(filledIn({ freeText: 'Lokalen är nybyggd.' }), 'Remiss').description).toBe(
+    'Lokalen är nybyggd.'
+  );
 });
 
 test('dates are read from the service as the date field writes them', () => {

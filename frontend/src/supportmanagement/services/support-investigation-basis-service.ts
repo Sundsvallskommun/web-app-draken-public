@@ -66,6 +66,7 @@ import {
   supportPremisesExamination,
   supportPremisesFireSafety,
 } from './support-premises-examination-service';
+import { isSupportStatementOtherCounterparty } from './support-statement-counterparties';
 import { getSupportStatements } from './support-statement-service';
 import { supportTobaccoSalesPointOf } from './support-tobacco-application-service';
 
@@ -145,10 +146,11 @@ export interface InvestigationBasisParameters {
   issuedByAuthority: string;
   communication: string;
   childPerspectiveHtml: string;
+  legislationHtml: string;
   marketingHtml: string;
   selfMonitoringHtml: string;
   exciseTaxHtml: string;
-  proposal: { points: string[] };
+  proposal: { html: string; points: string[] };
   applicant: { name: string; orgNumber: string; street: string; postalAddress: string };
   company: {
     form: string;
@@ -551,31 +553,37 @@ const fireSafetyLine = (statements: Statement[], metadata: SupportMetadata | und
  * The underlay reports the referral round: who was asked, what they answered and when. The template
  * prints "svar saknas, skickad ..." for one still out, so a referral is a row once it has gone out.
  */
+const standsOnADocumentOfItsOwn = (statement: Statement): boolean =>
+  isSupportStatementOtherCounterparty(statement.counterpartyName) && (statement.attachments ?? []).length > 0;
+
 const isAsked = (statement: Statement): boolean =>
-  !!statement.sentAt || !!statement.outcome || !!statement.respondedAt || !!statement.responseText?.trim();
+  !!statement.sentAt ||
+  !!statement.outcome ||
+  !!statement.respondedAt ||
+  !!statement.responseText?.trim() ||
+  standsOnADocumentOfItsOwn(statement);
+
+const counterpartyOf = (statement: Statement): string =>
+  isSupportStatementOtherCounterparty(statement.counterpartyName)
+    ? statement.title || statement.counterpartyName || ''
+    : statement.counterpartyName ?? '';
 
 const basisStatements = (
   statements: Statement[],
   metadata: SupportMetadata | undefined
 ): InvestigationBasisStatement[] =>
   statements.filter(isAsked).map((statement) => ({
-    counterparty: statement.counterpartyName ?? '',
+    counterparty: counterpartyOf(statement),
     sentAt: asDate(statement.sentAt),
     respondedAt: asDate(statement.respondedAt),
     outcomeLabel: statementOutcomeLabelOf(statement.outcome, metadata),
     responseText: plainTextOf(statement.responseText),
   }));
 
-/**
- * The points of the proposal are the motivation of the recommendation, one per line, so the handler
- * writes them as a list. Without a motivation the proposed decision stands as the only point.
- */
-const proposalPoints = (investigation: Investigation | undefined, metadata: SupportMetadata | undefined): string[] => {
-  const points = linesOf(investigation?.recommendationMotivation);
-  if (points.length > 0) return points;
-  const recommendation = outcomeLabelOf(investigation?.recommendation, metadata);
-  return recommendation ? [recommendation] : [];
-};
+const proposalParameters = (investigation: Investigation | undefined): { html: string; points: string[] } => ({
+  html: htmlOf(investigation?.summary),
+  points: linesOf(investigation?.summary),
+});
 
 const premisesName = (form: FormValue | undefined, errand: SupportErrand | undefined): string =>
   text(premisesValue(form, 'Name')) ?? applicantOf(errand)?.organizationName ?? '';
@@ -657,10 +665,11 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     ...ISSUER,
     communication: plainTextOf(texts.communication),
     childPerspectiveHtml: texts.child_perspective ?? '',
+    legislationHtml: texts.legal_basis ?? '',
     marketingHtml: texts.marketing ?? '',
     selfMonitoringHtml: texts.self_monitoring ?? '',
     exciseTaxHtml: '',
-    proposal: { points: proposalPoints(investigation, metadata) },
+    proposal: proposalParameters(investigation),
     applicant: applicantParameters(errand),
     company: {
       form: input.companyProfile?.form ?? '',

@@ -8,7 +8,10 @@ import { renderTemplatePdf } from '@common/services/template-render-service';
 import dayjs from 'dayjs';
 
 import type { SupportMetadata } from './support-metadata-service';
-import { supportStatementCounterpartyKey } from './support-statement-counterparties';
+import {
+  isSupportStatementOtherCounterparty,
+  supportStatementCounterpartyKey,
+} from './support-statement-counterparties';
 
 export const SupportStatementStatus = {
   DRAFT: 'DRAFT',
@@ -89,8 +92,10 @@ export const supportStatementPurposeDisplayName = (
 
 export interface SupportStatementForm {
   counterpartyName: string;
+  label: string;
   dueAt: string;
   question: string;
+  freeText: string;
   responseText: string;
   sentAt: string;
   respondedAt: string;
@@ -104,10 +109,21 @@ const asDateField = (value: string | undefined): string =>
 const asTimestamp = (value: string): string | undefined =>
   value && dayjs(value).isValid() ? dayjs(value).startOf('day').format() : undefined;
 
+const nameGivenToTheReferral = (statement: Statement): string => {
+  const title = statement.title ?? '';
+  const isUnnamed =
+    !isSupportStatementOtherCounterparty(statement.counterpartyName) || title === statement.counterpartyName;
+
+  return isUnnamed ? '' : title;
+};
+
 export const supportStatementForm = (statement: Statement): SupportStatementForm => ({
   counterpartyName: statement.counterpartyName ?? '',
+  label: nameGivenToTheReferral(statement),
   dueAt: asDateField(statement.dueAt),
   question: statement.question ?? '',
+  // Support Management has no field of its own for the free text, so it travels in the description.
+  freeText: statement.description ?? '',
   responseText: statement.responseText ?? '',
   sentAt: asDateField(statement.sentAt),
   respondedAt: asDateField(statement.respondedAt),
@@ -115,11 +131,17 @@ export const supportStatementForm = (statement: Statement): SupportStatementForm
   outcome: statement.outcome ?? '',
 });
 
+const supportStatementTitle = (form: SupportStatementForm, afterTheAuthority: string): string =>
+  isSupportStatementOtherCounterparty(form.counterpartyName)
+    ? form.label.trim() || form.counterpartyName
+    : afterTheAuthority;
+
 export const supportStatementFields = (form: SupportStatementForm, title: string): SupportStatementFields => ({
   counterpartyName: form.counterpartyName,
   dueAt: asTimestamp(form.dueAt),
-  title,
+  title: supportStatementTitle(form, title),
   question: form.question,
+  description: form.freeText,
   responseText: form.responseText,
   sentAt: asTimestamp(form.sentAt),
   respondedAt: asTimestamp(form.respondedAt),
@@ -129,6 +151,9 @@ export const supportStatementFields = (form: SupportStatementForm, title: string
 
 export const supportStatementEdited = (form: SupportStatementForm, statement: Statement): boolean =>
   JSON.stringify(form) !== JSON.stringify(supportStatementForm(statement));
+
+const problemOfADocumentOfItsOwn = (form: SupportStatementForm): string | undefined =>
+  form.label.trim() ? undefined : 'common:statements.validation.document_name';
 
 /** What keeps the underlay from being written at all: without these there is nothing to render. */
 export const supportStatementUnderlayProblem = (form: SupportStatementForm): string | undefined => {
@@ -176,14 +201,17 @@ export const supportStatementProblem = (
   statement: Statement,
   metadata: SupportMetadata | undefined
 ): string | undefined => {
-  const underlay = supportStatementUnderlayProblem(form);
+  if (!form.counterpartyName) return 'common:statements.validation.counterparty';
+  const ofItsOwn = isSupportStatementOtherCounterparty(form.counterpartyName);
+
+  const underlay = ofItsOwn ? problemOfADocumentOfItsOwn(form) : supportStatementUnderlayProblem(form);
   if (underlay) return underlay;
 
   if (form.outcome && form.status !== SupportStatementStatus.COMPLETED) {
     return 'common:statements.validation.outcome_needs_completed';
   }
 
-  const sent = hasLeftTheUnit(form) ? problemOfASentStatement(form, statement) : undefined;
+  const sent = !ofItsOwn && hasLeftTheUnit(form) ? problemOfASentStatement(form, statement) : undefined;
   if (sent) return sent;
 
   if (form.status !== SupportStatementStatus.COMPLETED) return undefined;
@@ -199,6 +227,7 @@ export interface SupportStatementFields {
   counterpartyReference?: string;
   title?: string;
   question?: string;
+  description?: string;
   responseText?: string;
   dueAt?: string;
   sentAt?: string;

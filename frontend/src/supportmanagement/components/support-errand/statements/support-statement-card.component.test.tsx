@@ -5,6 +5,7 @@ import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { hyphenatedIdentity } from '@supportmanagement/services/support-pbi-service';
 import { supportStatementTemplateParameters } from '@supportmanagement/services/support-statement-template-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { type FC, useState } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../../../tests/mock-env';
@@ -20,8 +21,12 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useSnackbar: () => vi.fn(),
 }));
+const preview: { parameters?: Record<string, unknown> } = {};
 vi.mock('@common/components/template-preview/template-pdf-preview.component', () => ({
-  TemplatePdfPreview: () => null,
+  TemplatePdfPreview: (props: { parameters?: Record<string, unknown> }) => {
+    preview.parameters = props.parameters;
+    return null;
+  },
 }));
 vi.mock('@common/services/adress-service', () => ({ searchPerson: vi.fn() }));
 vi.mock('@common/services/legal-entity-service', async (importOriginal) => ({
@@ -79,22 +84,56 @@ const statementForm = {
   status: 'DRAFT',
   dueAt: '2026-12-01',
   counterpartyName: 'Skatteverket',
-  question: 'Begäran Skatteverket, serveringstillstånd',
+  question: '',
+  label: '',
+  freeText: '',
   responseText: '',
   outcome: '',
 };
 
-const mountCard = (writable = true, counterpartyName = 'Skatteverket') =>
-  render(
+const formChanged = vi.fn();
+
+/** The section owns the form, so the card is mounted in something that writes its changes back. */
+const Harness: FC<{ written: Record<string, string>; writable: boolean; counterpartyName: string }> = ({
+  written,
+  writable,
+  counterpartyName,
+}) => {
+  const [form, setForm] = useState({ ...statementForm, counterpartyName, ...written });
+
+  return (
     <SupportStatementCard
       statement={{ id: 'st-1', type: 'REFERRAL', status: 'DRAFT', attachments: [] }}
-      form={{ ...statementForm, counterpartyName } as never}
+      form={form as never}
       problem={undefined}
       errandId="errand-1"
       errandNumber="AOT-26100216"
       municipalityId="2281"
       writable={writable}
-      onFormChange={vi.fn()}
+      onFormChange={(changes) => {
+        formChanged(changes);
+        setForm((current) => ({ ...current, ...changes }));
+      }}
+      onChanged={vi.fn()}
+      onRemoved={vi.fn()}
+    />
+  );
+};
+
+const mountCard = (writable = true, counterpartyName = 'Skatteverket', written: Record<string, string> = {}) =>
+  render(<Harness written={written} writable={writable} counterpartyName={counterpartyName} />);
+
+const withAnUnderlay = (statement: object) =>
+  render(
+    <SupportStatementCard
+      statement={statement as never}
+      form={{ ...statementForm, counterpartyName: 'Annan instans', label: 'Yttrande' } as never}
+      problem={undefined}
+      errandId="errand-1"
+      errandNumber="AOT-26100216"
+      municipalityId="2281"
+      writable
+      onFormChange={formChanged}
       onChanged={vi.fn()}
       onRemoved={vi.fn()}
     />
@@ -223,4 +262,112 @@ test('a company ticked for a person reaches the template under that person', asy
       companies: [{ name: 'Drivet AB', orgNumber: mockEnv.mockOrganizationNumber }],
     },
   ]);
+});
+
+// A template that names no people, so the card is not busy reading company data while this is tried.
+const chooseTheGeneralTemplate = () => chooseTemplate('referral-general');
+
+test('a referral saved before it was sent opens with the template it was written from', () => {
+  // The question of a statement that is saved but has no document written from it yet.
+  mountCard(true, 'Skatteverket', { question: 'Begäran Skatteverket, serveringstillstånd' });
+
+  expect((findOf('statement-template') as HTMLSelectElement).value).toBe('tax-agency-request-serving');
+});
+
+test('a form the counterparty fills in by hand is offered no free text at all', () => {
+  mountCard();
+  chooseTheTaxAgencyTemplate();
+
+  expect(findOf('statement-free-text')).toBeNull();
+  expect(findOf('statement-apply-free-text')).toBeNull();
+});
+
+test('the free text is written back under its own name, as another field of the referral', () => {
+  mountCard();
+  chooseTheGeneralTemplate();
+
+  fireEvent.change(findOf('statement-free-text') as HTMLTextAreaElement, {
+    target: { value: 'Lokalen är nybyggd.' },
+  });
+
+  expect(formChanged).toHaveBeenLastCalledWith({ freeText: 'Lokalen är nybyggd.' });
+});
+
+test('the preview renders the free text that was applied, not every keystroke on the way there', () => {
+  mountCard(true, 'Skatteverket', { freeText: 'Lokalen är nybyggd.' });
+  chooseTheGeneralTemplate();
+
+  // What the referral was saved with is what it previews as, without a click of its own.
+  expect(preview.parameters?.additionalText).toBe('Lokalen är nybyggd.');
+
+  fireEvent.change(findOf('statement-free-text') as HTMLTextAreaElement, {
+    target: { value: 'Lokalen är ombyggd.' },
+  });
+  expect(preview.parameters?.additionalText).toBe('Lokalen är nybyggd.');
+
+  fireEvent.click(findOf('statement-apply-free-text') as HTMLButtonElement);
+  expect(preview.parameters?.additionalText).toBe('Lokalen är ombyggd.');
+});
+
+test('a referral of its own is named instead of templated, and has no document to generate', () => {
+  mountCard(true, 'Annan instans');
+
+  expect(findOf('statement-document-name')).toBeTruthy();
+  expect(findOf('statement-template')).toBeNull();
+  expect(findOf('statement-generate')).toBeNull();
+  expect(findOf('statement-free-text')).toBeNull();
+
+  // The fields every referral carries are the same ones.
+  expect(findOf('statement-upload')).toBeTruthy();
+  expect(findOf('statement-sent-at')).toBeTruthy();
+  expect(findOf('statement-responded-at')).toBeTruthy();
+  expect(findOf('statement-outcome')).toBeTruthy();
+  expect(findOf('statement-response-text')).toBeTruthy();
+});
+
+test('what the handler calls the document is written back as the name of the referral', () => {
+  mountCard(true, 'Annan instans');
+
+  fireEvent.change(findOf('statement-document-name') as HTMLInputElement, {
+    target: { value: 'Yttrande från fastighetsägaren' },
+  });
+
+  expect(formChanged).toHaveBeenLastCalledWith({ label: 'Yttrande från fastighetsägaren' });
+});
+
+test('a referral of its own files what the handler says the file is', () => {
+  mountCard(true, 'Annan instans');
+
+  expect((findOf('statement-upload') as HTMLElement).textContent).toBe('common:statements.upload_attachment');
+  expect((findOf('statement-upload-kind-request') as HTMLInputElement).checked).toBe(true);
+
+  fireEvent.click(findOf('statement-upload-kind-response') as HTMLInputElement);
+
+  expect((findOf('statement-upload-kind-response') as HTMLInputElement).checked).toBe(true);
+});
+
+test('a referral of its own that carries a document is named once and for all', () => {
+  withAnUnderlay({
+    id: 'st-1',
+    type: 'REFERRAL',
+    status: 'DRAFT',
+    attachments: [{ id: 'a1', fileName: 'Yttrande.pdf', purpose: { name: 'STATEMENT_REQUEST' } }],
+  });
+
+  expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
+  expect((findOf('statement-counterparty') as HTMLSelectElement).disabled).toBe(true);
+  // Nothing has answered it yet, so it is still a referral the handler can take back.
+  expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(false);
+});
+
+test('a referral of its own that has been answered cannot be taken back', () => {
+  withAnUnderlay({
+    id: 'st-1',
+    type: 'REFERRAL',
+    status: 'COMPLETED',
+    attachments: [{ id: 'a2', fileName: 'Svar.pdf', purpose: { name: 'STATEMENT_RESPONSE' } }],
+  });
+
+  expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
+  expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(true);
 });

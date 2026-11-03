@@ -35,8 +35,10 @@ const OUTCOMES = [
   { name: 'REJECTION', displayName: 'Avslag' },
 ];
 
-const mount = (readOnly = false, values = { conclusion: '', recommendation: '', recommendationMotivation: '' }) =>
-  render(<InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={OUTCOMES} />);
+const mount = (
+  readOnly = false,
+  values = { proposal: '', conclusion: '', recommendation: '', recommendationMotivation: '' }
+) => render(<InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={OUTCOMES} />);
 
 const fieldOf = (name: string) => document.querySelector(`[data-cy="${name}"]`) as HTMLTextAreaElement;
 const proposal = () => document.querySelector('[data-cy="investigation-recommendation"]') as HTMLSelectElement;
@@ -45,9 +47,10 @@ beforeEach(() => vi.clearAllMocks());
 
 afterEach(cleanup);
 
-test('the section weighs the assessment, the proposal and its motivation, and asks nothing else', () => {
+test('the section weighs the proposal, the assessment, the outcome and its motivation, and asks nothing else', () => {
   mount();
 
+  expect(fieldOf('investigation-proposal')).toBeTruthy();
   expect(fieldOf('investigation-conclusion')).toBeTruthy();
   expect(proposal()).toBeTruthy();
   expect(fieldOf('investigation-motivation')).toBeTruthy();
@@ -55,8 +58,11 @@ test('the section weighs the assessment, the proposal and its motivation, and as
   expect(document.body.textContent).not.toContain('common:investigation.summary');
 });
 
-test('the assessment and the motivation are written back under their own names', () => {
+test('the proposal, the assessment and the motivation are written back under their own names', () => {
   mount();
+
+  fireEvent.change(fieldOf('investigation-proposal'), { target: { value: '<ol><li>bevilja ansökan</li></ol>' } });
+  expect(set).toHaveBeenLastCalledWith('proposal', '<ol><li>bevilja ansökan</li></ol>');
 
   fireEvent.change(fieldOf('investigation-conclusion'), { target: { value: 'Sökanden bedöms lämplig.' } });
   expect(set).toHaveBeenLastCalledWith('conclusion', 'Sökanden bedöms lämplig.');
@@ -81,11 +87,13 @@ test('the proposal offers the outcomes the namespace has registered, behind a pl
 
 test('what was written is what is shown', () => {
   mount(false, {
+    proposal: '<ol><li>bevilja ansökan</li></ol>',
     conclusion: 'Samlad bedömning.',
     recommendation: 'REJECTION',
     recommendationMotivation: 'Motivering.',
   });
 
+  expect(fieldOf('investigation-proposal').value).toBe('<ol><li>bevilja ansökan</li></ol>');
   expect(fieldOf('investigation-conclusion').value).toBe('Samlad bedömning.');
   expect(proposal().value).toBe('REJECTION');
   expect(fieldOf('investigation-motivation').value).toBe('Motivering.');
@@ -94,6 +102,7 @@ test('what was written is what is shown', () => {
 test('a passed step leaves the whole section read only', () => {
   mount(true);
 
+  expect(fieldOf('investigation-proposal').readOnly).toBe(true);
   expect(fieldOf('investigation-conclusion').readOnly).toBe(true);
   expect(proposal().disabled).toBe(true);
   expect(fieldOf('investigation-motivation').readOnly).toBe(true);
