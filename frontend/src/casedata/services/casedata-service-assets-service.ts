@@ -15,12 +15,16 @@ import type { RJSFSchema } from '@rjsf/utils';
 
 export type { ErrandServiceAssetParams };
 
-export const createErrandServiceDraftAsset = (
+export const createErrandServiceDraftAsset = async (
   params: ErrandServiceAssetParams,
   formData: any,
   schema: RJSFSchema | null,
   schemaId: string
 ) => {
+  // Partyassets rejects an asset without a partyId, which a manually added owner does not have.
+  if (!params.partyId) {
+    throw new Error('Insatsen kan inte sparas eftersom ärendeägaren saknar personuppslag.');
+  }
   return createDraftAsset(
     params.municipalityId,
     buildCreateAssetPayload(formData, schema, {

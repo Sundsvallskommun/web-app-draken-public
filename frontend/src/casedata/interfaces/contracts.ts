@@ -352,6 +352,10 @@ interface Invoicing {
   invoiceInterval: IntervalType;
   /** Invoiced in */
   invoicedIn: InvoicedIn;
+  /** Whether the contract is to be billed or not */
+  billingEnabled: boolean;
+  /** The month in which yearly billing takes place, June (6) or December (12). Mandatory when invoiceInterval is YEARLY */
+  yearlyBillingMonth?: number;
 }
 
 /** Leasehold */

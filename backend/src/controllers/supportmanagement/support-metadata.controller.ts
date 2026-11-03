@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { SUPPORTMANAGEMENT_CATEGORIZATION_ROOT, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { MetadataResponse, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -30,10 +30,10 @@ export class SupportMetadataController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<SupportMetadata> {
+  ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
-    return response.status(200).send({ ...withCategorizationLabels(res.data), namespace: this.namespace });
+    return response.status(200).send({ ...withCategorizationLabels(res.data, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT), namespace: this.namespace });
   }
 
   @Get('/supportmetadata/:municipalityId/roles')

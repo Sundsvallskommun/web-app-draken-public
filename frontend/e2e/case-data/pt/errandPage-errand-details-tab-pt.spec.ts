@@ -183,4 +183,24 @@ test.describe('Errand details tab', () => {
 
     await expect(page.locator('input[name="application@lostPermit@policeReportNumber"]')).toHaveValue('123456');
   });
+
+  test('shows the case information field for an errand from Kontakt Sundsvall', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute(
+      '**/errand/errandNumber/*',
+      modifyField(mockPTErrand_base, {
+        caseType: 'PARATRANSIT_FROM_KS',
+        facilities: [],
+        extraParameters: [{ key: 'caseInformation', values: ['Ringde om färdtjänst'] }],
+      })
+    );
+    await goToErrandInformationTab(page, dismissCookieConsent);
+
+    await expect(page.getByText('Ärendemening')).toBeVisible();
+    await expect(page.getByText('Ärendeinformation')).toBeVisible();
+    await expect(page.locator('[data-cy="caseInformation-textarea"]')).toHaveValue('Ringde om färdtjänst');
+  });
 });

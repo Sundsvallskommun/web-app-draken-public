@@ -1,5 +1,7 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { getDisplayNameFromADUsername } from '@common/services/user-service';
+import { compareByDisplayName } from '@common/utils/ad-display-name';
 import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
@@ -25,6 +27,8 @@ import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'reac
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
+import { SupportCloseErrandModal } from './buttons/support-close-errand-modal.component';
+import { SupportFollowErrandButtonComponent } from './buttons/support-follow-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
 import { SupportProcessStepButton } from './buttons/support-process-step/support-process-step-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
@@ -40,6 +44,8 @@ export const SidebarInfo: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const tabSavers = useSupportStore((s) => s.tabSavers);
+  const showCloseModalAfterHandover = useSupportStore((s) => s.showCloseModalAfterHandover);
+  const setShowCloseModalAfterHandover = useSupportStore((s) => s.setShowCloseModalAfterHandover);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -101,6 +107,11 @@ export const SidebarInfo: FC<{
   const formIsNotValid = useMemo(() => !formState.isValid, [formState.isValid]);
 
   const { admin, status, priority } = watch();
+  // The saved administrator, unlike admin which follows the select before the errand is saved.
+  const savedAdminName = useMemo(
+    () => getDisplayNameFromADUsername(supportErrand?.assignedUserId, administrators) || '',
+    [supportErrand, administrators]
+  );
 
   const aTabIsUnsaved = Object.values(unsavedTabs).some(Boolean);
 
@@ -180,11 +191,7 @@ export const SidebarInfo: FC<{
 
   useEffect(() => {
     if (administrators && supportErrand?.assignedUserId) {
-      const match =
-        administrators.filter((a) => {
-          return a.adAccount === supportErrand.assignedUserId;
-        })?.[0]?.displayName || '';
-      setValue('admin', match);
+      setValue('admin', savedAdminName);
     } else {
       setValue('admin', 'Välj handläggare');
     }
@@ -249,7 +256,7 @@ export const SidebarInfo: FC<{
   const solutionComponent = (label: string, info: string, icon: string) => (
     <>
       <div className="flex">
-        <Label rounded>
+        <Label rounded data-cy="resolution-label">
           {(() => {
             const DynIcon = iconMap[icon];
             return DynIcon ? <DynIcon size="1.5rem" /> : undefined;
@@ -259,7 +266,7 @@ export const SidebarInfo: FC<{
         <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
       </div>
       <p className="text-small">
-        <strong>{getValues('admin')}</strong> {info}
+        <strong>{savedAdminName}</strong> {info}
       </p>
     </>
   );
@@ -332,6 +339,34 @@ export const SidebarInfo: FC<{
       case Resolution.FORWARDED_TO_EXTERNAL_CONTRACTOR: {
         return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till extern entreprenör.', 'split');
       }
+      case Resolution.INFORMED: {
+        return solutionComponent('Informerat', 'informerade kunden.', 'check');
+      }
+      case Resolution.GUIDED: {
+        return solutionComponent('Guidat', 'guidade kunden.', 'check');
+      }
+      case Resolution.ACTIONED: {
+        return solutionComponent('Åtgärdat', 'åtgärdade ärendet.', 'check');
+      }
+      case Resolution.PREPARED: {
+        return solutionComponent('Förberett', 'förberedde ärendet för handläggare.', 'check');
+      }
+      case Resolution.REFERRED: {
+        return solutionComponent('Hänvisat', 'hänvisade ärendet vidare.', 'split');
+      }
+      case Resolution.HANDED_OVER: {
+        return solutionComponent('Överlämnat', 'överlämnade ärendet.', 'split');
+      }
+      case Resolution.SOLVED_FEEDBACK_VIA_PHONE: {
+        return solutionComponent('Löst', 'löste ärendet och återkopplade via telefon.', 'check');
+      }
+      case Resolution.SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX: {
+        return solutionComponent('Löst', 'löste ärendet och återkopplade via funktionsbrevlåda.', 'check');
+      }
+      default: {
+        // An unmapped code still gets a label instead of nothing.
+        return solutionComponent(resolution, 'avslutade ärendet.', 'check');
+      }
     }
   };
 
@@ -350,6 +385,11 @@ export const SidebarInfo: FC<{
       <div className="px-0 flex justify-between items-center">
         <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
       </div>
+      <SupportCloseErrandModal
+        show={showCloseModalAfterHandover}
+        afterHandover
+        onClose={() => setShowCloseModalAfterHandover(false)}
+      />
 
       <div className="w-full mt-md flex flex-col gap-12">
         <>
@@ -381,13 +421,11 @@ export const SidebarInfo: FC<{
               value={admin}
             >
               {!supportErrand?.assignedUserId ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-              {administrators
-                .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                .map((a) => (
-                  <Select.Option key={a.adAccount}>
-                    {/* TODO Avatar */} {a.displayName}
-                  </Select.Option>
-                ))}
+              {administrators.sort(compareByDisplayName).map((a) => (
+                <Select.Option key={a.adAccount}>
+                  {/* TODO Avatar */} {a.displayName}
+                </Select.Option>
+              ))}
             </Select>
           </FormControl>
 
@@ -486,11 +524,11 @@ export const SidebarInfo: FC<{
                   <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
                 </div>
                 <p className="text-small">
-                  {getValues('admin') === 'Välj handläggare' ? (
+                  {!supportErrand?.assignedUserId ? (
                     <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
                   ) : (
                     <span className="mb-24">
-                      <strong>{getValues('admin')}</strong>
+                      <strong>{savedAdminName}</strong>
                       {supportErrand?.status === Status.SUSPENDED
                         ? ' parkerade ärendet med en påminnelse '
                         : ' tilldelades ärendet'}{' '}
@@ -546,6 +584,10 @@ export const SidebarInfo: FC<{
                 <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
               </div>
             )}
+            {/* Following is about notifications, not about edit rights, so it is available on every
+                status and to handlers who are not assigned to the errand. */}
+            <Divider className="mt-16 mb-16" />
+            <SupportFollowErrandButtonComponent />
           </>
         </div>
       </div>

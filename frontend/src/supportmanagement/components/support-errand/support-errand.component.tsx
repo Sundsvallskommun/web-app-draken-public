@@ -8,11 +8,13 @@ import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
+  getLabelCategorizationHeading,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import { labelCategoryRequiresType } from '@supportmanagement/services/support-label-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { pbiProblemAmong } from '@supportmanagement/services/support-pbi-service';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
@@ -29,11 +31,19 @@ import { SupportProcessLog } from './ui-phase/support-process-log.component';
 import { SupportUiPhaseWrapper } from './ui-phase/support-ui-phase-wrapper';
 import { useSupportProcessPoller } from './ui-phase/use-support-process-poller';
 
+const typeIsOptional = (category: string | undefined): boolean =>
+  appConfig.features.useLabelCategorization &&
+  !labelCategoryRequiresType(useMetadataStore.getState().supportMetadata, category);
+
 let formSchema = yup
   .object({
     id: yup.string(),
     category: yup.string().required('Välj ärendekategori'),
-    type: yup.string().required('Välj ärendetyp'),
+    type: yup
+      .string()
+      .when('category', ([category], schema) =>
+        typeIsOptional(category) ? schema : schema.required('Välj ärendetyp')
+      ),
     channel: yup.string().required('Välj kanal'),
     description: yup.string(),
     parameters: yup.array(),
@@ -204,9 +214,8 @@ export const SupportErrandComponent: FC = () => {
                       {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useThreeLevelCategorization
-                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                                '(Ärendetyp saknas)'
+                            {appConfig.features.useLabelCategorization
+                              ? getLabelCategorizationHeading(supportErrand!, supportMetadata)
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>

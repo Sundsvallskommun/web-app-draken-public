@@ -1,6 +1,8 @@
 # Logs
 logs
 *.log
+# Audit files written by the daily log rotation next to its logs
+*-audit.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -22,6 +22,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   expect: {
+    // The CI runner has 2 vCPUs for 4 workers, so multi-request flows (save, forward) regularly
+    // take longer than the 5 s default there.
+    timeout: process.env.CI ? 10000 : 5000,
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.003,
     },
