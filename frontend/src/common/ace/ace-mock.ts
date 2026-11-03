@@ -68,7 +68,7 @@ export const installAceMock = (): void => {
             contactSourceType: 'ivr',
             direction: 'incoming',
             media: 'call',
-            ...(personNumber && { eidUserPnr: personNumber }),
+            ...(personNumber && { cid: personNumber }),
           },
         },
       };
