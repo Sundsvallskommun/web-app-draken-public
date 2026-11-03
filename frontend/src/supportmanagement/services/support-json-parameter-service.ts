@@ -64,7 +64,7 @@ const sortedKeys = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.keys(value)
-      .sort()
+      .sort((a, b) => a.localeCompare(b))
       .map((key) => [key, sortedKeys(value[key])])
   );
 };
