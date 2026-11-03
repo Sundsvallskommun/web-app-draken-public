@@ -206,7 +206,7 @@ test.describe('ACE screen pop', () => {
         .poll(() => logs.find((log) => log.text.startsWith('[ACE] onScreenPop'))?.payload)
         .toMatchObject({
           popEvent: 'afterNormalAccept',
-          contact: { currentContactsType: 'ivr', contactData: { eidUserPnr: '[dolt]', Ani: '[dolt]' } },
+          contact: { currentContactsType: 'ivr', contactData: { cid: '[dolt]', Ani: '[dolt]' } },
         });
       expect(logs.map((log) => log.text)).toEqual(
         expect.arrayContaining(['[ACE] onConnected', '[ACE] onScreenPop: skapar ärende för legitimerad uppringare'])
