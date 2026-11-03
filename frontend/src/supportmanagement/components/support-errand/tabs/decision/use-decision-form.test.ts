@@ -69,11 +69,11 @@ test('a decision that exists fills the fields, and its conditions come in their 
     outcome: 'APPROVAL',
     decidedByRole: 'Utskottet',
     validFrom: '2026-11-01',
-    issuedOn: '2026-10-20',
-    servingArea: 'Matsalen',
-    premisesPhone: mockEnv.mockSecondaryPhoneNumber,
-    decisionCaseNumber: 'KS 2026/123',
-    otherCaseNumber: '2026/42',
+    executionDate: '2026-10-20',
+    servingAreaDescription: 'Matsalen',
+    premisesPhoneNumber: mockEnv.mockSecondaryPhoneNumber,
+    caseRegistrationNumber: 'KS 2026/123',
+    externalCaseRegistrationNumber: '2026/42',
     terms: ['Villkor A', 'Villkor B'],
   });
   expect(result.current.edited).toBe(false);
@@ -82,7 +82,7 @@ test('a decision that exists fills the fields, and its conditions come in their 
 test('without a decision the telephone starts as the one the application gave', () => {
   const { result } = form();
 
-  expect(result.current.values.premisesPhone).toBe(APPLICATION_PHONE);
+  expect(result.current.values.premisesPhoneNumber).toBe(APPLICATION_PHONE);
   expect(result.current.values.decidedByRole).toBe(ROLE);
   expect(result.current.edited).toBe(false);
 });

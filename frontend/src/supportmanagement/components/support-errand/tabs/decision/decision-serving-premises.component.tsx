@@ -23,8 +23,8 @@ export const DecisionServingPremises: FC<{ form: DecisionForm; disabled: boolean
         <Textarea
           className="w-full"
           rows={3}
-          value={form.values.servingArea}
-          onChange={(event) => form.set('servingArea', event.target.value)}
+          value={form.values.servingAreaDescription}
+          onChange={(event) => form.set('servingAreaDescription', event.target.value)}
           disabled={disabled}
           data-cy="decision-serving-area"
         />
@@ -38,8 +38,8 @@ export const DecisionServingPremises: FC<{ form: DecisionForm; disabled: boolean
       >
         <Input
           className="w-full max-w-[20rem]"
-          value={form.values.premisesPhone}
-          onChange={(event) => form.set('premisesPhone', event.target.value)}
+          value={form.values.premisesPhoneNumber}
+          onChange={(event) => form.set('premisesPhoneNumber', event.target.value)}
           disabled={disabled}
           data-cy="decision-premises-phone"
         />

@@ -49,17 +49,17 @@ export interface DecisionParameterInput {
   /** The beverages and serving hours the handler decided (prefilled from the form). */
   scope?: DecisionScope;
   /** The premises within which serving is allowed, as the handler wrote it. */
-  servingArea?: string;
+  servingAreaDescription?: string;
   /** The errand's attachments; the drawings of the serving area are referenced by file name. */
   attachments?: { fileName: string; purpose?: { name?: string } }[];
   /** The day the permit is issued, as the handler set it on the decision. */
-  issuedOn?: string;
+  executionDate?: string;
   /** The decision's own registry number (Beslutsdiarienummer). */
-  decisionCaseNumber?: string;
+  caseRegistrationNumber?: string;
   /** A registry number elsewhere, e.g. Timrå's (Annat diarienummer). */
-  otherCaseNumber?: string;
+  externalCaseRegistrationNumber?: string;
   /** The telephone to the premises as the handler has it, which starts as the application's answer. */
-  premisesPhone?: string;
+  premisesPhoneNumber?: string;
   /** The handler saving the decision. */
   user: { name: string };
   /** Today, YYYY-MM-DD; the backend stamps decidedAt on the same save. */
@@ -166,10 +166,10 @@ const permitHolderOf = (holder: SupportStakeholderFormModel | undefined): JsonOb
 });
 
 /** The telephone is the handler's, since the application asks for it but does not insist. */
-const placeOf = ({ form, premises, premisesPhone }: DecisionParameterInput): JsonObject => ({
+const placeOf = ({ form, premises, premisesPhoneNumber }: DecisionParameterInput): JsonObject => ({
   name: text(premisesValue(form, 'Name')),
   address: premises && addressOf(premises.street, premises.postalCode, premises.city),
-  phoneNumber: text(premisesPhone) ?? text(applicationPremisesPhone(form)),
+  phoneNumber: text(premisesPhoneNumber) ?? text(applicationPremisesPhone(form)),
 });
 
 /** The process reads the choice to resolve the restaurant number: an existing one, or a new one to create. */
@@ -212,14 +212,20 @@ const servingPeriodsOf = (form: FormValue): JsonObject[] => {
     : periods;
 };
 
-const servingOf = ({ errandType, form, scope, servingArea, attachments }: DecisionParameterInput): JsonObject => ({
+const servingOf = ({
+  errandType,
+  form,
+  scope,
+  servingAreaDescription,
+  attachments,
+}: DecisionParameterInput): JsonObject => ({
   servingPermitType: oneOf(SERVING_PERMIT_TYPES)(errandType),
   servingTo: form && [servesPublic(form) && 'PUBLIC', servesPrivate(form) && 'CLOSED_COMPANY'].filter(Boolean),
   servingPeriods: form && servingPeriodsOf(form),
   tasting: errandType === 'TASTING' || undefined,
   ...(scope && toScopeJson(scope, SERVING_PERMIT)),
   servingArea: {
-    description: text(servingArea),
+    description: text(servingAreaDescription),
     drawingReference: drawingReference(attachments),
     seatsIndoor: count(form && childText(form, 'seating', 'seatsIndoor')),
     seatsOutdoor: count(form && childText(form, 'seating', 'seatsOutdoor')),
@@ -246,13 +252,16 @@ const tobaccoOf = ({ form }: DecisionParameterInput): JsonObject =>
 const ISSUING_UNIT = 'Alkohol- och tobaksenheten';
 
 /** The decision as the certificate states it; the decision's root carries the same for Support Management. */
-const decisionOf = ({ user, issuedOn, today }: DecisionParameterInput, decision: CertificateDecision): JsonObject => ({
+const decisionOf = (
+  { user, executionDate, today }: DecisionParameterInput,
+  decision: CertificateDecision
+): JsonObject => ({
   outcome: oneOf(OUTCOMES)(decision.outcome),
   decisionText: text(decision.decisionText),
   justification: text(decision.justification),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
-  executionDate: isoDate(issuedOn),
+  executionDate: isoDate(executionDate),
   validFrom: isoDate(decision.validFrom),
   legalBasis: text(decision.legalBasis),
   issuedBy: { name: text(user.name), title: 'handläggare', unit: ISSUING_UNIT },
@@ -266,8 +275,8 @@ export const toDecisionJson = (
 ): JsonObject => {
   const common = {
     errandId: input.errand.id,
-    caseRegistrationNumber: text(input.decisionCaseNumber),
-    externalCaseRegistrationNumber: text(input.otherCaseNumber),
+    caseRegistrationNumber: text(input.caseRegistrationNumber),
+    externalCaseRegistrationNumber: text(input.externalCaseRegistrationNumber),
     permitHolder: permitHolderOf(input.errand.customer?.[0]),
     decision: decisionOf(input, decision),
   };

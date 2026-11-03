@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  flattenDecisionJson,
-  savedDecisionJson,
-} from '@supportmanagement/services/support-decision-parameters-service';
+import { savedDecisionJson } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import type { DecisionScope } from '@supportmanagement/services/support-decision-scope-service';
 import {
@@ -11,6 +8,7 @@ import {
   outcomeWithoutConditions,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import { objectAt, stringAt } from '@supportmanagement/services/support-json-parameter-service';
 import { useCallback, useState } from 'react';
 
 export interface DecisionFormValues {
@@ -18,17 +16,17 @@ export interface DecisionFormValues {
   decidedByRole: string;
   legalBasis: string;
   /** The decision's own registry number, which the decision cannot be sent without. */
-  decisionCaseNumber: string;
-  otherCaseNumber: string;
+  caseRegistrationNumber: string;
+  externalCaseRegistrationNumber: string;
   justification: string;
   validFrom: string;
   validTo: string;
   /** The day the permit is issued, printed in the certificate's signature block. */
-  issuedOn: string;
+  executionDate: string;
   /** The premises within which serving is allowed, as the handler writes it. */
-  servingArea: string;
+  servingAreaDescription: string;
   /** Starts as the telephone the application gave, which it often does not. */
-  premisesPhone: string;
+  premisesPhoneNumber: string;
   terms: string[];
   /** The beverages and serving hours the permit grants, which start as the application asked. */
   scope: DecisionScope;
@@ -61,19 +59,20 @@ const asSaved = ({
   scopeAsSaved,
   defaultRole,
 }: DecisionFormInput): DecisionFormValues => {
-  const saved = flattenDecisionJson(savedDecisionJson(decision));
+  const json = savedDecisionJson(decision);
   return {
     outcome: outcomeWithoutConditions(decision?.outcome),
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
-    decisionCaseNumber: saved.decisionCaseNumber ?? '',
-    otherCaseNumber: saved.otherCaseNumber ?? '',
+    caseRegistrationNumber: stringAt(json?.caseRegistrationNumber) ?? '',
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
     justification: decision?.justification ?? '',
     validFrom: decision?.validFrom ?? '',
     validTo: decision?.validTo ?? '',
-    issuedOn: saved.executionDate ?? '',
-    servingArea: saved.servingAreaDescription ?? '',
-    premisesPhone: saved.premisesPhone ?? applicationPremisesPhone,
+    executionDate: stringAt(objectAt(json?.decision).executionDate) ?? '',
+    servingAreaDescription: stringAt(objectAt(json?.servingArea).description) ?? '',
+    premisesPhoneNumber:
+      stringAt(objectAt(json?.premises ?? json?.pointOfSale).phoneNumber) ?? applicationPremisesPhone,
     terms: decisionTermTexts(decision),
     scope: scopeAsSaved,
   };

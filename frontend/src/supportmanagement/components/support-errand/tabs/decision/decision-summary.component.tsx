@@ -1,9 +1,6 @@
 import type { DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Label } from '@sk-web-gui/react';
-import {
-  flattenDecisionJson,
-  savedDecisionJson,
-} from '@supportmanagement/services/support-decision-parameters-service';
+import { savedDecisionJson } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import {
   scopeFromDecision,
@@ -15,6 +12,7 @@ import {
   outcomeLabel,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import { stringAt } from '@supportmanagement/services/support-json-parameter-service';
 import dayjs from 'dayjs';
 import { FC, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +29,6 @@ export const DecisionSummary: FC<{
   const premisesText = usePremisesText();
   const empty = t('common:decision.empty_value');
   const json = savedDecisionJson(decision);
-  const saved = flattenDecisionJson(json);
   const decided = scopeFromDecision(json);
   const decidedHours = SERVING_HOURS_SLOTS.filter((spec) => decided.servingHours?.[spec.slot]);
 
@@ -54,9 +51,9 @@ export const DecisionSummary: FC<{
         <dt className="text-dark-secondary">{t('common:decision.legal_basis')}</dt>
         <dd className="m-0">{decision.legalBasis || empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.case_number')}</dt>
-        <dd className="m-0">{saved.decisionCaseNumber ?? empty}</dd>
+        <dd className="m-0">{stringAt(json?.caseRegistrationNumber) ?? empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.other_case_number')}</dt>
-        <dd className="m-0">{saved.otherCaseNumber ?? empty}</dd>
+        <dd className="m-0">{stringAt(json?.externalCaseRegistrationNumber) ?? empty}</dd>
         {premises ? (
           <>
             <dt className="text-dark-secondary">{t('common:decision.premises.label')}</dt>

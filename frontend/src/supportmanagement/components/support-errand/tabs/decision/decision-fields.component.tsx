@@ -51,8 +51,8 @@ export const DecisionFields: FC<{
           <DecisionField id="decision-case-number" label={t('common:decision.case_number')} required>
             <Input
               className="w-full"
-              value={values.decisionCaseNumber}
-              onChange={(event) => set('decisionCaseNumber', event.target.value)}
+              value={values.caseRegistrationNumber}
+              onChange={(event) => set('caseRegistrationNumber', event.target.value)}
               disabled={disabled}
               data-cy="decision-case-number"
             />
@@ -61,8 +61,8 @@ export const DecisionFields: FC<{
           <DecisionField id="decision-other-case-number" label={t('common:decision.other_case_number')}>
             <Input
               className="w-full"
-              value={values.otherCaseNumber}
-              onChange={(event) => set('otherCaseNumber', event.target.value)}
+              value={values.externalCaseRegistrationNumber}
+              onChange={(event) => set('externalCaseRegistrationNumber', event.target.value)}
               disabled={disabled}
               data-cy="decision-other-case-number"
             />
@@ -133,8 +133,8 @@ export const DecisionFields: FC<{
               <Input
                 type="date"
                 className="w-full"
-                value={values.issuedOn}
-                onChange={(event) => set('issuedOn', event.target.value)}
+                value={values.executionDate}
+                onChange={(event) => set('executionDate', event.target.value)}
                 disabled={disabled}
                 data-cy="decision-issued-on"
               />

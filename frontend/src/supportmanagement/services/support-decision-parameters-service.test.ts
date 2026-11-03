@@ -44,8 +44,8 @@ const errand = () =>
 const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParameterInput => ({
   errand: errand(),
   premises: { ...PREMISES, choice: EXISTING },
-  issuedOn: ISSUED,
-  decisionCaseNumber: DECISION_CASE_NUMBER,
+  executionDate: ISSUED,
+  caseRegistrationNumber: DECISION_CASE_NUMBER,
   user: { name: 'Test Testsson' },
   today: TODAY,
   ...overrides,
@@ -89,7 +89,7 @@ describe('a serving permit', () => {
   const parameters = sent('SERVERINGSTILLSTAND', {
     form: servingForm,
     scope: servingScope,
-    servingArea: ' Matsalen och uteserveringen ',
+    servingAreaDescription: ' Matsalen och uteserveringen ',
     attachments: [
       { fileName: 'plan-1.pdf', purpose: { name: 'FLOOR_PLAN' } },
       { fileName: 'meny.pdf', purpose: { name: 'MENU' } },
@@ -115,7 +115,8 @@ describe('a serving permit', () => {
 
   test('the handler’s telephone to the premises wins over the one the application gave', () => {
     expect(
-      sent('SERVERINGSTILLSTAND', { form: servingForm, premisesPhone: mockEnv.mockSecondaryPhoneNumber }).premisesPhone
+      sent('SERVERINGSTILLSTAND', { form: servingForm, premisesPhoneNumber: mockEnv.mockSecondaryPhoneNumber })
+        .premisesPhone
     ).toBe(mockEnv.mockSecondaryPhoneNumber);
     expect(sent('SERVERINGSTILLSTAND', { form: servingForm }).premisesPhone).toBe(mockEnv.mockPhoneNumber);
   });
@@ -176,7 +177,7 @@ describe('a serving permit', () => {
   test('the date of issue is the handler’s, and the decision date is today', () => {
     expect(parameters.executionDate).toBe(ISSUED);
     expect(parameters.decisionDate).toBe(TODAY);
-    expect(json('SERVERINGSTILLSTAND', { issuedOn: undefined }).decision).not.toHaveProperty('executionDate');
+    expect(json('SERVERINGSTILLSTAND', { executionDate: undefined }).decision).not.toHaveProperty('executionDate');
   });
 
   test('a tasting permit is told apart by the errand type', () => {
@@ -199,7 +200,7 @@ describe('a serving permit', () => {
   });
 
   test('a value that is not there is left out of the JSON, as the schema wants, and not sent blank', () => {
-    const bare = json('SERVERINGSTILLSTAND', { form: undefined, premises: undefined, issuedOn: '' });
+    const bare = json('SERVERINGSTILLSTAND', { form: undefined, premises: undefined, executionDate: '' });
 
     expect(bare).not.toHaveProperty('servingTo');
     expect(bare).not.toHaveProperty('servingArea');
@@ -214,7 +215,7 @@ describe('the JSON of a serving permit', () => {
     errandType: 'PERMANENT_SERVING',
     form: servingForm,
     scope: servingScope,
-    otherCaseNumber: '2026/42',
+    externalCaseRegistrationNumber: '2026/42',
   });
 
   test('is shaped as the permit in PartyAssets', () => {
@@ -403,7 +404,7 @@ describe('what the permit needs of the errand', () => {
   test('the decision is checked on what it saved', () => {
     const complete = toDecisionJson(
       'SERVERINGSTILLSTAND',
-      input({ form: servingForm, servingArea: 'Matsalen' }),
+      input({ form: servingForm, servingAreaDescription: 'Matsalen' }),
       DECISION
     );
 
@@ -428,14 +429,14 @@ describe('what the permit needs of the errand', () => {
   });
 
   test('the decision saves both case numbers, and only the decision case number is waited for', () => {
-    const saved = toDecisionJson('FOLKOLSANMALAN', input({ otherCaseNumber: ' 2026/42 ' }), DECISION);
+    const saved = toDecisionJson('FOLKOLSANMALAN', input({ externalCaseRegistrationNumber: ' 2026/42 ' }), DECISION);
 
     expect(saved).toMatchObject({
       caseRegistrationNumber: DECISION_CASE_NUMBER,
       externalCaseRegistrationNumber: '2026/42',
     });
     expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
-    expect(missingDecisionInputs('FOLKOLSANMALAN', json('FOLKOLSANMALAN', { decisionCaseNumber: '' }))).toEqual([
+    expect(missingDecisionInputs('FOLKOLSANMALAN', json('FOLKOLSANMALAN', { caseRegistrationNumber: '' }))).toEqual([
       'decisionCaseNumber',
     ]);
   });
