@@ -12,14 +12,22 @@ export interface AceCaller {
   phoneNumber?: string;
 }
 
-/** ACE contact data key holding the personal number of a caller identified with BankID/eID. */
-const PERSON_NUMBER_KEY = 'eidUserPnr';
+/** ACE contact data key Sundsvall's ACE maps the personal number of an identified caller to. */
+const PERSON_NUMBER_KEY = 'cid';
 /** ACE contact data key holding the calling number (A-number). */
 const PHONE_NUMBER_KEY = 'Ani';
 
+/** A contact data value by key, ignoring case: Telia writes Cid, the mapping says cid. */
+const contactDataValue = (contactData: Record<string, unknown> | undefined, key: string): string => {
+  const entry = Object.entries(contactData ?? {}).find(([name]) => name.toLowerCase() === key.toLowerCase());
+  return entry?.[1]?.toString() ?? '';
+};
+
 /**
  * The century of a 10-digit personal number, as Skatteverket counts it: the latest one in which the
- * person is already born, one more back for "+" (aged 100 or more).
+ * person is already born, one more back for "+" (aged 100 or more). A coordination number (day + 60)
+ * of someone born this month compares as later than today and gets the century before; accepted,
+ * since it hardly happens.
  */
 const centuryOf = (birthDate: string, isAged100OrMore: boolean, today: Date): number => {
   const bornLastCentury = birthDate > dayjs(today).format('YYMMDD');
@@ -61,8 +69,8 @@ export const parseScreenPop = (message: AceScreenPopMessage | undefined): AceCal
     return null;
   }
   const contactId = contact.contactId?.toString() ?? '';
-  const personNumber = toPersonNumber(contact.contactData?.[PERSON_NUMBER_KEY]?.toString() ?? '');
-  const phoneNumber = toPhoneNumber(contact.contactData?.[PHONE_NUMBER_KEY]?.toString() ?? '');
+  const personNumber = toPersonNumber(contactDataValue(contact.contactData, PERSON_NUMBER_KEY));
+  const phoneNumber = toPhoneNumber(contactDataValue(contact.contactData, PHONE_NUMBER_KEY));
   if (!contactId) {
     return null;
   }

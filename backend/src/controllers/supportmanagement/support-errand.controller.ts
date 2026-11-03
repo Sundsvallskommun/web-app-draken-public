@@ -365,6 +365,8 @@ export class SupportErrandController {
    * Resolves a free-text query that looks like an organization or personal number into a party id,
    * so that errands can also be matched on `stakeholders.externalId`. Returns '' when the query is
    * not an identifier or the lookup fails - a failed lookup must not fail the search itself.
+   * Known limitation: the query itself still travels in URLs, from the browser (?query=) and in the
+   * filter sent on to SupportManagement. Our logs mask it, logs in ingress or gateways do not.
    */
   private async resolveQueryPartyId(req: RequestWithUser, queryRaw?: string): Promise<string> {
     if (!queryRaw) return '';

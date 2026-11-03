@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { createPendingCallers, requestPendingCaller } from './ace-pending-caller';
+import { createPendingCallers, removeStoredCallers, requestPendingCaller } from './ace-pending-caller';
 
 // Test person number from Skatteverket, not a real person.
 const caller = { personNumber: '199001012385', phoneNumber: '+46701740635' };
@@ -59,5 +59,36 @@ describe('pending ACE caller hand-over', () => {
 
   test('asks for nothing without an errand number', async () => {
     expect(await requestPendingCaller('', timeoutMs)).toBeNull();
+  });
+});
+
+describe('removeStoredCallers', () => {
+  const memoryStorage = (entries: Record<string, string>) => {
+    const items = new Map(Object.entries(entries));
+    return {
+      get length() {
+        return items.size;
+      },
+      key: (index: number) => [...items.keys()][index] ?? null,
+      removeItem: (key: string) => void items.delete(key),
+      items,
+    };
+  };
+
+  test('removes the callers earlier versions left in localStorage, and nothing else', () => {
+    const storage = memoryStorage({
+      'draken-ace-caller:KC-1': JSON.stringify(caller),
+      'draken-ace-caller:KC-2': JSON.stringify(caller),
+      'draken-ace-contact:42': '1',
+      unrelated: 'value',
+    });
+
+    removeStoredCallers(storage);
+
+    expect([...storage.items.keys()]).toEqual(['draken-ace-contact:42', 'unrelated']);
+  });
+
+  test('does nothing without storage', () => {
+    expect(() => removeStoredCallers(null)).not.toThrow();
   });
 });

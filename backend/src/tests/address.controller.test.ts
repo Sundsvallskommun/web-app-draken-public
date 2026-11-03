@@ -34,7 +34,7 @@ describe('AddressController person lookup', () => {
 
     const result = await controller.cases(mockReq(), mockRes(), { ssn: mockPersonNumber });
 
-    expect(result.data).toEqual({ personId: mockCitizenPartyId });
+    expect(result.data).toEqual({ personId: mockCitizenPartyId, protectedIdentity: false });
     expect(citizen.getPartyIdByPersonNumber).toHaveBeenCalledWith(expect.any(String), mockPersonNumber, expect.anything());
     expect(api.get).toHaveBeenCalledWith({ url: expect.stringContaining(`${CITIZEN_SERVICE}/`) }, expect.anything());
     expect(api.get.mock.calls[0][0].url).not.toContain(mockPersonNumber);

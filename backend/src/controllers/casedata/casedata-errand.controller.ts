@@ -138,6 +138,8 @@ export class CaseDataErrandController {
     const baseURL = apiURL(this.SERVICE);
     const filterList = [];
     if (query) {
+      // The query still travels in URLs (?query= and the filter below); see resolveQueryPartyId in
+      // the support errand controller for this known limitation.
       const partyId = luhnCheck(query) ? await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, query, req.user).catch(() => '') : '';
       let queryFilter = `(`;
       queryFilter += `exists(stakeholders.firstName~'*${query}*')`;

@@ -14,7 +14,8 @@ if (!existsSync(logDir)) {
 }
 
 // Personal numbers end up in request URLs (search queries, lookups in other APIs) and error
-// messages; they never reach a log file or the console.
+// messages; this keeps them out of everything logged through this logger, its files and its
+// console output. Plain console.* calls elsewhere are not covered.
 const maskPersonalData = winston.format(info => {
   if (typeof info.message === 'string') {
     info.message = maskPersonalNumbers(info.message);

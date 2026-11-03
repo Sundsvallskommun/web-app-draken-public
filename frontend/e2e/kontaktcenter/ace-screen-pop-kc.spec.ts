@@ -100,6 +100,19 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).personNumber).toHaveText(mockEnv.mockPersonNumber);
     });
 
+    test('warns when the caller was lost before the errand tab could ask for it', async ({ page }) => {
+      // As when the tab that received the call is reloaded before the errand tab has loaded.
+      const errandPage = await page.context().newPage();
+      await errandPage.goto(`arende/${mockEmptySupportErrand.errandNumber}?ace=1`);
+
+      await expect(
+        errandPage.locator('.sk-snackbar-text', {
+          hasText: 'Uppgifterna om den som ringer kunde inte hämtas från ACE',
+        })
+      ).toBeVisible({ timeout: 10000 });
+      await expect(errandPage).toHaveURL(new RegExp(`/arende/${mockEmptySupportErrand.errandNumber}$`));
+    });
+
     test('saves the caller as errand owner only when the case worker saves', async ({ page, ace }) => {
       const patches: string[] = [];
       page.context().on('request', (r) => r.method() === 'PATCH' && patches.push(r.url()));
@@ -219,7 +232,8 @@ test.describe('ACE screen pop', () => {
     test('leaves out the address of a caller with protected personal data', async ({ page, ace }) => {
       await mockPersonLookup(page.context(), {
         ...mockAdressResponse,
-        data: { ...mockAdressResponse.data, classified: 'J', protectedNR: 'J' },
+        // As the BFF answers: it leaves out the address and says why.
+        data: { ...mockAdressResponse.data, addresses: [], protectedIdentity: true },
       });
 
       const errandPage = await ace.acceptCall();

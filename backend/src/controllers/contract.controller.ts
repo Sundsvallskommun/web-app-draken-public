@@ -40,7 +40,6 @@ export class CasedataContractsController {
   private apiService = new ApiService();
   private citizenService = new CitizenService();
   SERVICE = apiServiceName('contract');
-  CITIZEN_SERVICE = apiServiceName('citizen');
 
   @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
@@ -74,6 +73,8 @@ export class CasedataContractsController {
     const filterList: string[] = [];
 
     if (query) {
+      // The query still travels in URLs (?query= and the filter below); see resolveQueryPartyId in
+      // the support errand controller for this known limitation.
       const partyId = luhnCheck(query) ? await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, query, req.user).catch(() => '') : '';
 
       let queryFilter = `(`;

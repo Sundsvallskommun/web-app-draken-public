@@ -80,3 +80,36 @@ export const requestPendingCaller = (
     channel.postMessage({ type: 'caller-request', errandNumber } satisfies HandOverMessage);
   });
 };
+
+/** Marks the URL of an errand opened for an ACE caller, without saying anything about the caller. */
+export const ACE_CALLER_PARAM = 'ace';
+
+const LEGACY_STORAGE_PREFIX = 'draken-ace-caller:';
+
+const localStorageOrNull = (): Storage | null => {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Removes callers that earlier versions handed over through localStorage and nobody picked up,
+ * so no personal number is left behind in the browser.
+ */
+export const removeStoredCallers = (
+  storage: Pick<Storage, 'key' | 'length' | 'removeItem'> | null = localStorageOrNull()
+): void => {
+  try {
+    if (!storage) {
+      return;
+    }
+    const keys = Array.from({ length: storage.length }, (_, i) => storage.key(i)).filter(
+      (key): key is string => !!key?.startsWith(LEGACY_STORAGE_PREFIX)
+    );
+    keys.forEach((key) => storage.removeItem(key));
+  } catch {
+    // Storage unavailable: then nothing was stored either.
+  }
+};

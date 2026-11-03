@@ -1,4 +1,4 @@
-import { luhnCheck } from './util';
+import { luhnCheck } from './luhn-check';
 
 const MASK = '[personnummer]';
 

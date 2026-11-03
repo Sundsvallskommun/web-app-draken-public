@@ -11,7 +11,7 @@ import { AceConfig, getAceConfig } from './ace-config';
 import { markContactHandled } from './ace-handled-contacts';
 import { AceJSApi } from './ace-jsapi.types';
 import { installAceMock } from './ace-mock';
-import { createPendingCallers } from './ace-pending-caller';
+import { ACE_CALLER_PARAM, createPendingCallers, removeStoredCallers } from './ace-pending-caller';
 import { AceCaller, parseScreenPop } from './ace-screen-pop';
 import { AceStatus, useAceStore } from './ace-store';
 
@@ -135,6 +135,7 @@ export const AceConnector: React.FC = () => {
   const enabled = !!config && appConfig.isSupportManagement && !!username;
 
   useEffect(() => {
+    removeStoredCallers();
     if (!enabled || !config) {
       setStatus('disabled');
       return;
@@ -193,7 +194,8 @@ export const AceConnector: React.FC = () => {
         }
         // ACE's own JS API popup already requires popups to be allowed for Draken, so this normally
         // opens a new tab even though it does not follow a click.
-        const newTab = window.open(appURL(`/arende/${errandNumber}`), '_blank');
+        const errandPath = `/arende/${errandNumber}?${ACE_CALLER_PARAM}=1`;
+        const newTab = window.open(appURL(errandPath), '_blank');
         if (newTab) {
           newTab.opener = null;
           return;
@@ -204,7 +206,7 @@ export const AceConnector: React.FC = () => {
         // WarnIfUnsavedChanges patches router.push to reject when the case worker chooses to stay
         // on a page with unsaved changes.
         try {
-          await router.push(`/arende/${errandNumber}`);
+          await router.push(errandPath);
         } catch {
           pendingCallers.remove(errandNumber);
           toastMessage({

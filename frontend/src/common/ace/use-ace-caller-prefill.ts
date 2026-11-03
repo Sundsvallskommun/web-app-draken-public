@@ -3,7 +3,7 @@ import { useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useRef } from 'react';
 
 import { getAceConfig } from './ace-config';
-import { HandedOverCaller, requestPendingCaller } from './ace-pending-caller';
+import { ACE_CALLER_PARAM, HandedOverCaller, requestPendingCaller } from './ace-pending-caller';
 
 /**
  * The caller as the errand form gets it: what ACE knew, plus the looked-up person when the caller
@@ -31,14 +31,14 @@ const lookUpCaller = async (errandNumber: string): Promise<CallerLookup | null> 
   return { caller, person };
 };
 
-/** A person with protected personal data is filled in without an address. */
-const withoutAddress = (person: AddressResult): AddressResult => ({
-  ...person,
-  street: '',
-  careof: '',
-  zip: '',
-  city: '',
-});
+const isOpenedForAceCaller = (): boolean => new URLSearchParams(window.location.search).has(ACE_CALLER_PARAM);
+
+/** Drops the marker once handled, so a reload does not ask for the caller again. */
+const forgetAceCallerParam = () => {
+  const url = new URL(window.location.href);
+  url.searchParams.delete(ACE_CALLER_PARAM);
+  window.history.replaceState(window.history.state, '', url);
+};
 
 const getCallerLookup = (errandNumber: string): Promise<CallerLookup | null> => {
   let lookup = lookups.get(errandNumber);
@@ -69,20 +69,32 @@ export const useAceCallerPrefill = (
     if (!errandNumber) {
       return;
     }
-    // Only an instance with ACE opens errands for callers, so nothing is waiting anywhere else.
-    if (!getAceConfig()) {
+    // Only an errand that ACE opened for a caller has someone to ask for the caller.
+    if (!getAceConfig() || !isOpenedForAceCaller()) {
       return;
     }
     let active = true;
     void getCallerLookup(errandNumber).then((lookup) => {
-      if (!active || !lookup) {
+      if (!active) {
+        return;
+      }
+      forgetAceCallerParam();
+      if (!lookup) {
+        // The tab that received the call was closed or reloaded before handing the caller over.
+        latest.current.toastMessage({
+          position: 'bottom',
+          closeable: true,
+          message: 'Uppgifterna om den som ringer kunde inte hämtas från ACE. Lägg till ärendeägaren manuellt.',
+          status: 'warning',
+        });
         return;
       }
       const { personNumber, phoneNumber } = lookup.caller;
-      const person = lookup.person?.protectedIdentity ? withoutAddress(lookup.person) : lookup.person;
+      const { person } = lookup;
       // Without the person, hand over what ACE knew so the case worker can search with it.
       latest.current.onCaller({ personNumber, phoneNumber, person });
-      if (lookup.person?.protectedIdentity) {
+      // The BFF leaves out the address of a person with protected personal data.
+      if (person?.protectedIdentity) {
         latest.current.toastMessage({
           position: 'bottom',
           closeable: true,
