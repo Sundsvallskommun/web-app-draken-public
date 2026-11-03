@@ -1,0 +1,12 @@
+# Lägger Keycloak, LDAP och testapparna bakom profilen "keycloak" så att bara
+# själva fake-IdP:n (backend, admin, proxy) startar som standard.
+# Starta även dem med: docker compose --profile keycloak up
+services:
+  keycloak:
+    profiles: [keycloak]
+  openldap:
+    profiles: [keycloak]
+  employee-app:
+    profiles: [keycloak]
+  citizen-app:
+    profiles: [keycloak]

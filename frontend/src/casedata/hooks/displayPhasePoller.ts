@@ -1,25 +1,26 @@
-import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { getErrand } from '@casedata/services/casedata-errand-service';
+import { startDisplayPhasePolling } from '@casedata/services/display-phase-polling-service';
 import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useEffect, useRef } from 'react';
 
 function useDisplayPhasePoller() {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const setErrand = useCasedataStore((s) => s.setErrand);
-  const pollDisplayPhase = () => {
+  const stopPolling = useRef<() => void>(() => {});
+
+  // A response that arrives after leaving the errand must not overwrite whatever errand is shown next.
+  useEffect(() => () => stopPolling.current(), []);
+
+  const pollDisplayPhase = (options?: { resendLostComplete?: boolean; onPollingFinished?: () => void }) => {
     if (!errand) return;
-    let displayPhase = errand.extraParameters.find((p) => p.key === 'process.displayPhase')?.values?.[0] as UiPhase;
-    const displayPhasePoll = setInterval(() => {
-      if (displayPhase !== UiPhase.registrerad) {
-        clearInterval(displayPhasePoll);
-      } else {
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
-          setErrand(res.errand);
-          displayPhase = res.errand?.extraParameters.find((p) => p.key === 'process.displayPhase')
-            ?.values?.[0] as UiPhase;
-        });
-      }
-    }, 1000);
+    stopPolling.current();
+    stopPolling.current = startDisplayPhasePolling({
+      municipalityId,
+      errand,
+      onErrandFetched: setErrand,
+      onPollingFinished: options?.onPollingFinished,
+      resendLostComplete: options?.resendLostComplete,
+    });
   };
 
   return {

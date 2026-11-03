@@ -1,9 +1,11 @@
+import { useAceCallerPrefill } from '@common/ace/use-ace-caller-prefill';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandPremisesSection } from '@supportmanagement/components/premises/support-errand-premises-section.component';
 import {
   emptyContact,
+  ExternalIdType,
   isOrganizationExternalIdType,
   isSupportErrandLocked,
   SupportErrand,
@@ -12,9 +14,10 @@ import {
 import { existsOnlyAsPbi, isPbi, pbiOf, withoutPbi, withPbi } from '@supportmanagement/services/support-pbi-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
 import { Info, Users } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { v4 as uuidv4 } from 'uuid';
 
 import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
@@ -38,8 +41,8 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const stakeholderCustomers = useSupportStore((s) => s.stakeholderCustomers);
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
-  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const { t } = useTranslation();
+  const { control, setValue, getValues, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
   const errandId = supportErrand?.id;
 
@@ -52,6 +55,66 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errandId]);
+
+  // Set while the customer filled in from ACE is unsaved, see the effect below.
+  const aceCustomerId = useRef<string | null>(null);
+  // What ACE knew about a caller who could not be looked up, to search for the owner with.
+  const [ownerSearch, setOwnerSearch] = useState<Pick<SupportStakeholderFormModel, 'personNumber' | 'phoneNumbers'>>();
+  // An errand opened from an ACE screen pop gets the caller as (unsaved) customer, so the case worker
+  // reviews it before it is saved - saving makes the errand of an identified caller visible on Mina
+  // sidor. Whatever ACE knew is filled in: the person when identified, and the number they call from.
+  useAceCallerPrefill(supportErrand?.errandNumber, ({ person, personNumber, phoneNumber }) => {
+    if (useSupportStore.getState().stakeholderCustomers.length > 0) {
+      return;
+    }
+    const phoneNumbers = phoneNumber ? [{ value: phoneNumber }] : [];
+    if (personNumber && !person) {
+      // The lookup failed: leave the owner search open with what ACE knew instead of a half-empty owner.
+      setOwnerSearch({ personNumber, phoneNumbers });
+      return;
+    }
+    const customer: SupportStakeholderFormModel = {
+      ...emptyContact,
+      role: 'PRIMARY',
+      internalId: uuidv4(),
+      externalIdType: ExternalIdType.PRIVATE,
+      ...(person && {
+        externalId: person.personId,
+        personNumber,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        address: person.street,
+        careOf: person.careof,
+        zipCode: person.zip,
+        city: person.city,
+      }),
+      phoneNumbers,
+    };
+    aceCustomerId.current = customer.internalId;
+    setStakeholderCustomers([customer]);
+    setValue('customer', [customer], { shouldDirty: true });
+    props.setUnsaved(true);
+  });
+
+  // The errand page resets the form whenever it loads the errand, which can happen after the caller
+  // was filled in (React strict mode loads it twice in development). Put the caller back until the
+  // errand is saved with a customer or the case worker removes the caller.
+  useEffect(() => {
+    const id = aceCustomerId.current;
+    if (!id) {
+      return;
+    }
+    const customers = useSupportStore.getState().stakeholderCustomers;
+    if ((supportErrand?.customer?.length ?? 0) > 0 || !customers.some((c) => c.internalId === id)) {
+      aceCustomerId.current = null;
+      return;
+    }
+    if (!getValues('customer')?.some((c) => c.internalId === id)) {
+      setValue('customer', customers, { shouldDirty: true });
+      props.setUnsaved(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportErrand]);
 
   const contactsFieldArray = useFieldArray({
     control,
@@ -401,6 +464,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
 
   const addStakeholder = (stakeholder: SupportStakeholderFormModel) => {
     if (stakeholder.role === 'PRIMARY') {
+      setOwnerSearch(undefined);
       stakeholderCustomers.push(stakeholder);
       setValue('customer', stakeholderCustomers, { shouldDirty: true });
     } else {
@@ -437,10 +501,13 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
               <div className="w-full">
                 {stakeholderCustomers.length === 0 ? (
                   <SupportSimplifiedContactForm
+                    // The form reads contact once, so it starts over when ACE fills in the search.
+                    key={ownerSearch?.personNumber ?? 'owner'}
                     disabled={isSupportErrandLocked(supportErrand!)}
                     setUnsaved={props.setUnsaved}
                     onSave={(contact) => addStakeholder(contact)}
-                    contact={{ ...emptyContact, role: 'PRIMARY' }}
+                    contact={{ ...emptyContact, role: 'PRIMARY', ...ownerSearch }}
+                    initialQuery={ownerSearch?.personNumber}
                     editing={false}
                     label="Ärendeägare"
                     id="owner"

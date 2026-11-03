@@ -1,13 +1,21 @@
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  NotificationView,
+  SupportNotificationResponse,
+  toNotificationView,
+} from '@common/components/notifications/notification-view';
 import { apiService } from '@common/services/api-service';
 
-import { SupportErrand } from './support-errand-service';
+/** Which ids the backend managed to acknowledge upstream, and which it did not. */
+export interface AcknowledgeResult {
+  acknowledged: string[];
+  failed: string[];
+}
 
-export const getSupportNotifications: (municipalityId: string) => Promise<SupportNotification[]> = (municipalityId) => {
+export const getSupportNotifications: (municipalityId: string) => Promise<NotificationView[]> = (municipalityId) => {
   return apiService
-    .get<SupportNotification[]>(`supportnotifications/${municipalityId}`)
+    .get<SupportNotificationResponse[]>(`supportnotifications/${municipalityId}`)
     .then((res) => {
-      return res.data;
+      return res.data.map(toNotificationView);
     })
     .catch((e) => {
       console.error('Something went wrong when fetching notifications');
@@ -15,39 +23,47 @@ export const getSupportNotifications: (municipalityId: string) => Promise<Suppor
     });
 };
 
-export const acknowledgeSupportNotification: (
-  municipalityId: string,
-  notification: SupportNotification
-) => Promise<boolean> = (municipalityId, notification) => {
-  if (!notification.id) {
-    return Promise.reject('Missing id on notification');
+/**
+ * Acknowledge one or more notifications in a single request. Upstream only acknowledges one
+ * notification per call, but that fan-out lives in the backend so the browser makes one call
+ * regardless of how many notifications the user ticked.
+ */
+export const acknowledgeSupportNotifications: (municipalityId: string, ids: string[]) => Promise<AcknowledgeResult> = (
+  municipalityId,
+  ids
+) => {
+  if (!ids.length) {
+    return Promise.resolve({ acknowledged: [], failed: [] });
   }
-  const data = { ...notification, ownerFullName: notification.ownerFullName || '', acknowledged: true };
   return apiService
-    .patch<boolean, SupportNotification>(`supportnotifications/${municipalityId}`, data)
+    .patch<AcknowledgeResult, { ids: string[] }>(`supportnotifications/${municipalityId}/acknowledge`, { ids })
     .then((res) => {
-      return true;
+      return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      console.error('Something went wrong when acknowledging notifications');
       throw e;
     });
 };
 
-export const globalAcknowledgeSupportNotification: (
-  errand: SupportErrand,
-  municipalityId: string
-) => Promise<boolean> = (errand, municipalityId) => {
-  if (!errand.id) {
+/** Acknowledge every notification the logged in user has for one errand, e.g. when opening it. */
+export const acknowledgeAllForErrand: (municipalityId: string, errandId: string) => Promise<AcknowledgeResult> = (
+  municipalityId,
+  errandId
+) => {
+  if (!errandId) {
     return Promise.reject('Missing id on errand');
   }
   return apiService
-    .put(`supportnotifications/${municipalityId}/${errand.id}/global-acknowledged`, {})
+    .put<AcknowledgeResult, Record<string, never>>(
+      `supportnotifications/${municipalityId}/${errandId}/acknowledge-all`,
+      {}
+    )
     .then((res) => {
-      return true;
+      return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      console.error('Something went wrong when acknowledging notifications for errand');
       throw e;
     });
 };

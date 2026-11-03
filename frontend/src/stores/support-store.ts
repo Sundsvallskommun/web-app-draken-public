@@ -1,5 +1,5 @@
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import { NotificationView } from '@common/components/notifications/notification-view';
+import { Subscription } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   SupportErrand,
@@ -14,7 +14,9 @@ interface SupportState {
   supportAttachments: SupportAttachment[] | undefined;
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
-  notifications: (SupportNotification | CaseDataNotification)[];
+  notifications: NotificationView[];
+  /** Errand and namespace subscriptions belonging to the logged in user. */
+  subscriptions: Subscription[];
   activeTabKey?: string;
   unsavedTabs: Record<string, boolean>;
   tabsWithContent: Record<string, boolean>;
@@ -22,6 +24,7 @@ interface SupportState {
   tabSavers: Record<string, () => Promise<boolean>>;
   /** Rewrites a draft decision's JSON from the decision tab, so concluding sends what the errand says now. */
   decisionJsonWriter: ((decisionId: string) => Promise<unknown>) | undefined;
+  showCloseModalAfterHandover: boolean;
 }
 
 interface SupportActions {
@@ -30,13 +33,15 @@ interface SupportActions {
   setSupportAttachments: (attachments: SupportAttachment[]) => void;
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
-  setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
+  setNotifications: (notifications: NotificationView[]) => void;
+  setSubscriptions: (subscriptions: Subscription[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
   setUnsavedTab: (key: string, unsaved: boolean) => void;
   setTabHasContent: (key: string, hasContent: boolean) => void;
   setProcessSignal: (processSignal: { errandId: string; at: number } | undefined) => void;
   setTabSaver: (key: string, saver: (() => Promise<boolean>) | undefined) => void;
   setDecisionJsonWriter: (writer: ((decisionId: string) => Promise<unknown>) | undefined) => void;
+  setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
 }
 
@@ -49,12 +54,14 @@ const initialState: SupportState = {
   stakeholderContacts: [],
   stakeholderCustomers: [],
   notifications: [],
+  subscriptions: [],
   activeTabKey: 'basics',
   unsavedTabs: {},
   tabsWithContent: {},
   processSignal: undefined,
   tabSavers: {},
   decisionJsonWriter: undefined,
+  showCloseModalAfterHandover: false,
 };
 
 const flagsWithChange = (
@@ -71,6 +78,7 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
+  setSubscriptions: (subscriptions) => set({ subscriptions }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   setProcessSignal: (processSignal) => set({ processSignal }),
   setDecisionJsonWriter: (decisionJsonWriter) => set({ decisionJsonWriter }),
@@ -92,5 +100,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
       const tabsWithContent = flagsWithChange(state.tabsWithContent, key, hasContent);
       return tabsWithContent ? { tabsWithContent } : state;
     }),
+  setShowCloseModalAfterHandover: (showCloseModalAfterHandover) => set({ showCloseModalAfterHandover }),
   reset: () => set(initialState),
 }));

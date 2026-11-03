@@ -24,6 +24,7 @@ export const HandoverAutoSuggestIndicator: React.FC<{ matchReason?: MatchReason 
     <span
       className="inline-flex items-center gap-4 text-small text-vattjom-text-primary"
       title={matchReasonText(matchReason)}
+      data-cy="handover-auto-suggest"
     >
       <Icon icon={<Sparkles />} size={16} aria-hidden />
       Auto-förslag

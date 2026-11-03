@@ -10,7 +10,10 @@
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
     "format:check": "yarn --cwd frontend format:check && yarn --cwd backend format:check",
     "test": "yarn --cwd backend test",
-    "verify": "yarn type-check && yarn lint:strict && yarn format:check && yarn knip && yarn test"
+    "verify": "yarn type-check && yarn lint:strict && yarn format:check && yarn knip && yarn test",
+    "idp:up": "docker compose -f docker-compose.idp.yml up -d --build",
+    "idp:down": "docker compose -f docker-compose.idp.yml down",
+    "idp:logs": "docker compose -f docker-compose.idp.yml logs -f"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

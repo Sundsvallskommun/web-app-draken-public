@@ -28,6 +28,7 @@ export enum FTCaseLabel {
   PARATRANSIT_NOTIFICATION_CHANGE = 'Anmälan förändring färdtjänst',
   PARATRANSIT_NOTIFICATION_REASSESSMENT = 'Anmälan omprövning färdtjänst',
   PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan busskort',
+  PARATRANSIT_FROM_KS = 'Ärende från Kontakt Sundsvall',
 }
 
 const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
@@ -46,6 +47,7 @@ const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
   PARATRANSIT_NOTIFICATION_CHANGE: 'Anmälan förändring',
   PARATRANSIT_NOTIFICATION_REASSESSMENT: 'Anmälan omprövning',
   PARATRANSIT_NOTIFICATION_BUS_CARD: 'Anmälan busskort',
+  PARATRANSIT_FROM_KS: 'Från Kontakt Sundsvall',
 };
 
 export enum MEXCaseLabel {

@@ -142,6 +142,13 @@ export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseTyp
       LeaseType.OTHER_FEE,
     ].includes(leaseType));
 
+/** Months a yearly invoice can be created in (invoicing.yearlyBillingMonth). December is the default. */
+export const YEARLY_BILLING_MONTHS = [
+  { month: 12, label: 'December' },
+  { month: 6, label: 'Juni' },
+] as const;
+const DEFAULT_YEARLY_BILLING_MONTH = 12;
+
 export const defaultKopeavtal: ContractData = {
   status: Status.DRAFT,
   type: ContractType.PURCHASE_AGREEMENT,
@@ -161,7 +168,12 @@ export const defaultLagenhetsarrende: ContractData = {
   status: Status.DRAFT,
   propertyDesignations: [],
   stakeholders: [],
-  invoicing: { invoicedIn: InvoicedIn.ADVANCE, invoiceInterval: IntervalType.YEARLY },
+  invoicing: {
+    invoicedIn: InvoicedIn.ADVANCE,
+    invoiceInterval: IntervalType.YEARLY,
+    billingEnabled: true,
+    yearlyBillingMonth: DEFAULT_YEARLY_BILLING_MONTH,
+  },
   notice: {
     terms: [
       {
@@ -392,30 +404,29 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 
 const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
-  let fees: Fees | undefined = undefined;
-  if (data.generateInvoice) {
-    const feeDescription = getFeeDescription(data.type, data.leaseType);
-    const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
-    // Index fields must be sent all-or-nothing (API rule fees.consistentIndexFields): only include
-    // them when indexation is on AND both indexYear and indexNumber are populated (> 0). Sending
-    // indexType/indexationRate alone (e.g. after fees was cleared on a type switch) is rejected.
-    const indexComplete =
-      data.indexAdjusted === 'true' && Number(data.fees?.indexYear) > 0 && Number(data.fees?.indexNumber) > 0;
-    fees = {
-      yearly: yearlyNumber,
-      monthly: 0,
-      total: yearlyNumber,
-      currency: 'SEK',
-      // [0] = standardized fee description, [1] = optional supplementary avitext (appended below).
-      additionalInformation: [feeDescription],
-      ...(indexComplete && {
-        indexYear: data.fees?.indexYear,
-        indexNumber: data.fees?.indexNumber,
-        indexationRate: data.fees?.indexationRate ?? 1,
-        indexType: data.fees?.indexType ?? 'KPI 80',
-      }),
-    };
-  }
+  // Fees are kept also when billing is turned off (invoicing.billingEnabled = false): the contract
+  // still describes the fee, it is just not invoiced.
+  const feeDescription = getFeeDescription(data.type, data.leaseType);
+  const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
+  // Index fields must be sent all-or-nothing (API rule fees.consistentIndexFields): only include
+  // them when indexation is on AND both indexYear and indexNumber are populated (> 0). Sending
+  // indexType/indexationRate alone (e.g. after fees was cleared on a type switch) is rejected.
+  const indexComplete =
+    data.indexAdjusted === 'true' && Number(data.fees?.indexYear) > 0 && Number(data.fees?.indexNumber) > 0;
+  const fees: Fees = {
+    yearly: yearlyNumber,
+    monthly: 0,
+    total: yearlyNumber,
+    currency: 'SEK',
+    // [0] = standardized fee description, [1] = optional supplementary avitext (appended below).
+    additionalInformation: [feeDescription],
+    ...(indexComplete && {
+      indexYear: data.fees?.indexYear,
+      indexNumber: data.fees?.indexNumber,
+      indexationRate: data.fees?.indexationRate ?? 1,
+      indexType: data.fees?.indexType ?? 'KPI 80',
+    }),
+  };
 
   // Strip personalNumber and stakeholderId from stakeholders before sending to API
   const stakeholders = ((data.stakeholders ?? []) as StakeholderWithPersonnumber[]).map(
@@ -429,10 +440,7 @@ const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       ...(data?.extension?.autoExtend && { leaseExtension: data.extension?.leaseExtension }),
     },
     fees: fees,
-    invoicing: {
-      invoicedIn: data.invoicing?.invoicedIn ?? InvoicedIn.ADVANCE,
-      invoiceInterval: data.invoicing?.invoiceInterval ?? IntervalType.YEARLY,
-    },
+    invoicing: toInvoicing(data),
     currentPeriod: data.currentPeriod,
     startDate: data.status === Status.ACTIVE ? data.startDate : data.currentPeriod?.startDate,
     endDate: data.endDate,
@@ -456,6 +464,22 @@ const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   };
 };
 
+/**
+ * The invoicing sent to the contract API: "Ska detta avtal generera en faktura?" maps to billingEnabled,
+ * and yearlyBillingMonth (mandatory for YEARLY) is only sent for yearly invoicing.
+ */
+const toInvoicing = (data: ContractData): NonNullable<Contract['invoicing']> => {
+  const invoiceInterval = data.invoicing?.invoiceInterval ?? IntervalType.YEARLY;
+  return {
+    invoicedIn: data.invoicing?.invoicedIn ?? InvoicedIn.ADVANCE,
+    invoiceInterval,
+    billingEnabled: data.generateInvoice === 'true',
+    ...(invoiceInterval === IntervalType.YEARLY && {
+      yearlyBillingMonth: data.invoicing?.yearlyBillingMonth ?? DEFAULT_YEARLY_BILLING_MONTH,
+    }),
+  };
+};
+
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
   const feeDescription = getFeeDescription(contract.type, contract.leaseType);
   const hasIndexation = !!(
@@ -470,6 +494,17 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
     indexAdjusted: hasIndexation ? 'true' : 'false',
+    generateInvoice: contract.invoicing?.billingEnabled === false ? 'false' : 'true',
+    // A contract without invoicing details keeps the defaults (yearly, in advance, billed). A yearly
+    // contract without a billing month gets December; other intervals have no billing month.
+    invoicing: contract.invoicing
+      ? {
+          ...contract.invoicing,
+          ...(contract.invoicing.invoiceInterval === IntervalType.YEARLY && {
+            yearlyBillingMonth: contract.invoicing.yearlyBillingMonth ?? DEFAULT_YEARLY_BILLING_MONTH,
+          }),
+        }
+      : defaultLagenhetsarrende.invoicing,
     fees: {
       ...contract.fees,
       additionalInformation: [feeDescription],

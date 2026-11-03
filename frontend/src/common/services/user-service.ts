@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { splitAdDisplayName } from '@common/utils/ad-display-name';
 
 import { ApiResponse, apiService } from './api-service';
 
@@ -89,8 +90,7 @@ export const getAdminUsers: () => Promise<Admin[]> = () => {
     .then((res) =>
       res.data.data.map((u) => ({
         displayName: u.displayName,
-        firstName: u.displayName.split(' ')[1],
-        lastName: u.displayName.split(' ')[0],
+        ...splitAdDisplayName(u.displayName),
         adAccount: u.name,
         id: u.guid,
       }))
@@ -100,12 +100,16 @@ export const getAdminUsers: () => Promise<Admin[]> = () => {
     });
 };
 
+export const getDisplayNameFromADUsername = (username: string | undefined, admins: Admin[]): string | undefined =>
+  admins.find((a) => a.adAccount === username)?.displayName;
+
 export const getInitialsFromADUsername: (username: string, admins: Admin[]) => string | undefined = (
   username,
   admins
 ) => {
   const admin = admins.find((a) => a.adAccount === username);
-  return admin ? `${admin.firstName[0]}${admin.lastName[0]}` : undefined;
+  const initials = admin ? `${admin.firstName.charAt(0)}${admin.lastName.charAt(0)}` : '';
+  return initials || undefined;
 };
 
 export const getUserInfo: (adAccount: string) => Promise<EmployeeInfo> = (adAccount) => {

@@ -195,28 +195,30 @@ describe('support-errand.service', () => {
   });
 
   describe('getNewErrandDefaults', () => {
-    it('returns the classification configured for each drake', () => {
-      expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
-      expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
-      expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
-      expect(getNewErrandDefaults('AOT')?.classification).toEqual({ category: 'AOT', type: 'AOT/UNCATEGORIZED' });
+    it('gives a classification only to ROB and KA', () => {
+      const withClassification = Object.entries(NEW_ERRAND_DEFAULTS)
+        .filter(([, defaults]) => defaults.classification)
+        .map(([application]) => application);
+      expect(withClassification.sort()).toEqual(['KA', 'ROB']);
+      expect(getNewErrandDefaults('KA')?.classification).toEqual({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' });
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'ROB', 'SE']);
+    });
+
+    it('gives the label drakes their default labels and no classification', () => {
+      expect(getNewErrandDefaults('KC')).toEqual({ labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' } });
+      expect(getNewErrandDefaults('LOP')?.classification).toBeUndefined();
+      expect(getNewErrandDefaults('AOT')).toEqual({ labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' } });
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
-      expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
-      expect(getNewErrandDefaults('AOT')).toEqual({
-        classification: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
-        labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
-      });
     });
 
-    it('returns undefined for an unknown or missing application', () => {
+    it('returns undefined for an unknown or missing application, and for MSVA which has no defaults', () => {
+      expect(getNewErrandDefaults('MSVA')).toBeUndefined();
       expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
       expect(getNewErrandDefaults(undefined)).toBeUndefined();
     });
@@ -251,6 +253,29 @@ describe('support-errand.service', () => {
     it('returns an empty list when the category is missing or the structure is absent', () => {
       expect(resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toEqual([]);
       expect(resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toEqual([]);
+    });
+
+    it('starts at the department in trees that have one, matching paths relative to the root', () => {
+      const rooted = [
+        label('CATEGORIZATION_ROOT/KSK', [
+          label('CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED', [label('CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED/X')]),
+        ]),
+      ];
+
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' }).map(l => l.resourcePath)).toEqual([
+        'CATEGORIZATION_ROOT/KSK',
+        'CATEGORIZATION_ROOT/KSK/NO_CASE_SPECIFIED',
+      ]);
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/MISSING' }).map(l => l.resourcePath)).toEqual([
+        'CATEGORIZATION_ROOT/KSK',
+      ]);
+      expect(resolveDefaultLabels(rooted, { department: 'MISSING', category: 'KSK/NO_CASE_SPECIFIED' })).toEqual([]);
+    });
+
+    it('does not let a relative path match the middle of a segment', () => {
+      const rooted = [label('ROOT/NOTKSK', [label('ROOT/NOTKSK/A')])];
+
+      expect(resolveDefaultLabels(rooted, { department: 'KSK', category: 'KSK/A' })).toEqual([]);
     });
   });
 

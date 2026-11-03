@@ -1,46 +1,33 @@
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { TenantKey } from '@common/interfaces/tenant';
 import { isKA } from '@common/services/application-service';
 import { buildEscalationEmailContent } from '@supportmanagement/components/templates/escalation-template';
 
-import {
-  getLabelCategory,
-  getLabelCategoryFromName,
-  getLabelSubType,
-  getLabelSubTypeFromName,
-  getLabelType,
-  getLabelTypeFromName,
-  SupportErrand,
-} from './support-errand-service';
+import type { SupportErrand } from './support-errand-service';
+import { resolveLabelPath } from './support-label-service';
 import { SupportMetadata } from './support-metadata-service';
 
 const ESCALATION_EMAIL_ATTRIBUTE_KEY = 'escalationEmail';
 
+const getEscalationEmailAttribute = (label: Label): string | undefined =>
+  label.attributes?.find((attribute) => attribute.key === ESCALATION_EMAIL_ATTRIBUTE_KEY)?.value;
+
 /**
- * Resolves the escalation email carried by the errand's labels, checking the most specific label
- * level first: SUBTYPE -> TYPE -> CATEGORY. The errand's stored labels do not carry attributes, so
- * each label is resolved back to the metadata label structure (via its resourcePath) to read its
- * escalationEmail attribute. Returns the first non-empty match, or undefined if none is found.
+ * Resolves the escalation email carried by the errand's labels from the lowest level up, so a type's email
+ * wins over its category's and a category's over its department's. The errand's stored labels do not carry
+ * attributes, so their path is resolved in the metadata label structure, whatever levels it has.
+ * Returns the first non-empty match, or undefined if none is found.
  */
 const getLabelEscalationEmail = (
   e: SupportErrand,
   metadata: SupportMetadata
 ): { label: string; value: string } | undefined => {
-  const subTypeResourcePath = getLabelSubType(e)?.resourcePath;
-  const typeResourcePath = getLabelType(e)?.resourcePath;
-  const categoryResourcePath = getLabelCategory(e, metadata)?.resourcePath;
+  const labelPathBottomUp = resolveLabelPath(metadata?.labels?.labelStructure, e.labels).reverse();
 
-  const resolvedLabels = [
-    subTypeResourcePath ? getLabelSubTypeFromName(subTypeResourcePath, metadata) : undefined,
-    typeResourcePath ? getLabelTypeFromName(typeResourcePath, metadata) : undefined,
-    categoryResourcePath ? getLabelCategoryFromName(categoryResourcePath, metadata) : undefined,
-  ];
-
-  for (const label of resolvedLabels) {
-    const escalationEmail = label?.attributes?.find(
-      (attribute) => attribute.key === ESCALATION_EMAIL_ATTRIBUTE_KEY
-    )?.value;
+  for (const label of labelPathBottomUp) {
+    const escalationEmail = getEscalationEmailAttribute(label);
     if (escalationEmail) {
-      return { label: label?.displayName ?? '', value: escalationEmail };
+      return { label: label.displayName ?? '', value: escalationEmail };
     }
   }
 

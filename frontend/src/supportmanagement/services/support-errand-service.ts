@@ -21,11 +21,18 @@ import { useCallback, useEffect } from 'react';
 import { CJsonParameter, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
+import {
+  getLegacyClassificationHeading,
+  hasClassification,
+  showsLegacyClassification,
+} from './legacy-classification-service';
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { CATEGORIZATION_CLASSIFICATIONS, getLabelDisplayName } from './support-label-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { ensureErrandSubscription } from './support-subscription-service';
 
 export enum ExternalIdType {
   PRIVATE = 'PRIVATE',
@@ -203,18 +210,27 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels?.length !== 0
-    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
+/** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
+export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
+  CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
+    errand.labels?.find((label) => label.classification === classification)
+  ).filter((label): label is Label => !!label);
 
-export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'TYPE');
+const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
+
+/** Heading under label categorization: the deepest label (type, else category, else department). */
+export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
+  // LEGACY_CLASSIFICATION
+  if (showsLegacyClassification(errand)) {
+    return getLegacyClassificationHeading(errand, metadata);
+  }
+  const deepest = getCategorizationLabels(errand).at(-1);
+  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
 };
 
-export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
-};
+export const getLabelType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'TYPE');
+
+const getLabelSubType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'SUBTYPE');
 
 export const getMostSpecificLabelType = (errand: SupportErrand) => getLabelSubType(errand) ?? getLabelType(errand);
 
@@ -229,10 +245,6 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
     .filter((l) => l?.labels && l.labels.length > 0)
     .flatMap((l) => l.labels ?? []) as Label[];
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
 };
 
 export enum Resolution {
@@ -263,6 +275,14 @@ export enum Resolution {
   REJECTED = 'REJECTED',
   WITHDRAWN = 'WITHDRAWN',
   DISMISSED = 'DISMISSED',
+  INFORMED = 'INFORMED',
+  GUIDED = 'GUIDED',
+  ACTIONED = 'ACTIONED',
+  PREPARED = 'PREPARED',
+  REFERRED = 'REFERRED',
+  HANDED_OVER = 'HANDED_OVER',
+  SOLVED_FEEDBACK_VIA_PHONE = 'SOLVED_FEEDBACK_VIA_PHONE',
+  SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX',
 }
 
 export enum ResolutionLabelLOP {
@@ -282,7 +302,18 @@ export enum ResolutionLabelIK {
   SENT_MESSAGE = 'Skickat ett meddelande',
 }
 
+/** KS codes selectable since 2026-10-21 (DRAKEN-5029), in picker order. */
 export enum ResolutionLabelKS {
+  INFORMED = 'Informerat',
+  GUIDED = 'Guidat',
+  ACTIONED = 'Åtgärdat',
+  PREPARED = 'Förberett',
+  REFERRED = 'Hänvisat',
+  HANDED_OVER = 'Överlämnat',
+}
+
+/** KS codes retired 2026-10-21. Display only, for errands closed before that. */
+export enum ResolutionLabelKSLegacy {
   SOLVED = 'Löst av Kontakt Sundsvall',
   REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
   CONNECTED = 'Kopplat samtal',
@@ -292,6 +323,27 @@ export enum ResolutionLabelKS {
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
   SECURE_APPBOX = 'SecureAppbox',
 }
+
+/** When to use each KS code; shown on demand in the close modal. */
+export const ResolutionDescriptionKS: Record<keyof typeof ResolutionLabelKS, string> = {
+  INFORMED:
+    'Jag har gett kunden den allmänna fakta som behövdes för att ärendet ska anses avslutat direkt vid första kontakt.',
+  GUIDED:
+    'Jag har hjälpt kunden att förstå sina alternativ eller navigera i en process så att de själva kan gå vidare.',
+  ACTIONED: 'Jag har använt det verksamhetsspecifika system som krävs och utfört ärendet enligt överenskommelsen.',
+  PREPARED: 'Jag har lagt grunden och samlat in underlag för att ärendet ska hanteras med enkelhet hos handläggaren.',
+  REFERRED:
+    'Ärendet ska inte hanteras av Kontakt Sundsvall. Jag har kopplat samtal eller hänvisat till telefontider där ärendet fortsätter.',
+  HANDED_OVER:
+    'Jag har skickat vidare ett specifikt ärende för formell handläggning eller politisk styrning då det kräver specialistkompetens.',
+};
+
+/** Code the source errand is closed with when forwarded or handed over. */
+export const forwardResolution = (): Resolution =>
+  isKC() ? Resolution.PREPARED : Resolution.REGISTERED_EXTERNAL_SYSTEM;
+
+/** KC's handler confirms or changes that code in the close modal right after (DRAKEN-5139). */
+export const choosesResolutionAfterForward = (): boolean => isKC();
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
@@ -315,6 +367,13 @@ export enum ResolutionLabelAOT {
   WITHDRAWN = 'Återkallat av sökanden',
   DISMISSED = 'Avskrivet',
   CLOSED = 'Avslutat',
+}
+
+export enum ResolutionLabelSE {
+  SOLVED = 'Löst',
+  SOLVED_FEEDBACK_VIA_PHONE = 'Löst och återkopplat via telefon',
+  SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'Löst och återkopplat via funktionsbrevlåda',
+  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
 }
 
 export enum ResolutionLabelLOK {
@@ -611,7 +670,12 @@ export const getSupportErrandByErrandNumber: (
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
     return true;
-  } else if (
+  }
+  if (appConfig.features.useLabelCategorization) {
+    // LEGACY_CLASSIFICATION: a classification alone counts as categorized
+    return !errand.id || (!errand.category && !hasClassification(errand));
+  }
+  if (
     !errand?.id ||
     !errand?.classification ||
     errand?.classification.category === 'NONE' ||
@@ -660,28 +724,18 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
-const classifiedValue = (value: string | undefined): string => (!value || value === 'NONE' ? '' : value);
-
-const categorizationLabelPath = (errand: ApiSupportErrand, classification: string): string =>
-  (appConfig.features.useThreeLevelCategorization
-    ? errand.labels?.find((label) => label.classification === classification)?.resourcePath
-    : undefined) ?? '';
-
-const errandCategory = (errand: ApiSupportErrand): string =>
-  classifiedValue(errand.classification?.category) || categorizationLabelPath(errand, 'CATEGORY');
-
-const errandType = (errand: ApiSupportErrand): string =>
-  classifiedValue(errand.classification?.type) || categorizationLabelPath(errand, 'TYPE');
-
-const errandSubType = (errand: ApiSupportErrand): string => categorizationLabelPath(errand, 'SUBTYPE');
-
-const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
+export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
+    const labelPath = (classification: string) =>
+      e.labels?.find((l) => l.classification === classification)?.resourcePath ?? '';
+    const classificationValue = (value?: string) => (value === 'NONE' ? '' : value) || '';
     const ierrand: SupportErrand = {
       ...e,
-      category: errandCategory(e),
-      type: errandType(e),
-      subType: errandSubType(e),
+      category: appConfig.features.useLabelCategorization
+        ? labelPath('CATEGORY') || labelPath('DEPARTMENT')
+        : classificationValue(e.classification?.category),
+      type: appConfig.features.useLabelCategorization ? labelPath('TYPE') : classificationValue(e.classification?.type),
+      subType: appConfig.features.useLabelCategorization ? labelPath('SUBTYPE') : '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -871,8 +925,10 @@ export const updateSupportErrand: (
     ...(formdata.priority && {
       priority: formdata.priority,
     }),
+    // With label categorization the category/type fields hold label paths, not a classification.
     ...(formdata.category &&
-      formdata.type && {
+      formdata.type &&
+      !appConfig.features.useLabelCategorization && {
         classification: {
           category: formdata.category,
           type: formdata.type,
@@ -911,6 +967,8 @@ export const updateSupportErrand: (
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
     .then(() => {
       responseObj.errand = true;
+      // Editing an errand is taken as "keep me posted on this one".
+      void ensureErrandSubscription(municipalityId, formdata.id);
       return responseObj;
     })
     .catch((e) => {
@@ -939,6 +997,12 @@ export const setSupportErrandAdmin: (
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
     .then(() => {
+      // Taking an errand yourself is the clearest "this one is mine" signal there is, so subscribe.
+      // Assigning it to someone else cannot subscribe them from here: a subscription always belongs
+      // to the logged in user, so that case has to be handled by the API.
+      if (assigner && assignedUserId === assigner) {
+        void ensureErrandSubscription(municipalityId, errandId);
+      }
       return true;
     })
     .catch((e) => {
@@ -1045,8 +1109,9 @@ export const forwardSupportErrand: (
   if (!data.recipient) {
     throw 'No recipient found. Cannot forward errand without recipient.';
   }
-  if (!data.message) {
-    throw 'No message found. Cannot forward errand without message.';
+  // Only the email is built from the message; a department forward (MEX, PT) may be sent without one.
+  if (data.recipient === 'EMAIL' && !data.message) {
+    throw 'No message found. Cannot forward errand by email without message.';
   }
 
   // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
@@ -1085,7 +1150,7 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     await assignSelfIfUnassigned();
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+    return closeSupportErrand(errand.id, municipalityId, forwardResolution());
   } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
@@ -1098,7 +1163,7 @@ export const forwardSupportErrand: (
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
       .then(async () => {
         await assignSelfIfUnassigned();
-        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+        return closeSupportErrand(errand.id!, municipalityId, forwardResolution());
       })
       .catch((e: AxiosError) => {
         throw new Error(e.response?.data as string);
