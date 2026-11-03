@@ -67,8 +67,13 @@ test('a referral of its own is not asked for an underlay nobody generated', () =
 });
 
 test('the name of a referral of its own is the title it is saved under, whoever saves it', () => {
-  expect(supportStatementForm({ title: 'Yttrande från fastighetsägaren' }).label).toBe(
-    'Yttrande från fastighetsägaren'
+  const named = { counterpartyName: 'Annan instans', title: 'Yttrande från fastighetsägaren' };
+
+  expect(supportStatementForm(named).label).toBe('Yttrande från fastighetsägaren');
+
+  expect(supportStatementForm({ counterpartyName: 'Annan instans', title: 'Annan instans' }).label).toBe('');
+  expect(supportStatementForm({ counterpartyName: 'Skatteverket', title: 'Remiss - Skatteverket - AOT-1' }).label).toBe(
+    ''
   );
 
   // The section saves every referral with a title built after the authority; the name wins over it.

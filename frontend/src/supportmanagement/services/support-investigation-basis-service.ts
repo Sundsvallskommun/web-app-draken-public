@@ -547,12 +547,15 @@ const fireSafetyLine = (statements: Statement[], metadata: SupportMetadata | und
  * The underlay reports the referral round: who was asked, what they answered and when. The template
  * prints "svar saknas, skickad ..." for one still out, so a referral is a row once it has gone out.
  */
+const standsOnADocumentOfItsOwn = (statement: Statement): boolean =>
+  isSupportStatementOtherCounterparty(statement.counterpartyName) && (statement.attachments ?? []).length > 0;
+
 const isAsked = (statement: Statement): boolean =>
   !!statement.sentAt ||
   !!statement.outcome ||
   !!statement.respondedAt ||
   !!statement.responseText?.trim() ||
-  (statement.attachments ?? []).length > 0;
+  standsOnADocumentOfItsOwn(statement);
 
 const counterpartyOf = (statement: Statement): string =>
   isSupportStatementOtherCounterparty(statement.counterpartyName)

@@ -109,9 +109,17 @@ const asDateField = (value: string | undefined): string =>
 const asTimestamp = (value: string): string | undefined =>
   value && dayjs(value).isValid() ? dayjs(value).startOf('day').format() : undefined;
 
+const nameGivenToTheReferral = (statement: Statement): string => {
+  const title = statement.title ?? '';
+  const isUnnamed =
+    !isSupportStatementOtherCounterparty(statement.counterpartyName) || title === statement.counterpartyName;
+
+  return isUnnamed ? '' : title;
+};
+
 export const supportStatementForm = (statement: Statement): SupportStatementForm => ({
   counterpartyName: statement.counterpartyName ?? '',
-  label: statement.title ?? '',
+  label: nameGivenToTheReferral(statement),
   dueAt: asDateField(statement.dueAt),
   question: statement.question ?? '',
   // Support Management has no field of its own for the free text, so it travels in the description.

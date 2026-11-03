@@ -400,7 +400,7 @@ export const SupportStatementCard: FC<{
     );
 
   const chooseCounterparty = async (counterpartyName: string) => {
-    set({ counterpartyName });
+    set({ counterpartyName, label: '' });
     if (!counterpartyName || statementId) return;
 
     setBusy(true);

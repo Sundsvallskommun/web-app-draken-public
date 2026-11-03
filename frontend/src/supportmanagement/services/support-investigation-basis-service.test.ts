@@ -464,6 +464,13 @@ test('a referral of its own stands under the name the handler gave its document'
   ]);
 });
 
+test('a referral whose underlay was generated but never sent is no row either', () => {
+  const generated = { counterpartyName: 'Skatteverket', attachments: [{ id: 'a1' }] };
+  const parameters = investigationBasisParameters(input({ statements: [generated] as never }));
+
+  expect(parameters.statements).toEqual([]);
+});
+
 test('a referral card opened but never sent is not a row at all', () => {
   expect(built().statements.map((statement) => statement.counterparty)).not.toContain('Miljökontoret');
 });
