@@ -7,6 +7,7 @@ import {
   saveSupportDecisionJsonParameter,
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
+  updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -245,6 +246,28 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     }),
   });
   expect(sentJson().value).toMatchObject({ decision: { executionDate: '2026-10-20', validFrom: '2026-11-01' } });
+});
+
+test('saving again after a failed JSON write updates the new decision, and keeps what was written', async () => {
+  vi.mocked(updateSupportDecision)
+    .mockReset()
+    .mockResolvedValue({ id: 'decision-1', status: 'DRAFT' } as never);
+  vi.mocked(saveSupportDecisionJsonParameter).mockRejectedValueOnce(new Error('json write failed'));
+  useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
+  await renderTab();
+  fillWhatTheCertificatePrints();
+
+  await expect(saveTheTab()).resolves.toBe(false);
+  expect(select('serving-area').value).toBe('Matsalen');
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(createSupportDecision).toHaveBeenCalledTimes(1);
+  expect(updateSupportDecision).toHaveBeenCalledWith(
+    'errand-id',
+    '2281',
+    'decision-1',
+    expect.objectContaining({ outcome: APPROVAL })
+  );
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {

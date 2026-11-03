@@ -76,6 +76,8 @@ export const useDecisionSave = ({
   const outcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
+  // Survives a failed JSON write, so that saving again updates the new decision instead of creating another.
+  const createdId = useRef<string>(undefined);
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
   const writeJsonLatest = useRef<(decisionId: string) => Promise<SupportDecision | undefined>>(undefined);
@@ -162,9 +164,11 @@ export const useDecisionSave = ({
     });
     let saved: SupportDecision | undefined;
     try {
-      saved = decision?.id
-        ? await updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
+      const existingId = decision?.id ?? createdId.current;
+      saved = existingId
+        ? await updateSupportDecision(supportErrand.id, municipalityId, existingId, written)
         : await createSupportDecision(supportErrand.id, municipalityId, written);
+      createdId.current = saved.id;
       const withJson = await writeDecisionJson(saved.id ?? '');
 
       onSaved(withJson ? [withJson] : [saved]);
