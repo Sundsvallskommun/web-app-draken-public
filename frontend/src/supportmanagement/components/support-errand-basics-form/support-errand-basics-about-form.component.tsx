@@ -18,6 +18,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { LabelCategorization } from './LabelCategorization';
+import { PremisesMunicipalitySelector } from './PremisesMunicipalitySelector';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
 export const SupportErrandBasicsAboutForm: FC<{
@@ -204,6 +205,12 @@ export const SupportErrandBasicsAboutForm: FC<{
             )}
           </FormControl>
         </div>
+
+        {isAOT() ? (
+          <div className="flex gap-xl w-1/2">
+            <PremisesMunicipalitySelector supportErrand={supportErrand} />
+          </div>
+        ) : null}
       </div>
 
       {appConfig.features.useExplanationOfTheCause ? (

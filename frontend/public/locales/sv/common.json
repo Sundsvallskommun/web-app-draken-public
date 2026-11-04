@@ -24,6 +24,10 @@
     "labels": {
       "IAF": "Detaljerad typ av avvikelse",
       "default": "Ärendetyp*"
+    },
+    "premises_municipality": {
+      "title": "Kommun",
+      "placeholder": "Välj kommun"
     }
   },
   "overview": {

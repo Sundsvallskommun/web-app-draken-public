@@ -643,6 +643,7 @@ export class SupportErrandController {
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
+      parameters: errandDefaults?.parameters,
     };
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');

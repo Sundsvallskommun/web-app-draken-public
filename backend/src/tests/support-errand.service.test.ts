@@ -210,7 +210,10 @@ describe('support-errand.service', () => {
     it('gives the label drakes their default labels and no classification', () => {
       expect(getNewErrandDefaults('KC')).toEqual({ labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' } });
       expect(getNewErrandDefaults('LOP')?.classification).toBeUndefined();
-      expect(getNewErrandDefaults('AOT')).toEqual({ labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' } });
+      expect(getNewErrandDefaults('AOT')).toEqual({
+        labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
+        parameters: [{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: ['2281'] }],
+      });
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {

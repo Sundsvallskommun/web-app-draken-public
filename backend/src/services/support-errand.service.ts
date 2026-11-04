@@ -183,6 +183,7 @@ export type LabelSpec = { department?: string; category: string; type?: string; 
 export interface NewErrandDefaults {
   classification?: { category: string; type: string };
   labels?: LabelSpec;
+  parameters?: Parameter[];
 }
 
 // Default classification and labels applied to a new empty errand, per application (drake).
@@ -214,6 +215,7 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
   },
   AOT: {
     labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
+    parameters: [{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: ['2281'] }],
   },
 };
 
