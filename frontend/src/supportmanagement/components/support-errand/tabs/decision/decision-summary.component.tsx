@@ -51,8 +51,6 @@ export const DecisionSummary: FC<{
         <dt className="text-dark-secondary">{t('common:decision.legal_basis')}</dt>
         <dd className="m-0">{decision.legalBasis || empty}</dd>
         <dt className="text-dark-secondary">{t('common:decision.case_number')}</dt>
-        <dd className="m-0">{stringAt(json?.caseRegistrationNumber) ?? empty}</dd>
-        <dt className="text-dark-secondary">{t('common:decision.other_case_number')}</dt>
         <dd className="m-0">{stringAt(json?.externalCaseRegistrationNumber) ?? empty}</dd>
         {premises ? (
           <>

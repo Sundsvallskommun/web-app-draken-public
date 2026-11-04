@@ -409,7 +409,6 @@
     "decided_at": "Beslutsdatum",
     "legal_basis": "Lagrum",
     "case_number": "Beslutsdiarienummer",
-    "other_case_number": "Annat diarienummer",
     "justification": "Beslutsmotivering",
     "justification_help": "Detta blir beslutets skäl.",
     "justification_placeholder": "Motivera beslutet...",

@@ -55,8 +55,6 @@ export interface DecisionParameterInput {
   /** The day the permit is issued, as the handler set it on the decision. */
   executionDate?: string;
   /** The decision's own registry number (Beslutsdiarienummer). */
-  caseRegistrationNumber?: string;
-  /** A registry number elsewhere, e.g. Timrå's (Annat diarienummer). */
   externalCaseRegistrationNumber?: string;
   /** The telephone to the premises as the handler has it, which starts as the application's answer. */
   premisesPhoneNumber?: string;
@@ -275,7 +273,6 @@ export const toDecisionJson = (
 ): JsonObject => {
   const common = {
     errandId: input.errand.id,
-    caseRegistrationNumber: text(input.caseRegistrationNumber),
     externalCaseRegistrationNumber: text(input.externalCaseRegistrationNumber),
     permitHolder: permitHolderOf(input.errand.customer?.[0]),
     decision: decisionOf(input, decision),
@@ -358,7 +355,7 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
   const salesPeriod = isRecord(json?.salesPeriod) ? json.salesPeriod : undefined;
   const beverages = strings(json?.beverages);
   const salesTypes = strings(json?.salesTypes);
-  const caseRegistrationNumber = stringAt(json?.caseRegistrationNumber);
+  const decisionCaseNumber = stringAt(json?.externalCaseRegistrationNumber) ?? errandNumber;
   const decisionDate = stringAt(decision.decisionDate);
   const issuer = stringAt(issuedBy.name);
 
@@ -400,8 +397,7 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     information: stringAt(json?.information),
     conditions: strings(json?.conditions)?.join('\n') || undefined,
     caseNumber: errandNumber,
-    decisionCaseNumber: caseRegistrationNumber,
-    otherCaseNumber: stringAt(json?.externalCaseRegistrationNumber),
+    decisionCaseNumber,
     executionDate: stringAt(decision.executionDate),
     issuedByNameAndTitle: join(issuer, stringAt(issuedBy.title)),
     issuedByUnit: stringAt(issuedBy.unit),
@@ -409,8 +405,8 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     decisionMaker: stringAt(decision.decisionMaker),
     decisionDate,
     validFrom: stringAt(decision.validFrom),
-    decisionDateAndCaseNumber: join(decisionDate, caseRegistrationNumber),
-    decisionOfficerAndCaseNumber: join(issuer, caseRegistrationNumber),
+    decisionDateAndCaseNumber: join(decisionDate, decisionCaseNumber),
+    decisionOfficerAndCaseNumber: join(issuer, decisionCaseNumber),
     replacesDecision: stringAt(decision.replacesDecision),
   };
 };

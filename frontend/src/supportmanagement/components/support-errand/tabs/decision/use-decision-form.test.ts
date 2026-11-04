@@ -35,8 +35,7 @@ const saved = (overrides: Partial<SupportDecision> = {}): SupportDecision =>
         key: 'permit',
         schemaId: '2281_aot_alcohol_decision_1.0',
         value: {
-          caseRegistrationNumber: 'KS 2026/123',
-          externalCaseRegistrationNumber: '2026/42',
+          externalCaseRegistrationNumber: 'KS 2026/123',
           premises: { phoneNumber: mockEnv.mockSecondaryPhoneNumber },
           servingArea: { description: 'Matsalen' },
           decision: { executionDate: '2026-10-20' },
@@ -72,8 +71,7 @@ test('a decision that exists fills the fields, and its conditions come in their 
     executionDate: '2026-10-20',
     servingAreaDescription: 'Matsalen',
     premisesPhoneNumber: mockEnv.mockSecondaryPhoneNumber,
-    caseRegistrationNumber: 'KS 2026/123',
-    externalCaseRegistrationNumber: '2026/42',
+    externalCaseRegistrationNumber: 'KS 2026/123',
     terms: ['Villkor A', 'Villkor B'],
   });
   expect(result.current.edited).toBe(false);

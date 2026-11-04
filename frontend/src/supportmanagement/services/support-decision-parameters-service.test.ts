@@ -45,7 +45,7 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
   errand: errand(),
   premises: { ...PREMISES, choice: EXISTING },
   executionDate: ISSUED,
-  caseRegistrationNumber: DECISION_CASE_NUMBER,
+  externalCaseRegistrationNumber: DECISION_CASE_NUMBER,
   user: { name: 'Test Testsson' },
   today: TODAY,
   ...overrides,
@@ -215,13 +215,11 @@ describe('the JSON of a serving permit', () => {
     errandType: 'PERMANENT_SERVING',
     form: servingForm,
     scope: servingScope,
-    externalCaseRegistrationNumber: '2026/42',
   });
 
   test('is shaped as the permit in PartyAssets', () => {
     expect(saved).toMatchObject({
-      caseRegistrationNumber: DECISION_CASE_NUMBER,
-      externalCaseRegistrationNumber: '2026/42',
+      externalCaseRegistrationNumber: DECISION_CASE_NUMBER,
       servingPermitType: 'PERMANENT_SERVING',
       permitHolder: {
         name: mockEnv.mockCompanyName,
@@ -428,15 +426,16 @@ describe('what the permit needs of the errand', () => {
     ).toEqual(['validFrom', 'servingAreaDescription']);
   });
 
-  test('the decision saves both case numbers, and only the decision case number is waited for', () => {
+  test('the decision case number is saved as the external one, and caseRegistrationNumber is ignored', () => {
     const saved = toDecisionJson('FOLKOLSANMALAN', input({ externalCaseRegistrationNumber: ' 2026/42 ' }), DECISION);
 
-    expect(saved).toMatchObject({
-      caseRegistrationNumber: DECISION_CASE_NUMBER,
-      externalCaseRegistrationNumber: '2026/42',
-    });
+    expect(saved.externalCaseRegistrationNumber).toBe('2026/42');
+    expect(saved).not.toHaveProperty('caseRegistrationNumber');
     expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
-    expect(missingDecisionInputs('FOLKOLSANMALAN', json('FOLKOLSANMALAN', { caseRegistrationNumber: '' }))).toEqual([
+    expect(
+      missingDecisionInputs('FOLKOLSANMALAN', json('FOLKOLSANMALAN', { externalCaseRegistrationNumber: '' }))
+    ).toEqual(['decisionCaseNumber']);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', { caseRegistrationNumber: DECISION_CASE_NUMBER })).toEqual([
       'decisionCaseNumber',
     ]);
   });
@@ -493,7 +492,7 @@ describe('every permit', () => {
 
   test('a permit without a record of its own still carries the holder, the premises and the decision', () => {
     expect(Object.keys(json('FOLKOLSANMALAN', { form: servingForm })).sort()).toEqual(
-      ['caseRegistrationNumber', 'conditions', 'decision', 'permitHolder', 'premises'].sort()
+      ['conditions', 'decision', 'externalCaseRegistrationNumber', 'permitHolder', 'premises'].sort()
     );
   });
 
