@@ -28,7 +28,7 @@ const makeController = (events: Event[]) => {
 const fetchEvents = async (controller: SupportHistoryController) => {
   const res = mockRes<PageEvent>();
   await controller.fetchSupportEvents(mockReq(), mockSupportErrandId, mockMunicipalityId, 0, 100, '', res as never);
-  return res.body as PageEvent & { content: (Event & { executedByName?: string })[] };
+  return res.body as Omit<PageEvent, 'content'> & { content: (Event & { executedByName?: string })[] };
 };
 
 describe('SupportHistoryController', () => {
