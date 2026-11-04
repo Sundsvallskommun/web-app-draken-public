@@ -458,6 +458,11 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
 
+const MIGRATED_ERRAND_CHANNEL: keyof typeof Channels = 'MIGRATION';
+
+export const isSupportMigratedErrand = (errand: Pick<SupportErrand, 'channel'> | undefined): boolean =>
+  errand?.channel === MIGRATED_ERRAND_CHANNEL;
+
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
     errand?.status === Status.SOLVED ||

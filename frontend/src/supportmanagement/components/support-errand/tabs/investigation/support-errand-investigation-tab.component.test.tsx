@@ -54,6 +54,9 @@ vi.mock('./investigation-disclosure.component', () => ({
     return null;
   },
 }));
+vi.mock('./migrated-investigation.component', () => ({
+  MigratedInvestigation: () => <div data-testid="migrated-investigation" />,
+}));
 vi.mock('./inspection-protocol.component', () => ({
   InspectionProtocol: () => <div data-testid="inspection-protocol" />,
 }));
@@ -342,4 +345,13 @@ test('a Lagrum somebody has written in is left as it stands', async () => {
 
   expect(renderTemplateHtml).not.toHaveBeenCalled();
   expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
+});
+
+test('a migrated errand is read through the view for migrated investigations', async () => {
+  useSupportStore.setState({ supportErrand: { id: ERRAND_ID, channel: 'MIGRATION' } as never });
+
+  mountTab();
+
+  expect(await screen.findByTestId('migrated-investigation')).toBeTruthy();
+  expect(completeSupportInvestigationSections).not.toHaveBeenCalled();
 });
