@@ -4,14 +4,19 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagement/data-contracts';
+import { DifferenceResponse, Event, PageEvent } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { PersonNameService } from '@/services/person-name.service';
+
+const getExecutedBy = (event: Event): string | undefined => event.metadata?.find(item => item.key === 'ExecutedBy')?.value;
 
 @Controller()
 export class SupportHistoryController {
   private apiService = new ApiService();
+  private personNameService = new PersonNameService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
@@ -34,7 +39,23 @@ export class SupportHistoryController {
     }).toString();
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/events?${query}`;
     const res = await this.apiService.get<PageEvent>({ url }, req.user);
-    return response.status(200).send(res.data);
+    const content = await this.withExecutedByNames(municipalityId, res.data.content ?? [], req.user);
+    return response.status(200).send({ ...res.data, content });
+  }
+
+  private async withExecutedByNames(municipalityId: string, events: Event[], user: User): Promise<(Event & { executedByName?: string })[]> {
+    const identifiers = [...new Set(events.map(getExecutedBy).filter((identifier): identifier is string => !!identifier))];
+    const names = new Map(
+      await Promise.all(
+        identifiers.map(
+          async (identifier): Promise<[string, string]> => [
+            identifier,
+            await this.personNameService.getNameByIdentifier(municipalityId, identifier, user),
+          ],
+        ),
+      ),
+    );
+    return events.map(event => ({ ...event, executedByName: names.get(getExecutedBy(event) ?? '') }));
   }
 
   @Get('/supporthistory/:municipalityId/:id/revisions/difference/')

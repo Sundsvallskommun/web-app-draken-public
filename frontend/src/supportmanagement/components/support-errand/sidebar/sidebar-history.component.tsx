@@ -204,7 +204,7 @@ export const SidebarHistory: React.FC<{}> = () => {
                   <small className="mb-6">
                     {/* TODO User image or initials for Avatar */}
                     <Avatar rounded size="sm" className="mr-8" />
-                    {group.latest.metadata.find((a) => a.key === 'ExecutedBy')?.value}
+                    {group.latest.executedByName}
                   </small>
                   {group.events.map((event) => (
                     <small key={event.id ?? event.message}>
