@@ -120,6 +120,58 @@ test.describe('Message tab', () => {
     expect(request.postDataJSON()).toEqual({ messageIds: ['d553003a-da2c-42d1-84aa-68b53aa7ea5f'] });
   });
 
+  test('can choose a message template for Mina sidor', async ({ page, mockRoute, env }) => {
+    // Mina sidor is only offered when the owner has a person number.
+    const errandWithPersonNumber = {
+      ...mockSupportErrand,
+      stakeholders: mockSupportErrand.stakeholders.map((stakeholder) =>
+        stakeholder.role === 'PRIMARY' ? { ...stakeholder, personNumber: env.mockPersonNumber } : stakeholder
+      ),
+    };
+    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', errandWithPersonNumber, {
+      method: 'GET',
+    });
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, errandWithPersonNumber, {
+      method: 'GET',
+    });
+    const toTemplate = (identifier: string, name: string, text: string) => ({
+      identifier,
+      name,
+      content: Buffer.from(text).toString('base64'),
+    });
+    await mockRoute(
+      '**/templates?*',
+      {
+        data: [
+          toTemplate('kc.mypages.default', 'Standardsvar', '<p>Text för standardsvar</p>'),
+          toTemplate('kc.mypages.paymentplan', 'Avbetalningsplan', '<p>Text för avbetalningsplan</p>'),
+          toTemplate('kc.mypages.signature', 'Signatur', '<p>Signatur för Mina sidor</p>'),
+        ],
+        message: 'success',
+      },
+      { method: 'GET' }
+    );
+
+    await page.reload();
+    await page.getByRole('tab', { name: /Meddelanden/ }).click();
+    await page.locator('[data-cy="new-message-button"]').click();
+    const templateSelect = page.locator('select#messageTemplate');
+    const messageBody = page.locator('[data-cy="decision-richtext-wrapper"]').first();
+
+    await page.locator('[data-cy="useMinasidor-radiobutton-true"]').check({ force: true });
+    await expect(templateSelect).toHaveValue('kc.mypages.default');
+    await expect(templateSelect.locator('option')).toHaveCount(2);
+    await expect(messageBody).toContainText('Text för standardsvar');
+    await expect(messageBody).toContainText('Signatur för Mina sidor');
+
+    await templateSelect.selectOption('kc.mypages.paymentplan');
+    await expect(messageBody).toContainText('Text för avbetalningsplan');
+    await expect(messageBody).not.toContainText('Text för standardsvar');
+
+    await page.locator('[data-cy="useEmail-radiobutton-true"]').check({ force: true });
+    await expect(templateSelect).toBeHidden();
+  });
+
   test('sends sms', async ({ page }) => {
     await page.locator('[data-cy="new-message-button"]').click();
 
