@@ -16,7 +16,6 @@ export const SUPPORT_STATEMENT_COUNTERPARTIES: SupportStatementCounterparty[] = 
     postalAddress: '851 02 Sundsvall',
   },
   { name: 'Miljökontoret', key: 'ENVIRONMENT_OFFICE' },
-  { name: 'Kreditupplysning (Syna)', key: 'CREDIT_REPORT' },
 ];
 
 export const SUPPORT_STATEMENT_OTHER_COUNTERPARTY = 'Annan instans';
