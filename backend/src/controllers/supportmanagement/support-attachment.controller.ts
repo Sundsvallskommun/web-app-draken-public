@@ -13,6 +13,10 @@ import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
 
+// SM can promise more bytes than it sends, and the response then stalls for about two minutes before it fails.
+// Axios applies this as an idle limit once the response has started, so large files keep loading while data flows.
+export const ATTACHMENT_STALL_TIMEOUT_MS = 30000;
+
 interface SupportAttachment {
   id: string;
   fileName: string;
@@ -51,7 +55,7 @@ export class SupportAttachmentController {
     @Res() response: any,
   ): Promise<SingleSupportAttachment> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
-    const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user);
+    const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer', timeout: ATTACHMENT_STALL_TIMEOUT_MS }, req.user);
     const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
     const b64 = Buffer.from(binaryString, 'binary').toString('base64');
     return response.send(b64);
