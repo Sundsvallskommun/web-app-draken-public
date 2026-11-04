@@ -1,6 +1,6 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isLOK } from '@common/services/application-service';
+import { isAOT, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -69,7 +69,11 @@ export const SupportErrandBasicsAboutForm: FC<{
 
       {appConfig.features.useLabelCategorization ? (
         <div className="w-full flex gap-20">
-          <LabelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          <LabelCategorization
+            readOnly={isAOT() && supportErrand.channel === 'ESERVICE'}
+            supportErrand={supportErrand}
+            supportMetadata={supportMetadata!}
+          />
         </div>
       ) : null}
 
