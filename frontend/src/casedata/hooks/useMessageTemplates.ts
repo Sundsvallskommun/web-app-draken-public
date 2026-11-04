@@ -1,5 +1,9 @@
 import { User } from '@common/interfaces/user';
-import { EMAIL_INFORMATION_TEXT, MessageTemplates } from '@common/services/message-template-body-service';
+import {
+  EMAIL_INFORMATION_TEXT,
+  MessageTemplateInfo,
+  MessageTemplates,
+} from '@common/services/message-template-body-service';
 import { getTemplateRole, getTemplateType } from '@common/utils/template-metadata';
 import {
   fetchTemplatesWithMetadata,
@@ -60,35 +64,15 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
           email_information: EMAIL_INFORMATION_TEXT,
         });
 
-        const emailTemplates = appResult.templates.filter((t) => {
-          return (
-            getTemplateType(t) === 'email' &&
-            !['signature', 'publicdocuments', 'closing'].includes(getTemplateRole(t) || '')
-          );
-        });
+        const myPagesSignature = getContentWithFallback('mypages.signature', { user: userName });
 
-        // If no app-specific email templates, use default ones
-        const fallbackEmailTemplates =
-          emailTemplates.length === 0
-            ? defaultResult.templates.filter((t) => {
-                return (
-                  getTemplateType(t) === 'email' &&
-                  !['signature', 'publicdocuments', 'closing'].includes(getTemplateRole(t) || '')
-                );
-              })
-            : [];
-
-        const smsTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'sms' && !['signature', 'closing'].includes(getTemplateRole(t) || '');
-        });
-
-        // If no app-specific sms templates, use default ones
-        const fallbackSmsTemplates =
-          smsTemplates.length === 0
-            ? defaultResult.templates.filter((t) => {
-                return getTemplateType(t) === 'sms' && !['signature', 'closing'].includes(getTemplateRole(t) || '');
-              })
-            : [];
+        // App-specific templates of the type, falling back to the default ones when there are none
+        const getSelectableTemplates = (type: string, excludedRoles: string[]) => {
+          const isSelectable = (template: MessageTemplateInfo) =>
+            getTemplateType(template) === type && !excludedRoles.includes(getTemplateRole(template) || '');
+          const appTemplates = appResult.templates.filter(isSelectable);
+          return appTemplates.length > 0 ? appTemplates : defaultResult.templates.filter(isSelectable);
+        };
 
         const byId: Record<string, string> = {};
         for (const t of defaultResult.templates) {
@@ -106,8 +90,10 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
           smsTemplate,
           smsSignature,
           emailSignature,
-          emailTemplates: [...emailTemplates, ...fallbackEmailTemplates],
-          smsTemplates: [...smsTemplates, ...fallbackSmsTemplates],
+          myPagesSignature,
+          emailTemplates: getSelectableTemplates('email', ['signature', 'publicdocuments', 'closing']),
+          smsTemplates: getSelectableTemplates('sms', ['signature', 'closing']),
+          myPagesTemplates: getSelectableTemplates('mypages', ['signature', 'closing']),
           byId,
           app,
         });
