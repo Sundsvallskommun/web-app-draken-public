@@ -4,6 +4,7 @@ import { renderTemplateHtml } from '@common/services/template-render-service';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { type ExaminedInvestigation, investigationVariantFor } from '@supportmanagement/investigations';
+import { isSupportMigratedErrand } from '@supportmanagement/services/support-errand-service';
 import {
   missingSupportInvestigationSections,
   sectionKeyOf,
@@ -19,7 +20,6 @@ import {
   saveSupportInvestigationSection,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
-import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -27,16 +27,8 @@ import { InspectionProtocol } from './inspection-protocol.component';
 import { InvestigationBasis } from './investigation-basis.component';
 import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
 import { SectionDisclosure } from './investigation-disclosure.component';
-
-const asDate = (value: string | undefined): string =>
-  value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '-';
-
-const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex flex-col">
-    <span className="text-small text-dark-secondary">{label}</span>
-    <span>{value}</span>
-  </div>
-);
+import { asInvestigationDate, InvestigationMetaItem } from './investigation-meta.component';
+import { MigratedInvestigation } from './migrated-investigation.component';
 
 const conclusionEditsOf = (investigation: Investigation | undefined) => ({
   proposal: investigation?.summary ?? '',
@@ -57,6 +49,10 @@ interface InvestigationTabProps {
 export const SupportErrandInvestigationTab: React.FC<InvestigationTabProps> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const variant = useMemo(() => investigationVariantFor(supportErrand), [supportErrand]);
+
+  if (isSupportMigratedErrand(supportErrand)) {
+    return <MigratedInvestigation setHasContent={props.setHasContent} />;
+  }
 
   return variant.body === 'protocol' ? (
     <InspectionProtocol writable={props.writable} setHasContent={props.setHasContent} />
@@ -352,11 +348,23 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       {!isLoading && !error && investigation ? (
         <div className="flex flex-col gap-24">
           <div className="flex flex-wrap gap-40">
-            <MetaItem label={t('common:investigation.investigator')} value={investigation.investigatorUserId ?? '-'} />
-            <MetaItem label={t('common:investigation.started_at')} value={asDate(investigation.startedAt)} />
-            <MetaItem label={t('common:investigation.due_at')} value={asDate(investigation.dueAt)} />
+            <InvestigationMetaItem
+              label={t('common:investigation.investigator')}
+              value={investigation.investigatorUserId ?? '-'}
+            />
+            <InvestigationMetaItem
+              label={t('common:investigation.started_at')}
+              value={asInvestigationDate(investigation.startedAt)}
+            />
+            <InvestigationMetaItem
+              label={t('common:investigation.due_at')}
+              value={asInvestigationDate(investigation.dueAt)}
+            />
             {isSupportInvestigationCompleted(investigation) ? (
-              <MetaItem label={t('common:investigation.status_completed')} value={asDate(investigation.completedAt)} />
+              <InvestigationMetaItem
+                label={t('common:investigation.status_completed')}
+                value={asInvestigationDate(investigation.completedAt)}
+              />
             ) : null}
           </div>
           <p className="text-small text-dark-secondary italic m-0">{t('common:investigation.processing_time')}</p>

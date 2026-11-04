@@ -224,6 +224,17 @@
     "started_at": "Utredning påbörjad",
     "due_at": "Beslutsfrist",
     "starting": "Utredningen påbörjas",
+    "migrated": {
+      "intro": "Ärendet är migrerat. Utredningen visas som den skrevs i det tidigare systemet och går inte att ändra här.",
+      "none": "Det migrerade ärendet har ingen utredning.",
+      "title": "Utredningens rubrik",
+      "description": "Beskrivning",
+      "summary": "Sammanfattning",
+      "conclusion": "Slutsats",
+      "files": "Kopplade filer",
+      "files_none": "Inga filer är kopplade till utredningen. Ärendets bilagor finns under fliken Bilagor.",
+      "open_failed": "Filen kunde inte hämtas."
+    },
     "section_not_built": "Den här delen av utredningen är inte byggd än.",
     "unsaved": "Osparade ändringar",
     "saving": "Sparar",
