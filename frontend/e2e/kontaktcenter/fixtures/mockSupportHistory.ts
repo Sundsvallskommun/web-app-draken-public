@@ -11,6 +11,7 @@ export const mockSupportHistory = {
       historyReference: 'b88c8c71-9687-4a79-91ae-1618acab14fa',
       sourceType: 'Note',
       subType: 'NOTE',
+      executedByName: 'My Testsson',
       metadata: [
         {
           key: 'NoteId',

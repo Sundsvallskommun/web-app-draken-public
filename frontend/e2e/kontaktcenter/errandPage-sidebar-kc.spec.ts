@@ -501,6 +501,9 @@ test.describe('errand page', () => {
     // Events sharing a requestGroupId are one entry in the log, so there are fewer entries than
     // events: three grouped operations plus two events that stand alone.
     await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(5);
+    const latestEntry = page.locator('[data-cy="history-event-req-group-0"]');
+    await expect(latestEntry).toContainText('My Testsson');
+    await expect(latestEntry).not.toContainText('kctest');
     await page.locator('[data-cy="history-log"] div button').first().click();
     await expect(page.locator('[data-cy="history-event-details"]')).toContainText(
       'Noteringen togs bort av handläggaren.'

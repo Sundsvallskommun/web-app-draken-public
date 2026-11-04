@@ -15,6 +15,7 @@ import {
   ResolutionLabelKSLegacy,
   ResolutionLabelLOK,
   ResolutionLabelLOP,
+  ResolutionLabelSE,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents, groupSupportEvents } from '@supportmanagement/services/support-history-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
@@ -69,6 +70,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       ...Object.entries(ResolutionLabelIK),
       ...Object.entries(ResolutionLabelLOK),
       ...Object.entries(ResolutionLabelBOU),
+      ...Object.entries(ResolutionLabelSE),
     ].forEach((e) => {
       _km[e[0]] = e[1];
     });
@@ -202,7 +204,7 @@ export const SidebarHistory: React.FC<{}> = () => {
                   <small className="mb-6">
                     {/* TODO User image or initials for Avatar */}
                     <Avatar rounded size="sm" className="mr-8" />
-                    {group.latest.metadata.find((a) => a.key === 'ExecutedBy')?.value}
+                    {group.latest.executedByName}
                   </small>
                   {group.events.map((event) => (
                     <small key={event.id ?? event.message}>
