@@ -5,9 +5,9 @@ export const TOBACCO_SALES_INVESTIGATION: ExaminedInvestigation = {
   body: 'sections',
   introKey: 'common:investigation.intro_tobacco',
   sections: [
+    'persons_of_influence',
     'statements',
     'ownership',
-    'persons_of_influence',
     'financial_suitability',
     'sales_point',
     'lease',

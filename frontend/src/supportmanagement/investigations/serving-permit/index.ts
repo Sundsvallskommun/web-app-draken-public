@@ -5,9 +5,9 @@ export const SERVING_PERMIT_INVESTIGATION: ExaminedInvestigation = {
   body: 'sections',
   introKey: 'common:investigation.intro',
   sections: [
+    'persons_of_influence',
     'statements',
     'ownership',
-    'persons_of_influence',
     'financial_suitability',
     'premises',
     'lease',
