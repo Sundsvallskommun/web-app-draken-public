@@ -45,6 +45,9 @@ vi.mock('react-hook-form', () => ({
 
 const EDWIN = 'edwin';
 
+const ALCOHOL_LABEL = { classification: 'CATEGORY', resourceName: 'ALCOHOL' };
+const TOBACCO_LABEL = { classification: 'CATEGORY', resourceName: 'TOBACCO' };
+
 const edwin = withPbi(
   {
     internalId: EDWIN,
@@ -76,7 +79,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   form.customer = [];
   form.contacts = [edwin];
-  useSupportStore.setState({ supportErrand: { id: 'e1', status: 'ONGOING', stakeholders: [] } as never });
+  useSupportStore.setState({
+    supportErrand: { id: 'e1', status: 'ONGOING', stakeholders: [], labels: [ALCOHOL_LABEL] } as never,
+  });
   useUserStore.setState({ user: { permissions: { canEditSupportManagement: true } } } as never);
 });
 
@@ -258,4 +263,28 @@ test('nobody marked shows the empty notice, and a read-only section offers no wa
 
   expect(document.querySelector('[data-cy="pbi-examination-empty"]')).toBeTruthy();
   expect(document.querySelector('[data-cy="pbi-add-open"]')).toBeNull();
+});
+
+test('a tobacco errand is examined without a knowledge test', () => {
+  useSupportStore.setState({
+    supportErrand: { id: 'e1', status: 'ONGOING', stakeholders: [], labels: [TOBACCO_LABEL] } as never,
+  });
+
+  mountSection();
+
+  expect(fieldOf('pbi-examination')).toBeTruthy();
+  expect(fieldOf('suitability-assessment')).toBeTruthy();
+  expect(fieldOf('knowledge-test-add')).toBeNull();
+  expect(fieldOf('knowledge-test-empty')).toBeNull();
+});
+
+test('a knowledge test already written on a tobacco errand is not shown either', () => {
+  useSupportStore.setState({
+    supportErrand: { id: 'e1', status: 'ONGOING', stakeholders: [], labels: [TOBACCO_LABEL] } as never,
+  });
+  form.contacts = [tested({ type: 'OTHER', status: 'BOOKED', testedAt: '', comment: '' })];
+
+  mountSection();
+
+  expect(testFieldOf('status')).toBeNull();
 });

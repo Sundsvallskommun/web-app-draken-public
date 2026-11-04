@@ -127,9 +127,13 @@ test('an investigation that lacks an examination is completed with it, once, and
   await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalledTimes(1));
 
   expect(completeSupportInvestigationSections).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation-1', [
-    { sectionKey: 'statements', heading: 'common:investigation.sections.statements', sortOrder: 1 },
-    { sectionKey: 'ownership', heading: 'common:investigation.sections.ownership', sortOrder: 2 },
-    { sectionKey: 'persons_of_influence', heading: 'common:investigation.sections.persons_of_influence', sortOrder: 3 },
+    {
+      sectionKey: 'persons_of_influence',
+      heading: 'common:investigation.sections.persons_of_influence',
+      sortOrder: 1,
+    },
+    { sectionKey: 'statements', heading: 'common:investigation.sections.statements', sortOrder: 2 },
+    { sectionKey: 'ownership', heading: 'common:investigation.sections.ownership', sortOrder: 3 },
     { sectionKey: 'premises', heading: 'common:investigation.sections.premises', sortOrder: 5 },
     { sectionKey: 'lease', heading: 'common:investigation.sections.lease', sortOrder: 6 },
     { sectionKey: 'fire_safety', heading: 'common:investigation.sections.fire_safety', sortOrder: 7 },
@@ -158,9 +162,9 @@ test('a tobacco permit is completed with the examinations its own type asks for'
 
   const asked = vi.mocked(completeSupportInvestigationSections).mock.calls[0][3];
   expect(asked.map((section) => section.sectionKey)).toEqual([
+    'persons_of_influence',
     'statements',
     'ownership',
-    'persons_of_influence',
     'sales_point',
     'lease',
     'self_monitoring',

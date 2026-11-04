@@ -17,6 +17,7 @@ import {
   pbiRoles,
   stakeholderName,
   SUPPORT_PARAMETER_VALUE_MAX_LENGTH,
+  supportErrandTakesKnowledgeTests,
   withAssessment,
   withKnowledgeTests,
   withMotivation,
@@ -193,18 +194,19 @@ const KnowledgeTestBlock: FC<BlockProps> = ({ person, writable, onChange }) => {
   );
 };
 
-const PersonCard: FC<BlockProps & { engagements: LegalEntityEngagement[] }> = ({
+const PersonCard: FC<BlockProps & { engagements: LegalEntityEngagement[]; takesKnowledgeTests: boolean }> = ({
   person,
   engagements,
   writable,
   onChange,
+  takesKnowledgeTests,
 }) => (
   <div className="border-1 rounded-groups p-16 flex flex-col gap-16" data-cy={`pbi-examination-${person.internalId}`}>
     <PersonHeading person={person} engagements={engagements} />
     <MotivationBlock person={person} writable={writable} onChange={onChange} />
     <EngagementsBlock person={person} writable={writable} onChange={onChange} />
     <SuitabilityBlock person={person} writable={writable} onChange={onChange} />
-    <KnowledgeTestBlock person={person} writable={writable} onChange={onChange} />
+    {takesKnowledgeTests ? <KnowledgeTestBlock person={person} writable={writable} onChange={onChange} /> : null}
   </div>
 );
 
@@ -222,6 +224,7 @@ export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writab
     (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
   )?.externalId;
   const pbi = useSupportPbi(organizationPartyId);
+  const takesKnowledgeTests = supportErrandTakesKnowledgeTests(supportErrand);
   const canWrite = writable && pbi.canEdit;
 
   return (
@@ -243,6 +246,7 @@ export const SupportPbiExaminationSection: FC<{ writable: boolean }> = ({ writab
             engagements={pbi.engagements}
             writable={canWrite}
             onChange={pbi.replace}
+            takesKnowledgeTests={takesKnowledgeTests}
           />
         ))}
 

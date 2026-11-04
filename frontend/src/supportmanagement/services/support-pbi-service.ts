@@ -3,6 +3,7 @@ import { engagementRoles, type LegalEntityPersonEngagement } from '@common/servi
 import {
   emptyContact,
   ExternalIdType,
+  SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
@@ -277,6 +278,11 @@ export const withAssessment = <T extends Pick<SupportStakeholderFormModel, 'para
   ...stakeholder,
   parameters: [...otherParameters(stakeholder), ...pbiParameters({ ...pbiOf(stakeholder), ...verdict })],
 });
+
+const ALCOHOL_CATEGORY = 'ALCOHOL';
+
+export const supportErrandTakesKnowledgeTests = (errand: Pick<SupportErrand, 'labels'> | undefined): boolean =>
+  !!errand?.labels?.some((label) => label.classification === 'CATEGORY' && label.resourceName === ALCOHOL_CATEGORY);
 
 /** The same stakeholder with the knowledge tests written beside the marking. The verdict is examined apart and left alone. */
 export const withKnowledgeTests = <T extends Pick<SupportStakeholderFormModel, 'parameters'>>(

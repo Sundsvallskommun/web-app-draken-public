@@ -5,9 +5,9 @@ import { SUPPORT_INVESTIGATION_SECTIONS } from '../services/support-investigatio
 import { examinedSections, INVESTIGATION_VARIANTS, investigationVariantFor } from './index';
 
 const SERVING = [
+  'persons_of_influence',
   'statements',
   'ownership',
-  'persons_of_influence',
   'financial_suitability',
   'premises',
   'lease',
@@ -21,9 +21,9 @@ const SERVING = [
 ];
 
 const TOBACCO = [
+  'persons_of_influence',
   'statements',
   'ownership',
-  'persons_of_influence',
   'financial_suitability',
   'sales_point',
   'lease',
