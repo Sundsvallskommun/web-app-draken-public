@@ -3,6 +3,7 @@
 
 import errorMiddleware from '@middlewares/error.middleware';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { useExpressServer } from 'routing-controllers';
 import request from 'supertest';
 
@@ -31,6 +32,8 @@ const caseWorker = (username: string, permissions: Partial<User['permissions']> 
 
 const buildApp = (user: User) => {
   const app = express();
+  // App-wide ceiling far above anything the tests send, so it never masks the person lookup limiter.
+  app.use(rateLimit({ windowMs: 60_000, limit: 10_000 }));
   app.use(express.json());
   app.use((req, _res, next) => {
     Object.assign(req, { user, isAuthenticated: () => true });
