@@ -89,17 +89,6 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
-        <DecisionField id="decision-legal-basis" label={t('common:decision.legal_basis')}>
-          <Input
-            className="w-full max-w-[28rem]"
-            value={values.legalBasis}
-            onChange={(event) => set('legalBasis', event.target.value)}
-            disabled={disabled}
-          />
-        </DecisionField>
-      </DecisionCard>
-
-      <DecisionCard>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
           <DecisionField id="decision-valid-from" label={t('common:decision.valid_from')} required={printed}>
             <Input
