@@ -47,27 +47,15 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-          <DecisionField id="decision-case-number" label={t('common:decision.case_number')} required>
-            <Input
-              className="w-full"
-              value={values.caseRegistrationNumber}
-              onChange={(event) => set('caseRegistrationNumber', event.target.value)}
-              disabled={disabled}
-              data-cy="decision-case-number"
-            />
-          </DecisionField>
-
-          <DecisionField id="decision-other-case-number" label={t('common:decision.other_case_number')}>
-            <Input
-              className="w-full"
-              value={values.externalCaseRegistrationNumber}
-              onChange={(event) => set('externalCaseRegistrationNumber', event.target.value)}
-              disabled={disabled}
-              data-cy="decision-other-case-number"
-            />
-          </DecisionField>
-        </div>
+        <DecisionField id="decision-case-number" label={t('common:decision.case_number')} required>
+          <Input
+            className="w-full max-w-[28rem]"
+            value={values.externalCaseRegistrationNumber}
+            onChange={(event) => set('externalCaseRegistrationNumber', event.target.value)}
+            disabled={disabled}
+            data-cy="decision-case-number"
+          />
+        </DecisionField>
       </DecisionCard>
 
       <DecisionCard>

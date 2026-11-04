@@ -98,7 +98,6 @@ export const useDecisionSave = ({
     attachments: supportAttachments,
     executionDate: values.executionDate,
     premisesPhoneNumber: values.premisesPhoneNumber,
-    caseRegistrationNumber: values.caseRegistrationNumber,
     externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
     user,
     today: dayjs().format('YYYY-MM-DD'),

@@ -69,7 +69,7 @@ const ERRAND_ID = 'errand-1';
 
 // What the certificate needs of the decision, as its JSON carries it.
 const CERTIFICATE_JSON = {
-  caseRegistrationNumber: 'ifyllt',
+  externalCaseRegistrationNumber: 'ifyllt',
   premises: { address: { street: 'ifyllt', postalCode: '000 01', city: 'ifyllt' }, phoneNumber: 'ifyllt' },
   servingArea: { description: 'ifyllt' },
   decision: { decisionText: 'ifyllt', decisionMaker: 'ifyllt', validFrom: '2026-11-01', executionDate: '2026-11-01' },
