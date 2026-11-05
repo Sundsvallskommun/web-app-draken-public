@@ -15,8 +15,10 @@ export interface DecisionFormValues {
   outcome: string;
   decidedByRole: string;
   legalBasis: string;
-  /** The decision's own registry number, which the decision cannot be sent without. */
+  /** The decision's own registry number. */
   externalCaseRegistrationNumber: string;
+  /** The att-satser, one per line. */
+  clauses: string;
   justification: string;
   validFrom: string;
   validTo: string;
@@ -39,6 +41,8 @@ interface DecisionFormInput {
   savedPremises: DecisionPremises | undefined;
   premisesToSend: DecisionPremises | undefined;
   applicationPremisesPhone: string;
+  /** What a decision not yet saved starts its att-satser from. */
+  investigationClauses: string;
   /** The decided scope as saved, and the application's where the decision has none saved. */
   scopeAsSaved: DecisionScope;
   defaultRole: string;
@@ -55,6 +59,7 @@ export interface DecisionForm {
 const asSaved = ({
   decision,
   applicationPremisesPhone,
+  investigationClauses,
   scopeAsSaved,
   defaultRole,
 }: DecisionFormInput): DecisionFormValues => {
@@ -64,6 +69,7 @@ const asSaved = ({
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
     externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
+    clauses: decision?.id ? stringAt(objectAt(json?.decision).clauses) ?? '' : investigationClauses,
     justification: decision?.justification ?? '',
     validFrom: decision?.validFrom ?? '',
     validTo: decision?.validTo ?? '',
@@ -88,7 +94,9 @@ export const useDecisionForm = (input: DecisionFormInput): DecisionForm => {
   const saved = asSaved(input);
   const [values, setValues] = useState(saved);
 
-  const version = `${input.decision?.id ?? ''}:${input.decision?.version ?? ''}`;
+  const version = input.decision?.id
+    ? `${input.decision.id}:${input.decision.version ?? ''}`
+    : `new:${input.investigationClauses}`;
   const [filledFrom, setFilledFrom] = useState(version);
   if (version !== filledFrom) {
     setFilledFrom(version);

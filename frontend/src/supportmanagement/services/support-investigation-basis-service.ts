@@ -246,7 +246,7 @@ const htmlOf = (value: string | undefined): string => (value?.trim() ? sanitized
  * `communication` is the one text the template prints without markup, so its tags are taken off here
  * rather than printed as they stand. A block tag ends a line, since the text is written in an editor.
  */
-const plainTextOf = (value: string | undefined): string =>
+export const plainTextOf = (value: string | undefined): string =>
   sanitizedInline((value ?? '').replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '\n'))
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')

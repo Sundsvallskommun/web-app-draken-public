@@ -1,11 +1,12 @@
 'use client';
 
+import { getLatestSchema } from '@common/services/jsonschema-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   type CertificateDecision,
-  decisionJsonParameter,
   type DecisionParameterInput,
+  decisionSchemaName,
   toCertificateParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
@@ -25,7 +26,6 @@ import {
 } from '@supportmanagement/services/support-decision-service';
 import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { FormValue } from '@supportmanagement/services/support-form-value-service';
-import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -112,6 +112,7 @@ export const useDecisionSave = ({
     validFrom: values.validFrom,
     legalBasis: values.legalBasis,
     justification: values.justification,
+    clauses: values.clauses,
     terms: writtenTerms,
   };
 
@@ -119,9 +120,13 @@ export const useDecisionSave = ({
   const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
     if (!supportErrand?.id) return undefined;
 
-    const jsonParameter = decisionJsonParameter(permit.type);
-    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, jsonParameter.key, {
-      schemaId: supportSchemaId(municipalityId, jsonParameter.schema),
+    const schemaName = decisionSchemaName(permit.type);
+    // A decision stays on the schema version it was first saved with.
+    const schemaId =
+      decision?.jsonParameters?.find(({ key }) => key === schemaName)?.schemaId ??
+      (await getLatestSchema(municipalityId, schemaName)).data.id;
+    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, schemaName, {
+      schemaId,
       value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
     });
   };

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { getLatestSchema } from '@common/services/jsonschema-service';
 import { emptyUser } from '@common/services/user-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -10,6 +11,7 @@ import {
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -43,12 +45,21 @@ vi.mock('@common/components/template-preview/template-pdf-preview.component', ()
 vi.mock('@supportmanagement/components/premises/use-decision-premises', () => ({
   useDecisionPremises: () => ({ decided: undefined }),
 }));
+vi.mock('@common/services/jsonschema-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@common/services/jsonschema-service')>()),
+  getLatestSchema: vi.fn().mockResolvedValue({ data: { id: '2281_aot_alcohol_decision_9.9' } }),
+}));
 vi.mock('@supportmanagement/services/support-decision-service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@supportmanagement/services/support-decision-service')>()),
   getSupportDecisions: vi.fn(),
   createSupportDecision: vi.fn(),
   updateSupportDecision: vi.fn(),
   saveSupportDecisionJsonParameter: vi.fn(),
+}));
+
+vi.mock('@supportmanagement/services/support-investigation-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@supportmanagement/services/support-investigation-service')>()),
+  getSupportInvestigation: vi.fn(),
 }));
 
 const toast = vi.hoisted(() => vi.fn());
@@ -119,6 +130,7 @@ const renderTab = async () => {
 beforeEach(() => {
   toast.mockReset();
   vi.mocked(getSupportDecisions).mockReset().mockResolvedValue([]);
+  vi.mocked(getSupportInvestigation).mockReset().mockResolvedValue(undefined);
   vi.mocked(createSupportDecision)
     .mockReset()
     .mockResolvedValue({ id: 'decision-1', status: 'DRAFT' } as never);
@@ -236,16 +248,41 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
   await expect(saveTheTab()).resolves.toBe(true);
 
   expect(vi.mocked(createSupportDecision).mock.calls[0][2]).not.toHaveProperty('parameters');
-  expect(saveSupportDecisionJsonParameter).toHaveBeenCalledWith('errand-id', '2281', 'decision-1', 'permit', {
-    schemaId: '2281_aot_alcohol_decision_1.0',
-    value: expect.objectContaining({
-      servingPermitType: 'PERMANENT_SERVING',
-      beverages: ['STRONG_BEER'],
-      servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '11:00', to: '00:00' }],
-      servingArea: { description: 'Matsalen' },
-    }),
-  });
+  expect(saveSupportDecisionJsonParameter).toHaveBeenCalledWith(
+    'errand-id',
+    '2281',
+    'decision-1',
+    'aot_alcohol_decision',
+    {
+      schemaId: '2281_aot_alcohol_decision_9.9',
+      value: expect.objectContaining({
+        servingPermitType: 'PERMANENT_SERVING',
+        beverages: ['STRONG_BEER'],
+        servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '11:00', to: '00:00' }],
+        servingArea: { description: 'Matsalen' },
+      }),
+    }
+  );
   expect(sentJson().value).toMatchObject({ decision: { executionDate: '2026-10-20', validFrom: '2026-11-01' } });
+});
+
+test('the att-satser start from the investigation, and an edit is saved on the decision alone', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({ summary: '<p>att bevilja</p><p>att servera</p>' } as never);
+  await renderTab();
+  await waitFor(() => expect(input('clauses').value).toBe('att bevilja\natt servera'));
+
+  fireEvent.change(select('outcome'), { target: { value: APPROVAL } });
+  fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().value).toMatchObject({ decision: { clauses: 'att bevilja' } });
+});
+
+test('the tab still opens when the investigation cannot be read', async () => {
+  vi.mocked(getSupportInvestigation).mockRejectedValue(new Error('no investigation'));
+  await renderTab();
+
+  expect(input('clauses').value).toBe('');
 });
 
 test('saving again after a failed JSON write updates the new decision, and keeps what was written', async () => {
@@ -270,6 +307,29 @@ test('saving again after a failed JSON write updates the new decision, and keeps
   );
 });
 
+test('saving a saved decision again keeps the schema version it was first saved with', async () => {
+  vi.mocked(getLatestSchema).mockClear();
+  vi.mocked(updateSupportDecision)
+    .mockReset()
+    .mockResolvedValue({ id: 'decision-id', status: 'DRAFT' } as never);
+  vi.mocked(getSupportDecisions).mockResolvedValue([
+    {
+      id: 'decision-id',
+      status: 'DRAFT',
+      outcome: APPROVAL,
+      version: 1,
+      jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: '2281_aot_alcohol_decision_1.0', value: {} }],
+    } as SupportDecision,
+  ]);
+  await renderTab();
+
+  fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.0');
+  expect(getLatestSchema).not.toHaveBeenCalled();
+});
+
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {
   useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
   vi.mocked(getSupportDecisions).mockResolvedValue([
@@ -280,7 +340,7 @@ test('a saved decision fills the fields instead of the application, an empty val
       version: 1,
       jsonParameters: [
         {
-          key: 'permit',
+          key: 'aot_alcohol_decision',
           schemaId: '2281_aot_alcohol_decision_1.0',
           value: {
             beverages: [],

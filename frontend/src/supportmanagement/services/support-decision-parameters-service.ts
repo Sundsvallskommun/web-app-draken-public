@@ -25,7 +25,6 @@ import {
   jsonParameterObject,
   objectAt,
   stringAt,
-  type SupportJsonParameterSpec,
   withoutBlanks,
 } from './support-json-parameter-service';
 
@@ -71,6 +70,8 @@ export interface CertificateDecision {
   validFrom: string;
   legalBasis?: string;
   justification?: string;
+  /** The att-satser, one per line. */
+  clauses?: string;
   terms: string[];
 }
 
@@ -80,16 +81,12 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const DECISION_JSON_KEY = 'permit';
+const ALCOHOL_DECISION_SCHEMA = 'aot_alcohol_decision';
+const TOBACCO_DECISION_SCHEMA = 'aot_tobacco_decision';
 
-/** The decision keeps what the permit says in one JSON parameter, against the schema of its permit area. */
-export const decisionJsonParameter = (permitType: string): SupportJsonParameterSpec => ({
-  key: DECISION_JSON_KEY,
-  schema: {
-    name: TOBACCO_PERMITS.includes(permitType) ? 'aot_tobacco_decision' : 'aot_alcohol_decision',
-    version: '1.0',
-  },
-});
+/** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
+export const decisionSchemaName = (permitType: string): string =>
+  TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
 
 // The values the schemas restrict. One that does not fit is left out, so the save is not refused for it
 // and the checks before the decision name it as missing.
@@ -105,7 +102,8 @@ const OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSI
 
 /** What a saved decision says of the permit; undefined for a decision without it. */
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
-  jsonParameterObject(decision?.jsonParameters, DECISION_JSON_KEY);
+  jsonParameterObject(decision?.jsonParameters, ALCOHOL_DECISION_SCHEMA) ??
+  jsonParameterObject(decision?.jsonParameters, TOBACCO_DECISION_SCHEMA);
 
 const matching =
   (pattern: RegExp) =>
@@ -257,6 +255,7 @@ const decisionOf = (
   outcome: oneOf(OUTCOMES)(decision.outcome),
   decisionText: text(decision.decisionText),
   justification: text(decision.justification),
+  clauses: text(decision.clauses),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
   executionDate: isoDate(executionDate),
@@ -402,6 +401,7 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     issuedByNameAndTitle: join(issuer, stringAt(issuedBy.title)),
     issuedByUnit: stringAt(issuedBy.unit),
     decisionText: stringAt(decision.decisionText),
+    decisionClauses: stringAt(decision.clauses),
     decisionMaker: stringAt(decision.decisionMaker),
     decisionDate,
     validFrom: stringAt(decision.validFrom),
@@ -468,15 +468,16 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
   TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate', 'information'],
 };
 
-// Every decision is registered under a number of its own, whether a permit is printed or not.
-const INPUTS_OF_EVERY_DECISION = ['decisionCaseNumber'];
+/** An inspection or action errand's decision can be sent without att-satser. */
+export const decisionRequiresClauses = (permitType: string): boolean => permitType !== 'TILLSYN';
 
 /** The keys the decision's saved JSON leaves without a value. */
 export const missingDecisionInputs = (permitType: string, json: JsonObject | undefined): string[] => {
   const flat = flattenDecisionJson(json);
-  return [...(PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []), ...INPUTS_OF_EVERY_DECISION].filter(
-    (key) => !flat[key]
-  );
+  return [
+    ...(PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []),
+    ...(decisionRequiresClauses(permitType) ? ['decisionClauses'] : []),
+  ].filter((key) => !flat[key]);
 };
 
 export interface MissingPermitInputs {

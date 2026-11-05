@@ -22,6 +22,8 @@ import {
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import { plainTextOf } from '@supportmanagement/services/support-investigation-basis-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +52,7 @@ export const SupportErrandDecisionTab: FC<{
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
 
   const [decisions, setDecisions] = useState<SupportDecision[]>([]);
+  const [investigationClauses, setInvestigationClauses] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   // The premises lookup costs a request, so it waits until the tab has been opened once.
@@ -88,10 +91,15 @@ export const SupportErrandDecisionTab: FC<{
     if (!supportErrand?.id) return;
     // The errand can change under a request in flight; only the latest one is allowed to answer.
     let current = true;
-    getSupportDecisions(supportErrand.id, municipalityId)
-      .then((result) => {
+    Promise.all([
+      getSupportDecisions(supportErrand.id, municipalityId),
+      // Only the prefill depends on it, so a failed read leaves the field empty rather than the tab broken.
+      getSupportInvestigation(supportErrand.id, municipalityId).catch(() => undefined),
+    ])
+      .then(([result, investigation]) => {
         if (!current) return;
         setDecisions(result);
+        setInvestigationClauses(plainTextOf(investigation?.summary));
         setIsLoading(false);
       })
       .catch(() => {
@@ -123,6 +131,7 @@ export const SupportErrandDecisionTab: FC<{
     savedPremises,
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
+    investigationClauses,
     scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
   });
@@ -217,7 +226,13 @@ export const SupportErrandDecisionTab: FC<{
 
       {!isLoading && !error && editable ? (
         <div className="flex flex-col gap-16">
-          <DecisionFields form={form} outcomes={outcomes} printed={!!permit.certificate} disabled={!canEdit} />
+          <DecisionFields
+            form={form}
+            outcomes={outcomes}
+            printed={!!permit.certificate}
+            clausesRequired={permit.clausesRequired}
+            disabled={!canEdit}
+          />
 
           {supportErrand ? (
             <TemplatePdfPreview

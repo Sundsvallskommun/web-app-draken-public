@@ -32,7 +32,7 @@ const saved = (overrides: Partial<SupportDecision> = {}): SupportDecision =>
     ],
     jsonParameters: [
       {
-        key: 'permit',
+        key: 'aot_alcohol_decision',
         schemaId: '2281_aot_alcohol_decision_1.0',
         value: {
           externalCaseRegistrationNumber: 'KS 2026/123',
@@ -53,6 +53,7 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
       savedPremises: undefined,
       premisesToSend: undefined,
       applicationPremisesPhone: APPLICATION_PHONE,
+      investigationClauses: '',
       scopeAsSaved: NOTHING_DECIDED,
       defaultRole: ROLE,
       ...input,
@@ -60,6 +61,42 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
   });
 
 afterEach(cleanup);
+
+test('a decision not yet saved starts its att-satser from the investigation, also when that arrives late', () => {
+  const props = {
+    decision: undefined,
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  };
+  const { result, rerender } = form(props);
+  expect(result.current.values.clauses).toBe('');
+
+  rerender({ ...props, investigationClauses: 'att bevilja' });
+  expect(result.current.values.clauses).toBe('att bevilja');
+  expect(result.current.edited).toBe(false);
+});
+
+test('a saved decision keeps its own att-satser, also when they are empty', () => {
+  const withClauses = saved({
+    jsonParameters: [
+      {
+        key: 'aot_alcohol_decision',
+        schemaId: '2281_aot_alcohol_decision_1.1',
+        value: { decision: { clauses: 'att bevilja' } },
+      },
+    ],
+  });
+
+  expect(form({ decision: withClauses, investigationClauses: 'annat' }).result.current.values.clauses).toBe(
+    'att bevilja'
+  );
+  expect(form({ decision: saved(), investigationClauses: 'annat' }).result.current.values.clauses).toBe('');
+});
 
 test('a decision that exists fills the fields, and its conditions come in their order', () => {
   const { result } = form({ decision: saved() });
@@ -118,6 +155,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });
@@ -129,6 +167,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });

@@ -18,8 +18,9 @@ export const DecisionFields: FC<{
   outcomes: DecisionOutcome[];
   /** A permit that is printed needs the dates the certificate carries. */
   printed: boolean;
+  clausesRequired: boolean;
   disabled: boolean;
-}> = ({ form, outcomes, printed, disabled }) => {
+}> = ({ form, outcomes, printed, clausesRequired, disabled }) => {
   const { t } = useTranslation();
   const { values, set } = form;
 
@@ -47,13 +48,27 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
-        <DecisionField id="decision-case-number" label={t('common:decision.case_number')} required>
+        <DecisionField id="decision-case-number" label={t('common:decision.case_number')}>
           <Input
             className="w-full max-w-[28rem]"
             value={values.externalCaseRegistrationNumber}
             onChange={(event) => set('externalCaseRegistrationNumber', event.target.value)}
             disabled={disabled}
             data-cy="decision-case-number"
+          />
+        </DecisionField>
+      </DecisionCard>
+
+      <DecisionCard>
+        <DecisionField id="decision-clauses" label={t('common:decision.clauses')} required={clausesRequired}>
+          <Textarea
+            className="w-full"
+            rows={4}
+            value={values.clauses}
+            placeholder={t('common:decision.clauses_placeholder')}
+            onChange={(event) => set('clauses', event.target.value)}
+            disabled={disabled}
+            data-cy="decision-clauses"
           />
         </DecisionField>
       </DecisionCard>

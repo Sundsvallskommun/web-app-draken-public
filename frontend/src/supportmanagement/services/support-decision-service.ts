@@ -34,6 +34,7 @@ const PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT: Record<string, string> =
   'e-cigarette-sales': 'ECIGARETTFORSALJNING',
   'internal-inspection': 'TILLSYN',
   'external-inspection': 'TILLSYN',
+  'action-errand': 'TILLSYN',
 };
 
 const PERMIT_TYPE_OF_AN_UNKNOWN_PROCESS = 'PERMIT';
