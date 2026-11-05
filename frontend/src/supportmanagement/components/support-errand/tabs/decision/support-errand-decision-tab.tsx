@@ -22,7 +22,7 @@ import {
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
-import { plainTextOf } from '@supportmanagement/services/support-investigation-basis-service';
+import { typedLinesOf } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -99,7 +99,7 @@ export const SupportErrandDecisionTab: FC<{
       .then(([result, investigation]) => {
         if (!current) return;
         setDecisions(result);
-        setInvestigationClauses(plainTextOf(investigation?.summary));
+        setInvestigationClauses(typedLinesOf(investigation?.summary).join('\n'));
         setIsLoading(false);
       })
       .catch(() => {

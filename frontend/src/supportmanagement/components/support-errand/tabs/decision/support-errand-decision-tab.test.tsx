@@ -278,6 +278,15 @@ test('the att-satser start from the investigation, and an edit is saved on the d
   expect(sentJson().value).toMatchObject({ decision: { clauses: 'att bevilja' } });
 });
 
+test('the att-satser prefill shows the text as typed, without entities or blank lines', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({
+    summary: '<p>att bevilja Bar &amp; Kök AB tillstånd</p><p><br></p><p>att servera &lt; 15 % &gt;</p>',
+  } as never);
+  await renderTab();
+
+  await waitFor(() => expect(input('clauses').value).toBe('att bevilja Bar & Kök AB tillstånd\natt servera < 15 % >'));
+});
+
 test('the tab still opens when the investigation cannot be read', async () => {
   vi.mocked(getSupportInvestigation).mockRejectedValue(new Error('no investigation'));
   await renderTab();
