@@ -25,7 +25,9 @@ const contactDataValue = (contactData: Record<string, unknown> | undefined, key:
 
 /**
  * The century of a 10-digit personal number, as Skatteverket counts it: the latest one in which the
- * person is already born, one more back for "+" (aged 100 or more).
+ * person is already born, one more back for "+" (aged 100 or more). A coordination number (day + 60)
+ * of someone born this month compares as later than today and gets the century before; accepted,
+ * since it hardly happens.
  */
 const centuryOf = (birthDate: string, isAged100OrMore: boolean, today: Date): number => {
   const bornLastCentury = birthDate > dayjs(today).format('YYMMDD');
@@ -76,31 +78,5 @@ export const parseScreenPop = (message: AceScreenPopMessage | undefined): AceCal
     contactId,
     ...(personNumber && { personNumber }),
     ...(phoneNumber && { phoneNumber }),
-  };
-};
-
-const HIDDEN = '[dolt]';
-/** Contact fields that describe the contact, not the person, and may be logged as they are. */
-const LOGGABLE_CONTACT_KEYS = ['contactId', 'contactStatus', 'currentContactsType', 'isActiveContact'] as const;
-/** Contact data keys whose values describe the contact, not the person, and may be logged. */
-const LOGGABLE_CONTACT_DATA_KEYS = new Set(['contactSourceType', 'direction', 'media']);
-
-/**
- * The screen pop as it may be logged: only the fields listed above keep their values. Every other
- * contact data key is logged by name with its value hidden, so the log shows what ACE sends without
- * the caller's personal number, phone number, name or messages.
- */
-export const loggableScreenPop = (message: AceScreenPopMessage | undefined) => {
-  const contact = message?.contact;
-  const contactData = Object.entries(contact?.contactData ?? {}).map(([key, value]) => [
-    key,
-    LOGGABLE_CONTACT_DATA_KEYS.has(key) || value === '' || value === undefined ? value : HIDDEN,
-  ]);
-  return {
-    popEvent: message?.popEvent,
-    contact: contact && {
-      ...Object.fromEntries(LOGGABLE_CONTACT_KEYS.map((key) => [key, contact[key]])),
-      contactData: Object.fromEntries(contactData),
-    },
   };
 };

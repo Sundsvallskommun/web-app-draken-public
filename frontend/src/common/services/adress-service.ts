@@ -1,11 +1,14 @@
 import { ApiResponse, apiService, Data } from '@common/services/api-service';
 import { formatOrgNr, luhnCheck, OrgNumberFormat } from '@common/services/helper-service';
+import { AxiosError } from 'axios';
 import { CLegalEntity2WithId } from 'src/data-contracts/backend/data-contracts';
 
 interface CitizenAddressData extends Data {
   personId: string;
   givenname: string;
   lastname: string;
+  /** Set by the BFF, which then leaves addresses empty. */
+  protectedIdentity?: boolean;
   addresses: {
     realEstateDescription: string;
     co: string;
@@ -22,6 +25,8 @@ interface CitizenAddressData extends Data {
 
 export interface AddressResult {
   personId: string;
+  /** The person has protected personal data (skyddade personuppgifter); the address is left out. */
+  protectedIdentity?: boolean;
   firstName: string;
   lastName: string;
   organizationName: string;
@@ -132,6 +137,21 @@ export const isValidOrgNumber: (ssn: string) => boolean = (ssn) => {
   return passingLuhn && passingDigitTest;
 };
 
+export const NO_MATCH_MESSAGE = 'Sökningen gav ingen träff';
+export const PROTECTED_IDENTITY_MESSAGE = 'Personen har skyddade personuppgifter. Adressen visas inte.';
+
+/** Why a search gave nothing, worded for the case worker: a refused search is not a missing person. */
+export const searchFailureMessage = (error: unknown): string => {
+  const status = (error as AxiosError | undefined)?.response?.status;
+  if (status === 429) {
+    return 'För många sökningar på kort tid. Vänta en minut och sök igen.';
+  }
+  if (status === 403) {
+    return 'Du saknar behörighet att söka på personer.';
+  }
+  return NO_MATCH_MESSAGE;
+};
+
 export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> = (ssn: string) => {
   ssn = ssn.replace(/\D/g, '');
   return !isValidPersonalNumber(ssn)
@@ -148,6 +168,7 @@ export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> =
             const addressItem = res.addresses?.[0];
             return {
               personId: res.personId,
+              protectedIdentity: !!res.protectedIdentity,
               firstName: res.givenname,
               lastName: res.lastname,
               organizationName: '',
@@ -222,7 +243,8 @@ export const searchADUserByPersonNumber: (personalNumber: string) => Promise<Add
   return !isValidPersonalNumber(personalNumber)
     ? Promise.resolve([])
     : await apiService
-        .get<ApiResponse<EmployedPersonData[]>>(`employed/${personalNumber}/loginname`)
+        // The personal number goes in the body: request URLs end up in logs.
+        .post<ApiResponse<EmployedPersonData[]>, { ssn: string }>('employed/loginname', { ssn: personalNumber })
         .then((res) => res.data.data)
         .then((res) => {
           if (res.length > 1) {

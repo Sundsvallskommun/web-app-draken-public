@@ -1,6 +1,7 @@
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
+import { CitizenService } from '@services/citizen.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import FormData from 'form-data';
 import {
@@ -37,8 +38,8 @@ export interface ResponseData {
 @Controller()
 export class CasedataContractsController {
   private apiService = new ApiService();
+  private citizenService = new CitizenService();
   SERVICE = apiServiceName('contract');
-  CITIZEN_SERVICE = apiServiceName('citizen');
 
   @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
@@ -72,12 +73,9 @@ export class CasedataContractsController {
     const filterList: string[] = [];
 
     if (query) {
-      let guidRes = null;
-      const isPersonNumber = luhnCheck(query);
-      if (isPersonNumber) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
-      }
+      // The query still travels in URLs (?query= and the filter below); see resolveQueryPartyId in
+      // the support errand controller for this known limitation.
+      const partyId = luhnCheck(query) ? await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, query, req.user).catch(() => '') : '';
 
       let queryFilter = `(`;
       queryFilter += `contractId~'*${query}*'`;
@@ -90,8 +88,8 @@ export class CasedataContractsController {
       queryFilter += ` or exists(stakeholders.phoneNumber~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.emailAddress~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.address.streetAddress~'*${query}*')`;
-      if (guidRes !== null) {
-        queryFilter += ` or exists(stakeholders.partyId ~ '*${guidRes.data}*')`;
+      if (partyId) {
+        queryFilter += ` or exists(stakeholders.partyId ~ '*${partyId}*')`;
       }
       queryFilter += ')';
       filterList.push(queryFilter);

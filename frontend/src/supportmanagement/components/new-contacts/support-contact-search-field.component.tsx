@@ -1,7 +1,10 @@
 import {
   AddressResult,
+  NO_MATCH_MESSAGE,
+  PROTECTED_IDENTITY_MESSAGE,
   searchADUser,
   searchADUserByPersonNumber,
+  searchFailureMessage,
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
@@ -9,7 +12,7 @@ import { luhnCheck } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { cx, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField, Select } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
-import { ChangeEvent, Dispatch, FC, SetStateAction } from 'react';
+import { ChangeEvent, Dispatch, FC, SetStateAction, useState } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SupportSearchFieldProps {
@@ -53,8 +56,12 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
   appendEmail,
   searchFieldKey = 0,
 }) => {
+  const [notFoundMessage, setNotFoundMessage] = useState(NO_MATCH_MESSAGE);
+  const [protectedIdentity, setProtectedIdentity] = useState(false);
+
   const doSearch = (val: string) => {
     setSearchResult(false);
+    setProtectedIdentity(false);
     let search: ((val: string) => Promise<AddressResult | AddressResult[] | undefined>) | undefined;
 
     if (searchMode === 'person') {
@@ -77,6 +84,7 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
         .then((res) => {
           if (!res) {
             setSearching(false);
+            setNotFoundMessage(NO_MATCH_MESSAGE);
             setNotFound(true);
             setSearchResult(false);
             return;
@@ -86,6 +94,7 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
             // it as externalId for organizations/enterprises too — not only for person/employee
             // searches. externalId must always be the UUID partyId, never the organization number.
             form.setValue(`externalId`, res.personId, { shouldDirty: true });
+            setProtectedIdentity(!!res.protectedIdentity);
             form.setValue(`firstName`, res.firstName, { shouldDirty: true });
             form.setValue(`lastName`, res.lastName, { shouldDirty: true });
             form.setValue(`organizationName`, res.organizationName, {
@@ -129,8 +138,9 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
             setSearchResultArray(res as AddressResult[]);
           }
         })
-        .catch(() => {
+        .catch((error) => {
           setSearching(false);
+          setNotFoundMessage(searchFailureMessage(error));
           setNotFound(true);
           setSearchResult(false);
         });
@@ -238,11 +248,16 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
           )}
         </div>
 
+        {protectedIdentity ? (
+          <p className="my-sm text-small" data-cy="protected-identity-message">
+            {PROTECTED_IDENTITY_MESSAGE}
+          </p>
+        ) : null}
         {notFound || form.formState.errors.personNumber || form.formState.errors.organizationNumber ? (
           <div className="my-sm text-error">
             {notFound ? (
               <FormErrorMessage className="text-error" data-cy="not-found-error-message">
-                Sökningen gav ingen träff
+                {notFoundMessage}
               </FormErrorMessage>
             ) : (
               <>

@@ -7,6 +7,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { hasPermissions } from '@middlewares/permissions.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
+import { CitizenService } from '@services/citizen.service';
 import { makeErrandApiData } from '@services/errand.service';
 import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
@@ -39,6 +40,7 @@ interface ResponseData {
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class CaseDataErrandController {
   private apiService = new ApiService();
+  private citizenService = new CitizenService();
   SERVICE = apiServiceName('case-data');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
@@ -136,12 +138,9 @@ export class CaseDataErrandController {
     const baseURL = apiURL(this.SERVICE);
     const filterList = [];
     if (query) {
-      let guidRes = null;
-      const isPersonNumber = luhnCheck(query);
-      if (isPersonNumber) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
-      }
+      // The query still travels in URLs (?query= and the filter below); see resolveQueryPartyId in
+      // the support errand controller for this known limitation.
+      const partyId = luhnCheck(query) ? await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, query, req.user).catch(() => '') : '';
       let queryFilter = `(`;
       queryFilter += `exists(stakeholders.firstName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
@@ -151,8 +150,8 @@ export class CaseDataErrandController {
       queryFilter += ` or exists(stakeholders.contactInformation.value~'*${query.replace('+', '')}*')`;
       queryFilter += ` or exists(stakeholders.organizationNumber~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
-      if (guidRes !== null) {
-        queryFilter += ` or exists(stakeholders.personId ~ '*${guidRes.data}*')`;
+      if (partyId) {
+        queryFilter += ` or exists(stakeholders.personId ~ '*${partyId}*')`;
       }
       queryFilter += ` or errandNumber~'*${query}*'`;
       queryFilter += ` or exists(facilities.address.propertyDesignation~'*${query}*')`;
