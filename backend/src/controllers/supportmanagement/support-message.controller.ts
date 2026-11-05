@@ -172,8 +172,7 @@ export class SupportMessageController {
       throw e;
     });
 
-    const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
-    const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+    const b64 = Buffer.from(res.data).toString('base64');
     return { data: b64, message: 'ok' };
   }
 }

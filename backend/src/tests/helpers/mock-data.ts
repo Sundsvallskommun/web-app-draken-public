@@ -77,6 +77,8 @@ export const mockFileName = 'brev.pdf';
 export const mockMultiDotFileName = 'rapport.v2.pdf';
 export const mockMimeType = 'application/pdf';
 export const mockFileContent = 'Hej';
+// Every possible byte value, so a test notices if a file gets damaged on its way to base64
+export const mockBinaryFileContent = Buffer.from(Array.from({ length: 256 }, (_unused, byteValue) => byteValue));
 
 // Property designations, they are not real properties
 export const mockPropertyDesignation = 'SUNDSVALL BÖLE 1:1';

@@ -1,7 +1,7 @@
 import { mockEnv } from '../../fixtures/mock-env';
 
 export interface ScreenPopOptions {
-  /** Sent as contactData.eidUserPnr; null leaves the caller unidentified. */
+  /** Sent as contactData.cid, where Sundsvall's ACE puts it; null leaves the caller unidentified. */
   personNumber?: string | null;
   /** Sent as contactData.Ani, the calling number; null hides the number. */
   phoneNumber?: string | null;
@@ -36,7 +36,7 @@ export const screenPopMessage = ({
       contactSourceType: contactType,
       direction: 'incoming',
       media: 'call',
-      ...(personNumber === null ? {} : { eidUserPnr: personNumber }),
+      ...(personNumber === null ? {} : { cid: personNumber }),
     },
   },
 });
