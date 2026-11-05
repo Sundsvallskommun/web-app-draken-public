@@ -3,6 +3,7 @@
 import type { Assignment } from '@common/data-contracts/licensed-business/data-contracts';
 import { Asset } from '@common/interfaces/asset';
 import { getPartyServices } from '@common/services/asset-service';
+import { CaseStatusResponse, getStatusesUsingOrganizationNumber } from '@common/services/casestatus-service';
 import { getCompanyProfileByPartyId, getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
@@ -187,6 +188,17 @@ export const getCustomerErrands = async (
   );
   return Array.from(errands.values());
 };
+
+/** The organisation's errands according to Casestatus, which covers more than this Drake. */
+export const getCustomerCaseStatuses = (
+  municipalityId: string,
+  organizationNumber: string | undefined
+): Promise<CaseStatusResponse[]> =>
+  organizationNumber ? getStatusesUsingOrganizationNumber(municipalityId, organizationNumber) : Promise.resolve([]);
+
+/** Cases without a namespace come from systems outside the Drakar. */
+export const isOtherDrakeCase = (status: CaseStatusResponse, ownNamespace: string): boolean =>
+  !!status.namespace && status.namespace !== ownNamespace;
 
 const isClosed = (errand: SupportErrand) => closedStatuses.includes(errand.status as Status);
 

@@ -1,5 +1,8 @@
 'use client';
 
+import { CustomerPlace, getCustomerErrands } from '@common/services/customer-service';
+import { useConfigStore } from '@stores/index';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
 
 export type CustomerLookup<T> = { status: 'loading' } | { status: 'error' } | { status: 'done'; data: T };
@@ -26,4 +29,19 @@ export const useCustomerLookup = <T>(key: string, load: (() => Promise<T>) | und
   }, [key, ready]);
 
   return result?.key === key ? result.lookup : LOADING;
+};
+
+/** The customer's errands, once its places are known. */
+export const useCustomerErrands = (
+  customerId: string,
+  places: CustomerLookup<CustomerPlace[]>
+): CustomerLookup<SupportErrand[]> => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const knownPlaces = places.status === 'done' ? places.data : undefined;
+  const placeKeys = knownPlaces?.map((place) => place.key).join(',');
+  const errands = useCustomerLookup(
+    `${municipalityId}|${customerId}|${placeKeys}`,
+    municipalityId && knownPlaces ? () => getCustomerErrands(municipalityId, customerId, knownPlaces) : undefined
+  );
+  return places.status === 'error' ? places : errands;
 };
