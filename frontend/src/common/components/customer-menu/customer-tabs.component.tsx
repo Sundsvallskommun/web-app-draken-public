@@ -1,6 +1,9 @@
 'use client';
 
 import { CustomerAssets } from '@common/components/customer-menu/customer-assets.component';
+import { CustomerOverview } from '@common/components/customer-menu/customer-overview.component';
+import type { CustomerLookup } from '@common/components/customer-menu/use-customer-lookup';
+import type { Customer, CustomerPlace } from '@common/services/customer-service';
 import { SegmentedControl } from '@sk-web-gui/react';
 import { FC, useState } from 'react';
 
@@ -17,7 +20,11 @@ type CustomerTabId = (typeof customerTabs)[number]['id'];
 /**
  * Tab bar for the customer view. Tab state is local; the route stops at the customer id.
  */
-export const CustomerTabs: FC<{ customerId: string }> = ({ customerId }) => {
+export const CustomerTabs: FC<{ customer: Customer; places: CustomerLookup<CustomerPlace[]> }> = ({
+  customer,
+  places,
+}) => {
+  const { customerId } = customer;
   const [selected, setSelected] = useState<number>(0);
   const activeTab = customerTabs[selected];
 
@@ -44,7 +51,9 @@ export const CustomerTabs: FC<{ customerId: string }> = ({ customerId }) => {
       </SegmentedControl>
 
       <section aria-label={activeTab.label} data-cy={`customer-tab-content-${activeTab.id}`}>
-        {activeTab.id === 'tillstand' ? (
+        {activeTab.id === 'oversikt' ? (
+          <CustomerOverview customer={customer} places={places} />
+        ) : activeTab.id === 'tillstand' ? (
           <CustomerAssets customerId={customerId} />
         ) : (
           // Placeholder until the remaining tab contents are built.

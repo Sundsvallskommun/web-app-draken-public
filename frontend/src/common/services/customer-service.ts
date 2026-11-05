@@ -1,12 +1,20 @@
 'use client';
 
+import type { Assignment } from '@common/data-contracts/licensed-business/data-contracts';
 import { Asset } from '@common/interfaces/asset';
 import { getPartyServices } from '@common/services/asset-service';
-import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
+import { getCompanyProfileByPartyId, getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  closedStatuses,
+  getErrandParameterValue,
+  getSupportErrands,
+  Status,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
 /**
  * A customer as shown in the customer view (kundbild).
@@ -15,23 +23,33 @@ import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-
  * but it may become an organisation number or a serveringsställe id. Only this service knows how
  * to turn the id into customer information; the components just render what they get.
  */
+const INSPECTION_LABEL_PATH = 'CATEGORYROOT/INSPECTION';
+
 export interface Customer {
   customerId: string;
   name: string;
   organizationNumber?: string;
   /** Company form, e.g. "Aktiebolag". */
   form?: string;
+  profile: LegalEntityProfile;
 }
 
+const toTitleCase = (text: string): string => text.toLowerCase().replace(/(^|\s)\S/g, (start) => start.toUpperCase());
+
 export const getCustomerByCustomerId = async (customerId: string): Promise<Customer> => {
-  const profile = await getCompanyProfileByPartyId(customerId);
+  const companyProfile = await getCompanyProfileByPartyId(customerId);
+  const form = companyProfile.form && toTitleCase(companyProfile.form);
   return {
     customerId,
-    name: profile.name ?? customerId,
-    organizationNumber: profile.organizationNumber,
-    form: profile.form,
+    name: companyProfile.name ?? customerId,
+    organizationNumber: companyProfile.organizationNumber,
+    form,
+    profile: { ...companyProfile, form },
   };
 };
+
+export const getCustomerEngagements = (customerId: string): Promise<LegalEntityEngagement[]> =>
+  getLegalEntityEngagements(customerId);
 
 export const getCustomerIdFromErrand = (errand: SupportErrand): string | undefined =>
   getSupportOwnerStakeholder(errand)?.externalId;
@@ -62,41 +80,126 @@ export const getCustomerAssets = async (
   return res?.data ?? [];
 };
 
-type PartyAssetValue = { premises?: { name?: string; restaurantNumber?: string } };
+type PartyAssetPlace = { name?: string; address?: CustomerPlaceAddress; restaurantNumber?: string };
+
+type PartyAssetValue = {
+  // Alcohol assets have premises, tobacco assets pointOfSale.
+  premises?: PartyAssetPlace;
+  pointOfSale?: PartyAssetPlace;
+  decision?: { validFrom?: string };
+};
+
+interface CustomerPlaceAddress {
+  street?: string;
+  postalCode?: string;
+  city?: string;
+}
 
 export interface CustomerPlace {
-  restaurantNumber: string;
+  /** Identifies the place among the customer's: its restaurant number, else name and street. */
+  key: string;
+  restaurantNumber?: string;
   name?: string;
+  address?: CustomerPlaceAddress;
+  /** When the asset's permit took effect. */
+  validFrom?: string;
+  assetTypes: string[];
+  activeAssets: number;
 }
 
 const placesFromAssets = (assets: Asset[]): CustomerPlace[] => {
   const places = new Map<string, CustomerPlace>();
-  assets
-    .flatMap((asset) => asset.jsonParameters ?? [])
-    .forEach((parameter) => {
-      const premises = (parameter.value as unknown as PartyAssetValue)?.premises;
-      if (premises?.restaurantNumber && !places.has(premises.restaurantNumber)) {
-        places.set(premises.restaurantNumber, { restaurantNumber: premises.restaurantNumber, name: premises.name });
+  assets.forEach((asset) =>
+    (asset.jsonParameters ?? []).forEach((parameter) => {
+      const { premises, pointOfSale, decision } = (parameter.value ?? {}) as unknown as PartyAssetValue;
+      const site = premises ?? pointOfSale;
+      if (!site?.restaurantNumber && !site?.name) {
+        return;
       }
-    });
+      const key = site.restaurantNumber ?? `${site.name}|${site.address?.street ?? ''}`;
+      const place = places.get(key) ?? {
+        key,
+        restaurantNumber: site.restaurantNumber,
+        name: site.name,
+        address: site.address,
+        validFrom: decision?.validFrom,
+        assetTypes: [],
+        activeAssets: 0,
+      };
+      if (asset.type && !place.assetTypes.includes(asset.type)) {
+        place.assetTypes.push(asset.type);
+      }
+      place.activeAssets += asset.status === 'ACTIVE' ? 1 : 0;
+      places.set(key, place);
+    })
+  );
   return Array.from(places.values());
 };
 
-/**
- * The customer's places: restaurant numbers on its assets, named by the LicensedBusiness register or else the asset.
- * Only alcohol permits have a restaurant number; tobacco uses pointOfSale.
- */
+const coversAsset = (assignment: Assignment | null, validFrom: string | undefined): boolean =>
+  !!assignment?.validFrom &&
+  !!validFrom &&
+  assignment.validFrom <= validFrom &&
+  (!assignment.validTo || validFrom <= assignment.validTo);
+
+/** The customer's places from its assets, named by the LicensedBusiness register where the place has a restaurant number. */
 export const getCustomerPlaces = async (municipalityId: string, customerId: string): Promise<CustomerPlace[]> => {
   const places = placesFromAssets(await getCustomerAssets(municipalityId, customerId));
   if (!appConfig.features.useLicensedBusiness) {
     return places;
   }
-  const registered = await withAssignments(
-    municipalityId,
-    places.map(({ restaurantNumber }) => ({ number: restaurantNumber }))
-  );
-  return places.map((place, index) => ({
-    ...place,
-    name: registered[index]?.assignment?.premisesName || place.name,
-  }));
+  const numbered = places.flatMap(({ restaurantNumber }) => (restaurantNumber ? [{ number: restaurantNumber }] : []));
+  const registered = await withAssignments(municipalityId, numbered);
+  const assignments = new Map(numbered.map(({ number }, index) => [number, registered[index]?.assignment ?? null]));
+  return places.map((place) => {
+    const assignment = (place.restaurantNumber && assignments.get(place.restaurantNumber)) || null;
+    return { ...place, name: (coversAsset(assignment, place.validFrom) && assignment?.premisesName) || place.name };
+  });
 };
+
+const ERRAND_LOOKUP_SIZE = 100;
+
+const concernsPlace = (errand: SupportErrand, place: CustomerPlace): boolean =>
+  place.restaurantNumber
+    ? getErrandParameterValue(errand.parameters, 'restaurantNumber') === place.restaurantNumber
+    : getErrandParameterValue(errand.parameters, 'premisesName') === place.name;
+
+/** Errands found through the customer's id or through one of its places. */
+export const getCustomerErrands = async (
+  municipalityId: string,
+  customerId: string,
+  places: CustomerPlace[]
+): Promise<SupportErrand[]> => {
+  const search = async (query: string) => {
+    const result = await getSupportErrands(municipalityId, 0, ERRAND_LOOKUP_SIZE, { query: encodeURIComponent(query) });
+    if (result.error) {
+      throw new Error(`Could not fetch errands: ${result.error}`);
+    }
+    return result.errands;
+  };
+  const [own, ...perPlace] = await Promise.all([
+    search(customerId),
+    ...places.map((place) => search(place.restaurantNumber ?? place.name ?? '')),
+  ]);
+  const errands = new Map((own ?? []).map((errand) => [errand.id, errand]));
+  perPlace.forEach((found, index) =>
+    found.filter((errand) => concernsPlace(errand, places[index])).forEach((errand) => errands.set(errand.id, errand))
+  );
+  return Array.from(errands.values());
+};
+
+const isClosed = (errand: SupportErrand) => closedStatuses.includes(errand.status as Status);
+
+export const countErrands = (errands: SupportErrand[]): { ongoing: number; closed: number } => {
+  const closed = errands.filter(isClosed).length;
+  return { ongoing: errands.length - closed, closed };
+};
+
+const isInspection = (errand: SupportErrand) =>
+  !!errand.labels?.some((label) => label.resourcePath?.startsWith(INSPECTION_LABEL_PATH));
+
+/** The most recently active closed inspection errand of the place. */
+export const getLatestInspection = (errands: SupportErrand[], place: CustomerPlace): SupportErrand | undefined =>
+  errands
+    .filter((errand) => isInspection(errand) && isClosed(errand) && concernsPlace(errand, place))
+    .sort((a, b) => (b.touched ?? '').localeCompare(a.touched ?? ''))[0];

@@ -806,7 +806,7 @@ const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] = (res)
   return errands;
 };
 
-const getSupportErrands: (
+export const getSupportErrands: (
   municipalityId: string,
   page?: number,
   size?: number,

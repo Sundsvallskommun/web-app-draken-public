@@ -1,6 +1,7 @@
 'use client';
 
 import { CustomerTabs } from '@common/components/customer-menu/customer-tabs.component';
+import { type CustomerLookup, useCustomerLookup } from '@common/components/customer-menu/use-customer-lookup';
 import {
   Customer,
   CustomerPlace,
@@ -31,50 +32,24 @@ const CustomerBreadcrumb: FC<{ current: string }> = ({ current }) => (
   </Breadcrumb>
 );
 
-type PlacesResult = { customerId: string; places: CustomerPlace[] } | { customerId: string; error: true };
-
-const CustomerPlaces: FC<{ customerId: string }> = ({ customerId }) => {
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const [result, setResult] = useState<PlacesResult | null>(null);
-
-  useEffect(() => {
-    if (!municipalityId) {
-      return;
-    }
-    let cancelled = false;
-    getCustomerPlaces(municipalityId, customerId)
-      .then((places) => {
-        if (!cancelled) {
-          setResult({ customerId, places });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setResult({ customerId, error: true });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [municipalityId, customerId]);
-
+const CustomerPlaces: FC<{ places: CustomerLookup<CustomerPlace[]> }> = ({ places }) => {
   const content = () => {
-    if (!result || result.customerId !== customerId) {
+    if (places.status === 'loading') {
       return <Spinner size={2} aria-label="Hämtar ställen" />;
     }
-    if ('error' in result) {
+    if (places.status === 'error') {
       return (
         <span className="text-error" role="alert" data-cy="customer-view-places-error">
           Ställen kunde inte hämtas.
         </span>
       );
     }
-    if (result.places.length === 0) {
+    if (places.data.length === 0) {
       return <span className="text-dark-secondary">Inga ställen att visa ännu.</span>;
     }
-    return result.places.map(({ restaurantNumber, name }) => (
-      <Label key={restaurantNumber} rounded inverted color="tertiary" data-cy="customer-view-place">
-        {name ? `${name} · ${restaurantNumber}` : restaurantNumber}
+    return places.data.map(({ key, restaurantNumber, name }) => (
+      <Label key={key} rounded inverted color="tertiary" data-cy="customer-view-place">
+        {[name, restaurantNumber].filter(Boolean).join(' · ')}
       </Label>
     ));
   };
@@ -90,6 +65,11 @@ const CustomerPlaces: FC<{ customerId: string }> = ({ customerId }) => {
 
 export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
   const [result, setResult] = useState<LookupResult | null>(null);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const places = useCustomerLookup(
+    `${municipalityId}|${customerId}`,
+    municipalityId ? () => getCustomerPlaces(municipalityId, customerId) : undefined
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -141,9 +121,9 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
         )}
       </div>
 
-      <CustomerPlaces customerId={customerId} />
+      <CustomerPlaces places={places} />
 
-      <CustomerTabs customerId={customerId} />
+      <CustomerTabs customer={customer} places={places} />
     </div>
   );
 };
