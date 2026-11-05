@@ -14,6 +14,7 @@ import {
   mapApiSupportErrandToSupportErrand,
   SupportErrand,
   supportErrandIsEmpty,
+  supportErrandRejectionReason,
   updateSupportErrand,
 } from './support-errand-service';
 
@@ -228,5 +229,29 @@ describe('getStakeholderOrganizationNumber', () => {
         stakeholder({ externalIdType: ExternalIdType.PRIVATE, externalId: '5560269986' })
       )
     ).toBeUndefined();
+  });
+});
+
+describe('supportErrandRejectionReason', () => {
+  const rejection = (status: number, message?: string) => ({ response: { status, data: { message } } });
+
+  test('reads what the service said when it rejected the write', () => {
+    expect(supportErrandRejectionReason(rejection(400, 'Schema validation failed: missing required field'))).toBe(
+      'Schema validation failed: missing required field'
+    );
+  });
+
+  test('says nothing when the failure was not a rejection', () => {
+    expect(supportErrandRejectionReason(rejection(500, 'Internal server error'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(409, 'Errand is locked'))).toBeUndefined();
+    expect(supportErrandRejectionReason(new Error('Network Error'))).toBeUndefined();
+    expect(supportErrandRejectionReason(undefined)).toBeUndefined();
+  });
+
+  test('says nothing when the rejection carries no reason', () => {
+    expect(supportErrandRejectionReason(rejection(400, 'Constraint Violation'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400, 'Request failed'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400, '   '))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400))).toBeUndefined();
   });
 });

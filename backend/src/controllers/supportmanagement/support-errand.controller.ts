@@ -676,11 +676,13 @@ export class SupportErrandController {
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
-    const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
-      throw e;
-    });
+    const res = await this.apiService
+      .patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body, propagateClientError: true }, req.user)
+      .catch(e => {
+        logger.error('Error when registering support errand');
+        logger.error(e);
+        throw e;
+      });
     return response.status(200).send(res.data);
   }
 

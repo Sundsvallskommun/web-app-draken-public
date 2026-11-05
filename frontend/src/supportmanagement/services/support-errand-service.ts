@@ -1016,6 +1016,18 @@ export const setSupportErrandAdmin: (
     });
 };
 
+const REJECTED_BY_SERVICE_STATUS = 400;
+
+const MESSAGES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request', 'Request failed', 'Internal server error'];
+
+export const supportErrandRejectionReason = (error: unknown): string | undefined => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+  if (response?.status !== REJECTED_BY_SERVICE_STATUS) return undefined;
+
+  const message = response.data?.message?.trim();
+  return message && !MESSAGES_WITHOUT_A_REASON.includes(message) ? message : undefined;
+};
+
 /** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
 export const saveSupportErrandJsonParameters: (
   errandId: string,
