@@ -1,8 +1,15 @@
 'use client';
 
 import { CustomerTabs } from '@common/components/customer-menu/customer-tabs.component';
-import { Customer, formatOrganizationNumber, getCustomerByCustomerId } from '@common/services/customer-service';
-import { Breadcrumb, Spinner } from '@sk-web-gui/react';
+import {
+  Customer,
+  CustomerPlace,
+  formatOrganizationNumber,
+  getCustomerByCustomerId,
+  getCustomerPlaces,
+} from '@common/services/customer-service';
+import { Breadcrumb, Label, Spinner } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { Building2 } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useEffect, useState } from 'react';
@@ -23,6 +30,63 @@ const CustomerBreadcrumb: FC<{ current: string }> = ({ current }) => (
     </Breadcrumb.Item>
   </Breadcrumb>
 );
+
+type PlacesResult = { customerId: string; places: CustomerPlace[] } | { customerId: string; error: true };
+
+const CustomerPlaces: FC<{ customerId: string }> = ({ customerId }) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const [result, setResult] = useState<PlacesResult | null>(null);
+
+  useEffect(() => {
+    if (!municipalityId) {
+      return;
+    }
+    let cancelled = false;
+    getCustomerPlaces(municipalityId, customerId)
+      .then((places) => {
+        if (!cancelled) {
+          setResult({ customerId, places });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResult({ customerId, error: true });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [municipalityId, customerId]);
+
+  const content = () => {
+    if (!result || result.customerId !== customerId) {
+      return <Spinner size={2} aria-label="Hämtar ställen" />;
+    }
+    if ('error' in result) {
+      return (
+        <span className="text-error" role="alert" data-cy="customer-view-places-error">
+          Ställen kunde inte hämtas.
+        </span>
+      );
+    }
+    if (result.places.length === 0) {
+      return <span className="text-dark-secondary">Inga ställen att visa ännu.</span>;
+    }
+    return result.places.map(({ restaurantNumber, name }) => (
+      <Label key={restaurantNumber} rounded inverted color="tertiary" data-cy="customer-view-place">
+        {name ? `${name} · ${restaurantNumber}` : restaurantNumber}
+      </Label>
+    ));
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-8" data-cy="customer-view-places">
+      <Building2 size={16} aria-hidden />
+      <span className="font-bold">Ställen:</span>
+      {content()}
+    </div>
+  );
+};
 
 export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
   const [result, setResult] = useState<LookupResult | null>(null);
@@ -77,12 +141,7 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
         )}
       </div>
 
-      {/* TODO: Fill with serveringsställen/försäljningsställen when the microservice exists. */}
-      <div className="flex items-center gap-8" data-cy="customer-view-places">
-        <Building2 size={16} aria-hidden />
-        <span className="font-bold">Ställen:</span>
-        <span className="text-dark-secondary">Inga ställen att visa ännu.</span>
-      </div>
+      <CustomerPlaces customerId={customerId} />
 
       <CustomerTabs customerId={customerId} />
     </div>

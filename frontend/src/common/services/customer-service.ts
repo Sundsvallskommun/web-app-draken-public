@@ -3,6 +3,8 @@
 import { Asset } from '@common/interfaces/asset';
 import { getPartyServices } from '@common/services/asset-service';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
+import { appConfig } from '@config/appconfig';
+import { withAssignments } from '@supportmanagement/services/licensed-business-service';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 
@@ -58,4 +60,43 @@ export const getCustomerAssets = async (
 ): Promise<Asset[]> => {
   const res = await getPartyServices({ municipalityId, partyId: customerId, type });
   return res?.data ?? [];
+};
+
+type PartyAssetValue = { premises?: { name?: string; restaurantNumber?: string } };
+
+export interface CustomerPlace {
+  restaurantNumber: string;
+  name?: string;
+}
+
+const placesFromAssets = (assets: Asset[]): CustomerPlace[] => {
+  const places = new Map<string, CustomerPlace>();
+  assets
+    .flatMap((asset) => asset.jsonParameters ?? [])
+    .forEach((parameter) => {
+      const premises = (parameter.value as unknown as PartyAssetValue)?.premises;
+      if (premises?.restaurantNumber && !places.has(premises.restaurantNumber)) {
+        places.set(premises.restaurantNumber, { restaurantNumber: premises.restaurantNumber, name: premises.name });
+      }
+    });
+  return Array.from(places.values());
+};
+
+/**
+ * The customer's places: restaurant numbers on its assets, named by the LicensedBusiness register or else the asset.
+ * Only alcohol permits have a restaurant number; tobacco uses pointOfSale.
+ */
+export const getCustomerPlaces = async (municipalityId: string, customerId: string): Promise<CustomerPlace[]> => {
+  const places = placesFromAssets(await getCustomerAssets(municipalityId, customerId));
+  if (!appConfig.features.useLicensedBusiness) {
+    return places;
+  }
+  const registered = await withAssignments(
+    municipalityId,
+    places.map(({ restaurantNumber }) => ({ number: restaurantNumber }))
+  );
+  return places.map((place, index) => ({
+    ...place,
+    name: registered[index]?.assignment?.premisesName || place.name,
+  }));
 };
