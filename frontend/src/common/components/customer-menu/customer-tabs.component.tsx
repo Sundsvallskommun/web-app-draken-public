@@ -1,6 +1,7 @@
 'use client';
 
 import { CustomerAssets } from '@common/components/customer-menu/customer-assets.component';
+import { CustomerErrandsTab } from '@common/components/customer-menu/customer-errands-tab.component';
 import { CustomerOverview } from '@common/components/customer-menu/customer-overview.component';
 import type { CustomerLookup } from '@common/components/customer-menu/use-customer-lookup';
 import type { Customer, CustomerPlace } from '@common/services/customer-service';
@@ -53,6 +54,8 @@ export const CustomerTabs: FC<{ customer: Customer; places: CustomerLookup<Custo
       <section aria-label={activeTab.label} data-cy={`customer-tab-content-${activeTab.id}`}>
         {activeTab.id === 'oversikt' ? (
           <CustomerOverview customer={customer} places={places} />
+        ) : activeTab.id === 'arenden' ? (
+          <CustomerErrandsTab customer={customer} places={places} />
         ) : activeTab.id === 'tillstand' ? (
           <CustomerAssets customerId={customerId} />
         ) : (
