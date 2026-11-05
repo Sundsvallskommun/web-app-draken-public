@@ -11,6 +11,7 @@ import {
   getLabelCategorizationHeading,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
+  NEW_ERRAND_HEADING,
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
@@ -224,7 +225,7 @@ export const SupportErrandComponent: FC = () => {
                       ) : (
                         <div className="flex justify-between items-center pt-8">
                           <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                            Registrera nytt ärende
+                            {NEW_ERRAND_HEADING}
                           </h1>
                         </div>
                       )}

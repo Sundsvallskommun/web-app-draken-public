@@ -10,6 +10,7 @@ import {
   ApiSupportErrand,
   ExternalIdType,
   forwardSupportErrand,
+  getLabelCategorizationHeading,
   getStakeholderOrganizationNumber,
   mapApiSupportErrandToSupportErrand,
   SupportErrand,
@@ -253,5 +254,50 @@ describe('supportErrandRejectionReason', () => {
     expect(supportErrandRejectionReason(rejection(400, 'Request failed'))).toBeUndefined();
     expect(supportErrandRejectionReason(rejection(400, '   '))).toBeUndefined();
     expect(supportErrandRejectionReason(rejection(400))).toBeUndefined();
+  });
+});
+
+describe('getLabelCategorizationHeading', () => {
+  const label = (classification: string, resourcePath: string, displayName?: string) => ({
+    classification,
+    resourcePath,
+    displayName,
+  });
+
+  const errand = (over: Partial<SupportErrand> = {}): SupportErrand =>
+    ({ id: 'errand-id', category: '', labels: [], ...over } as SupportErrand);
+
+  beforeEach(() => {
+    appConfig.features.useLabelCategorization = true;
+  });
+
+  afterEach(() => {
+    appConfig.features.useLabelCategorization = false;
+  });
+
+  test('names the deepest level of the categorization', () => {
+    const labels = [
+      label('CATEGORY', 'ALCOHOL', 'Alkohol'),
+      label('TYPE', 'SERVING_PERMIT_APPLICATION', 'Ansökan om serveringstillstånd'),
+      label('SUBTYPE', 'PERMANENT_SERVING', 'Stadigvarande servering'),
+    ];
+
+    expect(getLabelCategorizationHeading(errand({ category: 'ALCOHOL', labels }), undefined)).toBe(
+      'Stadigvarande servering'
+    );
+  });
+
+  test('says the errand is being registered while its shell carries no categorization', () => {
+    expect(getLabelCategorizationHeading(errand(), undefined)).toBe('Registrera nytt ärende');
+  });
+
+  test('still says the type is missing on an errand that is categorized in every other way', () => {
+    expect(getLabelCategorizationHeading(errand({ category: 'ALCOHOL' }), undefined)).toBe('(Ärendetyp saknas)');
+  });
+
+  test('reads the classification of an errand registered before label categorization', () => {
+    const legacy = errand({ classification: { category: 'ALCOHOL', type: 'NONE' } } as Partial<SupportErrand>);
+
+    expect(getLabelCategorizationHeading(legacy, undefined)).toBe('ALCOHOL');
   });
 });
