@@ -1,3 +1,5 @@
+import { getLatestSchema } from '@common/services/jsonschema-service';
+
 import { isRecord } from './support-form-value-service';
 
 export type JsonObject = Record<string, unknown>;
@@ -10,27 +12,23 @@ export interface SupportJsonParameter {
   version?: number;
 }
 
-/** A schema in Jsonschema; the version is the one the code writes, so a new version is a code change. */
-export interface SupportJsonSchema {
-  name: string;
-  version: string;
-}
-
-/** Where a JSON parameter is filed and the schema it is written against. */
-export interface SupportJsonParameterSpec {
-  key: string;
-  schema: SupportJsonSchema;
-}
-
 /** What a JSON parameter is written with. */
 export interface SupportJsonParameterWrite {
   schemaId: string;
   value: JsonObject;
 }
 
-/** Jsonschema names a schema `<municipality>_<name>_<version>`. */
-export const supportSchemaId = (municipalityId: string, schema: SupportJsonSchema): string =>
-  `${municipalityId}_${schema.name}_${schema.version}`;
+/**
+ * The schema version to write an entry with, the entry being filed under its schema's name: the one it was first
+ * saved with, or the latest when this is its first save.
+ */
+export const jsonParameterSchemaId = async (
+  parameters: SupportJsonParameter[] | undefined,
+  municipalityId: string,
+  schemaName: string
+): Promise<string> =>
+  parameters?.find(({ key }) => key === schemaName)?.schemaId ??
+  (await getLatestSchema(municipalityId, schemaName)).data.id;
 
 /** The object filed under the key; undefined when there is none. */
 export const jsonParameterObject = (

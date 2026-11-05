@@ -20,7 +20,6 @@ import {
 } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
-  INSPECTION_PROTOCOL_JSON_KEY,
   inspectionProtocolFileName,
   type InspectionProtocolValues,
   inspectionProtocolValuesFromJson,
@@ -30,6 +29,7 @@ import {
   toInspectionProtocolRenderParameters,
 } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
+  deleteSupportInvestigationJsonParameter,
   getSupportInvestigation,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
@@ -37,7 +37,7 @@ import {
   startSupportInvestigation,
   type SupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
-import { jsonParameterObject, supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { jsonParameterObject, jsonParameterSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import {
   getSupportMeasures,
   saveSupportMeasures,
@@ -95,7 +95,7 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
     values: template
       ? inspectionProtocolValuesFromJson(
           template,
-          jsonParameterObject(saved.investigation?.jsonParameters, INSPECTION_PROTOCOL_JSON_KEY),
+          jsonParameterObject(saved.investigation?.jsonParameters, template.schemaName),
           inspectionProtocolValuesOf(template, errand, user)
         )
       : {},
@@ -216,10 +216,6 @@ export const InspectionProtocol: FC<{
       ]);
       receiveMeasures({ ...data, measures: await getSupportMeasures(errandId, municipalityId) });
       if (template) {
-        const answers = {
-          schemaId: supportSchemaId(municipalityId, template.schema),
-          value: toInspectionProtocolJson(template, draft.values),
-        };
         const templateChanged = template.key !== baseline.templateKey;
         let investigationId = data.investigation?.id;
         if (!investigationId) {
@@ -234,13 +230,18 @@ export const InspectionProtocol: FC<{
           });
         }
         if (investigationId && (!data.investigation?.id || templateChanged || !same(draft.values, baseline.values))) {
-          await saveSupportInvestigationJsonParameter(
-            errandId,
-            municipalityId,
-            investigationId,
-            INSPECTION_PROTOCOL_JSON_KEY,
-            answers
-          );
+          await saveSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, template.schemaName, {
+            schemaId: await jsonParameterSchemaId(
+              data.investigation?.jsonParameters,
+              municipalityId,
+              template.schemaName
+            ),
+            value: toInspectionProtocolJson(template, draft.values),
+          });
+        }
+        const replaced = templateChanged && inspectionProtocolTemplate(baseline.templateKey)?.schemaName;
+        if (investigationId && replaced && data.investigation?.jsonParameters?.some(({ key }) => key === replaced)) {
+          await deleteSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, replaced);
         }
       }
       receive(await load(errandId, municipalityId));

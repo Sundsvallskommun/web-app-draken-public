@@ -1,5 +1,3 @@
-import type { SupportJsonSchema } from '@supportmanagement/services/support-json-parameter-service';
-
 /** What a field can be filled with before the handler types: the date, the permit holder, the signed-in user. */
 export type ProtocolPrefill = 'today' | 'permitHolderName' | 'permitHolderOrgNumber' | 'inspector';
 
@@ -67,8 +65,8 @@ export interface InspectionProtocolTemplate {
   label: string;
   /** The template's identifier in Templating, once uploaded. */
   identifier: string;
-  /** The schema the answers are saved against, one property per field key. */
-  schema: SupportJsonSchema;
+  /** The schema the answers are filed under and saved against, one property per field key. */
+  schemaName: string;
   /** Rendered directly until the template is uploaded; drop it then. */
   html?: string;
   /** The standard control points, saved as INTERNAL measures. */

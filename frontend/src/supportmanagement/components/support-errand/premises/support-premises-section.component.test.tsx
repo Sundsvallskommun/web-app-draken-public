@@ -6,6 +6,11 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportPremisesSection } from './support-premises-section.component';
 
+vi.mock('@common/services/jsonschema-service', () => ({
+  getLatestSchema: vi.fn((_municipalityId: string, name: string) =>
+    Promise.resolve({ data: { id: `2281_${name}_9.9` } })
+  ),
+}));
 vi.mock('@common/components/dynamic-text-editor', () => ({
   default: ({ value }: { value: { markup?: string } }) => <div data-cy="editor">{value.markup}</div>,
 }));
@@ -137,10 +142,17 @@ test('the inspection date and the right of disposal are saved in the JSON of the
 
   await expect(saveRef.current?.()).resolves.toBe(true);
 
-  expect(saveSupportInvestigationSectionJsonParameter).toHaveBeenCalledWith('e1', '2281', 'i1', 's1', 'premises', {
-    schemaId: '2281_aot_investigation_premises_section_1.0',
-    value: { inspectedAt: '2026-04-10', rightOfDisposal: { status: 'PROVEN' } },
-  });
+  expect(saveSupportInvestigationSectionJsonParameter).toHaveBeenCalledWith(
+    'e1',
+    '2281',
+    'i1',
+    's1',
+    'aot_investigation_premises_section',
+    {
+      schemaId: '2281_aot_investigation_premises_section_9.9',
+      value: { inspectedAt: '2026-04-10', rightOfDisposal: { status: 'PROVEN' } },
+    }
+  );
   expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
 });
 
@@ -151,7 +163,7 @@ test('what the section holds is shown, and an edit keeps the other fields', asyn
     text: '',
     jsonParameters: [
       {
-        key: 'premises',
+        key: 'aot_investigation_premises_section',
         schemaId: '2281_aot_investigation_premises_section_1.0',
         value: { inspectedAt: '2026-03-01', rightOfDisposal: { status: 'PENDING' } },
       },
@@ -165,6 +177,9 @@ test('what the section holds is shown, and an edit keeps the other fields', asyn
   await expect(saveRef.current?.()).resolves.toBe(true);
 
   expect(savedJson()).toEqual({ inspectedAt: '2026-03-01', rightOfDisposal: { status: 'PROVEN' } });
+  expect(saveSupportInvestigationSectionJsonParameter.mock.calls[0][5].schemaId).toBe(
+    '2281_aot_investigation_premises_section_1.0'
+  );
 });
 
 test('a space typed in the note survives the re-render', () => {

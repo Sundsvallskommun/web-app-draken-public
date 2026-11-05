@@ -27,6 +27,7 @@ interface ApiStub {
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
   put: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
 }
 
 const anInvestigation = { id: INVESTIGATION_ID, version: 4, status: 'ACTIVE', sections: [] as object[] };
@@ -41,6 +42,7 @@ const makeController = (existing: object[] = [], investigation: object = anInves
     post: vi.fn(async () => ({ data: { id: INVESTIGATION_ID }, message: 'success' })),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
     put: vi.fn(async () => ({ data: {}, message: 'success' })),
+    delete: vi.fn(async () => ({ data: {}, message: 'success' })),
   };
   Object.assign(controller as object, { apiService: api });
   return { controller, api };
@@ -350,6 +352,23 @@ describe('the JSON parameters', () => {
     const [config] = api.put.mock.calls[0];
     expect(config.url).toBe(`${investigationUrl}/json-parameters/inspectionProtocol`);
     expect(config.data).toEqual({ key: 'inspectionProtocol', schemaId: 'aot_inspection_internal', value: { summary: 'approved' } });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('deletes a JSON parameter of the investigation', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.deleteInvestigationJsonParameter(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      INVESTIGATION_ID,
+      'aot_inspection_internal',
+      res,
+    );
+
+    expect(api.delete.mock.calls[0][0].url).toBe(`${investigationUrl}/json-parameters/aot_inspection_internal`);
     expect(res.statusCode).toBe(200);
   });
 

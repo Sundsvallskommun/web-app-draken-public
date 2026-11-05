@@ -61,7 +61,7 @@ import {
 import { getPremisesAddress } from './support-premises-address-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
-  SUPPORT_PREMISES_SECTION_JSON,
+  SUPPORT_PREMISES_SECTION_SCHEMA,
   supportPremisesCapacityOf,
   supportPremisesExamination,
   supportPremisesFireSafety,
@@ -269,7 +269,7 @@ const sectionTexts = (investigation: Investigation | undefined): Record<string, 
 const premisesJson = (investigation: SupportInvestigation | undefined) =>
   jsonParameterObject(
     investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.jsonParameters,
-    SUPPORT_PREMISES_SECTION_JSON.key
+    SUPPORT_PREMISES_SECTION_SCHEMA
   );
 
 const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>
