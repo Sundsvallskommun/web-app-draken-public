@@ -89,18 +89,26 @@ const comparable = (values: DecisionFormValues, premises: DecisionPremises | und
  * The fields of the decision while it is being written. The decision behind them is read again
  * whenever the errand changes, and the fields follow it only when it is a different decision or a
  * newer version of it, so a reload does not wipe what the handler is in the middle of writing.
+ * A new decision's att-satser follow the investigation for as long as the handler leaves them as prefilled.
  */
 export const useDecisionForm = (input: DecisionFormInput): DecisionForm => {
   const saved = asSaved(input);
   const [values, setValues] = useState(saved);
 
-  const version = input.decision?.id
-    ? `${input.decision.id}:${input.decision.version ?? ''}`
-    : `new:${input.investigationClauses}`;
+  const version = input.decision?.id ? `${input.decision.id}:${input.decision.version ?? ''}` : 'new';
   const [filledFrom, setFilledFrom] = useState(version);
+  const [prefilled, setPrefilled] = useState(input.investigationClauses);
   if (version !== filledFrom) {
     setFilledFrom(version);
+    setPrefilled(input.investigationClauses);
     setValues(saved);
+  } else if (input.investigationClauses !== prefilled) {
+    setPrefilled(input.investigationClauses);
+    if (!input.decision?.id) {
+      setValues((current) =>
+        current.clauses === prefilled ? { ...current, clauses: input.investigationClauses } : current
+      );
+    }
   }
 
   const set = useCallback(

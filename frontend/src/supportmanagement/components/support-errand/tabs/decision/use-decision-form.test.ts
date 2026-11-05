@@ -81,6 +81,28 @@ test('a decision not yet saved starts its att-satser from the investigation, als
   expect(result.current.edited).toBe(false);
 });
 
+test('a newer investigation changes only att-satser the handler has left as prefilled', () => {
+  const props = {
+    decision: undefined,
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: 'att bevilja',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  };
+  const { result, rerender } = form(props);
+
+  act(() => result.current.set('justification', 'Motivering'));
+  rerender({ ...props, investigationClauses: 'att bevilja\natt servera' });
+  expect(result.current.values).toMatchObject({ clauses: 'att bevilja\natt servera', justification: 'Motivering' });
+
+  act(() => result.current.set('clauses', 'egen'));
+  rerender({ ...props, investigationClauses: 'att avslå' });
+  expect(result.current.values).toMatchObject({ clauses: 'egen', justification: 'Motivering' });
+});
+
 test('a saved decision keeps its own att-satser, also when they are empty', () => {
   const withClauses = saved({
     jsonParameters: [

@@ -246,7 +246,7 @@ const htmlOf = (value: string | undefined): string => (value?.trim() ? sanitized
  * An editor text without its tags, for the texts the template prints without markup. A block tag ends a line,
  * since the text is written in an editor. The result is still HTML-escaped, as the template wants it.
  */
-export const plainTextOf = (value: string | undefined): string =>
+const plainTextOf = (value: string | undefined): string =>
   sanitizedInline((value ?? '').replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '\n'))
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
