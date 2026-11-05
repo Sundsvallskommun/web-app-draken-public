@@ -6,7 +6,10 @@ import { apiURL } from '@/utils/util';
 import { mockReq } from './helpers/http';
 import {
   mockAdUsername,
+  mockAttachmentId,
+  mockBinaryFileContent,
   mockConversationId,
+  mockMessageId,
   mockMunicipalityId,
   mockSupportErrandId,
   mockSupportErrandNumber,
@@ -116,5 +119,24 @@ describe('SupportConversationController read state', () => {
       expect.objectContaining({ messageId: 'own-message', viewed: true }),
       expect.objectContaining({ messageId: 'read-message', viewed: true }),
     ]);
+  });
+});
+
+describe('SupportConversationController attachments', () => {
+  it('returns a binary attachment as base64 with every byte intact', async () => {
+    const { controller, api } = makeController();
+    api.get.mockResolvedValue({ data: mockBinaryFileContent, message: 'success' });
+
+    const result = await controller.getAttachment(
+      mockReq(),
+      mockSupportErrandId,
+      mockMunicipalityId,
+      mockConversationId,
+      mockMessageId,
+      mockAttachmentId,
+    );
+
+    expect(api.get).toHaveBeenCalledWith(expect.objectContaining({ responseType: 'arraybuffer' }), expect.anything());
+    expect(result).toEqual({ data: mockBinaryFileContent.toString('base64'), message: 'Success' });
   });
 });

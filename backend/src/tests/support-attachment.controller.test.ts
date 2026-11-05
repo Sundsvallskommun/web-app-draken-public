@@ -2,7 +2,7 @@ import { apiServiceName } from '@/config/api-config';
 import { ATTACHMENT_STALL_TIMEOUT_MS, SupportAttachmentController } from '@/controllers/supportmanagement/support-attachment.controller';
 
 import { mockReq, mockRes } from './helpers/http';
-import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
+import { mockBinaryFileContent, mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 const SERVICE = apiServiceName('supportmanagement');
 const ATTACHMENT_ID = 'attachment-1';
@@ -10,7 +10,7 @@ const FILE_CONTENT = 'file content';
 
 const makeController = () => {
   const controller = new SupportAttachmentController();
-  const api = { get: vi.fn(async () => ({ data: new TextEncoder().encode(FILE_CONTENT).buffer, message: 'success' })) };
+  const api = { get: vi.fn(async () => ({ data: Buffer.from(FILE_CONTENT), message: 'success' })) };
   (controller as unknown as { apiService: typeof api }).apiService = api;
   return { controller, api };
 };
@@ -32,6 +32,16 @@ describe('SupportAttachmentController', () => {
         expect.anything(),
       );
       expect(res.body).toBe(Buffer.from(FILE_CONTENT).toString('base64'));
+    });
+
+    it('returns a binary file as base64 with every byte intact', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValueOnce({ data: mockBinaryFileContent, message: 'success' });
+      const res = mockRes<string>();
+
+      await controller.fetchSingleSupportAttachment(mockReq(), mockSupportErrandId, ATTACHMENT_ID, mockMunicipalityId, res);
+
+      expect(res.body).toBe(mockBinaryFileContent.toString('base64'));
     });
 
     it('fails the request when the download fails', async () => {
