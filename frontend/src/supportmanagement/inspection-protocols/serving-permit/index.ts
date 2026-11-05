@@ -14,7 +14,7 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
   key: 'serving_permit',
   label: 'Serveringstillstånd – tillsyn',
   identifier: 'serving-inspection-protocol',
-  schemaName: 'aot_inspection_serving_permit',
+  schema: { name: 'aot_inspection_serving_permit', version: '1.0' },
   html: SERVING_PERMIT_HTML,
   controlPoints: [
     'Nykterhet (3:5, 3:8, 8:20)',

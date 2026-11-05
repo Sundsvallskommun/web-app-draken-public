@@ -4,7 +4,7 @@ import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
   type DecisionParameterInput,
-  decisionSchemaName,
+  decisionSchema,
   flattenDecisionJson,
   missingDecisionInputs,
   missingPermitInputs,
@@ -289,8 +289,8 @@ describe('the JSON of a serving permit', () => {
   });
 
   test('is saved against the schema of the permit area', () => {
-    expect(decisionSchemaName('SERVERINGSTILLSTAND')).toBe('aot_alcohol_decision');
-    expect(decisionSchemaName('ECIGARETTFORSALJNING')).toBe('aot_tobacco_decision');
+    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.2' });
+    expect(decisionSchema('ECIGARETTFORSALJNING')).toEqual({ name: 'aot_tobacco_decision', version: '1.2' });
     expect(
       savedDecisionJson({ jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: 'x', value: saved }] })
     ).toEqual(saved);

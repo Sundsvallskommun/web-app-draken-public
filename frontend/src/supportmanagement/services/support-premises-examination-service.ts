@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-schema-service';
 import type { SupportErrand } from './support-errand-service';
 import { childText, type FormValue, isRecord } from './support-form-value-service';
-import { type JsonObject, withoutBlanks } from './support-json-parameter-service';
+import { type JsonObject, type SupportJsonSchema, withoutBlanks } from './support-json-parameter-service';
 import type { SupportMetadata } from './support-metadata-service';
 import { supportStatementCounterpartyKey } from './support-statement-counterparties';
 
@@ -41,7 +41,10 @@ export interface SupportPremisesExamination {
 }
 
 /** The premises section keeps the examination in one JSON parameter, filed under this schema. */
-export const SUPPORT_PREMISES_SECTION_SCHEMA = 'aot_investigation_premises_section';
+export const SUPPORT_PREMISES_SECTION_SCHEMA: SupportJsonSchema = {
+  name: 'aot_investigation_premises_section',
+  version: '1.0',
+};
 
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
 

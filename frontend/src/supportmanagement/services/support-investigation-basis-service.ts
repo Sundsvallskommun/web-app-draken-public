@@ -275,7 +275,7 @@ const sectionTexts = (investigation: Investigation | undefined): Record<string, 
 const premisesJson = (investigation: SupportInvestigation | undefined) =>
   jsonParameterObject(
     investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.jsonParameters,
-    SUPPORT_PREMISES_SECTION_SCHEMA
+    SUPPORT_PREMISES_SECTION_SCHEMA.name
   );
 
 const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>

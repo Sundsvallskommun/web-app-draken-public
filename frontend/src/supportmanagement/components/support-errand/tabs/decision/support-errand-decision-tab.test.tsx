@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { getLatestSchema } from '@common/services/jsonschema-service';
 import { emptyUser } from '@common/services/user-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -44,10 +43,6 @@ vi.mock('@common/components/template-preview/template-pdf-preview.component', ()
 }));
 vi.mock('@supportmanagement/components/premises/use-decision-premises', () => ({
   useDecisionPremises: () => ({ decided: undefined }),
-}));
-vi.mock('@common/services/jsonschema-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@common/services/jsonschema-service')>()),
-  getLatestSchema: vi.fn().mockResolvedValue({ data: { id: '2281_aot_alcohol_decision_9.9' } }),
 }));
 vi.mock('@supportmanagement/services/support-decision-service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@supportmanagement/services/support-decision-service')>()),
@@ -254,7 +249,7 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     'decision-1',
     'aot_alcohol_decision',
     {
-      schemaId: '2281_aot_alcohol_decision_9.9',
+      schemaId: '2281_aot_alcohol_decision_1.2',
       value: expect.objectContaining({
         servingPermitType: 'PERMANENT_SERVING',
         beverages: ['STRONG_BEER'],
@@ -316,8 +311,7 @@ test('saving again after a failed JSON write updates the new decision, and keeps
   );
 });
 
-test('saving a saved decision again keeps the schema version it was first saved with', async () => {
-  vi.mocked(getLatestSchema).mockClear();
+test('a decision saved against an older schema version is written against the one the code builds for', async () => {
   vi.mocked(updateSupportDecision)
     .mockReset()
     .mockResolvedValue({ id: 'decision-id', status: 'DRAFT' } as never);
@@ -335,8 +329,7 @@ test('saving a saved decision again keeps the schema version it was first saved 
   fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
   await expect(saveTheTab()).resolves.toBe(true);
 
-  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.0');
-  expect(getLatestSchema).not.toHaveBeenCalled();
+  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.2');
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {

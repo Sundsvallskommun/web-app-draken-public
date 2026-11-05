@@ -37,7 +37,7 @@ import {
   startSupportInvestigation,
   type SupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
-import { jsonParameterObject, jsonParameterSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { jsonParameterObject, supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import {
   getSupportMeasures,
   saveSupportMeasures,
@@ -95,7 +95,7 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
     values: template
       ? inspectionProtocolValuesFromJson(
           template,
-          jsonParameterObject(saved.investigation?.jsonParameters, template.schemaName),
+          jsonParameterObject(saved.investigation?.jsonParameters, template.schema.name),
           inspectionProtocolValuesOf(template, errand, user)
         )
       : {},
@@ -230,16 +230,12 @@ export const InspectionProtocol: FC<{
           });
         }
         if (investigationId && (!data.investigation?.id || templateChanged || !same(draft.values, baseline.values))) {
-          await saveSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, template.schemaName, {
-            schemaId: await jsonParameterSchemaId(
-              data.investigation?.jsonParameters,
-              municipalityId,
-              template.schemaName
-            ),
+          await saveSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, template.schema.name, {
+            schemaId: supportSchemaId(municipalityId, template.schema),
             value: toInspectionProtocolJson(template, draft.values),
           });
         }
-        const replaced = templateChanged && inspectionProtocolTemplate(baseline.templateKey)?.schemaName;
+        const replaced = templateChanged && inspectionProtocolTemplate(baseline.templateKey)?.schema.name;
         if (investigationId && replaced && data.investigation?.jsonParameters?.some(({ key }) => key === replaced)) {
           await deleteSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, replaced);
         }

@@ -25,6 +25,7 @@ import {
   jsonParameterObject,
   objectAt,
   stringAt,
+  type SupportJsonSchema,
   withoutBlanks,
 } from './support-json-parameter-service';
 
@@ -81,11 +82,11 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const ALCOHOL_DECISION_SCHEMA = 'aot_alcohol_decision';
-const TOBACCO_DECISION_SCHEMA = 'aot_tobacco_decision';
+const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.2' };
+const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision', version: '1.2' };
 
 /** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
-export const decisionSchemaName = (permitType: string): string =>
+export const decisionSchema = (permitType: string): SupportJsonSchema =>
   TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
 
 // The values the schemas restrict. One that does not fit is left out, so the save is not refused for it
@@ -102,8 +103,8 @@ const OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSI
 
 /** What a saved decision says of the permit; undefined for a decision without it. */
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
-  jsonParameterObject(decision?.jsonParameters, ALCOHOL_DECISION_SCHEMA) ??
-  jsonParameterObject(decision?.jsonParameters, TOBACCO_DECISION_SCHEMA);
+  jsonParameterObject(decision?.jsonParameters, ALCOHOL_DECISION_SCHEMA.name) ??
+  jsonParameterObject(decision?.jsonParameters, TOBACCO_DECISION_SCHEMA.name);
 
 const matching =
   (pattern: RegExp) =>

@@ -6,11 +6,6 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportPremisesSection } from './support-premises-section.component';
 
-vi.mock('@common/services/jsonschema-service', () => ({
-  getLatestSchema: vi.fn((_municipalityId: string, name: string) =>
-    Promise.resolve({ data: { id: `2281_${name}_9.9` } })
-  ),
-}));
 vi.mock('@common/components/dynamic-text-editor', () => ({
   default: ({ value }: { value: { markup?: string } }) => <div data-cy="editor">{value.markup}</div>,
 }));
@@ -149,7 +144,7 @@ test('the inspection date and the right of disposal are saved in the JSON of the
     's1',
     'aot_investigation_premises_section',
     {
-      schemaId: '2281_aot_investigation_premises_section_9.9',
+      schemaId: '2281_aot_investigation_premises_section_1.0',
       value: { inspectedAt: '2026-04-10', rightOfDisposal: { status: 'PROVEN' } },
     }
   );

@@ -5,7 +5,7 @@ import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from 
 import {
   type CertificateDecision,
   type DecisionParameterInput,
-  decisionSchemaName,
+  decisionSchema,
   toCertificateParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
@@ -25,7 +25,7 @@ import {
 } from '@supportmanagement/services/support-decision-service';
 import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { FormValue } from '@supportmanagement/services/support-form-value-service';
-import { jsonParameterSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -120,9 +120,9 @@ export const useDecisionSave = ({
   const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
     if (!supportErrand?.id) return undefined;
 
-    const schemaName = decisionSchemaName(permit.type);
-    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, schemaName, {
-      schemaId: await jsonParameterSchemaId(decision?.jsonParameters, municipalityId, schemaName),
+    const schema = decisionSchema(permit.type);
+    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, schema.name, {
+      schemaId: supportSchemaId(municipalityId, schema),
       value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
     });
   };
