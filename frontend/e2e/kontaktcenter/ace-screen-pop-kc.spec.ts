@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from '@playwright/test';
 
 import { ACE_TEST_CONFIG, expect, test } from '../blocks/ace/ace.fixture';
-import { mockEnv } from '../fixtures/mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 import { mockAdressResponse } from './fixtures/mockAdressResponse';
 import { mockEmptySupportErrand, mockSupportErrand, mockSupportErrands } from './fixtures/mockSupportErrands';
 import { errandOwner, fillRequiredErrandFields, saveErrand } from './blocks/kc-errand-page';

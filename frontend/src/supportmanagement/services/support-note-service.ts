@@ -1,3 +1,4 @@
+import { NoteType } from '@casedata/interfaces/errandNote';
 import { apiService } from '@common/services/api-service';
 
 import { ensureErrandSubscription } from './support-subscription-service';
@@ -9,6 +10,7 @@ interface SupportNoteDto {
   subject: string;
   body: string;
   createdBy: string;
+  noteType: NoteType;
 }
 
 export interface SupportNote {
@@ -35,12 +37,16 @@ export interface SupportNoteData {
   };
 }
 
-export const getSupportNotes: (errandId: string, municipalityId: string) => Promise<SupportNoteData> = (
-  errandId,
-  municipalityId
-) => {
+const notesUrl = (errandId: string, municipalityId: string, noteType: NoteType) =>
+  `supportnotes/${municipalityId}/${errandId}${noteType === 'PUBLIC' ? '?noteType=PUBLIC' : ''}`;
+
+export const getSupportNotes: (
+  errandId: string,
+  municipalityId: string,
+  noteType?: NoteType
+) => Promise<SupportNoteData> = (errandId, municipalityId, noteType = 'INTERNAL') => {
   return apiService
-    .get<SupportNoteData>(`supportnotes/${municipalityId}/${errandId}`)
+    .get<SupportNoteData>(notesUrl(errandId, municipalityId, noteType))
     .then((res) => {
       return res.data;
     })
@@ -50,12 +56,13 @@ export const getSupportNotes: (errandId: string, municipalityId: string) => Prom
     });
 };
 
-export const getSupportNotesCount: (errandId: string, municipalityId: string) => Promise<number> = (
-  errandId,
-  municipalityId
-) => {
+export const getSupportNotesCount: (
+  errandId: string,
+  municipalityId: string,
+  noteType?: NoteType
+) => Promise<number> = (errandId, municipalityId, noteType = 'INTERNAL') => {
   return apiService
-    .get<SupportNoteData>(`supportnotes/${municipalityId}/${errandId}`)
+    .get<SupportNoteData>(notesUrl(errandId, municipalityId, noteType))
     .then((res) => {
       return res.data.notes.length;
     })
@@ -69,10 +76,11 @@ export const saveSupportNote: (
   errandId: string,
   municipalityId: string,
   body: string,
-  partyId?: string
-) => Promise<boolean> = (errandId, municipalityId, body, partyId) => {
+  partyId?: string,
+  noteType?: NoteType
+) => Promise<boolean> = (errandId, municipalityId, body, partyId, noteType) => {
   return apiService
-    .post<boolean, Partial<SupportNoteDto>>(`supportnotes/${municipalityId}/${errandId}`, { body, partyId })
+    .post<boolean, Partial<SupportNoteDto>>(`supportnotes/${municipalityId}/${errandId}`, { body, partyId, noteType })
     .then((res) => {
       // Commenting on an errand is taken as "keep me posted on this one".
       void ensureErrandSubscription(municipalityId, errandId);

@@ -7,6 +7,10 @@ import {
   mockHandoverNamespace,
   mockLastName,
   mockMunicipalityId,
+  mockOrganizationName,
+  mockOrganizationNumber,
+  mockOrganizationNumberDigits,
+  mockOrganizationPartyId,
   mockSupportErrandId,
   mockSupportErrandNumber,
   mockSupportNamespace,
@@ -14,6 +18,10 @@ import {
 
 interface ApiStub {
   get: ReturnType<typeof vi.fn>;
+}
+
+interface OrgStub {
+  getOrganizationNumberByPartyId: ReturnType<typeof vi.fn>;
 }
 
 // A labels namespace keeps its classification as resource paths and has no categories in its metadata;
@@ -66,14 +74,16 @@ const makeController = (sourceErrand: SupportManagementErrand, metadata: Metadat
       return { data: sourceErrand, message: 'success' };
     }),
   };
+  const organization: OrgStub = { getOrganizationNumberByPartyId: vi.fn(async () => mockOrganizationNumberDigits) };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
-  return { controller, api };
+  (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
+  return { controller, api, organization };
 };
 
 const referredFrom = async (sourceErrand: SupportManagementErrand, metadata: MetadataResponse, namespace?: string) => {
-  const { controller } = makeController(sourceErrand, metadata, namespace);
+  const { controller, organization } = makeController(sourceErrand, metadata, namespace);
   const res = await controller.getReferredFromErrand(mockReq(), mockMunicipalityId, 'target-1');
-  return res.data[0];
+  return { ...res.data[0], organization };
 };
 
 beforeEach(() => {
@@ -144,5 +154,24 @@ describe('RelationsController referred-from classification', () => {
 
     expect(result.classificationCategoryDisplayName).toBe('');
     expect(result.classificationTypeDisplayName).toBe('');
+  });
+});
+
+describe('RelationsController referred-from stakeholders', () => {
+  it.each(['COMPANY', 'ENTERPRISE'])('looks up the organization number by party id for a %s stakeholder', async externalIdType => {
+    const result = await referredFrom(
+      errand({ stakeholders: [{ role: 'PRIMARY', organizationName: mockOrganizationName, externalId: mockOrganizationPartyId, externalIdType }] }),
+      { categories } as MetadataResponse,
+    );
+
+    expect(result.organization.getOrganizationNumberByPartyId).toHaveBeenCalledWith(mockMunicipalityId, mockOrganizationPartyId, expect.anything());
+    expect(result.stakeholders[0].organizationNumber).toBe(mockOrganizationNumber);
+  });
+
+  it('does not look up an organization number for a person', async () => {
+    const result = await referredFrom(errand(), { categories } as MetadataResponse);
+
+    expect(result.organization.getOrganizationNumberByPartyId).not.toHaveBeenCalled();
+    expect(result.stakeholders[0].organizationNumber).toBe('');
   });
 });

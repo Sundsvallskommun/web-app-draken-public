@@ -1,4 +1,4 @@
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 export interface ScreenPopOptions {
   /** Sent as contactData.cid, where Sundsvall's ACE puts it; null leaves the caller unidentified. */

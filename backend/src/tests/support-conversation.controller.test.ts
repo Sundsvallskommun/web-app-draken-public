@@ -92,7 +92,7 @@ describe('SupportConversationController read state', () => {
     const { controller, api } = makeController();
     api.get
       .mockResolvedValueOnce({
-        data: [{ id: mockConversationId, type: ConversationType.INTERNAL }],
+        data: { id: mockConversationId, topic: 'Fråga om tillstånd', type: ConversationType.INTERNAL },
         message: 'success',
       })
       .mockResolvedValueOnce({
@@ -116,5 +116,47 @@ describe('SupportConversationController read state', () => {
       expect.objectContaining({ messageId: 'own-message', viewed: true }),
       expect.objectContaining({ messageId: 'read-message', viewed: true }),
     ]);
+  });
+});
+
+describe('SupportConversationController conversation lookup', () => {
+  it('reads the conversation on its own rather than listing every conversation of the errand', async () => {
+    const { controller, api } = makeController();
+    api.get
+      .mockResolvedValueOnce({
+        data: { id: mockConversationId, topic: 'Fråga om tillstånd', type: ConversationType.INTERNAL },
+        message: 'success',
+      })
+      .mockResolvedValueOnce({ data: { content: [{ id: 'a-message' }] }, message: 'success' });
+
+    await controller.returnAllMessages(mockReq(), mockSupportErrandId, mockMunicipalityId, mockConversationId);
+
+    expect(api.get).toHaveBeenNthCalledWith(
+      1,
+      {
+        url: `${mockMunicipalityId}/${mockSupportNamespace}/errands/${mockSupportErrandId}/communication/conversations/${mockConversationId}`,
+        baseURL: apiURL(SUPPORT_SERVICE),
+      },
+      expect.anything(),
+    );
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('answers with the messages even when the conversation itself cannot be read', async () => {
+    const { controller, api } = makeController();
+    api.get.mockRejectedValueOnce(new Error('gone')).mockResolvedValueOnce({ data: { content: [{ id: 'a-message' }] }, message: 'success' });
+
+    const result = await controller.returnAllMessages(mockReq(), mockSupportErrandId, mockMunicipalityId, mockConversationId);
+
+    expect(result.data).toEqual([expect.objectContaining({ messageId: 'a-message' })]);
+  });
+
+  it('leaves a conversation it could not read without a channel rather than calling it the one the citizen sees', async () => {
+    const { controller, api } = makeController();
+    api.get.mockRejectedValueOnce(new Error('gone')).mockResolvedValueOnce({ data: { content: [{ id: 'a-message' }] }, message: 'success' });
+
+    const result = await controller.returnAllMessages(mockReq(), mockSupportErrandId, mockMunicipalityId, mockConversationId);
+
+    expect(result.data[0].communicationType).toBeUndefined();
   });
 });

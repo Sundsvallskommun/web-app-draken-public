@@ -1,3 +1,4 @@
+import { appConfig } from '@config/appconfig';
 import { useSearchParams } from 'next/navigation';
 import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
 
@@ -5,6 +6,7 @@ import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
+import { SidebarNotes } from './sidebar-notes.component';
 import { SidebarSupportExport } from './sidebar-support-export.component';
 
 export const SidebarWrapper: FC<{
@@ -25,6 +27,16 @@ export const SidebarWrapper: FC<{
       icon: 'user-cog',
       component: <SidebarInfo unsavedFacility={props.unsavedFacility} setUnsavedFacility={props.setUnsavedFacility!} />,
     },
+    ...(appConfig.features.useServiceNotes
+      ? [
+          {
+            label: 'Tjänsteanteckningar',
+            key: 'notes' as const,
+            icon: 'pencil-line',
+            component: <SidebarNotes />,
+          },
+        ]
+      : []),
     {
       label: 'Kommentarer',
       key: 'comments',

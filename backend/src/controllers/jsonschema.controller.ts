@@ -11,6 +11,7 @@ interface ResponseData<T> {
   message: string;
 }
 
+/** Pass-through to the jsonschema service. ApiService forwards a 404 as 404: an unpublished schema is an answer, not a failure. */
 @Controller()
 export class JsonSchemaController {
   private apiService = new ApiService();

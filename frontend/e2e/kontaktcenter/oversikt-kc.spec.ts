@@ -239,4 +239,12 @@ test.describe('Overview support errand', () => {
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await expect(page.locator('Caption#errandTableCaption')).toContainText('Det finns inga ärenden');
   });
+
+  test('does not show the overview notice when the flag is off', async ({ page }) => {
+    await expect(page.locator('[data-cy="overview-notice"]')).toHaveCount(0);
+  });
+
+  test('does not show the customer menu when the flag is off', async ({ page }) => {
+    await expect(page.locator('[data-cy="customer-menu"]')).toHaveCount(0);
+  });
 });

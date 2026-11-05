@@ -1,0 +1,84 @@
+import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-schema-service';
+import type { SupportErrand } from './support-errand-service';
+import { premisesValue } from './support-form-value-service';
+
+/** Where the premises address was read from: the errand form, or the owner (PRIMARY) stakeholder. */
+type PremisesAddressSource = 'FORM' | 'OWNER';
+
+export interface PremisesAddress {
+  street: string;
+  /** Whitespace removed — Katla accepts both `85230` and `852 30`. */
+  postalCode?: string;
+  city?: string;
+  source: PremisesAddressSource;
+}
+
+type PremisesAddressErrand = Pick<SupportErrand, 'labels' | 'classification' | 'jsonParameters' | 'stakeholders'>;
+
+// TODO Decide when to show the serving sections
+export const hasServingPremises = (errand: Pick<SupportErrand, 'process'> | undefined): boolean => true;
+
+const text = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() ? value.trim() : undefined;
+
+/** A street is what identifies the premises; without one there is no address to look up. */
+const toPremisesAddress = (
+  street: unknown,
+  postalCode: unknown,
+  city: unknown,
+  source: PremisesAddressSource
+): PremisesAddress | undefined => {
+  const normalizedStreet = text(street);
+  if (!normalizedStreet) return undefined;
+
+  return {
+    street: normalizedStreet,
+    postalCode: text(postalCode)?.replace(/\s+/g, ''),
+    city: text(city),
+    source,
+  };
+};
+
+const fromForm = (formData: Record<string, unknown> | undefined): PremisesAddress | undefined => {
+  const address = premisesValue(formData, 'Address');
+  if (!address || typeof address !== 'object') return undefined;
+
+  const { street, postalCode, city } = address as Record<string, unknown>;
+  return toPremisesAddress(street, postalCode, city, 'FORM');
+};
+
+const fromOwner = (errand: PremisesAddressErrand): PremisesAddress | undefined => {
+  const owner = errand.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
+  return owner ? toPremisesAddress(owner.address, owner.zipCode, owner.city, 'OWNER') : undefined;
+};
+
+/**
+ * The address of the serving/sales premises (besöksadress) of an AoT errand.
+ *
+ * `premisesAddressSameAsCompany: "YES"` (`pointOfSale*` for tobacco) means the premises are at the owner's
+ * address; anything else, including the question being absent, means the form's own `premisesAddress`. The
+ * chosen source is final: when it holds no usable address the result is undefined, never the other source — a
+ * stale `premisesAddress` left behind after answering YES is not the premises.
+ */
+export const getPremisesAddress = (
+  errand: PremisesAddressErrand | undefined,
+  namespace: string | undefined
+): PremisesAddress | undefined => {
+  if (!errand) return undefined;
+
+  const value = jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value;
+  const formData = value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+
+  return premisesValue(formData, 'AddressSameAsCompany') === 'YES' ? fromOwner(errand) : fromForm(formData);
+};
+
+// The premises address arrives with the space stripped from its postal code; show it as written in Sweden.
+const formatPostalCode = (postalCode?: string) => postalCode?.replace(/^(\d{3})(\d{2})$/, '$1 $2');
+
+export const formatAddress = (address: { streetAddress?: string; postalCode?: string; postalArea?: string }) =>
+  [address.streetAddress, [formatPostalCode(address.postalCode), address.postalArea].filter(Boolean).join(' ')]
+    .filter(Boolean)
+    .join(', ');
+
+export const formatPremisesAddress = (premises: PremisesAddress) =>
+  formatAddress({ streetAddress: premises.street, postalCode: premises.postalCode, postalArea: premises.city });

@@ -1,6 +1,6 @@
 import { test as base, Route } from '@playwright/test';
 import { ACE_JSAPI_SCRIPT_PATTERN } from '../blocks/ace/fake-jsapi';
-import { mockEnv } from './mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 
 type MockRouteOptions = {
   method?: string;

@@ -1,5 +1,5 @@
 import { Page, expect } from '@playwright/test';
-import { mockEnv } from '../fixtures/mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 
 // Lop-local copies of the shared stakeholder-search helpers, adjusted for the
 // @sk-web-gui bump:

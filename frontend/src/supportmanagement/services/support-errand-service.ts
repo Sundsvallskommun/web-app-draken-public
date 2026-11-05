@@ -1,4 +1,9 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  ErrandProcess,
+  Label,
+  Measure,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK, isROB } from '@common/services/application-service';
@@ -13,7 +18,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CJsonParameter, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -35,6 +40,9 @@ export enum ExternalIdType {
   EMPLOYEE = 'EMPLOYEE',
   COMPANY = 'COMPANY',
 }
+
+export const isOrganizationExternalIdType = (type?: string): boolean =>
+  type === ExternalIdType.COMPANY || type === ExternalIdType.ENTERPRISE;
 
 // Keeping both enums for now, as the backend uses the uppercase version
 // but existing stakeholders use the lowercase version
@@ -66,6 +74,8 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  measures?: Measure[];
+  process?: ErrandProcess;
   created?: string;
   modified?: string;
   touched?: string;
@@ -109,6 +119,7 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
   WEB_UI = 'Draken webbgränssnitt',
+  MIGRATION = 'Migrerat ärende',
 }
 
 // The channels a user can choose from when registering an errand.
@@ -217,6 +228,12 @@ export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: S
   return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
 };
 
+export const getLabelType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'TYPE');
+
+const getLabelSubType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'SUBTYPE');
+
+export const getMostSpecificLabelType = (errand: SupportErrand) => getLabelSubType(errand) ?? getLabelType(errand);
+
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
   return allTypesFlattened.find((t) => t?.resourcePath === name);
@@ -254,6 +271,10 @@ export enum Resolution {
   FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
   FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
   FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
+  GRANTED = 'GRANTED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+  DISMISSED = 'DISMISSED',
   INFORMED = 'INFORMED',
   GUIDED = 'GUIDED',
   ACTIONED = 'ACTIONED',
@@ -338,6 +359,14 @@ export enum ResolutionLabelROB {
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelAOT {
+  GRANTED = 'Beviljat',
+  REJECTED = 'Avslag',
+  WITHDRAWN = 'Återkallat av sökanden',
+  DISMISSED = 'Avskrivet',
+  CLOSED = 'Avslutat',
 }
 
 export enum ResolutionLabelSE {
@@ -428,6 +457,11 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
+
+const MIGRATED_ERRAND_CHANNEL: keyof typeof Channels = 'MIGRATION';
+
+export const isSupportMigratedErrand = (errand: Pick<SupportErrand, 'channel'> | undefined): boolean =>
+  errand?.channel === MIGRATED_ERRAND_CHANNEL;
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
@@ -659,11 +693,22 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
   return false;
 };
 
-// Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
-// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
-const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
+const ORGANIZATION_NUMBER_PATTERN = /^(\d{2})?\d{6}-?\d{4}$/;
+
+/**
+ * Resolve org number for a stakeholder, preferring the dedicated parameter, then the backend-resolved number, and lastly externalId for legacy org stakeholders.
+ *
+ * @param s Stakeholder potentially with organizationNumber field
+ * @returns string organization number
+ */
+export const getStakeholderOrganizationNumber = (
+  s: SupportStakeholder & { organizationNumber?: string }
+): string | undefined =>
   s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
-  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+  s.organizationNumber ||
+  (isOrganizationExternalIdType(s.externalIdType) && ORGANIZATION_NUMBER_PATTERN.test(s.externalId ?? '')
+    ? s.externalId
+    : undefined);
 
 // Read the first value of an errand parameter by key.
 export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
@@ -967,6 +1012,23 @@ export const setSupportErrandAdmin: (
     })
     .catch((e) => {
       console.error('Something went wrong when patching errand');
+      throw e;
+    });
+};
+
+/** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
+export const saveSupportErrandJsonParameters: (
+  errandId: string,
+  municipalityId: string,
+  jsonParameters: CJsonParameter[]
+) => Promise<boolean> = async (errandId, municipalityId, jsonParameters) => {
+  return apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+      jsonParameters,
+    })
+    .then(() => true)
+    .catch((e) => {
+      console.error('Something went wrong when patching errand json parameters');
       throw e;
     });
 };

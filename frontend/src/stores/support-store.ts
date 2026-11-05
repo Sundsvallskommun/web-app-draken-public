@@ -18,6 +18,12 @@ interface SupportState {
   /** Errand and namespace subscriptions belonging to the logged in user. */
   subscriptions: Subscription[];
   activeTabKey?: string;
+  unsavedTabs: Record<string, boolean>;
+  tabsWithContent: Record<string, boolean>;
+  processSignal: { errandId: string; at: number } | undefined;
+  tabSavers: Record<string, () => Promise<boolean>>;
+  /** Rewrites a draft decision's JSON from the decision tab, so concluding sends what the errand says now. */
+  decisionJsonWriter: ((decisionId: string) => Promise<unknown>) | undefined;
   showCloseModalAfterHandover: boolean;
 }
 
@@ -30,6 +36,11 @@ interface SupportActions {
   setNotifications: (notifications: NotificationView[]) => void;
   setSubscriptions: (subscriptions: Subscription[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
+  setUnsavedTab: (key: string, unsaved: boolean) => void;
+  setTabHasContent: (key: string, hasContent: boolean) => void;
+  setProcessSignal: (processSignal: { errandId: string; at: number } | undefined) => void;
+  setTabSaver: (key: string, saver: (() => Promise<boolean>) | undefined) => void;
+  setDecisionJsonWriter: (writer: ((decisionId: string) => Promise<unknown>) | undefined) => void;
   setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
 }
@@ -45,8 +56,19 @@ const initialState: SupportState = {
   notifications: [],
   subscriptions: [],
   activeTabKey: 'basics',
+  unsavedTabs: {},
+  tabsWithContent: {},
+  processSignal: undefined,
+  tabSavers: {},
+  decisionJsonWriter: undefined,
   showCloseModalAfterHandover: false,
 };
+
+const flagsWithChange = (
+  flags: Record<string, boolean>,
+  key: string,
+  value: boolean
+): Record<string, boolean> | undefined => (flags[key] === value ? undefined : { ...flags, [key]: value });
 
 export const useSupportStore = create<SupportStore>((set) => ({
   ...initialState,
@@ -58,6 +80,26 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setNotifications: (notifications) => set({ notifications }),
   setSubscriptions: (subscriptions) => set({ subscriptions }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
+  setProcessSignal: (processSignal) => set({ processSignal }),
+  setDecisionJsonWriter: (decisionJsonWriter) => set({ decisionJsonWriter }),
+  setTabSaver: (key, saver) =>
+    set((state) => {
+      if (state.tabSavers[key] === saver) return state;
+      const tabSavers = { ...state.tabSavers };
+      if (saver) tabSavers[key] = saver;
+      else delete tabSavers[key];
+      return { tabSavers };
+    }),
+  setUnsavedTab: (key, unsaved) =>
+    set((state) => {
+      const unsavedTabs = flagsWithChange(state.unsavedTabs, key, unsaved);
+      return unsavedTabs ? { unsavedTabs } : state;
+    }),
+  setTabHasContent: (key, hasContent) =>
+    set((state) => {
+      const tabsWithContent = flagsWithChange(state.tabsWithContent, key, hasContent);
+      return tabsWithContent ? { tabsWithContent } : state;
+    }),
   setShowCloseModalAfterHandover: (showCloseModalAfterHandover) => set({ showCloseModalAfterHandover }),
   reset: () => set(initialState),
 }));

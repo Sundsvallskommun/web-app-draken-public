@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isKC, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isAOT, isBOU, isIK, isKA, isKC, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -9,6 +9,7 @@ import {
   getSupportErrandById,
   Resolution,
   ResolutionDescriptionKS,
+  ResolutionLabelAOT,
   ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
@@ -35,6 +36,7 @@ const HANDOVER_DESCRIPTION =
   'Ärendet är överlämnat och avslutat med lösningskoden nedan. Ändra den om den inte speglar vad du har gjort.';
 
 const getResolutionLabels = (): Record<string, string> => {
+  if (isAOT()) return ResolutionLabelAOT;
   if (isLOP()) return ResolutionLabelLOP;
   if (isIK()) return ResolutionLabelIK;
   if (isSE()) return ResolutionLabelSE;

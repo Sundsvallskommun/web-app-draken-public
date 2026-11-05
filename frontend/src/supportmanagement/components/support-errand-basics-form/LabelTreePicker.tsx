@@ -206,6 +206,7 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
             onChangeSearch={(e) => setFirstSearch(e.target.value)}
           >
             <Combobox.Input
+              disabled={disabled}
               data-cy="labelCategory-input"
               className="w-full"
               onChangeSearch={(e) => setFirstSearch(e.target.value)}
@@ -242,6 +243,7 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
             onChangeSearch={(e) => setSecondSearch(e.target.value)}
           >
             <Combobox.Input
+              disabled={disabled || !firstSelection || firstIsLeaf}
               data-cy="labelType-input"
               className="w-full"
               onChangeSearch={(e) => setSecondSearch(e.target.value)}

@@ -1,5 +1,6 @@
-import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import FileUpload from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
+import { imageMimeTypes } from '@common/components/file-upload/mime-types';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';
@@ -14,11 +15,12 @@ import {
   Input,
   Modal,
   PopupMenu,
+  Select,
   Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   deleteSupportAttachment,
@@ -27,20 +29,30 @@ import {
   saveSupportAttachments,
   SingleSupportAttachment,
   SupportAttachment,
+  updateSupportAttachmentPurpose,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportStatements,
+  isStatementAttachmentWithoutItsStatement,
+  supportStatementAttachmentIds,
+} from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
-import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import { Ellipsis, Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+
+import { UnlinkedStatementAttachmentFlag } from '../statements/unlinked-statement-attachment-flag.component';
 
 interface SingleAttachment {
   file: File | undefined;
+  purposeId?: string;
 }
 interface SupportAttachmentFormModel {
   id?: string;
@@ -63,6 +75,11 @@ export const SupportErrandAttachmentsTab: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const attachmentPurposes = useMetadataStore((s) => s.supportMetadata?.attachmentPurposes);
+  const purposes = (attachmentPurposes ?? [])
+    .filter((p) => p.id && !p.deprecated)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((p) => ({ id: p.id!, label: p.displayName || p.name }));
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);
   const [modalFetching, setModalFetching] = useState(false);
@@ -73,10 +90,13 @@ export const SupportErrandAttachmentsTab: FC<{
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [selectedAttachment, setSelectedAttachment] = useState<SupportAttachment>();
   const [attachmentTypeExists, setAttachmentTypeExists] = useState(false);
-  const removeConfirm = useConfirm();
+  const confirm = useConfirm();
   const toastMessage = useSnackbar();
+  const { t } = useTranslation();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
+  const [editingPurposeId, setEditingPurposeId] = useState<string>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [statementAttachmentIds, setStatementAttachmentIds] = useState<Set<string>>();
 
   const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {
@@ -177,6 +197,22 @@ export const SupportErrandAttachmentsTab: FC<{
   }, [attachments]);
 
   useEffect(() => {
+    const errandId = supportErrand?.id?.toString();
+    if (!errandId) return;
+
+    let abandoned = false;
+    getSupportStatements(errandId, municipalityId)
+      .then((statements) => {
+        if (!abandoned) setStatementAttachmentIds(supportStatementAttachmentIds(statements));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      abandoned = true;
+    };
+  }, [supportErrand?.id, municipalityId, supportAttachments]);
+
+  useEffect(() => {
     if (!supportErrand?.id || !supportAttachments?.length) return;
 
     const errandId = supportErrand.id.toString();
@@ -256,7 +292,7 @@ export const SupportErrandAttachmentsTab: FC<{
   };
 
   const onDelete = () => {
-    removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
+    confirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
         return deleteSupportAttachment(supportErrand!.id!.toString(), municipalityId, selectedAttachment!.id!)
           ?.then(() => {
@@ -286,6 +322,32 @@ export const SupportErrandAttachmentsTab: FC<{
           });
       }
     });
+  };
+
+  const changePurpose = async (attachment: SupportAttachment, purposeId: string) => {
+    setEditingPurposeId(undefined);
+    if (!purposeId || purposeId === attachment.purpose?.id) return;
+    const purposeLabel = purposes.find((p) => p.id === purposeId)?.label;
+    const confirmed = await confirm.showConfirmation(
+      t('common:attachments.change_purpose_title'),
+      t('common:attachments.change_purpose_body', { fileName: attachment.fileName, purpose: purposeLabel }),
+      t('common:attachments.confirm_yes'),
+      t('common:attachments.confirm_no'),
+      'info',
+      'info'
+    );
+    if (!confirmed) return;
+    try {
+      await updateSupportAttachmentPurpose(supportErrand!.id!.toString(), municipalityId, attachment.id, purposeId);
+      props.update();
+    } catch {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: t('common:attachments.change_purpose_error'),
+        status: 'error',
+      });
+    }
   };
 
   const editAttachmentModal = (
@@ -348,6 +410,7 @@ export const SupportErrandAttachmentsTab: FC<{
                     helperText="Maximal filstorlek: 10 MB"
                     dragDrop={dragDrop}
                     allowMultiple={isKC() ? true : false}
+                    purposes={purposes}
                   />
                 </FormControl>
 
@@ -370,8 +433,9 @@ export const SupportErrandAttachmentsTab: FC<{
                   onClick={(e) => {
                     e.preventDefault();
                     const vals: SupportAttachmentFormModel = getValues();
-                    const attachmentsData: { file: File }[] = vals.attachments.map((a) => ({
+                    const attachmentsData: { file: File; purposeId?: string }[] = vals.attachments.map((a) => ({
                       file: a.file!,
+                      purposeId: a.purposeId || undefined,
                     }));
                     setIsLoading(true);
                     saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
@@ -497,6 +561,41 @@ export const SupportErrandAttachmentsTab: FC<{
                   </div>
                 </div>
 
+                {isStatementAttachmentWithoutItsStatement(attachment, statementAttachmentIds) ? (
+                  <UnlinkedStatementAttachmentFlag fileName={attachment.fileName} />
+                ) : null}
+
+                {purposes.length > 0 &&
+                  (editingPurposeId === attachment.id ? (
+                    <Select
+                      data-cy={`attachment-purpose-${attachment.id}`}
+                      aria-label={t('common:attachments.purpose_label', { fileName: attachment.fileName })}
+                      className="self-center w-[28rem] max-w-[40%]"
+                      autoFocus
+                      value={attachment.purpose?.id ?? ''}
+                      onChange={(e) => changePurpose(attachment, e.target.value)}
+                      onBlur={() => setEditingPurposeId(undefined)}
+                    >
+                      <Select.Option value="">{t('common:attachments.purpose_placeholder')}</Select.Option>
+                      {purposes.map((purpose) => (
+                        <Select.Option key={purpose.id} value={purpose.id}>
+                          {purpose.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <p
+                      data-cy={`attachment-purpose-text-${attachment.id}`}
+                      className={`self-center ${attachment.purpose ? '' : 'text-dark-disabled'}`}
+                    >
+                      {attachment.purpose
+                        ? purposes.find((p) => p.id === attachment.purpose?.id)?.label ||
+                          attachment.purpose.displayName ||
+                          attachment.purpose.name
+                        : t('common:attachments.no_purpose')}
+                    </p>
+                  ))}
+
                 <div className="self-center relative">
                   <PopupMenu>
                     <PopupMenu.Button
@@ -525,6 +624,19 @@ export const SupportErrandAttachmentsTab: FC<{
                             </Button>
                           </PopupMenu.Item>
                         </PopupMenu.Group>
+                        {!isSupportErrandLocked(supportErrand!) && purposes.length > 0 && (
+                          <PopupMenu.Group>
+                            <PopupMenu.Item>
+                              <Button
+                                data-cy={`edit-attachment-${attachment.id}`}
+                                leftIcon={<Pencil />}
+                                onClick={() => setEditingPurposeId(attachment.id)}
+                              >
+                                {t('common:attachments.edit')}
+                              </Button>
+                            </PopupMenu.Item>
+                          </PopupMenu.Group>
+                        )}
                         {!isSupportErrandLocked(supportErrand!) && (
                           <PopupMenu.Group>
                             <PopupMenu.Item>
