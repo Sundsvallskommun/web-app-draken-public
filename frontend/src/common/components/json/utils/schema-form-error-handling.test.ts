@@ -1,17 +1,28 @@
 import assert from 'node:assert/strict';
 
+import { mockEnv } from '@e2e/fixtures/mock-env';
 import type { RJSFSchema } from '@rjsf/utils';
-import { customizeValidator } from '@rjsf/validator-ajv8';
-import Ajv2020 from 'ajv/dist/2020';
 import { test } from 'vitest';
 
 import createJsonErrorTransformer, { getSchemaFormErrors } from './schema-form-error-handling';
-
-const validator = customizeValidator({ AjvClass: Ajv2020 });
+import { schemaFormValidator } from './schema-form-validator';
 
 function validate(schema: RJSFSchema, data: Record<string, unknown>) {
-  return validator.validateFormData(data, schema, undefined, createJsonErrorTransformer(schema)).errors;
+  return schemaFormValidator.validateFormData(data, schema, undefined, createJsonErrorTransformer(schema)).errors;
 }
+
+test('validates format email with the same rule and message as the rest of Draken', () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: { contact: { title: 'E-post', type: 'string', format: 'email' } },
+  };
+
+  assert.equal(validate(schema, { contact: mockEnv.mockEmail }).length, 0);
+  // Saved as typed, so the leading space in mockRecipientEmail makes it invalid here
+  assert.equal(validate(schema, { contact: mockEnv.mockRecipientEmail }).length, 1);
+  const [invalidEmailError] = validate(schema, { contact: mockEnv.mockEmail.replace('@', '.') });
+  assert.equal(invalidEmailError.message, 'E-postadress har fel format');
+});
 
 test('summarizes nested errors with Swedish titles and navigable field ids', () => {
   const schema: RJSFSchema = {

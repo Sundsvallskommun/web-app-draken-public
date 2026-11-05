@@ -1,4 +1,5 @@
 import { PrettyRole } from '@casedata/interfaces/role';
+import { invalidEmailMessage, isValidEmail } from '@common/utils/contact-validation-utils';
 import { appConfig } from '@config/appconfig';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -11,7 +12,6 @@ type size = 'sm' | 'md' | 'lg';
 interface CommonNestedEmailArrayV2Props {
   errand: any;
   register: any;
-  errors: any;
   watch: any;
   setValue: any;
   disabled?: boolean;
@@ -27,7 +27,6 @@ interface CommonNestedEmailArrayV2Props {
 const CommonNestedEmailArrayV2 = ({
   errand,
   register,
-  errors,
   watch,
   setValue,
   disabled,
@@ -46,6 +45,8 @@ const CommonNestedEmailArrayV2 = ({
   });
 
   const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
+  // The address is checked when Add is clicked, so typing never shows an error or blocks saving the form
+  const [showNewEmailError, setShowNewEmailError] = useState(false);
 
   useEffect(() => {
     const stakeholders: { email: string; role: string[] }[] = [];
@@ -125,8 +126,8 @@ const CommonNestedEmailArrayV2 = ({
         <Input
           data-cy={`new-email-input`}
           placeholder="Ange e-postadress"
-          {...register('newEmail')}
-          className={cx(error ? 'border-error' : null, `w-full`)}
+          {...register('newEmail', { onChange: () => setShowNewEmailError(false) })}
+          className={cx(error || showNewEmailError ? 'border-error' : null, `w-full`)}
         />
 
         <Button
@@ -135,18 +136,24 @@ const CommonNestedEmailArrayV2 = ({
           variant="tertiary"
           size={size as size}
           onClick={() => {
-            append({ value: newEmail });
+            if (!isValidEmail(newEmail)) {
+              setShowNewEmailError(true);
+              return;
+            }
+            append({ value: newEmail.trim() });
             setValue('newEmail', '');
             trigger();
           }}
           className="rounded-button"
-          disabled={disabled || errors?.newEmail || !newEmail}
+          disabled={disabled || !newEmail}
         >
           Lägg till
         </Button>
       </div>
-      {errors?.newEmail?.message && (
-        <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
+      {showNewEmailError && (
+        <FormErrorMessage data-cy="new-email-error" className="text-error">
+          {invalidEmailMessage}
+        </FormErrorMessage>
       )}
       {fields?.length > 0 ? (
         <>

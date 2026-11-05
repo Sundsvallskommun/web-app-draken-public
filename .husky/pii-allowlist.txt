@@ -46,6 +46,9 @@
 +46701740605
 +46701740635
 +46701740636
+# Fastnätsnummer ur PTS-serierna för fiktion (08-46500400–46500499, 0980-319200–319299), frontend/e2e/fixtures/mock-env.ts
+0846500456
+0980319247
 # 0046701740635 (testnumret ovan med 00-prefix, frontend/src/common/ace/ace-screen-pop.test.ts)
 0467017406
 # Falska träffar: substrängar av test-ärendenummer/datum som telefon-regexen plockar

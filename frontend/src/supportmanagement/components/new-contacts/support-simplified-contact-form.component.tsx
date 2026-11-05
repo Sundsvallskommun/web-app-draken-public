@@ -1,16 +1,14 @@
 import { AddressResult, isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
-  invalidPhoneMessage,
   invalidSsnMessage,
   invalidUsernameMessage,
   luhnCheck,
-  newNumberPhonePattern,
   orgNumberPattern,
-  phonePattern,
   ssnPattern,
   usernamePattern,
 } from '@common/services/helper-service';
+import { emailSchema, phoneNumberSchema } from '@common/utils/contact-validation-utils';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
@@ -114,24 +112,14 @@ export const SupportSimplifiedContactForm: FC<{
       department: yup.string(),
       referencenumber: yup.string().optional(),
       title: yup.string(),
-      newPhoneNumber: yup
-        .string()
-        .trim()
-        .transform((val) => val && val.replace('-', ''))
-        .matches(newNumberPhonePattern, invalidPhoneMessage),
       phoneNumbers: yup.array().of(
         yup.object().shape({
-          value: yup
-            .string()
-            .trim()
-            .transform((val) => val.replace('-', ''))
-            .matches(phonePattern, invalidPhoneMessage),
+          value: phoneNumberSchema(),
         })
       ),
-      newEmail: yup.string().trim().email('E-postadress har fel format'),
       emails: yup.array().of(
         yup.object().shape({
-          value: yup.string().trim().email('E-postadress har fel format'),
+          value: emailSchema(),
         })
       ),
       primaryContact: yup.boolean(),

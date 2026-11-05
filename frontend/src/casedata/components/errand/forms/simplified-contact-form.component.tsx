@@ -5,14 +5,17 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
-  invalidPhoneMessage,
   invalidSsnMessage,
   luhnCheck,
-  newNumberPhonePattern,
   orgNumberPattern,
-  phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
+import {
+  emailSchema,
+  isValidEmail,
+  isValidPhoneNumber,
+  phoneNumberSchema,
+} from '@common/utils/contact-validation-utils';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
@@ -126,21 +129,11 @@ export const SimplifiedContactForm: FC<{
       careof: yup.string(),
       zip: yup.string(),
       city: yup.string(),
-      newPhoneNumber: yup
-        .string()
-        .trim()
-        .transform((val) => val && val.replace('-', ''))
-        .matches(newNumberPhonePattern, invalidPhoneMessage),
-      newEmail: yup.string().trim().email('E-postadress har fel format'),
       phoneNumbers: yup
         .array()
         .of(
           yup.object().shape({
-            value: yup
-              .string()
-              .trim()
-              .transform((val) => val.replace('-', ''))
-              .matches(phonePattern, invalidPhoneMessage),
+            value: phoneNumberSchema(),
           })
         )
         .test(
@@ -149,12 +142,8 @@ export const SimplifiedContactForm: FC<{
           function (phoneNumbers) {
             if (!appConfig.features.useRequireContactChannel) return true;
             const emails = this.parent.emails || [];
-            const hasValidPhone = (phoneNumbers || []).some(
-              (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
-            );
-            const hasValidEmail = (emails || []).some(
-              (e: { value?: string }) => e.value && yup.string().email().isValidSync(e.value)
-            );
+            const hasValidPhone = (phoneNumbers || []).some((p) => p.value && isValidPhoneNumber(p.value));
+            const hasValidEmail = (emails || []).some((e: { value?: string }) => e.value && isValidEmail(e.value));
             return hasValidEmail || hasValidPhone;
           }
         ),
@@ -162,7 +151,7 @@ export const SimplifiedContactForm: FC<{
         .array()
         .of(
           yup.object().shape({
-            value: yup.string().trim().email('E-postadress har fel format'),
+            value: emailSchema(),
           })
         )
         .test(
@@ -171,9 +160,9 @@ export const SimplifiedContactForm: FC<{
           function (emails) {
             if (!appConfig.features.useRequireContactChannel) return true;
             const phoneNumbers = this.parent.phoneNumbers || [];
-            const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
+            const hasValidEmail = (emails || []).some((e) => e.value && isValidEmail(e.value));
             const hasValidPhone = (phoneNumbers || []).some(
-              (p: { value?: string }) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
+              (p: { value?: string }) => p.value && isValidPhoneNumber(p.value)
             );
             return hasValidEmail || hasValidPhone;
           }

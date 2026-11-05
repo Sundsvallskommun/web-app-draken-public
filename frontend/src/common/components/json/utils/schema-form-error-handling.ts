@@ -1,3 +1,4 @@
+import { invalidEmailMessage } from '@common/utils/contact-validation-utils';
 import { findSchemaDefinition, type RJSFSchema, type RJSFValidationError } from '@rjsf/utils';
 
 type RequiredParams = { missingProperty: string };
@@ -122,7 +123,7 @@ function createJsonErrorTransformer(schema: RJSFSchema) {
 
       if (e.name === 'format' && hasFormat(e)) {
         const f = e.params.format;
-        if (f === 'email') return { ...e, message: 'Ange en giltig e-postadress.' };
+        if (f === 'email') return { ...e, message: invalidEmailMessage };
         if (f === 'uri' || f === 'url') return { ...e, message: 'Ange en giltig länk (URL).' };
         if (f === 'date') return { ...e, message: 'Ange ett datum i giltigt format (ÅÅÅÅ-MM-DD).' };
         if (f === 'date-time') return { ...e, message: 'Ange datum och tid i giltigt format.' };
