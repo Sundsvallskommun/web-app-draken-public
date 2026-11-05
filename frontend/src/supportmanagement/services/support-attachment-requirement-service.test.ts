@@ -40,6 +40,23 @@ const FOLKOL_SCHEMA: RJSFSchema = {
   ],
 } as RJSFSchema;
 
+/**
+ * The three levels the published schemas use, as the permanent serving schema spells them out: an
+ * empty condition is always required, a condition is required when the answers match it, and no
+ * condition at all is offered but never demanded.
+ */
+const EVERY_LEVEL_SCHEMA: RJSFSchema = {
+  'x-attachments': [
+    { key: 'BUDGET', label: 'Budget', requiredWhen: {} },
+    {
+      key: 'POWER_OF_ATTORNEY',
+      label: 'Fullmakt',
+      requiredWhen: { properties: { isAuthorizedSignatory: { const: 'NO' } }, required: ['isAuthorizedSignatory'] },
+    },
+    { key: 'MENU', label: 'Meny' },
+  ],
+} as RJSFSchema;
+
 const keysOf = (requirements: { key: string }[]) => requirements.map((requirement) => requirement.key);
 
 describe('attachmentRequirementsOfSchema', () => {
@@ -140,5 +157,26 @@ describe('missingAttachments', () => {
 
   test('misses nothing while the form is unanswered', () => {
     expect(missingAttachments(FOLKOL_SCHEMA, {}, undefined)).toEqual([]);
+  });
+});
+
+describe('the three levels the published schemas use', () => {
+  test('an empty condition means the attachment is always required', () => {
+    expect(keysOf(requiredAttachments(EVERY_LEVEL_SCHEMA, {}))).toEqual(['BUDGET']);
+    expect(keysOf(requiredAttachments(EVERY_LEVEL_SCHEMA, undefined))).toEqual(['BUDGET']);
+  });
+
+  test('a condition is required once the answers match it', () => {
+    expect(keysOf(requiredAttachments(EVERY_LEVEL_SCHEMA, { isAuthorizedSignatory: 'NO' }))).toEqual([
+      'BUDGET',
+      'POWER_OF_ATTORNEY',
+    ]);
+  });
+
+  test('no condition at all is offered but never demanded', () => {
+    const answers = { isAuthorizedSignatory: 'NO' };
+
+    expect(keysOf(requiredAttachments(EVERY_LEVEL_SCHEMA, answers))).not.toContain('MENU');
+    expect(keysOf(missingAttachments(EVERY_LEVEL_SCHEMA, answers, undefined))).not.toContain('MENU');
   });
 });

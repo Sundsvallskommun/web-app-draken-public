@@ -14,6 +14,7 @@ import {
   getStakeholderOrganizationNumber,
   mapApiSupportErrandToSupportErrand,
   SupportErrand,
+  supportErrandHasAnIdentifiedApplicant,
   supportErrandIsEmpty,
   supportErrandRejectionReason,
   updateSupportErrand,
@@ -299,5 +300,31 @@ describe('getLabelCategorizationHeading', () => {
     const legacy = errand({ classification: { category: 'ALCOHOL', type: 'NONE' } } as Partial<SupportErrand>);
 
     expect(getLabelCategorizationHeading(legacy, undefined)).toBe('ALCOHOL');
+  });
+});
+
+describe('supportErrandHasAnIdentifiedApplicant', () => {
+  const PARTY_ID = 'a3f1c2e4-0000-4000-8000-000000000001';
+
+  const errandWith = (customer: unknown[]) => ({ customer } as unknown as SupportErrand);
+
+  test('an applicant the register knows counts', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY', externalId: PARTY_ID }]))).toBe(true);
+  });
+
+  test('an applicant without a party id does not', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY' }]))).toBe(false);
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY', externalId: '   ' }]))).toBe(false);
+  });
+
+  test('an errand without an applicant does not', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([]))).toBe(false);
+    expect(supportErrandHasAnIdentifiedApplicant(undefined)).toBe(false);
+  });
+
+  test('one identified applicant among several is enough', () => {
+    const customer = [{ role: 'PRIMARY' }, { role: 'PRIMARY', externalId: PARTY_ID }];
+
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith(customer))).toBe(true);
   });
 });

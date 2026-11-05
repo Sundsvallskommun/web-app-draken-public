@@ -1038,6 +1038,14 @@ export const setSupportErrandAdmin: (
     });
 };
 
+/**
+ * Whether the errand carries an applicant the process can use. pw-alkt reads the permit holder from
+ * the PRIMARY stakeholder's partyId (`SupportManagementMapper`), so one without an identity is not
+ * enough: the process would die on it a few steps later.
+ */
+export const supportErrandHasAnIdentifiedApplicant = (errand: Pick<SupportErrand, 'customer'> | undefined): boolean =>
+  (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId?.trim());
+
 const REJECTED_BY_SERVICE_STATUS = 400;
 
 const MESSAGES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request', 'Request failed', 'Internal server error'];
