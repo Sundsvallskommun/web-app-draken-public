@@ -143,7 +143,7 @@ export const completeSupportInvestigation = (
       throw e;
     });
 
-/** Creates or replaces the JSON parameter of the investigation under the key. */
+/** Deletes the JSON parameter of the investigation under the key. */
 export const deleteSupportInvestigationJsonParameter = (
   errandId: string,
   municipalityId: string,
@@ -160,6 +160,7 @@ export const deleteSupportInvestigationJsonParameter = (
       throw e;
     });
 
+/** Creates or replaces the JSON parameter of the investigation under the key. */
 export const saveSupportInvestigationJsonParameter = (
   errandId: string,
   municipalityId: string,
