@@ -894,6 +894,31 @@
         "intro": "Ärenden från andra kommunala system (ByggR, ECOS, Lex Alkohol, EDP VA m.fl.). Draken har begränsad information om dessa ärenden. De visas i informationssyfte.",
         "deferred": "Visning av ärenden i externa system är inte klar ännu och kommer i ett senare skede."
       }
+    },
+    "assets": {
+      "title": "Tillstånd",
+      "intro": "Serverings- och tobakstillstånd som rör organisationen. Klicka på ett tillstånd för att öppna ärendet det kommer från.",
+      "source": "Datan kommer från Alkohol och Tobak-Draken.",
+      "loading": "Hämtar tillstånd",
+      "error": "Tillstånd kunde inte hämtas.",
+      "empty": "Inga tillstånd.",
+      "openRow": "Öppna ärende {{errandNumber}} i ny flik",
+      "columns": {
+        "status": "Status",
+        "registrationNumber": "Diarienr",
+        "type": "Typ",
+        "caseOfficer": "Handläggare",
+        "decisionDate": "Beslutsdatum",
+        "open": "Öppna"
+      },
+      "status": {
+        "ACTIVE": "Gällande",
+        "TEMPORARY": "Tillfälligt",
+        "EXPIRED": "Utgånget",
+        "BLOCKED": "Blockerat",
+        "REPLACED": "Ersatt",
+        "DRAFT": "Utkast"
+      }
     }
   }
 }

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  countErrands,
-  Customer,
-  CustomerPlace,
-  getCustomerEngagements,
-  getLatestInspection,
-} from '@common/services/customer-service';
+import { countErrands, Customer, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
 import { Button, Label, Spinner, Table } from '@sk-web-gui/react';
 import { SupportErrandBusinessDescriptionDrawer } from '@supportmanagement/components/support-errand/tabs/support-errand-business-description-drawer.component';
@@ -16,7 +10,7 @@ import dayjs from 'dayjs';
 import { CircleAlert, Store } from 'lucide-react';
 import { FC, PropsWithChildren, ReactNode, useState } from 'react';
 
-import { type CustomerLookup, useCustomerErrands, useCustomerLookup } from './use-customer-lookup';
+import type { CustomerData, CustomerLookup } from './use-customer-lookup';
 
 const INSPECTION_MAX_AGE_MONTHS = 12;
 
@@ -176,9 +170,7 @@ const CompanyDetails: FC<{ customer: Customer }> = ({ customer }) => {
   );
 };
 
-const Engagements: FC<{ customerId: string }> = ({ customerId }) => {
-  const engagements = useCustomerLookup(customerId, () => getCustomerEngagements(customerId));
-
+const Engagements: FC<{ engagements: CustomerData['engagements'] }> = ({ engagements }) => {
   return lookupContent(engagements, 'Bolagsordning kunde inte hämtas.', (data) =>
     data.length === 0 ? (
       <p className="m-0 text-dark-secondary">Inga uppgifter att visa.</p>
@@ -211,12 +203,8 @@ const Counter: FC<{ label: string; value: number | string }> = ({ label, value }
 );
 
 /** Översikt tab of the customer view. */
-export const CustomerOverview: FC<{ customer: Customer; places: CustomerLookup<CustomerPlace[]> }> = ({
-  customer,
-  places,
-}) => {
-  const { customerId } = customer;
-  const errands = useCustomerErrands(customerId, places);
+export const CustomerOverview: FC<{ customer: Customer; data: CustomerData }> = ({ customer, data }) => {
+  const { places, errands, engagements } = data;
   const counts = errands.status === 'done' ? countErrands(errands.data) : undefined;
   const count = (value: number | undefined) => value ?? (errands.status === 'error' ? '–' : '…');
 
@@ -265,7 +253,7 @@ export const CustomerOverview: FC<{ customer: Customer; places: CustomerLookup<C
       </div>
 
       <OverviewSection title="Bolagsordning" dataCy="customer-overview-articles">
-        <Engagements customerId={customerId} />
+        <Engagements engagements={engagements} />
       </OverviewSection>
     </div>
   );
