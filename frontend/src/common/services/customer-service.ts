@@ -3,6 +3,8 @@
 import { Asset } from '@common/interfaces/asset';
 import { getPartyServices } from '@common/services/asset-service';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 
 /**
  * A customer as shown in the customer view (kundbild).
@@ -28,6 +30,9 @@ export const getCustomerByCustomerId = async (customerId: string): Promise<Custo
     form: profile.form,
   };
 };
+
+export const getCustomerIdFromErrand = (errand: SupportErrand): string | undefined =>
+  getSupportOwnerStakeholder(errand)?.externalId;
 
 export const formatOrganizationNumber = (organizationNumber: string): string =>
   /^\d{10}$/.test(organizationNumber)
