@@ -392,6 +392,32 @@ test('a changed answer is saved in the JSON of the investigation, on the schema 
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
+test('answers another template left on the investigation are removed by the next save', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({
+    ...investigation,
+    jsonParameters: [
+      ...investigation.jsonParameters,
+      { key: 'aot_inspection_internal', schemaId: '2281_aot_inspection_internal_1.0', value: {} },
+      { key: 'other', schemaId: '2281_other_1.0', value: {} },
+    ],
+  });
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
+  await act(async () => {
+    expect(await saver()()).toBe(true);
+  });
+
+  expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledTimes(1);
+  expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'aot_inspection_internal'
+  );
+});
+
 test('another template is taken only after the handler confirms, and replaces control points and answers', async () => {
   showConfirmation.mockResolvedValueOnce(false);
   mount();

@@ -63,6 +63,7 @@ import { InspectionProtocolObservations } from './inspection-protocol-observatio
 
 // The protocol is what the Utredning tab holds for an inspection errand, so it saves under that tab's key.
 const TAB_KEY = 'investigation';
+const INSPECTION_SCHEMA_NAMES = INSPECTION_PROTOCOL_TEMPLATES.map(({ schema }) => schema.name);
 
 /** What the errand holds: the measures (control points, action points, observations) and the investigation. */
 interface Saved {
@@ -235,9 +236,13 @@ export const InspectionProtocol: FC<{
             value: toInspectionProtocolJson(template, draft.values),
           });
         }
-        const replaced = templateChanged && inspectionProtocolTemplate(baseline.templateKey)?.schema.name;
-        if (investigationId && replaced && data.investigation?.jsonParameters?.some(({ key }) => key === replaced)) {
-          await deleteSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, replaced);
+        const replaced = (data.investigation?.jsonParameters ?? [])
+          .map(({ key }) => key)
+          .filter((key) => key !== template.schema.name && INSPECTION_SCHEMA_NAMES.includes(key));
+        if (investigationId) {
+          for (const key of replaced) {
+            await deleteSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, key);
+          }
         }
       }
       receive(await load(errandId, municipalityId));
