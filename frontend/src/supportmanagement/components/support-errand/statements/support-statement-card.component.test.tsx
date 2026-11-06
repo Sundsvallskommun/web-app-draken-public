@@ -229,9 +229,9 @@ test('a company ticked for a person reaches the template under that person', asy
   // Two hops before the option is there: the company data, then that person's engagements.
   // The choice can show up while the company data is still being read, and the card is locked until it is.
   const companyInput = () =>
-    document.querySelector(`[data-cy="statement-companies-${ERICAS_PARTY_ID}"] input.sk-form-combobox-select`) as
-      | HTMLInputElement
-      | null;
+    document.querySelector(
+      `[data-cy="statement-companies-${ERICAS_PARTY_ID}"] input.sk-form-combobox-select`
+    ) as HTMLInputElement | null;
   await waitFor(() => expect(companyInput()?.disabled).toBe(false), { timeout: 5000 });
 
   // The list keeps the options it rendered until it is opened, so open it as the handler would.
