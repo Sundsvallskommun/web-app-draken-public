@@ -210,43 +210,23 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-/** Categorization labels in tree order, leaving out the ROOT label and any other label sets. */
-const getCategorizationLabelsOf = (labels: Label[] | undefined): Label[] =>
-  CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
-    labels?.find((label) => label.classification === classification)
-  ).filter((label): label is Label => !!label);
-
 /** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
-export const getCategorizationLabels = (errand: SupportErrand): Label[] => getCategorizationLabelsOf(errand.labels);
+export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
+  CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
+    errand.labels?.find((label) => label.classification === classification)
+  ).filter((label): label is Label => !!label);
 
 const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
 
 export const NEW_ERRAND_HEADING = 'Registrera nytt ärende';
 
-/** What the chosen categorization is called, named from its deepest level. */
-const getCategorizationHeadingOf = (
-  labels: Label[] | undefined,
-  metadata: SupportMetadata | undefined
-): string | undefined => {
-  const deepest = getCategorizationLabelsOf(labels).at(-1);
-  return deepest ? getLabelDisplayName(deepest, metadata) : undefined;
-};
-
-/**
- * Heading under label categorization: the deepest label (type, else category, else department). An errand
- * whose shell exists but which is not categorized yet is still being registered, and says so.
- */
+/** Heading under label categorization: the deepest label (type, else category, else department). */
 export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
-  // LEGACY_CLASSIFICATION
   if (showsLegacyClassification(errand)) {
     return getLegacyClassificationHeading(errand, metadata);
   }
-
-  const chosen = getCategorizationHeadingOf(errand.labels, metadata);
-  if (chosen) {
-    return chosen;
-  }
-
+  const deepest = getCategorizationLabels(errand).at(-1);
+  if (deepest) return getLabelDisplayName(deepest, metadata);
   return supportErrandIsEmpty(errand) ? NEW_ERRAND_HEADING : MISSING_ERRAND_TYPE_TEXT;
 };
 
