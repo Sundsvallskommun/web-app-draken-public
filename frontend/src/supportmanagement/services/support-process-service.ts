@@ -249,11 +249,26 @@ export const hasVisitedSupportProcessStep = (
 const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
   process?.awaitingSignals ?? [];
 
+const INSPECTION_PROCESS_KEYS = ['internal-inspection', 'external-inspection'];
+
+/** Inspections leave the decision step by the protocol's summary instead of decision_completed. */
+const INSPECTION_DECISION_GATES: Record<string, string> = {
+  approved: 'inspection_approved',
+  actionRequired: 'action_errand_requested',
+};
+
+export const isSupportInspectionProcess = (process: ErrandProcess | undefined): boolean =>
+  INSPECTION_PROCESS_KEYS.includes(process?.processKey ?? '');
+
 export const awaitedGateOfStep = (
   process: ErrandProcess | undefined,
-  step: SupportProcessStepName | undefined
+  step: SupportProcessStepName | undefined,
+  inspectionSummary?: string
 ): ProcessSignal | undefined => {
-  const gate = step && gateOfSupportProcessStep(step);
+  const gate =
+    step === SupportProcessStep.DECISION && isSupportInspectionProcess(process)
+      ? INSPECTION_DECISION_GATES[inspectionSummary ?? '']
+      : step && gateOfSupportProcessStep(step);
   return supportProcessAwaitingSignals(process).find((signal) => signal.name === gate);
 };
 

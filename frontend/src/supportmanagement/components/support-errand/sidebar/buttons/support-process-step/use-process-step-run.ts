@@ -13,6 +13,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { inspectionProtocolSummary } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
   completeSupportInvestigation,
   getSupportInvestigation,
@@ -22,6 +23,7 @@ import {
   awaitedGateOfStep,
   getSupportErrandProcess,
   getSupportErrandProcessState,
+  isSupportInspectionProcess,
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
@@ -107,9 +109,13 @@ export const useProcessStepRun = ({
 
   const gateToLeaveTheStep = async (action: ProcessAction): Promise<ProcessSignal | undefined> => {
     if (!action.needsSignal) return undefined;
-
     const state = await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined);
-    return awaitedGateOfStep(state?.process ?? process, step);
+    const current = state?.process ?? process;
+    const summary =
+      step === SupportProcessStep.DECISION && isSupportInspectionProcess(current)
+        ? inspectionProtocolSummary(await getSupportInvestigation(errandId, municipalityId))
+        : undefined;
+    return awaitedGateOfStep(current, step, summary);
   };
 
   const takeErrand = async () => {
@@ -219,6 +225,16 @@ export const useProcessStepRun = ({
 
       if (action.completesInvestigation) {
         await completeAnyOpenInvestigation();
+      }
+
+      // Checked before the decision is concluded, while the protocol can still be changed.
+      if (
+        action.completesDecision &&
+        isSupportInspectionProcess(process) &&
+        !(await gateToLeaveTheStep(action))?.name
+      ) {
+        tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
+        return;
       }
 
       let decisionWasConcluded = false;
