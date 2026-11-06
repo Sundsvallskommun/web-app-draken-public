@@ -1,9 +1,18 @@
 'use client';
 
-import { CustomerPlace, getCustomerErrands } from '@common/services/customer-service';
+import {
+  CustomerAsset,
+  CustomerPlace,
+  getCustomerAssets,
+  getCustomerEngagements,
+  getCustomerErrands,
+  getCustomerPlaces,
+  withSourceErrands,
+} from '@common/services/customer-service';
 import { useConfigStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
+import type { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 export type CustomerLookup<T> = { status: 'loading' } | { status: 'error' } | { status: 'done'; data: T };
 
@@ -31,17 +40,44 @@ export const useCustomerLookup = <T>(key: string, load: (() => Promise<T>) | und
   return result?.key === key ? result.lookup : LOADING;
 };
 
-/** The customer's errands, once its places are known. */
-export const useCustomerErrands = (
-  customerId: string,
-  places: CustomerLookup<CustomerPlace[]>
-): CustomerLookup<SupportErrand[]> => {
+export interface CustomerData {
+  assets: CustomerLookup<CustomerAsset[]>;
+  places: CustomerLookup<CustomerPlace[]>;
+  errands: CustomerLookup<SupportErrand[]>;
+  engagements: CustomerLookup<LegalEntityEngagement[]>;
+}
+
+/** Everything the customer view shows, fetched once per customer and shared by its tabs. */
+export const useCustomerData = (customerId: string): CustomerData => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const key = `${municipalityId}|${customerId}`;
+
+  const fetchedAssets = useCustomerLookup(
+    key,
+    municipalityId ? () => getCustomerAssets(municipalityId, customerId) : undefined
+  );
+  const knownAssets = fetchedAssets.status === 'done' ? fetchedAssets.data : undefined;
+  const assets = useCustomerLookup(
+    key,
+    municipalityId && knownAssets ? () => withSourceErrands(municipalityId, knownAssets) : undefined
+  );
+  const places = useCustomerLookup(
+    key,
+    municipalityId && knownAssets ? () => getCustomerPlaces(municipalityId, knownAssets) : undefined
+  );
   const knownPlaces = places.status === 'done' ? places.data : undefined;
-  const placeKeys = knownPlaces?.map((place) => place.key).join(',');
   const errands = useCustomerLookup(
-    `${municipalityId}|${customerId}|${placeKeys}`,
+    key,
     municipalityId && knownPlaces ? () => getCustomerErrands(municipalityId, customerId, knownPlaces) : undefined
   );
-  return places.status === 'error' ? places : errands;
+  const engagements = useCustomerLookup(customerId, () => getCustomerEngagements(customerId));
+
+  const failed = fetchedAssets.status === 'error';
+  const placesFailed = failed || places.status === 'error';
+  return {
+    assets: failed ? fetchedAssets : assets,
+    places: failed ? fetchedAssets : places,
+    errands: placesFailed ? { status: 'error' } : errands,
+    engagements,
+  };
 };
