@@ -12,7 +12,7 @@ import {
   outcomeLabel,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
-import { stringAt } from '@supportmanagement/services/support-json-parameter-service';
+import { objectAt, stringAt } from '@supportmanagement/services/support-json-parameter-service';
 import dayjs from 'dayjs';
 import { FC, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,7 @@ export const DecisionSummary: FC<{
   const empty = t('common:decision.empty_value');
   const json = savedDecisionJson(decision);
   const decided = scopeFromDecision(json);
+  const clauses = stringAt(objectAt(json?.decision).clauses);
   const decidedHours = SERVING_HOURS_SLOTS.filter((spec) => decided.servingHours?.[spec.slot]);
 
   return (
@@ -78,6 +79,12 @@ export const DecisionSummary: FC<{
           </Fragment>
         ))}
       </dl>
+      {clauses ? (
+        <div>
+          <h3 className="text-h4-md mb-8">{t('common:decision.clauses')}</h3>
+          <p className="m-0 whitespace-pre-wrap">{clauses}</p>
+        </div>
+      ) : null}
       {decision.justification ? (
         <div>
           <h3 className="text-h4-md mb-8">{t('common:decision.justification')}</h3>

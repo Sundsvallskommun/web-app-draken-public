@@ -76,7 +76,13 @@ const CERTIFICATE_JSON = {
   externalCaseRegistrationNumber: 'ifyllt',
   premises: { address: { street: 'ifyllt', postalCode: '000 01', city: 'ifyllt' }, phoneNumber: 'ifyllt' },
   servingArea: { description: 'ifyllt' },
-  decision: { decisionText: 'ifyllt', decisionMaker: 'ifyllt', validFrom: '2026-11-01', executionDate: '2026-11-01' },
+  decision: {
+    decisionText: 'ifyllt',
+    clauses: 'ifyllt',
+    decisionMaker: 'ifyllt',
+    validFrom: '2026-11-01',
+    executionDate: '2026-11-01',
+  },
 };
 
 const aDecision = (value: object = CERTIFICATE_JSON) => [
@@ -84,7 +90,7 @@ const aDecision = (value: object = CERTIFICATE_JSON) => [
     id: 'decision-1',
     decisionType: 'PROPOSED',
     outcome: 'APPROVAL',
-    jsonParameters: [{ key: 'permit', schemaId: '2281_aot_alcohol_decision_1.0', value }],
+    jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: '2281_aot_alcohol_decision_1.0', value }],
   },
 ];
 

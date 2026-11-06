@@ -61,7 +61,7 @@ import {
 import { getPremisesAddress } from './support-premises-address-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
-  SUPPORT_PREMISES_SECTION_JSON,
+  SUPPORT_PREMISES_SECTION_SCHEMA,
   supportPremisesCapacityOf,
   supportPremisesExamination,
   supportPremisesFireSafety,
@@ -243,8 +243,8 @@ const asDate = (value: string | undefined): string =>
 const htmlOf = (value: string | undefined): string => (value?.trim() ? sanitized(value) : '');
 
 /**
- * `communication` is the one text the template prints without markup, so its tags are taken off here
- * rather than printed as they stand. A block tag ends a line, since the text is written in an editor.
+ * An editor text without its tags, for the texts the template prints without markup. A block tag ends a line,
+ * since the text is written in an editor. The result is still HTML-escaped, as the template wants it.
  */
 const plainTextOf = (value: string | undefined): string =>
   sanitizedInline((value ?? '').replace(/<\/(p|div|li|h[1-6]|blockquote)>|<br\s*\/?>/gi, '\n'))
@@ -261,6 +261,12 @@ const linesOf = (value: string | undefined): string[] =>
     .map((line) => line.trim())
     .filter(Boolean);
 
+// `&amp;` goes last, so that an escaped entity such as `&amp;lt;` comes back as the `&lt;` that was typed.
+const unescaped = (text: string): string => text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+/** The non-blank lines of an editor text as typed, without tags or entities: for a field rather than the template. */
+export const typedLinesOf = (value: string | undefined): string[] => linesOf(value).map(unescaped);
+
 const sectionTexts = (investigation: Investigation | undefined): Record<string, string> =>
   Object.fromEntries(
     (investigation?.sections ?? []).map((section) => [sectionKeyOf(section), htmlOf(section.text ?? '')])
@@ -269,7 +275,7 @@ const sectionTexts = (investigation: Investigation | undefined): Record<string, 
 const premisesJson = (investigation: SupportInvestigation | undefined) =>
   jsonParameterObject(
     investigation?.sections?.find((section) => sectionKeyOf(section) === 'premises')?.jsonParameters,
-    SUPPORT_PREMISES_SECTION_JSON.key
+    SUPPORT_PREMISES_SECTION_SCHEMA.name
   );
 
 const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>

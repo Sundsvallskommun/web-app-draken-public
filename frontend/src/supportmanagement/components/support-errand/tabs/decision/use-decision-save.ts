@@ -4,8 +4,8 @@ import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   type CertificateDecision,
-  decisionJsonParameter,
   type DecisionParameterInput,
+  decisionSchema,
   toCertificateParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
@@ -112,6 +112,7 @@ export const useDecisionSave = ({
     validFrom: values.validFrom,
     legalBasis: values.legalBasis,
     justification: values.justification,
+    clauses: values.clauses,
     terms: writtenTerms,
   };
 
@@ -119,9 +120,9 @@ export const useDecisionSave = ({
   const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
     if (!supportErrand?.id) return undefined;
 
-    const jsonParameter = decisionJsonParameter(permit.type);
-    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, jsonParameter.key, {
-      schemaId: supportSchemaId(municipalityId, jsonParameter.schema),
+    const schema = decisionSchema(permit.type);
+    return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, schema.name, {
+      schemaId: supportSchemaId(municipalityId, schema),
       value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
     });
   };
