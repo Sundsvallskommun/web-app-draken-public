@@ -91,7 +91,7 @@ const investigation = {
   version: 3,
   jsonParameters: [
     {
-      key: 'inspectionProtocol',
+      key: 'aot_inspection_serving_permit',
       schemaId: '2281_aot_inspection_serving_permit_1.0',
       value: { visit: 'closed', guestCount: '80' },
     },
@@ -204,7 +204,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     ERRAND_ID,
     '2281',
     'inv-new',
-    'inspectionProtocol',
+    'aot_inspection_internal',
     {
       schemaId: '2281_aot_inspection_internal_1.0',
       value: expect.objectContaining({ businessName: 'Exempel AB' }),
@@ -376,10 +376,16 @@ test("a changed answer is saved in the JSON of the investigation, against the te
   });
 
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
-  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', 'inspectionProtocol', {
-    schemaId: '2281_aot_inspection_serving_permit_1.0',
-    value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
-  });
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'aot_inspection_serving_permit',
+    {
+      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
+    }
+  );
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
@@ -436,7 +442,7 @@ test('another template is taken only after the handler confirms, and replaces co
     ERRAND_ID,
     '2281',
     'inv-1',
-    'inspectionProtocol',
+    'aot_inspection_internal',
     expect.objectContaining({ schemaId: '2281_aot_inspection_internal_1.0' })
   );
 });

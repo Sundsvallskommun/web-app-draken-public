@@ -20,7 +20,6 @@ import {
 } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
-  INSPECTION_PROTOCOL_JSON_KEY,
   inspectionProtocolFileName,
   type InspectionProtocolValues,
   inspectionProtocolValuesFromJson,
@@ -95,7 +94,7 @@ const draftOf = (saved: Saved, errand: Errand, user: Handler): Draft => {
     values: template
       ? inspectionProtocolValuesFromJson(
           template,
-          jsonParameterObject(saved.investigation?.jsonParameters, INSPECTION_PROTOCOL_JSON_KEY),
+          jsonParameterObject(saved.investigation?.jsonParameters, template.schema.name),
           inspectionProtocolValuesOf(template, errand, user)
         )
       : {},
@@ -238,7 +237,7 @@ export const InspectionProtocol: FC<{
             errandId,
             municipalityId,
             investigationId,
-            INSPECTION_PROTOCOL_JSON_KEY,
+            template.schema.name,
             answers
           );
         }
