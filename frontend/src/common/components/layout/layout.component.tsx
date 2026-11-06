@@ -1,8 +1,9 @@
+import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { AceStatusIndicator } from '@common/ace/ace-status.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu } from '@sk-web-gui/react';
+import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -18,6 +19,7 @@ import { userMenuGroups } from './userMenuGroups';
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
   const applicationEnvironment = getApplicationEnvironment();
+  const { isMinLargeDevice } = useThemeQueries();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const pathName = usePathname() ?? '';
   const errand = useCasedataStore((s) => s.errand);
@@ -25,6 +27,11 @@ export default function Layout({ title, children }: { title: string; children: R
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
+
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    appConfig.isCaseData &&
+    (pathName === '/registrera' || pathName.includes('arende'));
 
   useEffect(() => {
     setHostName(window.location.hostname);
@@ -91,7 +98,7 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
-  const registerErrandSection = !appConfig.features.useProcess ? (
+  const registerErrandSection = !(appConfig.features.useProcess && appConfig.isSupportManagement) ? (
     <>
       <Divider orientation="vertical" className="mx-24" />
       <Link
@@ -156,7 +163,10 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-        ></PageHeader>
+          bottomContent={showUiPhases && !isMinLargeDevice ? <UiPhaseWrapper /> : null}
+        >
+          {showUiPhases && isMinLargeDevice ? <UiPhaseWrapper /> : null}
+        </PageHeader>
       </div>
 
       {children}
