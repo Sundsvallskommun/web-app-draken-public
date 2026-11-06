@@ -7,7 +7,7 @@ import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/d
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { FC, useState } from 'react';
-const MAX_VISIBLE_RECIPIENTS = 2;
+const MAX_VISIBLE_RECIPIENTS = 3;
 
 const getDrakenSourceLabel = (errand: IErrand | undefined): string =>
   errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';

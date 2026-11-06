@@ -1,4 +1,5 @@
 import { PrettyRole } from '@casedata/interfaces/role';
+import { invalidEmailMessage, isValidEmail } from '@common/utils/contact-validation-utils';
 import { appConfig } from '@config/appconfig';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -8,10 +9,23 @@ import { useFieldArray } from 'react-hook-form';
 
 type size = 'sm' | 'md' | 'lg';
 
+export interface NestedEmailFieldNames {
+  emails: string;
+  newEmail: string;
+  existingEmail: string;
+}
+
+const defaultFieldNames: NestedEmailFieldNames = {
+  emails: 'emails',
+  newEmail: 'newEmail',
+  existingEmail: 'existingEmail',
+};
+
+const defaultCountLabel = (count: number) => `Ditt meddelande har ${count} mottagare`;
+
 interface CommonNestedEmailArrayV2Props {
   errand: any;
   register: any;
-  errors: any;
   watch: any;
   setValue: any;
   disabled?: boolean;
@@ -21,13 +35,15 @@ interface CommonNestedEmailArrayV2Props {
   error?: boolean;
   addingStakeholder?: boolean;
   size?: string;
+  fieldNames?: NestedEmailFieldNames;
+  dataCyPrefix?: string;
+  countLabel?: (count: number) => string;
   [key: string]: any;
 }
 
 const CommonNestedEmailArrayV2 = ({
   errand,
   register,
-  errors,
   watch,
   setValue,
   disabled,
@@ -37,15 +53,23 @@ const CommonNestedEmailArrayV2 = ({
   error = false,
   addingStakeholder = false,
   size = 'sm',
+  fieldNames = defaultFieldNames,
+  dataCyPrefix = '',
+  countLabel = defaultCountLabel,
 }: CommonNestedEmailArrayV2Props) => {
-  const { emails, existingEmail, newEmail } = watch();
+  const formValues = watch();
+  const emails = formValues[fieldNames.emails];
+  const existingEmail = formValues[fieldNames.existingEmail];
+  const newEmail = formValues[fieldNames.newEmail];
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { fields, remove, append } = useFieldArray<{ emails: { value: string }[] }>({
     control,
-    name: 'emails',
+    name: fieldNames.emails as 'emails',
   });
 
   const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
+  // The address is checked when Add is clicked, so typing never shows an error or blocks saving the form
+  const [showNewEmailError, setShowNewEmailError] = useState(false);
 
   useEffect(() => {
     const stakeholders: { email: string; role: string[] }[] = [];
@@ -82,15 +106,15 @@ const CommonNestedEmailArrayV2 = ({
   }, [errand?.stakeholders]);
 
   return (
-    <FormControl id={'emails'} className="w-full" size={size as size}>
+    <FormControl id={fieldNames.emails} className="w-full" size={size as size}>
       {!addingStakeholder ? (
         <>
           <FormLabel>Lägg till befintlig e-postadress</FormLabel>
           <div className="flex gap-16 mb-16">
             <Select
-              data-cy="existing-email-addresses"
+              data-cy={`${dataCyPrefix}existing-email-addresses`}
               className="w-full"
-              {...register('existingEmail')}
+              {...register(fieldNames.existingEmail)}
               placeholder="Välj mottagare"
             >
               <Select.Option value="">Välj mottagare</Select.Option>
@@ -104,7 +128,7 @@ const CommonNestedEmailArrayV2 = ({
             </Select>
             <Button
               type="button"
-              data-cy={`add-email-button`}
+              data-cy={`${dataCyPrefix}add-email-button`}
               variant="tertiary"
               size={size as size}
               onClick={() => {
@@ -123,41 +147,47 @@ const CommonNestedEmailArrayV2 = ({
       <FormLabel>Lägg till ny e-postadress{required ? <span aria-hidden="true">*</span> : null}</FormLabel>
       <div className="w-full flex gap-16 mb-8">
         <Input
-          data-cy={`new-email-input`}
+          data-cy={`${dataCyPrefix}new-email-input`}
           placeholder="Ange e-postadress"
-          {...register('newEmail')}
-          className={cx(error ? 'border-error' : null, `w-full`)}
+          {...register(fieldNames.newEmail, { onChange: () => setShowNewEmailError(false) })}
+          className={cx(error || showNewEmailError ? 'border-error' : null, `w-full`)}
         />
 
         <Button
           type="button"
-          data-cy={`add-new-email-button`}
+          data-cy={`${dataCyPrefix}add-new-email-button`}
           variant="tertiary"
           size={size as size}
           onClick={() => {
-            append({ value: newEmail });
-            setValue('newEmail', '');
+            if (!isValidEmail(newEmail)) {
+              setShowNewEmailError(true);
+              return;
+            }
+            append({ value: newEmail.trim() });
+            setValue(fieldNames.newEmail, '');
             trigger();
           }}
           className="rounded-button"
-          disabled={disabled || errors?.newEmail || !newEmail}
+          disabled={disabled || !newEmail}
         >
           Lägg till
         </Button>
       </div>
-      {errors?.newEmail?.message && (
-        <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
+      {showNewEmailError && (
+        <FormErrorMessage data-cy={`${dataCyPrefix}new-email-error`} className="text-error">
+          {invalidEmailMessage}
+        </FormErrorMessage>
       )}
       {fields?.length > 0 ? (
         <>
-          {!addingStakeholder && <strong>Ditt meddelande har {emails?.length} mottagare</strong>}
+          {!addingStakeholder && <strong>{countLabel(emails?.length)}</strong>}
           <div className="flex items-center w-full flex-wrap justify-start gap-md">
             {fields?.map((field, index) => {
               return (
                 <div key={`chip-${index}`}>
                   <span className="sr-only">Tillagd epostadress</span>
                   <Chip
-                    data-cy={`email-tag-${index}`}
+                    data-cy={`${dataCyPrefix}email-tag-${index}`}
                     aria-label={`Tillagd epostadress ${field}. Klicka för att ta bort.`}
                     key={`-${field}-tag`}
                     onClick={() => {

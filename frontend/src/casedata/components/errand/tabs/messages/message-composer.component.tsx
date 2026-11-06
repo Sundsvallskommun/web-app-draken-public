@@ -16,18 +16,13 @@ import {
   sendSms,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
+import CommonNestedEmailArrayV2, { NestedEmailFieldNames } from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isMEX } from '@common/services/application-service';
-import {
-  invalidPhoneMessage,
-  phonePattern,
-  supportManagementPhonePatternOrCountryCode,
-} from '@common/services/helper-service';
 import {
   buildMessageTemplateBody,
   getDefaultMessageBody,
@@ -37,6 +32,7 @@ import {
   supportsSelectableTemplates,
 } from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
+import { emailSchema, phoneNumberSchema } from '@common/utils/contact-validation-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -66,6 +62,8 @@ export interface CasedataMessageTabFormModel {
   messageTemplate?: string;
   emails: { value: string }[];
   newEmail: string;
+  ccEmails: { value: string }[];
+  newCcEmail: string;
   phoneNumbers: string[];
   newPhoneNumber: string;
   messageBody: string;
@@ -84,6 +82,8 @@ const defaultMessage: Partial<CasedataMessageTabFormModel> = {
   contactMeans: 'email' as const,
   emails: [] as { value: string }[],
   newEmail: '',
+  ccEmails: [] as { value: string }[],
+  newCcEmail: '',
   phoneNumbers: [] as string[],
   newPhoneNumber: '',
   messageBody: '',
@@ -110,15 +110,20 @@ let formSchema = yup
         schema
           .of(
             yup.object().shape({
-              value: yup.string().email('E-postadress har fel format'),
+              value: emailSchema(),
             })
           )
           .min(1, 'Ange minst en E-postadress'),
       otherwise: (schema) => schema,
     }),
-    newEmail: yup.string().when('contactMeans', {
-      is: (means: string) => means === 'email',
-      then: (schema) => schema.email('E-postadressen har fel format'),
+    ccEmails: yup.array().when('contactMeans', {
+      is: (val: string) => val === 'email',
+      then: (schema) =>
+        schema.of(
+          yup.object().shape({
+            value: emailSchema(),
+          })
+        ),
       otherwise: (schema) => schema,
     }),
     phoneNumbers: yup.array().when('contactMeans', {
@@ -127,23 +132,13 @@ let formSchema = yup
         schema
           .of(
             yup.object().shape({
-              value: yup
-                .string()
-                .required('Telefonnummer måste anges för sms-meddelande')
-                .trim()
-                .transform((val) => val && val.replace('-', ''))
-                .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+              value: phoneNumberSchema().required('Telefonnummer måste anges för sms-meddelande'),
             })
           )
           .min(1, 'Ange minst ett telefonnummer')
           .required('Ange minst ett telefonnummer'),
       otherwise: (schema) => schema,
     }),
-    newPhoneNumber: yup
-      .string()
-      .trim()
-      .transform((val) => val && val.replace('-', ''))
-      .matches(phonePattern, invalidPhoneMessage),
     messageBody: yup.string().required('Text måste anges'),
     messageBodyPlaintext: yup.string(),
     attachUtredning: yup.bool(),
@@ -163,6 +158,14 @@ let formSchema = yup
     addNew: yup.mixed(),
   })
   .required();
+
+const ccEmailFieldNames: NestedEmailFieldNames = {
+  emails: 'ccEmails',
+  newEmail: 'newCcEmail',
+  existingEmail: 'existingCcEmail',
+};
+
+const ccCountLabel = (count: number) => `Ditt meddelande har ${count} ${count === 1 ? 'kopia' : 'kopior'}`;
 
 export const MessageComposer: FC<{
   message?: MessageNode;
@@ -252,6 +255,7 @@ export const MessageComposer: FC<{
       setValue('messageBody', defaultBody, { shouldDirty: false });
       setValue('messageBodyPlaintext', defaultBody, { shouldDirty: false });
       setValue('emails', [], { shouldDirty: false });
+      setValue('ccEmails', [], { shouldDirty: false });
       removeNewAttachment();
       remove();
       props.closeHandler();
@@ -683,6 +687,7 @@ export const MessageComposer: FC<{
           ) : null}
           {contactMeans === 'email' ? (
             <>
+              <strong className="text-md">Till</strong>
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
                   errand={errand!}
@@ -698,6 +703,19 @@ export const MessageComposer: FC<{
                   <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
                 </div>
               ) : null}
+
+              <strong className="text-md pt-16">Kopia</strong>
+              <FormControl id="messageCcEmail" className="w-full">
+                <CommonNestedEmailArrayV2
+                  errand={errand!}
+                  disabled={errand ? isMessagesLocked(errand) : false}
+                  fieldNames={ccEmailFieldNames}
+                  dataCyPrefix="cc-"
+                  countLabel={ccCountLabel}
+                  key={`nested-cc-email-array`}
+                  {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+                />
+              </FormControl>
             </>
           ) : contactMeans === 'sms' ? (
             <>
@@ -711,12 +729,6 @@ export const MessageComposer: FC<{
                   {...{ control, register, errors, watch, setValue, trigger }}
                 />
               </FormControl>
-
-              {errors?.newPhoneNumber && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage data-cy="messagePhone-error">{errors?.newPhoneNumber?.message}</FormErrorMessage>
-                </div>
-              )}
             </>
           ) : null}
 

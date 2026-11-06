@@ -342,7 +342,8 @@ export interface FeatureFlagDto {
 }
 
 export interface MessageDto {
-  email?: string;
+  recipients?: string[];
+  ccRecipients?: string[];
   contactMeans?: string;
   subject?: string;
   text: string;
