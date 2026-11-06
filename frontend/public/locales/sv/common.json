@@ -376,7 +376,21 @@
         "confirm_yes": "Gå vidare",
         "cancel": "Avbryt"
       },
-      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare."
+      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare.",
+      "missing_registration_inputs": {
+        "title": "Ärendet är inte klart att ta vidare",
+        "text": "Innan handläggningen startar behöver ärendet {{inputs}}.",
+        "go_to_applicant": "Till grundinformationen",
+        "go_to_errand_form": "Till ärendeuppgifterna",
+        "go_to_attachments": "Till bilagorna",
+        "cancel": "Avbryt"
+      },
+      "registration_inputs": {
+        "applicant": "en sökande som är identifierad med personnummer eller organisationsnummer",
+        "errand_form": "ifyllda ärendeuppgifter",
+        "attachments": "bilagorna {{labels}}"
+      },
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",

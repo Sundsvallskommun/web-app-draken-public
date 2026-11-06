@@ -17,6 +17,7 @@ import {
   isSupportErrandLocked,
   saveSupportErrandJsonParameters,
   SupportErrand,
+  supportErrandRejectionReason,
 } from '@supportmanagement/services/support-errand-service';
 import { hasSupportProcessPassedStep, SupportProcessStep } from '@supportmanagement/services/support-process-service';
 import { FC, useCallback, useEffect, useState } from 'react';
@@ -82,9 +83,15 @@ export const SupportErrandTypeForm: FC<SupportErrandTypeFormProps> = ({
           setSupportErrand(errand);
         }
         toastMessage(getToastOptions({ message: 'Ärendeuppgifterna sparades.', status: 'success' }));
-      } catch {
+      } catch (error) {
+        const reason = supportErrandRejectionReason(error);
         toastMessage(
-          getToastOptions({ message: 'Något gick fel när ärendeuppgifterna skulle sparas.', status: 'error' })
+          getToastOptions({
+            message: reason
+              ? `Ärendeuppgifterna sparades inte eftersom tjänsten avvisade dem: ${reason}`
+              : 'Något gick fel när ärendeuppgifterna skulle sparas.',
+            status: 'error',
+          })
         );
       } finally {
         setSubmitting(false);

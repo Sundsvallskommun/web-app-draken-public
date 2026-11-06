@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { completeSupportDecision, getSupportDecisions } from '@supportmanagement/services/support-decision-service';
 import {
   getSupportErrandById,
@@ -45,9 +46,12 @@ vi.mock('@supportmanagement/services/support-errand-service', () => ({
   setSupportErrandAdmin: vi.fn(),
   setSupportErrandStatus: vi.fn(),
   getMostSpecificLabelType: () => undefined,
+  supportErrandHasAnIdentifiedApplicant: (errand: { customer?: { externalId?: string }[] } | undefined) =>
+    (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId),
   Status: { ONGOING: 'ONGOING', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: { CLOSED: 'CLOSED' },
 }));
+vi.mock('@common/components/json/utils/schema-utils', () => ({ getLatestRjsfSchema: vi.fn() }));
 vi.mock('@supportmanagement/services/support-statement-service', () => ({
   getSupportStatements: vi.fn().mockResolvedValue([]),
   isSupportStatementAwaitingAnswer: (statement: { status?: string }) => statement.status === 'ACTIVE',
@@ -516,4 +520,142 @@ test('a process that failed is not offered a restart from the errand page', asyn
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(getSupportErrandProcessState).not.toHaveBeenCalled();
   expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
+});
+
+/** The folköl schema as the jsonschema service publishes it, cut to its attachment declaration. */
+const FOLKOL_SCHEMA = {
+  type: 'object',
+  'x-attachments': [
+    {
+      key: 'POWER_OF_ATTORNEY',
+      label: 'Fullmakt',
+      requiredWhen: { properties: { arDuFirmatecknare: { const: 'NEJ' } }, required: ['arDuFirmatecknare'] },
+    },
+  ],
+};
+
+const SCHEMA_NAME = 'aot_alcohol_folkol_folkol_serving_notification';
+
+const identifiedApplicant = { role: 'PRIMARY', externalId: 'a3f1c2e4-0000-4000-8000-000000000001' };
+
+const errandInRegistration = (over: Partial<SupportErrand> = {}): SupportErrand =>
+  ({
+    id: ERRAND_ID,
+    status: 'NEW',
+    modified: '2026-11-05T10:00:00Z',
+    labels: [
+      { classification: 'CATEGORY', resourceName: 'ALCOHOL' },
+      { classification: 'TYPE', resourceName: 'FOLKOL' },
+      { classification: 'SUBTYPE', resourceName: 'FOLKOL_SERVING_NOTIFICATION' },
+    ],
+    customer: [identifiedApplicant],
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'JA' }, schemaId: `${SCHEMA_NAME}-id` }],
+    process: {
+      processInstanceId: 'process-1',
+      processStatus: 'WAITING',
+      currentActivityId: 'registration_phase',
+      awaitingSignals: [{ name: 'registration_completed' }],
+    },
+    ...over,
+  } as unknown as SupportErrand);
+
+const startTheHandling = async (supportErrand: SupportErrand) => {
+  useSupportStore.setState({ supportErrand, activeTabKey: 'messages' });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: supportErrand.process,
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  const button = await theButton('start_handling');
+  button.click();
+};
+
+beforeEach(() => {
+  vi.mocked(getLatestRjsfSchema)
+    .mockReset()
+    .mockResolvedValue({ schema: FOLKOL_SCHEMA } as never);
+  useMetadataStore.setState({ supportMetadata: { namespace: 'AOT' } as never });
+});
+
+test('the handling does not start on an errand without an identified applicant', async () => {
+  await startTheHandling(errandInRegistration({ customer: [] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an applicant without a party id is not an applicant the process can use', async () => {
+  await startTheHandling(errandInRegistration({ customer: [{ role: 'PRIMARY' }] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('the handling does not start before the errand details have been filled in', async () => {
+  await startTheHandling(errandInRegistration({ jsonParameters: [] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('details'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('the handling does not start while an attachment the errand type asks for is missing', async () => {
+  const errand = errandInRegistration({
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'NEJ' }, schemaId: `${SCHEMA_NAME}-id` }],
+  } as never);
+
+  await startTheHandling(errand);
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('attachments'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an uploaded attachment with the right purpose lets the handling start', async () => {
+  useSupportStore.setState({
+    supportAttachments: [
+      {
+        id: 'attachment-1',
+        fileName: 'fullmakt.pdf',
+        mimeType: 'application/pdf',
+        purpose: { name: 'POWER_OF_ATTORNEY' },
+      },
+    ] as never,
+  });
+  const errand = errandInRegistration({
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'NEJ' }, schemaId: `${SCHEMA_NAME}-id` }],
+  } as never);
+
+  await startTheHandling(errand);
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+  useSupportStore.setState({ supportAttachments: undefined });
+});
+
+test('a complete errand starts its handling', async () => {
+  await startTheHandling(errandInRegistration());
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+});
+
+test('an errand type that publishes no schema asks for no details and no attachments', async () => {
+  vi.mocked(getLatestRjsfSchema).mockRejectedValue({ response: { status: 404 } });
+
+  await startTheHandling(errandInRegistration({ jsonParameters: [] } as never));
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+});
+
+test('a schema that cannot be read holds the step rather than passing it on a guess', async () => {
+  vi.mocked(getLatestRjsfSchema).mockRejectedValue({ response: { status: 503 } });
+
+  await startTheHandling(errandInRegistration());
+
+  await waitFor(() => expect(toast).toHaveBeenCalled());
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });

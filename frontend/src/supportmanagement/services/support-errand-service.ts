@@ -210,22 +210,44 @@ export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-/** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
-export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
+/** Categorization labels in tree order, leaving out the ROOT label and any other label sets. */
+const getCategorizationLabelsOf = (labels: Label[] | undefined): Label[] =>
   CATEGORIZATION_CLASSIFICATIONS.map((classification) =>
-    errand.labels?.find((label) => label.classification === classification)
+    labels?.find((label) => label.classification === classification)
   ).filter((label): label is Label => !!label);
+
+/** The errand's categorization labels in tree order, leaving out the ROOT label and any other label sets. */
+export const getCategorizationLabels = (errand: SupportErrand): Label[] => getCategorizationLabelsOf(errand.labels);
 
 const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
 
-/** Heading under label categorization: the deepest label (type, else category, else department). */
+export const NEW_ERRAND_HEADING = 'Registrera nytt ärende';
+
+/** What the chosen categorization is called, named from its deepest level. */
+const getCategorizationHeadingOf = (
+  labels: Label[] | undefined,
+  metadata: SupportMetadata | undefined
+): string | undefined => {
+  const deepest = getCategorizationLabelsOf(labels).at(-1);
+  return deepest ? getLabelDisplayName(deepest, metadata) : undefined;
+};
+
+/**
+ * Heading under label categorization: the deepest label (type, else category, else department). An errand
+ * whose shell exists but which is not categorized yet is still being registered, and says so.
+ */
 export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
   // LEGACY_CLASSIFICATION
   if (showsLegacyClassification(errand)) {
     return getLegacyClassificationHeading(errand, metadata);
   }
-  const deepest = getCategorizationLabels(errand).at(-1);
-  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
+
+  const chosen = getCategorizationHeadingOf(errand.labels, metadata);
+  if (chosen) {
+    return chosen;
+  }
+
+  return supportErrandIsEmpty(errand) ? NEW_ERRAND_HEADING : MISSING_ERRAND_TYPE_TEXT;
 };
 
 export const getLabelType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'TYPE');
@@ -1014,6 +1036,26 @@ export const setSupportErrandAdmin: (
       console.error('Something went wrong when patching errand');
       throw e;
     });
+};
+
+/**
+ * Whether the errand carries an applicant the process can use. pw-alkt reads the permit holder from
+ * the PRIMARY stakeholder's partyId (`SupportManagementMapper`), so one without an identity is not
+ * enough: the process would die on it a few steps later.
+ */
+export const supportErrandHasAnIdentifiedApplicant = (errand: Pick<SupportErrand, 'customer'> | undefined): boolean =>
+  (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId?.trim());
+
+const REJECTED_BY_SERVICE_STATUS = 400;
+
+const MESSAGES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request', 'Request failed', 'Internal server error'];
+
+export const supportErrandRejectionReason = (error: unknown): string | undefined => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+  if (response?.status !== REJECTED_BY_SERVICE_STATUS) return undefined;
+
+  const message = response.data?.message?.trim();
+  return message && !MESSAGES_WITHOUT_A_REASON.includes(message) ? message : undefined;
 };
 
 /** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
