@@ -877,5 +877,37 @@
       "what": "Vad observerades?",
       "missing": "Välj minst en observation, eller ändra bedömningen."
     }
+  },
+  "customer": {
+    "errands": {
+      "columns": {
+        "status": "Status",
+        "errandNumber": "Ärendenr",
+        "errandType": "Ärendetyp",
+        "channel": "Inkom via",
+        "administrator": "Handläggare",
+        "drake": "Drake"
+      },
+      "own": {
+        "title": "Ärenden i AoT-Draken",
+        "intro": "Ärenden i Alkohol och Tobak-Draken för organisationen: ansökningar, anmälningar och tillsyn. Interna ärenden kan öppnas direkt.",
+        "empty": "Inga ärenden för denna organisation.",
+        "error": "Ärenden kunde inte hämtas.",
+        "openRow": "Ärende {{errandNumber}}, öppna ärende i ny flik"
+      },
+      "other": {
+        "title": "Ärenden i andra Drakar",
+        "intro": "Ärenden i kommunens övriga Drakar (Kontakt Sundsvall, MEX, Näring och tillväxt m.fl.).",
+        "loading": "Hämtar ärenden i andra Drakar. Det kan ta en stund.",
+        "empty": "Inga ärenden i andra Drakar för denna organisation.",
+        "error": "Ärenden i andra Drakar kunde inte hämtas.",
+        "deferred": "Visning av ärenden i kommunens övriga Drakar är inte klar ännu och kommer i ett senare skede."
+      },
+      "external": {
+        "title": "Ärenden i externa system",
+        "intro": "Ärenden från andra kommunala system (ByggR, ECOS, Lex Alkohol, EDP VA m.fl.). Draken har begränsad information om dessa ärenden. De visas i informationssyfte.",
+        "deferred": "Visning av ärenden i externa system är inte klar ännu och kommer i ett senare skede."
+      }
+    }
   }
 }
