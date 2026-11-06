@@ -110,8 +110,7 @@ export const SupportErrandDecisionTab: FC<{
     return () => {
       current = false;
     };
-    // Read again when the tab is opened, since the investigation can be edited in the decision step.
-  }, [supportErrand?.id, municipalityId, supportErrand?.process?.currentActivityId, isActive]);
+  }, [supportErrand?.id, municipalityId, supportErrand?.process?.currentActivityId]);
 
   const editable = writable && (!decision || isSupportDecisionDraft(decision));
 

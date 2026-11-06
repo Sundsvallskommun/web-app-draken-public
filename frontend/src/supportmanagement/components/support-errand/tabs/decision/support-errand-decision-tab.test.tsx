@@ -12,7 +12,7 @@ import {
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -271,18 +271,6 @@ test('the att-satser start from the investigation, and an edit is saved on the d
   await expect(saveTheTab()).resolves.toBe(true);
 
   expect(sentJson().value).toMatchObject({ decision: { clauses: 'att bevilja' } });
-});
-
-test('opening the tab again brings the att-satser from an investigation edited meanwhile', async () => {
-  vi.mocked(getSupportInvestigation).mockResolvedValue({ summary: '<p>att bevilja</p>' } as never);
-  await renderTab();
-  await waitFor(() => expect(input('clauses').value).toBe('att bevilja'));
-
-  vi.mocked(getSupportInvestigation).mockResolvedValue({ summary: '<p>att bevilja</p><p>att servera</p>' } as never);
-  act(() => useSupportStore.setState({ activeTabKey: 'investigation' }));
-  act(() => useSupportStore.setState({ activeTabKey: 'decision' }));
-
-  await waitFor(() => expect(input('clauses').value).toBe('att bevilja\natt servera'));
 });
 
 test('the att-satser prefill shows the text as typed, without entities or blank lines', async () => {
