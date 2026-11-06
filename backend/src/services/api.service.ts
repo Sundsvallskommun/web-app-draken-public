@@ -63,6 +63,35 @@ const logConstraintViolations = (responseData: unknown, requestData: unknown): v
   }
 };
 
+const FAILED_REQUEST_MESSAGE = 'Request failed';
+
+const PROBLEM_TITLES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request'];
+
+type UpstreamProblem = {
+  detail?: string;
+  message?: string;
+  title?: string;
+  violations?: { field?: string; message?: string }[];
+};
+
+const violationMessagesOf = (problem: UpstreamProblem): string[] =>
+  (problem.violations ?? []).map(violation => violation.message?.trim()).filter((message): message is string => !!message);
+
+export const upstreamClientErrorMessage = (data: unknown): string => {
+  if (typeof data !== 'object' || data === null) {
+    return FAILED_REQUEST_MESSAGE;
+  }
+
+  const problem = data as UpstreamProblem;
+  const violationMessages = violationMessagesOf(problem);
+  if (violationMessages.length > 0) {
+    return violationMessages.join('; ');
+  }
+
+  const title = problem.title && !PROBLEM_TITLES_WITHOUT_A_REASON.includes(problem.title) ? problem.title : undefined;
+  return problem.detail || problem.message || title || FAILED_REQUEST_MESSAGE;
+};
+
 class ApiService {
   private instance: AxiosInstance;
   constructor() {
@@ -167,9 +196,7 @@ class ApiService {
           // context instead of an opaque 500. Server/network errors still become 500 below.
           const status = error.response!.status;
           if (propagateClientError && status >= 400 && status < 500) {
-            const data = error.response!.data as { detail?: string; message?: string; title?: string };
-            const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
-            throw new HttpException(status, message);
+            throw new HttpException(status, upstreamClientErrorMessage(error.response!.data));
           }
         }
       } else {
