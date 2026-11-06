@@ -5,15 +5,7 @@ export interface AppConfig {
   isCaseData: boolean;
   isSupportManagement: boolean;
   reopenSupportErrandLimit: string;
-  /** TODO: Remove testCustomer as soon as customers are fetched from the API. Dev/test-only shortcut into the customer view. */
-  testCustomer?: TestCustomer;
   features: AppConfigFeatures;
-}
-
-// TODO: Remove as soon as customers are fetched from the API.
-interface TestCustomer {
-  customerId: string;
-  name: string;
 }
 
 interface AppConfigFeatures {
@@ -72,18 +64,11 @@ const envBool = (val: string | undefined): boolean => {
   }
 };
 
-// TODO: Remove as soon as customers are fetched from the API.
-const testCustomerFromEnv = (): TestCustomer | undefined => {
-  const customerId = process.env.NEXT_PUBLIC_TEST_CUSTOMER_ID;
-  return customerId ? { customerId, name: process.env.NEXT_PUBLIC_TEST_CUSTOMER_NAME || customerId } : undefined;
-};
-
 export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
   isCaseData: envBool(process.env.NEXT_PUBLIC_IS_CASEDATA),
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
-  testCustomer: testCustomerFromEnv(), // TODO: Remove as soon as customers are fetched from the API.
   features: {
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
     useLabelCategorization: envBool(process.env.NEXT_PUBLIC_USE_LABEL_CATEGORIZATION),

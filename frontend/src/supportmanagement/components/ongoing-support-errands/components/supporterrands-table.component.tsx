@@ -13,11 +13,19 @@ import { useFormContext } from 'react-hook-form';
 
 import { TableForm } from '../ongoing-support-errands.component';
 
-export const SupportErrandsTable: FC = () => {
+interface SupportErrandsTableProps {
+  /** Overrides the statuses selected in the overview. */
+  statuses?: Status[];
+  /** Replaces opening the errand in a new tab. */
+  rowAction?: { label: string; onClick: (errand: SupportErrand) => void };
+}
+
+export const SupportErrandsTable: FC<SupportErrandsTableProps> = ({ statuses, rowAction }) => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const data = useSupportStore((s) => s.supportErrands);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const storedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const selectedSupportErrandStatuses = statuses ?? storedErrandStatuses;
   const refreshNotifications = useRefreshNotifications();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
@@ -133,14 +141,15 @@ export const SupportErrandsTable: FC = () => {
   ));
 
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+    const handleRowAction = () => (rowAction ? rowAction.onClick(errand) : openErrandeInNewWindow(errand));
     return (
       <Table.Row
         tabIndex={0}
         role="button"
         key={`row-${index}`}
-        aria-label={`Ärende ${errand.errandNumber}, öppna ärende i ny flik`}
-        onKeyDown={(e) => (e.key === 'Enter' ? openErrandeInNewWindow(errand) : null)}
-        onClick={() => openErrandeInNewWindow(errand)}
+        aria-label={`Ärende ${errand.errandNumber}, ${rowAction?.label ?? 'öppna ärende i ny flik'}`}
+        onKeyDown={(e) => (e.key === 'Enter' ? handleRowAction() : null)}
+        onClick={handleRowAction}
         className="cursor-pointer"
       >
         {errandTableObject.map((column, index) => (
