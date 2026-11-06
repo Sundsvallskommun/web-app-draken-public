@@ -1,16 +1,14 @@
 'use client';
 
 import { CustomerTabs } from '@common/components/customer-menu/customer-tabs.component';
-import { type CustomerLookup, useCustomerLookup } from '@common/components/customer-menu/use-customer-lookup';
+import { type CustomerLookup, useCustomerData } from '@common/components/customer-menu/use-customer-lookup';
 import {
   Customer,
   CustomerPlace,
   formatOrganizationNumber,
   getCustomerByCustomerId,
-  getCustomerPlaces,
 } from '@common/services/customer-service';
 import { Breadcrumb, Label, Spinner } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
 import { Building2 } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useEffect, useState } from 'react';
@@ -65,11 +63,7 @@ const CustomerPlaces: FC<{ places: CustomerLookup<CustomerPlace[]> }> = ({ place
 
 export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
   const [result, setResult] = useState<LookupResult | null>(null);
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const places = useCustomerLookup(
-    `${municipalityId}|${customerId}`,
-    municipalityId ? () => getCustomerPlaces(municipalityId, customerId) : undefined
-  );
+  const data = useCustomerData(customerId);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,9 +115,9 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
         )}
       </div>
 
-      <CustomerPlaces places={places} />
+      <CustomerPlaces places={data.places} />
 
-      <CustomerTabs customer={customer} places={places} />
+      <CustomerTabs customer={customer} data={data} />
     </div>
   );
 };

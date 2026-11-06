@@ -10,6 +10,7 @@ import { withAssignments } from '@supportmanagement/services/licensed-business-s
 import {
   closedStatuses,
   getErrandParameterValue,
+  getSupportErrandById,
   getSupportErrands,
   Status,
   SupportErrand,
@@ -87,8 +88,39 @@ type PartyAssetValue = {
   // Alcohol assets have premises, tobacco assets pointOfSale.
   premises?: PartyAssetPlace;
   pointOfSale?: PartyAssetPlace;
-  decision?: { validFrom?: string };
+  errandId?: string;
+  caseRegistrationNumber?: string;
+  decision?: { validFrom?: string; decisionDate?: string; caseOfficer?: string };
 };
+
+export interface CustomerAsset {
+  asset: Asset;
+  registrationNumber?: string;
+  caseOfficer?: string;
+  decisionDate?: string;
+  /** The errand the asset came from. */
+  errandNumber?: string;
+}
+
+/** Assets as listed in the Tillstånd tab: decision data from the JSON, and the errand number looked up by the errand id. */
+export const withSourceErrands = (municipalityId: string, assets: Asset[]): Promise<CustomerAsset[]> =>
+  Promise.all(
+    assets.map(async (asset) => {
+      const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
+      const errandNumber =
+        asset.sourceErrandNumber ??
+        (value.errandId
+          ? (await getSupportErrandById(value.errandId, municipalityId)).errand?.errandNumber
+          : undefined);
+      return {
+        asset,
+        registrationNumber: value.caseRegistrationNumber,
+        caseOfficer: value.decision?.caseOfficer,
+        decisionDate: value.decision?.decisionDate ?? asset.issued,
+        errandNumber,
+      };
+    })
+  );
 
 interface CustomerPlaceAddress {
   street?: string;
@@ -143,9 +175,9 @@ const coversAsset = (assignment: Assignment | null, validFrom: string | undefine
   assignment.validFrom <= validFrom &&
   (!assignment.validTo || validFrom <= assignment.validTo);
 
-/** The customer's places from its assets, named by the LicensedBusiness register where the place has a restaurant number. */
-export const getCustomerPlaces = async (municipalityId: string, customerId: string): Promise<CustomerPlace[]> => {
-  const places = placesFromAssets(await getCustomerAssets(municipalityId, customerId));
+/** The places on the customer's assets, named by the LicensedBusiness register where the place has a restaurant number. */
+export const getCustomerPlaces = async (municipalityId: string, assets: Asset[]): Promise<CustomerPlace[]> => {
+  const places = placesFromAssets(assets);
   if (!appConfig.features.useLicensedBusiness) {
     return places;
   }
