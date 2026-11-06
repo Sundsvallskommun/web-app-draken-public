@@ -2,12 +2,13 @@ import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-contracts/relations/data-contracts';
 import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
+import type { ErrandService } from './errand-lookup.service';
 
 const RELATIONS_SERVICE = apiServiceName('relations');
 const RELATIONS_PAGE_LIMIT = 200;
@@ -23,6 +24,14 @@ const isAssetTarget = (relation: Relation): boolean =>
   relation.target?.service === ASSET_TARGET.service && relation.target?.type === ASSET_TARGET.type;
 
 const isErrandAssetLink = (relation: Relation): boolean => relation.type === LINK_RELATION_TYPE && isCaseSource(relation) && isAssetTarget(relation);
+
+const SOURCE_ERRAND_SERVICES: string[] = ['case-data', 'supportmanagement'];
+
+const isSourceErrandLink = (relation: Relation): boolean =>
+  relation.type === LINK_RELATION_TYPE &&
+  relation.source?.type === CASE_SOURCE.type &&
+  SOURCE_ERRAND_SERVICES.includes(relation.source?.service ?? '') &&
+  isAssetTarget(relation);
 
 const buildErrandSource = (errandId: string): ResourceIdentifier => ({
   ...CASE_SOURCE,
@@ -90,13 +99,15 @@ export const findAssetIdsForErrand = async (municipalityId: string, errandId: st
   return new Set(relations.filter(isErrandAssetLink).map(r => r.target.resourceId));
 };
 
-export type SourceErrandRef = { id: string; namespace?: string };
+export type SourceErrandRef = { id: string; namespace?: string; service: ErrandService };
 
 export const findSourceErrandIdForAsset = async (municipalityId: string, assetId: string, user: User): Promise<SourceErrandRef | undefined> => {
   const relations = await listRelationsBy(municipalityId, 'target.resourceId', assetId, user);
-  const link = relations.find(isErrandAssetLink);
+  const link = relations.find(isSourceErrandLink);
   if (!link?.source.resourceId) return undefined;
-  return { id: link.source.resourceId, namespace: link.source.namespace ?? CASEDATA_NAMESPACE };
+  const service = link.source.service as ErrandService;
+  const fallbackNamespace = service === 'supportmanagement' ? SUPPORTMANAGEMENT_NAMESPACE : CASEDATA_NAMESPACE;
+  return { id: link.source.resourceId, namespace: link.source.namespace ?? fallbackNamespace, service };
 };
 
 export const findSourceErrandsForAssets = async (municipalityId: string, assetIds: string[], user: User): Promise<Map<string, SourceErrandRef>> => {

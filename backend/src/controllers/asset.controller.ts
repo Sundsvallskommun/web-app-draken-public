@@ -9,7 +9,7 @@ import {
   findSourceErrandIdForAsset,
   findSourceErrandsForAssets,
 } from '@services/asset-relations.service';
-import { fetchErrandNumberById, fetchErrandNumbersByIds } from '@services/errand-lookup.service';
+import { type ErrandService, fetchErrandNumberById, fetchErrandNumbersByIds } from '@services/errand-lookup.service';
 import { logger } from '@utils/logger';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -28,6 +28,7 @@ type EnrichedAsset = Asset & {
   sourceErrandId?: string;
   sourceErrandNumber?: string;
   sourceErrandNamespace?: string;
+  sourceErrandService?: ErrandService;
 };
 
 @Controller()
@@ -104,7 +105,9 @@ export class AssetController {
   }
 
   private async enrichWithErrandNumbers(user: RequestWithUser['user'], municipalityId: string, assets: EnrichedAsset[]): Promise<EnrichedAsset[]> {
-    const refs = assets.filter(a => !!a.sourceErrandId).map(a => ({ id: a.sourceErrandId as string, namespace: a.sourceErrandNamespace }));
+    const refs = assets
+      .filter(a => !!a.sourceErrandId)
+      .map(a => ({ id: a.sourceErrandId as string, namespace: a.sourceErrandNamespace, service: a.sourceErrandService }));
     if (refs.length === 0) return assets;
     const numbers = await fetchErrandNumbersByIds(municipalityId, refs, user);
     return assets.map(asset => ({
@@ -150,6 +153,7 @@ export class AssetController {
         ...asset,
         sourceErrandId: ref?.id,
         sourceErrandNamespace: ref?.namespace,
+        sourceErrandService: ref?.service,
       };
     });
     return this.enrichWithErrandNumbers(req.user, municipalityId, enriched);
@@ -235,7 +239,7 @@ export class AssetController {
     try {
       const sourceErrand = await findSourceErrandIdForAsset(municipalityId, id, req.user);
       const sourceErrandNumber = sourceErrand
-        ? await fetchErrandNumberById(municipalityId, sourceErrand.id, req.user, sourceErrand.namespace)
+        ? await fetchErrandNumberById(municipalityId, sourceErrand.id, req.user, sourceErrand.namespace, sourceErrand.service)
         : undefined;
       return {
         data: {
@@ -243,6 +247,7 @@ export class AssetController {
           sourceErrandId: sourceErrand?.id,
           sourceErrandNumber,
           sourceErrandNamespace: sourceErrand?.namespace,
+          sourceErrandService: sourceErrand?.service,
         },
         message: 'success',
       };

@@ -337,6 +337,23 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   actions?: CErrandAction[];
 }
 
+/** What a new errand can be created with instead of the defaults, e.g. a tillsyn errand from the customer view. */
+export class NewSupportErrandDto {
+  @IsOptional()
+  @IsArray()
+  labels?: Label[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CSupportStakeholder)
+  stakeholders?: CSupportStakeholder[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CJsonParameter)
+  jsonParameters?: CJsonParameter[];
+}
+
 class ForwardFormDto {
   @IsString()
   recipient!: string;
@@ -609,12 +626,13 @@ export class SupportErrandController {
 
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
-  @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware)
+  @OpenAPI({ summary: 'Initiate a new support errand, empty or with the given labels, stakeholders and JSON parameters' })
+  @UseBefore(authMiddleware, validationMiddleware(NewSupportErrandDto, 'body'))
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
+    @Body({ required: false }) prefill?: NewSupportErrandDto,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     if (!municipalityId) {
       console.error('No municipality id found, needed to fetch errands.');
@@ -633,17 +651,21 @@ export class SupportErrandController {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
       classification: errandDefaults?.classification,
-      labels: errandDefaults?.labels
-        ? resolveDefaultLabels(
-            selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
-            errandDefaults.labels,
-          )
-        : [],
+      labels: prefill?.labels
+        ? prefill.labels
+        : errandDefaults?.labels
+          ? resolveDefaultLabels(
+              selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
+              errandDefaults.labels,
+            )
+          : [],
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
       parameters: errandDefaults?.parameters,
+      ...(prefill?.stakeholders ? { stakeholders: prefill.stakeholders } : {}),
+      ...(prefill?.jsonParameters ? { jsonParameters: prefill.jsonParameters } : {}),
     };
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');

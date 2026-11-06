@@ -866,6 +866,14 @@
     }
   },
   "customer": {
+    "overview": {
+      "inspection": {
+        "create": "Skapa tillsynsärende",
+        "INTERNAL_INSPECTION": "Inre tillsyn",
+        "EXTERNAL_INSPECTION": "Yttre tillsyn",
+        "error": "Tillsynsärendet kunde inte skapas."
+      }
+    },
     "errands": {
       "columns": {
         "status": "Status",

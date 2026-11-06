@@ -1,14 +1,22 @@
 'use client';
 
+import {
+  createInspectionErrand,
+  type InspectionKind,
+  latestActiveAsset,
+} from '@common/services/customer-inspection-service';
 import { countErrands, Customer, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
-import { Button, Label, Spinner, Table } from '@sk-web-gui/react';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { Button, Label, PopupMenu, Spinner, Table, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
 import { SupportErrandBusinessDescriptionDrawer } from '@supportmanagement/components/support-errand/tabs/support-errand-business-description-drawer.component';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { formatAddress } from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
-import { CircleAlert, Store } from 'lucide-react';
+import { ChevronDown, CircleAlert, Store } from 'lucide-react';
 import { FC, PropsWithChildren, ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { CustomerData, CustomerLookup } from './use-customer-lookup';
 
@@ -56,8 +64,69 @@ export const lookupContent = <T,>(lookup: CustomerLookup<T>, failure: string, re
   return render(lookup.data);
 };
 
+const INSPECTION_KINDS: InspectionKind[] = ['INTERNAL_INSPECTION', 'EXTERNAL_INSPECTION'];
+
+/** Creates a tillsyn errand from the place's latest active asset and opens it in a new tab. */
+const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
+  const { t } = useTranslation();
+  const toastMessage = useSnackbar();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const metadata = useMetadataStore((s) => s.supportMetadata);
+  const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
+  const [creating, setCreating] = useState(false);
+  const asset = latestActiveAsset(place);
+
+  if (!canEdit || !asset) return null;
+
+  const create = async (kind: InspectionKind) => {
+    // Opened before the request, since a tab opened after it is taken for a popup.
+    const tab = window.open('', '_blank');
+    setCreating(true);
+    try {
+      const errandNumber = await createInspectionErrand(municipalityId, metadata, asset, kind);
+      if (tab) tab.location.href = `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errandNumber}`;
+    } catch (e) {
+      console.error('Something went wrong when creating the tillsyn errand', e);
+      tab?.close();
+      toastMessage(getToastOptions({ message: t('common:customer.overview.inspection.error'), status: 'error' }));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    // The panel is placed against the nearest positioned ancestor.
+    <div className="relative">
+      <PopupMenu align="end">
+        <PopupMenu.Button
+          size="sm"
+          variant="secondary"
+          rightIcon={<ChevronDown size={16} />}
+          loading={creating}
+          disabled={creating}
+          data-cy="customer-overview-create-inspection"
+        >
+          {t('common:customer.overview.inspection.create')}
+        </PopupMenu.Button>
+        <PopupMenu.Panel>
+          <PopupMenu.Items>
+            {INSPECTION_KINDS.map((kind) => (
+              <PopupMenu.Item key={kind}>
+                <Button onClick={() => void create(kind)} data-cy={`customer-overview-create-inspection-${kind}`}>
+                  {t(`common:customer.overview.inspection.${kind}`)}
+                </Button>
+              </PopupMenu.Item>
+            ))}
+          </PopupMenu.Items>
+        </PopupMenu.Panel>
+      </PopupMenu>
+    </div>
+  );
+};
+
 const InspectionRow: FC<{ place: CustomerPlace; errands: SupportErrand[] }> = ({ place, errands }) => {
-  const inspection = getLatestInspection(errands, place);
+  const namespace = useMetadataStore((s) => s.supportMetadata?.namespace);
+  const inspection = getLatestInspection(errands, place, namespace);
   const outdated =
     !!inspection && dayjs(inspection.touched).isBefore(dayjs().subtract(INSPECTION_MAX_AGE_MONTHS, 'month'));
   const flagged = !inspection || outdated;
@@ -98,6 +167,7 @@ const InspectionRow: FC<{ place: CustomerPlace; errands: SupportErrand[] }> = ({
             {inspection ? `Äldre än ${INSPECTION_MAX_AGE_MONTHS} månader` : 'Ingen tillsyn gjord'}
           </Label>
         )}
+        <CreateInspectionMenu place={place} />
       </div>
     </Card>
   );

@@ -65,19 +65,17 @@ export const useCustomerData = (customerId: string): CustomerData => {
     key,
     municipalityId && knownAssets ? () => getCustomerPlaces(municipalityId, knownAssets) : undefined
   );
-  const knownPlaces = places.status === 'done' ? places.data : undefined;
   const errands = useCustomerLookup(
     key,
-    municipalityId && knownPlaces ? () => getCustomerErrands(municipalityId, customerId, knownPlaces) : undefined
+    municipalityId ? () => getCustomerErrands(municipalityId, customerId) : undefined
   );
   const engagements = useCustomerLookup(customerId, () => getCustomerEngagements(customerId));
 
   const failed = fetchedAssets.status === 'error';
-  const placesFailed = failed || places.status === 'error';
   return {
     assets: failed ? fetchedAssets : assets,
     places: failed ? fetchedAssets : places,
-    errands: placesFailed ? { status: 'error' } : errands,
+    errands,
     engagements,
   };
 };
