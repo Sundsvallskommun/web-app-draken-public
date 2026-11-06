@@ -3,8 +3,8 @@ import { describe, expect, test } from 'vitest';
 import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
-  decisionJsonParameter,
   type DecisionParameterInput,
+  decisionSchema,
   flattenDecisionJson,
   missingDecisionInputs,
   missingPermitInputs,
@@ -12,6 +12,7 @@ import {
   toCertificateParameters,
   toDecisionJson,
 } from './support-decision-parameters-service';
+import { supportDecisionPermitType } from './support-decision-service';
 import type { SupportErrand } from './support-errand-service';
 
 const HOLDER = mockEnv.mockCompanyAddress;
@@ -22,6 +23,7 @@ const TODAY = '2026-10-07';
 const ISSUED = '2026-10-09';
 const DECISION_CASE_NUMBER = 'KS 2026/123';
 const DECISION = { decisionText: 'Bifall', decisionMaker: 'Nämnd', validFrom: '2026-11-01', terms: ['A', 'B'] };
+const WITH_CLAUSES = { ...DECISION, clauses: 'att bevilja tillstånd' };
 
 const errand = () =>
   ({
@@ -287,12 +289,14 @@ describe('the JSON of a serving permit', () => {
   });
 
   test('is saved against the schema of the permit area', () => {
-    expect(decisionJsonParameter('SERVERINGSTILLSTAND')).toEqual({
-      key: 'permit',
-      schema: { name: 'aot_alcohol_decision', version: '1.0' },
-    });
-    expect(decisionJsonParameter('ECIGARETTFORSALJNING').schema.name).toBe('aot_tobacco_decision');
-    expect(savedDecisionJson({ jsonParameters: [{ key: 'permit', schemaId: 'x', value: saved }] })).toEqual(saved);
+    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.2' });
+    expect(decisionSchema('ECIGARETTFORSALJNING')).toEqual({ name: 'aot_tobacco_decision', version: '1.2' });
+    expect(
+      savedDecisionJson({ jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: 'x', value: saved }] })
+    ).toEqual(saved);
+    expect(
+      savedDecisionJson({ jsonParameters: [{ key: 'aot_tobacco_decision', schemaId: 'x', value: saved }] })
+    ).toEqual(saved);
     expect(savedDecisionJson({})).toBeUndefined();
   });
 });
@@ -403,7 +407,7 @@ describe('what the permit needs of the errand', () => {
     const complete = toDecisionJson(
       'SERVERINGSTILLSTAND',
       input({ form: servingForm, servingAreaDescription: 'Matsalen' }),
-      DECISION
+      WITH_CLAUSES
     );
 
     expect(missingDecisionInputs('SERVERINGSTILLSTAND', complete)).toEqual([]);
@@ -416,12 +420,12 @@ describe('what the permit needs of the errand', () => {
       'premisesPostalAddress',
       'premisesPhone',
       'servingAreaDescription',
-      'decisionCaseNumber',
+      'decisionClauses',
     ]);
     expect(
       missingDecisionInputs(
         'SERVERINGSTILLSTAND',
-        toDecisionJson('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...DECISION, validFrom: '' })
+        toDecisionJson('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...WITH_CLAUSES, validFrom: '' })
       )
     ).toEqual(['validFrom', 'servingAreaDescription']);
   });
@@ -431,13 +435,13 @@ describe('what the permit needs of the errand', () => {
 
     expect(saved.externalCaseRegistrationNumber).toBe('2026/42');
     expect(saved).not.toHaveProperty('caseRegistrationNumber');
+  });
+
+  test('a decision can be sent without a case number of its own', () => {
+    const saved = toDecisionJson('FOLKOLSANMALAN', input({ externalCaseRegistrationNumber: '' }), WITH_CLAUSES);
+
+    expect(saved).not.toHaveProperty('externalCaseRegistrationNumber');
     expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
-    expect(
-      missingDecisionInputs('FOLKOLSANMALAN', json('FOLKOLSANMALAN', { externalCaseRegistrationNumber: '' }))
-    ).toEqual(['decisionCaseNumber']);
-    expect(missingDecisionInputs('FOLKOLSANMALAN', { caseRegistrationNumber: DECISION_CASE_NUMBER })).toEqual([
-      'decisionCaseNumber',
-    ]);
   });
 
   test('a tobacco permit waits for the outcome, the dates and the information it prints', () => {
@@ -446,20 +450,29 @@ describe('what the permit needs of the errand', () => {
       'validFrom',
       'executionDate',
       'information',
-      'decisionCaseNumber',
+      'decisionClauses',
     ]);
   });
 
   test('a tobacco decision without terms is held back, since the certificate prints them without a default', () => {
-    const withTerms = toDecisionJson('TOBAKSFORSALJNING', input(), DECISION);
-    const withoutTerms = toDecisionJson('TOBAKSFORSALJNING', input(), { ...DECISION, terms: [] });
+    const withTerms = toDecisionJson('TOBAKSFORSALJNING', input(), WITH_CLAUSES);
+    const withoutTerms = toDecisionJson('TOBAKSFORSALJNING', input(), { ...WITH_CLAUSES, terms: [] });
 
     expect(missingDecisionInputs('TOBAKSFORSALJNING', withTerms)).toEqual([]);
     expect(missingDecisionInputs('TOBAKSFORSALJNING', withoutTerms)).toEqual(['information']);
   });
 
-  test('a permit that issues no certificate waits for the decision case number alone', () => {
-    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual(['decisionCaseNumber']);
+  test('att-satser are saved on the decision and required, except on an inspection', () => {
+    const saved = toDecisionJson('FOLKOLSANMALAN', input(), { ...DECISION, clauses: ' att bevilja\natt servera ' });
+
+    expect(saved.decision).toMatchObject({ clauses: 'att bevilja\natt servera' });
+    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
+    expect(missingDecisionInputs('TILLSYN', undefined)).toEqual([]);
+    expect(missingDecisionInputs(supportDecisionPermitType(undefined, 'action-errand'), undefined)).toEqual([]);
+  });
+
+  test('a permit that issues no certificate waits for the att-satser alone', () => {
+    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual(['decisionClauses']);
     expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],

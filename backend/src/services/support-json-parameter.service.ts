@@ -27,6 +27,17 @@ export const readJsonParameters = async (apiService: ApiService, resourceUrl: st
   return res.data ?? [];
 };
 
+export const deleteJsonParameter = async (apiService: ApiService, resourceUrl: string, key: string, user: RequestWithUser['user']): Promise<void> => {
+  await apiService.delete(
+    {
+      url: `${resourceUrl}/json-parameters/${encodeURIComponent(key)}`,
+      baseURL: apiURL(apiServiceName('supportmanagement')),
+      propagateClientError: true,
+    },
+    user,
+  );
+};
+
 /** Creates or replaces the parameter; Support Management validates the value against the schema. */
 export const writeJsonParameter = async (
   apiService: ApiService,

@@ -4,6 +4,7 @@ import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import { getSupportAttachments, saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
+  deleteSupportInvestigationJsonParameter,
   getSupportInvestigation,
   saveSupportInvestigation,
   saveSupportInvestigationJsonParameter,
@@ -61,6 +62,7 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   startSupportInvestigation: vi.fn(),
   saveSupportInvestigation: vi.fn(),
   saveSupportInvestigationJsonParameter: vi.fn(),
+  deleteSupportInvestigationJsonParameter: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-measure-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -91,7 +93,7 @@ const investigation = {
   version: 3,
   jsonParameters: [
     {
-      key: 'inspectionProtocol',
+      key: 'aot_inspection_serving_permit',
       schemaId: '2281_aot_inspection_serving_permit_1.0',
       value: { visit: 'closed', guestCount: '80' },
     },
@@ -204,7 +206,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     ERRAND_ID,
     '2281',
     'inv-new',
-    'inspectionProtocol',
+    'aot_inspection_internal',
     {
       schemaId: '2281_aot_inspection_internal_1.0',
       value: expect.objectContaining({ businessName: 'Exempel AB' }),
@@ -363,7 +365,7 @@ test('a control point can be added beyond the template, and a saved one removed,
   ]);
 });
 
-test("a changed answer is saved in the JSON of the investigation, against the template's schema", async () => {
+test('a changed answer is saved in the JSON of the investigation, on the schema version the code writes', async () => {
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
 
@@ -376,11 +378,44 @@ test("a changed answer is saved in the JSON of the investigation, against the te
   });
 
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [nothing, nothing, nothing]);
-  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inv-1', 'inspectionProtocol', {
-    schemaId: '2281_aot_inspection_serving_permit_1.0',
-    value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
-  });
+  expect(saveSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'aot_inspection_serving_permit',
+    {
+      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
+    }
+  );
+  expect(deleteSupportInvestigationJsonParameter).not.toHaveBeenCalled();
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
+});
+
+test('answers another template left on the investigation are removed by the next save', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({
+    ...investigation,
+    jsonParameters: [
+      ...investigation.jsonParameters,
+      { key: 'aot_inspection_internal', schemaId: '2281_aot_inspection_internal_1.0', value: {} },
+      { key: 'other', schemaId: '2281_other_1.0', value: {} },
+    ],
+  });
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  fireEvent.change(screen.getByLabelText('Antal gäster'), { target: { value: '120' } });
+  await act(async () => {
+    expect(await saver()()).toBe(true);
+  });
+
+  expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledTimes(1);
+  expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'aot_inspection_internal'
+  );
 });
 
 test('another template is taken only after the handler confirms, and replaces control points and answers', async () => {
@@ -436,8 +471,14 @@ test('another template is taken only after the handler confirms, and replaces co
     ERRAND_ID,
     '2281',
     'inv-1',
-    'inspectionProtocol',
+    'aot_inspection_internal',
     expect.objectContaining({ schemaId: '2281_aot_inspection_internal_1.0' })
+  );
+  expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledWith(
+    ERRAND_ID,
+    '2281',
+    'inv-1',
+    'aot_inspection_serving_permit'
   );
 });
 

@@ -66,9 +66,6 @@ export const inspectionProtocolValuesOf = (
   return Object.fromEntries(fieldsOf(template).map((field) => [field.key, initialValueOf(field, prefills)]));
 };
 
-/** The investigation keeps the answers in one JSON parameter, against the template's schema. */
-export const INSPECTION_PROTOCOL_JSON_KEY = 'inspectionProtocol';
-
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((candidate): candidate is string => typeof candidate === 'string') : [];
 
