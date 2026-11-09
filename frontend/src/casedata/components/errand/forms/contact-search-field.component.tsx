@@ -1,7 +1,14 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
+import {
+  AddressResult,
+  NO_MATCH_MESSAGE,
+  PROTECTED_IDENTITY_MESSAGE,
+  searchFailureMessage,
+  searchOrganization,
+  searchPerson,
+} from '@common/services/adress-service';
 import { FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
-import { Dispatch, FC, SetStateAction } from 'react';
+import { Dispatch, FC, SetStateAction, useState } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SearchFieldProps {
@@ -35,6 +42,9 @@ export const ContactSearchField: FC<SearchFieldProps> = ({
   const personalNumber = form.watch(`personalNumber`);
   const organizationNumber = form.watch(`organizationNumber`);
 
+  const [notFoundMessage, setNotFoundMessage] = useState(NO_MATCH_MESSAGE);
+  const [protectedIdentity, setProtectedIdentity] = useState(false);
+
   const doSearch = () => {
     let search: () => Promise<AddressResult | AddressResult[] | undefined>;
     search =
@@ -46,10 +56,12 @@ export const ContactSearchField: FC<SearchFieldProps> = ({
     setSearching(true);
     setSearchResult(false);
     setNotFound(false);
+    setProtectedIdentity(false);
     search?.()
       .then((res) => {
         if (res && !isArray(res)) {
           setValue(`personId`, res.personId, { shouldDirty: true });
+          setProtectedIdentity(!!res.protectedIdentity);
           setValue(`firstName`, res.firstName, { shouldDirty: true });
           setValue(`lastName`, res.lastName, { shouldDirty: true });
           setValue(`organizationName`, res.organizationName, {
@@ -71,8 +83,9 @@ export const ContactSearchField: FC<SearchFieldProps> = ({
           setSearching(false);
         }
       })
-      .catch((e) => {
+      .catch((error) => {
         setSearching(false);
+        setNotFoundMessage(searchFailureMessage(error));
         setNotFound(true);
         setSearchResult(false);
       });
@@ -142,11 +155,16 @@ export const ContactSearchField: FC<SearchFieldProps> = ({
           )}
         </div>
 
+        {protectedIdentity ? (
+          <p className="my-sm text-small" data-cy="protected-identity-message">
+            {PROTECTED_IDENTITY_MESSAGE}
+          </p>
+        ) : null}
         {notFound || formState.errors.personalNumber || formState.errors.organizationNumber ? (
           <div className="my-sm text-error">
             {notFound && (
               <FormErrorMessage className="text-error" data-cy="not-found-error-message">
-                Sökningen gav ingen träff
+                {notFoundMessage}
               </FormErrorMessage>
             )}
             {formState.errors.personalNumber && (

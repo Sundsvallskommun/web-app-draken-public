@@ -1,5 +1,6 @@
 import { HttpException } from '@exceptions/HttpException';
 import { logger } from '@utils/logger';
+import { maskPersonalNumbers } from '@utils/mask-personal-numbers';
 import { NextFunction, Request, Response } from 'express';
 
 // Helper function to sanitize log input by removing CR and LF characters
@@ -20,7 +21,7 @@ const errorMiddleware = (error: HttpException, req: Request, res: Response, next
     const safeMessage = sanitizeLogInput(String(message));
     const safeErrors = sanitizeLogInput(String(errors));
 
-    console.error(`[${safeMethod}] ${safePath} >> StatusCode:: ${status}, Message:: ${safeMessage}, Errors:: ${safeErrors}`);
+    console.error(maskPersonalNumbers(`[${safeMethod}] ${safePath} >> StatusCode:: ${status}, Message:: ${safeMessage}, Errors:: ${safeErrors}`));
     logger.error(`[${safeMethod}] ${safePath} >> StatusCode:: ${status}, Message:: ${safeMessage}, Errors:: ${safeErrors}`);
     res.status(status).json({ message });
   } catch (error) {

@@ -21,6 +21,8 @@ export interface SupportEvent {
   created: string;
   historyReference: string;
   sourceType: string;
+  /** The name of who did it, looked up by the BFF. Metadata only holds their identifier. */
+  executedByName?: string;
   metadata: {
     key: string;
     value: string;

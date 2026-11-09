@@ -186,6 +186,10 @@ export const SupportMessageForm: FC<{
     templateId: getDefaultTemplateId(templates, 'sms'),
     means: 'sms',
   });
+  const defaultMyPagesTemplateId = getDefaultTemplateId(templates, 'minasidor');
+  const myPagesBody = defaultMyPagesTemplateId
+    ? buildMessageTemplateBody({ templates, templateId: defaultMyPagesTemplateId, means: 'minasidor' })
+    : removeEmailInformation('minasidor', emailBody);
   const internalSignature = getDefaultMessageBody(templates, 'draken');
 
   const closeAttachmentModal = () => {
@@ -437,6 +441,9 @@ export const SupportMessageForm: FC<{
             break;
           case 'draken':
             body = internalSignature;
+            break;
+          case 'minasidor':
+            body = myPagesBody;
             break;
           default:
             body = removeEmailInformation(contactMeans, emailBody);
