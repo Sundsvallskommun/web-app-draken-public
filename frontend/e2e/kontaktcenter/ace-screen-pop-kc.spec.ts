@@ -100,6 +100,19 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).personNumber).toHaveText(mockEnv.mockPersonNumber);
     });
 
+    test('warns when the caller was lost before the errand tab could ask for it', async ({ page }) => {
+      // As when the tab that received the call is reloaded before the errand tab has loaded.
+      const errandPage = await page.context().newPage();
+      await errandPage.goto(`arende/${mockEmptySupportErrand.errandNumber}?ace=1`);
+
+      await expect(
+        errandPage.locator('.sk-snackbar-text', {
+          hasText: 'Uppgifterna om den som ringer kunde inte hämtas från ACE',
+        })
+      ).toBeVisible({ timeout: 10000 });
+      await expect(errandPage).toHaveURL(new RegExp(`/arende/${mockEmptySupportErrand.errandNumber}$`));
+    });
+
     test('saves the caller as errand owner only when the case worker saves', async ({ page, ace }) => {
       const patches: string[] = [];
       page.context().on('request', (r) => r.method() === 'PATCH' && patches.push(r.url()));
@@ -188,13 +201,12 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).phone).toHaveText(mockEnv.mockPhoneNumberCountryCode);
     });
 
-    test('logs the events from ACE without personal or phone numbers', async ({ page, ace }) => {
-      // The arguments as logged: the text of a console message only shows the top level of an object.
-      const logs: { text: string; payload?: unknown }[] = [];
+    test('logs what happened with the events from ACE, but not their data', async ({ page, ace }) => {
+      // Every argument as logged: the text of a console message only shows the top level of an object.
+      const logs: unknown[][] = [];
       page.on('console', async (message) => {
         if (message.text().startsWith('[ACE]')) {
-          const [text, payload] = await Promise.all(message.args().map((arg) => arg.jsonValue()));
-          logs.push({ text, payload });
+          logs.push(await Promise.all(message.args().map((arg) => arg.jsonValue())));
         }
       });
 
@@ -203,17 +215,35 @@ test.describe('ACE screen pop', () => {
       await expect(errandOwner(errandPage).card).toBeVisible();
 
       await expect
-        .poll(() => logs.find((log) => log.text.startsWith('[ACE] onScreenPop'))?.payload)
-        .toMatchObject({
-          popEvent: 'afterNormalAccept',
-          contact: { currentContactsType: 'ivr', contactData: { cid: '[dolt]', Ani: '[dolt]' } },
-        });
-      expect(logs.map((log) => log.text)).toEqual(
-        expect.arrayContaining(['[ACE] onConnected', '[ACE] onScreenPop: skapar ärende för legitimerad uppringare'])
-      );
+        .poll(() => logs.map(([text]) => text))
+        .toEqual(
+          expect.arrayContaining([
+            '[ACE] onConnected',
+            '[ACE] onScreenPop afterNormalAccept (ivr): skapar ärende för legitimerad uppringare',
+          ])
+        );
+      // One argument per line: no event objects.
+      expect(logs.every((args) => args.length === 1)).toBe(true);
       const logged = JSON.stringify(logs);
       expect(logged).not.toContain(mockEnv.mockPersonNumber);
       expect(logged).not.toContain(mockEnv.mockPhoneNumberCountryCode);
+    });
+
+    test('leaves out the address of a caller with protected personal data', async ({ page, ace }) => {
+      await mockPersonLookup(page.context(), {
+        ...mockAdressResponse,
+        // As the BFF answers: it leaves out the address and says why.
+        data: { ...mockAdressResponse.data, addresses: [], protectedIdentity: true },
+      });
+
+      const errandPage = await ace.acceptCall();
+
+      const owner = errandOwner(errandPage);
+      await expect(owner.name).toHaveText(`${mockAdressResponse.data.givenname} ${mockAdressResponse.data.lastname}`);
+      await expect(owner.address).not.toContainText(mockAdressResponse.data.addresses[0].address);
+      await expect(
+        errandPage.locator('.sk-snackbar-text', { hasText: 'Den som ringer har skyddade personuppgifter' })
+      ).toBeVisible();
     });
 
     test('opens an empty errand when the caller did not identify and the number is hidden', async ({ ace }) => {

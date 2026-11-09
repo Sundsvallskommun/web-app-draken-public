@@ -3,25 +3,14 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
 import { logger } from './logger';
+import { luhnCheck } from './luhn-check';
+
+export { luhnCheck };
 dayjs.extend(utc);
 
 export const apiURL = (...parts: string[]): string => {
   const urlParts = [API_BASE_URL!, ...parts];
   return urlParts.map(pathPart => pathPart!.replace(/(^\/|\/$)/g, '')).join('/');
-};
-
-export const luhnCheck = (str = ''): boolean => {
-  str = str.length === 12 ? str.slice(2) : str;
-  let sum = 0;
-  for (let i = 0, l = str.length; i < l; i++) {
-    let v = parseInt(str[i]);
-    v *= 2 - (i % 2);
-    if (v > 9) {
-      v -= 9;
-    }
-    sum += v;
-  }
-  return sum % 10 === 0;
 };
 
 export enum OrgNumberFormat {

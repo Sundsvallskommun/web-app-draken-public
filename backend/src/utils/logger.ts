@@ -4,12 +4,24 @@ import { join } from 'path';
 import winston from 'winston';
 import winstonDaily from 'winston-daily-rotate-file';
 
+import { maskPersonalNumbers } from './mask-personal-numbers';
+
 // logs dir
 const logDir: string = join(__dirname, LOG_DIR ?? '');
 
 if (!existsSync(logDir)) {
   mkdirSync(logDir, { recursive: true });
 }
+
+// Personal numbers end up in request URLs (search queries, lookups in other APIs) and error
+// messages; this keeps them out of everything logged through this logger, its files and its
+// console output. Plain console.* calls elsewhere are not covered.
+const maskPersonalData = winston.format(info => {
+  if (typeof info.message === 'string') {
+    info.message = maskPersonalNumbers(info.message);
+  }
+  return info;
+});
 
 // Define log format
 const logFormat = winston.format.printf(({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`);
@@ -20,6 +32,7 @@ const logFormat = winston.format.printf(({ timestamp, level, message }) => `${ti
  */
 const logger = winston.createLogger({
   format: winston.format.combine(
+    maskPersonalData(),
     winston.format.timestamp({
       format: 'YYYY-MM-DD HH:mm:ss',
     }),
