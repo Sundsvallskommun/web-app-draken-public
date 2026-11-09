@@ -8,6 +8,7 @@ import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-cont
 import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
+import { type ErrandRef, type ErrandService, normalizeService, withDefaultNamespace } from './errand-lookup.service';
 
 const RELATIONS_SERVICE = apiServiceName('relations');
 const RELATIONS_PAGE_LIMIT = 200;
@@ -17,12 +18,24 @@ const LINK_RELATION_TYPE = 'LINK';
 const CASE_SOURCE = { type: 'case', service: 'case-data' } as const;
 const ASSET_TARGET = { type: 'asset', service: 'partyassets' } as const;
 
-const isCaseSource = (relation: Relation): boolean => relation.source?.service === CASE_SOURCE.service && relation.source?.type === CASE_SOURCE.type;
+/** PT creates, narrows and deletes asset links in case-data only; reading an asset's source errand accepts both. */
+const CASE_DATA_ONLY: ErrandService[] = ['case-data'];
+const ANY_ERRAND: ErrandService[] = ['case-data', 'supportmanagement'];
 
 const isAssetTarget = (relation: Relation): boolean =>
   relation.target?.service === ASSET_TARGET.service && relation.target?.type === ASSET_TARGET.type;
 
-const isErrandAssetLink = (relation: Relation): boolean => relation.type === LINK_RELATION_TYPE && isCaseSource(relation) && isAssetTarget(relation);
+/** A LINK from an errand in one of the services to an asset. */
+const isErrandAssetLink = (relation: Relation, services: ErrandService[]): boolean => {
+  const service = normalizeService(relation.source?.service);
+  return (
+    relation.type === LINK_RELATION_TYPE &&
+    relation.source?.type === CASE_SOURCE.type &&
+    !!service &&
+    services.includes(service) &&
+    isAssetTarget(relation)
+  );
+};
 
 const buildErrandSource = (errandId: string): ResourceIdentifier => ({
   ...CASE_SOURCE,
@@ -87,33 +100,34 @@ export const createErrandAssetRelation = async (municipalityId: string, errandId
 
 export const findAssetIdsForErrand = async (municipalityId: string, errandId: string, user: User): Promise<Set<string>> => {
   const relations = await listRelationsBy(municipalityId, 'source.resourceId', errandId, user);
-  return new Set(relations.filter(isErrandAssetLink).map(r => r.target.resourceId));
+  return new Set(relations.filter(relation => isErrandAssetLink(relation, CASE_DATA_ONLY)).map(r => r.target.resourceId));
 };
 
-export type SourceErrandRef = { id: string; namespace?: string };
-
-export const findSourceErrandIdForAsset = async (municipalityId: string, assetId: string, user: User): Promise<SourceErrandRef | undefined> => {
+/** The errand the asset was made from, in either errand service. */
+const findSourceErrand = async (municipalityId: string, assetId: string, user: User): Promise<ErrandRef | undefined> => {
   const relations = await listRelationsBy(municipalityId, 'target.resourceId', assetId, user);
-  const link = relations.find(isErrandAssetLink);
-  if (!link?.source.resourceId) return undefined;
-  return { id: link.source.resourceId, namespace: link.source.namespace ?? CASEDATA_NAMESPACE };
+  const link = relations.find(relation => isErrandAssetLink(relation, ANY_ERRAND));
+  const service = normalizeService(link?.source.service);
+  if (!link?.source.resourceId || !service) return undefined;
+  return withDefaultNamespace({ id: link.source.resourceId, service, namespace: link.source.namespace });
 };
 
-export const findSourceErrandsForAssets = async (municipalityId: string, assetIds: string[], user: User): Promise<Map<string, SourceErrandRef>> => {
+/** Source errands by asset id; assets without one are left out. */
+export const findSourceErrandsForAssets = async (municipalityId: string, assetIds: string[], user: User): Promise<Map<string, ErrandRef>> => {
   const unique = Array.from(new Set(assetIds.filter(Boolean)));
   const entries = await mapWithConcurrency(
     unique,
     RELATION_LOOKUP_CONCURRENCY,
-    async id => [id, await findSourceErrandIdForAsset(municipalityId, id, user)] as const,
+    async id => [id, await findSourceErrand(municipalityId, id, user)] as const,
   );
-  return new Map(entries.filter((entry): entry is readonly [string, SourceErrandRef] => !!entry[1]?.id));
+  return new Map(entries.filter((entry): entry is readonly [string, ErrandRef] => !!entry[1]));
 };
 
 export const deleteErrandAssetRelationsForAsset = async (municipalityId: string, assetId: string, user: User): Promise<void> => {
   if (!assetId) return;
   const relations = await listRelationsBy(municipalityId, 'target.resourceId', assetId, user);
   const ids = relations
-    .filter(isErrandAssetLink)
+    .filter(relation => isErrandAssetLink(relation, CASE_DATA_ONLY))
     .map(r => r.id)
     .filter((id): id is string => !!id);
   if (ids.length === 0) return;

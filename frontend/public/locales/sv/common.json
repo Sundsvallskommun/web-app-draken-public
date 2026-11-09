@@ -280,6 +280,7 @@
       "confirm_no": "Nej",
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
       "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
+      "inspection_summary_needed": "Välj Godkänd eller Godkänd, men åtgärd krävs som summering i tillsynsprotokollet innan beslutet skickas.",
       "start_process": {
         "label": "Starta process",
         "done": "Processen startas. Ärendet uppdateras när den har registrerats.",
@@ -881,6 +882,14 @@
     }
   },
   "customer": {
+    "overview": {
+      "inspection": {
+        "create": "Skapa tillsynsärende",
+        "INTERNAL_INSPECTION": "Inre tillsyn",
+        "EXTERNAL_INSPECTION": "Yttre tillsyn",
+        "error": "Tillsynsärendet kunde inte skapas."
+      }
+    },
     "errands": {
       "columns": {
         "status": "Status",

@@ -17,6 +17,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType, isOrganizationExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { fetchErrandNumber, normalizeService } from '@/services/errand-lookup.service';
 import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, OrgNumberFormat } from '@/utils/util';
@@ -84,44 +85,17 @@ export class RelationsController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
   private SERVICE = apiServiceName('relations');
-  private CASEDATA_SERVICE = apiServiceName('case-data');
   private SUPPORTMANAGEMENT_SERVICE = apiServiceName('supportmanagement');
   private CASESTATUS_SERVICE = apiServiceName('casestatus');
   private CITIZEN_SERVICE = apiServiceName('citizen');
 
-  // The relations service returns service names in varying formats ('support-management',
-  // 'SUPPORT_MANAGEMENT', 'supportmanagement', 'case-data', 'casedata'). Normalise to our canonical
-  // values so comparisons/routing work regardless of which system created the relation.
-  private normalizeService(service?: string): string {
-    const normalized = (service ?? '').toLowerCase().replace(/[-_]/g, '');
-    if (normalized === 'supportmanagement') return 'supportmanagement';
-    if (normalized === 'casedata') return 'case-data';
-    return service ?? '';
-  }
-
   private async fetchErrandNumber(municipalityId: string, resource: ResourceIdentifier, user: any): Promise<string> {
-    const { service, namespace, resourceId } = resource;
-    let url: string;
-    let baseURL: string;
-
-    const normalizedService = this.normalizeService(service);
-    if (normalizedService === 'case-data') {
-      url = `${municipalityId}/${namespace}/errands/${resourceId}`;
-      baseURL = apiURL(this.CASEDATA_SERVICE);
-    } else if (normalizedService === 'supportmanagement') {
-      url = `${municipalityId}/${namespace}/errands/${resourceId}`;
-      baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
-    } else {
-      logger.error(`Unknown service: ${service}`);
+    const service = normalizeService(resource.service);
+    if (!service) {
+      logger.error(`Unknown service: ${resource.service}`);
       return '';
     }
-
-    const res = await this.apiService.get<any>({ url, baseURL }, user).catch(e => {
-      logger.error(`Error fetching errand number for ${service}/${namespace}/${resourceId}: `, e);
-      return null;
-    });
-
-    return res?.data?.errandNumber ?? '';
+    return (await fetchErrandNumber(municipalityId, { id: resource.resourceId, service, namespace: resource.namespace }, user)) ?? '';
   }
 
   private async fetchCaseStatus(municipalityId: string, errandNumber: string, user: any): Promise<CaseStatusResponse[]> {
@@ -358,7 +332,7 @@ export class RelationsController {
     // handover. Both should surface the source errand's info on the new errand.
     const referredFromRelations = (res.data.relations ?? []).filter(
       relation =>
-        (relation.type === 'REFERRED_FROM' || relation.type === 'HANDOVER') && this.normalizeService(relation.source.service) === 'supportmanagement',
+        (relation.type === 'REFERRED_FROM' || relation.type === 'HANDOVER') && normalizeService(relation.source.service) === 'supportmanagement',
     );
 
     if (referredFromRelations.length === 0) {

@@ -1,6 +1,7 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { User } from '@common/interfaces/user';
 import { renderTemplatePdf, renderTemplatePdfDirect } from '@common/services/template-render-service';
+import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import type {
   InspectionProtocolTemplate,
   ProtocolField,
@@ -10,7 +11,8 @@ import type {
 import dayjs from 'dayjs';
 
 import type { SupportErrand } from './support-errand-service';
-import type { JsonObject } from './support-json-parameter-service';
+import type { SupportInvestigation } from './support-investigation-service';
+import { type JsonObject, jsonParameterObject } from './support-json-parameter-service';
 import { SupportMeasureResult } from './support-measure-service';
 
 /** The handler's answers by field key; a 'multi' field holds the chosen option values, '' means not chosen. */
@@ -64,6 +66,13 @@ export const inspectionProtocolValuesOf = (
 ): InspectionProtocolValues => {
   const prefills = prefillsOf(errand, user);
   return Object.fromEntries(fieldsOf(template).map((field) => [field.key, initialValueOf(field, prefills)]));
+};
+
+/** The summary chosen in the protocol, e.g. 'approved' or 'actionRequired'. */
+export const inspectionProtocolSummary = (investigation: SupportInvestigation | undefined): string | undefined => {
+  const template = inspectionProtocolTemplate(investigation?.type);
+  const summary = template && jsonParameterObject(investigation?.jsonParameters, template.schema.name)?.summary;
+  return typeof summary === 'string' ? summary : undefined;
 };
 
 const strings = (value: unknown): string[] =>

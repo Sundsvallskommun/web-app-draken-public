@@ -867,11 +867,15 @@ const getSupportErrandsCount: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
-  municipalityId
-) => {
+/** What a new errand can be created with instead of the defaults. */
+export type NewSupportErrandPrefill = Pick<Partial<SupportErrandDto>, 'labels' | 'stakeholders' | 'jsonParameters'>;
+
+export const initiateSupportErrand: (
+  municipalityId: string,
+  prefill?: NewSupportErrandPrefill
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, prefill = {}) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, NewSupportErrandPrefill>(`newerrand/${municipalityId}`, prefill)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })

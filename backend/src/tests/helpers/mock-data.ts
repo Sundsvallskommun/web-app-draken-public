@@ -59,6 +59,8 @@ export const mockCasedataErrandId = 99;
 export const mockCasedataErrandNumber = 'MEX-2026-000001';
 export const mockAttachmentId = 'att-1';
 export const mockRelationId = 'relation-1';
+export const mockAssetId = 'asset-1';
+export const mockSecondaryAssetId = 'asset-2';
 export const mockConversationId = 'conversation-1';
 export const mockNoteId = 'note-1';
 // The MEX and PT casedata namespaces, and the supportmanagement namespaces used as handover targets

@@ -25,7 +25,9 @@ import {
   mockOrganizationPartyId,
   mockParkingPermitDepartment,
   mockPersonNumber,
+  mockPremisesName,
   mockRelationId,
+  mockRestaurantNumber,
   mockSecondaryCitizenPartyId,
   mockSupportErrandId,
   mockSupportErrandNumber,
@@ -357,6 +359,42 @@ describe('SupportErrandController', () => {
 
       expect(res.statusCode).toBe(500);
       expect(res.body).toBe('Something went wrong when initiating support errand');
+    });
+
+    it('creates the errand with the given labels, stakeholders and JSON parameters instead of the defaults', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue(metadata);
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+      const labels = [
+        {
+          id: mockSupportErrandId,
+          classification: 'TYPE',
+          resourceName: 'INTERNAL_INSPECTION',
+          resourcePath: 'CATEGORYROOT/INSPECTION/INTERNAL_INSPECTION',
+        },
+      ];
+      const stakeholders = [
+        {
+          externalId: mockOrganizationPartyId,
+          externalIdType: ExternalIdType.COMPANY,
+          role: 'PRIMARY',
+          organizationName: mockOrganizationName,
+          contactChannels: [],
+          parameters: [],
+        },
+      ];
+      const jsonParameters = [
+        {
+          key: 'aot_inspection_internal_inspection',
+          schemaId: `${MUNICIPALITY_ID}_aot_inspection_internal_inspection_1.0`,
+          value: { premises: { name: mockPremisesName, restaurantNumber: mockRestaurantNumber } },
+        },
+      ];
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes(), { labels, stakeholders, jsonParameters });
+
+      const [config] = api.post.mock.calls[0];
+      expect(config.data).toEqual(expect.objectContaining({ labels, stakeholders, jsonParameters, status: 'NEW' }));
     });
 
     it('rethrows when the API call fails', async () => {

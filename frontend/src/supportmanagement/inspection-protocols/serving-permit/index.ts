@@ -12,7 +12,7 @@ const no = (parameter: string): ProtocolOption => ({ value: 'no', label: 'Nej', 
 /** Tillsynsprotokoll Alkohollagen: the paper protocol's blocks, with the control points as the loop. */
 export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
   key: 'serving_permit',
-  label: 'Serveringstillstånd – tillsyn',
+  label: 'Yttre tillsyn',
   identifier: 'serving-inspection-protocol',
   schema: { name: 'aot_inspection_serving_permit', version: '1.0' },
   html: SERVING_PERMIT_HTML,

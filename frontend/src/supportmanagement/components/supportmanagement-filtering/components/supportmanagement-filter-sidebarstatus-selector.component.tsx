@@ -103,7 +103,9 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   return (
     <>
       {supportSidebarButtons?.map((button) => {
-        const buttonIsActive = selectedErrandStatuses.includes(button.key as Status);
+        const buttonIsActive =
+          window.location.pathname.includes(errandOverviewPath) &&
+          selectedErrandStatuses.includes(button.key as Status);
         return (
           <Button
             onClick={() => {

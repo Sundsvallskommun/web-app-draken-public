@@ -7,10 +7,9 @@ import { CaseStatusResponse, getStatusesUsingOrganizationNumber } from '@common/
 import { getCompanyProfileByPartyId, getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
+import { jsonParameterForSchema, schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import {
   closedStatuses,
-  getErrandParameterValue,
-  getSupportErrandById,
   getSupportErrands,
   Status,
   SupportErrand,
@@ -84,11 +83,10 @@ export const getCustomerAssets = async (
 
 type PartyAssetPlace = { name?: string; address?: CustomerPlaceAddress; restaurantNumber?: string };
 
-type PartyAssetValue = {
+export type PartyAssetValue = {
   // Alcohol assets have premises, tobacco assets pointOfSale.
   premises?: PartyAssetPlace;
   pointOfSale?: PartyAssetPlace;
-  errandId?: string;
   caseRegistrationNumber?: string;
   decision?: { validFrom?: string; decisionDate?: string; caseOfficer?: string };
 };
@@ -102,25 +100,18 @@ export interface CustomerAsset {
   errandNumber?: string;
 }
 
-/** Assets as listed in the Tillstånd tab: decision data from the JSON, and the errand number looked up by the errand id. */
-export const withSourceErrands = (municipalityId: string, assets: Asset[]): Promise<CustomerAsset[]> =>
-  Promise.all(
-    assets.map(async (asset) => {
-      const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
-      const errandNumber =
-        asset.sourceErrandNumber ??
-        (value.errandId
-          ? (await getSupportErrandById(value.errandId, municipalityId)).errand?.errandNumber
-          : undefined);
-      return {
-        asset,
-        registrationNumber: value.caseRegistrationNumber,
-        caseOfficer: value.decision?.caseOfficer,
-        decisionDate: value.decision?.decisionDate ?? asset.issued,
-        errandNumber,
-      };
-    })
-  );
+/** Assets as listed in the Tillstånd tab: decision data from the JSON, the source errand as the BFF found it. */
+export const toCustomerAssets = (assets: Asset[]): CustomerAsset[] =>
+  assets.map((asset) => {
+    const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
+    return {
+      asset,
+      registrationNumber: value.caseRegistrationNumber,
+      caseOfficer: value.decision?.caseOfficer,
+      decisionDate: value.decision?.decisionDate ?? asset.issued,
+      errandNumber: asset.sourceErrandNumber,
+    };
+  });
 
 interface CustomerPlaceAddress {
   street?: string;
@@ -138,7 +129,13 @@ export interface CustomerPlace {
   validFrom?: string;
   assetTypes: string[];
   activeAssets: number;
+  /** The assets the place was found through. */
+  assets: Asset[];
 }
+
+/** A place is its restaurant number, else its name and street; tobacco points of sale have no number. */
+const placeKeyOf = (site: PartyAssetPlace | undefined): string | undefined =>
+  site?.restaurantNumber ?? (site?.name ? `${site.name}|${site.address?.street ?? ''}` : undefined);
 
 const placesFromAssets = (assets: Asset[]): CustomerPlace[] => {
   const places = new Map<string, CustomerPlace>();
@@ -146,10 +143,10 @@ const placesFromAssets = (assets: Asset[]): CustomerPlace[] => {
     (asset.jsonParameters ?? []).forEach((parameter) => {
       const { premises, pointOfSale, decision } = (parameter.value ?? {}) as unknown as PartyAssetValue;
       const site = premises ?? pointOfSale;
-      if (!site?.restaurantNumber && !site?.name) {
+      const key = placeKeyOf(site);
+      if (!site || !key) {
         return;
       }
-      const key = site.restaurantNumber ?? `${site.name}|${site.address?.street ?? ''}`;
       const place = places.get(key) ?? {
         key,
         restaurantNumber: site.restaurantNumber,
@@ -158,7 +155,11 @@ const placesFromAssets = (assets: Asset[]): CustomerPlace[] => {
         validFrom: decision?.validFrom,
         assetTypes: [],
         activeAssets: 0,
+        assets: [],
       };
+      if (!place.assets.includes(asset)) {
+        place.assets.push(asset);
+      }
       if (asset.type && !place.assetTypes.includes(asset.type)) {
         place.assetTypes.push(asset.type);
       }
@@ -192,33 +193,21 @@ export const getCustomerPlaces = async (municipalityId: string, assets: Asset[])
 
 const ERRAND_LOOKUP_SIZE = 100;
 
-const concernsPlace = (errand: SupportErrand, place: CustomerPlace): boolean =>
-  place.restaurantNumber
-    ? getErrandParameterValue(errand.parameters, 'restaurantNumber') === place.restaurantNumber
-    : getErrandParameterValue(errand.parameters, 'premisesName') === place.name;
+/** A tillsyn errand names its place in the form of its errand type, as premises or pointOfSale. */
+const concernsPlace = (errand: SupportErrand, place: CustomerPlace, namespace: string | undefined): boolean => {
+  const form = (jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value ?? {}) as PartyAssetValue;
+  return placeKeyOf(form.premises ?? form.pointOfSale) === place.key;
+};
 
-/** Errands found through the customer's id or through one of its places. */
-export const getCustomerErrands = async (
-  municipalityId: string,
-  customerId: string,
-  places: CustomerPlace[]
-): Promise<SupportErrand[]> => {
-  const search = async (query: string) => {
-    const result = await getSupportErrands(municipalityId, 0, ERRAND_LOOKUP_SIZE, { query: encodeURIComponent(query) });
-    if (result.error) {
-      throw new Error(`Could not fetch errands: ${result.error}`);
-    }
-    return result.errands;
-  };
-  const [own, ...perPlace] = await Promise.all([
-    search(customerId),
-    ...places.map((place) => search(place.restaurantNumber ?? place.name ?? '')),
-  ]);
-  const errands = new Map((own ?? []).map((errand) => [errand.id, errand]));
-  perPlace.forEach((found, index) =>
-    found.filter((errand) => concernsPlace(errand, places[index])).forEach((errand) => errands.set(errand.id, errand))
-  );
-  return Array.from(errands.values());
+/** The customer's errands. Support Management searches no JSON parameters, so a place cannot be searched for. */
+export const getCustomerErrands = async (municipalityId: string, customerId: string): Promise<SupportErrand[]> => {
+  const result = await getSupportErrands(municipalityId, 0, ERRAND_LOOKUP_SIZE, {
+    query: encodeURIComponent(customerId),
+  });
+  if (result.error) {
+    throw new Error(`Could not fetch errands: ${result.error}`);
+  }
+  return result.errands ?? [];
 };
 
 /** The organisation's errands according to Casestatus, which covers more than this Drake. */
@@ -243,7 +232,11 @@ const isInspection = (errand: SupportErrand) =>
   !!errand.labels?.some((label) => label.resourcePath?.startsWith(INSPECTION_LABEL_PATH));
 
 /** The most recently active closed inspection errand of the place. */
-export const getLatestInspection = (errands: SupportErrand[], place: CustomerPlace): SupportErrand | undefined =>
+export const getLatestInspection = (
+  errands: SupportErrand[],
+  place: CustomerPlace,
+  namespace: string | undefined
+): SupportErrand | undefined =>
   errands
-    .filter((errand) => isInspection(errand) && isClosed(errand) && concernsPlace(errand, place))
+    .filter((errand) => isInspection(errand) && isClosed(errand) && concernsPlace(errand, place, namespace))
     .sort((a, b) => (b.touched ?? '').localeCompare(a.touched ?? ''))[0];

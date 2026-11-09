@@ -2,12 +2,7 @@ import type { Asset } from '@common/interfaces/asset';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
-import {
-  getSupportErrandById,
-  getSupportErrands,
-  Status,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
+import { getSupportErrands, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
@@ -19,14 +14,13 @@ import {
   getCustomerPlaces,
   getLatestInspection,
   isOtherDrakeCase,
-  withSourceErrands,
+  toCustomerAssets,
 } from './customer-service';
 
 vi.mock('@common/services/legal-entity-service', () => ({ getCompanyProfileByPartyId: vi.fn() }));
 vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAssignments: vi.fn() }));
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  getSupportErrandById: vi.fn(),
   getSupportErrands: vi.fn(),
 }));
 
@@ -47,6 +41,7 @@ const assetPlace = {
   validFrom: ASSET_VALID_FROM,
   assetTypes: [],
   activeAssets: 0,
+  assets: expect.any(Array),
 };
 
 let givenAssetList: Asset[] = [];
@@ -150,6 +145,7 @@ describe('getCustomerPlaces', () => {
     expect(places[0]).toMatchObject({
       assetTypes: ['TobaccoSalesPermit', 'LowAlcoholBeerSalesNotification'],
       activeAssets: 1,
+      assets: givenAssetList,
     });
     expect(withAssignments).toHaveBeenCalledWith(MUNICIPALITY_ID, []);
   });
@@ -163,54 +159,80 @@ describe('getCustomerPlaces', () => {
   });
 });
 
-const numberedPlace = { key: NUMBER, restaurantNumber: NUMBER, assetTypes: [], activeAssets: 0 } as CustomerPlace;
-const parametersOf = (restaurantNumber: string) => [{ key: 'restaurantNumber', values: [restaurantNumber] }];
+const NAMESPACE = 'AOT';
+const INSPECTION_FORM = 'aot_inspection_external_inspection';
+const numberedPlace = {
+  key: NUMBER,
+  restaurantNumber: NUMBER,
+  assetTypes: [],
+  activeAssets: 0,
+  assets: [],
+} as CustomerPlace;
+const inspectionLabels = [
+  { classification: 'ROOT', resourceName: 'CATEGORYROOT', resourcePath: 'CATEGORYROOT' },
+  { classification: 'CATEGORY', resourceName: 'INSPECTION', resourcePath: 'CATEGORYROOT/INSPECTION' },
+  {
+    classification: 'TYPE',
+    resourceName: 'EXTERNAL_INSPECTION',
+    resourcePath: 'CATEGORYROOT/INSPECTION/EXTERNAL_INSPECTION',
+  },
+];
+const formOf = (site: object) => [
+  { key: INSPECTION_FORM, schemaId: `${MUNICIPALITY_ID}_${INSPECTION_FORM}_1.0`, value: site },
+];
 const errand = (id: string, fields: object = {}) =>
   ({ id, status: Status.SOLVED, ...fields } as unknown as SupportErrand);
 const inspection = (id: string, touched: string, fields: object = {}) =>
   errand(id, {
     touched,
-    parameters: parametersOf(NUMBER),
-    labels: [{ resourcePath: 'CATEGORYROOT/INSPECTION/EXTERNAL_INSPECTION' }],
+    labels: inspectionLabels,
+    jsonParameters: formOf({ premises: { restaurantNumber: NUMBER } }),
     ...fields,
   });
 
 describe('getCustomerErrands', () => {
   beforeEach(() => vi.mocked(getSupportErrands).mockReset());
 
-  test('adds errands of a place to the customer own, once, and only when they concern the place', async () => {
-    const own = errand('own', { parameters: parametersOf(NUMBER) });
-    const place = errand('place', { parameters: parametersOf(NUMBER) });
-    const unrelated = errand('unrelated', { parameters: parametersOf(OTHER_NUMBER) });
-    vi.mocked(getSupportErrands).mockImplementation(
-      async (_municipalityId, _page, _size, filter) =>
-        ({ errands: filter?.query === CUSTOMER_ID ? [own] : [own, place, unrelated], labels: [] } as never)
-    );
+  test("finds the customer's errands by its id", async () => {
+    vi.mocked(getSupportErrands).mockResolvedValue({ errands: [errand('own')], labels: [] } as never);
 
-    const errands = await getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID, [numberedPlace]);
+    const errands = await getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID);
 
-    expect(errands.map(({ id }) => id)).toEqual(['own', 'place']);
+    expect(errands.map(({ id }) => id)).toEqual(['own']);
+    expect(getSupportErrands).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getSupportErrands).mock.calls[0][3]).toEqual({ query: CUSTOMER_ID });
   });
 
-  test('fails when a search fails', async () => {
+  test('fails when the search fails', async () => {
     vi.mocked(getSupportErrands).mockResolvedValue({ errands: [], labels: [], error: '500' } as never);
 
-    await expect(getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID, [])).rejects.toThrow();
+    await expect(getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID)).rejects.toThrow();
   });
 });
 
 describe('getLatestInspection', () => {
-  test('picks the latest closed inspection of the place', () => {
+  test('picks the latest closed inspection of the place, as its errand type form names it', () => {
     const latest = inspection('latest', '2024-01-01');
     const errands = [
       inspection('older', '2023-01-01'),
       latest,
       inspection('ongoing', '2025-01-01', { status: Status.ONGOING }),
-      inspection('other place', '2025-01-01', { parameters: parametersOf(OTHER_NUMBER) }),
+      inspection('other place', '2025-01-01', {
+        jsonParameters: formOf({ premises: { restaurantNumber: OTHER_NUMBER } }),
+      }),
+      inspection('no form', '2025-01-01', { jsonParameters: [] }),
       inspection('not an inspection', '2025-01-01', { labels: [] }),
     ];
 
-    expect(getLatestInspection(errands, numberedPlace)).toBe(latest);
+    expect(getLatestInspection(errands, numberedPlace, NAMESPACE)).toBe(latest);
+  });
+
+  test('matches a point of sale without a number on its name and street', () => {
+    const site = { name: ASSET_NAME, address: { street: 'Testgatan 1' } };
+    const place = { ...numberedPlace, key: `${ASSET_NAME}|Testgatan 1`, restaurantNumber: undefined };
+    const latest = inspection('latest', '2024-01-01', { jsonParameters: formOf({ pointOfSale: site }) });
+
+    expect(getLatestInspection([latest], place, NAMESPACE)).toBe(latest);
   });
 });
 
@@ -230,22 +252,17 @@ describe('isOtherDrakeCase', () => {
   });
 });
 
-describe('withSourceErrands', () => {
-  const ERRAND_ID = mockEnv.mockRestaurantNumberId;
+describe('toCustomerAssets', () => {
   const ERRAND_NUMBER = 'AOT-1';
 
-  beforeEach(() => vi.mocked(getSupportErrandById).mockReset());
-
-  test('reads the decision data and looks up the errand number', async () => {
+  test('reads the decision data and the source errand the BFF found', () => {
     const value = {
-      errandId: ERRAND_ID,
       caseRegistrationNumber: 'IAN-1',
       decision: { caseOfficer: 'Handläggare', decisionDate: '2024-01-01' },
     };
-    givenAssets([{ ...assetWith(value), issued: '2024-02-02' }]);
-    vi.mocked(getSupportErrandById).mockResolvedValue({ errand: { errandNumber: ERRAND_NUMBER } } as never);
+    givenAssets([{ ...assetWith(value), issued: '2024-02-02', sourceErrandNumber: ERRAND_NUMBER }]);
 
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
+    const [row] = toCustomerAssets(givenAssetList);
 
     expect(row).toMatchObject({
       registrationNumber: 'IAN-1',
@@ -253,24 +270,13 @@ describe('withSourceErrands', () => {
       decisionDate: '2024-01-01',
       errandNumber: ERRAND_NUMBER,
     });
-    expect(getSupportErrandById).toHaveBeenCalledWith(ERRAND_ID, MUNICIPALITY_ID);
   });
 
-  test('falls back to the issued date and has no errand without an errand id', async () => {
+  test('falls back to the issued date and has no errand without a source errand', () => {
     givenAssets([{ ...assetWith({}), issued: '2024-02-02' }]);
 
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
+    const [row] = toCustomerAssets(givenAssetList);
 
     expect(row).toMatchObject({ decisionDate: '2024-02-02', errandNumber: undefined });
-    expect(getSupportErrandById).not.toHaveBeenCalled();
-  });
-
-  test('keeps the asset when the errand cannot be found', async () => {
-    givenAssets([assetWith({ errandId: ERRAND_ID })]);
-    vi.mocked(getSupportErrandById).mockResolvedValue({ errand: undefined, error: '404' } as never);
-
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
-
-    expect(row.errandNumber).toBeUndefined();
   });
 });

@@ -57,6 +57,28 @@ export const createRelation = (municipalityId: string, sourceId: string, targetE
     });
 };
 
+/** Links an errand of this drake to another Support Management errand, e.g. a tillsyn errand to its permit errand. */
+export const linkSupportErrands = (
+  municipalityId: string,
+  sourceId: string,
+  targetId: string,
+  targetNamespace: string
+) => {
+  const body: Partial<Relation> = {
+    type: 'LINK',
+    source: { resourceId: sourceId, type: 'case', service: 'supportmanagement', namespace: '' },
+    target: { resourceId: targetId, type: 'case', service: 'supportmanagement', namespace: targetNamespace },
+  };
+
+  return apiService
+    .post<ApiResponse<Relation>, Partial<Relation>>(`${municipalityId}/relations`, body)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when linking errands: ' + e);
+      throw e;
+    });
+};
+
 export const deleteRelation = (municipalityId: string, id: string) => {
   const url = `${municipalityId}/relations/${id}`;
 
