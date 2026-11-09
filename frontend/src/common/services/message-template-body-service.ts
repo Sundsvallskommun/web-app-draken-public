@@ -31,8 +31,10 @@ export interface MessageTemplates {
   smsTemplate: string;
   smsSignature: string;
   emailSignature: string;
+  myPagesSignature: string;
   emailTemplates: MessageTemplateInfo[];
   smsTemplates: MessageTemplateInfo[];
+  myPagesTemplates: MessageTemplateInfo[];
   byId: Record<string, string>;
   app: string;
 }
@@ -49,12 +51,25 @@ export const removeEmailInformation = (means: MessageContactMeans, template: str
     .replace(/Vänligen ändra inte ämnesraden om du besvarar mejlet.<br>?/gi, '');
 };
 
+const getMyPagesSignature = (templates: MessageTemplates): string =>
+  templates.myPagesSignature || removeEmailInformation('minasidor', templates.emailSignature);
+
 export const getTemplateOptions = (
   templates: MessageTemplates | null,
   means: MessageContactMeans
 ): MessageTemplateInfo[] => {
-  if (!templates || !supportsSelectableTemplates(means)) return [];
-  return means === 'sms' ? templates.smsTemplates : templates.emailTemplates;
+  if (!templates) return [];
+
+  switch (means) {
+    case 'email':
+      return templates.emailTemplates;
+    case 'sms':
+      return templates.smsTemplates;
+    case 'minasidor':
+      return templates.myPagesTemplates;
+    default:
+      return [];
+  }
 };
 
 export const getDefaultTemplateId = (templates: MessageTemplates | null, means: MessageContactMeans): string => {
@@ -84,6 +99,8 @@ export const getDefaultMessageBody = (
       return templates.internalSignature + history;
     case 'sms':
       return templates.smsTemplate + history;
+    case 'minasidor':
+      return getMyPagesSignature(templates) + history;
     default:
       return removeEmailInformation(means, templates.emailSignature) + history;
   }
@@ -108,6 +125,9 @@ export const buildMessageTemplateBody = ({
   const content = templates.byId[templateId] || '';
   if (means === 'sms') {
     return content + templates.smsSignature + history;
+  }
+  if (means === 'minasidor') {
+    return content + getMyPagesSignature(templates) + history;
   }
 
   const footerId = `${templates.app}.email.publicdocuments`;

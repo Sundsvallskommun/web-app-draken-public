@@ -34,6 +34,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { CitizenService } from '@/services/citizen.service';
 import { getCasedataForwardTarget, isAllowedHandoverTarget } from '@/services/handover-targets.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
@@ -372,6 +373,7 @@ class ForwardFormDto {
 export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
+  private citizenService = new CitizenService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -380,6 +382,8 @@ export class SupportErrandController {
    * Resolves a free-text query that looks like an organization or personal number into a party id,
    * so that errands can also be matched on `stakeholders.externalId`. Returns '' when the query is
    * not an identifier or the lookup fails - a failed lookup must not fail the search itself.
+   * Known limitation: the query itself still travels in URLs, from the browser (?query=) and in the
+   * filter sent on to SupportManagement. Our logs mask it, logs in ingress or gateways do not.
    */
   private async resolveQueryPartyId(req: RequestWithUser, queryRaw?: string): Promise<string> {
     if (!queryRaw) return '';
@@ -388,11 +392,7 @@ export class SupportErrandController {
       return this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
     }
     if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
-      const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
-      return this.apiService
-        .get<string>({ url: guidUrl }, req.user)
-        .then(response => response.data)
-        .catch(() => '');
+      return this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
     }
     return '';
   }

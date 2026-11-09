@@ -62,6 +62,10 @@ interface OrgStub {
   getPartyIdByOrganizationNumber: ReturnType<typeof vi.fn>;
 }
 
+interface CitizenStub {
+  getPartyIdByPersonNumber: ReturnType<typeof vi.fn>;
+}
+
 /**
  * `apiService` and `organizationService` are plain instance properties (the `private` keyword is
  * erased at runtime), so they can be replaced directly instead of mocking the modules.
@@ -78,8 +82,10 @@ const makeController = () => {
     getPartyIdByOrganizationNumber: vi.fn(async () => ''),
   };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
+  const citizen: CitizenStub = { getPartyIdByPersonNumber: vi.fn(async () => '') };
   (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
-  return { controller, api, organization };
+  (controller as unknown as { citizenService: CitizenStub }).citizenService = citizen;
+  return { controller, api, organization, citizen };
 };
 
 /** All 15 query params of `errands`, in declaration order, so tests can override just one. */
@@ -241,27 +247,25 @@ describe('SupportErrandController', () => {
     });
 
     it('resolves a personal number in the query through the citizen service', async () => {
-      const { controller, api } = makeController();
-      api.get.mockImplementation(async ({ url }: { url: string }) =>
-        url.includes('/guid') ? { data: mockCitizenPartyId, message: 'success' } : { data: { content: [] }, message: 'success' },
-      );
+      const { controller, api, citizen } = makeController();
+      citizen.getPartyIdByPersonNumber.mockResolvedValue(mockCitizenPartyId);
+      api.get.mockResolvedValue({ data: { content: [] }, message: 'success' });
 
       await controller.errands(mockReq(), ...errandsArgs({ query: mockPersonNumber }), MUNICIPALITY_ID, mockRes());
 
-      expect(api.get).toHaveBeenCalledWith({ url: `${CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${mockPersonNumber}/guid` }, expect.anything());
-      expect(api.get.mock.calls[1][0].url).toContain(`or exists(stakeholders.externalId~'*${mockCitizenPartyId}*')`);
+      expect(citizen.getPartyIdByPersonNumber).toHaveBeenCalledWith(MUNICIPALITY_ID, mockPersonNumber, expect.anything());
+      expect(api.get.mock.calls[0][0].url).toContain(`or exists(stakeholders.externalId~'*${mockCitizenPartyId}*')`);
     });
 
     it('still searches when the party id lookup fails', async () => {
-      const { controller, api } = makeController();
-      api.get.mockImplementation(async ({ url }: { url: string }) =>
-        url.includes('/guid') ? Promise.reject(new Error('boom')) : { data: { content: [] }, message: 'success' },
-      );
+      const { controller, api, citizen } = makeController();
+      citizen.getPartyIdByPersonNumber.mockRejectedValue(new Error('boom'));
+      api.get.mockResolvedValue({ data: { content: [] }, message: 'success' });
 
       await controller.errands(mockReq(), ...errandsArgs({ query: mockPersonNumber }), MUNICIPALITY_ID, mockRes());
 
       // Only the clause matching the raw query text remains; no extra party-id clause is added.
-      expect(api.get.mock.calls[1][0].url.match(/stakeholders\.externalId~/g)).toHaveLength(1);
+      expect(api.get.mock.calls[0][0].url.match(/stakeholders\.externalId~/g)).toHaveLength(1);
     });
 
     it('does not attempt a party id lookup for a plain text query', async () => {
