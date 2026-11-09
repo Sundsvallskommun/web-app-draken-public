@@ -54,7 +54,7 @@ export function useJsonSchemaByName(
 
     let active = true;
 
-    (async () => {
+    void (async () => {
       try {
         const { schema, schemaId } = boundSchemaId
           ? { schema: await getRjsfSchema(municipalityId, boundSchemaId), schemaId: boundSchemaId }
