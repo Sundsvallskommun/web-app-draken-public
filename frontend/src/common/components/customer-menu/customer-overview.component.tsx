@@ -5,12 +5,10 @@ import {
   Customer,
   CustomerPlace,
   getCustomerEngagements,
-  getCustomerErrands,
   getLatestInspection,
 } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
 import { Button, Label, Spinner, Table } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
 import { SupportErrandBusinessDescriptionDrawer } from '@supportmanagement/components/support-errand/tabs/support-errand-business-description-drawer.component';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { formatAddress } from '@supportmanagement/services/support-premises-address-service';
@@ -18,7 +16,7 @@ import dayjs from 'dayjs';
 import { CircleAlert, Store } from 'lucide-react';
 import { FC, PropsWithChildren, ReactNode, useState } from 'react';
 
-import { type CustomerLookup, useCustomerLookup } from './use-customer-lookup';
+import { type CustomerLookup, useCustomerErrands, useCustomerLookup } from './use-customer-lookup';
 
 const INSPECTION_MAX_AGE_MONTHS = 12;
 
@@ -33,7 +31,11 @@ const kindColor = (kind: string) => (kind === 'Alkohol' ? 'vattjom' : 'juniskar'
 
 const placeTitle = (place: CustomerPlace) => place.name ?? place.restaurantNumber;
 
-const OverviewSection: FC<PropsWithChildren<{ title: string; dataCy: string }>> = ({ title, dataCy, children }) => (
+export const OverviewSection: FC<PropsWithChildren<{ title: string; dataCy: string }>> = ({
+  title,
+  dataCy,
+  children,
+}) => (
   <section className="flex flex-col gap-12" data-cy={dataCy}>
     <h2 className="text-h3-md m-0">{title}</h2>
     {children}
@@ -46,7 +48,7 @@ const Card: FC<PropsWithChildren<{ className?: string; dataCy?: string }>> = ({ 
   </div>
 );
 
-const lookupContent = <T,>(lookup: CustomerLookup<T>, failure: string, render: (data: T) => ReactNode) => {
+export const lookupContent = <T,>(lookup: CustomerLookup<T>, failure: string, render: (data: T) => ReactNode) => {
   if (lookup.status === 'loading') {
     return <Spinner size={3} aria-label="Hämtar uppgifter" />;
   }
@@ -214,13 +216,7 @@ export const CustomerOverview: FC<{ customer: Customer; places: CustomerLookup<C
   places,
 }) => {
   const { customerId } = customer;
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const knownPlaces = places.status === 'done' ? places.data : undefined;
-  const placeKeys = knownPlaces?.map((place) => place.key).join(',');
-  const errands = useCustomerLookup(
-    `${municipalityId}|${customerId}|${placeKeys}`,
-    municipalityId && knownPlaces ? () => getCustomerErrands(municipalityId, customerId, knownPlaces) : undefined
-  );
+  const errands = useCustomerErrands(customerId, places);
   const counts = errands.status === 'done' ? countErrands(errands.data) : undefined;
   const count = (value: number | undefined) => value ?? (errands.status === 'error' ? '–' : '…');
 

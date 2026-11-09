@@ -13,6 +13,7 @@ import {
   getCustomerErrands,
   getCustomerPlaces,
   getLatestInspection,
+  isOtherDrakeCase,
 } from './customer-service';
 
 vi.mock('@common/services/asset-service', () => ({ getPartyServices: vi.fn() }));
@@ -207,5 +208,15 @@ describe('getLatestInspection', () => {
 describe('countErrands', () => {
   test('counts closed errands and treats the rest as ongoing', () => {
     expect(countErrands([errand('a'), errand('b', { status: Status.NEW })])).toEqual({ ongoing: 1, closed: 1 });
+  });
+});
+
+describe('isOtherDrakeCase', () => {
+  test.each([
+    ['another namespace', { namespace: 'SBK_MEX' }, true],
+    ['the own namespace', { namespace: 'AOT' }, false],
+    ['a system without namespace', { system: 'BYGGR' }, false],
+  ])('%s', (_, status, expected) => {
+    expect(isOtherDrakeCase(status, 'AOT')).toBe(expected);
   });
 });
