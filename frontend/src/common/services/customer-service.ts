@@ -82,7 +82,7 @@ export const getCustomerAssets = async (
   return res?.data ?? [];
 };
 
-export type PartyAssetPlace = { name?: string; address?: CustomerPlaceAddress; restaurantNumber?: string };
+type PartyAssetPlace = { name?: string; address?: CustomerPlaceAddress; restaurantNumber?: string };
 
 export type PartyAssetValue = {
   // Alcohol assets have premises, tobacco assets pointOfSale.
