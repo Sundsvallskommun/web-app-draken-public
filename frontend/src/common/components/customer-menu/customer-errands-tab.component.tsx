@@ -2,7 +2,7 @@
 
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { findOperationUsingNamespace } from '@common/services/casestatus-service';
-import { Customer, CustomerPlace, getCustomerCaseStatuses, isOtherDrakeCase } from '@common/services/customer-service';
+import { Customer, getCustomerCaseStatuses, isOtherDrakeCase } from '@common/services/customer-service';
 import { Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -16,7 +16,7 @@ import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { lookupContent, OverviewSection } from './customer-overview.component';
-import { type CustomerLookup, useCustomerErrands, useCustomerLookup } from './use-customer-lookup';
+import { type CustomerLookup, useCustomerLookup } from './use-customer-lookup';
 
 const Intro: FC<{ text: string }> = ({ text }) => <p className="m-0 max-w-[70rem]">{text}</p>;
 
@@ -26,7 +26,7 @@ const EmptyText: FC<{ text: string; dataCy?: string }> = ({ text, dataCy }) => (
   </p>
 );
 
-const openErrand = (errandNumber?: string) =>
+export const openErrand = (errandNumber?: string) =>
   window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errandNumber}`, '_blank');
 
 const OwnErrandsTable: FC<{ errands: SupportErrand[] }> = ({ errands }) => {
@@ -130,12 +130,8 @@ const OtherDrakeErrands: FC<{ customer: Customer }> = ({ customer }) => {
 };
 
 /** Ärenden tab of the customer view. */
-export const CustomerErrandsTab: FC<{ customer: Customer; places: CustomerLookup<CustomerPlace[]> }> = ({
-  customer,
-  places,
-}) => {
+export const CustomerErrandsTab: FC<{ errands: CustomerLookup<SupportErrand[]> }> = ({ errands }) => {
   const { t } = useTranslation();
-  const errands = useCustomerErrands(customer.customerId, places);
 
   return (
     <div className="flex flex-col gap-32" data-cy="customer-errands-tab">

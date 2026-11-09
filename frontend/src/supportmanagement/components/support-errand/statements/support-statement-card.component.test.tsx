@@ -179,6 +179,8 @@ test('a person the errand knows is offered their companies, and loses the offer 
   // A marked person is listed in the request from the start, so their companies are offered at once.
   await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-select`)).toBeTruthy());
   expect(getLegalEntityPersonEngagements).toHaveBeenCalledWith(ERICAS_PARTY_ID);
+  // Erica is listed before the company data is read, and the card is locked until it is.
+  await waitFor(() => expect(checkboxOf('Erica Fritz').disabled).toBe(false));
 
   fireEvent.click(checkboxOf('Erica Fritz'));
 
@@ -225,11 +227,19 @@ test('a company ticked for a person reaches the template under that person', asy
   chooseTheTaxAgencyTemplate();
 
   // Two hops before the option is there: the company data, then that person's engagements.
-  await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`)).toBeTruthy(), {
-    timeout: 5000,
-  });
+  // The choice can show up while the company data is still being read, and the card is locked until it is.
+  const companyInput = () =>
+    document.querySelector(
+      `[data-cy="statement-companies-${ERICAS_PARTY_ID}"] input.sk-form-combobox-select`
+    ) as HTMLInputElement | null;
+  await waitFor(() => expect(companyInput()?.disabled).toBe(false), { timeout: 5000 });
 
-  fireEvent.click(findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`) as HTMLElement);
+  // The list keeps the options it rendered until it is opened, so open it as the handler would.
+  fireEvent.click(companyInput() as HTMLInputElement);
+  const option = () => findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`) as HTMLInputElement | null;
+  await waitFor(() => expect(option()?.disabled).toBe(false));
+
+  fireEvent.click(option() as HTMLInputElement);
 
   await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-chip-${DRIVEN}`)).toBeTruthy());
 
