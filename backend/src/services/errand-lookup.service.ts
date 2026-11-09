@@ -4,60 +4,59 @@ import { apiURL } from '@utils/util';
 
 import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
 
 const ERRAND_LOOKUP_CONCURRENCY = 8;
 
-/** The errand services an asset's source errand can live in. */
+/** The errand services the drakes keep errands in. */
 export type ErrandService = 'case-data' | 'supportmanagement';
+
+/** An errand in one of the errand services. Without a namespace, this drake's namespace in that service is meant. */
+export type ErrandRef = { id: string; service: ErrandService; namespace?: string };
+
 const SERVICE_NAMES: Record<ErrandService, string> = {
   'case-data': apiServiceName('case-data'),
   supportmanagement: apiServiceName('supportmanagement'),
 };
+
 const DEFAULT_NAMESPACES: Record<ErrandService, string | undefined> = {
   'case-data': CASEDATA_NAMESPACE,
   supportmanagement: SUPPORTMANAGEMENT_NAMESPACE,
 };
 
-export type ErrandLookupRef = { id: string; namespace?: string; service?: ErrandService };
+/** Relations spells the services in several ways ('support-management', 'SUPPORT_MANAGEMENT', 'casedata', …). */
+export const normalizeService = (service: string | undefined): ErrandService | undefined => {
+  const normalized = (service ?? '').toLowerCase().replace(/[-_]/g, '');
+  if (normalized === 'supportmanagement') return 'supportmanagement';
+  if (normalized === 'casedata') return 'case-data';
+  return undefined;
+};
 
-export const fetchErrandNumberById = async (
-  municipalityId: string,
-  errandId: string,
-  user: User,
-  namespace?: string,
-  service: ErrandService = 'case-data',
-): Promise<string | undefined> => {
-  if (!errandId) return undefined;
-  const effectiveNamespace = namespace ?? DEFAULT_NAMESPACES[service];
-  const apiService = new ApiService();
-  const baseURL = apiURL(SERVICE_NAMES[service]);
-  const url = `${municipalityId}/${effectiveNamespace}/errands/${errandId}`;
+export const withDefaultNamespace = (ref: ErrandRef): ErrandRef => ({ ...ref, namespace: ref.namespace ?? DEFAULT_NAMESPACES[ref.service] });
+
+/** The errand's number, or undefined when the errand cannot be read. */
+export const fetchErrandNumber = async (municipalityId: string, ref: ErrandRef, user: User): Promise<string | undefined> => {
+  if (!ref.id) return undefined;
+  const { namespace } = withDefaultNamespace(ref);
+  const url = `${municipalityId}/${namespace}/errands/${ref.id}`;
   try {
-    const res = await apiService.get<ErrandDTO>({ url, baseURL }, user);
+    const res = await new ApiService().get<{ errandNumber?: string }>({ url, baseURL: apiURL(SERVICE_NAMES[ref.service]) }, user);
     return res.data?.errandNumber ?? undefined;
   } catch (e) {
-    logger.error(`Failed to fetch errandNumber for ${effectiveNamespace}/${errandId}: `, e);
+    logger.error(`Failed to fetch errandNumber for ${ref.service}/${namespace}/${ref.id}: `, e);
     return undefined;
   }
 };
 
-export const fetchErrandNumbersByIds = async (municipalityId: string, refs: ErrandLookupRef[], user: User): Promise<Map<string, string>> => {
-  const uniqueByKey = new Map<string, ErrandLookupRef>();
-  for (const ref of refs) {
-    if (!ref?.id) continue;
-    const service = ref.service ?? 'case-data';
-    const namespace = ref.namespace ?? DEFAULT_NAMESPACES[service];
-    uniqueByKey.set(`${service}|${namespace}|${ref.id}`, { id: ref.id, namespace, service });
-  }
-
+/** Errand numbers by errand id; errands that cannot be read are left out. */
+export const fetchErrandNumbers = async (municipalityId: string, refs: ErrandRef[], user: User): Promise<Map<string, string>> => {
+  const unique = Array.from(new Map(refs.filter(ref => ref.id).map(ref => [ref.id, ref])).values());
   const entries = await mapWithConcurrency(
-    Array.from(uniqueByKey.values()),
+    unique,
     ERRAND_LOOKUP_CONCURRENCY,
-    async ref => [ref.id, await fetchErrandNumberById(municipalityId, ref.id, user, ref.namespace, ref.service)] as const,
+    async ref => [ref.id, await fetchErrandNumber(municipalityId, ref, user)] as const,
   );
   return new Map(entries.filter((entry): entry is readonly [string, string] => !!entry[1]));
 };

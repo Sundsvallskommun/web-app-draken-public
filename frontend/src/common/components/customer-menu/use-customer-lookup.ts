@@ -7,11 +7,11 @@ import {
   getCustomerEngagements,
   getCustomerErrands,
   getCustomerPlaces,
-  withSourceErrands,
+  toCustomerAssets,
 } from '@common/services/customer-service';
 import { useConfigStore } from '@stores/index';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 export type CustomerLookup<T> = { status: 'loading' } | { status: 'error' } | { status: 'done'; data: T };
@@ -57,9 +57,10 @@ export const useCustomerData = (customerId: string): CustomerData => {
     municipalityId ? () => getCustomerAssets(municipalityId, customerId) : undefined
   );
   const knownAssets = fetchedAssets.status === 'done' ? fetchedAssets.data : undefined;
-  const assets = useCustomerLookup(
-    key,
-    municipalityId && knownAssets ? () => withSourceErrands(municipalityId, knownAssets) : undefined
+  const assets = useMemo(
+    (): CustomerLookup<CustomerAsset[]> =>
+      fetchedAssets.status === 'done' ? { status: 'done', data: toCustomerAssets(fetchedAssets.data) } : fetchedAssets,
+    [fetchedAssets]
   );
   const places = useCustomerLookup(
     key,
@@ -73,7 +74,7 @@ export const useCustomerData = (customerId: string): CustomerData => {
 
   const failed = fetchedAssets.status === 'error';
   return {
-    assets: failed ? fetchedAssets : assets,
+    assets,
     places: failed ? fetchedAssets : places,
     errands,
     engagements,

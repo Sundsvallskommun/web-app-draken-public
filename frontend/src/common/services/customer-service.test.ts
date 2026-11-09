@@ -2,12 +2,7 @@ import type { Asset } from '@common/interfaces/asset';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
-import {
-  getSupportErrandById,
-  getSupportErrands,
-  Status,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
+import { getSupportErrands, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
@@ -19,14 +14,13 @@ import {
   getCustomerPlaces,
   getLatestInspection,
   isOtherDrakeCase,
-  withSourceErrands,
+  toCustomerAssets,
 } from './customer-service';
 
 vi.mock('@common/services/legal-entity-service', () => ({ getCompanyProfileByPartyId: vi.fn() }));
 vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAssignments: vi.fn() }));
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  getSupportErrandById: vi.fn(),
   getSupportErrands: vi.fn(),
 }));
 
@@ -258,21 +252,17 @@ describe('isOtherDrakeCase', () => {
   });
 });
 
-describe('withSourceErrands', () => {
-  const ERRAND_ID = mockEnv.mockRestaurantNumberId;
+describe('toCustomerAssets', () => {
   const ERRAND_NUMBER = 'AOT-1';
 
-  beforeEach(() => vi.mocked(getSupportErrandById).mockReset());
-
-  test('reads the decision data and looks up the number of the source errand', async () => {
+  test('reads the decision data and the source errand the BFF found', () => {
     const value = {
       caseRegistrationNumber: 'IAN-1',
       decision: { caseOfficer: 'Handläggare', decisionDate: '2024-01-01' },
     };
-    givenAssets([{ ...assetWith(value), issued: '2024-02-02', sourceErrandId: ERRAND_ID }]);
-    vi.mocked(getSupportErrandById).mockResolvedValue({ errand: { errandNumber: ERRAND_NUMBER } } as never);
+    givenAssets([{ ...assetWith(value), issued: '2024-02-02', sourceErrandNumber: ERRAND_NUMBER }]);
 
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
+    const [row] = toCustomerAssets(givenAssetList);
 
     expect(row).toMatchObject({
       registrationNumber: 'IAN-1',
@@ -280,33 +270,13 @@ describe('withSourceErrands', () => {
       decisionDate: '2024-01-01',
       errandNumber: ERRAND_NUMBER,
     });
-    expect(getSupportErrandById).toHaveBeenCalledWith(ERRAND_ID, MUNICIPALITY_ID);
   });
 
-  test('takes the errand number the BFF found', async () => {
-    givenAssets([{ ...assetWith({}), sourceErrandId: ERRAND_ID, sourceErrandNumber: ERRAND_NUMBER }]);
-
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
-
-    expect(row.errandNumber).toBe(ERRAND_NUMBER);
-    expect(getSupportErrandById).not.toHaveBeenCalled();
-  });
-
-  test('falls back to the issued date and has no errand without a source errand', async () => {
+  test('falls back to the issued date and has no errand without a source errand', () => {
     givenAssets([{ ...assetWith({}), issued: '2024-02-02' }]);
 
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
+    const [row] = toCustomerAssets(givenAssetList);
 
     expect(row).toMatchObject({ decisionDate: '2024-02-02', errandNumber: undefined });
-    expect(getSupportErrandById).not.toHaveBeenCalled();
-  });
-
-  test('keeps the asset when the errand cannot be found', async () => {
-    givenAssets([{ ...assetWith({}), sourceErrandId: ERRAND_ID }]);
-    vi.mocked(getSupportErrandById).mockResolvedValue({ errand: undefined, error: '404' } as never);
-
-    const [row] = await withSourceErrands(MUNICIPALITY_ID, givenAssetList);
-
-    expect(row.errandNumber).toBeUndefined();
   });
 });

@@ -10,7 +10,6 @@ import { withAssignments } from '@supportmanagement/services/licensed-business-s
 import { jsonParameterForSchema, schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
 import {
   closedStatuses,
-  getSupportErrandById,
   getSupportErrands,
   Status,
   SupportErrand,
@@ -101,28 +100,18 @@ export interface CustomerAsset {
   errandNumber?: string;
 }
 
-/**
- * Assets as listed in the Tillstånd tab: decision data from the JSON, and the errand number. The BFF finds the source
- * errand in Relations (`sourceErrandId`) and usually its number too; the number is looked up here when it did not.
- */
-export const withSourceErrands = (municipalityId: string, assets: Asset[]): Promise<CustomerAsset[]> =>
-  Promise.all(
-    assets.map(async (asset) => {
-      const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
-      const errandNumber =
-        asset.sourceErrandNumber ??
-        (asset.sourceErrandId
-          ? (await getSupportErrandById(asset.sourceErrandId, municipalityId)).errand?.errandNumber
-          : undefined);
-      return {
-        asset,
-        registrationNumber: value.caseRegistrationNumber,
-        caseOfficer: value.decision?.caseOfficer,
-        decisionDate: value.decision?.decisionDate ?? asset.issued,
-        errandNumber,
-      };
-    })
-  );
+/** Assets as listed in the Tillstånd tab: decision data from the JSON, the source errand as the BFF found it. */
+export const toCustomerAssets = (assets: Asset[]): CustomerAsset[] =>
+  assets.map((asset) => {
+    const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
+    return {
+      asset,
+      registrationNumber: value.caseRegistrationNumber,
+      caseOfficer: value.decision?.caseOfficer,
+      decisionDate: value.decision?.decisionDate ?? asset.issued,
+      errandNumber: asset.sourceErrandNumber,
+    };
+  });
 
 interface CustomerPlaceAddress {
   street?: string;
