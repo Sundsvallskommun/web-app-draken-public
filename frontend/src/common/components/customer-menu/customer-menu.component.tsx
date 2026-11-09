@@ -26,20 +26,23 @@ export const CustomerMenu: FC<{ open: boolean }> = ({ open }) => {
         data-cy="customer-menu"
       >
         {open && <span className="text-small font-bold text-dark-secondary uppercase">Kunder</span>}
-        {customerLinks.map((link) => (
-          <NextLink key={link.href} href={link.href} passHref className="no-underline">
-            <Button
-              leftIcon={link.icon}
-              className={cx('w-full hover:bg-dark-ghost', open && 'justify-start')}
-              variant="ghost"
-              iconButton={!open}
-              aria-label={link.label}
-              data-cy={`customer-menu-link-${link.label.toLowerCase()}`}
-            >
-              {open && <span className="w-full flex justify-between">{link.label}</span>}
-            </Button>
-          </NextLink>
-        ))}
+        {customerLinks.map((link) => {
+          const buttonIsActive = window.location.pathname.includes(link.href);
+          return (
+            <NextLink key={link.href} href={link.href} passHref className="no-underline">
+              <Button
+                leftIcon={link.icon}
+                className={cx('w-full hover:bg-dark-ghost', open && 'justify-start')}
+                variant={buttonIsActive ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={link.label}
+                data-cy={`customer-menu-link-${link.label.toLowerCase()}`}
+              >
+                {open && <span className="w-full flex justify-between">{link.label}</span>}
+              </Button>
+            </NextLink>
+          );
+        })}
       </div>
     </>
   );
