@@ -365,9 +365,23 @@ describe('SupportErrandController', () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValue(metadata);
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
-      const labels = [{ id: mockSupportErrandId, classification: 'TYPE', resourcePath: 'CATEGORYROOT/INSPECTION/INTERNAL_INSPECTION' }];
+      const labels = [
+        {
+          id: mockSupportErrandId,
+          classification: 'TYPE',
+          resourceName: 'INTERNAL_INSPECTION',
+          resourcePath: 'CATEGORYROOT/INSPECTION/INTERNAL_INSPECTION',
+        },
+      ];
       const stakeholders = [
-        { externalId: mockOrganizationPartyId, externalIdType: ExternalIdType.COMPANY, role: 'PRIMARY', organizationName: mockOrganizationName },
+        {
+          externalId: mockOrganizationPartyId,
+          externalIdType: ExternalIdType.COMPANY,
+          role: 'PRIMARY',
+          organizationName: mockOrganizationName,
+          contactChannels: [],
+          parameters: [],
+        },
       ];
       const jsonParameters = [
         {
