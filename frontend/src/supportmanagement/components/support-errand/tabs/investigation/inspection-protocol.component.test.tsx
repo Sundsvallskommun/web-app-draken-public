@@ -204,9 +204,9 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     ERRAND_ID,
     '2281',
     'inv-new',
-    'aot_inspection_internal',
+    'aot_internal_inspection_protocol',
     {
-      schemaId: '2281_aot_inspection_internal_1.0',
+      schemaId: '2281_aot_internal_inspection_protocol_1.0',
       value: expect.objectContaining({ businessName: 'Exempel AB' }),
     }
   );
@@ -380,9 +380,9 @@ test("a changed answer is saved in the JSON of the investigation, against the te
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_serving_permit',
+    'aot_external_inspection_protocol',
     {
-      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      schemaId: '2281_aot_external_inspection_protocol_1.0',
       value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
     }
   );
@@ -405,7 +405,7 @@ test('another template is taken only after the handler confirms, and replaces co
     'info',
     'info'
   );
-  expect(template().value).toBe('serving_permit');
+  expect(template().value).toBe('external_inspection');
   expect(screen.getByDisplayValue('Ålderskontroll')).toBeTruthy();
 
   await act(async () => {

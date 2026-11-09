@@ -1,13 +1,11 @@
 import type { InspectionProtocolTemplate } from '../types';
-import { INTERNAL_INSPECTION_HTML } from './template';
 
 /** Tillsynsprotokoll inre tillsyn: a desk inspection of the permit holder, the checks made as the control points. */
 export const INTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
   key: 'internal_inspection',
   label: 'Inre tillsyn',
-  identifier: 'internal-inspection-protocol',
-  schema: { name: 'aot_inspection_internal', version: '1.0' },
-  html: INTERNAL_INSPECTION_HTML,
+  identifier: 'aot-internal-inspection-protocol',
+  schema: { name: 'aot_internal_inspection_protocol', version: '1.0' },
   controlPoints: [
     'Granskning via upplysningstjänsten Syna/Svensk faktakontroll',
     'Belastningsregistret',

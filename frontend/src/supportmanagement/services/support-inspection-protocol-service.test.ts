@@ -1,7 +1,5 @@
 import { renderTemplatePdf, renderTemplatePdfDirect } from '@common/services/template-render-service';
-import { INSPECTION_PROTOCOL_TEMPLATES, inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
-import internalSample from '@supportmanagement/inspection-protocols/internal-inspection/sampledata.json';
-import servingSample from '@supportmanagement/inspection-protocols/serving-permit/sampledata.json';
+import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import { expect, test, vi } from 'vitest';
 
 import type { SupportErrand } from './support-errand-service';
@@ -23,7 +21,6 @@ vi.mock('@common/services/template-render-service', () => ({
 const serving = inspectionProtocolTemplate('serving_permit')!;
 const internal = inspectionProtocolTemplate('internal_inspection')!;
 const errand = { customer: [{ organizationName: 'Exempel AB', organizationNumber: '556000-0000' }] } as SupportErrand;
-const samples: Record<string, object> = { serving_permit: servingSample, internal_inspection: internalSample };
 
 test('a template is found by its key', () => {
   expect(inspectionProtocolTemplate('internal_inspection')?.label).toBe('Inre tillsyn');
@@ -174,25 +171,6 @@ test('the order is without remarks while no area is deficient', () => {
 
   expect(parameters).toMatchObject({ orderWithoutRemarks: 'true', orderWithRemarks: '' });
 });
-
-test.each(INSPECTION_PROTOCOL_TEMPLATES)(
-  'every key $key sends is in its sample data, so the HTML knows it',
-  (template) => {
-    const sent = Object.keys(
-      toInspectionProtocolRenderParameters(
-        template,
-        'X',
-        inspectionProtocolValuesOf(template, undefined, undefined),
-        [],
-        []
-      )
-    );
-
-    expect(Object.keys(samples[template.key])).toEqual(expect.arrayContaining(sent));
-    expect(template.html).toContain('{% for m in measures %}');
-    expect(template.controlPoints.length).toBeGreaterThan(0);
-  }
-);
 
 test('the protocol is rendered directly while the template is in the code, by identifier once uploaded', async () => {
   await expect(renderInspectionProtocol(internal, { caseNumber: 'X' })).resolves.toBe('direct');

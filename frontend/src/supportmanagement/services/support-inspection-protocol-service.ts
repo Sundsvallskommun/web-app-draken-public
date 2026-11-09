@@ -1,6 +1,6 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { User } from '@common/interfaces/user';
-import { renderTemplatePdf, renderTemplatePdfDirect } from '@common/services/template-render-service';
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import type {
   InspectionProtocolTemplate,
@@ -168,14 +168,10 @@ export const toInspectionProtocolRenderParameters = (
   return parameters;
 };
 
-/** Direct render while the template lives in the code, by identifier once it is uploaded to Templating. */
 export const renderInspectionProtocol = (
   template: InspectionProtocolTemplate,
   parameters: Record<string, string | InspectionProtocolMeasureRow[]>
-): Promise<string> =>
-  template.html
-    ? renderTemplatePdfDirect(template.html, parameters)
-    : renderTemplatePdf(template.identifier, parameters);
+): Promise<string> => renderTemplatePdf(template.identifier, parameters);
 
 export const inspectionProtocolFileName = (errandNumber: string | undefined, date: string): string =>
   `Tillsynsprotokoll ${[errandNumber, date].filter(Boolean).join(' ')}.pdf`;
