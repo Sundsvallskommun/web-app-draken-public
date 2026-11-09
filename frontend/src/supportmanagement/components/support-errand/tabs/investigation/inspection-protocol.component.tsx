@@ -29,6 +29,7 @@ import {
   toInspectionProtocolRenderParameters,
 } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
+  deleteSupportInvestigationJsonParameter,
   getSupportInvestigation,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
@@ -62,6 +63,7 @@ import { InspectionProtocolObservations } from './inspection-protocol-observatio
 
 // The protocol is what the Utredning tab holds for an inspection errand, so it saves under that tab's key.
 const TAB_KEY = 'investigation';
+const INSPECTION_SCHEMA_NAMES = INSPECTION_PROTOCOL_TEMPLATES.map(({ schema }) => schema.name);
 
 /** What the errand holds: the measures (control points, action points, observations) and the investigation. */
 interface Saved {
@@ -215,10 +217,6 @@ export const InspectionProtocol: FC<{
       ]);
       receiveMeasures({ ...data, measures: await getSupportMeasures(errandId, municipalityId) });
       if (template) {
-        const answers = {
-          schemaId: supportSchemaId(municipalityId, template.schema),
-          value: toInspectionProtocolJson(template, draft.values),
-        };
         const templateChanged = template.key !== baseline.templateKey;
         let investigationId = data.investigation?.id;
         if (!investigationId) {
@@ -233,13 +231,18 @@ export const InspectionProtocol: FC<{
           });
         }
         if (investigationId && (!data.investigation?.id || templateChanged || !same(draft.values, baseline.values))) {
-          await saveSupportInvestigationJsonParameter(
-            errandId,
-            municipalityId,
-            investigationId,
-            template.schema.name,
-            answers
-          );
+          await saveSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, template.schema.name, {
+            schemaId: supportSchemaId(municipalityId, template.schema),
+            value: toInspectionProtocolJson(template, draft.values),
+          });
+        }
+        const replaced = (data.investigation?.jsonParameters ?? [])
+          .map(({ key }) => key)
+          .filter((key) => key !== template.schema.name && INSPECTION_SCHEMA_NAMES.includes(key));
+        if (investigationId) {
+          for (const key of replaced) {
+            await deleteSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, key);
+          }
         }
       }
       receive(await load(errandId, municipalityId));

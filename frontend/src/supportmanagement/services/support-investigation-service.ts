@@ -143,6 +143,23 @@ export const completeSupportInvestigation = (
       throw e;
     });
 
+/** Deletes the JSON parameter of the investigation under the key. */
+export const deleteSupportInvestigationJsonParameter = (
+  errandId: string,
+  municipalityId: string,
+  investigationId: string,
+  key: string
+): Promise<SupportInvestigation> =>
+  apiService
+    .deleteRequest<SupportInvestigation>(
+      `supportinvestigations/${municipalityId}/${errandId}/${investigationId}/json-parameters/${key}`
+    )
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when deleting a JSON parameter of the investigation');
+      throw e;
+    });
+
 /** Creates or replaces the JSON parameter of the investigation under the key. */
 export const saveSupportInvestigationJsonParameter = (
   errandId: string,

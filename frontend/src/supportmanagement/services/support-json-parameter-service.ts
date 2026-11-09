@@ -10,22 +10,19 @@ export interface SupportJsonParameter {
   version?: number;
 }
 
-/** A schema in Jsonschema; the version is the one the code writes, so a new version is a code change. */
-export interface SupportJsonSchema {
-  name: string;
-  version: string;
-}
-
-/** Where a JSON parameter is filed and the schema it is written against. */
-export interface SupportJsonParameterSpec {
-  key: string;
-  schema: SupportJsonSchema;
-}
-
 /** What a JSON parameter is written with. */
 export interface SupportJsonParameterWrite {
   schemaId: string;
   value: JsonObject;
+}
+
+/**
+ * A schema in Jsonschema. The version is the one whose shape the code writes, so a new version is a code change;
+ * an entry is filed under the name, and a saved entry's own schemaId says what it was written against.
+ */
+export interface SupportJsonSchema {
+  name: string;
+  version: string;
 }
 
 /** Jsonschema names a schema `<municipality>_<name>_<version>`. */

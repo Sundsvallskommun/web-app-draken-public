@@ -1,4 +1,7 @@
-import { certificateTemplate } from '@supportmanagement/services/support-decision-parameters-service';
+import {
+  certificateTemplate,
+  decisionRequiresClauses,
+} from '@supportmanagement/services/support-decision-parameters-service';
 import { supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
 import { getMostSpecificLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 
@@ -9,6 +12,8 @@ export interface DecisionPermit {
   certificate: string | undefined;
   /** A serving permit asks for things no other permit does. */
   serving: boolean;
+  /** Whether the decision needs att-satser before it is sent. */
+  clausesRequired: boolean;
   /** The most specific type label of the errand, e.g. TASTING. */
   errandType: string | undefined;
 }
@@ -24,6 +29,7 @@ export const decisionPermit = (errand: SupportErrand | undefined): DecisionPermi
     type,
     certificate: certificateTemplate(type),
     serving: type === SERVING,
+    clausesRequired: decisionRequiresClauses(type),
     errandType: typeLabel?.resourceName,
   };
 };

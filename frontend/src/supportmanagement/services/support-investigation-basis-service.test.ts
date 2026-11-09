@@ -102,7 +102,7 @@ const investigation = {
     ...(sectionKey === 'premises' && {
       jsonParameters: [
         {
-          key: 'premises',
+          key: 'aot_investigation_premises_section',
           schemaId: '2281_aot_investigation_premises_section_1.0',
           value: { inspectedAt: '2026-05-21', rightOfDisposal: { status: 'PROVEN', note: 'Hyresavtal 2026-05-01' } },
         },
@@ -722,7 +722,7 @@ test('what the handler established about the premises for the underlay travels w
                 ...section,
                 jsonParameters: [
                   {
-                    key: 'premises',
+                    key: 'aot_investigation_premises_section',
                     schemaId: '2281_aot_investigation_premises_section_1.0',
                     value: { servingArea: { description: 'Matsalen, uteserveringen och bryggan' } },
                   },

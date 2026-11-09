@@ -1,4 +1,3 @@
-import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
@@ -11,6 +10,7 @@ import {
   getLabelCategorizationHeading,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
+  NEW_ERRAND_HEADING,
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
@@ -75,14 +75,9 @@ export const SupportErrandComponent: FC = () => {
     appConfig.features.useUiPhases &&
     (pathName === '/registrera' || pathName.includes('arende')) &&
     (!followsProcess || hasSupportErrandProcess(supportErrand));
-  const uiPhaseRow = appConfig.isSupportManagement ? (
-    <SupportUiPhaseWrapper working={processIsWorking} />
-  ) : (
-    <UiPhaseWrapper />
-  );
   const uiPhaseSection = (
     <div className="flex items-center justify-between">
-      {uiPhaseRow}
+      <SupportUiPhaseWrapper working={processIsWorking} />
       {followsProcess ? <SupportProcessLog /> : null}
     </div>
   );
@@ -224,7 +219,7 @@ export const SupportErrandComponent: FC = () => {
                       ) : (
                         <div className="flex justify-between items-center pt-8">
                           <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                            Registrera nytt ärende
+                            {NEW_ERRAND_HEADING}
                           </h1>
                         </div>
                       )}

@@ -49,6 +49,7 @@ import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 import { UnlinkedStatementAttachmentFlag } from '../statements/unlinked-statement-attachment-flag.component';
+import { SupportErrandRequiredAttachments } from './support-errand-required-attachments.component';
 
 interface SingleAttachment {
   file: File | undefined;
@@ -495,6 +496,7 @@ export const SupportErrandAttachmentsTab: FC<{
       </div>
       <div>
         <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
+        <SupportErrandRequiredAttachments />
         {!supportAttachments?.length && (
           <>
             <Divider className="pt-16" />

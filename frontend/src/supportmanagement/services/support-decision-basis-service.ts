@@ -1,5 +1,6 @@
 import type { RJSFSchema } from '@rjsf/utils';
 
+import { attachmentRequirementsOfSchema } from './support-attachment-requirement-service';
 import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-schema-service';
 import type { SupportErrand } from './support-errand-service';
 import {
@@ -236,13 +237,9 @@ const asksPremises: Asks = (schema, value, field, uploaded) =>
  * The schema's `x-attachments` name the uploads it asks for by purpose; the row's field is the purpose.
  * A handler may also give an attachment the purpose by hand, and then it is shown as well.
  */
-const asksAttachment: Asks = (schema, _value, purpose, uploaded) => {
-  if (uploaded.includes(purpose)) return true;
-  const attachments = schema?.['x-attachments'];
-  return (
-    Array.isArray(attachments) && attachments.some((attachment) => isRecord(attachment) && attachment.key === purpose)
-  );
-};
+const asksAttachment: Asks = (schema, _value, purpose, uploaded) =>
+  uploaded.includes(purpose) ||
+  attachmentRequirementsOfSchema(schema).some((requirement) => requirement.key === purpose);
 
 /** Only the schemas that ask about an outdoor area have the child under the seats object. */
 const asksOutdoorSeats: Asks = (schema, value) => {

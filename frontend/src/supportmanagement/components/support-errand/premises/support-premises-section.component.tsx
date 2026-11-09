@@ -5,7 +5,7 @@ import { Checkbox, FormControl, FormLabel, Input, Select, Textarea } from '@sk-w
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
-  SUPPORT_PREMISES_SECTION_JSON,
+  SUPPORT_PREMISES_SECTION_SCHEMA,
   supportPremisesCapacity,
   type SupportPremisesExamination,
   supportPremisesExamination,
@@ -36,7 +36,7 @@ export const SupportPremisesSection: FC<InvestigationSectionProps> = (props) => 
   const sectionSave = useInvestigationSectionSave(
     props,
     'common:premises.toast.save_failed',
-    SUPPORT_PREMISES_SECTION_JSON
+    SUPPORT_PREMISES_SECTION_SCHEMA
   );
   const knownBefore = sectionSave.values.assessment === APPROVED;
   // Unchecking only takes back an approval; any other assessment is left as it is.

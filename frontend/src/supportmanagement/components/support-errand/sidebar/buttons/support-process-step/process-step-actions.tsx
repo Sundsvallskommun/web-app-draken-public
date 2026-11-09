@@ -17,6 +17,8 @@ export interface ProcessAction {
   takesErrand?: boolean;
   requiresDecisionOutcome?: boolean;
   requiresAnsweredStatements?: boolean;
+  /** What the process needs on the errand before the handling starts: applicant, form and attachments. */
+  requiresRegistrationInputs?: boolean;
   /** What the permit certificate prints has to be on the errand before the process needs it. */
   requiresPermitInputs?: boolean;
   completesDecision?: boolean;
@@ -53,6 +55,7 @@ export const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>
     needsSignal: true,
     confirms: false,
     takesErrand: true,
+    requiresRegistrationInputs: true,
   },
   [SupportProcessStep.REVIEW]: {
     key: 'start_investigation',
