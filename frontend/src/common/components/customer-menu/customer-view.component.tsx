@@ -1,8 +1,16 @@
 'use client';
 
 import { CustomerTabs } from '@common/components/customer-menu/customer-tabs.component';
-import { Customer, formatOrganizationNumber, getCustomerByCustomerId } from '@common/services/customer-service';
-import { Breadcrumb, Spinner } from '@sk-web-gui/react';
+import { type CustomerLookup, useCustomerLookup } from '@common/components/customer-menu/use-customer-lookup';
+import {
+  Customer,
+  CustomerPlace,
+  formatOrganizationNumber,
+  getCustomerByCustomerId,
+  getCustomerPlaces,
+} from '@common/services/customer-service';
+import { Breadcrumb, Label, Spinner } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { Building2 } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useEffect, useState } from 'react';
@@ -24,8 +32,44 @@ const CustomerBreadcrumb: FC<{ current: string }> = ({ current }) => (
   </Breadcrumb>
 );
 
+const CustomerPlaces: FC<{ places: CustomerLookup<CustomerPlace[]> }> = ({ places }) => {
+  const content = () => {
+    if (places.status === 'loading') {
+      return <Spinner size={2} aria-label="Hämtar ställen" />;
+    }
+    if (places.status === 'error') {
+      return (
+        <span className="text-error" role="alert" data-cy="customer-view-places-error">
+          Ställen kunde inte hämtas.
+        </span>
+      );
+    }
+    if (places.data.length === 0) {
+      return <span className="text-dark-secondary">Inga ställen att visa ännu.</span>;
+    }
+    return places.data.map(({ key, restaurantNumber, name }) => (
+      <Label key={key} rounded inverted color="tertiary" data-cy="customer-view-place">
+        {[name, restaurantNumber].filter(Boolean).join(' · ')}
+      </Label>
+    ));
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-8" data-cy="customer-view-places">
+      <Building2 size={16} aria-hidden />
+      <span className="font-bold">Ställen:</span>
+      {content()}
+    </div>
+  );
+};
+
 export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
   const [result, setResult] = useState<LookupResult | null>(null);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const places = useCustomerLookup(
+    `${municipalityId}|${customerId}`,
+    municipalityId ? () => getCustomerPlaces(municipalityId, customerId) : undefined
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -77,14 +121,9 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
         )}
       </div>
 
-      {/* TODO: Fill with serveringsställen/försäljningsställen when the microservice exists. */}
-      <div className="flex items-center gap-8" data-cy="customer-view-places">
-        <Building2 size={16} aria-hidden />
-        <span className="font-bold">Ställen:</span>
-        <span className="text-dark-secondary">Inga ställen att visa ännu.</span>
-      </div>
+      <CustomerPlaces places={places} />
 
-      <CustomerTabs customerId={customerId} />
+      <CustomerTabs customer={customer} places={places} />
     </div>
   );
 };

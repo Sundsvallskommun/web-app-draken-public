@@ -103,13 +103,11 @@ export interface RestaurantNumberWithAssignment extends AddressRestaurantNumber 
   assignmentFailed: boolean;
 }
 
-/** Every restaurant number at the address, each with its most recent assignment. */
-export const getRestaurantNumbersWithAssignments = async (
+/** Each restaurant number with its most recent assignment. */
+export const withAssignments = async (
   municipalityId: string,
-  addressId: string
+  numbers: AddressRestaurantNumber[]
 ): Promise<RestaurantNumberWithAssignment[]> => {
-  const numbers = await getAddressRestaurantNumbers(municipalityId, addressId);
-
   const assignments = await Promise.allSettled(
     numbers.map((restaurantNumber) =>
       restaurantNumber.number
@@ -127,3 +125,10 @@ export const getRestaurantNumbersWithAssignments = async (
     };
   });
 };
+
+/** Every restaurant number at the address, each with its most recent assignment. */
+export const getRestaurantNumbersWithAssignments = async (
+  municipalityId: string,
+  addressId: string
+): Promise<RestaurantNumberWithAssignment[]> =>
+  withAssignments(municipalityId, await getAddressRestaurantNumbers(municipalityId, addressId));
