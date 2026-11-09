@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandProcessState } from '@supportmanagement/services/support-process-service';
 import { cleanup, renderHook } from '@testing-library/react';
@@ -9,6 +10,7 @@ import { useSupportProcessPoller } from './use-support-process-poller';
 const store = vi.hoisted(() => ({
   supportErrand: undefined as SupportErrand | undefined,
   setSupportErrand: vi.fn(),
+  setSupportAttachments: vi.fn(),
   processSignal: undefined as { errandId: string; at: number } | undefined,
   setProcessSignal: vi.fn(),
 }));
@@ -18,6 +20,7 @@ vi.mock('@stores/index', () => ({
   useSupportStore: (select: (state: typeof store) => unknown) => select(store),
   useConfigStore: (select: (state: { municipalityId: string }) => unknown) => select({ municipalityId: '2281' }),
 }));
+vi.mock('@supportmanagement/services/support-attachment-service', () => ({ getSupportAttachments: vi.fn() }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({ getSupportErrandById: vi.fn() }));
 vi.mock('@supportmanagement/services/support-process-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -50,7 +53,11 @@ beforeEach(() => {
   store.supportErrand = errandWith('RUNNING');
   store.processSignal = undefined;
   store.setSupportErrand.mockReset();
+  store.setSupportAttachments.mockReset();
   store.setProcessSignal.mockReset();
+  vi.mocked(getSupportAttachments)
+    .mockReset()
+    .mockImplementation(async () => [{ id: 'attachment-1', fileName: 'Beslutsunderlag AOT-26110137.pdf' }] as never);
   vi.mocked(getSupportErrandProcessState)
     .mockReset()
     .mockImplementation(async () => stateOf('RUNNING'));
@@ -146,6 +153,37 @@ test('the errand is read as soon as the process has been written, whatever chang
   await vi.advanceTimersByTimeAsync(3200);
   expect(errandReads()).toBe(1);
   expect(store.setSupportErrand).toHaveBeenCalledWith(errandWith('RUNNING', 'investigation_phase'));
+});
+
+test('what the process filed on the errand is read along with the errand', async () => {
+  renderHook(() => useSupportProcessPoller());
+
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(store.setSupportAttachments).not.toHaveBeenCalled();
+
+  vi.mocked(getSupportErrandProcessState).mockImplementation(async () =>
+    stateOf('RUNNING', 'external_task_create_decision_basis', 'second')
+  );
+
+  await vi.advanceTimersByTimeAsync(3200);
+  expect(store.setSupportAttachments).toHaveBeenCalledWith([
+    { id: 'attachment-1', fileName: 'Beslutsunderlag AOT-26110137.pdf' },
+  ]);
+});
+
+test('attachments that cannot be read leave the ones in hand alone', async () => {
+  vi.mocked(getSupportAttachments).mockImplementation(async () => {
+    throw new Error('no');
+  });
+  vi.mocked(getSupportErrandProcessState).mockImplementation(async () =>
+    stateOf('RUNNING', 'decision_phase', 'second')
+  );
+
+  renderHook(() => useSupportProcessPoller());
+
+  await vi.advanceTimersByTimeAsync(3200);
+  expect(store.setSupportErrand).toHaveBeenCalled();
+  expect(store.setSupportAttachments).not.toHaveBeenCalled();
 });
 
 test('a signal is held until the process has left the activity it was sent at, not merely written', async () => {

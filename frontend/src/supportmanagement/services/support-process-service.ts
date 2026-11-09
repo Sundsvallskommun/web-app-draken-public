@@ -114,6 +114,8 @@ export const supportProcessStepKeys = (): string[] => SUPPORT_PROCESS_STEPS.map(
 
 const EXTERNAL_TASK_KEYS: Record<string, string> = {
   external_task_notify_processing_started: 'common:process.activities.notify_processing_started',
+  external_task_set_complete_at: 'common:process.activities.set_complete_at',
+  external_task_create_decision_basis: 'common:process.activities.create_decision_basis',
   external_task_create_decision: 'common:process.activities.create_decision',
   external_task_check_decision: 'common:process.activities.check_decision',
   external_task_create_asset: 'common:process.activities.create_asset',
@@ -137,6 +139,22 @@ const startsProcess = (label: Label, processKey: string): boolean =>
   label.attributes?.some((attribute) => attribute.key === PROCESS_KEY_ATTRIBUTE && attribute.value === processKey) ===
   true;
 
+/**
+ * The processes that end their investigation phase by rendering the decision basis and filing it on the errand as a
+ * PDF (external_task_create_decision_basis in pw-alkt). The closure, action and inspection processes have an
+ * investigation phase too, but no basis is written there, so nothing is promised to the handler for those.
+ */
+const PROCESS_KEYS_FILING_A_DECISION_BASIS = [
+  'alcohol-serving',
+  'alcohol-serving-addition',
+  'alcohol-serving-change',
+  'tobacco-sales',
+  'tobacco-sales-change',
+];
+
+export const processFilesADecisionBasis = (processKey: string | undefined): boolean =>
+  !!processKey && PROCESS_KEYS_FILING_A_DECISION_BASIS.includes(processKey);
+
 export const supportProcessName = (processKey: string | undefined, metadata: SupportMetadata | undefined): string => {
   if (!processKey) return '';
 
@@ -146,6 +164,8 @@ export const supportProcessName = (processKey: string | undefined, metadata: Sup
 
 const PHASE_OF_EXTERNAL_TASK: Record<string, SupportProcessStepName> = {
   external_task_notify_processing_started: SupportProcessStep.REVIEW,
+  external_task_set_complete_at: SupportProcessStep.INVESTIGATION,
+  external_task_create_decision_basis: SupportProcessStep.INVESTIGATION,
   external_task_create_decision: SupportProcessStep.DECISION,
   external_task_check_decision: SupportProcessStep.DECISION,
   external_task_create_asset: SupportProcessStep.DECISION,
