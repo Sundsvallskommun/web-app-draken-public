@@ -650,7 +650,8 @@ test('only the tax agency templates that list the companies ask for them', () =>
     expect(supportStatementTemplateAsksForCompanies(identifier)).toBe(false);
 });
 
-const municipalityCodeOf = (code: string) => ({ parameters: [{ key: 'premisesMunicipality', values: [code] }] });
+/** The key the e-service writes and the process reads. Nothing ever wrote a shorter one. */
+const municipalityCodeOf = (code: string) => ({ parameters: [{ key: 'premisesMunicipalityId', values: [code] }] });
 
 test('the municipality asking is the one the errand names, worded as the tax agency templates word it', () => {
   const sent = supportStatementTemplateParameters({
@@ -680,6 +681,9 @@ test('an errand with no municipality on it, or one nobody knows, is taken for Su
   expect(askFor(errandOf()).municipality).toBe('Sundsvalls kommun');
   expect(askFor(errandOf(municipalityCodeOf('2281'))).municipality).toBe('Sundsvalls kommun');
   expect(askFor(errandOf(municipalityCodeOf('1480'))).municipality).toBe('Sundsvalls kommun');
+  // A parameter under any other name is not the municipality, however close the name comes.
+  const underAnotherName = { parameters: [{ key: 'premisesMunicipality', values: ['2262'] }] };
+  expect(askFor(errandOf(underAnotherName)).municipality).toBe('Sundsvalls kommun');
 });
 
 test('the inner inspection is told the municipality too, so its own default cannot name the wrong one', () => {
