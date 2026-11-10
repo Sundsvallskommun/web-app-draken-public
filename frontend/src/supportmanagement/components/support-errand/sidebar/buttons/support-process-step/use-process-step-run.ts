@@ -26,6 +26,7 @@ import {
   isSupportInspectionProcess,
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
+  processFilesADecisionBasis,
   sendSupportProcessSignal,
   startSupportProcess,
   SupportProcessStep,
@@ -95,6 +96,13 @@ export const useProcessStepRun = ({
     toastMessage({ position: 'bottom', closeable: false, message, status });
 
   const sendSignal = (signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
+
+  const doneMessage = (action: ProcessAction): string => {
+    const aDecisionBasisIsFiled = action.completesInvestigation && processFilesADecisionBasis(process?.processKey);
+    if (aDecisionBasisIsFiled) return t(`common:process.actions.${action.key}.done_with_decision_basis`);
+
+    return t(`common:process.actions.${action.key}.done`);
+  };
 
   /** Starts the process and lets the poller pick it up once the engine has registered it. */
   const startTheProcess = async () => {
@@ -263,7 +271,7 @@ export const useProcessStepRun = ({
       }
 
       if (action.tabKey && !awaitedMove.current) setActiveTabKey(action.tabKey);
-      tellTheHandler(t(`common:process.actions.${action.key}.done`), 'success');
+      tellTheHandler(doneMessage(action), 'success');
     } catch (error) {
       await recoverFromAFailedStep(action, error);
     } finally {

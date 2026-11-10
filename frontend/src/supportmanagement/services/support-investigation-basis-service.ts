@@ -58,7 +58,7 @@ import {
   sameIdentity,
   stakeholderName,
 } from './support-pbi-service';
-import { getPremisesAddress } from './support-premises-address-service';
+import { formatPostalCode, getPremisesAddress } from './support-premises-address-service';
 import {
   SUPPORT_PREMISES_RIGHT_OF_DISPOSALS,
   SUPPORT_PREMISES_SECTION_SCHEMA,
@@ -308,7 +308,7 @@ const applicantOf = (errand: SupportErrand | undefined): SupportStakeholderFormM
   errand?.customer?.[0];
 
 const postalAddressOf = (postalCode: string | undefined, city: string | undefined): string =>
-  [postalCode, city].filter(Boolean).join(' ');
+  [formatPostalCode(postalCode), city].filter(Boolean).join(' ');
 
 const applicantParameters = (errand: SupportErrand | undefined): InvestigationBasisParameters['applicant'] => {
   const applicant = applicantOf(errand);
@@ -431,7 +431,7 @@ const personsOfInfluence = (
 
   const named = marked.map(({ engagement, stakeholder }) =>
     personOfInfluence(
-      engagement.name ?? '',
+      stakeholderName(stakeholder!) || engagement.name || '',
       hyphenatedIdentity(engagement.identity?.code),
       engagementRoles(engagement) || pbiOf(stakeholder!).role,
       stakeholder!,
