@@ -2,6 +2,7 @@
 import { searchPerson } from '@common/services/adress-service';
 import { getLegalEntityEngagements, getLegalEntityPersonEngagements } from '@common/services/legal-entity-service';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { hyphenatedIdentity } from '@supportmanagement/services/support-pbi-service';
 import { supportStatementTemplateParameters } from '@supportmanagement/services/support-statement-template-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
@@ -380,4 +381,101 @@ test('a referral of its own that has been answered cannot be taken back', () => 
 
   expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
   expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('the police referral carries the contact the handler addressed it to', () => {
+  const addressed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+    recipientAttention: 'Karin Vakt',
+    recipientEmail: 'karin.vakt@polisen.se',
+  });
+
+  expect(addressed.recipientAttention).toBe('Karin Vakt');
+  expect(addressed.recipientEmail).toBe('karin.vakt@polisen.se');
+});
+
+test('a police referral addressed to nobody sends the fields empty, for the template to fall back on', () => {
+  const unaddressed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+  });
+
+  expect(unaddressed.recipientAttention).toBe('');
+  expect(unaddressed.recipientEmail).toBe('');
+});
+
+test('the municipality is read from the errand parameter the e-service writes', () => {
+  const errandInTimra = {
+    parameters: [{ key: 'premisesMunicipalityId', values: ['2262'] }],
+  } as unknown as SupportErrand;
+
+  const parameters = supportStatementTemplateParameters({
+    identifier: 'tax-agency-request-serving',
+    errand: errandInTimra,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Skatteverket',
+    dueAt: '2026-12-01',
+    people: [],
+  });
+
+  expect(parameters.municipality).toBe('Timrå kommun');
+});
+
+test('the underlay is signed by whoever the handler says is asking', () => {
+  const signed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Karin Chef',
+    handlerEmail: 'annika@sundsvall.se',
+    handlerMunicipality: 'Timrå kommun',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+  });
+
+  expect(signed.handlerName).toBe('Karin Chef');
+  expect(signed.handlerMunicipality).toBe('Timrå kommun');
+});
+
+test('an underlay with no municipality of its own is signed by the unit own', () => {
+  const signed = supportStatementTemplateParameters({
+    identifier: 'referral-rescue-service',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Räddningstjänsten',
+    dueAt: '2026-12-01',
+    people: [],
+  });
+
+  expect(signed.handlerMunicipality).toBe('Sundsvalls kommun');
+});
+
+test('the handler types a contact and a submitter, and the fields keep what was typed', () => {
+  mountCard(true, 'Polismyndigheten');
+  chooseTemplate('referral-police');
+
+  const typeInto = (name: string, value: string) =>
+    fireEvent.change(findOf(name) as HTMLInputElement, { target: { value } });
+
+  typeInto('statement-recipient-name', 'Karin Vakt');
+  typeInto('statement-recipient-email', 'karin.vakt@polisen.se');
+  typeInto('statement-submitter-municipality', 'Timrå kommun');
+
+  expect((findOf('statement-recipient-name') as HTMLInputElement).value).toBe('Karin Vakt');
+  expect((findOf('statement-recipient-email') as HTMLInputElement).value).toBe('karin.vakt@polisen.se');
+  expect((findOf('statement-submitter-municipality') as HTMLInputElement).value).toBe('Timrå kommun');
+  expect((findOf('statement-submitter-name') as HTMLInputElement).value).toBe('Annika Jansson');
 });
