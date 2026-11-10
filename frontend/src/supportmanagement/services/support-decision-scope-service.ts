@@ -19,7 +19,7 @@ export const BEVERAGES = [
   'WINE',
   'SPIRITS',
   'OTHER_FERMENTED_BEVERAGES',
-  'ALCOHOL_LIKE_PREPARATIONS',
+  'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS',
 ] as const;
 
 export type ServingHoursSlot = 'indoorPublic' | 'outdoorPublic' | 'indoorPrivate' | 'outdoorPrivate' | 'single';

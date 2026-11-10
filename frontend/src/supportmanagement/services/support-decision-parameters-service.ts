@@ -82,7 +82,7 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.3' };
+const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.2' };
 const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision', version: '1.2' };
 
 /** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
@@ -382,7 +382,7 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     beverageWine: box(beverages, 'WINE'),
     beverageBeer: box(beverages, 'STRONG_BEER'),
     beverageOtherFermented: box(beverages, 'OTHER_FERMENTED_BEVERAGES'),
-    beverageAlcoholLikePreparations: box(beverages, 'ALCOHOL_LIKE_PREPARATIONS'),
+    beverageAlcoholLikePreparations: box(beverages, 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'),
     servingAreaDescription: stringAt(area.description),
     servingAreaDrawingReference: stringAt(area.drawingReference),
     servingAreaSeats: numberText(area.seatsIndoor),

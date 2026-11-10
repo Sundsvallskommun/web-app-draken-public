@@ -249,7 +249,7 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     'decision-1',
     'aot_alcohol_decision',
     {
-      schemaId: '2281_aot_alcohol_decision_1.3',
+      schemaId: '2281_aot_alcohol_decision_1.2',
       value: expect.objectContaining({
         servingPermitType: 'PERMANENT_SERVING',
         beverages: ['STRONG_BEER'],
@@ -266,15 +266,15 @@ test('a preparation is offered among the beverages and saved with them', async (
   await renderTab();
   fillWhatTheCertificatePrints();
 
-  expect(input('beverages-ALCOHOL_LIKE_PREPARATIONS').checked).toBe(false);
+  expect(input('beverages-ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS').checked).toBe(false);
 
-  fireEvent.click(input('beverages-ALCOHOL_LIKE_PREPARATIONS'));
+  fireEvent.click(input('beverages-ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'));
   fireEvent.change(input('serving-hours-indoorPublic-to'), { target: { value: '00:00' } });
 
   await expect(saveTheTab()).resolves.toBe(true);
 
   expect(sentJson().value).toMatchObject({
-    beverages: expect.arrayContaining(['STRONG_BEER', 'WINE', 'ALCOHOL_LIKE_PREPARATIONS']),
+    beverages: expect.arrayContaining(['STRONG_BEER', 'WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS']),
   });
 });
 
@@ -346,7 +346,7 @@ test('a decision saved against an older schema version is written against the on
   fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
   await expect(saveTheTab()).resolves.toBe(true);
 
-  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.3');
+  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.2');
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {

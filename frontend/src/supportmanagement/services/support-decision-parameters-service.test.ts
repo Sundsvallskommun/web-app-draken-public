@@ -189,7 +189,7 @@ describe('a serving permit', () => {
   test('a decided preparation ticks a box of its own, and leaves the four beverages alone', () => {
     const withPreparations = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
-      scope: { beverages: ['WINE', 'ALCOHOL_LIKE_PREPARATIONS'], servingHours: {} },
+      scope: { beverages: ['WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'], servingHours: {} },
     });
 
     expect(withPreparations).toMatchObject({
@@ -305,7 +305,7 @@ describe('the JSON of a serving permit', () => {
   });
 
   test('is saved against the schema of the permit area', () => {
-    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.3' });
+    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.2' });
     expect(decisionSchema('ECIGARETTFORSALJNING')).toEqual({ name: 'aot_tobacco_decision', version: '1.2' });
     expect(
       savedDecisionJson({ jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: 'x', value: saved }] })

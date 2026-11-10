@@ -480,7 +480,7 @@
         "WINE": "Vin",
         "SPIRITS": "Spritdrycker",
         "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker",
-        "ALCOHOL_LIKE_PREPARATIONS": "Alkoholdrycksliknande preparat"
+        "ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS": "Alkoholdrycksliknande preparat"
       },
       "serving_hours": {
         "heading": "Beslutade serveringstider",
