@@ -2,15 +2,22 @@ import type { Asset } from '@common/interfaces/asset';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
-import { getSupportErrands, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrands,
+  getSupportErrandsCount,
+  Status,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
 import {
-  countErrands,
+  CUSTOMER_ERRANDS_PAGE_SIZE,
   CustomerPlace,
   getCustomerByCustomerId,
+  getCustomerErrandCounts,
   getCustomerErrands,
+  getCustomerInspections,
   getCustomerPlaces,
   getLatestInspection,
   isOtherDrakeCase,
@@ -22,6 +29,7 @@ vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAs
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getSupportErrands: vi.fn(),
+  getSupportErrandsCount: vi.fn(),
 }));
 
 const MUNICIPALITY_ID = '2281';
@@ -193,20 +201,75 @@ const inspection = (id: string, touched: string, fields: object = {}) =>
 describe('getCustomerErrands', () => {
   beforeEach(() => vi.mocked(getSupportErrands).mockReset());
 
-  test("finds the customer's errands by its id", async () => {
-    vi.mocked(getSupportErrands).mockResolvedValue({ errands: [errand('own')], labels: [] } as never);
+  test("fetches the asked page of the customer's errands, the most recently active first", async () => {
+    vi.mocked(getSupportErrands).mockResolvedValue({ errands: [errand('own')], labels: [], totalPages: 75 } as never);
 
-    const errands = await getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID);
+    const result = await getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID, 3);
 
-    expect(errands.map(({ id }) => id)).toEqual(['own']);
-    expect(getSupportErrands).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(getSupportErrands).mock.calls[0][3]).toEqual({ query: CUSTOMER_ID });
+    expect(result.errands.map(({ id }) => id)).toEqual(['own']);
+    expect(result.totalPages).toBe(75);
+    expect(getSupportErrands).toHaveBeenCalledExactlyOnceWith(
+      MUNICIPALITY_ID,
+      3,
+      CUSTOMER_ERRANDS_PAGE_SIZE,
+      { query: CUSTOMER_ID },
+      { touched: 'desc' }
+    );
   });
 
   test('fails when the search fails', async () => {
     vi.mocked(getSupportErrands).mockResolvedValue({ errands: [], labels: [], error: '500' } as never);
 
-    await expect(getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID)).rejects.toThrow();
+    await expect(getCustomerErrands(MUNICIPALITY_ID, CUSTOMER_ID, 0)).rejects.toThrow();
+  });
+});
+
+describe('getCustomerErrandCounts', () => {
+  beforeEach(() => vi.mocked(getSupportErrandsCount).mockReset());
+
+  test('counts every errand of the customer, not only a page of them', async () => {
+    vi.mocked(getSupportErrandsCount).mockImplementation(async (_, filter) => (filter?.status ? 400 : 1500));
+
+    expect(await getCustomerErrandCounts(MUNICIPALITY_ID, CUSTOMER_ID)).toEqual({ ongoing: 1100, closed: 400 });
+    expect(getSupportErrandsCount).toHaveBeenCalledWith(MUNICIPALITY_ID, { query: CUSTOMER_ID });
+    expect(getSupportErrandsCount).toHaveBeenCalledWith(MUNICIPALITY_ID, {
+      query: CUSTOMER_ID,
+      status: Status.SOLVED,
+    });
+  });
+
+  test('fails when a count fails', async () => {
+    vi.mocked(getSupportErrandsCount).mockResolvedValueOnce(1500).mockResolvedValueOnce(null);
+
+    await expect(getCustomerErrandCounts(MUNICIPALITY_ID, CUSTOMER_ID)).rejects.toThrow();
+  });
+});
+
+describe('getCustomerInspections', () => {
+  beforeEach(() => vi.mocked(getSupportErrands).mockReset());
+
+  test("fetches every page of the customer's closed inspections", async () => {
+    vi.mocked(getSupportErrands)
+      .mockResolvedValueOnce({ errands: [errand('first')], labels: [], totalPages: 2 } as never)
+      .mockResolvedValueOnce({ errands: [errand('second')], labels: [], totalPages: 2 } as never);
+
+    const inspections = await getCustomerInspections(MUNICIPALITY_ID, CUSTOMER_ID);
+
+    expect(inspections.map(({ id }) => id)).toEqual(['first', 'second']);
+    expect(vi.mocked(getSupportErrands).mock.calls.map((call) => call[1])).toEqual([0, 1]);
+    expect(vi.mocked(getSupportErrands).mock.calls[0][3]).toEqual({
+      query: CUSTOMER_ID,
+      labelCategory: 'CATEGORYROOT/INSPECTION',
+      status: Status.SOLVED,
+    });
+  });
+
+  test('fails when a page fails', async () => {
+    vi.mocked(getSupportErrands)
+      .mockResolvedValueOnce({ errands: [errand('first')], labels: [], totalPages: 2 } as never)
+      .mockResolvedValueOnce({ errands: [], labels: [], error: '500' } as never);
+
+    await expect(getCustomerInspections(MUNICIPALITY_ID, CUSTOMER_ID)).rejects.toThrow();
   });
 });
 
@@ -233,12 +296,6 @@ describe('getLatestInspection', () => {
     const latest = inspection('latest', '2024-01-01', { jsonParameters: formOf({ pointOfSale: site }) });
 
     expect(getLatestInspection([latest], place, NAMESPACE)).toBe(latest);
-  });
-});
-
-describe('countErrands', () => {
-  test('counts closed errands and treats the rest as ongoing', () => {
-    expect(countErrands([errand('a'), errand('b', { status: Status.NEW })])).toEqual({ ongoing: 1, closed: 1 });
   });
 });
 

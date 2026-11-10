@@ -846,7 +846,7 @@ export const getSupportErrands: (
     });
 };
 
-const getSupportErrandsCount: (
+export const getSupportErrandsCount: (
   municipalityId: string,
   filter?: { [key: string]: string | boolean | number }
 ) => Promise<any> = (municipalityId, filter = {}) => {

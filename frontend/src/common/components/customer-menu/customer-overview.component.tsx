@@ -5,7 +5,7 @@ import {
   type InspectionKind,
   latestActiveAsset,
 } from '@common/services/customer-inspection-service';
-import { countErrands, Customer, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
+import { Customer, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Label, PopupMenu, Spinner, Table, useSnackbar } from '@sk-web-gui/react';
@@ -274,9 +274,9 @@ const Counter: FC<{ label: string; value: number | string }> = ({ label, value }
 
 /** Översikt tab of the customer view. */
 export const CustomerOverview: FC<{ customer: Customer; data: CustomerData }> = ({ customer, data }) => {
-  const { places, errands, engagements } = data;
-  const counts = errands.status === 'done' ? countErrands(errands.data) : undefined;
-  const count = (value: number | undefined) => value ?? (errands.status === 'error' ? '–' : '…');
+  const { places, inspections, errandCounts, engagements } = data;
+  const counts = errandCounts.status === 'done' ? errandCounts.data : undefined;
+  const count = (value: number | undefined) => value ?? (errandCounts.status === 'error' ? '–' : '…');
 
   return (
     <div className="flex flex-col gap-32" data-cy="customer-overview">
@@ -285,7 +285,7 @@ export const CustomerOverview: FC<{ customer: Customer; data: CustomerData }> = 
           data.length === 0 ? (
             <p className="m-0 text-dark-secondary">Inga ställen att visa.</p>
           ) : (
-            lookupContent(errands, 'Tillsyner kunde inte hämtas.', (found) => (
+            lookupContent(inspections, 'Tillsyner kunde inte hämtas.', (found) => (
               <>
                 {data.map((place) => (
                   <InspectionRow key={place.key} place={place} errands={found} />

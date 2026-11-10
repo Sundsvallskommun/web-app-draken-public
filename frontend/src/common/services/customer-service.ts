@@ -11,6 +11,7 @@ import { jsonParameterForSchema, schemaNameForErrand } from '@supportmanagement/
 import {
   closedStatuses,
   getSupportErrands,
+  getSupportErrandsCount,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
@@ -193,21 +194,72 @@ export const getCustomerPlaces = async (municipalityId: string, assets: Asset[])
 
 const ERRAND_LOOKUP_SIZE = 100;
 
+export const CUSTOMER_ERRANDS_PAGE_SIZE = 10;
+
 /** A tillsyn errand names its place in the form of its errand type, as premises or pointOfSale. */
 const concernsPlace = (errand: SupportErrand, place: CustomerPlace, namespace: string | undefined): boolean => {
   const form = (jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value ?? {}) as PartyAssetValue;
   return placeKeyOf(form.premises ?? form.pointOfSale) === place.key;
 };
 
-/** The customer's errands. Support Management searches no JSON parameters, so a place cannot be searched for. */
-export const getCustomerErrands = async (municipalityId: string, customerId: string): Promise<SupportErrand[]> => {
-  const result = await getSupportErrands(municipalityId, 0, ERRAND_LOOKUP_SIZE, {
-    query: encodeURIComponent(customerId),
+const customerFilter = (customerId: string) => ({ query: encodeURIComponent(customerId) });
+
+export interface CustomerErrandsPage {
+  errands: SupportErrand[];
+  totalPages: number;
+}
+
+/**
+ * One page of the customer's errands, the most recently active first.
+ * Support Management searches no JSON parameters, so a place cannot be searched for.
+ */
+export const getCustomerErrands = async (
+  municipalityId: string,
+  customerId: string,
+  page: number
+): Promise<CustomerErrandsPage> => {
+  const result = await getSupportErrands(municipalityId, page, CUSTOMER_ERRANDS_PAGE_SIZE, customerFilter(customerId), {
+    touched: 'desc',
   });
   if (result.error) {
     throw new Error(`Could not fetch errands: ${result.error}`);
   }
-  return result.errands ?? [];
+  return { errands: result.errands ?? [], totalPages: result.totalPages ?? 0 };
+};
+
+/** Counted by Support Management, so a customer with more errands than a page holds is counted in full. */
+export const getCustomerErrandCounts = async (
+  municipalityId: string,
+  customerId: string
+): Promise<{ ongoing: number; closed: number }> => {
+  const [all, closed] = await Promise.all([
+    getSupportErrandsCount(municipalityId, customerFilter(customerId)),
+    getSupportErrandsCount(municipalityId, { ...customerFilter(customerId), status: closedStatuses.join(',') }),
+  ]);
+  // The count answers null when it fails.
+  if (typeof all !== 'number' || typeof closed !== 'number') {
+    throw new Error('Could not count errands');
+  }
+  return { ongoing: all - closed, closed };
+};
+
+/** The customer's closed inspection errands, every page of them; a customer has few. */
+export const getCustomerInspections = async (municipalityId: string, customerId: string): Promise<SupportErrand[]> => {
+  const filter = {
+    ...customerFilter(customerId),
+    labelCategory: INSPECTION_LABEL_PATH,
+    status: closedStatuses.join(','),
+  };
+  const inspections: SupportErrand[] = [];
+  for (let page = 0, pages = 1; page < pages; page++) {
+    const result = await getSupportErrands(municipalityId, page, ERRAND_LOOKUP_SIZE, filter);
+    if (result.error) {
+      throw new Error(`Could not fetch inspections: ${result.error}`);
+    }
+    inspections.push(...(result.errands ?? []));
+    pages = result.totalPages ?? 0;
+  }
+  return inspections;
 };
 
 /** The organisation's errands according to Casestatus, which covers more than this Drake. */
@@ -222,11 +274,6 @@ export const isOtherDrakeCase = (status: CaseStatusResponse, ownNamespace: strin
   !!status.namespace && status.namespace !== ownNamespace;
 
 const isClosed = (errand: SupportErrand) => closedStatuses.includes(errand.status as Status);
-
-export const countErrands = (errands: SupportErrand[]): { ongoing: number; closed: number } => {
-  const closed = errands.filter(isClosed).length;
-  return { ongoing: errands.length - closed, closed };
-};
 
 const isInspection = (errand: SupportErrand) =>
   !!errand.labels?.some((label) => label.resourcePath?.startsWith(INSPECTION_LABEL_PATH));

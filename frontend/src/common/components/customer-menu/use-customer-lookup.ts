@@ -2,10 +2,13 @@
 
 import {
   CustomerAsset,
+  CustomerErrandsPage,
   CustomerPlace,
   getCustomerAssets,
   getCustomerEngagements,
+  getCustomerErrandCounts,
   getCustomerErrands,
+  getCustomerInspections,
   getCustomerPlaces,
   toCustomerAssets,
 } from '@common/services/customer-service';
@@ -43,7 +46,13 @@ export const useCustomerLookup = <T>(key: string, load: (() => Promise<T>) | und
 export interface CustomerData {
   assets: CustomerLookup<CustomerAsset[]>;
   places: CustomerLookup<CustomerPlace[]>;
-  errands: CustomerLookup<SupportErrand[]>;
+  /** The customer's closed inspections, for the Tillsyn card. */
+  inspections: CustomerLookup<SupportErrand[]>;
+  errandCounts: CustomerLookup<{ ongoing: number; closed: number }>;
+  /** The page of the Ärenden tab, kept here so that switching tabs does not fetch it again. */
+  errands: CustomerLookup<CustomerErrandsPage>;
+  errandsPage: number;
+  setErrandsPage: (page: number) => void;
   engagements: CustomerLookup<LegalEntityEngagement[]>;
 }
 
@@ -66,9 +75,20 @@ export const useCustomerData = (customerId: string): CustomerData => {
     key,
     municipalityId && knownAssets ? () => getCustomerPlaces(municipalityId, knownAssets) : undefined
   );
-  const errands = useCustomerLookup(
+  const inspections = useCustomerLookup(
     key,
-    municipalityId ? () => getCustomerErrands(municipalityId, customerId) : undefined
+    municipalityId ? () => getCustomerInspections(municipalityId, customerId) : undefined
+  );
+  const errandCounts = useCustomerLookup(
+    key,
+    municipalityId ? () => getCustomerErrandCounts(municipalityId, customerId) : undefined
+  );
+  // A page chosen for another customer is not carried over.
+  const [paging, setPaging] = useState({ key, page: 0 });
+  const errandsPage = paging.key === key ? paging.page : 0;
+  const errands = useCustomerLookup(
+    `${key}|${errandsPage}`,
+    municipalityId ? () => getCustomerErrands(municipalityId, customerId, errandsPage) : undefined
   );
   const engagements = useCustomerLookup(customerId, () => getCustomerEngagements(customerId));
 
@@ -76,7 +96,11 @@ export const useCustomerData = (customerId: string): CustomerData => {
   return {
     assets,
     places: failed ? fetchedAssets : places,
+    inspections,
+    errandCounts,
     errands,
+    errandsPage,
+    setErrandsPage: (page: number) => setPaging({ key, page }),
     engagements,
   };
 };
