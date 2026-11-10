@@ -15,6 +15,8 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { inspectionProtocolDate } from '@supportmanagement/services/support-inspection-protocol-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
@@ -243,8 +245,17 @@ export const getCustomerErrandCounts = async (
   return { ongoing: all - closed, closed };
 };
 
-/** The customer's closed inspection errands, every page of them; a customer has few. */
-export const getCustomerInspections = async (municipalityId: string, customerId: string): Promise<SupportErrand[]> => {
+export interface CustomerInspection {
+  errand: SupportErrand;
+  /** The date the protocol gives, YYYY-MM-DD; missing when the protocol has none. */
+  date?: string;
+}
+
+/** The customer's closed inspection errands, every page of them (a customer has few), dated by their protocols. */
+export const getCustomerInspections = async (
+  municipalityId: string,
+  customerId: string
+): Promise<CustomerInspection[]> => {
   const filter = {
     ...customerFilter(customerId),
     labelCategory: INSPECTION_LABEL_PATH,
@@ -259,7 +270,12 @@ export const getCustomerInspections = async (municipalityId: string, customerId:
     inspections.push(...(result.errands ?? []));
     pages = result.totalPages ?? 0;
   }
-  return inspections;
+  return Promise.all(
+    inspections.map(async (errand) => ({
+      errand,
+      date: inspectionProtocolDate(await getSupportInvestigation(errand.id!, municipalityId)),
+    }))
+  );
 };
 
 /** The organisation's errands according to Casestatus, which covers more than this Drake. */
@@ -278,12 +294,15 @@ const isClosed = (errand: SupportErrand) => closedStatuses.includes(errand.statu
 const isInspection = (errand: SupportErrand) =>
   !!errand.labels?.some((label) => label.resourcePath?.startsWith(INSPECTION_LABEL_PATH));
 
-/** The most recently active closed inspection errand of the place. */
+/** The place's closed inspection with the latest protocol date; one without a date cannot be placed and is left out. */
 export const getLatestInspection = (
-  errands: SupportErrand[],
+  inspections: CustomerInspection[],
   place: CustomerPlace,
   namespace: string | undefined
-): SupportErrand | undefined =>
-  errands
-    .filter((errand) => isInspection(errand) && isClosed(errand) && concernsPlace(errand, place, namespace))
-    .sort((a, b) => (b.touched ?? '').localeCompare(a.touched ?? ''))[0];
+): CustomerInspection | undefined =>
+  inspections
+    .filter(
+      ({ errand, date }) =>
+        !!date && isInspection(errand) && isClosed(errand) && concernsPlace(errand, place, namespace)
+    )
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];

@@ -3,6 +3,7 @@
 import {
   CustomerAsset,
   CustomerErrandsPage,
+  CustomerInspection,
   CustomerPlace,
   getCustomerAssets,
   getCustomerEngagements,
@@ -13,7 +14,6 @@ import {
   toCustomerAssets,
 } from '@common/services/customer-service';
 import { useConfigStore } from '@stores/index';
-import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useMemo, useState } from 'react';
 import type { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
@@ -47,7 +47,7 @@ export interface CustomerData {
   assets: CustomerLookup<CustomerAsset[]>;
   places: CustomerLookup<CustomerPlace[]>;
   /** The customer's closed inspections, for the Tillsyn card. */
-  inspections: CustomerLookup<SupportErrand[]>;
+  inspections: CustomerLookup<CustomerInspection[]>;
   errandCounts: CustomerLookup<{ ongoing: number; closed: number }>;
   /** The page of the Ärenden tab, kept here so that switching tabs does not fetch it again. */
   errands: CustomerLookup<CustomerErrandsPage>;

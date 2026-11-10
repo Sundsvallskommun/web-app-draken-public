@@ -8,6 +8,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
@@ -26,6 +27,7 @@ import {
 
 vi.mock('@common/services/legal-entity-service', () => ({ getCompanyProfileByPartyId: vi.fn() }));
 vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAssignments: vi.fn() }));
+vi.mock('@supportmanagement/services/support-investigation-service', () => ({ getSupportInvestigation: vi.fn() }));
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getSupportErrands: vi.fn(),
@@ -190,13 +192,14 @@ const formOf = (site: object) => [
 ];
 const errand = (id: string, fields: object = {}) =>
   ({ id, status: Status.SOLVED, ...fields } as unknown as SupportErrand);
-const inspection = (id: string, touched: string, fields: object = {}) =>
-  errand(id, {
-    touched,
+const inspection = (id: string, date: string | undefined, fields: object = {}) => ({
+  errand: errand(id, {
     labels: inspectionLabels,
     jsonParameters: formOf({ premises: { restaurantNumber: NUMBER } }),
     ...fields,
-  });
+  }),
+  date,
+});
 
 describe('getCustomerErrands', () => {
   beforeEach(() => vi.mocked(getSupportErrands).mockReset());
@@ -246,7 +249,10 @@ describe('getCustomerErrandCounts', () => {
 });
 
 describe('getCustomerInspections', () => {
-  beforeEach(() => vi.mocked(getSupportErrands).mockReset());
+  beforeEach(() => {
+    vi.mocked(getSupportErrands).mockReset();
+    vi.mocked(getSupportInvestigation).mockReset().mockResolvedValue(undefined);
+  });
 
   test("fetches every page of the customer's closed inspections", async () => {
     vi.mocked(getSupportErrands)
@@ -255,7 +261,7 @@ describe('getCustomerInspections', () => {
 
     const inspections = await getCustomerInspections(MUNICIPALITY_ID, CUSTOMER_ID);
 
-    expect(inspections.map(({ id }) => id)).toEqual(['first', 'second']);
+    expect(inspections.map(({ errand: { id } }) => id)).toEqual(['first', 'second']);
     expect(vi.mocked(getSupportErrands).mock.calls.map((call) => call[1])).toEqual([0, 1]);
     expect(vi.mocked(getSupportErrands).mock.calls[0][3]).toEqual({
       query: CUSTOMER_ID,
@@ -271,12 +277,34 @@ describe('getCustomerInspections', () => {
 
     await expect(getCustomerInspections(MUNICIPALITY_ID, CUSTOMER_ID)).rejects.toThrow();
   });
+
+  test('dates each inspection by the inspection date in its protocol', async () => {
+    vi.mocked(getSupportErrands).mockResolvedValue({ errands: [errand('dated')], labels: [], totalPages: 1 } as never);
+    vi.mocked(getSupportInvestigation).mockResolvedValue({
+      type: 'internal_inspection',
+      jsonParameters: [
+        { key: 'aot_other', schemaId: 'other', value: { inspectionDate: '1999-01-01' } },
+        {
+          key: 'aot_inspection_internal',
+          schemaId: `${MUNICIPALITY_ID}_aot_inspection_internal_1.0`,
+          value: { inspectionDate: '2026-11-10' },
+        },
+      ],
+    } as never);
+
+    const [dated] = await getCustomerInspections(MUNICIPALITY_ID, CUSTOMER_ID);
+
+    expect(dated.date).toBe('2026-11-10');
+    expect(getSupportInvestigation).toHaveBeenCalledWith('dated', MUNICIPALITY_ID);
+  });
 });
 
 describe('getLatestInspection', () => {
-  test('picks the latest closed inspection of the place, as its errand type form names it', () => {
+  test('picks the closed inspection of the place with the latest protocol date, as its errand type form names it', () => {
     const latest = inspection('latest', '2024-01-01');
     const errands = [
+      inspection('touched later, inspected earlier', '2023-06-01', { touched: '2026-01-01' }),
+      inspection('no protocol date', undefined),
       inspection('older', '2023-01-01'),
       latest,
       inspection('ongoing', '2025-01-01', { status: Status.ONGOING }),
