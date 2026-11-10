@@ -26,7 +26,7 @@ export const APIS = [
   },
   {
     name: 'messaging',
-    version: '7.10',
+    version: '7.11',
   },
   {
     name: 'case-data',
@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '18.1',
+    version: '18.4',
   },
   {
     name: 'supportmanagement-sprint',
@@ -70,7 +70,7 @@ export const APIS = [
   },
   {
     name: 'partyassets',
-    version: '6.5',
+    version: '6.10',
   },
   {
     name: 'jsonschema',

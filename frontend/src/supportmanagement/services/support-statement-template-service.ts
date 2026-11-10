@@ -63,6 +63,7 @@ interface SupportReferralTemplate extends SupportStatementTemplate {
   permitKinds?: PermitKindName[];
   companies?: boolean;
   additionalText?: boolean;
+  recipientContact?: { defaultEmail: string };
 }
 
 const GENERAL_TEMPLATE = 'referral-general';
@@ -80,6 +81,7 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
     counterpartyKey: 'POLICE',
     persons: SupportReferralPersons.LISTED,
     additionalText: true,
+    recipientContact: { defaultEmail: 'registrator.nord@polisen.se' },
   },
   {
     identifier: 'criminal-record-request',
@@ -177,6 +179,9 @@ export const supportStatementTemplateAsksForCompanies = (identifier: string): bo
 
 export const supportStatementTemplateTakesAFreeText = (identifier: string): boolean =>
   !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.additionalText;
+
+export const supportStatementTemplateRecipientContact = (identifier: string): { defaultEmail: string } | undefined =>
+  SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.recipientContact;
 
 export interface SupportReferralPerson {
   partyId: string;
@@ -308,7 +313,7 @@ const MUNICIPALITY_OF_CODE: Record<string, string> = {
 const MUNICIPALITY_WITHOUT_A_CODE = 'Sundsvalls kommun';
 
 const municipalityOfErrand = (errand: SupportErrand | undefined): string =>
-  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, 'premisesMunicipality')] ??
+  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, 'premisesMunicipalityId')] ??
   MUNICIPALITY_WITHOUT_A_CODE;
 
 /**
@@ -333,7 +338,12 @@ export interface SupportStatementTemplateFacts {
   person?: SupportReferralPerson;
   companies?: Record<string, ChosenCompany[]>;
   freeText?: string;
+  recipientAttention?: string;
+  recipientEmail?: string;
+  handlerMunicipality?: string;
 }
+
+export const SUPPORT_STATEMENT_HANDLER_MUNICIPALITY = 'Sundsvalls kommun';
 
 const listedPeople = (people: SupportReferralPerson[] | undefined) =>
   (people ?? []).map((person) => ({
@@ -357,6 +367,7 @@ const listedRepresentatives = (
 
 export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => ({
   additionalText: facts.freeText ?? '',
+  handlerMunicipality: facts.handlerMunicipality || SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
   ...parametersOfTemplate(facts),
 });
 
@@ -433,6 +444,8 @@ const parametersOfTemplate = (facts: SupportStatementTemplateFacts): Record<stri
       caseNumber,
       documentDate,
       handlerName: facts.handlerName,
+      recipientAttention: facts.recipientAttention ?? '',
+      recipientEmail: facts.recipientEmail ?? '',
       ...premisesFields,
       persons: listedPeople(facts.people),
     };

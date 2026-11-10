@@ -188,8 +188,7 @@ export class CaseDataConversationController {
       console.log('Something went wrong when getting conversation attachment: ' + e);
       throw e;
     });
-    const binaryString = Array.from(new Uint8Array(response.data), v => String.fromCharCode(v)).join('');
-    const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+    const b64 = Buffer.from(response.data).toString('base64');
     return { data: b64, message: `Success` };
   }
 }

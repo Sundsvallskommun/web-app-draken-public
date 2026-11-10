@@ -24,7 +24,6 @@ import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
-import bodyParser from 'body-parser';
 import { defaultMetadataStorage } from 'class-transformer/cjs/storage';
 import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
 import compression from 'compression';
@@ -292,7 +291,7 @@ class App {
       },
     );
 
-    this.app.get(`${BASE_URL_PREFIX}/saml/logout/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
+    this.app.get(`${BASE_URL_PREFIX}/saml/logout/callback`, samlLimiter, express.urlencoded({ extended: false }), (req, res, next) => {
       req.logout(err => {
         if (err) {
           return next(err);
@@ -329,7 +328,7 @@ class App {
       });
     });
 
-    this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
+    this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, express.urlencoded({ extended: false }), (req, res, next) => {
       let successRedirect: URL, failureRedirect: URL;
 
       const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { completeSupportDecision, getSupportDecisions } from '@supportmanagement/services/support-decision-service';
 import {
   getSupportErrandById,
@@ -7,10 +8,12 @@ import {
   setSupportErrandStatus,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { inspectionProtocolSummary } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
   completeSupportInvestigation,
   getSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
+import { getSupportMeasures } from '@supportmanagement/services/support-measure-service';
 import {
   getSupportErrandProcessState,
   sendSupportProcessSignal,
@@ -45,9 +48,12 @@ vi.mock('@supportmanagement/services/support-errand-service', () => ({
   setSupportErrandAdmin: vi.fn(),
   setSupportErrandStatus: vi.fn(),
   getMostSpecificLabelType: () => undefined,
+  supportErrandHasAnIdentifiedApplicant: (errand: { customer?: { externalId?: string }[] } | undefined) =>
+    (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId),
   Status: { ONGOING: 'ONGOING', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: { CLOSED: 'CLOSED' },
 }));
+vi.mock('@common/components/json/utils/schema-utils', () => ({ getLatestRjsfSchema: vi.fn() }));
 vi.mock('@supportmanagement/services/support-statement-service', () => ({
   getSupportStatements: vi.fn().mockResolvedValue([]),
   isSupportStatementAwaitingAnswer: (statement: { status?: string }) => statement.status === 'ACTIVE',
@@ -57,6 +63,14 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   ...(await importOriginal<object>()),
   getSupportInvestigation: vi.fn(),
   completeSupportInvestigation: vi.fn(),
+}));
+vi.mock('@supportmanagement/services/support-inspection-protocol-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  inspectionProtocolSummary: vi.fn(),
+}));
+vi.mock('@supportmanagement/services/support-measure-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getSupportMeasures: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-process-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -72,7 +86,13 @@ const CERTIFICATE_JSON = {
   externalCaseRegistrationNumber: 'ifyllt',
   premises: { address: { street: 'ifyllt', postalCode: '000 01', city: 'ifyllt' }, phoneNumber: 'ifyllt' },
   servingArea: { description: 'ifyllt' },
-  decision: { decisionText: 'ifyllt', decisionMaker: 'ifyllt', validFrom: '2026-11-01', executionDate: '2026-11-01' },
+  decision: {
+    decisionText: 'ifyllt',
+    clauses: 'ifyllt',
+    decisionMaker: 'ifyllt',
+    validFrom: '2026-11-01',
+    executionDate: '2026-11-01',
+  },
 };
 
 const aDecision = (value: object = CERTIFICATE_JSON) => [
@@ -80,11 +100,11 @@ const aDecision = (value: object = CERTIFICATE_JSON) => [
     id: 'decision-1',
     decisionType: 'PROPOSED',
     outcome: 'APPROVAL',
-    jsonParameters: [{ key: 'permit', schemaId: '2281_aot_alcohol_decision_1.0', value }],
+    jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: '2281_aot_alcohol_decision_1.0', value }],
   },
 ];
 
-const errandAt = (currentActivityId: string, awaitingSignals: string[]): SupportErrand =>
+const errandAt = (currentActivityId: string, awaitingSignals: string[], processKey?: string): SupportErrand =>
   ({
     id: ERRAND_ID,
     status: 'ONGOING',
@@ -94,6 +114,7 @@ const errandAt = (currentActivityId: string, awaitingSignals: string[]): Support
       processStatus: 'WAITING',
       currentActivityId,
       awaitingSignals: awaitingSignals.map((name) => ({ name })),
+      ...(processKey ? { processKey } : {}),
     },
   } as unknown as SupportErrand);
 
@@ -143,6 +164,8 @@ beforeEach(() => {
   vi.mocked(completeSupportInvestigation)
     .mockReset()
     .mockResolvedValue({ id: 'investigation-1', status: 'COMPLETED' } as never);
+  vi.mocked(inspectionProtocolSummary).mockReset();
+  vi.mocked(getSupportMeasures).mockReset().mockResolvedValue([]);
   vi.mocked(sendSupportProcessSignal).mockReset().mockResolvedValue(undefined);
   vi.mocked(startSupportProcess).mockReset().mockResolvedValue(undefined);
   vi.mocked(getSupportErrandProcessState).mockReset();
@@ -223,6 +246,97 @@ test('the decision is read again for the gate, so one saved after the list was r
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
 });
 
+const INSPECTION_DECISION_GATES = ['action_errand_requested', 'inspection_approved', 'process_cancelled'];
+
+const anInspectionInDecision = () => {
+  const process = {
+    processKey: 'internal-inspection',
+    processStatus: 'WAITING',
+    currentActivityId: 'decision_phase',
+    awaitingSignals: INSPECTION_DECISION_GATES.map((name) => ({ name })),
+  };
+  useSupportStore.setState({ supportErrand: { ...errandAt('decision_phase', []), process } as SupportErrand });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({ process, startability: 'LIVE_INSTANCE' } as never);
+};
+
+test('an inspection that requires action is not sent on without an action point to carry over', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('actionRequired');
+  vi.mocked(getSupportMeasures).mockResolvedValue([
+    { id: 'control-1', type: 'INTERNAL', status: 'ACTIVE', result: 'NOT_COMPLETED' },
+    { id: 'action-1', type: 'EXTERNAL', status: 'INACTIVE' },
+  ]);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.action_points_needed', status: 'error' })
+    )
+  );
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an inspection that requires action is sent on once it has an active action point', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('actionRequired');
+  vi.mocked(getSupportMeasures).mockResolvedValue([{ id: 'action-1', type: 'EXTERNAL', status: 'ACTIVE' }]);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'action_errand_requested')
+  );
+});
+
+test('an approved inspection needs no action points', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('approved');
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inspection_approved'));
+  expect(getSupportMeasures).not.toHaveBeenCalled();
+});
+
+test('an inspection the process has already moved on from concludes the draft instead of asking for a summary', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('approved');
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processKey: 'internal-inspection',
+      processStatus: 'WAITING',
+      currentActivityId: 'follow_up_phase',
+      awaitingSignals: [{ name: 'follow_up_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.start_follow_up.done' })
+    )
+  );
+  expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
 test('ready for decision completes the investigation before the signal, since the protocol is built from it', async () => {
   useSupportStore.setState({
     supportErrand: errandAt('investigation_phase', ['investigation_completed', 'process_cancelled']),
@@ -277,6 +391,47 @@ test('an investigation already completed is not completed again', async () => {
     expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation_completed')
   );
   expect(completeSupportInvestigation).not.toHaveBeenCalled();
+});
+
+const takeTheErrandToDecision = async (processKey: string) => {
+  const underInvestigation = errandAt('investigation_phase', ['investigation_completed'], processKey);
+  useSupportStore.setState({ supportErrand: underInvestigation });
+  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: underInvestigation } as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'investigation_phase',
+      awaitingSignals: [{ name: 'investigation_completed' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  (await theButton('ready_for_decision')).click();
+};
+
+test('a process that files the decision basis says where the handler finds it', async () => {
+  await takeTheErrandToDecision('alcohol-serving');
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'common:process.actions.ready_for_decision.done_with_decision_basis',
+        status: 'success',
+      })
+    )
+  );
+});
+
+test('a process that files no decision basis promises none', async () => {
+  await takeTheErrandToDecision('internal-inspection');
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.ready_for_decision.done', status: 'success' })
+    )
+  );
 });
 
 test('a phase whose gate the process no longer offers says so instead of saying it is done', async () => {
@@ -510,4 +665,142 @@ test('a process that failed is not offered a restart from the errand page', asyn
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(getSupportErrandProcessState).not.toHaveBeenCalled();
   expect(document.querySelector('[data-cy="process-action-start_process"]')).toBeNull();
+});
+
+/** The folköl schema as the jsonschema service publishes it, cut to its attachment declaration. */
+const FOLKOL_SCHEMA = {
+  type: 'object',
+  'x-attachments': [
+    {
+      key: 'POWER_OF_ATTORNEY',
+      label: 'Fullmakt',
+      requiredWhen: { properties: { arDuFirmatecknare: { const: 'NEJ' } }, required: ['arDuFirmatecknare'] },
+    },
+  ],
+};
+
+const SCHEMA_NAME = 'aot_alcohol_folkol_folkol_serving_notification';
+
+const identifiedApplicant = { role: 'PRIMARY', externalId: 'a3f1c2e4-0000-4000-8000-000000000001' };
+
+const errandInRegistration = (over: Partial<SupportErrand> = {}): SupportErrand =>
+  ({
+    id: ERRAND_ID,
+    status: 'NEW',
+    modified: '2026-11-05T10:00:00Z',
+    labels: [
+      { classification: 'CATEGORY', resourceName: 'ALCOHOL' },
+      { classification: 'TYPE', resourceName: 'FOLKOL' },
+      { classification: 'SUBTYPE', resourceName: 'FOLKOL_SERVING_NOTIFICATION' },
+    ],
+    customer: [identifiedApplicant],
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'JA' }, schemaId: `${SCHEMA_NAME}-id` }],
+    process: {
+      processInstanceId: 'process-1',
+      processStatus: 'WAITING',
+      currentActivityId: 'registration_phase',
+      awaitingSignals: [{ name: 'registration_completed' }],
+    },
+    ...over,
+  } as unknown as SupportErrand);
+
+const startTheHandling = async (supportErrand: SupportErrand) => {
+  useSupportStore.setState({ supportErrand, activeTabKey: 'messages' });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: supportErrand.process,
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  const button = await theButton('start_handling');
+  button.click();
+};
+
+beforeEach(() => {
+  vi.mocked(getLatestRjsfSchema)
+    .mockReset()
+    .mockResolvedValue({ schema: FOLKOL_SCHEMA } as never);
+  useMetadataStore.setState({ supportMetadata: { namespace: 'AOT' } as never });
+});
+
+test('the handling does not start on an errand without an identified applicant', async () => {
+  await startTheHandling(errandInRegistration({ customer: [] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an applicant without a party id is not an applicant the process can use', async () => {
+  await startTheHandling(errandInRegistration({ customer: [{ role: 'PRIMARY' }] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('basics'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('the handling does not start before the errand details have been filled in', async () => {
+  await startTheHandling(errandInRegistration({ jsonParameters: [] } as never));
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('details'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('the handling does not start while an attachment the errand type asks for is missing', async () => {
+  const errand = errandInRegistration({
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'NEJ' }, schemaId: `${SCHEMA_NAME}-id` }],
+  } as never);
+
+  await startTheHandling(errand);
+
+  await waitFor(() => expect(useSupportStore.getState().activeTabKey).toBe('attachments'));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an uploaded attachment with the right purpose lets the handling start', async () => {
+  useSupportStore.setState({
+    supportAttachments: [
+      {
+        id: 'attachment-1',
+        fileName: 'fullmakt.pdf',
+        mimeType: 'application/pdf',
+        purpose: { name: 'POWER_OF_ATTORNEY' },
+      },
+    ] as never,
+  });
+  const errand = errandInRegistration({
+    jsonParameters: [{ key: SCHEMA_NAME, value: { arDuFirmatecknare: 'NEJ' }, schemaId: `${SCHEMA_NAME}-id` }],
+  } as never);
+
+  await startTheHandling(errand);
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+  useSupportStore.setState({ supportAttachments: undefined });
+});
+
+test('a complete errand starts its handling', async () => {
+  await startTheHandling(errandInRegistration());
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+});
+
+test('an errand type that publishes no schema asks for no details and no attachments', async () => {
+  vi.mocked(getLatestRjsfSchema).mockRejectedValue({ response: { status: 404 } });
+
+  await startTheHandling(errandInRegistration({ jsonParameters: [] } as never));
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'registration_completed')
+  );
+});
+
+test('a schema that cannot be read holds the step rather than passing it on a guess', async () => {
+  vi.mocked(getLatestRjsfSchema).mockRejectedValue({ response: { status: 503 } });
+
+  await startTheHandling(errandInRegistration());
+
+  await waitFor(() => expect(toast).toHaveBeenCalled());
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });

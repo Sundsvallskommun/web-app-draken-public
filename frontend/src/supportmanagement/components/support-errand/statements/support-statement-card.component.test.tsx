@@ -2,6 +2,7 @@
 import { searchPerson } from '@common/services/adress-service';
 import { getLegalEntityEngagements, getLegalEntityPersonEngagements } from '@common/services/legal-entity-service';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { hyphenatedIdentity } from '@supportmanagement/services/support-pbi-service';
 import { supportStatementTemplateParameters } from '@supportmanagement/services/support-statement-template-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
@@ -179,6 +180,8 @@ test('a person the errand knows is offered their companies, and loses the offer 
   // A marked person is listed in the request from the start, so their companies are offered at once.
   await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-select`)).toBeTruthy());
   expect(getLegalEntityPersonEngagements).toHaveBeenCalledWith(ERICAS_PARTY_ID);
+  // Erica is listed before the company data is read, and the card is locked until it is.
+  await waitFor(() => expect(checkboxOf('Erica Fritz').disabled).toBe(false));
 
   fireEvent.click(checkboxOf('Erica Fritz'));
 
@@ -225,11 +228,19 @@ test('a company ticked for a person reaches the template under that person', asy
   chooseTheTaxAgencyTemplate();
 
   // Two hops before the option is there: the company data, then that person's engagements.
-  await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`)).toBeTruthy(), {
-    timeout: 5000,
-  });
+  // The choice can show up while the company data is still being read, and the card is locked until it is.
+  const companyInput = () =>
+    document.querySelector(
+      `[data-cy="statement-companies-${ERICAS_PARTY_ID}"] input.sk-form-combobox-select`
+    ) as HTMLInputElement | null;
+  await waitFor(() => expect(companyInput()?.disabled).toBe(false), { timeout: 5000 });
 
-  fireEvent.click(findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`) as HTMLElement);
+  // The list keeps the options it rendered until it is opened, so open it as the handler would.
+  fireEvent.click(companyInput() as HTMLInputElement);
+  const option = () => findOf(`statement-companies-${ERICAS_PARTY_ID}-option-${DRIVEN}`) as HTMLInputElement | null;
+  await waitFor(() => expect(option()?.disabled).toBe(false));
+
+  fireEvent.click(option() as HTMLInputElement);
 
   await waitFor(() => expect(findOf(`statement-companies-${ERICAS_PARTY_ID}-chip-${DRIVEN}`)).toBeTruthy());
 
@@ -370,4 +381,101 @@ test('a referral of its own that has been answered cannot be taken back', () => 
 
   expect((findOf('statement-document-name') as HTMLInputElement).disabled).toBe(true);
   expect((findOf('statement-remove') as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('the police referral carries the contact the handler addressed it to', () => {
+  const addressed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+    recipientAttention: 'Karin Vakt',
+    recipientEmail: 'karin.vakt@polisen.se',
+  });
+
+  expect(addressed.recipientAttention).toBe('Karin Vakt');
+  expect(addressed.recipientEmail).toBe('karin.vakt@polisen.se');
+});
+
+test('a police referral addressed to nobody sends the fields empty, for the template to fall back on', () => {
+  const unaddressed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+  });
+
+  expect(unaddressed.recipientAttention).toBe('');
+  expect(unaddressed.recipientEmail).toBe('');
+});
+
+test('the municipality is read from the errand parameter the e-service writes', () => {
+  const errandInTimra = {
+    parameters: [{ key: 'premisesMunicipalityId', values: ['2262'] }],
+  } as unknown as SupportErrand;
+
+  const parameters = supportStatementTemplateParameters({
+    identifier: 'tax-agency-request-serving',
+    errand: errandInTimra,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Skatteverket',
+    dueAt: '2026-12-01',
+    people: [],
+  });
+
+  expect(parameters.municipality).toBe('Timrå kommun');
+});
+
+test('the underlay is signed by whoever the handler says is asking', () => {
+  const signed = supportStatementTemplateParameters({
+    identifier: 'referral-police',
+    errand: undefined,
+    handlerName: 'Karin Chef',
+    handlerEmail: 'annika@sundsvall.se',
+    handlerMunicipality: 'Timrå kommun',
+    counterpartyName: 'Polismyndigheten',
+    dueAt: '',
+    people: [],
+  });
+
+  expect(signed.handlerName).toBe('Karin Chef');
+  expect(signed.handlerMunicipality).toBe('Timrå kommun');
+});
+
+test('an underlay with no municipality of its own is signed by the unit own', () => {
+  const signed = supportStatementTemplateParameters({
+    identifier: 'referral-rescue-service',
+    errand: undefined,
+    handlerName: 'Annika Jansson',
+    handlerEmail: 'annika@sundsvall.se',
+    counterpartyName: 'Räddningstjänsten',
+    dueAt: '2026-12-01',
+    people: [],
+  });
+
+  expect(signed.handlerMunicipality).toBe('Sundsvalls kommun');
+});
+
+test('the handler types a contact and a submitter, and the fields keep what was typed', () => {
+  mountCard(true, 'Polismyndigheten');
+  chooseTemplate('referral-police');
+
+  const typeInto = (name: string, value: string) =>
+    fireEvent.change(findOf(name) as HTMLInputElement, { target: { value } });
+
+  typeInto('statement-recipient-name', 'Karin Vakt');
+  typeInto('statement-recipient-email', 'karin.vakt@polisen.se');
+  typeInto('statement-submitter-municipality', 'Timrå kommun');
+
+  expect((findOf('statement-recipient-name') as HTMLInputElement).value).toBe('Karin Vakt');
+  expect((findOf('statement-recipient-email') as HTMLInputElement).value).toBe('karin.vakt@polisen.se');
+  expect((findOf('statement-submitter-municipality') as HTMLInputElement).value).toBe('Timrå kommun');
+  expect((findOf('statement-submitter-name') as HTMLInputElement).value).toBe('Annika Jansson');
 });

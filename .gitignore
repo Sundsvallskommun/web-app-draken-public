@@ -12,3 +12,6 @@ docs/jira
 docs/plans
 docs/testing
 docs/templates
+
+# Local Node-RED for development only
+mock/node-red/

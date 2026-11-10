@@ -68,12 +68,20 @@ export const inspectionProtocolValuesOf = (
   return Object.fromEntries(fieldsOf(template).map((field) => [field.key, initialValueOf(field, prefills)]));
 };
 
-/** The summary chosen in the protocol, e.g. 'approved' or 'actionRequired'. */
-export const inspectionProtocolSummary = (investigation: SupportInvestigation | undefined): string | undefined => {
+/** An answer in the protocol, found under the schema of the investigation's template rather than by position. */
+const protocolAnswer = (investigation: SupportInvestigation | undefined, key: string): string | undefined => {
   const template = inspectionProtocolTemplate(investigation?.type);
-  const summary = template && jsonParameterObject(investigation?.jsonParameters, template.schema.name)?.summary;
-  return typeof summary === 'string' ? summary : undefined;
+  const answer = template && jsonParameterObject(investigation?.jsonParameters, template.schema.name)?.[key];
+  return typeof answer === 'string' && answer ? answer : undefined;
 };
+
+/** The summary chosen in the protocol, e.g. 'approved' or 'actionRequired'. */
+export const inspectionProtocolSummary = (investigation: SupportInvestigation | undefined): string | undefined =>
+  protocolAnswer(investigation, 'summary');
+
+/** The date of the inspection as the protocol has it, YYYY-MM-DD. */
+export const inspectionProtocolDate = (investigation: SupportInvestigation | undefined): string | undefined =>
+  protocolAnswer(investigation, 'inspectionDate');
 
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((candidate): candidate is string => typeof candidate === 'string') : [];

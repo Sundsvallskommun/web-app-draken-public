@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsInt, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
@@ -12,7 +12,13 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { readJsonParameters, WithJsonParameters, writeJsonParameter, WriteSupportJsonParameterDto } from '@/services/support-json-parameter.service';
+import {
+  deleteJsonParameter,
+  readJsonParameters,
+  WithJsonParameters,
+  writeJsonParameter,
+  WriteSupportJsonParameterDto,
+} from '@/services/support-json-parameter.service';
 import { apiURL } from '@/utils/util';
 
 const ACTIVE_STATUS = 'ACTIVE';
@@ -403,6 +409,25 @@ export class SupportInvestigationController {
     }
 
     await writeJsonParameter(this.apiService, this.investigationUrl(municipalityId, id, investigationId), key, data, req.user);
+    return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
+  }
+
+  @Delete('/supportinvestigations/:municipalityId/:id/:investigationId/json-parameters/:key')
+  @OpenAPI({ summary: 'Delete a JSON parameter of the investigation, such as the answers of a replaced inspection protocol' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
+  async deleteInvestigationJsonParameter(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('investigationId') investigationId: string,
+    @Param('key') key: string,
+    @Res() response: any,
+  ): Promise<any> {
+    if (municipalityId !== MUNICIPALITY_ID) {
+      return response.status(400).send('Invalid municipality id');
+    }
+
+    await deleteJsonParameter(this.apiService, this.investigationUrl(municipalityId, id, investigationId), key, req.user);
     return response.status(200).send(await this.readInvestigation(municipalityId, id, investigationId, req.user));
   }
 

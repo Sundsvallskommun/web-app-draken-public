@@ -12,7 +12,7 @@ import {
   type JsonObject,
   jsonParameterObject,
   sameJson,
-  type SupportJsonParameterSpec,
+  type SupportJsonSchema,
   supportSchemaId,
 } from '@supportmanagement/services/support-json-parameter-service';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -39,21 +39,20 @@ const differs = (a: SectionValues, b: SectionValues, field: SectionField): boole
 export const useInvestigationSectionSave = (
   { section, investigationId, writable, onEdited, onSaved, saveRef }: InvestigationSectionProps,
   saveFailedKey: string,
-  jsonParameter?: SupportJsonParameterSpec
+  jsonSchema?: SupportJsonSchema
 ) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
-  const jsonKey = jsonParameter?.key;
   const written = useMemo<SectionValues>(
     () => ({
       text: section.text ?? '',
       assessment: section.assessment ?? '',
-      json: (jsonKey && jsonParameterObject(section.jsonParameters, jsonKey)) || {},
+      json: (jsonSchema && jsonParameterObject(section.jsonParameters, jsonSchema.name)) || {},
     }),
-    [section.text, section.assessment, section.jsonParameters, jsonKey]
+    [section.text, section.assessment, section.jsonParameters, jsonSchema]
   );
   const [values, setValues] = useState(written);
   const [loaded, setLoaded] = useState(written);
@@ -96,14 +95,14 @@ export const useInvestigationSectionSave = (
       if (Object.keys(fields).length > 0) {
         saved = await saveSupportInvestigationSection(errandId, municipalityId, investigationId, section.id, fields);
       }
-      if (json && jsonParameter) {
+      if (json && jsonSchema) {
         saved = await saveSupportInvestigationSectionJsonParameter(
           errandId,
           municipalityId,
           investigationId,
           section.id,
-          jsonParameter.key,
-          { schemaId: supportSchemaId(municipalityId, jsonParameter.schema), value: json }
+          jsonSchema.name,
+          { schemaId: supportSchemaId(municipalityId, jsonSchema), value: json }
         );
       }
       if (saved) onSaved(saved);
@@ -119,7 +118,7 @@ export const useInvestigationSectionSave = (
     changedFields,
     errandId,
     investigationId,
-    jsonParameter,
+    jsonSchema,
     municipalityId,
     onSaved,
     saveFailedKey,

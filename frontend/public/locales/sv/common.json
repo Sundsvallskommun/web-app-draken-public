@@ -281,6 +281,7 @@
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
       "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
       "inspection_summary_needed": "Välj Godkänd eller Godkänd, men åtgärd krävs som summering i tillsynsprotokollet innan beslutet skickas.",
+      "action_points_needed": "Lägg till minst en åtgärdspunkt under Skapa åtgärdspunkter i tillsynsprotokollet innan beslutet skickas. Åtgärdspunkterna förs över till åtgärdsärendet.",
       "start_process": {
         "label": "Starta process",
         "done": "Processen startas. Ärendet uppdateras när den har registrerats.",
@@ -305,6 +306,7 @@
         "confirm_title": "Ta ärendet till beslut?",
         "confirm_text": "När du tar ärendet vidare till beslut innebär det att utredningen är klar och att underlaget räcker för att fatta beslut.",
         "done": "Ärendet är taget till beslut.",
+        "done_with_decision_basis": "Ärendet är taget till beslut. Beslutsunderlaget skapas som en bilaga och hamnar under Bilagor.",
         "error": "Ärendet kunde inte tas till beslut.",
         "confirm_yes": "Ja"
       },
@@ -338,7 +340,7 @@
         "application_text": "Tillståndsbeviset trycker {{inputs}}, och ansökan bär det inte. Det kan bara kompletteras av sökanden. Vill du avsluta granskningen ändå?",
         "continue_anyway": "Avsluta granskningen",
         "decision_title": "Uppgifter i beslutet saknas",
-        "decision_text": "Tillståndsbeviset trycker {{inputs}}. Komplettera beslutet innan ärendet går vidare, annars kan tillståndet inte utfärdas.",
+        "decision_text": "Beslutet saknar {{inputs}}.",
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       },
@@ -351,7 +353,7 @@
         "decisionMaker": "beslutsfattare",
         "validFrom": "datum då tillståndet börjar gälla",
         "executionDate": "datum för utfärdande",
-        "decisionCaseNumber": "beslutsdiarienummer",
+        "decisionClauses": "att-satser",
         "premisesStreet": "serveringsställets gatuadress, alltså ett valt serveringsställe",
         "premisesPostalAddress": "serveringsställets postnummer och postort",
         "premisesPhone": "telefonnummer till serveringsstället",
@@ -377,7 +379,21 @@
         "confirm_yes": "Gå vidare",
         "cancel": "Avbryt"
       },
-      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare."
+      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare.",
+      "missing_registration_inputs": {
+        "title": "Ärendet är inte klart att ta vidare",
+        "text": "Innan handläggningen startar behöver ärendet {{inputs}}.",
+        "go_to_applicant": "Till grundinformationen",
+        "go_to_errand_form": "Till ärendeuppgifterna",
+        "go_to_attachments": "Till bilagorna",
+        "cancel": "Avbryt"
+      },
+      "registration_inputs": {
+        "applicant": "en sökande som är identifierad med personnummer eller organisationsnummer",
+        "errand_form": "ifyllda ärendeuppgifter",
+        "attachments": "bilagorna {{labels}}"
+      },
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -387,6 +403,8 @@
     },
     "activities": {
       "notify_processing_started": "Meddelar att handläggningen startat",
+      "set_complete_at": "Noterar när ansökan var komplett",
+      "create_decision_basis": "Skapar beslutsunderlag",
       "create_decision": "Skapar beslut",
       "check_decision": "Kontrollerar beslut",
       "create_asset": "Skapar tillstånd",
@@ -410,6 +428,8 @@
     "decided_at": "Beslutsdatum",
     "legal_basis": "Lagrum",
     "case_number": "Beslutsdiarienummer",
+    "clauses": "Att-satser",
+    "clauses_placeholder": "Skriv en att-sats per rad",
     "justification": "Beslutsmotivering",
     "justification_help": "Detta blir beslutets skäl.",
     "justification_placeholder": "Motivera beslutet...",
@@ -639,6 +659,11 @@
     "outcome_placeholder": "Välj utfall...",
     "document_name": "Benämning på remiss",
     "document_name_placeholder": "Till exempel Yttrande från fastighetsägaren",
+    "submitter_name": "Uppgiftslämnare",
+    "submitter_municipality": "Uppgiftslämnarens kommun",
+    "recipient_name": "Kontaktperson hos mottagaren",
+    "recipient_name_placeholder": "Lämnas tom om remissen inte ska ställas till någon särskild",
+    "recipient_email": "Mejladress till mottagaren",
     "free_text": "Fritext",
     "apply_free_text": "Applicera fritext",
     "free_text_placeholder": "Text som följer med i remissen, till exempel en upplysning till mottagaren",

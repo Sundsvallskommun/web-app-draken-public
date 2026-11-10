@@ -10,10 +10,13 @@ import {
   ApiSupportErrand,
   ExternalIdType,
   forwardSupportErrand,
+  getLabelCategorizationHeading,
   getStakeholderOrganizationNumber,
   mapApiSupportErrandToSupportErrand,
   SupportErrand,
+  supportErrandHasAnIdentifiedApplicant,
   supportErrandIsEmpty,
+  supportErrandRejectionReason,
   updateSupportErrand,
 } from './support-errand-service';
 
@@ -228,5 +231,100 @@ describe('getStakeholderOrganizationNumber', () => {
         stakeholder({ externalIdType: ExternalIdType.PRIVATE, externalId: '5560269986' })
       )
     ).toBeUndefined();
+  });
+});
+
+describe('supportErrandRejectionReason', () => {
+  const rejection = (status: number, message?: string) => ({ response: { status, data: { message } } });
+
+  test('reads what the service said when it rejected the write', () => {
+    expect(supportErrandRejectionReason(rejection(400, 'Schema validation failed: missing required field'))).toBe(
+      'Schema validation failed: missing required field'
+    );
+  });
+
+  test('says nothing when the failure was not a rejection', () => {
+    expect(supportErrandRejectionReason(rejection(500, 'Internal server error'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(409, 'Errand is locked'))).toBeUndefined();
+    expect(supportErrandRejectionReason(new Error('Network Error'))).toBeUndefined();
+    expect(supportErrandRejectionReason(undefined)).toBeUndefined();
+  });
+
+  test('says nothing when the rejection carries no reason', () => {
+    expect(supportErrandRejectionReason(rejection(400, 'Constraint Violation'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400, 'Request failed'))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400, '   '))).toBeUndefined();
+    expect(supportErrandRejectionReason(rejection(400))).toBeUndefined();
+  });
+});
+
+describe('getLabelCategorizationHeading', () => {
+  const label = (classification: string, resourcePath: string, displayName?: string) => ({
+    classification,
+    resourcePath,
+    displayName,
+  });
+
+  const errand = (over: Partial<SupportErrand> = {}): SupportErrand =>
+    ({ id: 'errand-id', category: '', labels: [], ...over } as SupportErrand);
+
+  beforeEach(() => {
+    appConfig.features.useLabelCategorization = true;
+  });
+
+  afterEach(() => {
+    appConfig.features.useLabelCategorization = false;
+  });
+
+  test('names the deepest level of the categorization', () => {
+    const labels = [
+      label('CATEGORY', 'ALCOHOL', 'Alkohol'),
+      label('TYPE', 'SERVING_PERMIT_APPLICATION', 'Ansökan om serveringstillstånd'),
+      label('SUBTYPE', 'PERMANENT_SERVING', 'Stadigvarande servering'),
+    ];
+
+    expect(getLabelCategorizationHeading(errand({ category: 'ALCOHOL', labels }), undefined)).toBe(
+      'Stadigvarande servering'
+    );
+  });
+
+  test('says the errand is being registered while its shell carries no categorization', () => {
+    expect(getLabelCategorizationHeading(errand(), undefined)).toBe('Registrera nytt ärende');
+  });
+
+  test('still says the type is missing on an errand that is categorized in every other way', () => {
+    expect(getLabelCategorizationHeading(errand({ category: 'ALCOHOL' }), undefined)).toBe('(Ärendetyp saknas)');
+  });
+
+  test('reads the classification of an errand registered before label categorization', () => {
+    const legacy = errand({ classification: { category: 'ALCOHOL', type: 'NONE' } } as Partial<SupportErrand>);
+
+    expect(getLabelCategorizationHeading(legacy, undefined)).toBe('ALCOHOL');
+  });
+});
+
+describe('supportErrandHasAnIdentifiedApplicant', () => {
+  const PARTY_ID = 'a3f1c2e4-0000-4000-8000-000000000001';
+
+  const errandWith = (customer: unknown[]) => ({ customer } as unknown as SupportErrand);
+
+  test('an applicant the register knows counts', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY', externalId: PARTY_ID }]))).toBe(true);
+  });
+
+  test('an applicant without a party id does not', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY' }]))).toBe(false);
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([{ role: 'PRIMARY', externalId: '   ' }]))).toBe(false);
+  });
+
+  test('an errand without an applicant does not', () => {
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith([]))).toBe(false);
+    expect(supportErrandHasAnIdentifiedApplicant(undefined)).toBe(false);
+  });
+
+  test('one identified applicant among several is enough', () => {
+    const customer = [{ role: 'PRIMARY' }, { role: 'PRIMARY', externalId: PARTY_ID }];
+
+    expect(supportErrandHasAnIdentifiedApplicant(errandWith(customer))).toBe(true);
   });
 });

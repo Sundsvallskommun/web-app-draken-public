@@ -1,6 +1,9 @@
 'use client';
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import type { RJSFSchema } from '@rjsf/utils';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { missingAttachments } from '@supportmanagement/services/support-attachment-requirement-service';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   missingDecisionInputs,
@@ -8,13 +11,32 @@ import {
   savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
 import { type SupportDecision, supportDecisionPermitType } from '@supportmanagement/services/support-decision-service';
-import { getMostSpecificLabelType } from '@supportmanagement/services/support-errand-service';
+import { jsonParameterForSchema, schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
+import {
+  getMostSpecificLabelType,
+  supportErrandHasAnIdentifiedApplicant,
+} from '@supportmanagement/services/support-errand-service';
+import { isRecord } from '@supportmanagement/services/support-form-value-service';
 import {
   getSupportStatements,
   isSupportStatementAwaitingAnswer,
   isSupportStatementUnsent,
 } from '@supportmanagement/services/support-statement-service';
 import { useTranslation } from 'react-i18next';
+
+/** The tab a handler is sent to for the thing that is missing. */
+const REGISTRATION_INPUT_TABS = {
+  applicant: 'basics',
+  errand_form: 'details',
+  attachments: 'attachments',
+} as const;
+
+type RegistrationInput = keyof typeof REGISTRATION_INPUT_TABS;
+
+const SCHEMA_NOT_PUBLISHED_STATUS = 404;
+
+const isSchemaNotPublished = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === SCHEMA_NOT_PUBLISHED_STATUS;
 
 /**
  * What has to be true before a step may be taken. Each gate either lets the step through or points
@@ -32,6 +54,74 @@ export const useProcessStepGates = (errandId: string | undefined) => {
 
   const complain = (message: string) =>
     toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
+
+  /**
+   * The errand type's schema, or nothing when the type publishes none. A type without a schema asks
+   * for no form and no attachments; a schema that could not be read at all is not an answer, so the
+   * step waits rather than passing on a guess.
+   */
+  const readErrandTypeSchema = async (
+    schemaName: string | undefined
+  ): Promise<{ read: true; schema: RJSFSchema | undefined } | { read: false }> => {
+    if (!schemaName) return { read: true, schema: undefined };
+
+    try {
+      const { schema } = await getLatestRjsfSchema(municipalityId, schemaName);
+      return { read: true, schema };
+    } catch (error) {
+      return isSchemaNotPublished(error) ? { read: true, schema: undefined } : { read: false };
+    }
+  };
+
+  /**
+   * What the errand has to carry before the handling starts. The registration is the last stop where
+   * nothing has happened yet: a notification errand runs on to a decision of its own once the step is
+   * taken, so what that decision will rest on is checked here rather than after it is written.
+   *
+   * Everything missing is named at once. Which attachments the type asks for depends on the answers,
+   * so an errand without a filled in form is told about the form first and about its attachments once
+   * the answers exist.
+   */
+  const registrationIsComplete = async (): Promise<boolean> => {
+    if (!supportErrand) return true;
+
+    const schemaName = schemaNameForErrand(supportErrand, supportMetadata?.namespace);
+    const reading = await readErrandTypeSchema(schemaName);
+    if (!reading.read) {
+      complain(t('common:process.actions.registration_unread'));
+      return false;
+    }
+
+    const storedParameter = jsonParameterForSchema(supportErrand, schemaName);
+    const answers = isRecord(storedParameter?.value) ? storedParameter.value : undefined;
+    const attachmentsNotDelivered = missingAttachments(reading.schema, answers, supportAttachments);
+
+    const missing: RegistrationInput[] = [];
+    if (!supportErrandHasAnIdentifiedApplicant(supportErrand)) missing.push('applicant');
+    if (reading.schema && !storedParameter) missing.push('errand_form');
+    if (attachmentsNotDelivered.length) missing.push('attachments');
+
+    const [firstMissing] = missing;
+    if (!firstMissing) return true;
+
+    const named = (input: RegistrationInput) =>
+      input === 'attachments'
+        ? t('common:process.actions.registration_inputs.attachments', {
+            labels: attachmentsNotDelivered.map((attachment) => attachment.label).join(', '),
+          })
+        : t(`common:process.actions.registration_inputs.${input}`);
+
+    const goToWhatIsMissing = await confirm.showConfirmation(
+      t('common:process.actions.missing_registration_inputs.title'),
+      t('common:process.actions.missing_registration_inputs.text', { inputs: missing.map(named).join(', ') }),
+      t(`common:process.actions.missing_registration_inputs.go_to_${firstMissing}`),
+      t('common:process.actions.missing_registration_inputs.cancel'),
+      'info',
+      'info'
+    );
+    if (goToWhatIsMissing) setActiveTabKey(REGISTRATION_INPUT_TABS[firstMissing]);
+    return false;
+  };
 
   /**
    * Whether the statements leave the way to a decision open. One still out with a counterparty closes
@@ -167,6 +257,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
   const complainThatTheDecisionCouldNotBeRead = () => complain(t('common:process.actions.decision_unread'));
 
   return {
+    registrationIsComplete,
     statementsAllowADecision,
     permitInputsAreInPlace,
     decisionCarriesWhatThePermitNeeds,

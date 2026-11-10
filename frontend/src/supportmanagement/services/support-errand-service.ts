@@ -218,14 +218,16 @@ export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
 
 const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
 
+export const NEW_ERRAND_HEADING = 'Registrera nytt ärende';
+
 /** Heading under label categorization: the deepest label (type, else category, else department). */
 export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
-  // LEGACY_CLASSIFICATION
   if (showsLegacyClassification(errand)) {
     return getLegacyClassificationHeading(errand, metadata);
   }
   const deepest = getCategorizationLabels(errand).at(-1);
-  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
+  if (deepest) return getLabelDisplayName(deepest, metadata);
+  return supportErrandIsEmpty(errand) ? NEW_ERRAND_HEADING : MISSING_ERRAND_TYPE_TEXT;
 };
 
 export const getLabelType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'TYPE');
@@ -844,7 +846,7 @@ export const getSupportErrands: (
     });
 };
 
-const getSupportErrandsCount: (
+export const getSupportErrandsCount: (
   municipalityId: string,
   filter?: { [key: string]: string | boolean | number }
 ) => Promise<any> = (municipalityId, filter = {}) => {
@@ -1018,6 +1020,26 @@ export const setSupportErrandAdmin: (
       console.error('Something went wrong when patching errand');
       throw e;
     });
+};
+
+/**
+ * Whether the errand carries an applicant the process can use. pw-alkt reads the permit holder from
+ * the PRIMARY stakeholder's partyId (`SupportManagementMapper`), so one without an identity is not
+ * enough: the process would die on it a few steps later.
+ */
+export const supportErrandHasAnIdentifiedApplicant = (errand: Pick<SupportErrand, 'customer'> | undefined): boolean =>
+  (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId?.trim());
+
+const REJECTED_BY_SERVICE_STATUS = 400;
+
+const MESSAGES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request', 'Request failed', 'Internal server error'];
+
+export const supportErrandRejectionReason = (error: unknown): string | undefined => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+  if (response?.status !== REJECTED_BY_SERVICE_STATUS) return undefined;
+
+  const message = response.data?.message?.trim();
+  return message && !MESSAGES_WITHOUT_A_REASON.includes(message) ? message : undefined;
 };
 
 /** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */

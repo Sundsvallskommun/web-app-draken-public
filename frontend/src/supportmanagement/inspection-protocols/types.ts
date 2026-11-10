@@ -67,7 +67,7 @@ export interface InspectionProtocolTemplate {
   label: string;
   /** The template's identifier in Templating. */
   identifier: string;
-  /** The schema the answers are saved against, one property per field key. */
+  /** The schema the answers are filed under and saved against, one property per field key. */
   schema: SupportJsonSchema;
   /** The standard control points, saved as INTERNAL measures. */
   controlPoints: string[];

@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest';
 
 import type { SupportErrand } from './support-errand-service';
 import {
+  inspectionProtocolDate,
   inspectionProtocolFileName,
   inspectionProtocolMeasureRow,
   inspectionProtocolValuesFromJson,
@@ -25,6 +26,31 @@ test('a template is found by its key', () => {
   expect(inspectionProtocolTemplate('internal_inspection')?.label).toBe('Inre tillsyn');
   expect(inspectionProtocolTemplate('nope')).toBeUndefined();
   expect(inspectionProtocolTemplate(undefined)).toBeUndefined();
+});
+
+test("the inspection date is read from the protocol of the investigation's template, wherever it lies", () => {
+  const investigation = (type: string, key: string, value: object) =>
+    ({
+      type,
+      jsonParameters: [
+        { key: 'unrelated', schemaId: 'x', value: {} },
+        { key, schemaId: 'x', value },
+      ],
+    } as never);
+
+  expect(
+    inspectionProtocolDate(investigation('internal_inspection', internal.schema.name, { inspectionDate: '2026-11-10' }))
+  ).toBe('2026-11-10');
+  expect(
+    inspectionProtocolDate(investigation('serving_permit', serving.schema.name, { inspectionDate: '2026-10-01' }))
+  ).toBe('2026-10-01');
+  expect(
+    inspectionProtocolDate(investigation('serving_permit', serving.schema.name, { inspectionDate: '' }))
+  ).toBeUndefined();
+  expect(
+    inspectionProtocolDate(investigation('unknown', serving.schema.name, { inspectionDate: '2026-10-01' }))
+  ).toBeUndefined();
+  expect(inspectionProtocolDate(undefined)).toBeUndefined();
 });
 
 test('the permit holder, the inspector and the date are filled in from the errand and the signed-in user', () => {

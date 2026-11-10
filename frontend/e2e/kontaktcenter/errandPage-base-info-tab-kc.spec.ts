@@ -526,6 +526,61 @@ test.describe('Errand page', () => {
     await searchAndSavePersonStakeholder(page, mockAdressResponse);
   });
 
+  const openErrandWithoutStakeholders = async (
+    page: Page,
+    mockRoute: (pattern: string, response: unknown, options?: { method?: string }) => Promise<void>,
+    dismissCookieConsent: () => Promise<void>
+  ) => {
+    const errand = {
+      ...mockSupportErrand,
+      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      stakeholders: [],
+      contact: [],
+      customer: [],
+    };
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, errand, { method: 'GET' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, errand, { method: 'GET' });
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+  };
+
+  const searchOwner = async (page: Page) => {
+    await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+    await page.locator('[data-cy="contact-personNumber-owner"]').fill(mockEnv.mockPersonNumber);
+    await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  };
+
+  test('tells the case worker when a person has protected personal data', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute(
+      '**/address',
+      { ...mockAdressResponse, data: { ...mockAdressResponse.data, addresses: [], protectedIdentity: true } },
+      { method: 'POST' }
+    );
+    await openErrandWithoutStakeholders(page, mockRoute, dismissCookieConsent);
+
+    await searchOwner(page);
+
+    await expect(page.locator('[data-cy="protected-identity-message"]')).toHaveText(
+      'Personen har skyddade personuppgifter. Adressen visas inte.'
+    );
+  });
+
+  test('does not report a refused search as no match', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await mockRoute('**/address', { message: 'Too many person lookups' }, { method: 'POST', status: 429 });
+    await openErrandWithoutStakeholders(page, mockRoute, dismissCookieConsent);
+
+    await searchOwner(page);
+
+    await expect(page.locator('[data-cy="not-found-error-message"]')).toHaveText(
+      'För många sökningar på kort tid. Vänta en minut och sök igen.'
+    );
+  });
+
   test('shows search result and sends correct data for an organization', async ({
     page,
     mockRoute,

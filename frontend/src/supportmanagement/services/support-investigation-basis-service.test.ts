@@ -102,7 +102,7 @@ const investigation = {
     ...(sectionKey === 'premises' && {
       jsonParameters: [
         {
-          key: 'premises',
+          key: 'aot_investigation_premises_section',
           schemaId: '2281_aot_investigation_premises_section_1.0',
           value: { inspectedAt: '2026-05-21', rightOfDisposal: { status: 'PROVEN', note: 'Hyresavtal 2026-05-01' } },
         },
@@ -299,13 +299,32 @@ test('a script in a written examination never reaches the template', () => {
   expect(parameters.premises.leaseHtml).toBe('<p>Hyra</p>');
 });
 
-test('the people of influence are named by the company data, which is where their personal number comes from', () => {
+test('the people of influence are named by the errand, and the company data gives their personal number', () => {
   const people = built().personsOfInfluence;
 
   expect(people.map((candidate) => candidate.name)).toEqual(['Axel Hellman', 'Erica Fritz']);
   expect(people[0].personalNumber).toBe(mockEnv.mockPersonNumberDashed);
   expect(people[0].roles).toBe('Verkställande direktör, Styrelseledamot');
   expect(people[0].motivation).toBe('Daglig drift');
+});
+
+test('the name on the errand is the one printed, since the filed decision basis reads it too', () => {
+  const renamed = { ...axel, lastName: 'Hellman-Berg', personNumber: AXEL_IDENTITY };
+
+  const [axelsRow] = investigationBasisParameters(
+    input({ errand: { ...errand, contacts: [renamed, erica] } as SupportErrand })
+  ).personsOfInfluence;
+
+  expect(axelsRow.name).toBe('Axel Hellman-Berg');
+  expect(axelsRow.personalNumber).toBe(mockEnv.mockPersonNumberDashed);
+});
+
+test('a postal code kept without its space is written as postal codes are written in Sweden', () => {
+  const owner = { ...(errand.customer ?? [])[0], zipCode: '85230' };
+
+  const parameters = investigationBasisParameters(input({ errand: { ...errand, customer: [owner] } as SupportErrand }));
+
+  expect(parameters.applicant.postalAddress).toBe(`852 30 ${mockEnv.mockCompanyAddress.city}`);
 });
 
 test('a person of influence carries every knowledge test, the first one where the template prints one', () => {
@@ -722,7 +741,7 @@ test('what the handler established about the premises for the underlay travels w
                 ...section,
                 jsonParameters: [
                   {
-                    key: 'premises',
+                    key: 'aot_investigation_premises_section',
                     schemaId: '2281_aot_investigation_premises_section_1.0',
                     value: { servingArea: { description: 'Matsalen, uteserveringen och bryggan' } },
                   },

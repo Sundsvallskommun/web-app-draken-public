@@ -1,16 +1,20 @@
+import { HttpException } from '@exceptions/HttpException';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
+import { hasAnyPermission } from '@middlewares/permissions.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
+import { CitizenService } from '@services/citizen.service';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsString, isUUID, ValidateNested } from 'class-validator';
+import { NextFunction, Request, Response } from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
 import {
   LegalEntityEngagementsApiResponse,
   LegalEntityPersonEngagementsApiResponse,
@@ -24,6 +28,43 @@ class SsnPayload {
   @IsString()
   ssn!: string;
 }
+
+/**
+ * Person lookups per case worker and minute. Well above what a case worker does by hand or with
+ * ACE screen pops, but it stops a script from walking through the population register.
+ * Counted in memory per BFF process: with several instances the limit applies per instance, and a
+ * restart resets it. A shared store (the Redis used for sessions) would make it global.
+ */
+const PERSON_LOOKUPS_PER_MINUTE = 30;
+
+const personLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: PERSON_LOOKUPS_PER_MINUTE,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => (req as RequestWithUser).user?.username ?? ipKeyGenerator(req.ip ?? ''),
+  handler: (req: Request, res: Response, _next: NextFunction) => {
+    logger.warn(`AUDIT person lookup rate limited: user=${(req as RequestWithUser).user?.username ?? 'unknown'}`);
+    res.status(429).send({ message: 'Too many person lookups' });
+  },
+});
+
+type LookupKind = 'person' | 'employee';
+
+/** Records who looked up whom (by party id, never by personal number) and with what outcome. */
+const auditPersonLookup = (kind: LookupKind, user: RequestWithUser['user'], outcome: 'found' | 'not found' | 'failed', partyId = '') => {
+  const fields = [`user=${user?.username ?? 'unknown'}`, `outcome=${outcome}`, ...(partyId ? [`partyId=${partyId}`] : [])];
+  logger.info(`AUDIT ${kind} lookup: ${fields.join(' ')}`);
+};
+
+const NOT_PROTECTED = new Set(['', 'N', 'NEJ', 'FALSE', '0']);
+
+/**
+ * Whether Citizen marks the person's data as protected (skyddade personuppgifter) in classified or
+ * protectedNR. Their values are not specified, so anything but an explicit no counts as protected.
+ */
+const isProtectedIdentity = (citizen: Pick<Citizenaddress, 'classified' | 'protectedNR'>): boolean =>
+  [citizen.classified, citizen.protectedNR].some(value => !NOT_PROTECTED.has((value ?? '').trim().toUpperCase()));
 
 class OrgNrPayload {
   @IsString()
@@ -39,23 +80,23 @@ interface Citizenaddress {
   nrDate: string;
   classified: string;
   protectedNR: string;
-  addresses: [
-    {
-      realEstateDescription: string;
-      co?: string;
-      address: string;
-      addressArea?: string;
-      addressNumber?: string;
-      addressLetter?: string;
-      appartmentNumber: string;
-      postalCode: string;
-      city: string;
-      municipality: string;
-      country: string;
-      emigrated: boolean;
-      addressType: string;
-    },
-  ];
+  /** Set by the BFF: the person has protected personal data and addresses is left empty. */
+  protectedIdentity?: boolean;
+  addresses: {
+    realEstateDescription: string;
+    co?: string;
+    address: string;
+    addressArea?: string;
+    addressNumber?: string;
+    addressLetter?: string;
+    appartmentNumber: string;
+    postalCode: string;
+    city: string;
+    municipality: string;
+    country: string;
+    emigrated: boolean;
+    addressType: string;
+  }[];
 }
 
 interface EmployeeAddress {
@@ -149,6 +190,7 @@ interface ResponseData {
 @Controller()
 export class AddressController {
   private apiService = new ApiService();
+  private citizenService = new CitizenService();
   CITIZEN_SERVICE = apiServiceName('citizen');
   EMPLOYEE_SERVICE = apiServiceName('employee');
   LEGALENTITY_SERVICE = apiServiceName('legalentity');
@@ -157,15 +199,37 @@ export class AddressController {
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
-  @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
+  @UseBefore(
+    authMiddleware,
+    hasAnyPermission(['canEditSupportManagement', 'canEditCasedata']),
+    personLookupLimiter,
+    validationMiddleware(SsnPayload, 'body'),
+  )
   async cases(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<ResponseData> {
-    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
-    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
+    const partyId = await this.resolvePartyId('person', req, ssnPayload.ssn);
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${partyId}`;
+    const res = await this.apiService.get<Citizenaddress>({ url }, req.user).catch(e => {
+      auditPersonLookup('person', req.user, 'failed', partyId);
+      throw e;
+    });
+    auditPersonLookup('person', req.user, 'found', partyId);
+    // A protected address never leaves the BFF, so it can neither be shown nor saved on an errand.
+    const protectedIdentity = isProtectedIdentity(res.data);
+    const data = protectedIdentity ? { ...res.data, addresses: [] } : res.data;
+    return { data: { ...data, protectedIdentity }, message: 'success' };
+  }
 
-    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${guidRes.data}`;
-    const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
-
-    return { data: res.data, message: 'success' } as ResponseData;
+  /** The party id of the person with this personal number; answers 404 when there is none. */
+  private async resolvePartyId(kind: LookupKind, req: RequestWithUser, personNumber: string): Promise<string> {
+    const partyId = await this.citizenService.getPartyIdByPersonNumber(MUNICIPALITY_ID!, personNumber, req.user).catch(e => {
+      auditPersonLookup(kind, req.user, 'failed');
+      throw e;
+    });
+    if (!partyId) {
+      auditPersonLookup(kind, req.user, 'not found');
+      throw new HttpException(404, 'Person not found');
+    }
+    return partyId;
   }
 
   @Post('/organization/')
@@ -292,24 +356,27 @@ export class AddressController {
     }
   }
 
-  @Get('/employed/:personalNumber/loginname')
+  @Post('/employed/loginname')
   @OpenAPI({ summary: 'Fetch employed user information' })
-  @UseBefore(authMiddleware)
+  @UseBefore(
+    authMiddleware,
+    hasAnyPermission(['canEditSupportManagement', 'canEditCasedata']),
+    personLookupLimiter,
+    validationMiddleware(SsnPayload, 'body'),
+  )
   async employed(
     @Req() req: RequestWithUser,
-    @Param('personalNumber') personalNumber: string,
+    @Body() ssnPayload: SsnPayload,
     @Res() _response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
-    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${personalNumber}/guid`;
-    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
-    if (!guidRes.data) {
-      throw new Error('No data found for the given personal number');
-    }
-    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
+    const partyId = await this.resolvePartyId('employee', req, ssnPayload.ssn);
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${partyId}/accounts`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
+      auditPersonLookup('employee', req.user, 'failed', partyId);
       throw e;
     });
+    auditPersonLookup('employee', req.user, 'found', partyId);
     return { data: res.data, message: 'success' };
   }
 }

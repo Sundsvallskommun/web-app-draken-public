@@ -49,6 +49,7 @@ import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 import { UnlinkedStatementAttachmentFlag } from '../statements/unlinked-statement-attachment-flag.component';
+import { SupportErrandRequiredAttachments } from './support-errand-required-attachments.component';
 
 interface SingleAttachment {
   file: File | undefined;
@@ -86,7 +87,6 @@ export const SupportErrandAttachmentsTab: FC<{
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
-  const [pdfError, setPdfError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [selectedAttachment, setSelectedAttachment] = useState<SupportAttachment>();
@@ -162,6 +162,15 @@ export const SupportErrandAttachmentsTab: FC<{
 
   const attachments = watch('attachments');
 
+  const showAttachmentFetchError = () => {
+    toastMessage(
+      getToastOptions({
+        message: 'Något gick fel när bilagan skulle hämtas',
+        status: 'error',
+      })
+    );
+  };
+
   const downloadDocument = (a: SupportAttachment) => {
     getSupportAttachment(supportErrand!.id!.toString(), municipalityId, a)
       .then((att) => {
@@ -172,9 +181,7 @@ export const SupportErrandAttachmentsTab: FC<{
         document.body.appendChild(link);
         link.click();
       })
-      .catch(() => {
-        setPdfError(true);
-      });
+      .catch(showAttachmentFetchError);
   };
 
   useEffect(() => {
@@ -275,7 +282,11 @@ export const SupportErrandAttachmentsTab: FC<{
         .then(() => {
           setModalFetching(false);
         })
-        .then(() => openModal());
+        .then(() => openModal())
+        .catch(() => {
+          setModalFetching(false);
+          showAttachmentFetchError();
+        });
     } else {
       downloadDocument(attachment);
     }
@@ -495,6 +506,7 @@ export const SupportErrandAttachmentsTab: FC<{
       </div>
       <div>
         <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
+        <SupportErrandRequiredAttachments />
         {!supportAttachments?.length && (
           <>
             <Divider className="pt-16" />
