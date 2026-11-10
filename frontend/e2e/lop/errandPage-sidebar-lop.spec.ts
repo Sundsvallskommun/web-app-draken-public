@@ -19,7 +19,7 @@ import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage'
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
 import { mockRelations } from './fixtures/mockRelations';
-import { mockEnv } from '../fixtures/mock-env';
+import { mockEnv } from '../../src/tests/mock-env';
 import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 

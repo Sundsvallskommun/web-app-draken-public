@@ -24,6 +24,10 @@
     "labels": {
       "IAF": "Detaljerad typ av avvikelse",
       "default": "Ärendetyp*"
+    },
+    "premises_municipality": {
+      "title": "Kommun",
+      "placeholder": "Välj kommun"
     }
   },
   "overview": {
@@ -45,6 +49,904 @@
     "registeredBy": "Registrerad av",
     "priority": "Prioritet",
     "reminder": "Påminnelse",
-    "responsible": "Ansvarig"
+    "responsible": "Ansvarig",
+    "process": {
+      "label": "Process"
+    }
+  },
+  "tabs": {
+    "investigation": "Utredning",
+    "decision": "Beslut",
+    "followup": "Uppföljning",
+    "unsaved_title": "Du har osparade ändringar",
+    "unsaved_basics": "Intressenterna är inte sparade. Det du ändrat ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara ärende.",
+    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du sparar ärendet.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslut.",
+    "unsaved_leave": "Byt flik ändå",
+    "unsaved_stay": "Stanna kvar"
+  },
+  "company": {
+    "engagements_heading": "Förenklad bolagsdata",
+    "engagements_description": "Nedan kan du se personer kopplade till ärendeägaren.",
+    "role": "Roll",
+    "name": "Namn",
+    "identity": "Personnummer",
+    "show_more": "Visa mer information",
+    "description_heading": "Verksamhetsbeskrivning",
+    "accounting_period": "Räkenskapsår",
+    "table_company": "Bolag",
+    "table_address": "Adress",
+    "table_employees": "Antal anställda",
+    "no_description": "Ingen verksamhetsbeskrivning finns registrerad.",
+    "close_description": "Stäng verksamhetsbeskrivning",
+    "pbi": {
+      "column": "PBI",
+      "checkbox_aria": "Person med betydande inflytande: {{name}}",
+      "confirm_title": "Markera som PBI",
+      "confirm_text": "Vill du markera personen som PBI? Personen läggs till bland ärendets intressenter under övriga parter och sparas med Spara ärende.",
+      "confirm_yes": "Ja",
+      "confirm_no": "Nej",
+      "add": {
+        "open": "Lägg till PBI",
+        "title": "Lägg till person med betydande inflytande",
+        "description": "Sök personen i folkbokföringen med personnummer. Personen läggs till bland ärendets intressenter och sparas med Spara ärende.",
+        "identity": "Personnummer",
+        "identity_placeholder": "ååååmmddxxxx",
+        "search": "Sök",
+        "confirm": "Lägg till",
+        "cancel": "Avbryt",
+        "not_found": "Personen kunde inte hittas i folkbokföringen.",
+        "role": "Roll (frivillig)",
+        "role_placeholder": "Till exempel Finansiär eller Delägare"
+      },
+      "badge": "PBI",
+      "unmark": "Avmarkera som PBI",
+      "mark": "Markera som PBI",
+      "unmark_title": "Avmarkera som PBI?",
+      "unmark_removes": "{{name}} lades till för PBI-markeringen och tas bort från ärendets intressenter.",
+      "unmark_yes": "Ta bort",
+      "unmark_no": "Avbryt"
+    }
+  },
+  "investigation": {
+    "heading": "Utredning - lämplighetsprövning",
+    "title": "Utredning av ansökan",
+    "intro": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas utifrån sökandens personliga och ekonomiska förhållanden enligt 8 kap. 12 § alkohollagen.",
+    "start": "Starta utredning",
+    "loading": "Hämtar utredningen",
+    "error": "Utredningen kunde inte hämtas.",
+    "status_active": "Pågår",
+    "status_completed": "Avslutad",
+    "conclusion_heading": "Sammanvägd bedömning och förslag till beslut",
+    "proposal": "Förslag till beslut",
+    "proposal_placeholder": "Skriv att-listan, en punkt per rad. Underlaget inleder själv med Alkohol- och tobaksenheten föreslår att;",
+    "conclusion": "Samlad bedömning",
+    "conclusion_placeholder": "Skriv din samlade bedömning av ärendet",
+    "recommendation": "Föreslaget utfall",
+    "recommendation_placeholder": "Välj föreslaget utfall",
+    "recommendation_helper": "Denna sektion inleds med \"Alkohol- och tobaksenheten föreslår att;\"",
+    "recommendation_motivation": "Motivering",
+    "recommendation_motivation_placeholder": "Motivera förslaget till beslut",
+    "save": "Spara utredningen",
+    "saved": "Utredningen är sparad.",
+    "completed_at": "Avslutad {{date}}",
+    "save_error": "Utredningen kunde inte sparas.",
+    "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade - försök igen.",
+    "sections": {
+      "statements": "Remisser och yttranden",
+      "persons_of_influence": "Personer med betydande inflytande",
+      "financial_suitability": "Ekonomisk lämplighet",
+      "premises": "Lokal och serveringsställe",
+      "lease": "Nyttjanderätt och hyresavtal",
+      "fire_safety": "Brandskyddsdokumentation",
+      "food_and_beverages": "Mat och dryckesutbud",
+      "staffing": "Personal",
+      "communication": "Handläggning och kommunicering",
+      "child_perspective": "Barnperspektivet",
+      "legal_basis": "Lagrum",
+      "marketing": "Marknadsföring",
+      "ownership": "Ägarförhållande",
+      "sales_point": "Försäljningsstället",
+      "self_monitoring": "Egenkontroll"
+    },
+    "section_texts": {
+      "lease": {
+        "label": "Utredning av nyttjanderätten",
+        "placeholder": "Beskriv nyttjanderätten till lokalen och vad hyresavtalet säger"
+      },
+      "fire_safety": {
+        "label": "Utredning av brandskyddet",
+        "placeholder": "Beskriv brandskyddsdokumentationen och vad räddningstjänsten kräver"
+      },
+      "food_and_beverages": {
+        "label": "Utredning av mat och dryckesutbudet",
+        "placeholder": "Beskriv utbudet av mat och dryck på serveringsstället"
+      },
+      "staffing": {
+        "label": "Utredning av personalen",
+        "placeholder": "Beskriv personalens omfattning och kunskaper, till exempel utbildning i ansvarsfull alkoholservering"
+      },
+      "communication": {
+        "label": "Redogörelse för handläggningen och kommuniceringen",
+        "placeholder": "Beskriv handläggningen och hur sökanden har fått ta del av underlaget"
+      },
+      "child_perspective": {
+        "label": "Utredning av barnperspektivet",
+        "placeholder": "Beskriv hur barnperspektivet har beaktats, till exempel närhet till skola eller fritidsgård"
+      },
+      "legal_basis": {
+        "label": "Tillämpliga lagrum",
+        "placeholder": "Ange de lagrum som ärendet prövas mot"
+      },
+      "marketing": {
+        "label": "Utredning av marknadsföringen",
+        "placeholder": "Beskriv hur serveringsstället marknadsför sig och om marknadsföringen är måttfull"
+      },
+      "ownership": {
+        "label": "Utredning av ägarförhållandet",
+        "placeholder": "Beskriv vem som äger verksamheten och hur ägandet är fördelat"
+      },
+      "sales_point": {
+        "label": "Utredning av försäljningsstället",
+        "placeholder": "Beskriv försäljningsstället, lokalen och dess läge, och om försäljningen avser detaljhandel, partihandel eller distansförsäljning"
+      },
+      "self_monitoring": {
+        "label": "Utredning av egenkontrollen",
+        "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
+      }
+    },
+    "decision_basis": {
+      "label": "Beslutsunderlag",
+      "description": "Tryck på knappen för att förhandsvisa beslutsunderlaget. När ärendet går vidare till beslut så skapas beslutsunderlaget som en bilaga.",
+      "button_label": "Beslutsunderlag",
+      "update": "Uppdatera",
+      "rendering": "Skapar förhandsvisning",
+      "unsaved": "Spara ärendet så kommer det du nyss skrev med i underlaget.",
+      "preview_title": "Förhandsvisning av beslutsunderlaget",
+      "error": "Beslutsunderlaget kunde inte skapas. Mallen som efterfrågades heter {{template}}."
+    },
+    "section_save_failed": "Utredningstexten kunde inte sparas.",
+    "answer_yes": "Ja",
+    "answer_no": "Nej",
+    "filed_documents_none": "Inga handlingar av det slaget är inlämnade.",
+    "sales_point": {
+      "name": "Försäljningsställets namn",
+      "address": "Besöksadress",
+      "distance_selling": "Distansförsäljning",
+      "dangerous_products": "Särskilt farliga produkter",
+      "supplier_agreement": "Avtal med tillverkare eller partihandlare",
+      "sales_period": "Tidsperiod för försäljningen",
+      "indefinite": "Tillsvidare",
+      "temporary": "Tidsbegränsad försäljning"
+    },
+    "self_monitoring": {
+      "filed": "Inlämnat egenkontrollprogram"
+    },
+    "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6-8 veckor.",
+    "not_started": "Utredningen är inte påbörjad.",
+    "investigator": "Ansvarig handläggare",
+    "started_at": "Utredning påbörjad",
+    "due_at": "Beslutsfrist",
+    "starting": "Utredningen påbörjas",
+    "migrated": {
+      "intro": "Ärendet är migrerat. Utredningen visas som den skrevs i det tidigare systemet och går inte att ändra här.",
+      "none": "Det migrerade ärendet har ingen utredning.",
+      "title": "Utredningens rubrik",
+      "description": "Beskrivning",
+      "summary": "Sammanfattning",
+      "conclusion": "Slutsats",
+      "files": "Kopplade filer",
+      "files_none": "Inga filer är kopplade till utredningen. Ärendets bilagor finns under fliken Bilagor.",
+      "open_failed": "Filen kunde inte hämtas."
+    },
+    "section_not_built": "Den här delen av utredningen är inte byggd än.",
+    "unsaved": "Osparade ändringar",
+    "saving": "Sparar",
+    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
+    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll."
+  },
+  "process": {
+    "steps": {
+      "registration": "Registrerad",
+      "review": "Granskning",
+      "investigation": "Utredning",
+      "decision": "Beslut",
+      "follow_up": "Uppföljning",
+      "closing": "Avslut"
+    },
+    "status": {
+      "running": "Processen arbetar",
+      "waiting": "Väntar",
+      "retrying": "Försöker igen",
+      "completed": "Processen är avslutad",
+      "failed": "Processen misslyckades"
+    },
+    "log": {
+      "open": "Visa processloggen",
+      "heading": "Processlogg",
+      "loading": "Hämtar processloggen",
+      "error": "Processloggen kunde inte hämtas.",
+      "empty": "Processen har inte loggat något än.",
+      "step_taken_by": "{{step}} markerades som klar av {{by}}",
+      "step_taken": "{{step}} markerades som klar",
+      "stepped_by": "Ärendet stegades vidare av {{by}}",
+      "reported": "Processen rapporterade {{activity}}",
+      "started": "Processen startades",
+      "started_by": "Processen startades av {{by}}",
+      "cancelled": "Processen avbröts",
+      "cancelled_by": "Processen avbröts av {{by}}"
+    },
+    "actions": {
+      "confirm_no": "Nej",
+      "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
+      "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
+      "inspection_summary_needed": "Välj Godkänd eller Godkänd, men åtgärd krävs som summering i tillsynsprotokollet innan beslutet skickas.",
+      "start_process": {
+        "label": "Starta process",
+        "done": "Processen startas. Ärendet uppdateras när den har registrerats.",
+        "error": "Något gick fel vid start av processen",
+        "choose": "Ärendets etiketter pekar på flera processer. Rätta kategoriseringen innan processen startas."
+      },
+      "start_handling": {
+        "label": "Starta handläggning",
+        "done": "Handläggning startad",
+        "error": "Något gick fel vid start av handläggning"
+      },
+      "start_investigation": {
+        "label": "Inled utredning",
+        "confirm_title": "Ta ärendet till utredning?",
+        "confirm_text": "När du tar ett ansökningsärende vidare till utredning innebär det att du anser att ärendet är tillräckligt komplett. Ett bekräftelsemeddelande skickas då till kunden via Mina sidor.",
+        "done": "Ärendet är taget till utredning.",
+        "error": "Ärendet kunde inte tas till utredning.",
+        "confirm_yes": "Ja"
+      },
+      "ready_for_decision": {
+        "label": "Redo för beslut",
+        "confirm_title": "Ta ärendet till beslut?",
+        "confirm_text": "När du tar ärendet vidare till beslut innebär det att utredningen är klar och att underlaget räcker för att fatta beslut.",
+        "done": "Ärendet är taget till beslut.",
+        "done_with_decision_basis": "Ärendet är taget till beslut. Beslutsunderlaget skapas som en bilaga och hamnar under Bilagor.",
+        "error": "Ärendet kunde inte tas till beslut.",
+        "confirm_yes": "Ja"
+      },
+      "start_follow_up": {
+        "label": "Skicka beslut",
+        "confirm_title": "Skicka beslut och ta ärende till uppföljning?",
+        "confirm_text": "När du skickar beslutet tas ärendet vidare till uppföljning, vilket innebär det att beslutet är fattat och expedierat.",
+        "done": "Beslutet har skickats.",
+        "error": "Beslutet kunde inte skickas.",
+        "confirm_yes": "Ja"
+      },
+      "close_errand": {
+        "label": "Avsluta ärende",
+        "confirm_title": "Avsluta ärendet?",
+        "confirm_text": "Ärendet har följt hela processen (granska, utredning, beslut och uppföljning) och avslutas nu.",
+        "confirm_yes": "Ja, avsluta",
+        "done": "Ärendet är avslutat.",
+        "error": "Ärendet kunde inte avslutas."
+      },
+      "missing_outcome": {
+        "title": "Utfall saknas",
+        "text": "Ärendet kan inte gå vidare till uppföljning förrän ett beslut med utfall är sparat i beslutsfliken.",
+        "go_to_decision": "Till beslutsfliken",
+        "cancel": "Avbryt"
+      },
+      "missing_permit_inputs": {
+        "errand_title": "Uppgifter om sökanden saknas",
+        "errand_text": "Tillståndsbeviset trycker {{inputs}}. Fyll i det under Grundinformation innan granskningen avslutas, annars kan tillståndet inte utfärdas.",
+        "go_to_basics": "Till grundinformationen",
+        "application_title": "Uppgifter i ansökan saknas",
+        "application_text": "Tillståndsbeviset trycker {{inputs}}, och ansökan bär det inte. Det kan bara kompletteras av sökanden. Vill du avsluta granskningen ändå?",
+        "continue_anyway": "Avsluta granskningen",
+        "decision_title": "Uppgifter i beslutet saknas",
+        "decision_text": "Beslutet saknar {{inputs}}.",
+        "go_to_decision": "Till beslutsfliken",
+        "cancel": "Avbryt"
+      },
+      "permit_inputs": {
+        "permitHolderName": "sökandens namn",
+        "permitHolderStreet": "sökandens gatuadress",
+        "permitHolderPostalAddress": "sökandens postnummer och postort",
+        "permitHolderPhone": "sökandens telefonnummer",
+        "decisionText": "beslutets utfall",
+        "decisionMaker": "beslutsfattare",
+        "validFrom": "datum då tillståndet börjar gälla",
+        "executionDate": "datum för utfärdande",
+        "decisionClauses": "att-satser",
+        "premisesStreet": "serveringsställets gatuadress, alltså ett valt serveringsställe",
+        "premisesPostalAddress": "serveringsställets postnummer och postort",
+        "premisesPhone": "telefonnummer till serveringsstället",
+        "servingAreaDescription": "lokaler inom vilka servering får ske",
+        "premisesName": "serveringsställets namn",
+        "servingAreaSeats": "antal sittplatser inomhus",
+        "servingAreaMaxPersons": "maximalt antal personer i lokalen",
+        "servingHours": "serveringstider",
+        "servingAreaDrawingReference": "planritning som bilaga",
+        "information": "upplysningar och föreskrifter, som skrivs under Villkor"
+      },
+      "decision_unread": "Beslutet kunde inte läsas just nu. Försök igen om en stund.",
+      "statements_unread": "Remisserna kunde inte läsas just nu. Försök igen om en stund.",
+      "awaiting_statements": {
+        "title": "Remisser väntar på svar",
+        "text": "Ärendet har remisser som är skickade men ännu inte avgjorda. Registrera svaret, eller återkalla remissen, innan ärendet går vidare till beslut.",
+        "go_to_investigation": "Till utredningsfliken",
+        "cancel": "Avbryt"
+      },
+      "unsent_statements": {
+        "title": "Remisser som inte har skickats",
+        "text": "Det finns påbörjade remisser som inte har skickats. Ingen väntar på dem, men de blir kvar som utkast på ärendet. Vill du gå vidare till beslut ändå?",
+        "confirm_yes": "Gå vidare",
+        "cancel": "Avbryt"
+      },
+      "unsaved": "Det finns osparade ändringar. Spara ärendet för att gå vidare.",
+      "missing_registration_inputs": {
+        "title": "Ärendet är inte klart att ta vidare",
+        "text": "Innan handläggningen startar behöver ärendet {{inputs}}.",
+        "go_to_applicant": "Till grundinformationen",
+        "go_to_errand_form": "Till ärendeuppgifterna",
+        "go_to_attachments": "Till bilagorna",
+        "cancel": "Avbryt"
+      },
+      "registration_inputs": {
+        "applicant": "en sökande som är identifierad med personnummer eller organisationsnummer",
+        "errand_form": "ifyllda ärendeuppgifter",
+        "attachments": "bilagorna {{labels}}"
+      },
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
+    },
+    "trouble": {
+      "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
+      "concurrent_tasks": "Två steg i processen kördes samtidigt och slog ut varandra. Felet sitter i processmodellen.",
+      "unknown": "Processen stannade på ett tekniskt fel.",
+      "upstream_refused": "Processen fastnade mot tjänsten {{service}}, som svarade {{status}}. Det behöver rättas av teamet som förvaltar processen."
+    },
+    "activities": {
+      "notify_processing_started": "Meddelar att handläggningen startat",
+      "set_complete_at": "Noterar när ansökan var komplett",
+      "create_decision_basis": "Skapar beslutsunderlag",
+      "create_decision": "Skapar beslut",
+      "check_decision": "Kontrollerar beslut",
+      "create_asset": "Skapar tillstånd",
+      "complete_process": "Avslutar processen",
+      "cancel_process": "Avbryter processen",
+      "unknown": "Tekniskt steg"
+    }
+  },
+  "decision": {
+    "heading": "Beslut",
+    "intro": "Fatta beslutet utifrån underlaget ovan.",
+    "required_hint": "Fält markerade med * måste vara ifyllda innan ärendet kan gå vidare till uppföljning.",
+    "loading": "Hämtar beslut",
+    "error": "Beslutet kunde inte hämtas.",
+    "locked": "Låst",
+    "method": {
+      "manual": "Beslut fattat av handläggare",
+      "automatic": "Automatiskt beslut"
+    },
+    "decided_by": "Beslutsfattare",
+    "decided_at": "Beslutsdatum",
+    "legal_basis": "Lagrum",
+    "case_number": "Beslutsdiarienummer",
+    "clauses": "Att-satser",
+    "clauses_placeholder": "Skriv en att-sats per rad",
+    "justification": "Beslutsmotivering",
+    "justification_help": "Detta blir beslutets skäl.",
+    "justification_placeholder": "Motivera beslutet...",
+    "terms": "Villkor",
+    "outcome": "Beslut",
+    "outcome_placeholder": "Välj beslut...",
+    "role": "Välj beslutsfattare",
+    "role_help": "Ange vem som fattar beslutet enligt delegationsordningen.",
+    "roles": {
+      "handlaggare": "Handläggare",
+      "utskottet": "Utskottet",
+      "namndsordforande": "Nämndsordförande",
+      "namnd": "Nämnd"
+    },
+    "add_term": "Lägg till villkor",
+    "term_label": "Villkor {{number}}",
+    "remove_term": "Ta bort villkor {{number}}",
+    "save": "Spara beslut",
+    "saving": "Sparar beslutet",
+    "saved": "Beslutet sparades",
+    "save_error": "Något gick fel när beslutet skulle sparas",
+    "permit_json_rejected": "Beslutet sparades inte helt: uppgifterna om tillståndet godkändes inte. Kontrollera att datum, adresser, organisations- och restaurangnummer har rätt format och spara igen.",
+    "permit_json_save_error": "Beslutet sparades inte helt: uppgifterna om tillståndet kunde inte sparas. Försök spara igen.",
+    "locked_error": "Beslutet kan inte längre ändras. Det är slutfört eller processen har avslutats.",
+    "title_for": "Beslut om {{permit}}",
+    "valid_from": "Gäller från",
+    "valid_to": "Gäller till (lämna tomt för tills vidare)",
+    "issued_on": "Datum för utfärdande",
+    "issued_on_help": "Datumet som trycks på tillståndsbeviset.",
+    "empty_value": "—",
+    "unsaved_hint": "Beslutet har ändringar som inte är sparade. De sparas med Spara ärende.",
+    "unsaved": "Osparade ändringar",
+    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget.",
+    "preview": "Förhandsgranskning av tillståndsbevis",
+    "premises": {
+      "phone": "Telefonnummer till serveringsstället",
+      "phone_help": "Trycks på tillståndsbeviset. Förifyllt från ansökan när den bär det, annars måste det fyllas i här.",
+      "label": "Serveringsställe",
+      "number": "restaurangnummer {{number}}",
+      "new_number": "nytt restaurangnummer",
+      "sent": "Serveringsställe som skickas med beslutet: {{premises}}",
+      "not_chosen": "Inget restaurangnummer är valt under Serveringsställe. Beslutet sparas utan uppgifter om serveringsställe."
+    },
+    "scope": {
+      "beverages": {
+        "heading": "Beslutade alkoholdrycker",
+        "label": "Alkoholdrycker som får serveras",
+        "STRONG_BEER": "Starköl",
+        "WINE": "Vin",
+        "SPIRITS": "Spritdrycker",
+        "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker"
+      },
+      "serving_hours": {
+        "heading": "Beslutade serveringstider",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "single": "Serveringstid",
+        "from": "Från klockan",
+        "to": "Till klockan",
+        "half_filled": "Ange både från och till, eller lämna båda tomma."
+      },
+      "help": "Förifyllt från ansökan. Ändra om beslutet ska avvika från det som söktes.",
+      "none": "Inga"
+    },
+    "basis": {
+      "heading": "Beslutsunderlag",
+      "intro": "En sammanställning av de uppgifter beslutet ska grundas på, hämtade från ärendet.",
+      "errand": {
+        "heading": "Vad ärendet avser",
+        "type": "Ärendetyp",
+        "number": "Ärendenummer"
+      },
+      "holder": {
+        "heading": "Tillståndshavare",
+        "organization": "Organisation",
+        "organization_number": "Organisationsnummer",
+        "name": "Namn",
+        "address": "Adress",
+        "phone": "Telefon",
+        "email": "E-post",
+        "missing": "Ärendet saknar ärendeägare."
+      },
+      "premises": {
+        "heading": "Serveringsställe",
+        "name": "Namn",
+        "address": "Besöksadress",
+        "address_from": {
+          "FORM": "Besöksadress (ansökan)",
+          "OWNER": "Besöksadress (ärendeägare)"
+        },
+        "contact": "Kontakt",
+        "responsible": "Serveringsansvariga",
+        "right_of_disposal": "Förfoganderätt till lokalen",
+        "cooperation_agreement": "Samarbetsavtal",
+        "visitor_arrangement": "Besöksarrangemang",
+        "sales_site": "Försäljningsplats"
+      },
+      "operation": {
+        "heading": "Verksamheten",
+        "focus": "Inriktning",
+        "hotel_service": "Hotellservice",
+        "description": "Beskrivning",
+        "focus_description": "Beskrivning av inriktning",
+        "serving_to": "Servering avser",
+        "fair": "Mässa",
+        "order": "Ordning och nykterhet",
+        "food_sales": "Stadigvarande livsmedelsförsäljning",
+        "brews_on_site": "Tillverkar folköl på stället",
+        "food_registered": "Livsmedelsregistrerad",
+        "self_monitoring": "Egenkontrollprogram",
+        "distance_sales": "Distansförsäljning",
+        "supplier_agreement": "Avtal med tillverkare eller partihandlare",
+        "hazardous_products": "Särskilt farliga produkter"
+      },
+      "serving_hours": {
+        "heading": "Begärda serveringstider",
+        "period": "Period",
+        "period_public": "Period (allmänheten)",
+        "period_private": "Period (slutet sällskap)",
+        "indoor": "Serveringstid inne",
+        "indoor_public": "Serveringstid inne (allmänheten)",
+        "indoor_private": "Serveringstid inne (slutet sällskap)",
+        "outdoor": "Serveringstid ute",
+        "outdoor_public": "Serveringstid ute (allmänheten)",
+        "outdoor_private": "Serveringstid ute (slutet sällskap)",
+        "time": "Serveringstid",
+        "sales_time": "Försäljningstid",
+        "dates_note": "Övrigt om datum"
+      },
+      "serving_premises": {
+        "heading": "Serveringslokaler",
+        "drawing": "Planritning",
+        "kitchen_drawing": "Planritning kök",
+        "sales_drawing": "Ritning över försäljningsstället",
+        "area_drawing": "Ritning över serveringsområdet",
+        "seats": "Sittplatser",
+        "outdoor_seats": "Sittplatser uteservering",
+        "max_persons": "Max antal personer",
+        "description": "Lokaler inom vilka servering får ske"
+      },
+      "serving": {
+        "heading": "Servering",
+        "drinks": "Alkoholdrycker",
+        "food": "Serverar mat",
+        "menu": "Meny",
+        "drinks_menu": "Dryckesmeny"
+      },
+      "production": {
+        "heading": "Produktionen",
+        "beer": "Starköl (liter)",
+        "wine": "Vin (liter)",
+        "spirits": "Spritdrycker (liter)",
+        "cider": "Cider eller andra jästa drycker (liter)",
+        "started": "Produktionen startade",
+        "dependency": "Beroende till annan tillverkare",
+        "dependency_description": "Beskrivning av beroendet",
+        "description": "Produktionsbeskrivning"
+      },
+      "event": {
+        "heading": "Tillställningen",
+        "type": "Typ av tillställning",
+        "guests": "Beräknat antal gäster",
+        "guest_kind": "Gäster",
+        "invitation": "Hur gästerna bjudits in",
+        "police_permit": "Tillstånd från Polismyndigheten"
+      },
+      "financing": {
+        "heading": "Finansiering",
+        "sources": "Finansieringskällor",
+        "own_funds": "Egna medel",
+        "bank_loan": "Banklån",
+        "private_loan": "Privatlån",
+        "other": "Annan finansiering",
+        "notes": "Övrigt om finansiering"
+      },
+      "referrals": "Remissvar",
+      "no_form": "Ärendet har inga ärendeuppgifter från ansökan att visa.",
+      "loading": "Hämtar ärendeuppgifterna …",
+      "attachment": "Bifogad som bilaga: {{fileName}} (se Bilagor)",
+      "attachment_pending": "Bifogad som bilaga (se Bilagor)",
+      "attachment_missing": "Bilaga saknas",
+      "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
+      "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
+    },
+    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet."
+  },
+  "attachments": {
+    "edit": "Ändra",
+    "no_purpose": "Ingen typ vald",
+    "purpose_label": "Typ av bilaga för {{fileName}}",
+    "purpose_placeholder": "Välj typ av bilaga",
+    "change_purpose_title": "Ändra typ av bilaga?",
+    "change_purpose_body": "Vill du ändra typ av bilaga för {{fileName}} till {{purpose}}?",
+    "confirm_yes": "Ja",
+    "confirm_no": "Nej",
+    "change_purpose_error": "Bilagetypen kunde inte sparas"
+  },
+  "statements": {
+    "description": "Hantera varje remiss på ett ställe: välj instans, skapa underlag (PDF), och registrera status och utfall när svaret kommer. Om en instans avstyrker på saklig grund kan det utgöra skäl för avslag.",
+    "loading": "Hämtar remisser",
+    "empty": "Inga remisser tillagda ännu. Klicka \"Lägg till remiss\" för att börja hantera en remiss.",
+    "add": "Lägg till remiss",
+    "remove": "Ta bort remiss",
+    "open": "Öppna",
+    "counterparty": "Remissinstans",
+    "counterparty_placeholder": "Välj instans...",
+    "choose_counterparty_first": "Välj remissinstans ovan för att skapa ett underlag.",
+    "choose_counterparty_first_short": "Välj remissinstans först",
+    "generate": "Generera PDF",
+    "generated": "Underlaget har skapats och registrerats som bilaga på ärendet. Ladda ner det från fliken Bilagor. Status satt till \"Skapad\".",
+    "upload": "Ladda upp svar",
+    "upload_attachment": "Ladda upp bilaga",
+    "upload_kind_request": "Underlag",
+    "upload_kind_response": "Svar",
+    "tagged_as": "Taggas automatiskt som {{purpose}}",
+    "attachment_request": "Skapat underlag",
+    "attachment_filed": "Uppladdat underlag",
+    "attachment_response": "Uppladdat svar",
+    "attachment_title": "Remiss - {{counterparty}} - {{errandNumber}}",
+    "attachment_filename": "Remiss - {{counterparty}} - {{errandNumber}}.pdf",
+    "sent_at": "Datum skickad",
+    "responded_at": "Datum svar",
+    "status_label": "Status",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall...",
+    "document_name": "Benämning på remiss",
+    "document_name_placeholder": "Till exempel Yttrande från fastighetsägaren",
+    "free_text": "Fritext",
+    "apply_free_text": "Applicera fritext",
+    "free_text_placeholder": "Text som följer med i remissen, till exempel en upplysning till mottagaren",
+    "response_text": "Yttrande / kommentar",
+    "response_text_placeholder": "Sammanfatta vad instansen anfört i sitt yttrande...",
+    "status": {
+      "draft": "Skapad",
+      "active": "Skickad",
+      "completed": "Besvarad",
+      "cancelled": "Återkallad"
+    },
+    "validation": {
+      "document_name": "Ge remissen en benämning, den står i stället för remissinstansen.",
+      "counterparty": "Välj remissinstans.",
+      "outcome_required": "Välj utfall innan remissen markeras som besvarad.",
+      "outcome_needs_completed": "Ett utfall kan bara registreras när remissen är besvarad.",
+      "responded_at": "Ange datum för svaret.",
+      "sent_at": "Ange datum då remissen skickades.",
+      "underlay_missing": "Skapa underlaget innan remissen markeras som skickad.",
+      "response_missing": "Ladda upp instansens svar.",
+      "template": "Välj en mall för underlaget.",
+      "people": "Välj minst en person.",
+      "people_without_identity": "En av de valda personerna saknar personnummer. Mallen kan inte skapas utan det.",
+      "due_at": "Ange datum då svaret senast ska komma in."
+    },
+    "toast": {
+      "read_failed": "Remisserna kunde inte hämtas.",
+      "add_failed": "Remissen kunde inte läggas till.",
+      "save_failed": "Remissen kunde inte sparas.",
+      "generate_failed": "Underlaget kunde inte skapas.",
+      "upload_failed": "Svaret kunde inte laddas upp.",
+      "remove_failed": "Remissen kunde inte tas bort.",
+      "open_failed": "Bilagan kunde inte öppnas.",
+      "incomplete": "Kontrollera remisserna innan du sparar utredningen.",
+      "people_failed": "Personerna i bolaget kunde inte hämtas."
+    },
+    "remove_blocked": "Remissen kan inte tas bort när ett svar har laddats upp.",
+    "template": "Välj mall",
+    "template_placeholder": "Välj mall...",
+    "due_at": "Svar önskas senast",
+    "preview": "Förhandsgranskning",
+    "people_listed": "Personer som ska räknas upp i underlaget",
+    "people_one_each": "Personer att skapa ett underlag per",
+    "people_empty": "Inga personer med engagemang i bolaget kunde hämtas.",
+    "attachment_filename_for": "{{template}} - {{person}} - {{errandNumber}}.pdf",
+    "locked_to_underlay": "Remissinstans och mall är låsta till det underlag som redan skapats. Behöver du remittera till någon annan, lägg till en ny remiss.",
+    "attachment_unlinked": "Remissen som den här bilagan hörde till är borttagen.",
+    "companies": {
+      "choose": "Bolag som ska undersökas i begäran",
+      "placeholder": "Välj bolag",
+      "search": "Sök bolag",
+      "remove": "Ta bort {{company}} från begäran",
+      "loading": "Hämtar bolagsengagemang",
+      "empty": "Inga bolagsengagemang hittades för {{person}}.",
+      "error": "Bolagsengagemangen kunde inte hämtas.",
+      "unknown": "Bolagsengagemang kan inte hämtas för {{person}}, personen kunde inte slås upp."
+    }
+  },
+  "personal_suitability": {
+    "label": "Personlig lämplighet",
+    "description": "Bedömning av vandel för personer med betydande inflytande (PBI), baserat på Polismyndighetens yttrande. Sätt vandelsbedömning och kommentera varje person för sig.",
+    "empty": "Inga personer är markerade som PBI. Markera dem under Grundinformation, eller lägg till någon för hand här nedan.",
+    "comment": "Kommentar",
+    "comment_placeholder": "Kommentar om {{person}}s personliga lämplighet…",
+    "assessment_placeholder": "Välj bedömning…",
+    "assessment_for": "Bedömning för {{person}}",
+    "assessment": {
+      "approved": "Ingen anmärkning",
+      "deficiency": "Anmärkning finns",
+      "pending": "Under utredning"
+    },
+    "validation": {
+      "assessment_required": "Varje person behöver en bedömning."
+    },
+    "comment_too_long": "Kommentaren får vara högst 3000 tecken."
+  },
+  "financial_suitability": {
+    "financing": "Finansiering",
+    "financing_none": "Ansökan anger ingen finansiering.",
+    "financing_notes": "Övriga upplysningar om finansieringen",
+    "assessment": "Bedömning av ekonomisk lämplighet",
+    "toast": {
+      "save_failed": "Bedömningen kunde inte sparas"
+    },
+    "assessment_placeholder": "Skriv din bedömning av sökandens ekonomiska lämplighet. Ange även eventuella skatte- och avgiftsskulder."
+  },
+  "pbi_engagements": {
+    "label": "Bolagsengagemang",
+    "description": "Bolag som personen är engagerad i enligt bolagsdata. Välj de bolag som ska med i utredningsunderlaget. Uppdrag som revisor listas inte.",
+    "choose": "Bolag som ska med i underlaget",
+    "placeholder": "Välj bolag",
+    "search": "Sök bolag",
+    "remove": "Ta bort {{company}} från underlaget",
+    "loading": "Hämtar bolagsengagemang",
+    "empty": "Inga bolagsengagemang hittades för {{person}}.",
+    "error": "Bolagsengagemangen kunde inte hämtas.",
+    "unknown": "Bolagsengagemang kan inte hämtas för {{person}}, personen kunde inte slås upp."
+  },
+  "pbi_motivation": {
+    "label": "Motivering",
+    "placeholder": "Motivera {{person}}s betydande inflytande, till exempel rollen i den dagliga driften…",
+    "too_long": "Motiveringen får vara högst 3000 tecken."
+  },
+  "knowledge_test": {
+    "label": "Kunskapsprov",
+    "description": "Kunskap i alkohollagstiftningen prövas via Folkhälsomyndighetens webbaserade kunskapsprov (8 kap. 12 §). I mindre bolag ska minst hälften av de aktiva PBI-personerna ha godkänt resultat. Lägg till ett prov i taget med typ, status, provdatum och kommentar.",
+    "empty": "Inget kunskapsprov är tillagt.",
+    "add": "Lägg till kunskapsprov",
+    "remove": "Ta bort kunskapsprov {{number}} för {{person}}",
+    "type": "Typ av kunskapsprov",
+    "type_placeholder": "Välj typ av kunskapsprov…",
+    "type_for": "Typ för {{person}}s kunskapsprov {{number}}",
+    "type_other": "Annat kunskapsprov",
+    "own_type": "Ange kunskapsprov",
+    "own_type_placeholder": "Skriv vilket prov det gäller",
+    "types": {
+      "permanent_public": "Stadigvarande serveringstillstånd till allmänheten",
+      "permanent_closed_catering": "Stadigvarande serveringstillstånd i slutet sällskap vid cateringverksamhet",
+      "permanent_closed": "Stadigvarande serveringstillstånd i slutet sällskap utan cateringverksamhet",
+      "temporary_public": "Tillfälligt serveringstillstånd till allmänheten",
+      "temporary_closed": "Tillfälligt serveringstillstånd i slutet sällskap",
+      "tasting": "Tillstånd för provsmakning",
+      "farm_sales": "Gårdsförsäljning"
+    },
+    "comment": "Kommentar",
+    "comment_placeholder": "Kommentar om {{person}}s kunskapsprov {{number}}…",
+    "comment_too_long": "Kommentaren får vara högst 3000 tecken.",
+    "status_placeholder": "Välj status…",
+    "status_for": "Status för {{person}}s kunskapsprov {{number}}",
+    "tested_at_for": "Provdatum för {{person}}s kunskapsprov {{number}}",
+    "status": {
+      "approved": "Godkänt",
+      "failed": "Underkänt",
+      "booked": "Bokat",
+      "retake": "Omprov",
+      "not_applicable": "Ej aktuellt"
+    }
+  },
+  "premises": {
+    "inspected_at": "Lokalinspektion genomförd",
+    "known_before": "Känd sedan tidigare",
+    "fire_safety": "Brandsäkerhet",
+    "fire_safety_pending": "Inget yttrande ännu",
+    "right_of_disposal": {
+      "label": "Dispositionsrätt styrkt",
+      "placeholder": "Välj",
+      "proven": "Ja",
+      "pending": "Under utredning",
+      "not_proven": "Nej",
+      "note": "Underlag för dispositionsrätten",
+      "note_placeholder": "Underlag, t.ex. hyresavtal t.o.m. 2029"
+    },
+    "max_persons": "Högsta antal personer",
+    "seats": "Antal sittplatser",
+    "seats_indoor": "{{number}} inne",
+    "seats_outdoor": "{{number}} uteservering",
+    "verksamhetsbeskrivning": "Verksamhetsbeskrivning (från ansökan)",
+    "not_answered": "Ansökan saknar uppgift.",
+    "notes": "Anmärkningar",
+    "notes_placeholder": "Notera eventuella anmärkningar om lokal och serveringsställe",
+    "requirement_note": "Obs: Kraven på matservering, eget kök och sittplatser slopades den 1 juni 2026. Krav på brandsäker lokal och avgränsad serveringsyta kvarstår.",
+    "toast": {
+      "save_failed": "Anmärkningarna kunde inte sparas"
+    },
+    "previous_business": "Tidigare verksamhet",
+    "previous_business_placeholder": "Ange tidigare verksamhet",
+    "serving_area": "Serveringsytor",
+    "serving_area_placeholder": "Beskriv vilka ytor serveringen omfattar, till exempel matsal, uteservering och brygga",
+    "also_in_decision": "Obs: restaurangnummer och serveringsytor följer inte med till beslutet, utan anges på nytt där."
+  },
+  "action_points": {
+    "heading": "Åtgärdspunkter",
+    "description": "Punkter som tillståndshavaren ska åtgärda efter tillsynen. De förs över till åtgärdsärendet när tillsynsärendet beslutas.",
+    "count": "Åtgärdspunkter ({{count}})",
+    "row": "Åtgärdspunkt {{number}}",
+    "remove": "Ta bort åtgärdspunkt {{number}}",
+    "add": "Lägg till åtgärdspunkt",
+    "save_error": "Åtgärdspunkterna kunde inte sparas"
+  },
+  "inspection_protocol": {
+    "heading": "Tillsynsprotokoll",
+    "intro": "Välj protokollmall och fyll i protokollet under tillsynen: uppgifterna om besöket, resultat och noteringar per kontrollpunkt, och summeringen. Allt sparas med Spara ärende, foton sparas direkt.",
+    "loading": "Hämtar kontrollpunkter",
+    "read_error": "Protokollet kunde inte hämtas.",
+    "assessed": "{{assessed}} av {{total}} bedömda",
+    "deficient_one": "{{count}} brist",
+    "deficient_other": "{{count}} brister",
+    "result": {
+      "approved": "Godkänt",
+      "not_completed": "Brist",
+      "not_applicable": "Ej aktuellt"
+    },
+    "note": "Notering",
+    "note_placeholder": "Notering om {{title}}…",
+    "add_photo": "Lägg till foto",
+    "remove_attachment": "Ta bort {{fileName}}",
+    "save_error": "Protokollet kunde inte sparas.",
+    "upload_failed": "Bilagan kunde inte laddas upp.",
+    "unlink_failed": "Bilagan kunde inte tas bort.",
+    "open_failed": "Bilagan kunde inte öppnas.",
+    "template": "Protokollmall",
+    "template_placeholder": "Välj mall…",
+    "template_change_title": "Byta protokollmall?",
+    "template_change_text": "Kontrollpunkterna och de ifyllda uppgifterna för den nuvarande mallen ersätts med den nya mallens. Ändringen skrivs när du sparar ärendet.",
+    "template_change_yes": "Byt mall",
+    "template_change_no": "Avbryt",
+    "generate": "Skapa tillsynsprotokoll",
+    "generating": "Skapar protokoll",
+    "generated": "Tillsynsprotokollet är skapat och ligger under Bilagor.",
+    "generate_failed": "Tillsynsprotokollet kunde inte skapas.",
+    "action_points": "Skapa åtgärdspunkter",
+    "control_points": "Kontrollpunkter",
+    "control_point": "Kontrollpunkt {{number}}",
+    "control_point_placeholder": "Rubrik för kontrollpunkten",
+    "add_control_point": "Lägg till kontrollpunkt",
+    "remove_control_point": "Ta bort kontrollpunkt {{number}}",
+    "observations": {
+      "heading": "Observationer",
+      "intro": "Bedöm varje område. Inget val betyder att området inte är bedömt. Väljer du Brist markerar du vad du såg.",
+      "assessed": "{{assessed}} av {{total}} områden bedömda",
+      "observed_one": "{{count}} observation",
+      "observed_other": "{{count}} observationer",
+      "what": "Vad observerades?",
+      "missing": "Välj minst en observation, eller ändra bedömningen."
+    }
+  },
+  "customer": {
+    "overview": {
+      "inspection": {
+        "create": "Skapa tillsynsärende",
+        "INTERNAL_INSPECTION": "Inre tillsyn",
+        "EXTERNAL_INSPECTION": "Yttre tillsyn",
+        "error": "Tillsynsärendet kunde inte skapas."
+      }
+    },
+    "errands": {
+      "columns": {
+        "status": "Status",
+        "errandNumber": "Ärendenr",
+        "errandType": "Ärendetyp",
+        "channel": "Inkom via",
+        "administrator": "Handläggare",
+        "drake": "Drake"
+      },
+      "own": {
+        "title": "Ärenden i AoT-Draken",
+        "intro": "Ärenden i Alkohol och Tobak-Draken för organisationen: ansökningar, anmälningar och tillsyn. Interna ärenden kan öppnas direkt.",
+        "empty": "Inga ärenden för denna organisation.",
+        "error": "Ärenden kunde inte hämtas.",
+        "openRow": "Ärende {{errandNumber}}, öppna ärende i ny flik"
+      },
+      "other": {
+        "title": "Ärenden i andra Drakar",
+        "intro": "Ärenden i kommunens övriga Drakar (Kontakt Sundsvall, MEX, Näring och tillväxt m.fl.).",
+        "loading": "Hämtar ärenden i andra Drakar. Det kan ta en stund.",
+        "empty": "Inga ärenden i andra Drakar för denna organisation.",
+        "error": "Ärenden i andra Drakar kunde inte hämtas.",
+        "deferred": "Visning av ärenden i kommunens övriga Drakar är inte klar ännu och kommer i ett senare skede."
+      },
+      "external": {
+        "title": "Ärenden i externa system",
+        "intro": "Ärenden från andra kommunala system (ByggR, ECOS, Lex Alkohol, EDP VA m.fl.). Draken har begränsad information om dessa ärenden. De visas i informationssyfte.",
+        "deferred": "Visning av ärenden i externa system är inte klar ännu och kommer i ett senare skede."
+      }
+    },
+    "assets": {
+      "title": "Tillstånd",
+      "intro": "Serverings- och tobakstillstånd som rör organisationen. Klicka på ett tillstånd för att öppna ärendet det kommer från.",
+      "source": "Datan kommer från Alkohol och Tobak-Draken.",
+      "loading": "Hämtar tillstånd",
+      "error": "Tillstånd kunde inte hämtas.",
+      "empty": "Inga tillstånd.",
+      "openRow": "Öppna ärende {{errandNumber}} i ny flik",
+      "columns": {
+        "status": "Status",
+        "registrationNumber": "Diarienr",
+        "type": "Typ",
+        "caseOfficer": "Handläggare",
+        "decisionDate": "Beslutsdatum",
+        "open": "Öppna"
+      },
+      "status": {
+        "ACTIVE": "Gällande",
+        "TEMPORARY": "Tillfälligt",
+        "EXPIRED": "Utgånget",
+        "BLOCKED": "Blockerat",
+        "REPLACED": "Ersatt",
+        "DRAFT": "Utkast"
+      }
+    }
   }
 }

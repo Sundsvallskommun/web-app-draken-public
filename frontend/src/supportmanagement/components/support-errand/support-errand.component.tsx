@@ -10,12 +10,15 @@ import {
   getLabelCategorizationHeading,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
+  NEW_ERRAND_HEADING,
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { labelCategoryRequiresType } from '@supportmanagement/services/support-label-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
-import { useParams, useRouter } from 'next/navigation';
+import { pbiProblemAmong } from '@supportmanagement/services/support-pbi-service';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -24,6 +27,9 @@ import { SupportErrandSummary } from '../support-errand-basics-form/support-erra
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
+import { SupportProcessLog } from './ui-phase/support-process-log.component';
+import { SupportUiPhaseWrapper } from './ui-phase/support-ui-phase-wrapper';
+import { useSupportProcessPoller } from './ui-phase/use-support-process-poller';
 
 const typeIsOptional = (category: string | undefined): boolean =>
   appConfig.features.useLabelCategorization &&
@@ -41,6 +47,9 @@ let formSchema = yup
     channel: yup.string().required('Välj kanal'),
     description: yup.string(),
     parameters: yup.array(),
+    // A person of significant influence may not carry a comment without a verdict; the card shows the message.
+    customer: yup.array().test('pbi-verdicts', 'pbi', (stakeholders) => !pbiProblemAmong(stakeholders as never)),
+    contacts: yup.array().test('pbi-verdicts', 'pbi', (stakeholders) => !pbiProblemAmong(stakeholders as never)),
   })
   .required();
 
@@ -53,9 +62,25 @@ export const SupportErrandComponent: FC = () => {
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { supportErrand, setSupportErrand } = useSupportStore();
-  const { setNotesCount } = useBadgeStore();
+  const { setNotesCount, setServiceNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
+  const pathName = usePathname() ?? '';
+  const { theme } = useGui();
+
+  const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
+  const processIsWorking = useSupportProcessPoller();
+
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende')) &&
+    (!followsProcess || hasSupportErrandProcess(supportErrand));
+  const uiPhaseSection = (
+    <div className="flex items-center justify-between">
+      <SupportUiPhaseWrapper working={processIsWorking} />
+      {followsProcess ? <SupportProcessLog /> : null}
+    </div>
+  );
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(formSchema) as any,
@@ -72,8 +97,6 @@ export const SupportErrandComponent: FC = () => {
   };
   const router = useRouter();
   const setUser = useUserStore((s) => s.setUser);
-
-  const { theme } = useGui();
 
   useEffect(() => {
     setCategoriesList(supportMetadata?.categories);
@@ -139,11 +162,15 @@ export const SupportErrandComponent: FC = () => {
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
-      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+      void getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
+      if (appConfig.features.useServiceNotes) {
+        void getSupportNotesCount(supportErrand.id!, municipalityId!, 'PUBLIC').then(setServiceNotesCount);
+      }
     }
-  }, [supportErrand, municipalityId, setNotesCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportErrand?.id, municipalityId, setNotesCount, setServiceNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 
@@ -161,6 +188,11 @@ export const SupportErrandComponent: FC = () => {
   return (
     <FormProvider {...methods}>
       <div className="grow shrink overflow-y-hidden">
+        {showUiPhases ? (
+          <div className="sticky top-0 z-10 flex bg-background-100 border-b-1 border-divider p-12 md:px-32 md:py-20 xl:px-80 overflow-y-auto">
+            <div className="w-full">{uiPhaseSection}</div>
+          </div>
+        ) : null}
         <div className="flex justify-end w-full pl-24 md:pl-40 h-full">
           <div className="flex justify-center overflow-y-auto w-full grow max-lg:mr-[5.6rem]">
             <main
@@ -187,7 +219,7 @@ export const SupportErrandComponent: FC = () => {
                       ) : (
                         <div className="flex justify-between items-center pt-8">
                           <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                            Registrera nytt ärende
+                            {NEW_ERRAND_HEADING}
                           </h1>
                         </div>
                       )}
@@ -199,7 +231,6 @@ export const SupportErrandComponent: FC = () => {
                     )}
                   </div>
                 </section>
-
                 <section className="bg-transparent pb-4">
                   <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
                     <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />

@@ -28,6 +28,11 @@ export default function Layout({ title, children }: { title: string; children: R
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
 
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    appConfig.isCaseData &&
+    (pathName === '/registrera' || pathName.includes('arende'));
+
   useEffect(() => {
     setHostName(window.location.hostname);
   }, []);
@@ -93,6 +98,21 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
+  const registerErrandSection = !(appConfig.features.useProcess && appConfig.isSupportManagement) ? (
+    <>
+      <Divider orientation="vertical" className="mx-24" />
+      <Link
+        href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+        target="_blank"
+        data-cy="register-new-errand-button"
+      >
+        <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
+          Nytt ärende
+        </Button>
+      </Link>
+    </>
+  ) : null;
+
   return (
     <>
       <div className="relative z-[15] bg-background-content">
@@ -111,17 +131,7 @@ export default function Layout({ title, children }: { title: string; children: R
                   buttonSize="sm"
                 />
               </span>
-
-              <Divider orientation="vertical" className="mx-24" />
-              <Link
-                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-                target="_blank"
-                data-cy="register-new-errand-button"
-              >
-                <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
-                  Nytt ärende
-                </Button>
-              </Link>
+              {registerErrandSection}
             </div>
           }
           mobileMenu={
@@ -153,19 +163,9 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={
-            appConfig.features.useUiPhases &&
-            !isMinLargeDevice &&
-            (pathName === '/registrera' || pathName.includes('arende')) ? (
-              <UiPhaseWrapper />
-            ) : null
-          }
+          bottomContent={showUiPhases && !isMinLargeDevice ? <UiPhaseWrapper /> : null}
         >
-          {appConfig.features.useUiPhases &&
-          isMinLargeDevice &&
-          (pathName === '/registrera' || pathName.includes('arende')) ? (
-            <UiPhaseWrapper />
-          ) : null}
+          {showUiPhases && isMinLargeDevice ? <UiPhaseWrapper /> : null}
         </PageHeader>
       </div>
 

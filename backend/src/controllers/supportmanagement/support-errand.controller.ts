@@ -28,7 +28,7 @@ import {
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
-import { ExternalIdType } from '@/interfaces/externalIdType.interface';
+import { ExternalIdType, isOrganizationExternalIdType } from '@/interfaces/externalIdType.interface';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
@@ -338,6 +338,23 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   actions?: CErrandAction[];
 }
 
+/** What a new errand can be created with instead of the defaults, e.g. a tillsyn errand from the customer view. */
+export class NewSupportErrandDto {
+  @IsOptional()
+  @IsArray()
+  labels?: Label[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CSupportStakeholder)
+  stakeholders?: CSupportStakeholder[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CJsonParameter)
+  jsonParameters?: CJsonParameter[];
+}
+
 class ForwardFormDto {
   @IsString()
   recipient!: string;
@@ -386,7 +403,7 @@ export class SupportErrandController {
   }
 
   /**
-   * Resolves the organization number for a COMPANY stakeholder when forwarding an errand.
+   * Resolves the organization number for an organization (COMPANY/ENTERPRISE) stakeholder when forwarding an errand.
    * Prefers the organization number persisted as a stakeholder parameter (written on save), falls
    * back to a Legal Entity lookup by partyId, and degrades gracefully on failure instead of
    * aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
@@ -420,18 +437,26 @@ export class SupportErrandController {
       return { data: errandData, message: 'success' };
     }
 
+    const municipalityId = MUNICIPALITY_ID ?? '';
     const personNumberOf = (s: SupportStakeholder) =>
-      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${s.externalId}/personnumber` }, req.user);
+      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${municipalityId}/${s.externalId}/personnumber` }, req.user);
 
     // The first PRIMARY stakeholder is the customer; every non-PRIMARY one is a contact. Any further
     // PRIMARY stakeholders are neither, and are passed through untouched.
     const customerIndex = stakeholders.findIndex(s => s.role === SupportStakeholderRole.PRIMARY);
 
     const enriched = await Promise.all(
-      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string }> => {
+      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string; organizationNumber?: string }> => {
         const isCustomer = i === customerIndex;
         const isContact = s.role !== SupportStakeholderRole.PRIMARY;
-        if ((!isCustomer && !isContact) || !this.hasResolvablePersonNumber(s)) {
+        if (!isCustomer && !isContact) {
+          return s;
+        }
+        if (isOrganizationExternalIdType(s.externalIdType)) {
+          const organizationNumber = await this.resolveStakeholderOrgNumber(s, municipalityId, req);
+          return organizationNumber ? { ...s, organizationNumber } : s;
+        }
+        if (!this.hasResolvablePersonNumber(s)) {
           return s;
         }
         if (isCustomer) {
@@ -601,12 +626,13 @@ export class SupportErrandController {
 
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
-  @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware)
+  @OpenAPI({ summary: 'Initiate a new support errand, empty or with the given labels, stakeholders and JSON parameters' })
+  @UseBefore(authMiddleware, validationMiddleware(NewSupportErrandDto, 'body'))
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
+    @Body({ required: false }) prefill?: NewSupportErrandDto,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     if (!municipalityId) {
       console.error('No municipality id found, needed to fetch errands.');
@@ -625,16 +651,21 @@ export class SupportErrandController {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
       classification: errandDefaults?.classification,
-      labels: errandDefaults?.labels
-        ? resolveDefaultLabels(
-            selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
-            errandDefaults.labels,
-          )
-        : [],
+      labels: prefill?.labels
+        ? prefill.labels
+        : errandDefaults?.labels
+          ? resolveDefaultLabels(
+              selectCategorizationLabels(metadataRes.data.labelStructure, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT),
+              errandDefaults.labels,
+            )
+          : [],
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
+      parameters: errandDefaults?.parameters,
+      ...(prefill?.stakeholders ? { stakeholders: prefill.stakeholders } : {}),
+      ...(prefill?.jsonParameters ? { jsonParameters: prefill.jsonParameters } : {}),
     };
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
@@ -667,11 +698,13 @@ export class SupportErrandController {
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
-    const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
-      throw e;
-    });
+    const res = await this.apiService
+      .patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body, propagateClientError: true }, req.user)
+      .catch(e => {
+        logger.error('Error when registering support errand');
+        logger.error(e);
+        throw e;
+      });
     return response.status(200).send(res.data);
   }
 
@@ -751,8 +784,9 @@ export class SupportErrandController {
       //   logger.error('Missing required contact channels for stakeholder');
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
-      const organizationNumber =
-        s.externalIdType === ExternalIdType.COMPANY ? await this.resolveStakeholderOrgNumber(s, municipalityId, req) : undefined;
+      const organizationNumber = isOrganizationExternalIdType(s.externalIdType)
+        ? await this.resolveStakeholderOrgNumber(s, municipalityId, req)
+        : undefined;
       stakeholders.push(toCasedataStakeholder(s, organizationNumber));
     }
 

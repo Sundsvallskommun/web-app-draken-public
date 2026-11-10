@@ -1,17 +1,24 @@
 'use client';
 
-import { renderTemplatePdf } from '@casedata/services/casedata-decision-service';
-import { Disclosure } from '@sk-web-gui/react';
-import { FileText } from 'lucide-react';
+import { PdfPreview } from '@common/components/template-preview/pdf-preview.component';
+import { renderTemplatePdf, renderTemplatePdfPreview } from '@common/services/template-render-service';
 import { useEffect, useRef, useState } from 'react';
 
 interface TemplatePdfPreviewProps {
   identifier: string | undefined;
   parameters: { [key: string]: string | Object };
   debounceMs?: number;
+  watermarked?: boolean;
+  title?: string;
 }
 
-export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifier, parameters, debounceMs = 800 }) => {
+export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({
+  identifier,
+  parameters,
+  debounceMs = 800,
+  watermarked = false,
+  title = 'Mallförhandsgranskning',
+}) => {
   const [pdfBase64, setPdfBase64] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -36,7 +43,8 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
     debounceTimerRef.current = setTimeout(async () => {
       const requestId = ++requestIdRef.current;
       try {
-        const result = await renderTemplatePdf(identifier, parameters);
+        const render = watermarked ? renderTemplatePdfPreview : renderTemplatePdf;
+        const result = await render(identifier, parameters);
         if (requestIdRef.current !== requestId) return;
         setPdfBase64(result);
       } catch {
@@ -56,35 +64,11 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifi
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identifier, JSON.stringify(parameters), debounceMs]);
+  }, [identifier, JSON.stringify(parameters), debounceMs, watermarked]);
 
-  if (!identifier || (!pdfBase64 && !isLoading && !error)) {
+  if (!identifier) {
     return null;
   }
 
-  return (
-    <Disclosure variant="alt" initalOpen data-cy="decision-template-preview" className="mb-24">
-      <Disclosure.Header>
-        <Disclosure.Icon icon={<FileText size={18} />} />
-        <Disclosure.Title>Mallförhandsgranskning</Disclosure.Title>
-        <Disclosure.Button />
-      </Disclosure.Header>
-      <Disclosure.Content>
-        {isLoading ? (
-          <div className="flex justify-center items-center h-[60rem] text-dark-secondary">
-            Laddar förhandsgranskning...
-          </div>
-        ) : error ? (
-          <div className="flex justify-center items-center h-[20rem] text-error">{error}</div>
-        ) : (
-          <iframe
-            src={`data:application/pdf;base64,${pdfBase64}#pagemode=none`}
-            className="w-full h-[80rem] border-0"
-            title="Mallförhandsgranskning"
-            data-cy="decision-template-preview-content"
-          />
-        )}
-      </Disclosure.Content>
-    </Disclosure>
-  );
+  return <PdfPreview pdfBase64={pdfBase64} isLoading={isLoading} error={error} title={title} />;
 };

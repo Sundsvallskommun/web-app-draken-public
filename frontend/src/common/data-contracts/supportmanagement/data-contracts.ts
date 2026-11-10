@@ -70,6 +70,22 @@ export interface Problem {
   status?: number;
 }
 
+/** Identifier describing a user or subject (AD-account or party-id) */
+export interface Identifier {
+  /**
+   * Identifier type
+   * @minLength 1
+   * @pattern ^(adAccount|partyId)$
+   */
+  type: IdentifierTypeEnum;
+  /**
+   * Identifier value (AD-account name or partyId UUID)
+   * @minLength 0
+   * @maxLength 255
+   */
+  value: string;
+}
+
 export interface ConstraintViolationProblem {
   /** @format uri */
   type?: string;
@@ -149,13 +165,27 @@ export interface NamespaceConfig {
    * @pattern ^https?://\S+$
    */
   teliaAceWorkItemBaseUrl?: string;
+  /** The process engine running the processes of this namespace, which is also the address its events are delivered to. The only one known is pw-alkt. A namespace has exactly one, and leaving it out means the namespace runs no processes at all. It cannot be combined with access control, as the access mapper only grants access to AD accounts */
+  processConsumer?: string;
+  /** The errand changes worth telling the process about. An event whose sub type is not listed here is not published, so a namespace with a process consumer must list ERRAND, for its processes to start, and DECISION, for a process waiting for its decision to learn that it has been made. Commands sent to the process (PROCESS, SIGNAL) are not errand changes, are never filtered by this list and may not be listed. Nor may NOTE and SYSTEM, as no event of theirs is ever published to a process. A change of status or phase is told as STATUS or PHASE apart from the ERRAND event of the change it is part of, as are an assignment (ASSIGNMENT), every label added (LABEL) and a draft being made active (ERRAND_ACTIVATION). Messages are logged by the channel they went through, received and sent alike: MESSAGE_EMAIL_EXTERNAL, MESSAGE_SMS_EXTERNAL, MESSAGE_WEB_MESSAGE_EXTERNAL, and MESSAGE_CONVERSATION_EXTERNAL and MESSAGE_CONVERSATION_INTERNAL for messages in conversations with the outside world and within the organisation respectively */
+  processTriggers?: NamespaceConfigProcessTriggersEnum[];
   /** If set to true emails sent to subscribers only name the errands that were updated, without describing what happened to them. If no value is set it defaults to false. */
   excludeEventDescriptionsInEmail?: boolean;
+  /** If set to true subscribers may be notified by sms, which only names the errands that were updated and links to them. Events routed to sms in a namespace where it is not enabled are not delivered by sms. If no value is set it defaults to false. */
+  smsNotificationsEnabled?: boolean;
   /**
-   * Base url of the web application handling errands in this namespace. Links to errands are made as <baseUrl>/<municipalityId>/<namespace>/errands/<errandNumber>. Leaving it out means emails carry no links to errands.
+   * Address of an errand in the web application handling errands in this namespace, short of the errand number. Links to errands are made as <baseUrl>/<errandNumber>, a trailing slash on the base url being ignored. Leaving it out means emails carry no links to errands.
    * @pattern ^https?://\S+$
    */
   baseUrl?: string;
+  /** Id of a subscription profile in this namespace. When set, the reporter of an errand is subscribed to the errand with this profile as the errand is created. Leaving it out subscribes no reporter. */
+  reporterProfileId?: string;
+  /**
+   * The channels a subscriber is given when the service creates one for a user, as when a user is assigned an errand without being a subscriber in the namespace. Leaving it out gives such a subscriber the INTERNAL channel alone. Subscribers already present keep their own channels.
+   * @maxItems 2147483647
+   * @minItems 1
+   */
+  newSubscriberChannels?: NamespaceConfigNewSubscriberChannelsEnum[];
   /** What a user whose labels only grant them limited read for an errand may reach on it. Limited read always reaches the errand itself, listing resources here extends it beyond that, up to what read access gives. The fields apply instead of the fields of any role the user holds */
   limitedReadAccess?: LimitedReadAccess;
   /** Access given to the reporter of an errand. Leaving it out means reporters get nothing beyond what their labels already grant */
@@ -217,6 +247,11 @@ export interface Config {
    */
   active?: boolean;
   /**
+   * If set to false, what the action does notifies no one, as a request sent with X-notify: false. The handler of the errand is not notified of what an action does either way, and the process of the errand is told either way. An action run at once, as part of the request that creates or updates the errand, notifies only if that request does too
+   * @default true
+   */
+  notify?: boolean;
+  /**
    * Conditions for when the action should be added to errand. Parameters must match action definition.
    * @minItems 1
    */
@@ -255,7 +290,7 @@ export interface Label {
   /**
    * Resource name
    * @minLength 1
-   * @pattern [A-Z0-9_]+
+   * @pattern [A-Z0-9_-]+
    */
   resourceName: string;
   /**
@@ -264,20 +299,22 @@ export interface Label {
    */
   deprecated?: boolean;
   labels?: Label[];
-  /** Free-form key/value data owned by the client. Stored and returned as-is by the service, which does not interpret the contents (apart from rejecting duplicate keys per label). Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  /** Free-form key/value data owned by the client, stored and returned as-is. Duplicate keys per label are rejected, and three keys are read by the service itself. processKey names the process an errand wearing the label runs. processStartMode says whether that process starts by itself when the errand changes (AUTOMATIC, which is also what leaving it out means) or only when a handler starts it (MANUAL); it has to be exactly one of those two, and is allowed only on a label that also has processKey. processBlocked set to true keeps every process away from an errand wearing the label; it has to be exactly true or false, and needs no processKey. The three keys are matched exactly as spelled, and a key spelled like any of them in any other way is rejected. Other keys are conventions agreed between clients (e.g. 'escalationEmail'). */
   attributes?: LabelAttribute[];
 }
 
-/** Label attribute model. Free-form key/value data owned by the client; not interpreted by the service. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+/** Label attribute model. Free-form key/value data owned by the client. Keys are conventions agreed between clients (e.g. 'escalationEmail'), except processKey and processStartMode, which the service reads itself - see attributes on the label. */
 export interface LabelAttribute {
   /**
    * Attribute key
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 255
    */
   key: string;
   /**
    * Attribute value
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 16383
    */
   value: string;
 }
@@ -309,10 +346,11 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  integralNumber?: boolean;
-  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -324,7 +362,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -352,6 +389,200 @@ export interface JsonParameter {
    * @format int64
    */
   version?: number;
+}
+
+/** What a process reports about itself: the state it is in, what it did and what it waits for */
+export interface ErrandProcessReport {
+  /**
+   * The service running the process, matching the process consumer configured for the namespace
+   * @minLength 1
+   * @maxLength 64
+   */
+  processService: string;
+  /**
+   * The process model this instance runs, as the process engine names it
+   * @minLength 1
+   * @maxLength 128
+   */
+  processKey: string;
+  /**
+   * Id of the process instance in the process engine. Required when registering a start that succeeded, and left out when registering one that failed, since a start that never happened has no instance. Taken from the path when reporting on an instance; sending a different one there is rejected.
+   * @minLength 0
+   * @maxLength 64
+   * @pattern \S+
+   */
+  processInstanceId?: string;
+  /**
+   * The state the process is in: RUNNING, WAITING, RETRYING, COMPLETED or FAILED. Carried as a string rather than as an enum so that a value added later does not break a client that generated one from this schema; an unknown value is still refused.
+   * @minLength 1
+   */
+  processStatus: string;
+  /**
+   * Identifier of the activity the process is at, as the process model names it
+   * @minLength 0
+   * @maxLength 255
+   */
+  currentActivityId?: string;
+  /**
+   * Display name of the activity the process is at
+   * @minLength 0
+   * @maxLength 255
+   */
+  currentActivityName?: string;
+  /**
+   * The external task the report was made from. Together with the activity ids of the report it is what makes a replayed report add no duplicate activities.
+   * @minLength 0
+   * @maxLength 64
+   */
+  externalTaskId?: string;
+  /**
+   * The version of the errand the work step read. Optional, and meant for a step that reads the errand without writing back to it and therefore has no If-Match of its own.
+   * @format int64
+   */
+  errandVersion?: number;
+  /**
+   * When the process started. A later report that leaves it out does not clear it
+   * @format date-time
+   */
+  started?: string;
+  /** Why the process failed, set when the state says it did */
+  error?: ProcessError;
+  /**
+   * What the process did, appended to the activity log of the errand in the same call as the state. Read back through GET /errands/{errandId}/process-activities.
+   * @maxItems 100
+   * @minItems 0
+   */
+  activities?: ProcessActivity[];
+  /**
+   * What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at. Replaces what the previous report said, and a report that leaves it out or sends it empty says the process waits for no person, which is the normal case for a gate the process passes by itself.
+   * @maxItems 50
+   * @minItems 0
+   */
+  awaitingSignals?: ProcessSignal[];
+}
+
+/** An entry in the activity log of an errand */
+export interface ProcessActivity {
+  /** Unique id of the entry */
+  id?: string;
+  /** The process instance the entry belongs to. Null for entries written when the errand had no process instance at all, which is precisely the case for the entries explaining why no process started. */
+  processInstanceId?: string;
+  /**
+   * Kind of entry. A free string that this service stores without interpreting it
+   * @minLength 1
+   * @maxLength 64
+   */
+  activityType: string;
+  /**
+   * Identifier of the activity in the process model
+   * @minLength 0
+   * @maxLength 255
+   */
+  activityId?: string;
+  /**
+   * Display name of the activity
+   * @minLength 0
+   * @maxLength 255
+   */
+  activityName?: string;
+  /** Severity of the entry: INFO, WARN or ERROR. Defaults to INFO. Carried as a string rather than as an enum so that a value added later does not break a client that generated one from this schema; an unknown value is still refused. */
+  severity?: string;
+  /**
+   * Free text describing what happened. Must not carry personal data
+   * @minLength 0
+   * @maxLength 2048
+   */
+  message?: string;
+  /**
+   * Error code, set for entries reporting a failure
+   * @minLength 0
+   * @maxLength 64
+   */
+  errorCode?: string;
+  /**
+   * When the entry happened, read from the clock of the process
+   * @format date-time
+   */
+  occurredAt: string;
+  /**
+   * When the entry was stored, read from the clock of this service
+   * @format date-time
+   */
+  created?: string;
+}
+
+/** Why a process failed */
+export interface ProcessError {
+  /**
+   * Error code as reported by the process. Not interpreted by this service
+   * @minLength 0
+   * @maxLength 64
+   */
+  code?: string;
+  /**
+   * Human readable explanation of the failure. Must not carry personal data
+   * @minLength 0
+   * @maxLength 2048
+   */
+  message?: string;
+}
+
+/** A signal the process waits for from a handler: a gate it can be stepped past by hand */
+export interface ProcessSignal {
+  /**
+   * The message name of the signal in the process model. It is what a handler sends to step the process on, and what the process correlates on - exactly as given, case included.
+   * @minLength 0
+   * @maxLength 128
+   */
+  name: string;
+  /**
+   * Display text for the choice, taken from the process model
+   * @minLength 0
+   * @maxLength 255
+   */
+  label?: string;
+}
+
+/** A process attached to an errand, and its state */
+export interface ErrandProcess {
+  /** Unique id of the process row */
+  id?: string;
+  /** The service running the process */
+  processService?: string;
+  /** The process model this instance runs, as the process engine names it */
+  processKey?: string;
+  /** Id of the process instance in the process engine. Left out for a start that failed, since it never produced one */
+  processInstanceId?: string;
+  /** The state the process is in: RUNNING, WAITING, RETRYING, COMPLETED or FAILED. Carried as a string rather than as an enum so that a value added later does not break a client that generated one from this schema. */
+  processStatus?: string;
+  /** Identifier of the activity the process is at, as the process model names it */
+  currentActivityId?: string;
+  /** Display name of the activity the process is at */
+  currentActivityName?: string;
+  /**
+   * When the process started
+   * @format date-time
+   */
+  started?: string;
+  /**
+   * When the process reached a state it does not leave. Set by this service from the reported state, and cleared again if the instance comes back to life.
+   * @format date-time
+   */
+  ended?: string;
+  /** Why the process failed, set when the state says it did */
+  error?: ProcessError;
+  /** What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at, through POST .../processes/{processInstanceId}/signals. Empty when the process waits for no person, which is the normal case for a gate the process passes by itself, and always empty for a process that has completed. A process that has FAILED keeps the signals it last reported, since an incident leaves it listening in the process engine. */
+  awaitingSignals?: ProcessSignal[];
+  /**
+   * When the process was first registered on the errand
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * When the state of the process was last updated
+   * @format date-time
+   */
+  modified?: string;
 }
 
 /** Email integration config model */
@@ -437,27 +668,45 @@ export interface EventFilter {
    */
   type: EventFilterTypeEnum;
   /**
-   * Event subtype. If null, all subtypes of the given type match.
+   * Event subtype. If null, all subtypes of the given type match. Messages are matched by the channel they went through, received and sent alike: MESSAGE_EMAIL_EXTERNAL, MESSAGE_SMS_EXTERNAL, MESSAGE_WEB_MESSAGE_EXTERNAL, and MESSAGE_CONVERSATION_EXTERNAL and MESSAGE_CONVERSATION_INTERNAL for messages in conversations with the outside world and within the organisation respectively. ERRAND matches every change to an errand, while STATUS and PHASE match only changes of its status and of its phase respectively. LABEL matches a label being added to an errand, logged once for every label added - as CREATE/LABEL for the labels an errand is created with and as UPDATE/LABEL for those added later. ERRAND_ACTIVATION matches a draft being made active, logged as UPDATE/ERRAND_ACTIVATION alongside the UPDATE/ERRAND of the update that made it active, and is not matched by ERRAND.
    * @minLength 0
    * @maxLength 64
    */
   subtype?: string;
+  /** Optional id of a metadata label, only allowed together with subtype LABEL. When set, only the event of this label being added to the errand matches, the id compared regardless of case. If null, which label was added does not matter. */
+  labelId?: string;
 }
 
-/** Identifier describing a user or subject (AD-account or party-id) */
-export interface Identifier {
+/** A subscription profile is a named set of event filters and the channels the events they match are delivered on. A subscription pointing at a profile delivers the events the profile's filters select, while the subscriber's own event filters do not apply to it. The events are delivered on the profile's channels, or on the subscriber's own channels when the profile has none. */
+export interface SubscriptionProfile {
+  /** Unique identifier of the subscription profile */
+  id?: string;
   /**
-   * Identifier type
-   * @minLength 1
-   * @pattern ^(adAccount|partyId)$
-   */
-  type: IdentifierTypeEnum;
-  /**
-   * Identifier value (AD-account name or partyId UUID)
+   * Name of the profile, unique within the namespace
    * @minLength 0
    * @maxLength 255
    */
-  value: string;
+  name?: string;
+  /**
+   * Optional description of what the profile is for
+   * @minLength 0
+   * @maxLength 255
+   */
+  description?: string;
+  /** Event filters selecting which events the profile delivers. An event matching any of them is delivered. */
+  eventFilters?: EventFilter[];
+  /** Channels the events matched by the profile are delivered on. Leaving it out or empty delivers them on the subscriber's own channels instead, which lets each user choose how they are notified. An update with an empty list clears the profile's channels. */
+  channels?: SubscriptionProfileChannelsEnum[];
+  /**
+   * Timestamp when the profile was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the profile was last modified
+   * @format date-time
+   */
+  modified?: string;
 }
 
 /** Channel a subscriber wants to receive notifications on */
@@ -465,7 +714,7 @@ export interface NotificationChannel {
   /** Channel type */
   type: NotificationChannelTypeEnum;
   /**
-   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used.
+   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used, i.e. the e-mail address or mobile number of the employee. The destination of an SMS channel must be an MSISDN, e.g. +46701234567.
    * @minLength 0
    * @maxLength 255
    */
@@ -523,7 +772,9 @@ export interface Subscription {
   id?: string;
   /** What this subscription targets (an errand or the whole namespace). */
   target?: SubscriptionTarget;
-  /** Optional per-subscription override of the subscriber-level event filters. When set, these filters apply to events matched by this subscription instead of the subscriber's global filters. When null or empty, the subscriber-level filters are used as-is. */
+  /** Optional id of a subscription profile. When set, the profile alone decides which events this subscription delivers, and on which channels unless the profile has none, when the subscriber's own channels are used. The subscriber's event filters do not apply. Cannot be combined with eventFilters. */
+  profileId?: string;
+  /** Optional per-subscription override of the subscriber-level event filters. When set, these filters apply to events matched by this subscription instead of the subscriber's global filters. When null or empty, the subscriber-level filters are used as-is. Cannot be combined with profileId. */
   eventFilters?: EventFilter[];
   /**
    * Optional expiration timestamp. After this point the subscription is eligible for automatic cleanup.
@@ -910,7 +1161,7 @@ export interface LabelRestructureStep {
   classification?: string;
   /**
    * MOVE only: an optional new resourceName to set at the same time (used for a combined move+rename)
-   * @pattern [A-Z0-9_]+
+   * @pattern [A-Z0-9_-]+
    */
   newResourceName?: string;
 }
@@ -1175,6 +1426,8 @@ export interface Errand {
   classification?: Classification;
   /** Status for the errand */
   status?: string;
+  /** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. Made active, everything on the errand is told of as new: every label on it, the ancestors of its labels included, its assignee, its status and its phase are logged as events, and its actions are created as for a new errand. An active errand never becomes a draft again. */
+  lifecycle?: ErrandLifecycleEnum;
   /** Resolution status for closed errands. Value can be set to anything */
   resolution?: string;
   /** Errand description text */
@@ -1206,7 +1459,7 @@ export interface Errand {
   suspension?: Suspension;
   /** Flag to indicate if the errand is business related */
   businessRelated?: boolean;
-  /** List of labels for the errand */
+  /** List of labels for the errand. Every label must belong to the namespace of the errand */
   labels?: ErrandLabel[];
   /** Phase history for the errand */
   phases?: ErrandPhase[];
@@ -1216,6 +1469,8 @@ export interface Errand {
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
   actions?: ErrandAction[];
+  /** The process driving this errand, and its state. Null for a namespace that runs no processes, and for an errand that never had one. Shows the live process when the errand has one, and otherwise the most recent, so that a start which failed is visible as a failure instead of as an errand without a process. */
+  process?: ErrandProcess;
   /** List of measures for the errand */
   measures?: Measure[];
   /**
@@ -1273,10 +1528,25 @@ export interface ErrandAttachment {
   /** The channel the attachment was received via */
   channel?: ErrandAttachmentChannelEnum;
   /**
+   * The number of the attachment within the errand, counted from 1 in the order the attachments were added. A number is never reused within the errand. Left out for an attachment that has not been given a number yet
+   * @format int32
+   */
+  sequenceNumber?: number;
+  /**
+   * When the attachment came in. The same as created unless given
+   * @format date-time
+   */
+  received?: string;
+  /**
    * The attachment created date
    * @format date-time
    */
   created?: string;
+  /**
+   * The attachment modified date
+   * @format date-time
+   */
+  modified?: string;
   /** SHA-256 hash (hex encoded) of the attachment's raw content */
   hash?: string;
   /** What the attachment is for. Left out for an attachment without a purpose */
@@ -1312,6 +1582,8 @@ export interface ErrandLabel {
   resourcePath?: string;
   /** Resource name */
   resourceName?: string;
+  /** Attributes of the label, as registered for the namespace. Changed through the label metadata, never through the errand */
+  attributes?: LabelAttribute[];
 }
 
 /** Errand phase model */
@@ -1482,13 +1754,20 @@ export interface Parameter {
   /**
    * Parameter key
    * @minLength 1
+   * @maxLength 255
    */
   key: string;
-  /** Parameter display name */
+  /**
+   * Parameter display name
+   * @maxLength 255
+   */
   displayName?: string;
-  /** Parameter group name */
+  /**
+   * Parameter group name
+   * @maxLength 255
+   */
   group?: string;
-  /** Parameter values. Each value can have a maximum length of 3000 characters */
+  /** Parameter values. Each value must not be blank, and can have a maximum length of 3000 characters */
   values?: string[];
   /**
    * Optimistic locking version of the parameter
@@ -1636,6 +1915,26 @@ export interface Statement {
   version?: number;
 }
 
+/** A request to step a process past a gate it waits at */
+export interface ProcessSignalRequest {
+  /**
+   * The name of the signal to send, which has to be one of awaitingSignals on the process right now, exactly as given there. The process decides what the signal means where it stands - sending one steps past nothing the process does not allow.
+   * @minLength 0
+   * @maxLength 128
+   */
+  signal: string;
+}
+
+/** A request to start a process for an errand */
+export interface ProcessStartRequest {
+  /**
+   * Which process to start. May be omitted, or left blank, when startable.processKeys holds exactly one key, and is required when it holds several. The value must be one of those keys, exactly as given there: a request cannot name a process that the labels of the errand do not point at.
+   * @minLength 0
+   * @maxLength 128
+   */
+  processKey?: string;
+}
+
 /** CreateErrandNoteRequest model */
 export interface CreateErrandNoteRequest {
   /**
@@ -1721,6 +2020,8 @@ export interface Investigation {
   sections?: InvestigationSection[];
   /** Attachments of the errand linked to this investigation */
   attachments?: ErrandAttachment[];
+  /** Parameters of the investigation, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the investigation */
   createdBy?: string;
   /** User who last modified the investigation */
@@ -1775,6 +2076,8 @@ export interface InvestigationSection {
    * @format date-time
    */
   completedAt?: string;
+  /** Parameters of the section, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
 }
 
 /** Request describing which namespace a source errand should be previewed for handover to */
@@ -2011,7 +2314,7 @@ export interface HandoverMapping {
    * @example "NEW_CASE"
    */
   status?: string;
-  /** Classification model */
+  /** Category/type to set on the new errand. Required when the target namespace validates CATEGORY or TYPE, otherwise optional */
   classification?: Classification;
   /** Label UUIDs to apply on the new errand */
   labels?: string[];
@@ -2178,6 +2481,8 @@ export interface Decision {
   terms?: DecisionTerm[];
   /** Attachments of the errand linked to this decision */
   attachments?: ErrandAttachment[];
+  /** Parameters of the decision, unstructured metadata as keys with lists of values, returned in the order of their keys. Keys are trimmed, and parameters sent for the same key are merged: their values are joined in the order sent, and the display name and group are those of the first. On update the sent list replaces the stored one; an omitted list leaves them as they are and an empty list removes them all */
+  parameters?: Parameter[];
   /** User who created the decision */
   createdBy?: string;
   /** User who last modified the decision */
@@ -2507,6 +2812,11 @@ export interface Conversation {
 export interface UpdateErrandAttachmentRequest {
   /** What the attachment is for, named by the id of an attachment purpose of the namespace. Left as it is when omitted */
   purpose?: ErrandAttachmentPurpose;
+  /**
+   * When the attachment came in. Left as it is when omitted
+   * @format date-time
+   */
+  received?: string;
 }
 
 export interface PageSubscriberNotification {
@@ -2768,6 +3078,41 @@ export interface Operation {
   value?: string;
   /** Previous value of attribute */
   fromValue?: string;
+}
+
+/** The processes attached to an errand, and whether a new one may be started right now */
+export interface ErrandProcessOverview {
+  /** Whether a process may be started for this errand right now, and why not when it cannot be. Read this before offering a start action to the user. The same rules are enforced by POST .../processes/start, which answers 400 or 409 when they are not met - so a client that ignores this field can never start something it should not. It can only show a button that fails. */
+  startable?: ProcessStartable;
+  /** Every process this errand has had, most recent first. Normally exactly one element. An empty list is not an error and does not mean the errand is broken: see startable for whether a process can be started, and why not if it cannot. */
+  processes?: ErrandProcess[];
+}
+
+/** Whether a process may be started for an errand, and which one */
+export interface ProcessStartable {
+  /** AVAILABLE means a process may be started right now; every other value says why one cannot be. LIVE_INSTANCE - a process is already running for this errand. PROCESS_COMPLETED - a process has already run to its end. An errand has one process life; a new process means a new errand. START_PENDING - a start is already on its way to the process engine, and the process shows up among the processes once the process engine has registered it, normally within seconds. Show that the start is on its way rather than offering it again. NO_PROCESS_KEY - no label on the errand carries a processKey attribute the errand can be started with, so there is nothing to start. Setting the right label is the fix. NO_PROCESS_ENGINE - this namespace does not run processes at all. ERRAND_DRAFT - the errand is a draft. A process is started only once the errand has been made active. PROCESS_BLOCKED - a label on the errand carries the attribute processBlocked=true. No process is started, signalled or told anything about the errand while it wears that label. An ad account cannot take the label off; a service identity can. The answer is the same whether or not the labels start the process on their own: an errand whose process starts by itself is AVAILABLE too, and starting it by hand is how a start that failed is tried again. Treat any value you do not recognise as not startable - values may be added over time. */
+  status?: string;
+  /** The process keys that are eligible to start, taken from the processKey attribute on the labels of the errand. One element is the normal case: send it - or send nothing - to POST .../processes/start. Two or more elements mean the errand carries labels pointing at different processes and a person has to choose: ask the user and send the chosen key, otherwise the request is rejected with 400. An errand runs one process for the whole of its life, so once it has had one - a start that failed included - only the key of that process is offered. Empty whenever status is not AVAILABLE. */
+  processKeys?: string[];
+}
+
+export interface PageProcessActivity {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: ProcessActivity[];
+  /** @format int32 */
+  number?: number;
+  sort?: SortObject;
+  pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
+  empty?: boolean;
 }
 
 /** FindErrandNotesRequest model */
@@ -3146,11 +3491,51 @@ export interface CountResponse {
   count?: number;
 }
 
+/**
+ * Identifier type
+ * @minLength 1
+ * @pattern ^(adAccount|partyId)$
+ */
+export enum IdentifierTypeEnum {
+  AdAccount = "adAccount",
+  PartyId = "partyId",
+}
+
 /** What the holder may do with the field, narrowing it below the level the errand itself is held at. Left unset the field simply follows the errand, which is what every grant did before this was added, and a level may only ever restrict further - it can never make a readable errand writable. Only a field holding a keyed collection may carry one, and limited read is not a level a field can be held at */
 export enum FieldAccessLevelEnum {
   LR = "LR",
   R = "R",
   RW = "RW",
+}
+
+export enum NamespaceConfigProcessTriggersEnum {
+  ASSIGNMENT = "ASSIGNMENT",
+  ATTACHMENT = "ATTACHMENT",
+  DECISION = "DECISION",
+  ERRAND = "ERRAND",
+  ERRAND_ACTIVATION = "ERRAND_ACTIVATION",
+  HANDOVER_IN = "HANDOVER_IN",
+  HANDOVER_OUT = "HANDOVER_OUT",
+  LABEL = "LABEL",
+  MESSAGE_CONVERSATION_EXTERNAL = "MESSAGE_CONVERSATION_EXTERNAL",
+  MESSAGE_CONVERSATION_INTERNAL = "MESSAGE_CONVERSATION_INTERNAL",
+  MESSAGE_EMAIL_EXTERNAL = "MESSAGE_EMAIL_EXTERNAL",
+  MESSAGE_SMS_EXTERNAL = "MESSAGE_SMS_EXTERNAL",
+  MESSAGE_WEB_MESSAGE_EXTERNAL = "MESSAGE_WEB_MESSAGE_EXTERNAL",
+  NOTE = "NOTE",
+  PHASE = "PHASE",
+  PROCESS = "PROCESS",
+  SIGNAL = "SIGNAL",
+  STATUS = "STATUS",
+  SYSTEM = "SYSTEM",
+  SUSPENSION = "SUSPENSION",
+}
+
+/** Channel through which a notification is delivered */
+export enum NamespaceConfigNewSubscriberChannelsEnum {
+  INTERNAL = "INTERNAL",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
 }
 
 /** Access level granted for the resource */
@@ -3188,14 +3573,11 @@ export enum EventFilterTypeEnum {
   DROP = "DROP",
 }
 
-/**
- * Identifier type
- * @minLength 1
- * @pattern ^(adAccount|partyId)$
- */
-export enum IdentifierTypeEnum {
-  AdAccount = "adAccount",
-  PartyId = "partyId",
+/** Channel through which a notification is delivered */
+export enum SubscriptionProfileChannelsEnum {
+  INTERNAL = "INTERNAL",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
 }
 
 /** Channel type */
@@ -3244,6 +3626,12 @@ export enum LabelRestructureStepTypeEnum {
   DELETE = "DELETE",
   MOVE = "MOVE",
   MERGE = "MERGE",
+}
+
+/** Life cycle of the errand, the same in every namespace and independent of its status. DRAFT - the errand is being prepared: no process is started or woken for it, no action is created, nothing is communicated about it, no one is notified about it, it is not handed over, and a search leaves it out unless its filter names lifecycle. ACTIVE - the errand is handled as any errand is. Left out on create, the errand is ACTIVE. A draft is made active by a patch setting ACTIVE, which starts a process the labels start on their own, unless the patch asks not to wake the process. Made active, everything on the errand is told of as new: every label on it, the ancestors of its labels included, its assignee, its status and its phase are logged as events, and its actions are created as for a new errand. An active errand never becomes a draft again. */
+export enum ErrandLifecycleEnum {
+  DRAFT = "DRAFT",
+  ACTIVE = "ACTIVE",
 }
 
 /** The channel the attachment was received via */

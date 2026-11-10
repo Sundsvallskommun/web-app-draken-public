@@ -6,7 +6,7 @@ import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import { CitizenService } from '@services/citizen.service';
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsString, ValidateNested } from 'class-validator';
+import { IsString, isUUID, ValidateNested } from 'class-validator';
 import { NextFunction, Request, Response } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
@@ -15,6 +15,12 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
+import {
+  LegalEntityEngagementsApiResponse,
+  LegalEntityPersonEngagementsApiResponse,
+  LegalEntityProfileApiResponse,
+} from '@/responses/legal-entity.response';
+import { OrganizationService, toLegalEntityProfile } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
@@ -189,6 +195,7 @@ export class AddressController {
   EMPLOYEE_SERVICE = apiServiceName('employee');
   LEGALENTITY_SERVICE = apiServiceName('legalentity');
   PARTY_SERVICE = apiServiceName('party');
+  private organizationService = new OrganizationService();
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
@@ -241,6 +248,76 @@ export class AddressController {
     const result: LegalEntity2WithId = { ...res.data, partyId: guidRes.data };
 
     return { data: result, message: 'success' } as ResponseData;
+  }
+
+  @Get('/legalentity/:partyId')
+  @OpenAPI({ summary: 'Return legal entity information for a given party id' })
+  @ResponseSchema(LegalEntityProfileApiResponse)
+  @UseBefore(authMiddleware)
+  async legalEntityByPartyId(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<LegalEntityProfileApiResponse> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const legalEntity = await this.organizationService.getOrganizationByPartyId(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data: toLegalEntityProfile(legalEntity), message: 'success' };
+  }
+
+  @Get('/legalentity/:partyId/engagements')
+  @OpenAPI({ summary: 'Return people engaged in the company a given party id belongs to' })
+  @ResponseSchema(LegalEntityEngagementsApiResponse)
+  @UseBefore(authMiddleware)
+  async legalEntityEngagements(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<LegalEntityEngagementsApiResponse> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const data = await this.organizationService.getOrganizationEngagements(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data, message: 'success' };
+  }
+
+  @Get('/legalentity/person/:partyId/engagements')
+  @OpenAPI({ summary: 'Return the companies a given person is engaged in' })
+  @ResponseSchema(LegalEntityPersonEngagementsApiResponse)
+  @UseBefore(authMiddleware)
+  async legalEntityPersonEngagements(
+    @Req() req: RequestWithUser,
+    @Param('partyId') partyId: string,
+  ): Promise<LegalEntityPersonEngagementsApiResponse> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${partyId}/personnumber`;
+    const personNumber = await this.apiService.get<string>({ url }, req.user).catch(() => undefined);
+    if (!personNumber?.data) {
+      return { data: [], message: 'success' };
+    }
+
+    const data = await this.organizationService.getPersonEngagements(MUNICIPALITY_ID, String(personNumber.data), req.user).catch(error => {
+      const status = (error as { status?: number })?.status ?? 0;
+      if (status >= 400 && status < 500) {
+        logger.info(`Legal Entity has no engagements for the person behind party id ${partyId}: ${error.message}`);
+        return [];
+      }
+      throw error;
+    });
+
+    return { data, message: 'success' };
   }
 
   @Get('/portalpersondata/personal/:loginName')

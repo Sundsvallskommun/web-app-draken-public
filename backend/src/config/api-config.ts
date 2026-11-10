@@ -22,11 +22,11 @@ export const APIS = [
   },
   {
     name: 'templating',
-    version: '2.1',
+    version: '2.2',
   },
   {
     name: 'messaging',
-    version: '7.10',
+    version: '7.11',
   },
   {
     name: 'case-data',
@@ -34,7 +34,15 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '16.1',
+    version: '18.4',
+  },
+  {
+    name: 'supportmanagement-sprint',
+    version: '16.0',
+    // Runtime transport target only. Application code imports the stable
+    // Support Management facade, so generating a second unused contract would
+    // create two competing TypeScript owners for the same domain.
+    generateDataContract: false,
   },
   {
     name: 'billingpreprocessor',
@@ -58,11 +66,11 @@ export const APIS = [
   },
   {
     name: 'party',
-    version: '2.1',
+    version: '2.2',
   },
   {
     name: 'partyassets',
-    version: '6.5',
+    version: '6.10',
   },
   {
     name: 'jsonschema',
@@ -72,9 +80,32 @@ export const APIS = [
     name: 'company',
     version: '1.0',
   },
+  {
+    name: 'licensed-business',
+    version: '1.0',
+  },
 ];
 
+const SUPPORT_MANAGEMENT_API_TARGETS = ['stable', 'sprint'] as const;
+
+type SupportManagementApiTarget = (typeof SUPPORT_MANAGEMENT_API_TARGETS)[number];
+
+const SUPPORT_MANAGEMENT_SERVICE_BY_TARGET: Readonly<Record<SupportManagementApiTarget, string>> = {
+  stable: 'supportmanagement',
+  sprint: 'supportmanagement-sprint',
+};
+
+const resolveSupportManagementApiTarget = (configuredTarget = process.env.SUPPORTMANAGEMENT_API_TARGET): SupportManagementApiTarget => {
+  const target = configuredTarget?.trim().toLowerCase() || 'stable';
+  if ((SUPPORT_MANAGEMENT_API_TARGETS as readonly string[]).includes(target)) {
+    return target as SupportManagementApiTarget;
+  }
+
+  throw new Error(`Unsupported SUPPORTMANAGEMENT_API_TARGET "${configuredTarget}". Expected one of: ${SUPPORT_MANAGEMENT_API_TARGETS.join(', ')}`);
+};
+
 export function apiServiceName(name: string): string {
-  const api = APIS.find(a => a.name === name);
+  const resolvedName = name === 'supportmanagement' ? SUPPORT_MANAGEMENT_SERVICE_BY_TARGET[resolveSupportManagementApiTarget()] : name;
+  const api = APIS.find(a => a.name === resolvedName);
   return api ? `${api.name}/${api.version}` : name;
 }

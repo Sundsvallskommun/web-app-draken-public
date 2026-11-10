@@ -1,5 +1,6 @@
 import { useRefreshNotifications } from '@common/hooks/useNotificationPoller';
 import { isKC } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { useConfigStore, useSupportStore } from '@stores/index';
@@ -12,11 +13,19 @@ import { useFormContext } from 'react-hook-form';
 
 import { TableForm } from '../ongoing-support-errands.component';
 
-export const SupportErrandsTable: FC = () => {
+interface SupportErrandsTableProps {
+  /** Overrides the statuses selected in the overview. */
+  statuses?: Status[];
+  /** Replaces opening the errand in a new tab. */
+  rowAction?: { label: string; onClick: (errand: SupportErrand) => void };
+}
+
+export const SupportErrandsTable: FC<SupportErrandsTableProps> = ({ statuses, rowAction }) => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const data = useSupportStore((s) => s.supportErrands);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const storedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const selectedSupportErrandStatuses = statuses ?? storedErrandStatuses;
   const refreshNotifications = useRefreshNotifications();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
@@ -36,13 +45,10 @@ export const SupportErrandsTable: FC = () => {
     desc: 'descending',
   };
 
+  const serverSideSortableCols = { 0: 'status', 1: 'touched', 2: 'category', 3: 'type', 4: 'channel', 5: 'created' };
+
   const serverSideSortableColsKC: { [key: number]: string } = {
-    0: 'status',
-    1: 'touched',
-    2: 'category',
-    3: 'type',
-    4: 'channel',
-    5: 'created',
+    ...serverSideSortableCols,
     6: 'priority',
     7: 'assignedUserId',
   };
@@ -50,42 +56,53 @@ export const SupportErrandsTable: FC = () => {
   const serverSideSortableColsLOP: { [key: number]: string } =
     data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
       ? {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
+          ...serverSideSortableCols,
           6: 'priority',
           7: 'suspendedTo',
           8: 'assignedUserId',
         }
       : {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
+          ...serverSideSortableCols,
           6: 'priority',
           7: 'assignedUserId',
         };
 
-  const handleSort = (index: number) => {
-    if (isKC()) {
-      if (sortColumn === serverSideSortableColsKC[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsKC[index]);
-      }
+  // The process column sits between the reminder and the responsible, and carries no sort of its own:
+  // Support Management has no such property to order by. Its index is therefore left out of the map.
+  const serverSideSortableColsAOT: { [key: number]: string } =
+    data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
+      ? {
+          ...serverSideSortableCols,
+          6: 'priority',
+          7: 'suspendedTo',
+          9: 'assignedUserId',
+        }
+      : {
+          ...serverSideSortableCols,
+          6: 'priority',
+          8: 'assignedUserId',
+        };
+
+  const sortableCols = (): { [key: number]: string } => {
+    if (isKC()) return serverSideSortableColsKC;
+    if (appConfig.features.useProcess) return serverSideSortableColsAOT;
+    return serverSideSortableColsLOP;
+  };
+
+  const handleSetValue = (
+    sortableCol: {
+      [key: number]: string;
+    },
+    index: number
+  ) => {
+    if (sortColumn === sortableCol[index]) {
+      setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
-      if (sortColumn === serverSideSortableColsLOP[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsLOP[index]);
-      }
+      setValue('sortColumn', sortableCol[index]);
     }
   };
+
+  const handleSort = (index: number) => handleSetValue(sortableCols(), index);
 
   const openErrandeInNewWindow = async (errand: SupportErrand) => {
     if (errand.id && errand.activeNotifications && errand.activeNotifications.length > 0) {
@@ -111,9 +128,7 @@ export const SupportErrandsTable: FC = () => {
         <span className="sr-only">{column.label}</span>
       ) : column.sortable ? (
         <Table.SortButton
-          isActive={
-            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
-          }
+          isActive={sortColumn === sortableCols()[index]}
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(index)}
         >
@@ -126,14 +141,15 @@ export const SupportErrandsTable: FC = () => {
   ));
 
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+    const handleRowAction = () => (rowAction ? rowAction.onClick(errand) : openErrandeInNewWindow(errand));
     return (
       <Table.Row
         tabIndex={0}
         role="button"
         key={`row-${index}`}
-        aria-label={`Ärende ${errand.errandNumber}, öppna ärende i ny flik`}
-        onKeyDown={(e) => (e.key === 'Enter' ? openErrandeInNewWindow(errand) : null)}
-        onClick={() => openErrandeInNewWindow(errand)}
+        aria-label={`Ärende ${errand.errandNumber}, ${rowAction?.label ?? 'öppna ärende i ny flik'}`}
+        onKeyDown={(e) => (e.key === 'Enter' ? handleRowAction() : null)}
+        onClick={handleRowAction}
         className="cursor-pointer"
       >
         {errandTableObject.map((column, index) => (

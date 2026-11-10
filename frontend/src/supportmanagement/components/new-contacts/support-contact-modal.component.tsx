@@ -4,7 +4,10 @@ import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
-import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import {
+  isOrganizationExternalIdType,
+  SupportStakeholderFormModel,
+} from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
@@ -162,7 +165,7 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
                 <FormControl id={`lastName`} className="w-1/2">
                   <FormLabel>
                     Efternamn{' '}
-                    {contact.externalIdType !== ExternalIdType.COMPANY ? <span aria-hidden="true">*</span> : null}
+                    {!isOrganizationExternalIdType(contact.externalIdType) ? <span aria-hidden="true">*</span> : null}
                   </FormLabel>
                   <Input
                     size="sm"

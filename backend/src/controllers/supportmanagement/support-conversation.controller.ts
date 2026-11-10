@@ -23,6 +23,12 @@ interface ResponseData {
   message: string;
 }
 
+const communicationTypeOfConversation = (conversation: Conversation | undefined): string | undefined => {
+  if (!conversation) return undefined;
+
+  return conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+};
+
 @Controller()
 export class SupportConversationController {
   private apiService = new ApiService();
@@ -75,12 +81,14 @@ export class SupportConversationController {
     @Param('conversationId') conversationId: string,
   ): Promise<ResponseData> {
     const baseURL = apiURL(this.SERVICE);
-    let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations`;
-    const resConversation = await this.apiService.get<Conversation[]>({ url, baseURL }, req.user);
+    let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}`;
+    const conversation = await this.apiService
+      .get<Conversation>({ url, baseURL }, req.user)
+      .then(res => res.data)
+      .catch(() => undefined);
 
-    const conversation = resConversation.data.find(item => item.id === conversationId);
-    const topic = conversation ? conversation.topic : undefined;
-    const communicationType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+    const topic = conversation?.topic;
+    const communicationType = communicationTypeOfConversation(conversation);
 
     url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);

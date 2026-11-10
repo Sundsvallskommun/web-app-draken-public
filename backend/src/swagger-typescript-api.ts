@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
 
 const PATH_TO_OUTPUT_DIR = path.resolve(process.cwd(), './src/data-contracts');
 
-type Api = { name: string; version: string };
+type Api = { name: string; service?: string; version: string };
 
 /**
  * Download the OpenAPI spec for a single API and generate its data contracts.
@@ -23,7 +23,7 @@ type Api = { name: string; version: string };
  * half-written (truncated) spec. The downloaded spec is deleted afterwards so
  * it never lingers next to the generated contracts.
  */
-const generateForApi = async ({ name, version }: Api): Promise<void> => {
+const generateForApi = async ({ name, service, version }: Api): Promise<void> => {
   const outputDir = `${PATH_TO_OUTPUT_DIR}/${name}`;
 
   if (!fs.existsSync(outputDir)) {
@@ -35,7 +35,7 @@ const generateForApi = async ({ name, version }: Api): Promise<void> => {
   try {
     // `--fail` makes curl exit non-zero on HTTP errors instead of writing an
     // error page to disk and having the generator choke on it later.
-    await execFileAsync('curl', ['--fail', '--silent', '--show-error', '-o', specPath, `${API_BASE_URL}/${name}/${version}/api-docs`]);
+    await execFileAsync('curl', ['--fail', '--silent', '--show-error', '-o', specPath, `${API_BASE_URL}/${service ?? name}/${version}/api-docs`]);
     console.log(`- ${name} ${version}`);
 
     // Run the generator's JS entrypoint directly with the current Node binary

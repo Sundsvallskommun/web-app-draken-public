@@ -8,6 +8,9 @@
 # testing
 /coverage
 
+# build output
+*.tsbuildinfo
+
 # Playwright
 /test-results/
 /playwright-report/

@@ -1,0 +1,198 @@
+// @vitest-environment jsdom
+import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import type { SupportDecision } from '@supportmanagement/services/support-decision-service';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, expect, test } from 'vitest';
+
+import { mockEnv } from '../../../../../tests/mock-env';
+import { useDecisionForm } from './use-decision-form';
+
+const ROLE = 'Handläggare';
+const APPLICATION_PHONE = mockEnv.mockPhoneNumber;
+const PREMISES: DecisionPremises = {
+  street: mockEnv.mockCompanyAddress.street,
+  postalCode: mockEnv.mockCompanyAddress.postalCode,
+  city: mockEnv.mockCompanyAddress.city,
+  choice: { kind: 'EXISTING', restaurantNumber: '00000000' },
+};
+
+const NOTHING_DECIDED = { beverages: [], servingHours: {} };
+
+const saved = (overrides: Partial<SupportDecision> = {}): SupportDecision =>
+  ({
+    id: 'decision-1',
+    version: 1,
+    status: 'DRAFT',
+    outcome: 'APPROVAL_WITH_CONDITIONS',
+    decidedByRole: 'Utskottet',
+    validFrom: '2026-11-01',
+    terms: [
+      { text: 'Villkor B', sortOrder: 2 },
+      { text: 'Villkor A', sortOrder: 1 },
+    ],
+    jsonParameters: [
+      {
+        key: 'aot_alcohol_decision',
+        schemaId: '2281_aot_alcohol_decision_1.0',
+        value: {
+          externalCaseRegistrationNumber: 'KS 2026/123',
+          premises: { phoneNumber: mockEnv.mockSecondaryPhoneNumber },
+          servingArea: { description: 'Matsalen' },
+          decision: { executionDate: '2026-10-20' },
+        },
+      },
+    ],
+    ...overrides,
+  } as SupportDecision);
+
+const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
+  renderHook((props: Parameters<typeof useDecisionForm>[0]) => useDecisionForm(props), {
+    initialProps: {
+      decision: undefined,
+      editable: true,
+      savedPremises: undefined,
+      premisesToSend: undefined,
+      applicationPremisesPhone: APPLICATION_PHONE,
+      investigationClauses: '',
+      scopeAsSaved: NOTHING_DECIDED,
+      defaultRole: ROLE,
+      ...input,
+    },
+  });
+
+afterEach(cleanup);
+
+test('a decision not yet saved starts its att-satser from the investigation, also when that arrives late', () => {
+  const props = {
+    decision: undefined,
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  };
+  const { result, rerender } = form(props);
+  expect(result.current.values.clauses).toBe('');
+
+  rerender({ ...props, investigationClauses: 'att bevilja' });
+  expect(result.current.values.clauses).toBe('att bevilja');
+  expect(result.current.edited).toBe(false);
+});
+
+test('a newer investigation changes only att-satser the handler has left as prefilled', () => {
+  const props = {
+    decision: undefined,
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: 'att bevilja',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  };
+  const { result, rerender } = form(props);
+
+  act(() => result.current.set('justification', 'Motivering'));
+  rerender({ ...props, investigationClauses: 'att bevilja\natt servera' });
+  expect(result.current.values).toMatchObject({ clauses: 'att bevilja\natt servera', justification: 'Motivering' });
+
+  act(() => result.current.set('clauses', 'egen'));
+  rerender({ ...props, investigationClauses: 'att avslå' });
+  expect(result.current.values).toMatchObject({ clauses: 'egen', justification: 'Motivering' });
+});
+
+test('a saved decision keeps its own att-satser, also when they are empty', () => {
+  const withClauses = saved({
+    jsonParameters: [
+      {
+        key: 'aot_alcohol_decision',
+        schemaId: '2281_aot_alcohol_decision_1.1',
+        value: { decision: { clauses: 'att bevilja' } },
+      },
+    ],
+  });
+
+  expect(form({ decision: withClauses, investigationClauses: 'annat' }).result.current.values.clauses).toBe(
+    'att bevilja'
+  );
+  expect(form({ decision: saved(), investigationClauses: 'annat' }).result.current.values.clauses).toBe('');
+});
+
+test('a decision that exists fills the fields, and its conditions come in their order', () => {
+  const { result } = form({ decision: saved() });
+
+  expect(result.current.values).toMatchObject({
+    outcome: 'APPROVAL',
+    decidedByRole: 'Utskottet',
+    validFrom: '2026-11-01',
+    executionDate: '2026-10-20',
+    servingAreaDescription: 'Matsalen',
+    premisesPhoneNumber: mockEnv.mockSecondaryPhoneNumber,
+    externalCaseRegistrationNumber: 'KS 2026/123',
+    terms: ['Villkor A', 'Villkor B'],
+  });
+  expect(result.current.edited).toBe(false);
+});
+
+test('without a decision the telephone starts as the one the application gave', () => {
+  const { result } = form();
+
+  expect(result.current.values.premisesPhoneNumber).toBe(APPLICATION_PHONE);
+  expect(result.current.values.decidedByRole).toBe(ROLE);
+  expect(result.current.edited).toBe(false);
+});
+
+test('a field that is written counts as edited, and counts again as saved when it is written back', () => {
+  const { result } = form();
+
+  act(() => result.current.set('justification', 'Motivering'));
+  expect(result.current.edited).toBe(true);
+
+  act(() => result.current.set('justification', ''));
+  expect(result.current.edited).toBe(false);
+});
+
+test('choosing premises the errand does not carry is an unsaved change of its own', () => {
+  const { result } = form({ premisesToSend: PREMISES });
+
+  expect(result.current.edited).toBe(true);
+});
+
+test('a concluded decision is read, so nothing counts as edited', () => {
+  const { result } = form({ decision: saved(), editable: false });
+
+  act(() => result.current.set('justification', 'Motivering'));
+  expect(result.current.edited).toBe(false);
+});
+
+test('the fields follow a newer version of the decision, and keep what is written until then', () => {
+  const { result, rerender } = form({ decision: saved() });
+
+  act(() => result.current.set('justification', 'Skrivet men inte sparat'));
+  rerender({
+    decision: saved(),
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  });
+  expect(result.current.values.justification).toBe('Skrivet men inte sparat');
+
+  rerender({
+    decision: saved({ version: 2, justification: 'Som beslutet sparades' }),
+    editable: true,
+    savedPremises: undefined,
+    premisesToSend: undefined,
+    applicationPremisesPhone: APPLICATION_PHONE,
+    investigationClauses: '',
+    scopeAsSaved: NOTHING_DECIDED,
+    defaultRole: ROLE,
+  });
+  expect(result.current.values.justification).toBe('Som beslutet sparades');
+  expect(result.current.edited).toBe(false);
+});

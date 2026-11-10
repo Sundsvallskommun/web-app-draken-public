@@ -1,4 +1,9 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  ErrandProcess,
+  Label,
+  Measure,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK, isROB } from '@common/services/application-service';
@@ -13,7 +18,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CJsonParameter, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -35,6 +40,9 @@ export enum ExternalIdType {
   EMPLOYEE = 'EMPLOYEE',
   COMPANY = 'COMPANY',
 }
+
+export const isOrganizationExternalIdType = (type?: string): boolean =>
+  type === ExternalIdType.COMPANY || type === ExternalIdType.ENTERPRISE;
 
 // Keeping both enums for now, as the backend uses the uppercase version
 // but existing stakeholders use the lowercase version
@@ -66,6 +74,8 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  measures?: Measure[];
+  process?: ErrandProcess;
   created?: string;
   modified?: string;
   touched?: string;
@@ -109,6 +119,7 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
   WEB_UI = 'Draken webbgränssnitt',
+  MIGRATION = 'Migrerat ärende',
 }
 
 // The channels a user can choose from when registering an errand.
@@ -207,15 +218,23 @@ export const getCategorizationLabels = (errand: SupportErrand): Label[] =>
 
 const MISSING_ERRAND_TYPE_TEXT = '(Ärendetyp saknas)';
 
+export const NEW_ERRAND_HEADING = 'Registrera nytt ärende';
+
 /** Heading under label categorization: the deepest label (type, else category, else department). */
 export const getLabelCategorizationHeading = (errand: SupportErrand, metadata: SupportMetadata | undefined): string => {
-  // LEGACY_CLASSIFICATION
   if (showsLegacyClassification(errand)) {
     return getLegacyClassificationHeading(errand, metadata);
   }
   const deepest = getCategorizationLabels(errand).at(-1);
-  return deepest ? getLabelDisplayName(deepest, metadata) : MISSING_ERRAND_TYPE_TEXT;
+  if (deepest) return getLabelDisplayName(deepest, metadata);
+  return supportErrandIsEmpty(errand) ? NEW_ERRAND_HEADING : MISSING_ERRAND_TYPE_TEXT;
 };
+
+export const getLabelType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'TYPE');
+
+const getLabelSubType = (errand: SupportErrand) => errand.labels?.find((label) => label.classification === 'SUBTYPE');
+
+export const getMostSpecificLabelType = (errand: SupportErrand) => getLabelSubType(errand) ?? getLabelType(errand);
 
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
@@ -254,6 +273,10 @@ export enum Resolution {
   FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
   FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
   FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
+  GRANTED = 'GRANTED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+  DISMISSED = 'DISMISSED',
   INFORMED = 'INFORMED',
   GUIDED = 'GUIDED',
   ACTIONED = 'ACTIONED',
@@ -338,6 +361,14 @@ export enum ResolutionLabelROB {
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelAOT {
+  GRANTED = 'Beviljat',
+  REJECTED = 'Avslag',
+  WITHDRAWN = 'Återkallat av sökanden',
+  DISMISSED = 'Avskrivet',
+  CLOSED = 'Avslutat',
 }
 
 export enum ResolutionLabelSE {
@@ -428,6 +459,11 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
+
+const MIGRATED_ERRAND_CHANNEL: keyof typeof Channels = 'MIGRATION';
+
+export const isSupportMigratedErrand = (errand: Pick<SupportErrand, 'channel'> | undefined): boolean =>
+  errand?.channel === MIGRATED_ERRAND_CHANNEL;
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
@@ -659,11 +695,22 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
   return false;
 };
 
-// Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
-// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
-const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
+const ORGANIZATION_NUMBER_PATTERN = /^(\d{2})?\d{6}-?\d{4}$/;
+
+/**
+ * Resolve org number for a stakeholder, preferring the dedicated parameter, then the backend-resolved number, and lastly externalId for legacy org stakeholders.
+ *
+ * @param s Stakeholder potentially with organizationNumber field
+ * @returns string organization number
+ */
+export const getStakeholderOrganizationNumber = (
+  s: SupportStakeholder & { organizationNumber?: string }
+): string | undefined =>
   s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
-  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+  s.organizationNumber ||
+  (isOrganizationExternalIdType(s.externalIdType) && ORGANIZATION_NUMBER_PATTERN.test(s.externalId ?? '')
+    ? s.externalId
+    : undefined);
 
 // Read the first value of an errand parameter by key.
 export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
@@ -761,7 +808,7 @@ const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] = (res)
   return errands;
 };
 
-const getSupportErrands: (
+export const getSupportErrands: (
   municipalityId: string,
   page?: number,
   size?: number,
@@ -820,11 +867,15 @@ const getSupportErrandsCount: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
-  municipalityId
-) => {
+/** What a new errand can be created with instead of the defaults. */
+export type NewSupportErrandPrefill = Pick<Partial<SupportErrandDto>, 'labels' | 'stakeholders' | 'jsonParameters'>;
+
+export const initiateSupportErrand: (
+  municipalityId: string,
+  prefill?: NewSupportErrandPrefill
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, prefill = {}) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, NewSupportErrandPrefill>(`newerrand/${municipalityId}`, prefill)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -967,6 +1018,43 @@ export const setSupportErrandAdmin: (
     })
     .catch((e) => {
       console.error('Something went wrong when patching errand');
+      throw e;
+    });
+};
+
+/**
+ * Whether the errand carries an applicant the process can use. pw-alkt reads the permit holder from
+ * the PRIMARY stakeholder's partyId (`SupportManagementMapper`), so one without an identity is not
+ * enough: the process would die on it a few steps later.
+ */
+export const supportErrandHasAnIdentifiedApplicant = (errand: Pick<SupportErrand, 'customer'> | undefined): boolean =>
+  (errand?.customer ?? []).some((stakeholder) => !!stakeholder.externalId?.trim());
+
+const REJECTED_BY_SERVICE_STATUS = 400;
+
+const MESSAGES_WITHOUT_A_REASON = ['Constraint Violation', 'Bad Request', 'Request failed', 'Internal server error'];
+
+export const supportErrandRejectionReason = (error: unknown): string | undefined => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+  if (response?.status !== REJECTED_BY_SERVICE_STATUS) return undefined;
+
+  const message = response.data?.message?.trim();
+  return message && !MESSAGES_WITHOUT_A_REASON.includes(message) ? message : undefined;
+};
+
+/** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
+export const saveSupportErrandJsonParameters: (
+  errandId: string,
+  municipalityId: string,
+  jsonParameters: CJsonParameter[]
+) => Promise<boolean> = async (errandId, municipalityId, jsonParameters) => {
+  return apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+      jsonParameters,
+    })
+    .then(() => true)
+    .catch((e) => {
+      console.error('Something went wrong when patching errand json parameters');
       throw e;
     });
 };

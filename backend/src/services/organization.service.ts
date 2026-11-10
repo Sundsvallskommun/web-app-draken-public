@@ -1,20 +1,71 @@
 import { User } from '@interfaces/users.interface';
 
 import { apiServiceName } from '@/config/api-config';
-import { LegalEntity2 } from '@/data-contracts/legalentity/data-contracts';
+import { LegalEntity2, OrganizationEngagements, PersonEngagement } from '@/data-contracts/legalentity/data-contracts';
+import { LegalEntityPersonEngagement, LegalEntityProfile } from '@/responses/legal-entity.response';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 import ApiService from './api.service';
+
+export const toLegalEntityProfile = (legalEntity: LegalEntity2): LegalEntityProfile => ({
+  name: legalEntity.name,
+  organizationNumber: legalEntity.organizationNumber,
+  form: legalEntity.form,
+  acountingPeriodStart: legalEntity.acountingPeriodStart,
+  acountingPeriodEnded: legalEntity.acountingPeriodEnded,
+  postAddress: legalEntity.postAddress && {
+    address1: legalEntity.postAddress.address1,
+    postalCode: legalEntity.postAddress.postalCode,
+    city: legalEntity.postAddress.city,
+  },
+  employeeSize: legalEntity.employeeSize && { name: legalEntity.employeeSize.name },
+  businessDescription: legalEntity.businessDescription,
+});
+
+export const toLegalEntityPersonEngagement = (engagement: PersonEngagement): LegalEntityPersonEngagement => ({
+  organizationNumber: engagement.organizationNumber,
+  name: engagement.name,
+  form: engagement.form,
+  roles: (engagement.roles ?? []).map(role => ({ description: role.description, code: role.code })),
+});
 
 export class OrganizationService {
   private apiService = new ApiService();
   private LEGALENTITY_SERVICE = apiServiceName('legalentity');
   private PARTY_SERVICE = apiServiceName('party');
 
-  async getOrganizationNumberByPartyId(municipalityId: string, partyId: string, user: User): Promise<string> {
+  async getOrganizationByPartyId(municipalityId: string, partyId: string, user: User): Promise<LegalEntity2> {
     const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/${partyId}`;
     const response = await this.apiService.get<LegalEntity2>({ url }, user);
-    return response.data.organizationNumber ?? '';
+    return response.data;
+  }
+
+  async getOrganizationNumberByPartyId(municipalityId: string, partyId: string, user: User): Promise<string> {
+    const organization = await this.getOrganizationByPartyId(municipalityId, partyId, user);
+    return organization.organizationNumber ?? '';
+  }
+
+  async getOrganizationEngagements(municipalityId: string, partyId: string, user: User): Promise<OrganizationEngagements> {
+    const organizationNumber = await this.getOrganizationNumberByPartyId(municipalityId, partyId, user);
+    if (!organizationNumber) {
+      return { engagements: [] };
+    }
+
+    const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/engagements/organization/${formatOrgNr(organizationNumber, OrgNumberFormat.NODASH)}`;
+    const response = await this.apiService.get<OrganizationEngagements>({ url }, user);
+    return response.data;
+  }
+
+  async getPersonEngagements(municipalityId: string, personNumber: string, user: User): Promise<LegalEntityPersonEngagement[]> {
+    const digits = personNumber.replace(/\D/g, '');
+    if (!digits) {
+      return [];
+    }
+
+    // Why: Legal Entity answers 4xx for a person it has nothing on, and the caller reads that as an empty list.
+    const url = `${this.LEGALENTITY_SERVICE}/${municipalityId}/engagements/person/${digits}`;
+    const response = await this.apiService.get<PersonEngagement[]>({ url, propagateClientError: true }, user);
+    return (response.data ?? []).map(toLegalEntityPersonEngagement);
   }
 
   async getPartyIdByOrganizationNumber(municipalityId: string, organizationNumber: string, user: User): Promise<string> {

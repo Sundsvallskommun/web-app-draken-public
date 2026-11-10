@@ -15,6 +15,7 @@ interface UserData {
   firstName: string;
   lastName: string;
   username: string;
+  email: string;
   userSettings: any;
   permissions: Permissions;
 }
@@ -28,7 +29,7 @@ export class UserController {
   @OpenAPI({ summary: 'Return current user' })
   @UseBefore(authMiddleware)
   async getUser(@Req() req: RequestWithUser, @Res() response: any): Promise<UserData> {
-    const { name, firstName, lastName, username, permissions } = req.user;
+    const { name, firstName, lastName, username, email, permissions } = req.user;
 
     if (!name) {
       throw new HttpException(400, 'Bad Request');
@@ -39,6 +40,7 @@ export class UserController {
       firstName,
       lastName,
       username,
+      email,
       userSettings: { username },
       permissions,
     };

@@ -144,7 +144,7 @@ export const ForwardErrandSummary: React.FC<{ errand?: SupportErrand; metadata?:
                 : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`;
             const idNumber =
               stakeholder.stakeholderType === 'ORGANIZATION'
-                ? stakeholder.organizationNumber || stakeholder.externalId
+                ? stakeholder.organizationNumber
                 : stakeholder.personNumber;
             return (
               <div key={`stakeholder-${index}`} className="flex flex-col gap-4">
