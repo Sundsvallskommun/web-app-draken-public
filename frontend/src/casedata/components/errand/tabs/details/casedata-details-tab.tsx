@@ -39,7 +39,16 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const form = useFormContext<IErrand>();
 
-  const { watch, setValue, trigger } = form;
+  const { watch, setValue, trigger, register, resetField } = form;
+
+  // Loads a value fetched from the errand as the field's *default* value, so it doesn't count as a user change.
+  // setValue(..., { shouldDirty: false }) isn't enough: these fields aren't part of the form's defaultValues, and
+  // react-hook-form (7.91 at least) recomputes dirtyFields for the whole form on any later setValue with shouldDirty,
+  // which would then flag every loaded field as dirty. resetField only applies to registered fields, hence register.
+  const loadFieldValue = (name: string, value: unknown) => {
+    register(name as any);
+    resetField(name as any, { defaultValue: value as any });
+  };
 
   const description = watch('description');
 
@@ -99,13 +108,13 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               .map((v) => v.trim())
               .filter((v) => v !== '')
           : [];
-        setValue<any>(key, normalizedArray, { shouldDirty: false });
+        loadFieldValue(key, normalizedArray);
       } else {
-        setValue<any>(key, rawValue, { shouldDirty: false });
+        loadFieldValue(key, rawValue);
       }
     });
 
-    setValue('description', errand?.description || '');
+    loadFieldValue('description', errand?.description || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
