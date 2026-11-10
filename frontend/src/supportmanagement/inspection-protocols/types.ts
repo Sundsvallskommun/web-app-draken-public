@@ -65,12 +65,10 @@ export interface InspectionProtocolTemplate {
   key: string;
   /** Shown in the dropdown and saved as investigation.title. */
   label: string;
-  /** The template's identifier in Templating, once uploaded. */
+  /** The template's identifier in Templating. */
   identifier: string;
   /** The schema the answers are saved against, one property per field key. */
   schema: SupportJsonSchema;
-  /** Rendered directly until the template is uploaded; drop it then. */
-  html?: string;
   /** The standard control points, saved as INTERNAL measures. */
   controlPoints: string[];
   observations?: ProtocolObservations;

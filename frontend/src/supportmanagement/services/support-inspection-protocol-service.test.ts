@@ -1,4 +1,4 @@
-import { renderTemplatePdf, renderTemplatePdfDirect } from '@common/services/template-render-service';
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import { expect, test, vi } from 'vitest';
 
@@ -15,10 +15,9 @@ import {
 
 vi.mock('@common/services/template-render-service', () => ({
   renderTemplatePdf: vi.fn(async () => 'by-identifier'),
-  renderTemplatePdfDirect: vi.fn(async () => 'direct'),
 }));
 
-const serving = inspectionProtocolTemplate('serving_permit')!;
+const serving = inspectionProtocolTemplate('external_inspection')!;
 const internal = inspectionProtocolTemplate('internal_inspection')!;
 const errand = { customer: [{ organizationName: 'Exempel AB', organizationNumber: '556000-0000' }] } as SupportErrand;
 
@@ -122,7 +121,7 @@ test('choices become "true" for the template\'s box macro, one per option, and u
     permitHolderName: 'Exempel AB',
     visitInPremises: '',
     visitClosed: 'true',
-    coordinatedNone: '',
+    coordinatedEnforcementAuthority: '',
     coordinatedPolice: 'true',
     coordinatedOther: 'true',
     coordinatedOtherText: 'Tullen',
@@ -172,14 +171,9 @@ test('the order is without remarks while no area is deficient', () => {
   expect(parameters).toMatchObject({ orderWithoutRemarks: 'true', orderWithRemarks: '' });
 });
 
-test('the protocol is rendered directly while the template is in the code, by identifier once uploaded', async () => {
-  await expect(renderInspectionProtocol(internal, { caseNumber: 'X' })).resolves.toBe('direct');
-  expect(renderTemplatePdfDirect).toHaveBeenCalledWith(internal.html, { caseNumber: 'X' });
-
-  await expect(renderInspectionProtocol({ ...internal, html: undefined }, { caseNumber: 'X' })).resolves.toBe(
-    'by-identifier'
-  );
-  expect(renderTemplatePdf).toHaveBeenCalledWith('internal-inspection-protocol', { caseNumber: 'X' });
+test('the protocol is rendered in Templating by the template identifier', async () => {
+  await expect(renderInspectionProtocol(internal, { caseNumber: 'X' })).resolves.toBe('by-identifier');
+  expect(renderTemplatePdf).toHaveBeenCalledWith('aot-internal-inspection-protocol', { caseNumber: 'X' });
 });
 
 test('the file is named after the errand and the inspection date', () => {
