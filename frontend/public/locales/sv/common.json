@@ -281,6 +281,7 @@
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
       "not_ready": "Processen är inte redo för det här steget ännu. Försök igen om en stund.",
       "inspection_summary_needed": "Välj Godkänd eller Godkänd, men åtgärd krävs som summering i tillsynsprotokollet innan beslutet skickas.",
+      "action_points_needed": "Lägg till minst en åtgärdspunkt under Skapa åtgärdspunkter i tillsynsprotokollet innan beslutet skickas. Åtgärdspunkterna förs över till åtgärdsärendet.",
       "start_process": {
         "label": "Starta process",
         "done": "Processen startas. Ärendet uppdateras när den har registrerats.",

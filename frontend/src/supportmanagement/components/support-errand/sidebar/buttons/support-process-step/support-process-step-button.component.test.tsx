@@ -8,10 +8,12 @@ import {
   setSupportErrandStatus,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { inspectionProtocolSummary } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
   completeSupportInvestigation,
   getSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
+import { getSupportMeasures } from '@supportmanagement/services/support-measure-service';
 import {
   getSupportErrandProcessState,
   sendSupportProcessSignal,
@@ -61,6 +63,14 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   ...(await importOriginal<object>()),
   getSupportInvestigation: vi.fn(),
   completeSupportInvestigation: vi.fn(),
+}));
+vi.mock('@supportmanagement/services/support-inspection-protocol-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  inspectionProtocolSummary: vi.fn(),
+}));
+vi.mock('@supportmanagement/services/support-measure-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getSupportMeasures: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-process-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -153,6 +163,8 @@ beforeEach(() => {
   vi.mocked(completeSupportInvestigation)
     .mockReset()
     .mockResolvedValue({ id: 'investigation-1', status: 'COMPLETED' } as never);
+  vi.mocked(inspectionProtocolSummary).mockReset();
+  vi.mocked(getSupportMeasures).mockReset().mockResolvedValue([]);
   vi.mocked(sendSupportProcessSignal).mockReset().mockResolvedValue(undefined);
   vi.mocked(startSupportProcess).mockReset().mockResolvedValue(undefined);
   vi.mocked(getSupportErrandProcessState).mockReset();
@@ -231,6 +243,69 @@ test('the decision is read again for the gate, so one saved after the list was r
 
   await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'decision_completed'));
+});
+
+const INSPECTION_DECISION_GATES = ['action_errand_requested', 'inspection_approved', 'process_cancelled'];
+
+const anInspectionInDecision = () => {
+  const process = {
+    processKey: 'internal-inspection',
+    processStatus: 'WAITING',
+    currentActivityId: 'decision_phase',
+    awaitingSignals: INSPECTION_DECISION_GATES.map((name) => ({ name })),
+  };
+  useSupportStore.setState({ supportErrand: { ...errandAt('decision_phase', []), process } as SupportErrand });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({ process, startability: 'LIVE_INSTANCE' } as never);
+};
+
+test('an inspection that requires action is not sent on without an action point to carry over', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('actionRequired');
+  vi.mocked(getSupportMeasures).mockResolvedValue([
+    { id: 'control-1', type: 'INTERNAL', status: 'ACTIVE', result: 'NOT_COMPLETED' },
+    { id: 'action-1', type: 'EXTERNAL', status: 'INACTIVE' },
+  ]);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.action_points_needed', status: 'error' })
+    )
+  );
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+test('an inspection that requires action is sent on once it has an active action point', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('actionRequired');
+  vi.mocked(getSupportMeasures).mockResolvedValue([{ id: 'action-1', type: 'EXTERNAL', status: 'ACTIVE' }]);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'action_errand_requested')
+  );
+});
+
+test('an approved inspection needs no action points', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('approved');
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inspection_approved'));
+  expect(getSupportMeasures).not.toHaveBeenCalled();
 });
 
 test('ready for decision completes the investigation before the signal, since the protocol is built from it', async () => {

@@ -72,6 +72,10 @@ export const supportMeasuresOfType = (measures: Measure[] | undefined, type: Sup
     .filter((measure) => measure.type === type)
     .sort((a, b) => (a.created ?? '').localeCompare(b.created ?? ''));
 
+/** pw-alkt builds the action errand from the active action points only, and refuses to create one without them. */
+export const hasSupportActionPoints = (measures: Measure[] | undefined): boolean =>
+  (measures ?? []).some((measure) => measure.type === SupportMeasureType.EXTERNAL && measure.status === 'ACTIVE');
+
 const isMeasureResult = (value: string | null | undefined): value is SupportMeasureResultName =>
   SUPPORT_MEASURE_RESULTS.some((candidate) => candidate.result === value);
 

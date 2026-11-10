@@ -257,6 +257,9 @@ const INSPECTION_DECISION_GATES: Record<string, string> = {
   actionRequired: 'action_errand_requested',
 };
 
+export const requestsSupportActionErrand = (signal: ProcessSignal | undefined): boolean =>
+  signal?.name === INSPECTION_DECISION_GATES.actionRequired;
+
 export const isSupportInspectionProcess = (process: ErrandProcess | undefined): boolean =>
   INSPECTION_PROCESS_KEYS.includes(process?.processKey ?? '');
 

@@ -19,6 +19,7 @@ import {
   getSupportInvestigation,
   isSupportInvestigationCompleted,
 } from '@supportmanagement/services/support-investigation-service';
+import { getSupportMeasures, hasSupportActionPoints } from '@supportmanagement/services/support-measure-service';
 import {
   awaitedGateOfStep,
   getSupportErrandProcess,
@@ -26,6 +27,7 @@ import {
   isSupportInspectionProcess,
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
+  requestsSupportActionErrand,
   sendSupportProcessSignal,
   startSupportProcess,
   SupportProcessStep,
@@ -228,13 +230,19 @@ export const useProcessStepRun = ({
       }
 
       // Checked before the decision is concluded, while the protocol can still be changed.
-      if (
-        action.completesDecision &&
-        isSupportInspectionProcess(process) &&
-        !(await gateToLeaveTheStep(action))?.name
-      ) {
-        tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
-        return;
+      if (action.completesDecision && isSupportInspectionProcess(process)) {
+        const gate = await gateToLeaveTheStep(action);
+        if (!gate?.name) {
+          tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
+          return;
+        }
+        if (
+          requestsSupportActionErrand(gate) &&
+          !hasSupportActionPoints(await getSupportMeasures(errandId, municipalityId))
+        ) {
+          tellTheHandler(t('common:process.actions.action_points_needed'), 'error');
+          return;
+        }
       }
 
       let decisionWasConcluded = false;
