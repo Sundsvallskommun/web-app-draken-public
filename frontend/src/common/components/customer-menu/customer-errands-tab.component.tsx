@@ -2,8 +2,13 @@
 
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { findOperationUsingNamespace } from '@common/services/casestatus-service';
-import { Customer, getCustomerCaseStatuses, isOtherDrakeCase } from '@common/services/customer-service';
-import { Spinner, Table } from '@sk-web-gui/react';
+import {
+  Customer,
+  CustomerErrandsPage,
+  getCustomerCaseStatuses,
+  isOtherDrakeCase,
+} from '@common/services/customer-service';
+import { Pagination, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import {
@@ -12,11 +17,11 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
-import { FC, useMemo } from 'react';
+import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { lookupContent, OverviewSection } from './customer-overview.component';
-import { type CustomerLookup, useCustomerLookup } from './use-customer-lookup';
+import { type CustomerData, useCustomerLookup } from './use-customer-lookup';
 
 const Intro: FC<{ text: string }> = ({ text }) => <p className="m-0 max-w-[70rem]">{text}</p>;
 
@@ -29,14 +34,14 @@ const EmptyText: FC<{ text: string; dataCy?: string }> = ({ text, dataCy }) => (
 export const openErrand = (errandNumber?: string) =>
   window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errandNumber}`, '_blank');
 
-const OwnErrandsTable: FC<{ errands: SupportErrand[] }> = ({ errands }) => {
+const OwnErrandsTable: FC<{
+  errands: CustomerErrandsPage;
+  page: number;
+  changePage: (page: number) => void;
+}> = ({ errands: { errands, totalPages }, page, changePage }) => {
   const { t } = useTranslation();
   const metadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
-  const sorted = useMemo(
-    () => [...errands].sort((a, b) => (b.touched ?? '').localeCompare(a.touched ?? '')),
-    [errands]
-  );
   const adminName = (errand: SupportErrand) => {
     const admin = administrators?.find((a) => a?.adAccount === errand.assignedUserId);
     return admin ? getAdminName(admin) : '–';
@@ -52,7 +57,7 @@ const OwnErrandsTable: FC<{ errands: SupportErrand[] }> = ({ errands }) => {
         <Table.HeaderColumn>{t('common:customer.errands.columns.administrator')}</Table.HeaderColumn>
       </Table.Header>
       <Table.Body>
-        {sorted.map((errand) => (
+        {errands.map((errand) => (
           <Table.Row
             key={errand.id}
             tabIndex={0}
@@ -76,6 +81,23 @@ const OwnErrandsTable: FC<{ errands: SupportErrand[] }> = ({ errands }) => {
           </Table.Row>
         ))}
       </Table.Body>
+      {totalPages > 1 && (
+        <Table.Footer>
+          <div className="sk-table-paginationwrapper">
+            <Pagination
+              showFirst
+              showLast
+              pagesBefore={1}
+              pagesAfter={1}
+              showConstantPages={true}
+              fitContainer
+              pages={totalPages}
+              activePage={page + 1}
+              changePage={(newPage) => changePage(newPage - 1)}
+            />
+          </div>
+        </Table.Footer>
+      )}
     </Table>
   );
 };
@@ -130,7 +152,7 @@ const OtherDrakeErrands: FC<{ customer: Customer }> = ({ customer }) => {
 };
 
 /** Ärenden tab of the customer view. */
-export const CustomerErrandsTab: FC<{ errands: CustomerLookup<SupportErrand[]> }> = ({ errands }) => {
+export const CustomerErrandsTab: FC<{ data: CustomerData }> = ({ data: { errands, errandsPage, setErrandsPage } }) => {
   const { t } = useTranslation();
 
   return (
@@ -138,10 +160,10 @@ export const CustomerErrandsTab: FC<{ errands: CustomerLookup<SupportErrand[]> }
       <OverviewSection title={t('common:customer.errands.own.title')} dataCy="customer-errands-own-section">
         <Intro text={t('common:customer.errands.own.intro')} />
         {lookupContent(errands, t('common:customer.errands.own.error'), (data) =>
-          data.length === 0 ? (
+          data.errands.length === 0 ? (
             <EmptyText text={t('common:customer.errands.own.empty')} dataCy="customer-errands-own-empty" />
           ) : (
-            <OwnErrandsTable errands={data} />
+            <OwnErrandsTable errands={data} page={errandsPage} changePage={setErrandsPage} />
           )
         )}
       </OverviewSection>

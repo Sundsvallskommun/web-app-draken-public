@@ -5,13 +5,12 @@ import {
   type InspectionKind,
   latestActiveAsset,
 } from '@common/services/customer-inspection-service';
-import { countErrands, Customer, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
+import { Customer, CustomerInspection, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Label, PopupMenu, Spinner, Table, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
 import { SupportErrandBusinessDescriptionDrawer } from '@supportmanagement/components/support-errand/tabs/support-errand-business-description-drawer.component';
-import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { formatAddress } from '@supportmanagement/services/support-premises-address-service';
 import dayjs from 'dayjs';
 import { ChevronDown, CircleAlert, Store } from 'lucide-react';
@@ -124,11 +123,11 @@ const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
   );
 };
 
-const InspectionRow: FC<{ place: CustomerPlace; errands: SupportErrand[] }> = ({ place, errands }) => {
+const InspectionRow: FC<{ place: CustomerPlace; inspections: CustomerInspection[] }> = ({ place, inspections }) => {
   const namespace = useMetadataStore((s) => s.supportMetadata?.namespace);
-  const inspection = getLatestInspection(errands, place, namespace);
+  const inspection = getLatestInspection(inspections, place, namespace);
   const outdated =
-    !!inspection && dayjs(inspection.touched).isBefore(dayjs().subtract(INSPECTION_MAX_AGE_MONTHS, 'month'));
+    !!inspection && dayjs(inspection.date).isBefore(dayjs().subtract(INSPECTION_MAX_AGE_MONTHS, 'month'));
   const flagged = !inspection || outdated;
 
   return (
@@ -148,18 +147,7 @@ const InspectionRow: FC<{ place: CustomerPlace; errands: SupportErrand[] }> = ({
       <div className="flex items-center gap-12">
         <div className="flex flex-col text-right">
           <span className="text-small text-dark-secondary">Senaste tillsyn</span>
-          <span className="font-bold">
-            {inspection ? (
-              <>
-                {dayjs(inspection.touched).format('YYYY-MM-DD')}{' '}
-                <span className="text-small font-normal" data-cy="customer-overview-inspection-todo">
-                  TODO källa?
-                </span>
-              </>
-            ) : (
-              'Aldrig'
-            )}
-          </span>
+          <span className="font-bold">{inspection?.date ?? 'Aldrig'}</span>
         </div>
         {flagged && (
           <Label rounded color="warning" className="gap-4 whitespace-nowrap">
@@ -274,9 +262,9 @@ const Counter: FC<{ label: string; value: number | string }> = ({ label, value }
 
 /** Översikt tab of the customer view. */
 export const CustomerOverview: FC<{ customer: Customer; data: CustomerData }> = ({ customer, data }) => {
-  const { places, errands, engagements } = data;
-  const counts = errands.status === 'done' ? countErrands(errands.data) : undefined;
-  const count = (value: number | undefined) => value ?? (errands.status === 'error' ? '–' : '…');
+  const { places, inspections, errandCounts, engagements } = data;
+  const counts = errandCounts.status === 'done' ? errandCounts.data : undefined;
+  const count = (value: number | undefined) => value ?? (errandCounts.status === 'error' ? '–' : '…');
 
   return (
     <div className="flex flex-col gap-32" data-cy="customer-overview">
@@ -285,10 +273,10 @@ export const CustomerOverview: FC<{ customer: Customer; data: CustomerData }> = 
           data.length === 0 ? (
             <p className="m-0 text-dark-secondary">Inga ställen att visa.</p>
           ) : (
-            lookupContent(errands, 'Tillsyner kunde inte hämtas.', (found) => (
+            lookupContent(inspections, 'Tillsyner kunde inte hämtas.', (found) => (
               <>
                 {data.map((place) => (
-                  <InspectionRow key={place.key} place={place} errands={found} />
+                  <InspectionRow key={place.key} place={place} inspections={found} />
                 ))}
                 <p className="m-0 text-small text-dark-secondary">
                   Ställen där senaste tillsyn är äldre än {INSPECTION_MAX_AGE_MONTHS} månader, eller saknas helt, är

@@ -51,7 +51,7 @@ export const CustomerTabs: FC<{ customer: Customer; data: CustomerData }> = ({ c
         {activeTab.id === 'oversikt' ? (
           <CustomerOverview customer={customer} data={data} />
         ) : activeTab.id === 'arenden' ? (
-          <CustomerErrandsTab errands={data.errands} />
+          <CustomerErrandsTab data={data} />
         ) : activeTab.id === 'tillstand' ? (
           <CustomerAssets assets={data.assets} />
         ) : (

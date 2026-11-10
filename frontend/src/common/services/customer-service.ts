@@ -11,9 +11,12 @@ import { jsonParameterForSchema, schemaNameForErrand } from '@supportmanagement/
 import {
   closedStatuses,
   getSupportErrands,
+  getSupportErrandsCount,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { inspectionProtocolDate } from '@supportmanagement/services/support-inspection-protocol-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
@@ -193,21 +196,86 @@ export const getCustomerPlaces = async (municipalityId: string, assets: Asset[])
 
 const ERRAND_LOOKUP_SIZE = 100;
 
+export const CUSTOMER_ERRANDS_PAGE_SIZE = 10;
+
 /** A tillsyn errand names its place in the form of its errand type, as premises or pointOfSale. */
 const concernsPlace = (errand: SupportErrand, place: CustomerPlace, namespace: string | undefined): boolean => {
   const form = (jsonParameterForSchema(errand, schemaNameForErrand(errand, namespace))?.value ?? {}) as PartyAssetValue;
   return placeKeyOf(form.premises ?? form.pointOfSale) === place.key;
 };
 
-/** The customer's errands. Support Management searches no JSON parameters, so a place cannot be searched for. */
-export const getCustomerErrands = async (municipalityId: string, customerId: string): Promise<SupportErrand[]> => {
-  const result = await getSupportErrands(municipalityId, 0, ERRAND_LOOKUP_SIZE, {
-    query: encodeURIComponent(customerId),
+const customerFilter = (customerId: string) => ({ query: encodeURIComponent(customerId) });
+
+export interface CustomerErrandsPage {
+  errands: SupportErrand[];
+  totalPages: number;
+}
+
+/**
+ * One page of the customer's errands, the most recently active first.
+ * Support Management searches no JSON parameters, so a place cannot be searched for.
+ */
+export const getCustomerErrands = async (
+  municipalityId: string,
+  customerId: string,
+  page: number
+): Promise<CustomerErrandsPage> => {
+  const result = await getSupportErrands(municipalityId, page, CUSTOMER_ERRANDS_PAGE_SIZE, customerFilter(customerId), {
+    touched: 'desc',
   });
   if (result.error) {
     throw new Error(`Could not fetch errands: ${result.error}`);
   }
-  return result.errands ?? [];
+  return { errands: result.errands ?? [], totalPages: result.totalPages ?? 0 };
+};
+
+/** Counted by Support Management, so a customer with more errands than a page holds is counted in full. */
+export const getCustomerErrandCounts = async (
+  municipalityId: string,
+  customerId: string
+): Promise<{ ongoing: number; closed: number }> => {
+  const [all, closed] = await Promise.all([
+    getSupportErrandsCount(municipalityId, customerFilter(customerId)),
+    getSupportErrandsCount(municipalityId, { ...customerFilter(customerId), status: closedStatuses.join(',') }),
+  ]);
+  // The count answers null when it fails.
+  if (typeof all !== 'number' || typeof closed !== 'number') {
+    throw new Error('Could not count errands');
+  }
+  return { ongoing: all - closed, closed };
+};
+
+export interface CustomerInspection {
+  errand: SupportErrand;
+  /** The date the protocol gives, YYYY-MM-DD; missing when the protocol has none. */
+  date?: string;
+}
+
+/** The customer's closed inspection errands, every page of them (a customer has few), dated by their protocols. */
+export const getCustomerInspections = async (
+  municipalityId: string,
+  customerId: string
+): Promise<CustomerInspection[]> => {
+  const filter = {
+    ...customerFilter(customerId),
+    labelCategory: INSPECTION_LABEL_PATH,
+    status: closedStatuses.join(','),
+  };
+  const inspections: SupportErrand[] = [];
+  for (let page = 0, pages = 1; page < pages; page++) {
+    const result = await getSupportErrands(municipalityId, page, ERRAND_LOOKUP_SIZE, filter);
+    if (result.error) {
+      throw new Error(`Could not fetch inspections: ${result.error}`);
+    }
+    inspections.push(...(result.errands ?? []));
+    pages = result.totalPages ?? 0;
+  }
+  return Promise.all(
+    inspections.map(async (errand) => ({
+      errand,
+      date: inspectionProtocolDate(await getSupportInvestigation(errand.id!, municipalityId)),
+    }))
+  );
 };
 
 /** The organisation's errands according to Casestatus, which covers more than this Drake. */
@@ -223,20 +291,18 @@ export const isOtherDrakeCase = (status: CaseStatusResponse, ownNamespace: strin
 
 const isClosed = (errand: SupportErrand) => closedStatuses.includes(errand.status as Status);
 
-export const countErrands = (errands: SupportErrand[]): { ongoing: number; closed: number } => {
-  const closed = errands.filter(isClosed).length;
-  return { ongoing: errands.length - closed, closed };
-};
-
 const isInspection = (errand: SupportErrand) =>
   !!errand.labels?.some((label) => label.resourcePath?.startsWith(INSPECTION_LABEL_PATH));
 
-/** The most recently active closed inspection errand of the place. */
+/** The place's closed inspection with the latest protocol date; one without a date cannot be placed and is left out. */
 export const getLatestInspection = (
-  errands: SupportErrand[],
+  inspections: CustomerInspection[],
   place: CustomerPlace,
   namespace: string | undefined
-): SupportErrand | undefined =>
-  errands
-    .filter((errand) => isInspection(errand) && isClosed(errand) && concernsPlace(errand, place, namespace))
-    .sort((a, b) => (b.touched ?? '').localeCompare(a.touched ?? ''))[0];
+): CustomerInspection | undefined =>
+  inspections
+    .filter(
+      ({ errand, date }) =>
+        !!date && isInspection(errand) && isClosed(errand) && concernsPlace(errand, place, namespace)
+    )
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];

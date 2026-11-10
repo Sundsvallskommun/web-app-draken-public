@@ -19,6 +19,7 @@ import {
   getSupportInvestigation,
   isSupportInvestigationCompleted,
 } from '@supportmanagement/services/support-investigation-service';
+import { getSupportMeasures, hasSupportActionPoints } from '@supportmanagement/services/support-measure-service';
 import {
   awaitedGateOfStep,
   getSupportErrandProcess,
@@ -27,6 +28,7 @@ import {
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
   processFilesADecisionBasis,
+  requestsSupportActionErrand,
   sendSupportProcessSignal,
   startSupportProcess,
   SupportProcessStep,
@@ -115,10 +117,15 @@ export const useProcessStepRun = ({
       if (!isSupportProcessSignalStale(error)) throw error;
     });
 
-  const gateToLeaveTheStep = async (action: ProcessAction): Promise<ProcessSignal | undefined> => {
+  const processAsItStands = async (): Promise<ErrandProcess | undefined> =>
+    (await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined))?.process ?? process;
+
+  const gateToLeaveTheStep = async (
+    action: ProcessAction,
+    current?: ErrandProcess
+  ): Promise<ProcessSignal | undefined> => {
     if (!action.needsSignal) return undefined;
-    const state = await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined);
-    const current = state?.process ?? process;
+    current ??= await processAsItStands();
     const summary =
       step === SupportProcessStep.DECISION && isSupportInspectionProcess(current)
         ? inspectionProtocolSummary(await getSupportInvestigation(errandId, municipalityId))
@@ -235,14 +242,23 @@ export const useProcessStepRun = ({
         await completeAnyOpenInvestigation();
       }
 
-      // Checked before the decision is concluded, while the protocol can still be changed.
-      if (
-        action.completesDecision &&
-        isSupportInspectionProcess(process) &&
-        !(await gateToLeaveTheStep(action))?.name
-      ) {
-        tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
-        return;
+      // Checked before the decision is concluded, while the protocol can still be changed. A process that has
+      // already left the step (another tab, an earlier attempt) is not stopped here: it is finished as any errand is.
+      const current =
+        action.completesDecision && isSupportInspectionProcess(process) ? await processAsItStands() : undefined;
+      if (current && supportProcessStepName(current) === step) {
+        const gate = await gateToLeaveTheStep(action, current);
+        if (!gate?.name) {
+          tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
+          return;
+        }
+        if (
+          requestsSupportActionErrand(gate) &&
+          !hasSupportActionPoints(await getSupportMeasures(errandId, municipalityId))
+        ) {
+          tellTheHandler(t('common:process.actions.action_points_needed'), 'error');
+          return;
+        }
       }
 
       let decisionWasConcluded = false;
