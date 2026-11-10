@@ -19,7 +19,7 @@ import {
   Textarea,
 } from '@sk-web-gui/react';
 import { ComponentProps, FC, useEffect, useMemo, useState } from 'react';
-import { get, UseFormReturn } from 'react-hook-form';
+import { FieldError, get, UseFormReturn } from 'react-hook-form';
 
 import { RepeatableFieldGroup } from './repeatable-field-group';
 
@@ -180,7 +180,7 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
   }, [isDisabledByField, fieldKey, setValue]);
 
   const validationRules = getConditionalValidationRules(detail, getValues);
-  const error = get(errors, fieldKey)?.message;
+  const error = get<typeof errors, FieldError | undefined>(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
   const isDisabled = isErrandLocked(errand) || isFTNotificationErrand(errand);
 

@@ -15,10 +15,7 @@
     "src/common/data-contracts/**"
   ],
   "ignoreDependencies": [
-    "sharp",
-    "swagger-typescript-api",
-    "@tailwindcss/forms",
-    "@tailwindcss/container-queries"
+    "swagger-typescript-api"
   ],
   "ignoreBinaries": [
     "tsx"

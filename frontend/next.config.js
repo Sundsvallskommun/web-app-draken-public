@@ -41,8 +41,9 @@ module.exports = {
       : `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
   output: 'standalone',
   images: {
-    remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],
-    formats: ['image/avif', 'image/webp'],
+    // The app doesn't use next/image. Disabling the optimizer turns off the /_next/image endpoint, which is
+    // affected by several advisories (RCE via AVIF/SVG, SSRF) that are not patched on Next 16.2.x.
+    unoptimized: true,
   },
   basePath: process.env.NEXT_PUBLIC_BASEPATH || '',
   async rewrites() {
