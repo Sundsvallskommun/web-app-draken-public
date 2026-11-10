@@ -42,10 +42,10 @@ test("the inspection date is read from the protocol of the investigation's templ
     inspectionProtocolDate(investigation('internal_inspection', internal.schema.name, { inspectionDate: '2026-11-10' }))
   ).toBe('2026-11-10');
   expect(
-    inspectionProtocolDate(investigation('serving_permit', serving.schema.name, { inspectionDate: '2026-10-01' }))
+    inspectionProtocolDate(investigation('external_inspection', serving.schema.name, { inspectionDate: '2026-10-01' }))
   ).toBe('2026-10-01');
   expect(
-    inspectionProtocolDate(investigation('serving_permit', serving.schema.name, { inspectionDate: '' }))
+    inspectionProtocolDate(investigation('external_inspection', serving.schema.name, { inspectionDate: '' }))
   ).toBeUndefined();
   expect(
     inspectionProtocolDate(investigation('unknown', serving.schema.name, { inspectionDate: '2026-10-01' }))

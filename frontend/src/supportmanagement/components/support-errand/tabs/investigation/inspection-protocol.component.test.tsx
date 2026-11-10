@@ -396,7 +396,7 @@ test('answers another template left on the investigation are removed by the next
     ...investigation,
     jsonParameters: [
       ...investigation.jsonParameters,
-      { key: 'aot_inspection_internal', schemaId: '2281_aot_inspection_internal_1.0', value: {} },
+      { key: 'aot_internal_inspection_protocol', schemaId: '2281_aot_internal_inspection_protocol_1.0', value: {} },
       { key: 'other', schemaId: '2281_other_1.0', value: {} },
     ],
   });
@@ -413,7 +413,7 @@ test('answers another template left on the investigation are removed by the next
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_internal'
+    'aot_internal_inspection_protocol'
   );
 });
 
@@ -477,7 +477,7 @@ test('another template is taken only after the handler confirms, and replaces co
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_serving_permit'
+    'aot_external_inspection_protocol'
   );
 });
 
