@@ -249,7 +249,7 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     'decision-1',
     'aot_alcohol_decision',
     {
-      schemaId: '2281_aot_alcohol_decision_1.2',
+      schemaId: '2281_aot_alcohol_decision_1.3',
       value: expect.objectContaining({
         servingPermitType: 'PERMANENT_SERVING',
         beverages: ['STRONG_BEER'],
@@ -259,6 +259,23 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     }
   );
   expect(sentJson().value).toMatchObject({ decision: { executionDate: '2026-10-20', validFrom: '2026-11-01' } });
+});
+
+test('a preparation is offered among the beverages and saved with them', async () => {
+  useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
+  await renderTab();
+  fillWhatTheCertificatePrints();
+
+  expect(input('beverages-ALCOHOL_LIKE_PREPARATIONS').checked).toBe(false);
+
+  fireEvent.click(input('beverages-ALCOHOL_LIKE_PREPARATIONS'));
+  fireEvent.change(input('serving-hours-indoorPublic-to'), { target: { value: '00:00' } });
+
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().value).toMatchObject({
+    beverages: expect.arrayContaining(['STRONG_BEER', 'WINE', 'ALCOHOL_LIKE_PREPARATIONS']),
+  });
 });
 
 test('the att-satser start from the investigation, and an edit is saved on the decision alone', async () => {
@@ -329,7 +346,7 @@ test('a decision saved against an older schema version is written against the on
   fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
   await expect(saveTheTab()).resolves.toBe(true);
 
-  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.2');
+  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.3');
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {

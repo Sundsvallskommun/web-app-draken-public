@@ -186,6 +186,22 @@ describe('a serving permit', () => {
     expect(sent('SERVERINGSTILLSTAND', { errandType: 'TASTING' }).scopeTasting).toBe('true');
   });
 
+  test('a decided preparation ticks a box of its own, and leaves the four beverages alone', () => {
+    const withPreparations = sent('SERVERINGSTILLSTAND', {
+      form: servingForm,
+      scope: { beverages: ['WINE', 'ALCOHOL_LIKE_PREPARATIONS'], servingHours: {} },
+    });
+
+    expect(withPreparations).toMatchObject({
+      beverageWine: 'true',
+      beverageSpirits: 'false',
+      beverageBeer: 'false',
+      beverageOtherFermented: 'false',
+      beverageAlcoholLikePreparations: 'true',
+    });
+    expect(parameters.beverageAlcoholLikePreparations).toBe('false');
+  });
+
   test('the beverages and hours follow the decision even where the form says otherwise', () => {
     const decidedLess = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
@@ -289,7 +305,7 @@ describe('the JSON of a serving permit', () => {
   });
 
   test('is saved against the schema of the permit area', () => {
-    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.2' });
+    expect(decisionSchema('SERVERINGSTILLSTAND')).toEqual({ name: 'aot_alcohol_decision', version: '1.3' });
     expect(decisionSchema('ECIGARETTFORSALJNING')).toEqual({ name: 'aot_tobacco_decision', version: '1.2' });
     expect(
       savedDecisionJson({ jsonParameters: [{ key: 'aot_alcohol_decision', schemaId: 'x', value: saved }] })
@@ -540,6 +556,7 @@ describe('every permit', () => {
         'beverageWine',
         'beverageBeer',
         'beverageOtherFermented',
+        'beverageAlcoholLikePreparations',
         'servingAreaDescription',
         'servingAreaDrawingReference',
         'servingAreaSeats',

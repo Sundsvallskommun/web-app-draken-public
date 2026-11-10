@@ -10,8 +10,17 @@ import { type JsonObject, stringAt } from './support-json-parameter-service';
  * both ends or not at all.
  */
 
-/** The beverage constants of the schemas' `beverages`, in the schemas' order. */
-export const BEVERAGES = ['STRONG_BEER', 'WINE', 'SPIRITS', 'OTHER_FERMENTED_BEVERAGES'] as const;
+/**
+ * The beverage constants of the schemas' `beverages`, in the schemas' order. A preparation is not a
+ * beverage in the law, but it is granted in the same list, so it rides along as the last constant.
+ */
+export const BEVERAGES = [
+  'STRONG_BEER',
+  'WINE',
+  'SPIRITS',
+  'OTHER_FERMENTED_BEVERAGES',
+  'ALCOHOL_LIKE_PREPARATIONS',
+] as const;
 
 export type ServingHoursSlot = 'indoorPublic' | 'outdoorPublic' | 'indoorPrivate' | 'outdoorPrivate' | 'single';
 
