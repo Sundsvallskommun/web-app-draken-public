@@ -49,6 +49,7 @@ import {
 } from '@supportmanagement/services/support-statement-service';
 import {
   chosenReferralPartyIds,
+  SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
   supportReferralPeople,
   type SupportReferralPerson,
   SupportReferralPersons,
@@ -61,6 +62,7 @@ import {
   supportStatementTemplateParameters,
   supportStatementTemplatePersons,
   supportStatementTemplateProblem,
+  supportStatementTemplateRecipientContact,
   supportStatementTemplates,
   supportStatementTemplateTakesAFreeText,
 } from '@supportmanagement/services/support-statement-template-service';
@@ -292,6 +294,11 @@ export const SupportStatementCard: FC<{
   );
   // The preview costs a render of its own, so the free text reaches it when the handler says so.
   const [appliedFreeText, setAppliedFreeText] = useState(form.freeText);
+  const [recipientContact, setRecipientContact] = useState({ name: '', email: '' });
+  const [submitter, setSubmitter] = useState(() => ({
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    municipality: SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
+  }));
 
   const watchedCustomer = watch('customer');
   const watchedContacts = watch('contacts');
@@ -319,6 +326,8 @@ export const SupportStatementCard: FC<{
   const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
   const asksForADeadline = supportStatementTemplateAsksForADeadline(templateIdentifier);
   const takesAFreeText = supportStatementTemplateTakesAFreeText(templateIdentifier);
+  const recipientContactAsked = supportStatementTemplateRecipientContact(templateIdentifier);
+  const defaultRecipientEmail = recipientContactAsked?.defaultEmail ?? '';
   const templateProblem = supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople);
   const removable = isSupportStatementRemovable(statement);
   const editable = writable && !busy;
@@ -349,7 +358,8 @@ export const SupportStatementCard: FC<{
   const factsFor = (person: SupportReferralPerson | undefined, freeText = appliedFreeText) => ({
     identifier: templateIdentifier,
     errand: supportErrand,
-    handlerName: `${user.firstName} ${user.lastName}`.trim(),
+    handlerName: submitter.name || `${user.firstName} ${user.lastName}`.trim(),
+    handlerMunicipality: submitter.municipality,
     handlerEmail: user.email,
     counterpartyName: form.counterpartyName,
     dueAt: form.dueAt,
@@ -357,6 +367,8 @@ export const SupportStatementCard: FC<{
     person: person ?? chosenPeople[0],
     companies,
     freeText,
+    recipientAttention: recipientContact.name,
+    recipientEmail: recipientContact.email || defaultRecipientEmail,
   });
 
   const chooseTemplate = (identifier: string) =>
@@ -387,9 +399,16 @@ export const SupportStatementCard: FC<{
   }, [peopleNeeded, supportErrand?.stakeholders, t, toastMessage]);
 
   useEffect(() => {
-    setChosenPartyIds((chosen) => chosenReferralPartyIds(people, chosen, partyIdsAlreadySeen.current));
+    const seenBefore = partyIdsAlreadySeen.current;
     partyIdsAlreadySeen.current = people.map((person) => person.partyId);
+    setChosenPartyIds((chosen) => chosenReferralPartyIds(people, chosen, seenBefore));
   }, [people]);
+
+  const changeRecipientContact = (field: 'name' | 'email', value: string) =>
+    setRecipientContact((contact) => ({ ...contact, [field]: value }));
+
+  const changeSubmitter = (field: 'name' | 'municipality', value: string) =>
+    setSubmitter((current) => ({ ...current, [field]: value }));
 
   const rememberCompanies = (partyId: string, chosen: ChosenCompany[]) =>
     setCompanies((current) => ({ ...current, [partyId]: chosen }));
@@ -623,6 +642,55 @@ export const SupportStatementCard: FC<{
               </div>
 
               <LockedNote shown={underlayExists} />
+
+              {recipientContactAsked ? (
+                <div className="flex flex-wrap items-end gap-16" data-cy="statement-recipient-contact">
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.recipient_name')}</FormLabel>
+                    <Input
+                      value={recipientContact.name}
+                      disabled={!editable || underlayExists}
+                      placeholder={t('common:statements.recipient_name_placeholder')}
+                      data-cy="statement-recipient-name"
+                      onChange={(e) => changeRecipientContact('name', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.recipient_email')}</FormLabel>
+                    <Input
+                      type="email"
+                      value={recipientContact.email}
+                      disabled={!editable || underlayExists}
+                      placeholder={defaultRecipientEmail}
+                      data-cy="statement-recipient-email"
+                      onChange={(e) => changeRecipientContact('email', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                </div>
+              ) : null}
+
+              {templateIdentifier ? (
+                <div className="flex flex-wrap items-end gap-16" data-cy="statement-submitter">
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.submitter_name')}</FormLabel>
+                    <Input
+                      value={submitter.name}
+                      disabled={!editable || underlayExists}
+                      data-cy="statement-submitter-name"
+                      onChange={(e) => changeSubmitter('name', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.submitter_municipality')}</FormLabel>
+                    <Input
+                      value={submitter.municipality}
+                      disabled={!editable || underlayExists}
+                      data-cy="statement-submitter-municipality"
+                      onChange={(e) => changeSubmitter('municipality', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                </div>
+              ) : null}
 
               <PeopleChoice
                 peopleNeeded={peopleNeeded}
