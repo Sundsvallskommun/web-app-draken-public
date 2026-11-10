@@ -308,6 +308,34 @@ test('an approved inspection needs no action points', async () => {
   expect(getSupportMeasures).not.toHaveBeenCalled();
 });
 
+test('an inspection the process has already moved on from concludes the draft instead of asking for a summary', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('approved');
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processKey: 'internal-inspection',
+      processStatus: 'WAITING',
+      currentActivityId: 'follow_up_phase',
+      awaitingSignals: [{ name: 'follow_up_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.start_follow_up.done' })
+    )
+  );
+  expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
 test('ready for decision completes the investigation before the signal, since the protocol is built from it', async () => {
   useSupportStore.setState({
     supportErrand: errandAt('investigation_phase', ['investigation_completed', 'process_cancelled']),
