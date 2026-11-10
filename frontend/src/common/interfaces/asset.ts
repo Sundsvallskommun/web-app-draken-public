@@ -22,6 +22,7 @@ export interface Asset {
   origin?: string;
   partyId?: string;
   type?: string;
+  title?: string;
   issued?: string;
   validTo?: string | null;
   status?: AssetStatus;

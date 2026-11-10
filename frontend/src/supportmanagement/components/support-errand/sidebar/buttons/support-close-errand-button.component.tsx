@@ -1,3 +1,4 @@
+import { appConfig } from '@config/appconfig';
 import { Button } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { Status } from '@supportmanagement/services/support-errand-service';
@@ -9,6 +10,10 @@ import { SupportCloseErrandModal } from './support-close-errand-modal.component'
 export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const [showModal, setShowModal] = useState(false);
+
+  if (appConfig.features.useProcess) {
+    return null;
+  }
 
   return (
     <>

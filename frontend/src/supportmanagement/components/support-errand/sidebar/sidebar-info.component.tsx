@@ -2,6 +2,7 @@ import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.componen
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
 import { getDisplayNameFromADUsername } from '@common/services/user-service';
 import { compareByDisplayName } from '@common/utils/ad-display-name';
+import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -29,6 +30,7 @@ import { SupportCloseErrandButtonComponent } from './buttons/support-close-erran
 import { SupportCloseErrandModal } from './buttons/support-close-errand-modal.component';
 import { SupportFollowErrandButtonComponent } from './buttons/support-follow-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
+import { SupportProcessStepButton } from './buttons/support-process-step/support-process-step-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
@@ -40,6 +42,8 @@ export const SidebarInfo: FC<{
 }> = (props) => {
   const user = useUserStore((s) => s.user);
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const tabSavers = useSupportStore((s) => s.tabSavers);
   const showCloseModalAfterHandover = useSupportStore((s) => s.showCloseModalAfterHandover);
   const setShowCloseModalAfterHandover = useSupportStore((s) => s.setShowCloseModalAfterHandover);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
@@ -108,6 +112,14 @@ export const SidebarInfo: FC<{
     () => getDisplayNameFromADUsername(supportErrand?.assignedUserId, administrators) || '',
     [supportErrand, administrators]
   );
+
+  const aTabIsUnsaved = Object.values(unsavedTabs).some(Boolean);
+
+  const saveTheTabs = async (): Promise<void> => {
+    for (const saveTab of Object.values(tabSavers)) {
+      await saveTab();
+    }
+  };
 
   const onSubmit = async () => {
     setError(false);
@@ -472,11 +484,12 @@ export const SidebarInfo: FC<{
             type="button"
             disabled={
               isSupportErrandLocked(supportErrand!) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+              (!Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) && !aTabIsUnsaved) ||
               formIsNotValid
             }
-            onClick={handleSubmit(() => {
-              return onSubmit();
+            onClick={handleSubmit(async () => {
+              await onSubmit();
+              await saveTheTabs();
             }, onError)}
             variant="primary"
             color="primary"
@@ -487,6 +500,14 @@ export const SidebarInfo: FC<{
           </Button>
           <>
             <Divider className="mt-16 mb-24" />
+
+            {appConfig.features.useProcess ? (
+              <SupportProcessStepButton
+                disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                onSubmit={onSubmit}
+                onError={onError}
+              />
+            ) : null}
 
             {supportErrand?.status === Status.SOLVED ? (
               <>

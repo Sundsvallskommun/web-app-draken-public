@@ -10,6 +10,60 @@
  * ---------------------------------------------------------------
  */
 
+export interface LegalEntityPostAddress {
+  address1?: string;
+  postalCode?: string;
+  city?: string;
+}
+
+export interface LegalEntityEmployeeSize {
+  name?: string;
+}
+
+export interface LegalEntityProfile {
+  name?: string;
+  organizationNumber?: string;
+  form?: string;
+  acountingPeriodStart?: string;
+  acountingPeriodEnded?: string;
+  postAddress?: LegalEntityPostAddress;
+  employeeSize?: LegalEntityEmployeeSize;
+  businessDescription?: string;
+}
+
+export interface LegalEntityProfileApiResponse {
+  data: LegalEntityProfile;
+  message: string;
+}
+
+export interface LegalEntityIdentity {
+  code?: string;
+  type?: string;
+}
+
+export interface LegalEntityEngagementRelation {
+  description?: string;
+  code?: string;
+  type?: string;
+}
+
+export interface LegalEntityEngagement {
+  name?: string;
+  identity?: LegalEntityIdentity;
+  relations?: LegalEntityEngagementRelation[];
+  source?: string;
+}
+
+export interface LegalEntityEngagements {
+  engagements?: LegalEntityEngagement[];
+  beneficialOwnershipMarking?: number;
+}
+
+export interface LegalEntityEngagementsApiResponse {
+  data: LegalEntityEngagements;
+  message: string;
+}
+
 export interface SsnPayload {
   ssn: string;
 }

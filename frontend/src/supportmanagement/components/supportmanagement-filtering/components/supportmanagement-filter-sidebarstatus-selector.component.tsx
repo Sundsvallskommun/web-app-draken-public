@@ -13,10 +13,13 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
+import { usePathname, useRouter } from 'next/navigation';
 import { FC, useMemo } from 'react';
 export interface SupportManagementStatusFilter {
   status: Status[];
 }
+
+const errandOverviewPath = '/oversikt';
 
 export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
@@ -27,6 +30,8 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
   const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
   const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
@@ -37,6 +42,12 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
+
+  const goToErrandOverview = () => {
+    if (pathname !== errandOverviewPath) {
+      router.push(errandOverviewPath);
+    }
+  };
 
   const updateStatusFilter = (ss: Status[]) => {
     try {
@@ -92,13 +103,16 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   return (
     <>
       {supportSidebarButtons?.map((button) => {
-        const buttonIsActive = selectedErrandStatuses.includes(button.key as Status);
+        const buttonIsActive =
+          window.location.pathname.includes(errandOverviewPath) &&
+          selectedErrandStatuses.includes(button.key as Status);
         return (
           <Button
             onClick={() => {
               updateStatusFilter(button.statuses as Status[]);
               setSidebarLabel(button.label);
               setShowAttestationTable(false);
+              goToErrandOverview();
             }}
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}

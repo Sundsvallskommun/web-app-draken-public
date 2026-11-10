@@ -1,5 +1,5 @@
-import { IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { IsIn, IsOptional, IsString } from 'class-validator';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
@@ -10,6 +10,14 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
+
+// Comments (INTERNAL) and tjänsteanteckningar (PUBLIC) are told apart by the note context
+const NOTE_CONTEXT = {
+  INTERNAL: 'SUPPORT',
+  PUBLIC: 'SERVICE_NOTE',
+} as const;
+type SupportNoteType = keyof typeof NOTE_CONTEXT;
+const NOTE_TYPES = Object.keys(NOTE_CONTEXT) as SupportNoteType[];
 
 interface SupportNote {
   context: string;
@@ -35,6 +43,9 @@ class SupportNoteDto {
   subject!: string;
   @IsString()
   body!: string;
+  @IsIn(NOTE_TYPES)
+  @IsOptional()
+  noteType?: SupportNoteType;
 }
 
 class SupportNoteUpdateDto {
@@ -79,6 +90,12 @@ export class SupportNoteController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
+  private async isServiceNote(req: RequestWithUser, municipalityId: string, errandId: string, noteId: string) {
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
+    const res = await this.apiService.get<SupportNoteResponse>({ url }, req.user);
+    return res.data.context === NOTE_CONTEXT.PUBLIC;
+  }
+
   @Get('/supportnotes/:municipalityId/:id')
   @OpenAPI({ summary: 'Get notes for errand' })
   @UseBefore(authMiddleware)
@@ -86,10 +103,15 @@ export class SupportNoteController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
+    @QueryParam('noteType') noteType: SupportNoteType = 'INTERNAL',
     @Res() response: any,
   ): Promise<SupportNoteData> {
+    const context = NOTE_CONTEXT[noteType];
+    if (!context) {
+      return response.status(400).send({ message: `Invalid noteType: ${noteType}` });
+    }
     const queryObject = {
-      context: 'SUPPORT',
+      context,
       role: 'FIRST_LINE_SUPPORT',
       page: '1',
       limit: '100',
@@ -115,7 +137,7 @@ export class SupportNoteController {
     let data: SupportNote;
     if (noteDto.body) {
       data = {
-        context: 'SUPPORT',
+        context: NOTE_CONTEXT[noteDto.noteType ?? 'INTERNAL'],
         role: 'FIRST_LINE_SUPPORT',
         ...(noteDto.partyId && { partyId: noteDto.partyId }),
         subject: 'Notering',
@@ -146,6 +168,9 @@ export class SupportNoteController {
     @Body() noteDto: Partial<SupportNoteUpdateDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
+    if (await this.isServiceNote(req, municipalityId, errandId, noteId)) {
+      return response.status(403).send('Tjänsteanteckningar kan inte ändras');
+    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     let data: SupportNoteUpdateDto;
     if (noteDto.body) {
@@ -176,6 +201,9 @@ export class SupportNoteController {
     @Param('noteId') noteId: string,
     @Res() response: any,
   ): Promise<SupportNoteData> {
+    if (await this.isServiceNote(req, municipalityId, errandId, noteId)) {
+      return response.status(403).send('Tjänsteanteckningar kan inte tas bort');
+    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     const res = await this.apiService.delete<SupportNoteData>({ url }, req.user);
     return response.status(204).send(res.data);

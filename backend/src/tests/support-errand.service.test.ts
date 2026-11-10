@@ -204,12 +204,16 @@ describe('support-errand.service', () => {
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'ROB', 'SE']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'ROB', 'SE']);
     });
 
     it('gives the label drakes their default labels and no classification', () => {
       expect(getNewErrandDefaults('KC')).toEqual({ labels: { department: 'KSK', category: 'KSK/NO_CASE_SPECIFIED' } });
       expect(getNewErrandDefaults('LOP')?.classification).toBeUndefined();
+      expect(getNewErrandDefaults('AOT')).toEqual({
+        labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
+        parameters: [{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: ['2281'] }],
+      });
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
@@ -319,6 +323,19 @@ describe('support-errand.service', () => {
         contactInformation: [],
         firstName: '',
         lastName: '',
+        organizationName: mockOrganizationName,
+        personId: mockOrganizationPartyId,
+        organizationNumber: mockOrganizationNumber,
+      });
+    });
+
+    it('maps an ENTERPRISE stakeholder to an organization just like COMPANY', () => {
+      const result = toCasedataStakeholder(
+        stakeholder({ externalIdType: ExternalIdType.ENTERPRISE, externalId: mockOrganizationPartyId, organizationName: mockOrganizationName }),
+        mockOrganizationNumber,
+      );
+      expect(result).toMatchObject({
+        type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
         organizationName: mockOrganizationName,
         personId: mockOrganizationPartyId,
         organizationNumber: mockOrganizationNumber,

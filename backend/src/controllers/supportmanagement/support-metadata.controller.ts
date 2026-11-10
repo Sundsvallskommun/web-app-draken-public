@@ -9,6 +9,14 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { withCategorizationLabels } from '@/utils/categorization-labels';
 
+/**
+ * `namespace` is added here; upstream does not return it.
+ *
+ * Context: the namespace is needed by the frontend to construct the json schema name for
+ * the errand type, which is used to fetch the form for the errand's type.
+ * */
+type SupportMetadata = MetadataResponse & { namespace?: string };
+
 @Controller()
 export class SupportMetadataController {
   private apiService = new ApiService();
@@ -24,8 +32,8 @@ export class SupportMetadataController {
     @Res() response: any,
   ): Promise<MetadataResponse> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
-    const res = await this.apiService.get<MetadataResponse>({ url }, req.user);
-    return response.status(200).send(withCategorizationLabels(res.data, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT));
+    const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
+    return response.status(200).send({ ...withCategorizationLabels(res.data, SUPPORTMANAGEMENT_CATEGORIZATION_ROOT), namespace: this.namespace });
   }
 
   @Get('/supportmetadata/:municipalityId/roles')

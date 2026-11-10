@@ -4,7 +4,7 @@ import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/er
 
 import {
   ContactChannelType,
-  ExternalIdType,
+  isOrganizationExternalIdType,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
@@ -66,9 +66,19 @@ export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
 };
 
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
-  c.externalIdType === ExternalIdType.COMPANY
+  isOrganizationExternalIdType(c.externalIdType)
     ? SupportStakeholderTypeEnum.ORGANIZATION
     : SupportStakeholderTypeEnum.PERSON;
+
+const FORM_OWNED_STAKEHOLDER_PARAMETERS = new Set([
+  'username',
+  'administrationCode',
+  'administrationName',
+  'department',
+  'title',
+  'referenceNumber',
+  'organizationNumber',
+]);
 
 const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
   if (
@@ -109,6 +119,9 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
         displayName: 'Organisationsnummer',
       });
     }
+    c.parameters
+      ?.filter((parameter) => !!parameter.key && !FORM_OWNED_STAKEHOLDER_PARAMETERS.has(parameter.key))
+      .forEach(({ key, values }) => parameters.push({ key: key as string, values: values ?? [] }));
     const stakeholder: SupportStakeholder = {
       // externalId is the party UUID. Never fall back to the organization number here — that would
       // store a non-UUID as the partyId. The organization number is persisted as a parameter above.

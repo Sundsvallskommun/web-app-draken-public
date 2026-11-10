@@ -27,6 +27,8 @@ const initLocalization = async (locale: string, namespaces: string[], i18nInstan
     ns: namespaces,
     preload: resources ? [] : i18nConfig.locales,
     initAsync: false,
+    // React escapes rendered text itself; escaping here would turn a "/" in a value into &#x2F;.
+    interpolation: { escapeValue: false },
   });
 
   return {

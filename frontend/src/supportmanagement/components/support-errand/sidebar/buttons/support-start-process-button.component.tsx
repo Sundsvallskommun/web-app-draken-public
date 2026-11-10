@@ -1,3 +1,4 @@
+import { appConfig } from '@config/appconfig';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -52,6 +53,12 @@ export const SupportStartProcessButtonComponent: FC<{
       toast({ message: 'Något gick fel vid start av handläggning', status: 'error', position: 'bottom' });
     }
   };
+
+  // A drake that runs processes starts its handling from the process step, so the two ways in never
+  // compete - not even in the seconds before the process has reported itself.
+  if (appConfig.features.useProcess) {
+    return null;
+  }
 
   if (!supportErrand || supportErrand.status !== Status.NEW) {
     return null;

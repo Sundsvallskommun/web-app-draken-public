@@ -23,7 +23,8 @@ const pathValue = (path: Label[], classification: string): string =>
 export const LabelCategorization: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata;
-}> = ({ supportErrand, supportMetadata }) => {
+  readOnly?: boolean;
+}> = ({ supportErrand, supportMetadata, readOnly = false }) => {
   const { setValue, getValues, trigger, formState }: UseFormReturn<SupportErrand> = useFormContext();
   const { errors } = formState;
   const { t } = useTranslation();
@@ -53,7 +54,7 @@ export const LabelCategorization: FC<{
       value={supportErrand?.labels}
       onChange={handleChange}
       metadata={supportMetadata}
-      disabled={isSupportErrandLocked(supportErrand)}
+      disabled={isSupportErrandLocked(supportErrand) || readOnly}
       fallbackLabels={{
         first: t(
           `common:basics_tab.categories.${process.env.NEXT_PUBLIC_APPLICATION}`,

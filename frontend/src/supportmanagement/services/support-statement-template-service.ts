@@ -1,0 +1,489 @@
+import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { formatOrgNr, OrgNumberFormat } from '@common/services/helper-service';
+import { engagementRoles } from '@common/services/legal-entity-service';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
+
+import type { ChosenCompany } from '../components/support-errand/company-engagements/company-engagement-choice.component';
+import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
+import { getErrandParameterValue, getStakeholderOrganizationNumber } from './support-errand-service';
+import { premisesValue } from './support-form-value-service';
+import {
+  engagementIsPerson,
+  hyphenatedIdentity,
+  isPbi,
+  normalizeIdentity,
+  pbiCandidates,
+  pbiOf,
+  stakeholderName,
+  SupportPbiCandidate,
+} from './support-pbi-service';
+import { supportStatementCounterparty, supportStatementCounterpartyKey } from './support-statement-counterparties';
+
+export const SupportReferralPersons = {
+  NONE: 'NONE',
+  LISTED: 'LISTED',
+  ONE_EACH: 'ONE_EACH',
+} as const;
+
+export type SupportReferralPersonsName = (typeof SupportReferralPersons)[keyof typeof SupportReferralPersons];
+
+const PermitKind = {
+  SERVING: 'SERVING',
+  TOBACCO: 'TOBACCO',
+  LOW_ALCOHOL_BEER: 'LOW_ALCOHOL_BEER',
+  INSPECTION: 'INSPECTION',
+} as const;
+
+type PermitKindName = (typeof PermitKind)[keyof typeof PermitKind];
+
+const PERMIT_KIND_OF_PROCESS: Record<string, PermitKindName> = {
+  'alcohol-serving': PermitKind.SERVING,
+  'alcohol-serving-change': PermitKind.SERVING,
+  'alcohol-serving-addition': PermitKind.SERVING,
+  'catering-occasion': PermitKind.SERVING,
+  'low-alcohol-beer-serving': PermitKind.LOW_ALCOHOL_BEER,
+  'low-alcohol-beer-sales': PermitKind.LOW_ALCOHOL_BEER,
+  'low-alcohol-beer-sales-and-serving': PermitKind.LOW_ALCOHOL_BEER,
+  'external-inspection': PermitKind.INSPECTION,
+  'internal-inspection': PermitKind.INSPECTION,
+  'tobacco-sales': PermitKind.TOBACCO,
+  'tobacco-sales-change': PermitKind.TOBACCO,
+  'tobacco-sales-closure': PermitKind.TOBACCO,
+  'e-cigarette-sales': PermitKind.TOBACCO,
+};
+
+export interface SupportStatementTemplate {
+  identifier: string;
+  name: string;
+  persons: SupportReferralPersonsName;
+}
+
+interface SupportReferralTemplate extends SupportStatementTemplate {
+  counterpartyKey?: string;
+  permitKinds?: PermitKindName[];
+  companies?: boolean;
+  additionalText?: boolean;
+  recipientContact?: { defaultEmail: string };
+}
+
+const GENERAL_TEMPLATE = 'referral-general';
+
+const EVERY_PERMIT_BUT_TOBACCO: PermitKindName[] = [
+  PermitKind.SERVING,
+  PermitKind.LOW_ALCOHOL_BEER,
+  PermitKind.INSPECTION,
+];
+
+const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
+  {
+    identifier: 'referral-police',
+    name: 'Remiss Polismyndigheten',
+    counterpartyKey: 'POLICE',
+    persons: SupportReferralPersons.LISTED,
+    additionalText: true,
+    recipientContact: { defaultEmail: 'registrator.nord@polisen.se' },
+  },
+  {
+    identifier: 'criminal-record-request',
+    name: 'Beställning belastningsregistret',
+    counterpartyKey: 'POLICE',
+    persons: SupportReferralPersons.ONE_EACH,
+  },
+  {
+    identifier: 'referral-enforcement-authority',
+    name: 'Remiss Kronofogden',
+    counterpartyKey: 'ENFORCEMENT_AUTHORITY',
+    persons: SupportReferralPersons.NONE,
+    additionalText: true,
+  },
+  {
+    identifier: 'referral-rescue-service',
+    name: 'Remiss räddningstjänsten',
+    counterpartyKey: 'RESCUE_SERVICE',
+    permitKinds: EVERY_PERMIT_BUT_TOBACCO,
+    persons: SupportReferralPersons.NONE,
+    additionalText: true,
+  },
+  {
+    identifier: 'tax-agency-request-serving',
+    name: 'Begäran Skatteverket, serveringstillstånd',
+    counterpartyKey: 'TAX_AGENCY',
+    permitKinds: [PermitKind.SERVING],
+    persons: SupportReferralPersons.LISTED,
+    companies: true,
+  },
+  {
+    identifier: 'tax-agency-request-serving-inspection',
+    name: 'Begäran Skatteverket, inre tillsyn',
+    counterpartyKey: 'TAX_AGENCY',
+    permitKinds: [PermitKind.INSPECTION],
+    persons: SupportReferralPersons.LISTED,
+    companies: true,
+    additionalText: true,
+  },
+  {
+    identifier: 'tax-agency-request-tobacco-company',
+    name: 'Begäran Skatteverket, tobakstillstånd bolag',
+    counterpartyKey: 'TAX_AGENCY',
+    permitKinds: [PermitKind.TOBACCO],
+    persons: SupportReferralPersons.NONE,
+    additionalText: true,
+  },
+  {
+    identifier: 'tax-agency-request-tobacco-pbi',
+    name: 'Begäran Skatteverket, tobakstillstånd PBI',
+    counterpartyKey: 'TAX_AGENCY',
+    permitKinds: [PermitKind.TOBACCO],
+    persons: SupportReferralPersons.ONE_EACH,
+    additionalText: true,
+  },
+  {
+    identifier: GENERAL_TEMPLATE,
+    name: 'Remiss, allmän',
+    persons: SupportReferralPersons.NONE,
+    additionalText: true,
+  },
+];
+
+const permitKindOfErrand = (errand: SupportErrand | undefined): PermitKindName | undefined => {
+  const processKey = errand?.process?.processKey;
+  return processKey ? PERMIT_KIND_OF_PROCESS[processKey] : undefined;
+};
+
+const servesTheErrand = (template: SupportReferralTemplate, kind: PermitKindName | undefined): boolean =>
+  !template.permitKinds || !kind || template.permitKinds.includes(kind);
+
+export const supportStatementTemplates = (
+  counterpartyName: string | undefined,
+  errand?: SupportErrand
+): SupportStatementTemplate[] => {
+  const key = supportStatementCounterpartyKey(counterpartyName);
+  const kind = permitKindOfErrand(errand);
+
+  return SUPPORT_REFERRAL_TEMPLATES.filter(
+    (template) => (template.counterpartyKey === key && servesTheErrand(template, kind)) || !template.counterpartyKey
+  ).map(({ identifier, name, persons }) => ({ identifier, name, persons }));
+};
+
+export const supportStatementTemplateNamed = (identifier: string): SupportStatementTemplate | undefined =>
+  SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier);
+
+export const supportStatementTemplateOfQuestion = (question: string): SupportStatementTemplate | undefined =>
+  SUPPORT_REFERRAL_TEMPLATES.find((template) => template.name === question.trim());
+
+export const supportStatementTemplatePersons = (identifier: string): SupportReferralPersonsName =>
+  supportStatementTemplateNamed(identifier)?.persons ?? SupportReferralPersons.NONE;
+
+export const supportStatementTemplateAsksForCompanies = (identifier: string): boolean =>
+  !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.companies;
+
+export const supportStatementTemplateTakesAFreeText = (identifier: string): boolean =>
+  !!SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.additionalText;
+
+export const supportStatementTemplateRecipientContact = (identifier: string): { defaultEmail: string } | undefined =>
+  SUPPORT_REFERRAL_TEMPLATES.find((template) => template.identifier === identifier)?.recipientContact;
+
+export interface SupportReferralPerson {
+  partyId: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  personalNumber: string;
+  roles: string;
+  marked: boolean;
+  onTheErrand: boolean;
+}
+
+const splitName = (name: string): { firstName: string; lastName: string } => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length < 2
+    ? { firstName: name.trim(), lastName: '' }
+    : { firstName: parts.slice(0, -1).join(' '), lastName: parts.at(-1) ?? '' };
+};
+
+const candidatesTheCompanyNames = (candidates: SupportPbiCandidate[]): SupportPbiCandidate[] =>
+  candidates.filter(({ engagement }) => engagementIsPerson(engagement) && !!engagement.name);
+
+const peopleOfTheCompany = (candidates: SupportPbiCandidate[]): SupportReferralPerson[] =>
+  candidates.map(({ engagement, marked, stakeholder }) => ({
+    partyId: stakeholder?.externalId || normalizeIdentity(engagement.identity?.code),
+    name: engagement.name as string,
+    ...splitName(engagement.name as string),
+    personalNumber: hyphenatedIdentity(engagement.identity?.code),
+    roles: engagementRoles(engagement),
+    marked,
+    onTheErrand: !!stakeholder?.externalId,
+  }));
+
+const referralPersonOfStakeholder = (stakeholder: SupportStakeholderFormModel): SupportReferralPerson => ({
+  partyId: stakeholder.externalId || normalizeIdentity(stakeholder.personNumber),
+  name: stakeholderName(stakeholder),
+  firstName: stakeholder.firstName ?? '',
+  lastName: stakeholder.lastName ?? '',
+  personalNumber: hyphenatedIdentity(stakeholder.personNumber),
+  roles: pbiOf(stakeholder).role,
+  marked: true,
+  onTheErrand: !!stakeholder.externalId,
+});
+
+const peopleMarkedApartFromTheCompany = (
+  companyCandidates: SupportPbiCandidate[],
+  stakeholders: SupportStakeholderFormModel[]
+): SupportReferralPerson[] => {
+  const alreadyNamed = companyCandidates.map(({ stakeholder }) => stakeholder?.internalId).filter(Boolean);
+  return stakeholders
+    .filter((stakeholder) => isPbi(stakeholder) && !alreadyNamed.includes(stakeholder.internalId))
+    .map(referralPersonOfStakeholder);
+};
+
+export const supportReferralPeople = (
+  engagements: LegalEntityEngagement[],
+  stakeholders: SupportStakeholderFormModel[]
+): SupportReferralPerson[] => {
+  const companyCandidates = candidatesTheCompanyNames(pbiCandidates(engagements, stakeholders));
+  return [
+    ...peopleOfTheCompany(companyCandidates),
+    ...peopleMarkedApartFromTheCompany(companyCandidates, stakeholders),
+  ];
+};
+
+export const chosenReferralPartyIds = (
+  people: SupportReferralPerson[],
+  chosen: string[],
+  alreadySeen: string[]
+): string[] => {
+  const present = people.map((person) => person.partyId);
+  const kept = chosen.filter((partyId) => present.includes(partyId));
+  const arriving = people
+    .filter((person) => person.marked && !alreadySeen.includes(person.partyId) && !kept.includes(person.partyId))
+    .map((person) => person.partyId);
+
+  return arriving.length === 0 && kept.length === chosen.length ? chosen : [...kept, ...arriving];
+};
+
+interface SupportStatementPremises {
+  name: string;
+  street: string;
+  postalAddress: string;
+}
+
+const organizationNumberOf = (owner: SupportStakeholder | undefined): string =>
+  (owner && getStakeholderOrganizationNumber(owner)) || '';
+
+const supportStatementPremises = (errand: SupportErrand | undefined): SupportStatementPremises => {
+  const document = (errand?.jsonParameters ?? []).map((parameter) => parameter.value).find(Boolean) as
+    | Record<string, unknown>
+    | undefined;
+  const owner = errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
+
+  const atTheCompany = premisesValue(document, 'AddressSameAsCompany') === 'YES';
+  const address = premisesValue(document, 'Address') as Record<string, string> | undefined;
+
+  const street = atTheCompany ? owner?.address ?? '' : address?.street ?? '';
+  const postalCode = atTheCompany ? owner?.zipCode ?? '' : address?.postalCode ?? '';
+  const city = atTheCompany ? owner?.city ?? '' : address?.city ?? '';
+
+  const name = premisesValue(document, 'Name');
+  return {
+    name: (typeof name === 'string' && name) || owner?.organizationName || '',
+    street,
+    postalAddress: [postalCode, city].filter(Boolean).join(' '),
+  };
+};
+
+const labelOfClassification = (errand: SupportErrand | undefined, classification: string) =>
+  (errand?.labels ?? []).find((label) => label.classification === classification);
+
+const caseTypeOfErrand = (errand: SupportErrand | undefined): string => {
+  const label = labelOfClassification(errand, 'SUBTYPE') ?? labelOfClassification(errand, 'TYPE');
+  return label?.displayName?.toLocaleLowerCase('sv-SE') ?? '';
+};
+
+/**
+ * The municipality the permit is decided for, worded as the tax agency templates word it. The
+ * e-service writes the applicant's choice as a municipality code on the errand; the two codes it
+ * offers are the ones below.
+ */
+const MUNICIPALITY_OF_CODE: Record<string, string> = {
+  '2281': 'Sundsvalls kommun',
+  '2262': 'Timrå kommun',
+};
+
+/** Errands registered before the e-service asked carry no code, and were all Sundsvall's own. */
+const MUNICIPALITY_WITHOUT_A_CODE = 'Sundsvalls kommun';
+
+const municipalityOfErrand = (errand: SupportErrand | undefined): string =>
+  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, 'premisesMunicipalityId')] ??
+  MUNICIPALITY_WITHOUT_A_CODE;
+
+/**
+ * The authority asking, which is the alcohol and tobacco unit itself. It handles the permits of
+ * every municipality the e-service offers, so it is the same whichever one the errand names.
+ */
+const REQUESTER = {
+  requesterAuthority: 'Sundsvalls kommun, Individ- och arbetsmarknadsförvaltningen, Alkohol- och tobaksenheten',
+  requesterAddress: 'Sundsvalls kommun',
+  requesterPostalCode: '851 85',
+  requesterCity: 'Sundsvall',
+};
+
+export interface SupportStatementTemplateFacts {
+  identifier: string;
+  errand: SupportErrand | undefined;
+  handlerName: string;
+  handlerEmail: string;
+  counterpartyName: string;
+  dueAt: string;
+  people?: SupportReferralPerson[];
+  person?: SupportReferralPerson;
+  companies?: Record<string, ChosenCompany[]>;
+  freeText?: string;
+  recipientAttention?: string;
+  recipientEmail?: string;
+  handlerMunicipality?: string;
+}
+
+export const SUPPORT_STATEMENT_HANDLER_MUNICIPALITY = 'Sundsvalls kommun';
+
+const listedPeople = (people: SupportReferralPerson[] | undefined) =>
+  (people ?? []).map((person) => ({
+    personalNumber: person.personalNumber,
+    name: person.name,
+    roles: person.roles,
+  }));
+
+const listedRepresentatives = (
+  people: SupportReferralPerson[] | undefined,
+  companies: Record<string, ChosenCompany[]> | undefined
+) =>
+  (people ?? []).map((person) => ({
+    personalNumber: person.personalNumber,
+    name: person.name,
+    companies: (companies?.[person.partyId] ?? []).map((company) => ({
+      name: company.name,
+      orgNumber: formatOrgNr(company.organizationNumber, OrgNumberFormat.DASH) || company.organizationNumber,
+    })),
+  }));
+
+export const supportStatementTemplateParameters = (facts: SupportStatementTemplateFacts): Record<string, unknown> => ({
+  additionalText: facts.freeText ?? '',
+  handlerMunicipality: facts.handlerMunicipality || SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
+  ...parametersOfTemplate(facts),
+});
+
+const parametersOfTemplate = (facts: SupportStatementTemplateFacts): Record<string, unknown> => {
+  const premises = supportStatementPremises(facts.errand);
+  const owner = facts.errand?.stakeholders?.find((stakeholder) => stakeholder.role === 'PRIMARY');
+  const counterparty = supportStatementCounterparty(facts.counterpartyName);
+  const applicantName = owner?.organizationName ?? '';
+  const applicantOrgNumber = organizationNumberOf(owner);
+  const caseNumber = facts.errand?.errandNumber ?? '';
+  const documentDate = new Date().toISOString().slice(0, 10);
+  const municipality = municipalityOfErrand(facts.errand);
+  const premisesFields = {
+    premisesName: premises.name,
+    premisesStreet: premises.street,
+    premisesPostalAddress: premises.postalAddress,
+  };
+
+  if (facts.identifier === 'criminal-record-request') {
+    return {
+      ...REQUESTER,
+      handlerName: facts.handlerName,
+      handlerEmail: facts.handlerEmail,
+      caseNumber,
+      personalNumber: facts.person?.personalNumber ?? '',
+      firstName: facts.person?.firstName ?? '',
+      lastName: facts.person?.lastName ?? '',
+    };
+  }
+
+  if (facts.identifier === 'tax-agency-request-tobacco-company') {
+    return { handlerName: facts.handlerName, applicantName, applicantOrgNumber };
+  }
+
+  if (facts.identifier === 'tax-agency-request-tobacco-pbi') {
+    return {
+      handlerName: facts.handlerName,
+      applicantName,
+      applicantOrgNumber,
+      pbiName: facts.person?.name ?? '',
+      pbiPersonalNumber: facts.person?.personalNumber ?? '',
+    };
+  }
+
+  if (facts.identifier === 'tax-agency-request-serving-inspection') {
+    return {
+      handlerName: facts.handlerName,
+      handlerEmail: facts.handlerEmail,
+      municipality,
+      documentDate,
+      ...premisesFields,
+      permitHolderName: applicantName,
+      permitHolderOrgNumber: applicantOrgNumber,
+      representatives: listedRepresentatives(facts.people, facts.companies),
+    };
+  }
+
+  if (facts.identifier === 'tax-agency-request-serving') {
+    return {
+      handlerName: facts.handlerName,
+      handlerEmail: facts.handlerEmail,
+      municipality,
+      documentDate,
+      caseType: caseTypeOfErrand(facts.errand),
+      ...premisesFields,
+      applicantName,
+      applicantOrgNumber,
+      representatives: listedRepresentatives(facts.people, facts.companies),
+    };
+  }
+
+  if (facts.identifier === 'referral-police') {
+    return {
+      caseNumber,
+      documentDate,
+      handlerName: facts.handlerName,
+      recipientAttention: facts.recipientAttention ?? '',
+      recipientEmail: facts.recipientEmail ?? '',
+      ...premisesFields,
+      persons: listedPeople(facts.people),
+    };
+  }
+
+  return {
+    caseNumber,
+    documentDate,
+    handlerName: facts.handlerName,
+    ...premisesFields,
+    applicantName,
+    applicantOrgNumber,
+    replyDeadline: facts.dueAt,
+    recipientName: facts.counterpartyName,
+    recipientStreet: counterparty?.street ?? '',
+    recipientPostalAddress: counterparty?.postalAddress ?? '',
+  };
+};
+
+export const supportStatementTemplateProblem = (
+  identifier: string,
+  dueAt: string,
+  people: SupportReferralPerson[]
+): string | undefined => {
+  if (!identifier) return 'common:statements.validation.template';
+
+  const persons = supportStatementTemplatePersons(identifier);
+  if (persons !== SupportReferralPersons.NONE && people.length === 0) {
+    return 'common:statements.validation.people';
+  }
+  if (persons !== SupportReferralPersons.NONE && people.some((person) => !person.personalNumber)) {
+    return 'common:statements.validation.people_without_identity';
+  }
+  if (supportStatementTemplateAsksForADeadline(identifier) && !dueAt) {
+    return 'common:statements.validation.due_at';
+  }
+  return undefined;
+};
+
+export const supportStatementTemplateAsksForADeadline = (identifier: string): boolean =>
+  identifier.startsWith('referral-') && identifier !== 'referral-police';

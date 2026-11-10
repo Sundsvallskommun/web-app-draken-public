@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 export const mockErrand_base = {
   data: {

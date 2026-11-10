@@ -1,0 +1,916 @@
+'use client';
+
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
+import type { ErrandAttachment, Statement } from '@common/data-contracts/supportmanagement/data-contracts';
+import { getLegalEntityEngagements } from '@common/services/legal-entity-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  FormControl,
+  FormLabel,
+  Input,
+  RadioButton,
+  Select,
+  Spinner,
+  Textarea,
+  useSnackbar,
+} from '@sk-web-gui/react';
+import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
+import { isOrganizationExternalIdType, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportStatementOtherCounterparty,
+  SUPPORT_STATEMENT_COUNTERPARTIES,
+  SUPPORT_STATEMENT_OTHER_COUNTERPARTY,
+} from '@supportmanagement/services/support-statement-counterparties';
+import {
+  attachmentsOfKind,
+  createSupportStatement,
+  deleteSupportStatement,
+  isSupportStatementRemovable,
+  pdfFileFromBase64,
+  renderSupportStatementPdf,
+  selectableSupportStatementOutcomes,
+  SUPPORT_STATEMENT_STATUSES,
+  SUPPORT_STATEMENT_TYPE,
+  SupportStatementAttachmentKind,
+  type SupportStatementAttachmentKindName,
+  supportStatementAttachmentPurpose,
+  supportStatementFields,
+  type SupportStatementForm,
+  supportStatementPurposeDisplayName,
+  SupportStatementStatus,
+  type SupportStatementStatusName,
+  supportStatementUnderlayProblem,
+  updateSupportStatement,
+  uploadSupportStatementAttachment,
+} from '@supportmanagement/services/support-statement-service';
+import {
+  chosenReferralPartyIds,
+  SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
+  supportReferralPeople,
+  type SupportReferralPerson,
+  SupportReferralPersons,
+  type SupportReferralPersonsName,
+  type SupportStatementTemplate,
+  supportStatementTemplateAsksForADeadline,
+  supportStatementTemplateAsksForCompanies,
+  supportStatementTemplateNamed,
+  supportStatementTemplateOfQuestion,
+  supportStatementTemplateParameters,
+  supportStatementTemplatePersons,
+  supportStatementTemplateProblem,
+  supportStatementTemplateRecipientContact,
+  supportStatementTemplates,
+  supportStatementTemplateTakesAFreeText,
+} from '@supportmanagement/services/support-statement-template-service';
+import { CornerDownRight, Mail, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
+
+import {
+  type ChosenCompany,
+  CompanyEngagementChoice,
+} from '../company-engagements/company-engagement-choice.component';
+
+const AttachmentRow: FC<{ name: string; note: string; openLabel: string; onOpen: () => void }> = ({
+  name,
+  note,
+  openLabel,
+  onOpen,
+}) => (
+  <div className="flex items-center justify-between gap-16 border-1 rounded-groups px-16 py-8">
+    <div className="flex items-center gap-12 min-w-0">
+      <Mail size={18} className="shrink-0" />
+      <div className="flex flex-col min-w-0">
+        <span className="font-semibold truncate">{name}</span>
+        <span className="text-small text-dark-secondary">{note}</span>
+      </div>
+    </div>
+    <Button type="button" size="sm" variant="secondary" onClick={onOpen}>
+      {openLabel}
+    </Button>
+  </div>
+);
+
+const TemplateOptions: FC<{
+  locked: boolean;
+  identifier: string;
+  question: string;
+  templates: SupportStatementTemplate[];
+}> = ({ locked, identifier, question, templates }) => {
+  const { t } = useTranslation();
+
+  if (locked) {
+    return (
+      <Select.Option value={identifier}>{supportStatementTemplateNamed(identifier)?.name ?? question}</Select.Option>
+    );
+  }
+
+  return (
+    <>
+      <Select.Option value="">{t('common:statements.template_placeholder')}</Select.Option>
+      {templates.map((template) => (
+        <Select.Option key={template.identifier} value={template.identifier}>
+          {template.name}
+        </Select.Option>
+      ))}
+    </>
+  );
+};
+
+const PeopleChoice: FC<{
+  peopleNeeded: SupportReferralPersonsName;
+  people: SupportReferralPerson[];
+  chosenPartyIds: string[];
+  companiesNeeded: boolean;
+  companies: Record<string, ChosenCompany[]>;
+  editable: boolean;
+  onToggle: (partyId: string) => void;
+  onCompanies: (partyId: string, companies: ChosenCompany[]) => void;
+}> = ({ peopleNeeded, people, chosenPartyIds, companiesNeeded, companies, editable, onToggle, onCompanies }) => {
+  const { t } = useTranslation();
+
+  if (peopleNeeded === SupportReferralPersons.NONE) return null;
+
+  return (
+    <FormControl className="w-full">
+      <FormLabel>
+        {peopleNeeded === SupportReferralPersons.ONE_EACH
+          ? t('common:statements.people_one_each')
+          : t('common:statements.people_listed')}
+      </FormLabel>
+      {people.length === 0 ? (
+        <p className="text-small text-dark-secondary italic m-0" data-cy="statement-people-empty">
+          {t('common:statements.people_empty')}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-12" data-cy="statement-people">
+          {people.map((person) => (
+            <div key={person.partyId} className="flex flex-col gap-8">
+              <Checkbox
+                size="sm"
+                checked={chosenPartyIds.includes(person.partyId)}
+                disabled={!editable}
+                onChange={() => onToggle(person.partyId)}
+              >
+                {[person.name, person.roles].filter(Boolean).join(' - ')}
+              </Checkbox>
+
+              {companiesNeeded && chosenPartyIds.includes(person.partyId) ? (
+                <div className="flex gap-8 pl-9">
+                  <CornerDownRight size={18} className="mt-8 shrink-0 text-dark-secondary" />
+                  <CompanyEngagementChoice
+                    partyId={person.onTheErrand ? person.partyId : undefined}
+                    personalNumber={person.personalNumber}
+                    personName={person.name}
+                    chosen={(companies[person.partyId] ?? []).map((company) => company.organizationNumber)}
+                    writable={editable}
+                    onChange={(picked) => onCompanies(person.partyId, picked)}
+                    textKey="common:statements.companies"
+                    dataCy={`statement-companies-${person.partyId}`}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </FormControl>
+  );
+};
+
+const DeadlineField: FC<{ asked: boolean; value: string; editable: boolean; onChange: (dueAt: string) => void }> = ({
+  asked,
+  value,
+  editable,
+  onChange,
+}) => {
+  const { t } = useTranslation();
+
+  if (!asked) return null;
+
+  return (
+    <FormControl>
+      <FormLabel>{t('common:statements.due_at')}</FormLabel>
+      <Input
+        type="date"
+        value={value}
+        disabled={!editable}
+        data-cy="statement-due-at"
+        onChange={(e) => onChange(e.currentTarget.value)}
+      />
+    </FormControl>
+  );
+};
+
+const LockedNote: FC<{ shown: boolean }> = ({ shown }) => {
+  const { t } = useTranslation();
+
+  if (!shown) return null;
+
+  return (
+    <p className="text-small text-dark-secondary italic m-0" data-cy="statement-locked">
+      {t('common:statements.locked_to_underlay')}
+    </p>
+  );
+};
+
+const TemplateProblem: FC<{ problem: string | undefined; identifier: string }> = ({ problem, identifier }) => {
+  const { t } = useTranslation();
+
+  if (!problem || !identifier) return null;
+
+  return (
+    <Alert type="info" data-cy="statement-template-problem">
+      <Alert.Icon />
+      <Alert.Content>
+        <Alert.Content.Description>{t(problem)}</Alert.Content.Description>
+      </Alert.Content>
+    </Alert>
+  );
+};
+
+const GeneratedNote: FC<{ shown: boolean }> = ({ shown }) => {
+  const { t } = useTranslation();
+
+  if (!shown) return null;
+
+  return (
+    <Alert type="success" data-cy="statement-generated">
+      <Alert.Icon />
+      <Alert.Content>
+        <Alert.Content.Description>{t('common:statements.generated')}</Alert.Content.Description>
+      </Alert.Content>
+    </Alert>
+  );
+};
+
+export const SupportStatementCard: FC<{
+  statement: Statement;
+  form: SupportStatementForm;
+  problem: string | undefined;
+  errandId: string;
+  errandNumber: string;
+  municipalityId: string;
+  writable: boolean;
+  onFormChange: (changes: Partial<SupportStatementForm>) => void;
+  onChanged: (statement: Statement) => void;
+  onRemoved: () => void;
+}> = ({
+  statement,
+  form,
+  problem,
+  errandId,
+  errandNumber,
+  municipalityId,
+  writable,
+  onFormChange,
+  onChanged,
+  onRemoved,
+}) => {
+  const { t } = useTranslation();
+  const toastMessage = useSnackbar();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const { watch } = useFormContext<SupportErrand>();
+  const user = useUserStore((s) => s.user);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const engagementsAskedFor = useRef(false);
+  const partyIdsAlreadySeen = useRef<string[]>([]);
+
+  const [generated, setGenerated] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
+  const [chosenPartyIds, setChosenPartyIds] = useState<string[]>([]);
+  const [companies, setCompanies] = useState<Record<string, ChosenCompany[]>>({});
+  const [uploadKind, setUploadKind] = useState<SupportStatementAttachmentKindName>(
+    SupportStatementAttachmentKind.REQUEST
+  );
+  // The preview costs a render of its own, so the free text reaches it when the handler says so.
+  const [appliedFreeText, setAppliedFreeText] = useState(form.freeText);
+  const [recipientContact, setRecipientContact] = useState({ name: '', email: '' });
+  const [submitter, setSubmitter] = useState(() => ({
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    municipality: SUPPORT_STATEMENT_HANDLER_MUNICIPALITY,
+  }));
+
+  const watchedCustomer = watch('customer');
+  const watchedContacts = watch('contacts');
+  const stakeholders = useMemo(
+    () => [...(watchedCustomer ?? []), ...(watchedContacts ?? [])],
+    [watchedCustomer, watchedContacts]
+  );
+  const people = useMemo(() => supportReferralPeople(engagements, stakeholders), [engagements, stakeholders]);
+
+  const statementId = statement.id;
+  const outcomes = selectableSupportStatementOutcomes(supportMetadata);
+  const requests = attachmentsOfKind(statement, SupportStatementAttachmentKind.REQUEST);
+  const responses = attachmentsOfKind(statement, SupportStatementAttachmentKind.RESPONSE);
+  const responsePurpose = supportStatementAttachmentPurpose(
+    form.counterpartyName,
+    SupportStatementAttachmentKind.RESPONSE
+  );
+  const underlayExists = requests.length > 0;
+  const templateIdentifier = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
+  const counterpartyChosen = form.counterpartyName.length > 0;
+  const ofItsOwn = isSupportStatementOtherCounterparty(form.counterpartyName);
+  const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
+  const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
+  const companiesNeeded = supportStatementTemplateAsksForCompanies(templateIdentifier);
+  const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));
+  const asksForADeadline = supportStatementTemplateAsksForADeadline(templateIdentifier);
+  const takesAFreeText = supportStatementTemplateTakesAFreeText(templateIdentifier);
+  const recipientContactAsked = supportStatementTemplateRecipientContact(templateIdentifier);
+  const defaultRecipientEmail = recipientContactAsked?.defaultEmail ?? '';
+  const templateProblem = supportStatementTemplateProblem(templateIdentifier, form.dueAt, chosenPeople);
+  const removable = isSupportStatementRemovable(statement);
+  const editable = writable && !busy;
+  const removeLabel = t(removable ? 'common:statements.remove' : 'common:statements.remove_blocked');
+
+  const noteOfAttachment = (attachment: ErrandAttachment) => {
+    const kind = requests.includes(attachment)
+      ? t(ofItsOwn ? 'common:statements.attachment_filed' : 'common:statements.attachment_request')
+      : t('common:statements.attachment_response');
+    return `${kind} · ${supportStatementPurposeDisplayName(attachment.purpose?.name ?? '', supportMetadata)}`;
+  };
+
+  const titleOfStatement = t('common:statements.attachment_title', {
+    counterparty: form.counterpartyName,
+    errandNumber,
+  });
+
+  const refreshAttachments = () =>
+    getSupportAttachments(errandId, municipalityId)
+      .then(setSupportAttachments)
+      .catch(() => undefined);
+
+  const set = (changes: Partial<SupportStatementForm>) => {
+    setGenerated(false);
+    onFormChange(changes);
+  };
+
+  const factsFor = (person: SupportReferralPerson | undefined, freeText = appliedFreeText) => ({
+    identifier: templateIdentifier,
+    errand: supportErrand,
+    handlerName: submitter.name || `${user.firstName} ${user.lastName}`.trim(),
+    handlerMunicipality: submitter.municipality,
+    handlerEmail: user.email,
+    counterpartyName: form.counterpartyName,
+    dueAt: form.dueAt,
+    people: chosenPeople,
+    person: person ?? chosenPeople[0],
+    companies,
+    freeText,
+    recipientAttention: recipientContact.name,
+    recipientEmail: recipientContact.email || defaultRecipientEmail,
+  });
+
+  const chooseTemplate = (identifier: string) =>
+    set({ question: identifier ? supportStatementTemplateNamed(identifier)?.name ?? identifier : '' });
+
+  useEffect(() => {
+    if (peopleNeeded === SupportReferralPersons.NONE || engagementsAskedFor.current) return;
+    engagementsAskedFor.current = true;
+
+    const company = supportErrand?.stakeholders?.find(
+      (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
+    )?.externalId;
+    if (!company) return;
+
+    const readEngagements = async () => {
+      setBusy(true);
+      try {
+        setEngagements(await getLegalEntityEngagements(company));
+      } catch {
+        engagementsAskedFor.current = false;
+        toastMessage(getToastOptions({ message: t('common:statements.toast.people_failed'), status: 'error' }));
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    void readEngagements();
+  }, [peopleNeeded, supportErrand?.stakeholders, t, toastMessage]);
+
+  useEffect(() => {
+    const seenBefore = partyIdsAlreadySeen.current;
+    partyIdsAlreadySeen.current = people.map((person) => person.partyId);
+    setChosenPartyIds((chosen) => chosenReferralPartyIds(people, chosen, seenBefore));
+  }, [people]);
+
+  const changeRecipientContact = (field: 'name' | 'email', value: string) =>
+    setRecipientContact((contact) => ({ ...contact, [field]: value }));
+
+  const changeSubmitter = (field: 'name' | 'municipality', value: string) =>
+    setSubmitter((current) => ({ ...current, [field]: value }));
+
+  const rememberCompanies = (partyId: string, chosen: ChosenCompany[]) =>
+    setCompanies((current) => ({ ...current, [partyId]: chosen }));
+
+  const togglePerson = (partyId: string) =>
+    setChosenPartyIds((current) =>
+      current.includes(partyId) ? current.filter((chosen) => chosen !== partyId) : [...current, partyId]
+    );
+
+  const chooseCounterparty = async (counterpartyName: string) => {
+    set({ counterpartyName, label: '' });
+    if (!counterpartyName || statementId) return;
+
+    setBusy(true);
+    try {
+      onChanged(
+        await createSupportStatement(errandId, municipalityId, {
+          type: SUPPORT_STATEMENT_TYPE,
+          counterpartyName,
+          title: isSupportStatementOtherCounterparty(counterpartyName)
+            ? counterpartyName
+            : t('common:statements.attachment_title', { counterparty: counterpartyName, errandNumber }),
+        })
+      );
+    } catch {
+      set({ counterpartyName: '' });
+      toastMessage(getToastOptions({ message: t('common:statements.toast.add_failed'), status: 'error' }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const filenameFor = (person: SupportReferralPerson | undefined) =>
+    person
+      ? t('common:statements.attachment_filename_for', {
+          template: supportStatementTemplateNamed(templateIdentifier)?.name ?? templateIdentifier,
+          person: person.name,
+          errandNumber,
+        })
+      : t('common:statements.attachment_filename', { counterparty: form.counterpartyName, errandNumber });
+
+  const generate = async () => {
+    if (!statementId || supportStatementUnderlayProblem(form) || templateProblem) return;
+
+    setAppliedFreeText(form.freeText);
+    setBusy(true);
+    try {
+      await updateSupportStatement(
+        errandId,
+        municipalityId,
+        statementId,
+        supportStatementFields(form, titleOfStatement)
+      );
+
+      const oneForEach = peopleNeeded === SupportReferralPersons.ONE_EACH ? chosenPeople : [undefined];
+      const purpose = supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST);
+
+      const documents = await Promise.all(
+        oneForEach.map(async (person) =>
+          pdfFileFromBase64(
+            await renderSupportStatementPdf(
+              templateIdentifier,
+              supportStatementTemplateParameters(factsFor(person, form.freeText))
+            ),
+            filenameFor(person)
+          )
+        )
+      );
+
+      const fileEachInTurn = async ([next, ...rest]: File[], written: Statement): Promise<Statement> =>
+        next === undefined
+          ? written
+          : fileEachInTurn(
+              rest,
+              await uploadSupportStatementAttachment(errandId, municipalityId, statementId, next, purpose)
+            );
+
+      onChanged(await fileEachInTurn(documents, statement));
+      await refreshAttachments();
+      setGenerated(true);
+    } catch {
+      toastMessage(getToastOptions({ message: t('common:statements.toast.generate_failed'), status: 'error' }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const filesAnUnderlay = ofItsOwn && uploadKind === SupportStatementAttachmentKind.REQUEST;
+  const uploadPurpose = filesAnUnderlay
+    ? supportStatementAttachmentPurpose(form.counterpartyName, SupportStatementAttachmentKind.REQUEST)
+    : responsePurpose;
+
+  const settled = underlayExists || responses.length > 0;
+
+  /** An answer that has arrived is what makes the statement answered, so the status follows the file. */
+  const upload = async (file: File | undefined) => {
+    if (!file || !statementId) return;
+
+    setBusy(true);
+    try {
+      await updateSupportStatement(
+        errandId,
+        municipalityId,
+        statementId,
+        supportStatementFields(form, titleOfStatement)
+      );
+      onChanged(await uploadSupportStatementAttachment(errandId, municipalityId, statementId, file, uploadPurpose));
+      if (!filesAnUnderlay) onFormChange({ status: SupportStatementStatus.COMPLETED });
+      await refreshAttachments();
+    } catch {
+      toastMessage(getToastOptions({ message: t('common:statements.toast.upload_failed'), status: 'error' }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const open = async (attachment: ErrandAttachment) => {
+    if (!attachment.id) return;
+
+    try {
+      const file = await getSupportAttachment(errandId, municipalityId, {
+        id: attachment.id,
+        fileName: attachment.fileName ?? '',
+        mimeType: attachment.mimeType ?? '',
+      });
+      const link = document.createElement('a');
+      link.href = `data:${attachment.mimeType};base64,${file.base64EncodedString}`;
+      link.setAttribute('download', attachment.fileName ?? '');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      toastMessage(getToastOptions({ message: t('common:statements.toast.open_failed'), status: 'error' }));
+    }
+  };
+
+  const remove = async () => {
+    if (!removable) return;
+
+    if (!statementId) {
+      onRemoved();
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await deleteSupportStatement(errandId, municipalityId, statementId);
+      await refreshAttachments();
+      onRemoved();
+    } catch {
+      toastMessage(getToastOptions({ message: t('common:statements.toast.remove_failed'), status: 'error' }));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="border-1 rounded-groups p-16 flex flex-col gap-16" data-cy={`statement-${statementId ?? 'new'}`}>
+      <div className="flex items-end gap-16">
+        <FormControl className="grow">
+          <FormLabel>{t('common:statements.counterparty')}</FormLabel>
+          <Select
+            value={form.counterpartyName}
+            disabled={!editable || settled}
+            data-cy="statement-counterparty"
+            onChange={(e) => void chooseCounterparty(e.currentTarget.value)}
+          >
+            <Select.Option value="">{t('common:statements.counterparty_placeholder')}</Select.Option>
+            {SUPPORT_STATEMENT_COUNTERPARTIES.map((counterparty) => (
+              <Select.Option key={counterparty.key} value={counterparty.name}>
+                {counterparty.name}
+              </Select.Option>
+            ))}
+            <Select.Option value={SUPPORT_STATEMENT_OTHER_COUNTERPARTY}>
+              {SUPPORT_STATEMENT_OTHER_COUNTERPARTY}
+            </Select.Option>
+          </Select>
+        </FormControl>
+        <Button
+          type="button"
+          iconButton
+          variant="tertiary"
+          color="error"
+          disabled={!editable || !removable}
+          aria-label={removeLabel}
+          title={removeLabel}
+          data-cy="statement-remove"
+          onClick={() => void remove()}
+        >
+          <Trash2 size={20} />
+        </Button>
+      </div>
+
+      {counterpartyChosen ? (
+        <div className="flex flex-col gap-12">
+          {ofItsOwn ? (
+            <FormControl className="w-full">
+              <FormLabel>{t('common:statements.document_name')}</FormLabel>
+              <Input
+                value={form.label}
+                disabled={!editable || settled}
+                placeholder={t('common:statements.document_name_placeholder')}
+                data-cy="statement-document-name"
+                onChange={(e) => set({ label: e.currentTarget.value })}
+              />
+            </FormControl>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-end gap-16">
+                <FormControl className="grow">
+                  <FormLabel>{t('common:statements.template')}</FormLabel>
+                  <Select
+                    value={templateIdentifier}
+                    disabled={!editable || underlayExists}
+                    data-cy="statement-template"
+                    onChange={(e) => chooseTemplate(e.currentTarget.value)}
+                  >
+                    <TemplateOptions
+                      locked={underlayExists}
+                      identifier={templateIdentifier}
+                      question={form.question}
+                      templates={templates}
+                    />
+                  </Select>
+                </FormControl>
+                <DeadlineField
+                  asked={asksForADeadline}
+                  value={form.dueAt}
+                  editable={editable}
+                  onChange={(dueAt) => set({ dueAt })}
+                />
+              </div>
+
+              <LockedNote shown={underlayExists} />
+
+              {recipientContactAsked ? (
+                <div className="flex flex-wrap items-end gap-16" data-cy="statement-recipient-contact">
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.recipient_name')}</FormLabel>
+                    <Input
+                      value={recipientContact.name}
+                      disabled={!editable || underlayExists}
+                      placeholder={t('common:statements.recipient_name_placeholder')}
+                      data-cy="statement-recipient-name"
+                      onChange={(e) => changeRecipientContact('name', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.recipient_email')}</FormLabel>
+                    <Input
+                      type="email"
+                      value={recipientContact.email}
+                      disabled={!editable || underlayExists}
+                      placeholder={defaultRecipientEmail}
+                      data-cy="statement-recipient-email"
+                      onChange={(e) => changeRecipientContact('email', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                </div>
+              ) : null}
+
+              {templateIdentifier ? (
+                <div className="flex flex-wrap items-end gap-16" data-cy="statement-submitter">
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.submitter_name')}</FormLabel>
+                    <Input
+                      value={submitter.name}
+                      disabled={!editable || underlayExists}
+                      data-cy="statement-submitter-name"
+                      onChange={(e) => changeSubmitter('name', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                  <FormControl className="grow">
+                    <FormLabel>{t('common:statements.submitter_municipality')}</FormLabel>
+                    <Input
+                      value={submitter.municipality}
+                      disabled={!editable || underlayExists}
+                      data-cy="statement-submitter-municipality"
+                      onChange={(e) => changeSubmitter('municipality', e.currentTarget.value)}
+                    />
+                  </FormControl>
+                </div>
+              ) : null}
+
+              <PeopleChoice
+                peopleNeeded={peopleNeeded}
+                people={people}
+                chosenPartyIds={chosenPartyIds}
+                companiesNeeded={companiesNeeded}
+                companies={companies}
+                editable={editable}
+                onToggle={togglePerson}
+                onCompanies={rememberCompanies}
+              />
+
+              {takesAFreeText ? (
+                <>
+                  <FormControl className="w-full">
+                    <FormLabel>{t('common:statements.free_text')}</FormLabel>
+                    <Textarea
+                      className="w-full"
+                      rows={4}
+                      value={form.freeText}
+                      disabled={!editable || underlayExists}
+                      placeholder={t('common:statements.free_text_placeholder')}
+                      data-cy="statement-free-text"
+                      onChange={(e) => set({ freeText: e.currentTarget.value })}
+                    />
+                  </FormControl>
+
+                  <div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!editable || underlayExists || appliedFreeText === form.freeText}
+                      data-cy="statement-apply-free-text"
+                      leftIcon={<RefreshCw size={18} />}
+                      onClick={() => setAppliedFreeText(form.freeText)}
+                    >
+                      {t('common:statements.apply_free_text')}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+
+              {!underlayExists && templateIdentifier && !templateProblem ? (
+                <TemplatePdfPreview
+                  identifier={templateIdentifier}
+                  parameters={
+                    supportStatementTemplateParameters(factsFor(undefined)) as { [key: string]: string | Object }
+                  }
+                  watermarked
+                  title={t('common:statements.preview')}
+                />
+              ) : null}
+
+              <TemplateProblem problem={templateProblem} identifier={templateIdentifier} />
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={!editable || !!templateProblem}
+                  data-cy="statement-generate"
+                  leftIcon={busy ? <Spinner size={2} /> : <Mail size={18} />}
+                  onClick={() => void generate()}
+                >
+                  {t('common:statements.generate')}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <p className="text-small text-dark-secondary italic m-0" data-cy="statement-choose-counterparty">
+          {t('common:statements.choose_counterparty_first')}
+        </p>
+      )}
+
+      <GeneratedNote shown={generated} />
+
+      {[...requests, ...responses].map((attachment) => (
+        <AttachmentRow
+          key={attachment.id}
+          name={attachment.fileName ?? ''}
+          note={noteOfAttachment(attachment)}
+          openLabel={t('common:statements.open')}
+          onOpen={() => void open(attachment)}
+        />
+      ))}
+
+      {ofItsOwn ? (
+        <RadioButton.Group inline data-cy="statement-upload-kind">
+          <RadioButton
+            size="sm"
+            name={`statement-upload-kind-${statementId ?? 'new'}`}
+            value={SupportStatementAttachmentKind.REQUEST}
+            checked={uploadKind === SupportStatementAttachmentKind.REQUEST}
+            disabled={!editable}
+            data-cy="statement-upload-kind-request"
+            onChange={() => setUploadKind(SupportStatementAttachmentKind.REQUEST)}
+          >
+            {t('common:statements.upload_kind_request')}
+          </RadioButton>
+          <RadioButton
+            size="sm"
+            name={`statement-upload-kind-${statementId ?? 'new'}`}
+            value={SupportStatementAttachmentKind.RESPONSE}
+            checked={uploadKind === SupportStatementAttachmentKind.RESPONSE}
+            disabled={!editable}
+            data-cy="statement-upload-kind-response"
+            onChange={() => setUploadKind(SupportStatementAttachmentKind.RESPONSE)}
+          >
+            {t('common:statements.upload_kind_response')}
+          </RadioButton>
+        </RadioButton.Group>
+      ) : null}
+
+      <div className="flex items-center gap-16">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!editable || !statementId}
+          data-cy="statement-upload"
+          leftIcon={<Upload size={18} />}
+          onClick={() => fileInput.current?.click()}
+        >
+          {t(ofItsOwn ? 'common:statements.upload_attachment' : 'common:statements.upload')}
+        </Button>
+        <span className="text-small text-dark-secondary">
+          {statementId
+            ? t('common:statements.tagged_as', {
+                purpose: supportStatementPurposeDisplayName(uploadPurpose, supportMetadata),
+              })
+            : t('common:statements.choose_counterparty_first_short')}
+        </span>
+        <input
+          ref={fileInput}
+          type="file"
+          className="hidden"
+          data-cy="statement-file"
+          onChange={(e) => {
+            void upload(e.currentTarget.files?.[0]);
+            e.currentTarget.value = '';
+          }}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-16">
+        <FormControl>
+          <FormLabel>{t('common:statements.sent_at')}</FormLabel>
+          <Input
+            type="date"
+            value={form.sentAt}
+            disabled={!editable}
+            data-cy="statement-sent-at"
+            onChange={(e) => set({ sentAt: e.currentTarget.value })}
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel>{t('common:statements.responded_at')}</FormLabel>
+          <Input
+            type="date"
+            value={form.respondedAt}
+            disabled={!editable}
+            data-cy="statement-responded-at"
+            onChange={(e) => set({ respondedAt: e.currentTarget.value })}
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel>{t('common:statements.status_label')}</FormLabel>
+          <Select
+            value={form.status}
+            disabled={!editable}
+            data-cy="statement-status"
+            onChange={(e) => set({ status: e.currentTarget.value as SupportStatementStatusName })}
+          >
+            {SUPPORT_STATEMENT_STATUSES.map((candidate) => (
+              <Select.Option key={candidate.status} value={candidate.status}>
+                {t(candidate.translationKey)}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl>
+          <FormLabel>{t('common:statements.outcome')}</FormLabel>
+          <Select
+            value={form.outcome}
+            disabled={!editable}
+            data-cy="statement-outcome"
+            onChange={(e) => set({ outcome: e.currentTarget.value })}
+          >
+            <Select.Option value="">{t('common:statements.outcome_placeholder')}</Select.Option>
+            {outcomes.map((outcome) => (
+              <Select.Option key={outcome.name} value={outcome.name ?? ''}>
+                {outcome.displayName ?? outcome.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormControl>
+      </div>
+
+      <FormControl className="w-full">
+        <FormLabel>{t('common:statements.response_text')}</FormLabel>
+        <Textarea
+          className="w-full"
+          rows={4}
+          value={form.responseText}
+          disabled={!editable}
+          placeholder={t('common:statements.response_text_placeholder')}
+          data-cy="statement-response-text"
+          onChange={(e) => set({ responseText: e.currentTarget.value })}
+        />
+      </FormControl>
+
+      {problem ? (
+        <Alert type="error" data-cy="statement-error">
+          <Alert.Icon />
+          <Alert.Content>
+            <Alert.Content.Description>{t(problem)}</Alert.Content.Description>
+          </Alert.Content>
+        </Alert>
+      ) : null}
+    </div>
+  );
+};

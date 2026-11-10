@@ -1,6 +1,6 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isLOK } from '@common/services/application-service';
+import { isAOT, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -18,6 +18,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { LabelCategorization } from './LabelCategorization';
+import { PremisesMunicipalitySelector } from './PremisesMunicipalitySelector';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
 export const SupportErrandBasicsAboutForm: FC<{
@@ -69,7 +70,11 @@ export const SupportErrandBasicsAboutForm: FC<{
 
       {appConfig.features.useLabelCategorization ? (
         <div className="w-full flex gap-20">
-          <LabelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          <LabelCategorization
+            readOnly={isAOT() && supportErrand.channel === 'ESERVICE'}
+            supportErrand={supportErrand}
+            supportMetadata={supportMetadata!}
+          />
         </div>
       ) : null}
 
@@ -200,6 +205,12 @@ export const SupportErrandBasicsAboutForm: FC<{
             )}
           </FormControl>
         </div>
+
+        {isAOT() ? (
+          <div className="flex gap-xl w-1/2">
+            <PremisesMunicipalitySelector supportErrand={supportErrand} />
+          </div>
+        ) : null}
       </div>
 
       {appConfig.features.useExplanationOfTheCause ? (

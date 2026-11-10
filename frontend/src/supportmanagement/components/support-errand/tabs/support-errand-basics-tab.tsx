@@ -2,9 +2,10 @@ import { LinkedErrandsDisclosure } from '@common/components/linked-errands-discl
 import { appConfig } from '@config/appconfig';
 import { useSupportStore } from '@stores/index';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
+import { SupportErrandCompanySection } from '@supportmanagement/components/support-errand/pbi/support-errand-company-section.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { ApiSupportErrand } from '@supportmanagement/services/support-errand-service';
+import { ApiSupportErrand, isOrganizationExternalIdType } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 export const SupportErrandBasicsTab: FC<{
   errand: ApiSupportErrand;
@@ -13,6 +14,10 @@ export const SupportErrandBasicsTab: FC<{
   update: () => void;
 }> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
+
+  const organizationPartyId = supportErrand?.stakeholders?.find(
+    (stakeholder) => stakeholder.role === 'PRIMARY' && isOrganizationExternalIdType(stakeholder.externalIdType)
+  )?.externalId;
 
   return (
     <div className="pt-xl pb-64 px-40 flex flex-col">
@@ -29,6 +34,12 @@ export const SupportErrandBasicsTab: FC<{
           setUnsaved={props.setUnsaved}
           update={() => {}}
         />
+      ) : null}
+
+      {appConfig.features.useCompanyInformation && supportErrand?.id ? (
+        <div className="mt-md">
+          <SupportErrandCompanySection organizationPartyId={organizationPartyId} />
+        </div>
       ) : null}
 
       {appConfig.features.useFacilities ? (

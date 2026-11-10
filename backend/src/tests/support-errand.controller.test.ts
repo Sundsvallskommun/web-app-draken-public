@@ -25,7 +25,9 @@ import {
   mockOrganizationPartyId,
   mockParkingPermitDepartment,
   mockPersonNumber,
+  mockPremisesName,
   mockRelationId,
+  mockRestaurantNumber,
   mockSecondaryCitizenPartyId,
   mockSupportErrandId,
   mockSupportErrandNumber,
@@ -363,6 +365,42 @@ describe('SupportErrandController', () => {
       expect(res.body).toBe('Something went wrong when initiating support errand');
     });
 
+    it('creates the errand with the given labels, stakeholders and JSON parameters instead of the defaults', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue(metadata);
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+      const labels = [
+        {
+          id: mockSupportErrandId,
+          classification: 'TYPE',
+          resourceName: 'INTERNAL_INSPECTION',
+          resourcePath: 'CATEGORYROOT/INSPECTION/INTERNAL_INSPECTION',
+        },
+      ];
+      const stakeholders = [
+        {
+          externalId: mockOrganizationPartyId,
+          externalIdType: ExternalIdType.COMPANY,
+          role: 'PRIMARY',
+          organizationName: mockOrganizationName,
+          contactChannels: [],
+          parameters: [],
+        },
+      ];
+      const jsonParameters = [
+        {
+          key: 'aot_inspection_internal_inspection',
+          schemaId: `${MUNICIPALITY_ID}_aot_inspection_internal_inspection_1.0`,
+          value: { premises: { name: mockPremisesName, restaurantNumber: mockRestaurantNumber } },
+        },
+      ];
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes(), { labels, stakeholders, jsonParameters });
+
+      const [config] = api.post.mock.calls[0];
+      expect(config.data).toEqual(expect.objectContaining({ labels, stakeholders, jsonParameters, status: 'NEW' }));
+    });
+
     it('rethrows when the API call fails', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValue(metadata);
@@ -449,6 +487,56 @@ describe('SupportErrandController', () => {
       await controller.preparedErrandResponse(errand, mockReq());
 
       expect(api.get).not.toHaveBeenCalled();
+    });
+
+    it('passes the organizationNumber parameter through for an organization stakeholder without a lookup', async () => {
+      const { controller, api, organization } = makeController();
+      const errand = errandWith([
+        {
+          role: 'PRIMARY',
+          externalId: mockOrganizationPartyId,
+          externalIdType: ExternalIdType.COMPANY,
+          parameters: [{ key: 'organizationNumber', values: [mockOrganizationNumberDigits] }],
+        },
+      ]);
+
+      const result = await controller.preparedErrandResponse(errand, mockReq());
+
+      expect(organization.getOrganizationNumberByPartyId).not.toHaveBeenCalled();
+      expect(api.get).not.toHaveBeenCalled();
+      expect((result.data.stakeholders![0] as { organizationNumber?: string }).organizationNumber).toBe(mockOrganizationNumber);
+    });
+
+    it.each([ExternalIdType.COMPANY, ExternalIdType.ENTERPRISE])(
+      'resolves the organization number of a %s stakeholder from its party id when the parameter is missing',
+      async externalIdType => {
+        const { controller, api, organization } = makeController();
+        organization.getOrganizationNumberByPartyId.mockResolvedValue(mockOrganizationNumberDigits);
+        const errand = errandWith([
+          { role: 'PRIMARY', externalId: mockOrganizationPartyId, externalIdType },
+          { role: 'CONTACT', externalId: mockOrganizationPartyId, externalIdType },
+        ]);
+
+        const result = await controller.preparedErrandResponse(errand, mockReq());
+
+        expect(organization.getOrganizationNumberByPartyId).toHaveBeenCalledTimes(2);
+        expect(organization.getOrganizationNumberByPartyId).toHaveBeenCalledWith(MUNICIPALITY_ID, mockOrganizationPartyId, expect.anything());
+        expect(api.get).not.toHaveBeenCalled();
+        expect(result.data.stakeholders!.map(s => (s as { organizationNumber?: string }).organizationNumber)).toEqual([
+          mockOrganizationNumber,
+          mockOrganizationNumber,
+        ]);
+      },
+    );
+
+    it('leaves an organization stakeholder untouched when the organization number cannot be resolved', async () => {
+      const { controller, organization } = makeController();
+      organization.getOrganizationNumberByPartyId.mockRejectedValue(new Error('legal entity down'));
+      const stakeholder = { role: 'PRIMARY', externalId: mockOrganizationPartyId, externalIdType: ExternalIdType.ENTERPRISE };
+
+      const result = await controller.preparedErrandResponse(errandWith([stakeholder]), mockReq());
+
+      expect(result.data.stakeholders![0]).toEqual(stakeholder);
     });
 
     it('leaves the personal number undefined when the lookup fails', async () => {
@@ -696,6 +784,30 @@ describe('SupportErrandController', () => {
 
       expect(organization.getOrganizationNumberByPartyId).toHaveBeenCalledWith(MUNICIPALITY_ID, mockOrganizationPartyId, expect.anything());
       expect(api.post.mock.calls[0][0].data.stakeholders[0]).toMatchObject({ organizationNumber: mockOrganizationNumber });
+    });
+
+    it('resolves the organization number for an ENTERPRISE stakeholder as well', async () => {
+      const { controller, api, organization } = makeController();
+      organization.getOrganizationNumberByPartyId.mockResolvedValue(mockOrganizationNumberDigits);
+      routeGets(
+        api,
+        supportErrand({
+          stakeholders: [
+            {
+              role: 'PRIMARY',
+              organizationName: mockOrganizationName,
+              externalId: mockOrganizationPartyId,
+              externalIdType: ExternalIdType.ENTERPRISE,
+            },
+          ],
+        }),
+      );
+      api.post.mockResolvedValue({ data: { id: mockCasedataErrandId, errandNumber: mockCasedataErrandNumber }, message: 'success' });
+
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, mockRes());
+
+      expect(organization.getOrganizationNumberByPartyId).toHaveBeenCalledWith(MUNICIPALITY_ID, mockOrganizationPartyId, expect.anything());
+      expect(api.post.mock.calls[0][0].data.stakeholders[0]).toMatchObject({ type: 'ORGANIZATION', organizationNumber: mockOrganizationNumber });
     });
 
     it('still forwards when the organization number cannot be resolved', async () => {
