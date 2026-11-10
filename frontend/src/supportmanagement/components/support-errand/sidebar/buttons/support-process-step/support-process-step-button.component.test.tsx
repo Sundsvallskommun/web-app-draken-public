@@ -104,7 +104,7 @@ const aDecision = (value: object = CERTIFICATE_JSON) => [
   },
 ];
 
-const errandAt = (currentActivityId: string, awaitingSignals: string[]): SupportErrand =>
+const errandAt = (currentActivityId: string, awaitingSignals: string[], processKey?: string): SupportErrand =>
   ({
     id: ERRAND_ID,
     status: 'ONGOING',
@@ -114,6 +114,7 @@ const errandAt = (currentActivityId: string, awaitingSignals: string[]): Support
       processStatus: 'WAITING',
       currentActivityId,
       awaitingSignals: awaitingSignals.map((name) => ({ name })),
+      ...(processKey ? { processKey } : {}),
     },
   } as unknown as SupportErrand);
 
@@ -390,6 +391,47 @@ test('an investigation already completed is not completed again', async () => {
     expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation_completed')
   );
   expect(completeSupportInvestigation).not.toHaveBeenCalled();
+});
+
+const takeTheErrandToDecision = async (processKey: string) => {
+  const underInvestigation = errandAt('investigation_phase', ['investigation_completed'], processKey);
+  useSupportStore.setState({ supportErrand: underInvestigation });
+  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: underInvestigation } as never);
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'investigation_phase',
+      awaitingSignals: [{ name: 'investigation_completed' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+
+  (await theButton('ready_for_decision')).click();
+};
+
+test('a process that files the decision basis says where the handler finds it', async () => {
+  await takeTheErrandToDecision('alcohol-serving');
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'common:process.actions.ready_for_decision.done_with_decision_basis',
+        status: 'success',
+      })
+    )
+  );
+});
+
+test('a process that files no decision basis promises none', async () => {
+  await takeTheErrandToDecision('internal-inspection');
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.ready_for_decision.done', status: 'success' })
+    )
+  );
 });
 
 test('a phase whose gate the process no longer offers says so instead of saying it is done', async () => {

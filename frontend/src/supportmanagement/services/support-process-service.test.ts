@@ -6,6 +6,7 @@ import {
   awaitedGateOfStep,
   hasSupportProcessPassedStep,
   hasVisitedSupportProcessStep,
+  processFilesADecisionBasis,
   supportProcessActivityKey,
   supportProcessName,
   supportProcessPhaseKey,
@@ -175,9 +176,25 @@ test('the review is passed once the process shows a later phase, whether the han
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('review_phase'))).toBe(false);
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('investigation_phase'))).toBe(true);
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_create_decision'))).toBe(true);
+  // The decision basis is written as the investigation phase ends, so the errand stands there while it runs.
+  expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_create_decision_basis'))).toBe(true);
+  expect(hasSupportProcessPassedStep(SupportProcessStep.INVESTIGATION, at('external_task_create_decision_basis'))).toBe(
+    false
+  );
   expect(
     hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_complete_process', 'COMPLETED'))
   ).toBe(true);
   // A cancellation belongs to no phase, so it has passed none.
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_cancel_process'))).toBe(false);
+});
+
+test('an application process files the decision basis, a closure, an action and an inspection file none', () => {
+  expect(processFilesADecisionBasis('alcohol-serving')).toBe(true);
+  expect(processFilesADecisionBasis('alcohol-serving-change')).toBe(true);
+  expect(processFilesADecisionBasis('tobacco-sales')).toBe(true);
+  expect(processFilesADecisionBasis('tobacco-sales-change')).toBe(true);
+  expect(processFilesADecisionBasis('tobacco-sales-closure')).toBe(false);
+  expect(processFilesADecisionBasis('action-errand')).toBe(false);
+  expect(processFilesADecisionBasis('internal-inspection')).toBe(false);
+  expect(processFilesADecisionBasis(undefined)).toBe(false);
 });

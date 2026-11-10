@@ -306,6 +306,7 @@
         "confirm_title": "Ta ärendet till beslut?",
         "confirm_text": "När du tar ärendet vidare till beslut innebär det att utredningen är klar och att underlaget räcker för att fatta beslut.",
         "done": "Ärendet är taget till beslut.",
+        "done_with_decision_basis": "Ärendet är taget till beslut. Beslutsunderlaget skapas som en bilaga och hamnar under Bilagor.",
         "error": "Ärendet kunde inte tas till beslut.",
         "confirm_yes": "Ja"
       },
@@ -402,6 +403,8 @@
     },
     "activities": {
       "notify_processing_started": "Meddelar att handläggningen startat",
+      "set_complete_at": "Noterar när ansökan var komplett",
+      "create_decision_basis": "Skapar beslutsunderlag",
       "create_decision": "Skapar beslut",
       "check_decision": "Kontrollerar beslut",
       "create_asset": "Skapar tillstånd",

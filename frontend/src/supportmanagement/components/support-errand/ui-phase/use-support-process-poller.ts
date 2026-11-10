@@ -1,6 +1,7 @@
 import type { ErrandProcess } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportErrandProcess,
@@ -34,6 +35,7 @@ const processStamp = (process: ErrandProcess | undefined): string | undefined =>
 export const useSupportProcessPoller = (): boolean => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
   const processSignal = useSupportStore((s) => s.processSignal);
   const setProcessSignal = useSupportStore((s) => s.setProcessSignal);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -68,6 +70,11 @@ export const useSupportProcessPoller = (): boolean => {
       return closely ? POLL_DELAY_AFTER_A_SIGNAL : Math.min(delay * POLL_BACKOFF, LONGEST_POLL_DELAY);
     };
 
+    const readWhatTheProcessFiled = async () => {
+      const attachments = await getSupportAttachments(errandId, municipalityId).catch(() => undefined);
+      if (!stopped && attachments) setSupportAttachments(attachments);
+    };
+
     const read = async () => {
       const state = await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined);
       if (stopped) return;
@@ -79,6 +86,9 @@ export const useSupportProcessPoller = (): boolean => {
         const { errand } = await getSupportErrandById(errandId, municipalityId).catch(() => ({ errand: undefined }));
         if (stopped) return;
         if (errand) setSupportErrand(errand);
+
+        await readWhatTheProcessFiled();
+        if (stopped) return;
 
         const hasLeftTheActivity =
           state.process.currentActivityId !== signalledActivity ||
@@ -121,6 +131,7 @@ export const useSupportProcessPoller = (): boolean => {
     signalledAt,
     errandWrittenWithoutAProcess,
     setSupportErrand,
+    setSupportAttachments,
     setProcessSignal,
   ]);
 

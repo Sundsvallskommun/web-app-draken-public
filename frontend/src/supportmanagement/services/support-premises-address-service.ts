@@ -73,7 +73,7 @@ export const getPremisesAddress = (
 };
 
 // The premises address arrives with the space stripped from its postal code; show it as written in Sweden.
-const formatPostalCode = (postalCode?: string) => postalCode?.replace(/^(\d{3})(\d{2})$/, '$1 $2');
+export const formatPostalCode = (postalCode?: string) => postalCode?.replace(/^(\d{3})(\d{2})$/, '$1 $2');
 
 export const formatAddress = (address: { streetAddress?: string; postalCode?: string; postalArea?: string }) =>
   [address.streetAddress, [formatPostalCode(address.postalCode), address.postalArea].filter(Boolean).join(' ')]
