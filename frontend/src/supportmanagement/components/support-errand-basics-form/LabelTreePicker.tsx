@@ -31,7 +31,7 @@ import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
  * Groups are never selectable; a branch that ends early is a leaf. Reports the picked path via `onChange`.
  */
 
-export type LabelTreeFirstLevel = 'CATEGORY' | 'DEPARTMENT';
+type LabelTreeFirstLevel = 'CATEGORY' | 'DEPARTMENT';
 
 const PLACEHOLDERS: Record<LabelTreeFirstLevel, { first: string; second: string }> = {
   CATEGORY: { first: 'Välj ärendekategori', second: 'Välj ärendetyp' },
