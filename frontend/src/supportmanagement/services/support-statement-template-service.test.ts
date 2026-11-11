@@ -492,6 +492,7 @@ test('every parameter the templates require of us is sent, the rest they default
     'tax-agency-request-serving': [
       'applicantName',
       'applicantOrgNumber',
+      'caseNumber',
       'caseType',
       'documentDate',
       'handlerName',
