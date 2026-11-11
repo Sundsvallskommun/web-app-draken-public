@@ -12,6 +12,8 @@ interface AppConfigFeatures {
   useTwoLevelCategorization: boolean;
   /** Categorization in the label tree (KS: DEPARTMENT > CATEGORY > TYPE, LOP: CATEGORY > TYPE > SUBTYPE). */
   useLabelCategorization: boolean;
+  /** With label categorization: pick the DEPARTMENT first and the CATEGORY below it second (LOK). */
+  useDepartmentCategorySelect: boolean;
   useExplanationOfTheCause: boolean;
   useReasonForContact: boolean;
   useBusinessCase: boolean;
@@ -72,6 +74,7 @@ export const appConfig: AppConfig = {
   features: {
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
     useLabelCategorization: envBool(process.env.NEXT_PUBLIC_USE_LABEL_CATEGORIZATION),
+    useDepartmentCategorySelect: envBool(process.env.NEXT_PUBLIC_USE_DEPARTMENT_CATEGORY_SELECT),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
     useReasonForContact: envBool(process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT),
     useBusinessCase: envBool(process.env.NEXT_PUBLIC_USE_BUSINESS_CASE),

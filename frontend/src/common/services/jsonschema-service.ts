@@ -38,7 +38,10 @@ export const getLatestSchema = (
     .get<ApiResponse<JsonSchemaResponse>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
+      // No schema published by that name is not an error: the errand has nothing to fill in (see useJsonSchemaByName).
+      if (e?.response?.status !== 404) {
+        console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
+      }
       throw e;
     });
 };

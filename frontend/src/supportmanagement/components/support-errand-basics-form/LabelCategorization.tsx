@@ -1,4 +1,5 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { appConfig } from '@config/appconfig';
 import {
   getClassificationCategoryDisplayName,
   getClassificationTypeDisplayName,
@@ -14,7 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { LabelTreePicker } from './LabelTreePicker';
 
 /**
- * Label categorization bound to the errand form: `category` = CATEGORY path (or the leaf DEPARTMENT), `type`,
+ * Label categorization bound to the errand form: `category` = CATEGORY path (or the DEPARTMENT when the path ends
+ * there without children, as a department picked on its own is not a category), `type`,
  * `subType`, `labels` = the picked path. A type is required only when the category has types.
  */
 const pathValue = (path: Label[], classification: string): string =>
@@ -30,7 +32,9 @@ export const LabelCategorization: FC<{
   const { t } = useTranslation();
 
   const handleChange = (path: Label[]) => {
-    const category = pathValue(path, 'CATEGORY') || pathValue(path, 'DEPARTMENT');
+    const last = path[path.length - 1];
+    const leafDepartment = last?.classification === 'DEPARTMENT' && !last.labels?.length;
+    const category = pathValue(path, 'CATEGORY') || (leafDepartment ? pathValue(path, 'DEPARTMENT') : '');
     const type = pathValue(path, 'TYPE');
     const subType = pathValue(path, 'SUBTYPE');
     setValue('category', category, { shouldDirty: category !== supportErrand.category });
@@ -54,6 +58,7 @@ export const LabelCategorization: FC<{
       value={supportErrand?.labels}
       onChange={handleChange}
       metadata={supportMetadata}
+      firstLevel={appConfig.features.useDepartmentCategorySelect ? 'DEPARTMENT' : 'CATEGORY'}
       disabled={isSupportErrandLocked(supportErrand) || readOnly}
       fallbackLabels={{
         first: t(
@@ -64,6 +69,7 @@ export const LabelCategorization: FC<{
           `common:basics_tab.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
           t('common:basics_tab.errandType.default')
         ),
+        third: t('common:basics_tab.errandType.default'),
       }}
       errors={{ first: errors.category?.message, second: errors.type?.message }}
       notes={
