@@ -4,12 +4,12 @@ import EmptyLayout from '@common/components/empty-layout/empty-layout.component'
 import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { apiURL } from '@common/utils/api-url';
 import { appURL } from '@common/utils/app-url';
+import { capitalize } from '@common/utils/capitalize';
 import { appConfig } from '@config/appconfig';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FC, Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { capitalize } from 'underscore.string';
 
 // Turn on/off automatic login
 const autoLogin = false;
