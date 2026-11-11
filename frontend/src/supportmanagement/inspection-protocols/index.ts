@@ -1,5 +1,5 @@
+import { EXTERNAL_INSPECTION_TEMPLATE } from './external-inspection';
 import { INTERNAL_INSPECTION_TEMPLATE } from './internal-inspection';
-import { SERVING_PERMIT_TEMPLATE } from './serving-permit';
 import type { InspectionProtocolTemplate } from './types';
 
 export type {
@@ -12,7 +12,7 @@ export type {
 
 /** The protocols a handler can pick, in dropdown order. None is chosen until the handler picks one. */
 export const INSPECTION_PROTOCOL_TEMPLATES: InspectionProtocolTemplate[] = [
-  SERVING_PERMIT_TEMPLATE,
+  EXTERNAL_INSPECTION_TEMPLATE,
   INTERNAL_INSPECTION_TEMPLATE,
 ];
 

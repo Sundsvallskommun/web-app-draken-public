@@ -285,8 +285,8 @@ describe('getCustomerInspections', () => {
       jsonParameters: [
         { key: 'aot_other', schemaId: 'other', value: { inspectionDate: '1999-01-01' } },
         {
-          key: 'aot_inspection_internal',
-          schemaId: `${MUNICIPALITY_ID}_aot_inspection_internal_1.0`,
+          key: 'aot_internal_inspection_protocol',
+          schemaId: `${MUNICIPALITY_ID}_aot_internal_inspection_protocol_1.0`,
           value: { inspectionDate: '2026-11-10' },
         },
       ],

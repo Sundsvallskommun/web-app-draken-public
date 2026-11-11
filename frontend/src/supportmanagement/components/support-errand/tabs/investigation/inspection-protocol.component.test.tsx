@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderTemplatePdfDirect } from '@common/services/template-render-service';
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protocols';
 import { getSupportAttachments, saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
@@ -48,7 +48,6 @@ vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   useConfirm: () => ({ showConfirmation }),
 }));
 vi.mock('@common/services/template-render-service', () => ({
-  renderTemplatePdfDirect: vi.fn(),
   renderTemplatePdf: vi.fn(),
 }));
 vi.mock('@supportmanagement/services/support-attachment-service', async (importOriginal) => ({
@@ -88,13 +87,13 @@ const measures = [
 ];
 const investigation = {
   id: 'inv-1',
-  type: 'serving_permit',
+  type: 'external_inspection',
   title: 'Serveringstillstånd – tillsyn',
   version: 3,
   jsonParameters: [
     {
-      key: 'aot_inspection_serving_permit',
-      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      key: 'aot_external_inspection_protocol',
+      schemaId: '2281_aot_external_inspection_protocol_1.0',
       value: { visit: 'closed', guestCount: '80' },
     },
   ],
@@ -121,7 +120,7 @@ beforeEach(() => {
   useConfigStore.setState({ municipalityId: '2281' } as never);
   useUserStore.setState({ user: { name: 'Anna Andersson', permissions: { canEditSupportManagement: true } } } as never);
   showConfirmation.mockResolvedValue(true);
-  vi.mocked(renderTemplatePdfDirect).mockResolvedValue(window.btoa('%PDF-1.7'));
+  vi.mocked(renderTemplatePdf).mockResolvedValue(window.btoa('%PDF-1.7'));
   vi.mocked(saveSupportAttachments).mockResolvedValue([]);
   vi.mocked(getSupportAttachments).mockResolvedValue([]);
   vi.mocked(getSupportMeasures).mockResolvedValue(measures);
@@ -139,7 +138,7 @@ test('shows the saved template, its answers and a card per control point, and co
   mount();
 
   expect(await screen.findByDisplayValue('Ålderskontroll')).toBeTruthy();
-  expect(template().value).toBe('serving_permit');
+  expect(template().value).toBe('external_inspection');
   expect(screen.getByDisplayValue('Stängde 01:00')).toBeTruthy();
   expect((screen.getByLabelText('Stängt') as HTMLInputElement).checked).toBe(true);
   expect(screen.getByDisplayValue('80')).toBeTruthy();
@@ -206,9 +205,9 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     ERRAND_ID,
     '2281',
     'inv-new',
-    'aot_inspection_internal',
+    'aot_internal_inspection_protocol',
     {
-      schemaId: '2281_aot_inspection_internal_1.0',
+      schemaId: '2281_aot_internal_inspection_protocol_1.0',
       value: expect.objectContaining({ businessName: 'Exempel AB' }),
     }
   );
@@ -382,9 +381,9 @@ test('a changed answer is saved in the JSON of the investigation, on the schema 
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_serving_permit',
+    'aot_external_inspection_protocol',
     {
-      schemaId: '2281_aot_inspection_serving_permit_1.0',
+      schemaId: '2281_aot_external_inspection_protocol_1.0',
       value: expect.objectContaining({ visit: 'closed', coordinatedWith: ['police'], guestCount: '120' }),
     }
   );
@@ -397,7 +396,7 @@ test('answers another template left on the investigation are removed by the next
     ...investigation,
     jsonParameters: [
       ...investigation.jsonParameters,
-      { key: 'aot_inspection_internal', schemaId: '2281_aot_inspection_internal_1.0', value: {} },
+      { key: 'aot_internal_inspection_protocol', schemaId: '2281_aot_internal_inspection_protocol_1.0', value: {} },
       { key: 'other', schemaId: '2281_other_1.0', value: {} },
     ],
   });
@@ -414,7 +413,7 @@ test('answers another template left on the investigation are removed by the next
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_internal'
+    'aot_internal_inspection_protocol'
   );
 });
 
@@ -434,7 +433,7 @@ test('another template is taken only after the handler confirms, and replaces co
     'info',
     'info'
   );
-  expect(template().value).toBe('serving_permit');
+  expect(template().value).toBe('external_inspection');
   expect(screen.getByDisplayValue('Ålderskontroll')).toBeTruthy();
 
   await act(async () => {
@@ -471,14 +470,14 @@ test('another template is taken only after the handler confirms, and replaces co
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_internal',
-    expect.objectContaining({ schemaId: '2281_aot_inspection_internal_1.0' })
+    'aot_internal_inspection_protocol',
+    expect.objectContaining({ schemaId: '2281_aot_internal_inspection_protocol_1.0' })
   );
   expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledWith(
     ERRAND_ID,
     '2281',
     'inv-1',
-    'aot_inspection_serving_permit'
+    'aot_external_inspection_protocol'
   );
 });
 
@@ -588,9 +587,9 @@ test('the protocol is rendered from the saved answers and control points, and fi
     fireEvent.click(screen.getByRole('button', { name: 'Skapa tillsynsprotokoll' }));
   });
 
-  expect(renderTemplatePdfDirect).toHaveBeenCalledTimes(1);
-  const [html, parameters] = vi.mocked(renderTemplatePdfDirect).mock.calls[0];
-  expect(html).toContain('{% for m in measures %}');
+  expect(renderTemplatePdf).toHaveBeenCalledTimes(1);
+  const [identifier, parameters] = vi.mocked(renderTemplatePdf).mock.calls[0];
+  expect(identifier).toBe('aot-external-inspection-protocol');
   expect(parameters).toMatchObject({
     caseNumber: 'AOT-26100063',
     permitHolderName: 'Exempel AB',
@@ -623,7 +622,7 @@ test('the observations of a deficient area are marked under it in the protocol',
     fireEvent.click(screen.getByRole('button', { name: 'Skapa tillsynsprotokoll' }));
   });
 
-  expect(vi.mocked(renderTemplatePdfDirect).mock.calls[0][1]).toMatchObject({
+  expect(vi.mocked(renderTemplatePdf).mock.calls[0][1]).toMatchObject({
     observationVomitToilets: 'X',
     observationSmokingToilets: 'X',
     observationVomitIndoor: '',

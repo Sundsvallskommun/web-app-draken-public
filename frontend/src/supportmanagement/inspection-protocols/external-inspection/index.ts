@@ -1,5 +1,4 @@
 import type { InspectionProtocolTemplate, ProtocolOption } from '../types';
-import { SERVING_PERMIT_HTML } from './template';
 
 const yes = (parameter: string, followUp?: ProtocolOption['followUp']): ProtocolOption => ({
   value: 'yes',
@@ -10,12 +9,11 @@ const yes = (parameter: string, followUp?: ProtocolOption['followUp']): Protocol
 const no = (parameter: string): ProtocolOption => ({ value: 'no', label: 'Nej', parameter });
 
 /** Tillsynsprotokoll Alkohollagen: the paper protocol's blocks, with the control points as the loop. */
-export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
-  key: 'serving_permit',
+export const EXTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
+  key: 'external_inspection',
   label: 'Yttre tillsyn',
-  identifier: 'serving-inspection-protocol',
-  schema: { name: 'aot_inspection_serving_permit', version: '1.0' },
-  html: SERVING_PERMIT_HTML,
+  identifier: 'aot-external-inspection-protocol',
+  schema: { name: 'aot_external_inspection_protocol', version: '1.0' },
   controlPoints: [
     'Nykterhet (3:5, 3:8, 8:20)',
     'Ålderskontroll (3:7, 3:8)',
@@ -87,7 +85,7 @@ export const SERVING_PERMIT_TEMPLATE: InspectionProtocolTemplate = {
           key: 'coordinatedWith',
           label: 'Samordnad tillsyn tillsammans med',
           options: [
-            { value: 'none', label: 'Nej', parameter: 'coordinatedNone' },
+            { value: 'enforcementAuthority', label: 'Kronofogden', parameter: 'coordinatedEnforcementAuthority' },
             { value: 'police', label: 'Polis', parameter: 'coordinatedPolice' },
             { value: 'taxAgency', label: 'Skatteverket', parameter: 'coordinatedTaxAgency' },
             { value: 'rescueService', label: 'Räddningstjänst', parameter: 'coordinatedRescueService' },
