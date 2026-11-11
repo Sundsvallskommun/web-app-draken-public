@@ -157,7 +157,7 @@ export class BillingController {
     @Body() data: CBillingRecord,
     @Res() response: any,
   ): Promise<BillingRecord> {
-    if (data.status !== Status.NEW) {
+    if (data.status !== Status.NEW && data.status !== Status.APPROVED) {
       return response.status(403).send('Error: user is not allowed to change status of billing record');
     }
     const url = `${municipalityId}/billingrecords/${id}`;
