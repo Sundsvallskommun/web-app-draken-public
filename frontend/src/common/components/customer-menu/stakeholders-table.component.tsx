@@ -4,10 +4,14 @@ import { formatOrganizationNumber, getCustomerIdFromErrand } from '@common/servi
 import { Pagination, Spinner, Table } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { TableForm } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
-import { SupportErrand, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import {
+  isOrganizationExternalIdType,
+  SupportErrand,
+  SupportStakeholderFormModel,
+} from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useRouter } from 'next/navigation';
-import { FC, useMemo } from 'react';
+import { FC, KeyboardEvent, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 interface CustomerRow {
@@ -27,6 +31,15 @@ const toCustomerRows = (errands: SupportErrand[]): CustomerRow[] => {
   });
   return Array.from(rows.values());
 };
+
+// The customer view only knows organisations so far, so a person is listed but cannot be opened.
+const isOrganization = ({ externalIdType }: SupportStakeholderFormModel): boolean =>
+  isOrganizationExternalIdType(externalIdType);
+
+const customerName = (stakeholder: SupportStakeholderFormModel): string =>
+  isOrganization(stakeholder)
+    ? stakeholder.organizationName ?? `(Organisation ${stakeholder.externalId})`
+    : [stakeholder.firstName, stakeholder.lastName].filter(Boolean).join(' ');
 
 const formatAddress = ({ address, zipCode, city }: SupportStakeholderFormModel): string =>
   [address, [zipCode, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
@@ -68,16 +81,20 @@ export const SupportStakeholdersTable: FC = () => {
             {rows.map(({ customerId, stakeholder }) => (
               <Table.Row
                 key={customerId}
-                tabIndex={0}
-                role="button"
-                aria-label={`Öppna kund ${stakeholder.organizationName}`}
-                onKeyDown={(e) => (e.key === 'Enter' ? openCustomer(customerId) : null)}
-                onClick={() => openCustomer(customerId)}
-                className="cursor-pointer"
+                {...(isOrganization(stakeholder) && {
+                  tabIndex: 0,
+                  role: 'button',
+                  'aria-label': `Öppna kund ${customerName(stakeholder)}`,
+                  onKeyDown: (e: KeyboardEvent) => (e.key === 'Enter' ? openCustomer(customerId) : null),
+                  onClick: () => openCustomer(customerId),
+                  className: 'cursor-pointer',
+                })}
               >
-                <Table.Column className="font-bold">{stakeholder.organizationName}</Table.Column>
+                <Table.Column className="font-bold">{customerName(stakeholder)}</Table.Column>
                 <Table.Column>
-                  {stakeholder.organizationNumber && formatOrganizationNumber(stakeholder.organizationNumber)}
+                  {isOrganization(stakeholder)
+                    ? stakeholder.organizationNumber && formatOrganizationNumber(stakeholder.organizationNumber)
+                    : 'Privatperson'}
                 </Table.Column>
                 <Table.Column>{formatAddress(stakeholder)}</Table.Column>
                 <Table.Column>{stakeholder.emails[0]?.value}</Table.Column>
