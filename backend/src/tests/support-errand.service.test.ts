@@ -91,6 +91,11 @@ describe('support-errand.service', () => {
       expect(buildErrandFilter({})).toBe('');
     });
 
+    it('keeps only errands with a PRIMARY stakeholder when asked for errands with a customer', () => {
+      expect(buildErrandFilter({ hasCustomer: true, status: 'SOLVED' })).toBe(`&filter=exists(stakeholders.role:'PRIMARY') and (status:'SOLVED')`);
+      expect(buildErrandFilter({ hasCustomer: false })).toBe('');
+    });
+
     it('expands a free-text query into the full disjunction', () => {
       const q = mockFirstName;
       expect(buildErrandFilter({ query: q })).toBe(

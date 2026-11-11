@@ -14,7 +14,7 @@ export type GetAssetsParams = {
   errandId?: string;
 };
 
-const buildQuery = (p: GetAssetsParams) => {
+const buildQuery = (p: Record<string, unknown>) => {
   const params = new URLSearchParams();
   Object.entries(p).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
@@ -46,6 +46,29 @@ export async function getErrandServices(params: GetServicesParams): Promise<ApiR
 export async function getPartyServices(params: GetServicesParams): Promise<ApiResponse<Asset[]>> {
   const url = `party-services${buildQuery(params)}`;
   const res = await apiService.get<ApiResponse<Asset[]>>(url);
+  return res.data;
+}
+
+export type SearchPermitAssetsParams = {
+  municipalityId?: string;
+  term?: string;
+  activeOnly?: boolean;
+  /** Comma-separated permit types; empty means all of them. The BFF rejects other asset types. */
+  types?: string;
+  /** Starts at 1. */
+  page?: number;
+  limit?: number;
+  sortDirection?: 'ASC' | 'DESC';
+};
+
+export interface PagedAssets {
+  assets: Asset[];
+  _meta: { page: number; limit: number; count: number; totalRecords: number; totalPages: number };
+}
+
+export async function searchPermitAssets(params: SearchPermitAssetsParams): Promise<ApiResponse<PagedAssets>> {
+  const url = `permit-assets${buildQuery(params)}`;
+  const res = await apiService.get<ApiResponse<PagedAssets>>(url);
   return res.data;
 }
 

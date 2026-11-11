@@ -9,6 +9,7 @@ import {
   findSourceErrandsForAssets,
 } from '@services/asset-relations.service';
 import { type ErrandRef, type ErrandService, fetchErrandNumber, fetchErrandNumbers, withDefaultNamespace } from '@services/errand-lookup.service';
+import { isPermitAssetType, permitAssetsFilter } from '@services/permit-assets.service';
 import { logger } from '@utils/logger';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -17,6 +18,18 @@ import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
 import { apiURL } from '@/utils/util';
+
+/** Pages start at 1. */
+interface PagedAssetResponse {
+  assets: Asset[];
+  _meta: {
+    page: number;
+    limit: number;
+    count: number;
+    totalRecords: number;
+    totalPages: number;
+  };
+}
 
 interface ResponseData<T> {
   data: T;
@@ -209,6 +222,35 @@ export class AssetController {
     municipalityId ??= '2281';
     const data = await this.listAssetsForPath(req, 'assets', municipalityId, { partyId, type, status, origin, assetId, issued, validTo }, errandId);
     return { data, message: 'success' };
+  }
+
+  // The filter is built here from an allowlist of permit types, so this cannot list other assets, e.g. persons' parking permits.
+  @Get('/permit-assets')
+  @OpenAPI({ summary: 'Pages through permit assets, optionally narrowed by permit type, active status and a search term' })
+  @UseBefore(authMiddleware)
+  async searchPermitAssets(
+    @Req() req: RequestWithUser,
+    @QueryParam('municipalityId') municipalityId?: string,
+    @QueryParam('term') term?: string,
+    @QueryParam('activeOnly') activeOnly?: boolean,
+    @QueryParam('types') types?: string, // comma-separated; empty means all permit types
+    @QueryParam('page') page?: string,
+    @QueryParam('limit') limit?: string,
+    @QueryParam('sortDirection') sortDirection?: string,
+  ): Promise<ResponseData<PagedAssetResponse>> {
+    municipalityId ??= '2281';
+    const typeList = (types ?? '')
+      .split(',')
+      .map(type => type.trim())
+      .filter(Boolean);
+    const unknownTypes = typeList.filter(type => !isPermitAssetType(type));
+    if (unknownTypes.length > 0) {
+      throw new HttpException(400, `Not permit types: ${unknownTypes.join(', ')}`);
+    }
+    const filter = permitAssetsFilter({ term, activeOnly: activeOnly ?? true, types: typeList });
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/search${this.buildAssetQuery({ filter, page, limit, sortDirection })}`;
+    const res = await this.apiService.get<PagedAssetResponse>({ url }, req.user);
+    return { data: res.data, message: 'success' };
   }
 
   @Get('/assets/:id')

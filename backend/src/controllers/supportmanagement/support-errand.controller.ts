@@ -527,6 +527,7 @@ export class SupportErrandController {
     @QueryParam('size') size: number,
     @QueryParam('query') query: string,
     @QueryParam('stakeholders') stakeholders: string,
+    @QueryParam('hasCustomer') hasCustomer: boolean,
     @QueryParam('priority') priority: string,
     @QueryParam('category') category: string,
     @QueryParam('type') type: string,
@@ -551,6 +552,7 @@ export class SupportErrandController {
     const filter = await this.buildFilterForRequest(req, {
       query,
       stakeholders,
+      hasCustomer,
       priority,
       category,
       type,
