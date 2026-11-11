@@ -12,7 +12,6 @@ interface AppConfigFeatures {
   useTwoLevelCategorization: boolean;
   /** Categorization in the label tree (KS: DEPARTMENT > CATEGORY > TYPE, LOP: CATEGORY > TYPE > SUBTYPE). */
   useLabelCategorization: boolean;
-  /** With label categorization: pick the DEPARTMENT first and the CATEGORY below it second (LOK). */
   useDepartmentCategorySelect: boolean;
   useExplanationOfTheCause: boolean;
   useReasonForContact: boolean;

@@ -6,7 +6,7 @@ import {
   showsLegacyClassification,
 } from '@supportmanagement/services/legacy-classification-service';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { replaceCategorizationLabels } from '@supportmanagement/services/support-label-service';
+import { getSelectableLabels, replaceCategorizationLabels } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { FC } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -15,8 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { LabelTreePicker } from './LabelTreePicker';
 
 /**
- * Label categorization bound to the errand form: `category` = CATEGORY path (or the DEPARTMENT when the path ends
- * there without children, as a department picked on its own is not a category), `type`,
+ * Label categorization bound to the errand form: `category` = CATEGORY path (or the leaf DEPARTMENT), `type`,
  * `subType`, `labels` = the picked path. A type is required only when the category has types.
  */
 const pathValue = (path: Label[], classification: string): string =>
@@ -33,7 +32,8 @@ export const LabelCategorization: FC<{
 
   const handleChange = (path: Label[]) => {
     const last = path[path.length - 1];
-    const leafDepartment = last?.classification === 'DEPARTMENT' && !last.labels?.length;
+    const leafDepartment =
+      last?.classification === 'DEPARTMENT' && getSelectableLabels(last.labels, [last.id]).length === 0;
     const category = pathValue(path, 'CATEGORY') || (leafDepartment ? pathValue(path, 'DEPARTMENT') : '');
     const type = pathValue(path, 'TYPE');
     const subType = pathValue(path, 'SUBTYPE');

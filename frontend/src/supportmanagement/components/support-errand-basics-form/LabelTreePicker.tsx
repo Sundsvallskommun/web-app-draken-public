@@ -23,11 +23,6 @@ import { FC, ReactNode, useEffect, useMemo, useState } from 'react';
  *   KS   DEPARTMENT > CATEGORY | TYPE
  *   LOP  CATEGORY | TYPE > SUBTYPE
  *
- * With `firstLevel` DEPARTMENT one box per level: DEPARTMENT, CATEGORY and, only when the picked category
- * has types, TYPE (SUBTYPE as options under TYPE groups):
- *
- *   LOK  DEPARTMENT | CATEGORY | TYPE
- *
  * Groups are never selectable; a branch that ends early is a leaf. Reports the picked path via `onChange`.
  */
 
@@ -86,17 +81,11 @@ export interface LabelTreePickerProps {
   onChange: (path: Label[]) => void;
   metadata: SupportMetadata | undefined;
   disabled?: boolean;
-  /** `third` is only used with `firstLevel` DEPARTMENT. */
   fallbackLabels: { first: string; second: string; third?: string };
-  /**
-   * `first` is the category error, `second` the type error. With `firstLevel` DEPARTMENT they are shown at the box
-   * where the choice is missing.
-   */
   errors?: { first?: string; second?: string };
   notes?: { first?: ReactNode; second?: ReactNode };
   /** Shown beside the box labels, where `notes` go below them. */
   labelAddons?: { first?: ReactNode; second?: ReactNode };
-  /** The classification the first box selects down to (default CATEGORY). */
   firstLevel?: LabelTreeFirstLevel;
 }
 
@@ -109,12 +98,17 @@ interface Box {
   placeholder: string;
   disabled: boolean;
   selection: Label | undefined;
-  nodes: Label[];
-  grouped: boolean;
-  search: string;
-  setSearch: (search: string) => void;
   error?: string;
 }
+
+interface BoxOptions {
+  nodes: Label[];
+  grouped: boolean;
+}
+
+/** A label counts as a leaf when nothing below it can be picked any more. */
+const hasSelectableChildren = (label: Label | undefined, keepIds: (string | undefined)[]): boolean =>
+  getSelectableLabels(label?.labels, keepIds).length > 0;
 
 export const LabelTreePicker: FC<LabelTreePickerProps> = ({
   labelStructure,
@@ -130,15 +124,10 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
 }) => {
   const structure = useMemo(() => getCategorizationStructure(labelStructure), [labelStructure]);
   const perLevel = firstLevel === 'DEPARTMENT';
-  const pivot = useMemo(
-    () => (perLevel ? 0 : getClassificationDepth(structure, firstLevel) ?? 0),
-    [structure, firstLevel, perLevel]
-  );
+  const pivot = useMemo(() => getClassificationDepth(structure, 'CATEGORY') ?? 0, [structure]);
 
   const [selected, setSelected] = useState<Label[]>([]);
-  const [firstSearch, setFirstSearch] = useState('');
-  const [secondSearch, setSecondSearch] = useState('');
-  const [thirdSearch, setThirdSearch] = useState('');
+  const [searches, setSearches] = useState<string[]>(['', '', '']);
 
   useEffect(() => {
     setSelected(resolveLabelPath(structure, value));
@@ -146,7 +135,10 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
 
   const keepIds = useMemo(() => selected.map((label) => label.id), [selected]);
 
-  const select = (id: string | string[] | undefined, current: Label | undefined) => {
+  const setSearch = (index: number, search: string) =>
+    setSearches((current) => current.map((value, i) => (i === index ? search : value)));
+
+  const select = (index: number, id: string | string[] | undefined, current: Label | undefined) => {
     const value = Array.isArray(id) ? id[0] : id;
     // The combobox reports its own value back; ignore a re-select.
     if (!value || value === current?.id) {
@@ -156,19 +148,64 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
     if (path.length === 0) {
       return;
     }
+    setSearches((current) => current.map((search, i) => (i > index ? '' : search)));
     setSelected(path);
     onChange(path);
   };
 
   // `structure` keeps deprecated labels so an existing selection still resolves; only the option lists are filtered.
-  const boxes: Box[] = (() => {
+  const options: BoxOptions[] = useMemo(() => {
     const deprecatedUpTo = (depth: number) => selected.slice(0, depth + 1).some((label) => isLabelDeprecated(label));
 
     if (perLevel) {
       const [department, category] = selected;
+      const result: BoxOptions[] = [
+        { nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(structure, keepIds)), grouped: false },
+        {
+          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(department?.labels, keepIds, deprecatedUpTo(0))),
+          grouped: false,
+        },
+      ];
+      if (hasChildren(category)) {
+        result.push({
+          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(category?.labels, keepIds, deprecatedUpTo(1))),
+          grouped: true,
+        });
+      }
+      return result;
+    }
+
+    const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
+    const firstGrouped = pivot > 0;
+    return [
+      {
+        nodes: sortLabelsByDisplayName(
+          firstGrouped
+            ? getSelectableGroupedLabels(getLabelsAtDepth(structure, pivot), keepIds)
+            : getSelectableLabels(structure, keepIds)
+        ),
+        grouped: firstGrouped,
+      },
+      {
+        nodes: sortLabelsByDisplayName(
+          getSelectableGroupedLabels(firstSelection?.labels, keepIds, deprecatedUpTo(pivot))
+        ),
+        grouped: true,
+      },
+    ];
+  }, [perLevel, selected, structure, pivot, keepIds]);
+
+  const visibleOptions = useMemo(
+    () => options.map((box, index) => filterBySearch(box.nodes, box.grouped, matches(searches[index], metadata))),
+    [options, searches, metadata]
+  );
+
+  const boxes: Box[] = (() => {
+    if (perLevel) {
+      const [department, category] = selected;
       const type = selected.length > 2 ? selected[selected.length - 1] : undefined;
-      const departmentIsLeaf = !!department && !hasChildren(department);
-      const showType = hasChildren(category);
+      const departmentIsLeaf = !!department && !hasSelectableChildren(department, keepIds);
+      const showType = options.length > 2;
       const categoryPlaceholder = departmentIsLeaf ? 'Ingen ärendekategori' : PLACEHOLDERS.DEPARTMENT.second;
       const result: Box[] = [
         {
@@ -176,14 +213,9 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
           dataCy: 'labelCategory',
           label: getBoxLabel(getLabelsAtDepth(structure, 1), fallbackLabels.first, true),
           addon: labelAddons?.first,
-          note: notes?.first,
           placeholder: department ? getLabelDisplayName(department, metadata) : PLACEHOLDERS.DEPARTMENT.first,
           disabled,
           selection: department,
-          nodes: sortLabelsByDisplayName(getSelectableLabels(structure, keepIds)),
-          grouped: false,
-          search: firstSearch,
-          setSearch: setFirstSearch,
           error: !department && errors?.first ? PLACEHOLDERS.DEPARTMENT.first : undefined,
         },
         {
@@ -191,15 +223,17 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
           dataCy: 'labelType',
           label: getBoxLabel(getLabelsAtDepth(structure, 2), fallbackLabels.second, !departmentIsLeaf),
           addon: labelAddons?.second,
-          note: notes?.second,
+          // A legacy classification has no labels, so no type box: its type note waits here.
+          note: (
+            <>
+              {notes?.first}
+              {!showType && notes?.second}
+            </>
+          ),
           placeholder: category ? getLabelDisplayName(category, metadata) : categoryPlaceholder,
           disabled: disabled || !department || departmentIsLeaf,
           selection: category,
-          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(department?.labels, keepIds, deprecatedUpTo(0))),
-          grouped: false,
-          search: secondSearch,
-          setSearch: setSecondSearch,
-          error: department ? errors?.first || (!showType ? errors?.second : undefined) : undefined,
+          error: department ? errors?.first : undefined,
         },
       ];
       if (showType) {
@@ -207,13 +241,10 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
           id: 'labelThird',
           dataCy: 'labelThird',
           label: getBoxLabel(getLabelsAtDepth(structure, 3), fallbackLabels.third ?? THIRD_FALLBACK_LABEL, true),
+          note: notes?.second,
           placeholder: type ? getLabelDisplayName(type, metadata) : THIRD_PLACEHOLDER,
           disabled,
           selection: type,
-          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(category?.labels, keepIds, deprecatedUpTo(1))),
-          grouped: true,
-          search: thirdSearch,
-          setSearch: setThirdSearch,
           error: errors?.second,
         });
       }
@@ -223,7 +254,6 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
     const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
     const secondSelection = selected.length > pivot + 1 ? selected[selected.length - 1] : undefined;
     const firstIsLeaf = !!firstSelection && !hasChildren(firstSelection);
-    const firstGrouped = pivot > 0;
 
     let secondPlaceholder = PLACEHOLDERS.CATEGORY.second;
     if (secondSelection) {
@@ -248,14 +278,6 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
           : PLACEHOLDERS.CATEGORY.first,
         disabled,
         selection: firstSelection,
-        nodes: sortLabelsByDisplayName(
-          firstGrouped
-            ? getSelectableGroupedLabels(getLabelsAtDepth(structure, pivot), keepIds)
-            : getSelectableLabels(structure, keepIds)
-        ),
-        grouped: firstGrouped,
-        search: firstSearch,
-        setSearch: setFirstSearch,
         error: errors?.first,
       },
       {
@@ -267,12 +289,6 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
         placeholder: secondPlaceholder,
         disabled: disabled || !firstSelection || firstIsLeaf,
         selection: secondSelection,
-        nodes: sortLabelsByDisplayName(
-          getSelectableGroupedLabels(firstSelection?.labels, keepIds, deprecatedUpTo(pivot))
-        ),
-        grouped: true,
-        search: secondSearch,
-        setSearch: setSecondSearch,
         error: errors?.second,
       },
     ];
@@ -298,10 +314,9 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
       )
     );
 
-  // Equal columns sharing the row; when it gets too narrow a box wraps below, as wide as the ones above.
   return (
     <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(28rem,1fr))] gap-x-20" data-cy="label-tree-picker">
-      {boxes.map((box) => (
+      {boxes.map((box, index) => (
         <div className="flex my-md min-w-0" key={box.id}>
           <FormControl id={box.id} className="w-full" readOnly={!metadata}>
             <BoxLabel text={box.label} addon={box.addon} />
@@ -314,19 +329,19 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
               size="md"
               placeholder={box.placeholder}
               value={box.selection?.id ?? ''}
-              onSelect={(e) => select(e.target.value, box.selection)}
+              onSelect={(e) => select(index, e.target.value, box.selection)}
               autofilter={false}
-              searchValue={box.search}
-              onChangeSearch={(e) => box.setSearch(e.target.value)}
+              searchValue={searches[index]}
+              onChangeSearch={(e) => setSearch(index, e.target.value)}
             >
               <Combobox.Input
                 disabled={box.disabled}
                 data-cy={`${box.dataCy}-input`}
                 className="w-full"
-                onChangeSearch={(e) => box.setSearch(e.target.value)}
+                onChangeSearch={(e) => setSearch(index, e.target.value)}
               />
               <Combobox.List data-cy={`${box.dataCy}-list`} data-position="under" className="!max-h-[30em]">
-                {renderOptions(filterBySearch(box.nodes, box.grouped, matches(box.search, metadata)), box.grouped)}
+                {renderOptions(visibleOptions[index], options[index].grouped)}
               </Combobox.List>
             </Combobox>
             {box.error && (

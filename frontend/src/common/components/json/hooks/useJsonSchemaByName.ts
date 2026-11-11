@@ -1,4 +1,5 @@
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { isNotFound } from '@common/services/jsonschema-service';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { useEffect, useState } from 'react';
 
@@ -14,8 +15,6 @@ interface UseJsonSchemaByNameResult {
 }
 
 type LoadedSchema = UseJsonSchemaByNameResult & { municipalityId: string; request: string };
-
-const isNotFound = (error: unknown): boolean => (error as { response?: { status?: number } })?.response?.status === 404;
 
 const IDLE: UseJsonSchemaByNameResult = {
   schema: null,

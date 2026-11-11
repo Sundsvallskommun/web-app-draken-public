@@ -6,7 +6,6 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { LabelTreePicker } from './LabelTreePicker';
 
-// A plain stand-in for the sk-web-gui combobox: options are buttons that report their value to `onSelect`.
 vi.mock('@sk-web-gui/react', () => {
   const SelectContext = createContext<(value: string) => void>(() => {});
   const Combobox = ({
@@ -14,16 +13,23 @@ vi.mock('@sk-web-gui/react', () => {
     placeholder,
     disabled,
     onSelect,
+    searchValue,
     'data-cy': dataCy,
   }: {
     children: ReactNode;
     placeholder?: string;
+    searchValue?: string;
     disabled?: boolean;
     onSelect: (e: { target: { value: string } }) => void;
     'data-cy'?: string;
   }) => (
     <SelectContext.Provider value={(value) => onSelect({ target: { value } })}>
-      <div data-testid={dataCy} data-placeholder={placeholder} data-disabled={String(!!disabled)}>
+      <div
+        data-testid={dataCy}
+        data-placeholder={placeholder}
+        data-search={searchValue}
+        data-disabled={String(!!disabled)}
+      >
         {children}
       </div>
     </SelectContext.Provider>
@@ -36,7 +42,9 @@ vi.mock('@sk-web-gui/react', () => {
       </button>
     );
   };
-  const Input = () => null;
+  const Input: FC<{ onChangeSearch?: (e: { target: { value: string } }) => void }> = ({ onChangeSearch }) => (
+    <input onChange={(e) => onChangeSearch?.({ target: { value: e.target.value } })} />
+  );
   const List: FC<{ children: ReactNode; 'data-cy'?: string }> = ({ children, 'data-cy': dataCy }) => (
     <div data-testid={dataCy}>{children}</div>
   );
@@ -64,7 +72,6 @@ const label = (classification: string, path: string, displayName: string, labels
   labels,
 });
 
-// The LOK tree: DEPARTMENT > CATEGORY, with TYPE below one of the categories.
 const homecare = label('CATEGORY', 'VOF/HOMECARE', 'Hemtjänst');
 const groupHome = label('TYPE', 'VOF/SUPPORT_AND_CARE/GROUP_HOME', 'Gruppboende');
 const supportAndCare = label('CATEGORY', 'VOF/SUPPORT_AND_CARE', 'Stöd och omsorg', [groupHome]);
@@ -115,7 +122,6 @@ test('with firstLevel DEPARTMENT the second box lists the categories of the pick
 
   expect(onChange).toHaveBeenLastCalledWith([vof]);
   expect(screen.getByTestId('labelType-wrapper').dataset.disabled).toBe('false');
-  // Every category is an option of its own, also one with types below it.
   expect(optionNames('labelType-list')).toEqual(['Hemtjänst', 'Stöd och omsorg']);
   expect(screen.queryByRole('group')).toBeNull();
   expect(screen.queryByTestId('labelThird-wrapper')).toBeNull();
@@ -140,7 +146,6 @@ test('with firstLevel DEPARTMENT a third box for the type shows only for a categ
   expect(onChange).toHaveBeenLastCalledWith([vof, supportAndCare, groupHome]);
   expect(screen.getByTestId('labelThird-wrapper').dataset.placeholder).toBe('Gruppboende');
 
-  // Back to a category without types: the third box goes away.
   fireEvent.click(screen.getByRole('button', { name: 'Hemtjänst' }));
   expect(onChange).toHaveBeenLastCalledWith([vof, homecare]);
   expect(screen.queryByTestId('labelThird-wrapper')).toBeNull();
@@ -179,4 +184,58 @@ test('by default the first box lists the categories grouped by department', () =
   expect(screen.getByRole('group', { name: 'VoF' })).toBeTruthy();
   expect(screen.getByTestId('labelCategory-wrapper').dataset.placeholder).toBe('Välj ärendekategori');
   expect(screen.getByTestId('labelType-wrapper').dataset.placeholder).toBe('Välj ärendetyp');
+});
+
+test('with firstLevel DEPARTMENT a department with only deprecated categories is not offered', () => {
+  const closed = label('DEPARTMENT', 'CLOSED', 'Nedlagd', [
+    { ...label('CATEGORY', 'CLOSED/OLD', 'Gammal'), deprecated: true },
+  ]);
+  const structure = [iaf, vof, closed];
+  render(
+    <LabelTreePicker
+      labelStructure={structure}
+      value={[]}
+      onChange={vi.fn()}
+      metadata={{ labels: { labelStructure: structure } } as never}
+      fallbackLabels={{ first: 'Verksamhet*', second: 'Ärendekategori*' }}
+      firstLevel="DEPARTMENT"
+    />
+  );
+
+  expect(optionNames('labelCategory-list')).toEqual(['IAF', 'VoF']);
+});
+
+test('with firstLevel DEPARTMENT picking above clears the searches of the boxes below', () => {
+  renderPicker({ firstLevel: 'DEPARTMENT', value: [vof, supportAndCare] });
+
+  const search = (testId: string) => screen.getByTestId(testId).dataset.search;
+  const type = (testId: string, text: string) =>
+    fireEvent.change(within(screen.getByTestId(testId)).getByRole('textbox'), { target: { value: text } });
+  type('labelType-wrapper', 'hem');
+  type('labelThird-wrapper', 'grupp');
+  expect(search('labelType-wrapper')).toBe('hem');
+
+  fireEvent.click(screen.getByRole('button', { name: 'IAF' }));
+
+  expect(search('labelCategory-wrapper')).toBe('');
+  expect(search('labelType-wrapper')).toBe('');
+});
+
+test('with firstLevel DEPARTMENT the legacy notes follow the category and type boxes', () => {
+  const notes = { first: <p>Tidigare kategori</p>, second: <p>Tidigare typ</p> };
+
+  renderPicker({ firstLevel: 'DEPARTMENT', notes });
+  expect(within(screen.getByTestId('labelType-wrapper').parentElement!).getByText('Tidigare kategori')).toBeTruthy();
+  expect(within(screen.getByTestId('labelType-wrapper').parentElement!).getByText('Tidigare typ')).toBeTruthy();
+  cleanup();
+
+  renderPicker({ firstLevel: 'DEPARTMENT', notes, value: [vof, supportAndCare] });
+  expect(within(screen.getByTestId('labelType-wrapper').parentElement!).queryByText('Tidigare typ')).toBeNull();
+  expect(within(screen.getByTestId('labelThird-wrapper').parentElement!).getByText('Tidigare typ')).toBeTruthy();
+});
+
+test('with firstLevel DEPARTMENT a type error never shows under the category box', () => {
+  renderPicker({ firstLevel: 'DEPARTMENT', errors: { second: 'Välj ärendetyp' }, value: [vof] });
+
+  expect(errorText('labelType-error')).toBeNull();
 });
