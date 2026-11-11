@@ -475,12 +475,13 @@
     },
     "scope": {
       "beverages": {
-        "heading": "Beslutade alkoholdrycker",
-        "label": "Alkoholdrycker som får serveras",
+        "heading": "Beslutade alkoholdrycker och alkoholdrycksliknande preparat",
+        "label": "Alkoholdrycker och alkoholdrycksliknande preparat som får serveras",
         "STRONG_BEER": "Starköl",
         "WINE": "Vin",
         "SPIRITS": "Spritdrycker",
-        "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker"
+        "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker",
+        "ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS": "Alkoholdrycksliknande preparat"
       },
       "serving_hours": {
         "heading": "Beslutade serveringstider",

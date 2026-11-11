@@ -382,6 +382,7 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     beverageWine: box(beverages, 'WINE'),
     beverageBeer: box(beverages, 'STRONG_BEER'),
     beverageOtherFermented: box(beverages, 'OTHER_FERMENTED_BEVERAGES'),
+    beverageAlcoholLikePreparations: box(beverages, 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'),
     servingAreaDescription: stringAt(area.description),
     servingAreaDrawingReference: stringAt(area.drawingReference),
     servingAreaSeats: numberText(area.seatsIndoor),

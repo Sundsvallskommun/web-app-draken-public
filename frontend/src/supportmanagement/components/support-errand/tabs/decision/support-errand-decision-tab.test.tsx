@@ -261,6 +261,23 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
   expect(sentJson().value).toMatchObject({ decision: { executionDate: '2026-10-20', validFrom: '2026-11-01' } });
 });
 
+test('a preparation is offered among the beverages and saved with them', async () => {
+  useSupportStore.setState({ supportErrand: permanentErrand(), activeTabKey: 'decision' });
+  await renderTab();
+  fillWhatTheCertificatePrints();
+
+  expect(input('beverages-ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS').checked).toBe(false);
+
+  fireEvent.click(input('beverages-ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'));
+  fireEvent.change(input('serving-hours-indoorPublic-to'), { target: { value: '00:00' } });
+
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().value).toMatchObject({
+    beverages: expect.arrayContaining(['STRONG_BEER', 'WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS']),
+  });
+});
+
 test('the att-satser start from the investigation, and an edit is saved on the decision alone', async () => {
   vi.mocked(getSupportInvestigation).mockResolvedValue({ summary: '<p>att bevilja</p><p>att servera</p>' } as never);
   await renderTab();

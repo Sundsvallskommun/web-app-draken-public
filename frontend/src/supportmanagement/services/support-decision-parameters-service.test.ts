@@ -186,6 +186,22 @@ describe('a serving permit', () => {
     expect(sent('SERVERINGSTILLSTAND', { errandType: 'TASTING' }).scopeTasting).toBe('true');
   });
 
+  test('a decided preparation ticks a box of its own, and leaves the four beverages alone', () => {
+    const withPreparations = sent('SERVERINGSTILLSTAND', {
+      form: servingForm,
+      scope: { beverages: ['WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'], servingHours: {} },
+    });
+
+    expect(withPreparations).toMatchObject({
+      beverageWine: 'true',
+      beverageSpirits: 'false',
+      beverageBeer: 'false',
+      beverageOtherFermented: 'false',
+      beverageAlcoholLikePreparations: 'true',
+    });
+    expect(parameters.beverageAlcoholLikePreparations).toBe('false');
+  });
+
   test('the beverages and hours follow the decision even where the form says otherwise', () => {
     const decidedLess = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
@@ -540,6 +556,7 @@ describe('every permit', () => {
         'beverageWine',
         'beverageBeer',
         'beverageOtherFermented',
+        'beverageAlcoholLikePreparations',
         'servingAreaDescription',
         'servingAreaDrawingReference',
         'servingAreaSeats',
