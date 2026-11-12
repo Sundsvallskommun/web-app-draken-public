@@ -1,3 +1,4 @@
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { Asset } from '@common/interfaces/asset';
 import { linkSupportErrands } from '@common/services/relations-service';
@@ -10,7 +11,6 @@ import {
   PREMISES_MUNICIPALITY_KEY,
   upsertErrandParameter,
 } from '@supportmanagement/services/support-errand-service';
-import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { isPbi } from '@supportmanagement/services/support-pbi-service';
 import type { CSupportStakeholder } from 'src/data-contracts/backend/data-contracts';
@@ -21,9 +21,6 @@ export type InspectionKind = 'INTERNAL_INSPECTION' | 'EXTERNAL_INSPECTION';
 
 // The metadata leaves the ROOT label out, as the type form does when it saves labels.
 const INSPECTION_LABEL_PATHS = (kind: InspectionKind) => ['CATEGORYROOT/INSPECTION', `CATEGORYROOT/INSPECTION/${kind}`];
-
-/** The version of the tillsyn errand type schemas (aot_inspection_*_inspection) that the code writes. */
-const INSPECTION_FORM_VERSION = '1.2';
 
 const assetValue = (asset: Asset) => (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
 
@@ -103,7 +100,7 @@ export const createInspectionErrand = async (
     jsonParameters: [
       {
         key: schemaName,
-        schemaId: supportSchemaId(municipalityId, { name: schemaName, version: INSPECTION_FORM_VERSION }),
+        schemaId: (await getLatestRjsfSchema(municipalityId, schemaName)).schemaId,
         value: value.premises ? { premises: value.premises } : { pointOfSale: value.pointOfSale },
       },
     ],
