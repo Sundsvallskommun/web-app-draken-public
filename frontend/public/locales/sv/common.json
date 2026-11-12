@@ -897,7 +897,16 @@
         "create": "Skapa tillsynsärende",
         "INTERNAL_INSPECTION": "Inre tillsyn",
         "EXTERNAL_INSPECTION": "Yttre tillsyn",
-        "error": "Tillsynsärendet kunde inte skapas."
+        "error": "Tillsynsärendet kunde inte skapas.",
+        "unlinked": "Tillsynsärendet skapades, men kopplingen till tillståndets ärende blev inte av. Koppla det på tillsynsärendet.",
+        "choose": {
+          "title": "Vilket tillstånd gäller tillsynen?",
+          "description": "Stället har fler än ett gällande tillstånd. Välj det tillsynen avser.",
+          "validity": "gäller {{from}} till {{to}}",
+          "validity_open": "gäller från {{from}}",
+          "cancel": "Avbryt",
+          "confirm": "Skapa tillsynsärende"
+        }
       }
     },
     "errands": {
