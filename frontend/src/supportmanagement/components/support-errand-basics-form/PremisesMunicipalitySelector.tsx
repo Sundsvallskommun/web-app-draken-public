@@ -2,6 +2,8 @@ import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import {
   getErrandParameterValue,
   isSupportErrandLocked,
+  PREMISES_MUNICIPALITY_DISPLAY_NAME,
+  PREMISES_MUNICIPALITY_KEY,
   SupportErrand,
   upsertErrandParameter,
 } from '@supportmanagement/services/support-errand-service';
@@ -9,8 +11,7 @@ import { FC } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-/** Same parameter key and municipality codes as katla-aot uses when an errand is registered there. */
-const PREMISES_MUNICIPALITY_KEY = 'premisesMunicipalityId';
+/** Same municipality codes as katla-aot uses when an errand is registered there. */
 const PREMISES_MUNICIPALITIES = [
   { id: '2281', label: 'Sundsvall' },
   { id: '2262', label: 'Timrå' },
@@ -28,7 +29,12 @@ export const PremisesMunicipalitySelector: FC<{ supportErrand: SupportErrand }> 
         onChange={(e) => {
           setValue(
             'parameters',
-            upsertErrandParameter(getValues('parameters'), PREMISES_MUNICIPALITY_KEY, e.target.value, 'Kommun'),
+            upsertErrandParameter(
+              getValues('parameters'),
+              PREMISES_MUNICIPALITY_KEY,
+              e.target.value,
+              PREMISES_MUNICIPALITY_DISPLAY_NAME
+            ),
             { shouldDirty: true }
           );
         }}

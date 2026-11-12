@@ -42,6 +42,7 @@ import {
   buildErrandFilter,
   ErrandFilterInput,
   getNewErrandDefaults,
+  newErrandParameters,
   resolveDefaultLabels,
   stripErrandVersions,
   SupportStakeholderRole,
@@ -343,6 +344,11 @@ export class NewSupportErrandDto {
   @IsOptional()
   @IsArray()
   labels?: Label[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CParameter)
+  parameters?: Parameter[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -663,7 +669,7 @@ export class SupportErrandController {
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
-      parameters: errandDefaults?.parameters,
+      parameters: newErrandParameters(errandDefaults?.parameters, prefill?.parameters),
       ...(prefill?.stakeholders ? { stakeholders: prefill.stakeholders } : {}),
       ...(prefill?.jsonParameters ? { jsonParameters: prefill.jsonParameters } : {}),
     };

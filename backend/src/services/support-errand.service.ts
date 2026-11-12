@@ -221,6 +221,13 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
 
 export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];
 
+export const newErrandParameters = (defaults?: Parameter[], requested?: Parameter[]): Parameter[] | undefined => {
+  const requestedKeys = new Set((requested ?? []).map(parameter => parameter.key));
+  const keptDefaults = (defaults ?? []).filter(parameter => !requestedKeys.has(parameter.key));
+  const parameters = [...keptDefaults, ...(requested ?? [])];
+  return parameters.length ? parameters : undefined;
+};
+
 /** Exact `resourcePath` match, or a match below a ROOT prefix: defaults are written relative to the root. */
 const matchesPath = (label: Label, path: string): boolean => label.resourcePath === path || (label.resourcePath?.endsWith(`/${path}`) ?? false);
 

@@ -9,12 +9,14 @@ import { createInspectionErrand, latestActiveAsset } from './customer-inspection
 import type { CustomerPlace } from './customer-service';
 
 vi.mock('@common/services/relations-service', () => ({ linkSupportErrands: vi.fn() }));
-vi.mock('@supportmanagement/services/support-errand-service', () => ({
+vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   getSupportErrandById: vi.fn(),
   initiateSupportErrand: vi.fn(),
 }));
 
 const MUNICIPALITY_ID = '2281';
+const TIMRA = '2262';
 const PERMIT_ERRAND_ID = mockEnv.mockRestaurantNumberId;
 const NEW_ERRAND_ID = mockEnv.mockAssignmentId;
 const OWNER_ID = mockEnv.mockLicensedBusinessAddressId;
@@ -82,7 +84,10 @@ describe('createInspectionErrand', () => {
     vi.mocked(getSupportErrandById)
       .mockReset()
       .mockResolvedValue({
-        errand: { stakeholders: [owner, pbi, otherContact] },
+        errand: {
+          stakeholders: [owner, pbi, otherContact],
+          parameters: [{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: [TIMRA] }],
+        },
       } as never);
     vi.mocked(initiateSupportErrand).mockReset().mockResolvedValue({
       id: NEW_ERRAND_ID,
@@ -121,7 +126,17 @@ describe('createInspectionErrand', () => {
         value: { premises },
       },
     ]);
+    expect(prefill?.parameters).toEqual([{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: [TIMRA] }]);
     expect(linkSupportErrands).toHaveBeenCalledWith(MUNICIPALITY_ID, NEW_ERRAND_ID, PERMIT_ERRAND_ID, 'AOT');
+  });
+
+  test('sends no municipality when the permit errand names none', async () => {
+    vi.mocked(getSupportErrandById).mockResolvedValue({ errand: { stakeholders: [owner] } } as never);
+
+    await createInspectionErrand(MUNICIPALITY_ID, metadata, asset({}), 'INTERNAL_INSPECTION');
+
+    const [, prefill] = vi.mocked(initiateSupportErrand).mock.calls[0];
+    expect(prefill?.parameters).toEqual([]);
   });
 
   test('files a tobacco point of sale as pointOfSale', async () => {

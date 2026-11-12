@@ -2,7 +2,14 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 import type { Asset } from '@common/interfaces/asset';
 import { linkSupportErrands } from '@common/services/relations-service';
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
-import { getSupportErrandById, initiateSupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  getErrandParameterValue,
+  getSupportErrandById,
+  initiateSupportErrand,
+  PREMISES_MUNICIPALITY_DISPLAY_NAME,
+  PREMISES_MUNICIPALITY_KEY,
+  upsertErrandParameter,
+} from '@supportmanagement/services/support-errand-service';
 import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { isPbi } from '@supportmanagement/services/support-pbi-service';
@@ -63,7 +70,8 @@ const stakeholderCopy = (stakeholder: CSupportStakeholder): CSupportStakeholder 
 
 /**
  * Creates a tillsyn errand for the place of the asset: the owner and the PBI persons of the permit errand, the place
- * in the errand type's form, and a link to the permit errand. Returns the new errand's number.
+ * in the errand type's form, the municipality the permit names, and a link to the permit errand. Returns the new
+ * errand's number.
  */
 export const createInspectionErrand = async (
   municipalityId: string,
@@ -83,6 +91,12 @@ export const createInspectionErrand = async (
 
   const created = await initiateSupportErrand(municipalityId, {
     labels,
+    parameters: upsertErrandParameter(
+      [],
+      PREMISES_MUNICIPALITY_KEY,
+      getErrandParameterValue(source.parameters, PREMISES_MUNICIPALITY_KEY),
+      PREMISES_MUNICIPALITY_DISPLAY_NAME
+    ),
     stakeholders: (source.stakeholders ?? [])
       .filter((stakeholder) => stakeholder.role === 'PRIMARY' || isPbi(stakeholder))
       .map(stakeholderCopy),

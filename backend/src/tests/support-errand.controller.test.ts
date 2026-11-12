@@ -401,6 +401,18 @@ describe('SupportErrandController', () => {
       expect(config.data).toEqual(expect.objectContaining({ labels, stakeholders, jsonParameters, status: 'NEW' }));
     });
 
+    it('creates the errand with the parameters the caller sends', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue(metadata);
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+      const parameters = [{ key: 'premisesMunicipalityId', displayName: 'Kommun', values: ['2262'] }];
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes(), { parameters });
+
+      const [config] = api.post.mock.calls[0];
+      expect(config.data.parameters).toEqual(parameters);
+    });
+
     it('rethrows when the API call fails', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValue(metadata);
