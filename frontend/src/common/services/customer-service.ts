@@ -151,17 +151,16 @@ interface CustomerPlaceAddress {
   city?: string;
 }
 
-/** Display names in common.json under customer.list.permits.types. The BFF keeps the same list and accepts no others. */
-export const PERMIT_ASSET_TYPES = [
-  'AlcoholServingPermit',
-  'TobaccoSalesPermit',
-  'LowAlcoholBeerSalesNotification',
-  'LowAlcoholBeerServingNotification',
-  'LowAlcoholBeerSalesAndServingNotification',
-  'ECigaretteSalesNotification',
-  'TobaccoFreeNicotineProductSalesNotification',
-  'CateringOccasionNotification',
-];
+/** A permit type the app's permit list shows; the BFF decides which, per app. */
+export interface PermitAssetType {
+  type: string;
+  displayName: string;
+}
+
+export const getPermitAssetTypes = async (): Promise<PermitAssetType[]> => {
+  const res = await apiService.get<ApiResponse<PermitAssetType[]>>('permit-assets/types');
+  return res.data.data ?? [];
+};
 
 export const PERMIT_ASSETS_PAGE_SIZE = 12;
 
@@ -192,18 +191,13 @@ const toPermitAsset = (asset: Asset): PermitAsset => {
 export interface PermitAssetsQuery {
   term?: string;
   activeOnly?: boolean;
-  /** Empty means all PERMIT_ASSET_TYPES. */
+  /** Empty means all of the app's permit types. */
   types?: string[];
 }
 
 /** `page` is 0-based; PartyAssets' is 1-based. */
-export const getPermitAssets = async (
-  municipalityId: string,
-  page: number,
-  query: PermitAssetsQuery = {}
-): Promise<PermitAssetsPage> => {
+export const getPermitAssets = async (page: number, query: PermitAssetsQuery = {}): Promise<PermitAssetsPage> => {
   const res = await searchPermitAssets({
-    municipalityId,
     term: query.term?.trim() || undefined,
     activeOnly: query.activeOnly ?? true,
     types: query.types?.join(',') || undefined,

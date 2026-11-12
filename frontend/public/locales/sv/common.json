@@ -992,16 +992,6 @@
           "validFrom": "Giltigt från",
           "status": "Status"
         },
-        "types": {
-          "AlcoholServingPermit": "Serveringstillstånd",
-          "TobaccoSalesPermit": "Tobakstillstånd",
-          "LowAlcoholBeerSalesNotification": "Anmälan om försäljning av folköl",
-          "LowAlcoholBeerServingNotification": "Anmälan om servering av folköl",
-          "LowAlcoholBeerSalesAndServingNotification": "Anmälan om försäljning och servering av folköl",
-          "ECigaretteSalesNotification": "Anmälan om försäljning av e-cigaretter",
-          "TobaccoFreeNicotineProductSalesNotification": "Anmälan om försäljning av tobaksfria nikotinprodukter",
-          "CateringOccasionNotification": "Anmälan om catering"
-        },
         "loading": "Hämtar tillstånd",
         "error": "Det gick inte att hämta tillstånd",
         "empty": "Inga tillstånd matchar",

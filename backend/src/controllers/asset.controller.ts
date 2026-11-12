@@ -9,12 +9,12 @@ import {
   findSourceErrandsForAssets,
 } from '@services/asset-relations.service';
 import { type ErrandRef, type ErrandService, fetchErrandNumber, fetchErrandNumbers, withDefaultNamespace } from '@services/errand-lookup.service';
-import { isPermitAssetType, permitAssetsFilter } from '@services/permit-assets.service';
+import { permitAssetsFilter, type PermitAssetType, permitAssetTypes } from '@services/permit-assets.service';
 import { logger } from '@utils/logger';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
 import { apiURL } from '@/utils/util';
@@ -224,31 +224,40 @@ export class AssetController {
     return { data, message: 'success' };
   }
 
-  // The filter is built here from an allowlist of permit types, so this cannot list other assets, e.g. persons' parking permits.
+  @Get('/permit-assets/types')
+  @OpenAPI({ summary: "The permit asset types this app's permit list shows, with their display names" })
+  @UseBefore(authMiddleware)
+  getPermitAssetTypes(): ResponseData<PermitAssetType[]> {
+    return { data: permitAssetTypes(), message: 'success' };
+  }
+
+  // The filter is built here from the app's permit types, so this cannot list other assets, e.g. persons' parking permits.
   @Get('/permit-assets')
   @OpenAPI({ summary: 'Pages through permit assets, optionally narrowed by permit type, active status and a search term' })
   @UseBefore(authMiddleware)
   async searchPermitAssets(
     @Req() req: RequestWithUser,
-    @QueryParam('municipalityId') municipalityId?: string,
     @QueryParam('term') term?: string,
     @QueryParam('activeOnly') activeOnly?: boolean,
-    @QueryParam('types') types?: string, // comma-separated; empty means all permit types
+    @QueryParam('types') types?: string, // comma-separated; empty means all of the app's permit types
     @QueryParam('page') page?: string,
     @QueryParam('limit') limit?: string,
     @QueryParam('sortDirection') sortDirection?: string,
   ): Promise<ResponseData<PagedAssetResponse>> {
-    municipalityId ??= '2281';
+    const allowedTypes = permitAssetTypes().map(({ type }) => type);
+    if (allowedTypes.length === 0) {
+      throw new HttpException(404, 'This app has no permit types');
+    }
     const typeList = (types ?? '')
       .split(',')
       .map(type => type.trim())
       .filter(Boolean);
-    const unknownTypes = typeList.filter(type => !isPermitAssetType(type));
+    const unknownTypes = typeList.filter(type => !allowedTypes.includes(type));
     if (unknownTypes.length > 0) {
-      throw new HttpException(400, `Not permit types: ${unknownTypes.join(', ')}`);
+      throw new HttpException(400, `Not permit types of this app: ${unknownTypes.join(', ')}`);
     }
-    const filter = permitAssetsFilter({ term, activeOnly: activeOnly ?? true, types: typeList });
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/search${this.buildAssetQuery({ filter, page, limit, sortDirection })}`;
+    const filter = permitAssetsFilter({ term, activeOnly: activeOnly ?? true, types: typeList }, allowedTypes);
+    const url = `${this.PARTYASSETS_SERVICE}/${MUNICIPALITY_ID}/assets/search${this.buildAssetQuery({ filter, page, limit, sortDirection })}`;
     const res = await this.apiService.get<PagedAssetResponse>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }

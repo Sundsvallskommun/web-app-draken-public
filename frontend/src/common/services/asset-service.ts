@@ -14,7 +14,7 @@ export type GetAssetsParams = {
   errandId?: string;
 };
 
-const buildQuery = (p: Record<string, unknown>) => {
+const buildQuery = (p: Record<string, string | number | boolean | undefined>) => {
   const params = new URLSearchParams();
   Object.entries(p).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
@@ -49,8 +49,8 @@ export async function getPartyServices(params: GetServicesParams): Promise<ApiRe
   return res.data;
 }
 
+/** The BFF uses its own municipality id. */
 export type SearchPermitAssetsParams = {
-  municipalityId?: string;
   term?: string;
   activeOnly?: boolean;
   /** Comma-separated permit types; empty means all of them. The BFF rejects other asset types. */

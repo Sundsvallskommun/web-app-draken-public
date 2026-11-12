@@ -25,6 +25,7 @@ import {
   getCustomerPlaces,
   getLatestInspection,
   getPermitAssets,
+  getPermitAssetTypes,
   isOtherDrakeCase,
   nameFromAssetsOrErrands,
   PERMIT_ASSETS_PAGE_SIZE,
@@ -32,7 +33,7 @@ import {
 } from './customer-service';
 
 vi.mock('@common/services/asset-service', () => ({ getPartyServices: vi.fn(), searchPermitAssets: vi.fn() }));
-vi.mock('@common/services/api-service', () => ({ apiService: { post: vi.fn() } }));
+vi.mock('@common/services/api-service', () => ({ apiService: { get: vi.fn(), post: vi.fn() } }));
 vi.mock('@common/services/legal-entity-service', () => ({ getCompanyProfileByPartyId: vi.fn() }));
 vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAssignments: vi.fn() }));
 vi.mock('@supportmanagement/services/support-investigation-service', () => ({ getSupportInvestigation: vi.fn() }));
@@ -405,10 +406,9 @@ describe('getPermitAssets', () => {
   test('asks for one page of active permits of all types, counting pages from 1', async () => {
     vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [], _meta: { totalPages: 0 } } } as never);
 
-    await getPermitAssets(MUNICIPALITY_ID, 2);
+    await getPermitAssets(2);
 
     expect(searchPermitAssets).toHaveBeenCalledWith({
-      municipalityId: MUNICIPALITY_ID,
       term: undefined,
       activeOnly: true,
       types: undefined,
@@ -421,7 +421,7 @@ describe('getPermitAssets', () => {
   test('passes the trimmed term, the active choice and the chosen types', async () => {
     vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [], _meta: { totalPages: 0 } } } as never);
 
-    await getPermitAssets(MUNICIPALITY_ID, 0, {
+    await getPermitAssets(0, {
       term: ' Canton ',
       activeOnly: false,
       types: ['TobaccoSalesPermit', 'ECigaretteSalesNotification'],
@@ -450,7 +450,7 @@ describe('getPermitAssets', () => {
     };
     vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [asset], _meta: { totalPages: 4 } } } as never);
 
-    const result = await getPermitAssets(MUNICIPALITY_ID, 0);
+    const result = await getPermitAssets(0);
 
     expect(result.totalPages).toBe(4);
     expect(result.permits[0]).toMatchObject({
@@ -474,5 +474,21 @@ describe('getCustomerIdByOrganizationNumber', () => {
     vi.mocked(apiService.post).mockResolvedValue({ data: { data: { partyId: '' } } } as never);
 
     await expect(getCustomerIdByOrganizationNumber(mockEnv.mockOrganizationNumber)).resolves.toBeUndefined();
+  });
+});
+
+describe('getPermitAssetTypes', () => {
+  test("answers the app's permit types as the BFF gives them", async () => {
+    const types = [{ type: 'AlcoholServingPermit', displayName: 'Serveringstillstånd' }];
+    vi.mocked(apiService.get).mockResolvedValue({ data: { data: types } } as never);
+
+    await expect(getPermitAssetTypes()).resolves.toEqual(types);
+    expect(apiService.get).toHaveBeenCalledWith('permit-assets/types');
+  });
+
+  test('answers no types when the BFF gives none', async () => {
+    vi.mocked(apiService.get).mockResolvedValue({ data: {} } as never);
+
+    await expect(getPermitAssetTypes()).resolves.toEqual([]);
   });
 });

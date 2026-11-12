@@ -4,11 +4,10 @@ import {
   formatOrganizationNumber,
   getCustomerIdByOrganizationNumber,
   getPermitAssets,
-  PERMIT_ASSET_TYPES,
   PermitAsset,
+  PermitAssetType,
 } from '@common/services/customer-service';
 import { Checkbox, Chip, Pagination, PopupMenu, Spinner, Table, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
 import { ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, KeyboardEvent, useState } from 'react';
@@ -32,18 +31,16 @@ const headers = [
 const formatAddress = ({ street, postalCode, city }: { street?: string; postalCode?: string; city?: string } = {}) =>
   [street, [postalCode, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
-export const PermitAssetsTable: FC = () => {
+export const PermitAssetsTable: FC<{ permitTypes: PermitAssetType[] }> = ({ permitTypes }) => {
   const { t } = useTranslation();
-  const municipalityId = useConfigStore((s) => s.municipalityId);
   const router = useRouter();
   const toastMessage = useSnackbar();
   const [query, setQuery] = useState({ term: '', activeOnly: true, types: [] as string[], page: 0 });
   const { term, activeOnly, types, page } = query;
-  const lookup = useCustomerLookup(
-    `${municipalityId}|${term}|${activeOnly}|${types.join(',')}|${page}`,
-    municipalityId ? () => getPermitAssets(municipalityId, page, { term, activeOnly, types }) : undefined
+  const lookup = useCustomerLookup(`${term}|${activeOnly}|${types.join(',')}|${page}`, () =>
+    getPermitAssets(page, { term, activeOnly, types })
   );
-  const typeName = (type: string) => t(`common:customer.list.permits.types.${type}`);
+  const typeName = (type: string) => permitTypes.find((permitType) => permitType.type === type)?.displayName ?? type;
   const toggleType = (type: string) =>
     setQuery((current) => ({
       ...current,
@@ -106,7 +103,7 @@ export const PermitAssetsTable: FC = () => {
               </PopupMenu.Button>
               <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
                 <PopupMenu.Items autoFocus={false}>
-                  {PERMIT_ASSET_TYPES.map((type) => (
+                  {permitTypes.map(({ type, displayName }) => (
                     <PopupMenu.Item key={type}>
                       <Checkbox
                         labelPosition="left"
@@ -114,7 +111,7 @@ export const PermitAssetsTable: FC = () => {
                         onChange={() => toggleType(type)}
                         data-cy={`permit-assets-type-filter-${type}`}
                       >
-                        {typeName(type)}
+                        {displayName}
                       </Checkbox>
                     </PopupMenu.Item>
                   ))}
@@ -180,13 +177,7 @@ export const PermitAssetsTable: FC = () => {
                         formatOrganizationNumber(permit.permitHolder.organizationNumber)}
                     </Table.Column>
                     <Table.Column>{permit.premises?.name}</Table.Column>
-                    <Table.Column>
-                      {permit.asset.type &&
-                        t(
-                          `common:customer.list.permits.types.${permit.asset.type}`,
-                          permit.asset.title ?? permit.asset.type
-                        )}
-                    </Table.Column>
+                    <Table.Column>{permit.asset.type && typeName(permit.asset.type)}</Table.Column>
                     <Table.Column>{formatAddress(permit.premises?.address)}</Table.Column>
                     <Table.Column>{permit.registrationNumber}</Table.Column>
                     <Table.Column>{permit.validFrom}</Table.Column>
