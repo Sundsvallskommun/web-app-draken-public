@@ -712,6 +712,10 @@ export const getStakeholderOrganizationNumber = (
     ? s.externalId
     : undefined);
 
+/** Same parameter key and name as katla-aot uses when an errand is registered there. */
+export const PREMISES_MUNICIPALITY_KEY = 'premisesMunicipalityId';
+export const PREMISES_MUNICIPALITY_DISPLAY_NAME = 'Kommun';
+
 // Read the first value of an errand parameter by key.
 export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
   parameters?.find((parameter) => parameter.key === key)?.values?.[0] ?? '';
@@ -868,7 +872,10 @@ export const getSupportErrandsCount: (
 };
 
 /** What a new errand can be created with instead of the defaults. */
-export type NewSupportErrandPrefill = Pick<Partial<SupportErrandDto>, 'labels' | 'stakeholders' | 'jsonParameters'>;
+export type NewSupportErrandPrefill = Pick<
+  Partial<SupportErrandDto>,
+  'labels' | 'stakeholders' | 'jsonParameters' | 'parameters'
+>;
 
 export const initiateSupportErrand: (
   municipalityId: string,

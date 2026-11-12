@@ -5,7 +5,11 @@ import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts
 
 import type { ChosenCompany } from '../components/support-errand/company-engagements/company-engagement-choice.component';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
-import { getErrandParameterValue, getStakeholderOrganizationNumber } from './support-errand-service';
+import {
+  getErrandParameterValue,
+  getStakeholderOrganizationNumber,
+  PREMISES_MUNICIPALITY_KEY,
+} from './support-errand-service';
 import { premisesValue } from './support-form-value-service';
 import {
   engagementIsPerson,
@@ -313,7 +317,7 @@ const MUNICIPALITY_OF_CODE: Record<string, string> = {
 const MUNICIPALITY_WITHOUT_A_CODE = 'Sundsvalls kommun';
 
 const municipalityOfErrand = (errand: SupportErrand | undefined): string =>
-  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, 'premisesMunicipalityId')] ??
+  MUNICIPALITY_OF_CODE[getErrandParameterValue(errand?.parameters, PREMISES_MUNICIPALITY_KEY)] ??
   MUNICIPALITY_WITHOUT_A_CODE;
 
 /**

@@ -11,6 +11,7 @@ import {
   getNewErrandDefaults,
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
+  newErrandParameters,
   resolveDefaultLabels,
   sanitizeQuery,
   stripErrandVersions,
@@ -224,6 +225,24 @@ describe('support-errand.service', () => {
       expect(getNewErrandDefaults('MSVA')).toBeUndefined();
       expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
       expect(getNewErrandDefaults(undefined)).toBeUndefined();
+    });
+  });
+
+  describe('newErrandParameters', () => {
+    const municipality = (code: string): Parameter => ({ key: 'premisesMunicipalityId', displayName: 'Kommun', values: [code] });
+
+    it('lets the caller take over a key the drake defaults', () => {
+      expect(newErrandParameters([municipality('2281')], [municipality('2262')])).toEqual([municipality('2262')]);
+    });
+
+    it('keeps the defaults the caller says nothing about', () => {
+      const other: Parameter = { key: 'other', values: ['value'] };
+      expect(newErrandParameters([municipality('2281')], [other])).toEqual([municipality('2281'), other]);
+    });
+
+    it('gives no parameters at all when neither side has any', () => {
+      expect(newErrandParameters(undefined, [])).toBeUndefined();
+      expect(newErrandParameters([], undefined)).toBeUndefined();
     });
   });
 

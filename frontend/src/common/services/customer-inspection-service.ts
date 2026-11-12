@@ -1,9 +1,16 @@
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { Asset } from '@common/interfaces/asset';
 import { linkSupportErrands } from '@common/services/relations-service';
 import { schemaNameForErrand } from '@supportmanagement/services/support-errand-schema-service';
-import { getSupportErrandById, initiateSupportErrand } from '@supportmanagement/services/support-errand-service';
-import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import {
+  getErrandParameterValue,
+  getSupportErrandById,
+  initiateSupportErrand,
+  PREMISES_MUNICIPALITY_DISPLAY_NAME,
+  PREMISES_MUNICIPALITY_KEY,
+  upsertErrandParameter,
+} from '@supportmanagement/services/support-errand-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { isPbi } from '@supportmanagement/services/support-pbi-service';
 import type { CSupportStakeholder } from 'src/data-contracts/backend/data-contracts';
@@ -14,9 +21,6 @@ export type InspectionKind = 'INTERNAL_INSPECTION' | 'EXTERNAL_INSPECTION';
 
 // The metadata leaves the ROOT label out, as the type form does when it saves labels.
 const INSPECTION_LABEL_PATHS = (kind: InspectionKind) => ['CATEGORYROOT/INSPECTION', `CATEGORYROOT/INSPECTION/${kind}`];
-
-/** The version of the tillsyn errand type schemas (aot_inspection_*_inspection) that the code writes. */
-const INSPECTION_FORM_VERSION = '1.2';
 
 const assetValue = (asset: Asset) => (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
 
@@ -63,7 +67,8 @@ const stakeholderCopy = (stakeholder: CSupportStakeholder): CSupportStakeholder 
 
 /**
  * Creates a tillsyn errand for the place of the asset: the owner and the PBI persons of the permit errand, the place
- * in the errand type's form, and a link to the permit errand. Returns the new errand's number.
+ * in the errand type's form, the municipality the permit names, and a link to the permit errand. Returns the new
+ * errand's number.
  */
 export const createInspectionErrand = async (
   municipalityId: string,
@@ -83,13 +88,19 @@ export const createInspectionErrand = async (
 
   const created = await initiateSupportErrand(municipalityId, {
     labels,
+    parameters: upsertErrandParameter(
+      [],
+      PREMISES_MUNICIPALITY_KEY,
+      getErrandParameterValue(source.parameters, PREMISES_MUNICIPALITY_KEY),
+      PREMISES_MUNICIPALITY_DISPLAY_NAME
+    ),
     stakeholders: (source.stakeholders ?? [])
       .filter((stakeholder) => stakeholder.role === 'PRIMARY' || isPbi(stakeholder))
       .map(stakeholderCopy),
     jsonParameters: [
       {
         key: schemaName,
-        schemaId: supportSchemaId(municipalityId, { name: schemaName, version: INSPECTION_FORM_VERSION }),
+        schemaId: (await getLatestRjsfSchema(municipalityId, schemaName)).schemaId,
         value: value.premises ? { premises: value.premises } : { pointOfSale: value.pointOfSale },
       },
     ],
