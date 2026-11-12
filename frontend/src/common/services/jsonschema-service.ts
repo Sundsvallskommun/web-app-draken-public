@@ -17,6 +17,10 @@ export type UiSchemaResponse = {
   created?: string;
 };
 
+/** The jsonschema service publishes nothing under the name or id asked for. */
+export const isNotFound = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === 404;
+
 export const getSchema = (municipalityId: string, schemaId: string): Promise<ApiResponse<JsonSchemaResponse>> => {
   const url = `${municipalityId}/schemas/${schemaId}`;
   return apiService
@@ -38,7 +42,9 @@ export const getLatestSchema = (
     .get<ApiResponse<JsonSchemaResponse>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
+      if (!isNotFound(e)) {
+        console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
+      }
       throw e;
     });
 };
