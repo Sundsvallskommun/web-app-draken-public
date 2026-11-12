@@ -31,7 +31,7 @@ export const LabelCategorization: FC<{
   const { t } = useTranslation();
 
   const handleChange = (path: Label[]) => {
-    const last = path[path.length - 1];
+    const last = path.at(-1);
     const leafDepartment =
       last?.classification === 'DEPARTMENT' && getSelectableLabels(last.labels, [last.id]).length === 0;
     const category = pathValue(path, 'CATEGORY') || (leafDepartment ? pathValue(path, 'DEPARTMENT') : '');

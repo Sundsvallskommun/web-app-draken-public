@@ -110,6 +110,162 @@ interface BoxOptions {
 const hasSelectableChildren = (label: Label | undefined, keepIds: (string | undefined)[]): boolean =>
   getSelectableLabels(label?.labels, keepIds).length > 0;
 
+type BoxContext = Pick<LabelTreePickerProps, 'metadata' | 'fallbackLabels' | 'errors' | 'notes' | 'labelAddons'> & {
+  structure: Label[];
+  selected: Label[];
+  keepIds: (string | undefined)[];
+  disabled: boolean;
+};
+
+/** DEPARTMENT > CATEGORY, plus a third box for TYPE when the category has types. */
+const getPerLevelBoxes = (
+  { structure, selected, keepIds, metadata, disabled, fallbackLabels, errors, notes, labelAddons }: BoxContext,
+  showType: boolean
+): Box[] => {
+  const [department, category] = selected;
+  const type = selected.length > 2 ? selected.at(-1) : undefined;
+  const departmentIsLeaf = !!department && !hasSelectableChildren(department, keepIds);
+  const categoryPlaceholder = departmentIsLeaf ? 'Ingen ärendekategori' : PLACEHOLDERS.DEPARTMENT.second;
+  const result: Box[] = [
+    {
+      id: 'labelCategory',
+      dataCy: 'labelCategory',
+      label: getBoxLabel(getLabelsAtDepth(structure, 1), fallbackLabels.first, true),
+      addon: labelAddons?.first,
+      placeholder: department ? getLabelDisplayName(department, metadata) : PLACEHOLDERS.DEPARTMENT.first,
+      disabled,
+      selection: department,
+      error: !department && errors?.first ? PLACEHOLDERS.DEPARTMENT.first : undefined,
+    },
+    {
+      id: 'labelType',
+      dataCy: 'labelType',
+      label: getBoxLabel(getLabelsAtDepth(structure, 2), fallbackLabels.second, !departmentIsLeaf),
+      addon: labelAddons?.second,
+      // A legacy classification has no labels, so no type box: its type note waits here.
+      note: (
+        <>
+          {notes?.first}
+          {!showType && notes?.second}
+        </>
+      ),
+      placeholder: category ? getLabelDisplayName(category, metadata) : categoryPlaceholder,
+      disabled: disabled || !department || departmentIsLeaf,
+      selection: category,
+      error: department ? errors?.first : undefined,
+    },
+  ];
+  if (showType) {
+    result.push({
+      id: 'labelThird',
+      dataCy: 'labelThird',
+      label: getBoxLabel(getLabelsAtDepth(structure, 3), fallbackLabels.third ?? THIRD_FALLBACK_LABEL, true),
+      note: notes?.second,
+      placeholder: type ? getLabelDisplayName(type, metadata) : THIRD_PLACEHOLDER,
+      disabled,
+      selection: type,
+      error: errors?.second,
+    });
+  }
+  return result;
+};
+
+/** Everything down to the CATEGORY pivot in the first box, everything below it in the second. */
+const getPivotBoxes = (
+  { structure, selected, metadata, disabled, fallbackLabels, errors, notes, labelAddons }: BoxContext,
+  pivot: number
+): Box[] => {
+  const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
+  const secondSelection = selected.length > pivot + 1 ? selected.at(-1) : undefined;
+  const firstIsLeaf = !!firstSelection && !hasChildren(firstSelection);
+
+  let secondPlaceholder = PLACEHOLDERS.CATEGORY.second;
+  if (secondSelection) {
+    secondPlaceholder = getLabelDisplayName(secondSelection, metadata);
+  } else if (firstIsLeaf) {
+    secondPlaceholder = 'Ingen ärendetyp';
+  }
+
+  return [
+    {
+      id: 'labelCategory',
+      dataCy: 'labelCategory',
+      label: getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true),
+      addon: labelAddons?.first,
+      note: notes?.first,
+      placeholder: firstSelection
+        ? selected
+            .slice(0, pivot + 1)
+            .map((label) => getLabelDisplayName(label, metadata))
+            .filter(Boolean)
+            .join(' - ')
+        : PLACEHOLDERS.CATEGORY.first,
+      disabled,
+      selection: firstSelection,
+      error: errors?.first,
+    },
+    {
+      id: 'labelType',
+      dataCy: 'labelType',
+      label: getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf),
+      addon: labelAddons?.second,
+      note: notes?.second,
+      placeholder: secondPlaceholder,
+      disabled: disabled || !firstSelection || firstIsLeaf,
+      selection: secondSelection,
+      error: errors?.second,
+    },
+  ];
+};
+
+// `structure` keeps deprecated labels so an existing selection still resolves; only the option lists are filtered.
+const getBoxOptions = (
+  structure: Label[],
+  selected: Label[],
+  keepIds: (string | undefined)[],
+  perLevel: boolean,
+  pivot: number
+): BoxOptions[] => {
+  const deprecatedUpTo = (depth: number) => selected.slice(0, depth + 1).some((label) => isLabelDeprecated(label));
+
+  if (perLevel) {
+    const [department, category] = selected;
+    const result: BoxOptions[] = [
+      { nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(structure, keepIds)), grouped: false },
+      {
+        nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(department?.labels, keepIds, deprecatedUpTo(0))),
+        grouped: false,
+      },
+    ];
+    if (hasChildren(category)) {
+      result.push({
+        nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(category?.labels, keepIds, deprecatedUpTo(1))),
+        grouped: true,
+      });
+    }
+    return result;
+  }
+
+  const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
+  const firstGrouped = pivot > 0;
+  return [
+    {
+      nodes: sortLabelsByDisplayName(
+        firstGrouped
+          ? getSelectableGroupedLabels(getLabelsAtDepth(structure, pivot), keepIds)
+          : getSelectableLabels(structure, keepIds)
+      ),
+      grouped: firstGrouped,
+    },
+    {
+      nodes: sortLabelsByDisplayName(
+        getSelectableGroupedLabels(firstSelection?.labels, keepIds, deprecatedUpTo(pivot))
+      ),
+      grouped: true,
+    },
+  ];
+};
+
 export const LabelTreePicker: FC<LabelTreePickerProps> = ({
   labelStructure,
   value,
@@ -153,146 +309,28 @@ export const LabelTreePicker: FC<LabelTreePickerProps> = ({
     onChange(path);
   };
 
-  // `structure` keeps deprecated labels so an existing selection still resolves; only the option lists are filtered.
-  const options: BoxOptions[] = useMemo(() => {
-    const deprecatedUpTo = (depth: number) => selected.slice(0, depth + 1).some((label) => isLabelDeprecated(label));
-
-    if (perLevel) {
-      const [department, category] = selected;
-      const result: BoxOptions[] = [
-        { nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(structure, keepIds)), grouped: false },
-        {
-          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(department?.labels, keepIds, deprecatedUpTo(0))),
-          grouped: false,
-        },
-      ];
-      if (hasChildren(category)) {
-        result.push({
-          nodes: sortLabelsByDisplayName(getSelectableGroupedLabels(category?.labels, keepIds, deprecatedUpTo(1))),
-          grouped: true,
-        });
-      }
-      return result;
-    }
-
-    const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
-    const firstGrouped = pivot > 0;
-    return [
-      {
-        nodes: sortLabelsByDisplayName(
-          firstGrouped
-            ? getSelectableGroupedLabels(getLabelsAtDepth(structure, pivot), keepIds)
-            : getSelectableLabels(structure, keepIds)
-        ),
-        grouped: firstGrouped,
-      },
-      {
-        nodes: sortLabelsByDisplayName(
-          getSelectableGroupedLabels(firstSelection?.labels, keepIds, deprecatedUpTo(pivot))
-        ),
-        grouped: true,
-      },
-    ];
-  }, [perLevel, selected, structure, pivot, keepIds]);
+  const options = useMemo(
+    () => getBoxOptions(structure, selected, keepIds, perLevel, pivot),
+    [structure, selected, keepIds, perLevel, pivot]
+  );
 
   const visibleOptions = useMemo(
     () => options.map((box, index) => filterBySearch(box.nodes, box.grouped, matches(searches[index], metadata))),
     [options, searches, metadata]
   );
 
-  const boxes: Box[] = (() => {
-    if (perLevel) {
-      const [department, category] = selected;
-      const type = selected.length > 2 ? selected[selected.length - 1] : undefined;
-      const departmentIsLeaf = !!department && !hasSelectableChildren(department, keepIds);
-      const showType = options.length > 2;
-      const categoryPlaceholder = departmentIsLeaf ? 'Ingen ärendekategori' : PLACEHOLDERS.DEPARTMENT.second;
-      const result: Box[] = [
-        {
-          id: 'labelCategory',
-          dataCy: 'labelCategory',
-          label: getBoxLabel(getLabelsAtDepth(structure, 1), fallbackLabels.first, true),
-          addon: labelAddons?.first,
-          placeholder: department ? getLabelDisplayName(department, metadata) : PLACEHOLDERS.DEPARTMENT.first,
-          disabled,
-          selection: department,
-          error: !department && errors?.first ? PLACEHOLDERS.DEPARTMENT.first : undefined,
-        },
-        {
-          id: 'labelType',
-          dataCy: 'labelType',
-          label: getBoxLabel(getLabelsAtDepth(structure, 2), fallbackLabels.second, !departmentIsLeaf),
-          addon: labelAddons?.second,
-          // A legacy classification has no labels, so no type box: its type note waits here.
-          note: (
-            <>
-              {notes?.first}
-              {!showType && notes?.second}
-            </>
-          ),
-          placeholder: category ? getLabelDisplayName(category, metadata) : categoryPlaceholder,
-          disabled: disabled || !department || departmentIsLeaf,
-          selection: category,
-          error: department ? errors?.first : undefined,
-        },
-      ];
-      if (showType) {
-        result.push({
-          id: 'labelThird',
-          dataCy: 'labelThird',
-          label: getBoxLabel(getLabelsAtDepth(structure, 3), fallbackLabels.third ?? THIRD_FALLBACK_LABEL, true),
-          note: notes?.second,
-          placeholder: type ? getLabelDisplayName(type, metadata) : THIRD_PLACEHOLDER,
-          disabled,
-          selection: type,
-          error: errors?.second,
-        });
-      }
-      return result;
-    }
-
-    const firstSelection = selected.length > 0 ? selected[Math.min(pivot, selected.length - 1)] : undefined;
-    const secondSelection = selected.length > pivot + 1 ? selected[selected.length - 1] : undefined;
-    const firstIsLeaf = !!firstSelection && !hasChildren(firstSelection);
-
-    let secondPlaceholder = PLACEHOLDERS.CATEGORY.second;
-    if (secondSelection) {
-      secondPlaceholder = getLabelDisplayName(secondSelection, metadata);
-    } else if (firstIsLeaf) {
-      secondPlaceholder = 'Ingen ärendetyp';
-    }
-
-    return [
-      {
-        id: 'labelCategory',
-        dataCy: 'labelCategory',
-        label: getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true),
-        addon: labelAddons?.first,
-        note: notes?.first,
-        placeholder: firstSelection
-          ? selected
-              .slice(0, pivot + 1)
-              .map((label) => getLabelDisplayName(label, metadata))
-              .filter(Boolean)
-              .join(' - ')
-          : PLACEHOLDERS.CATEGORY.first,
-        disabled,
-        selection: firstSelection,
-        error: errors?.first,
-      },
-      {
-        id: 'labelType',
-        dataCy: 'labelType',
-        label: getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf),
-        addon: labelAddons?.second,
-        note: notes?.second,
-        placeholder: secondPlaceholder,
-        disabled: disabled || !firstSelection || firstIsLeaf,
-        selection: secondSelection,
-        error: errors?.second,
-      },
-    ];
-  })();
+  const boxContext: BoxContext = {
+    structure,
+    selected,
+    keepIds,
+    metadata,
+    disabled,
+    fallbackLabels,
+    errors,
+    notes,
+    labelAddons,
+  };
+  const boxes = perLevel ? getPerLevelBoxes(boxContext, options.length > 2) : getPivotBoxes(boxContext, pivot);
 
   const renderOptions = (nodes: Label[], grouped: boolean) =>
     nodes.map((node) =>
