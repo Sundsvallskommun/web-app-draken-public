@@ -13,7 +13,7 @@ export const EXTERNAL_INSPECTION_TEMPLATE: InspectionProtocolTemplate = {
   key: 'external_inspection',
   label: 'Yttre tillsyn',
   identifier: 'aot-external-inspection-protocol',
-  schema: { name: 'aot_external_inspection_protocol', version: '1.0' },
+  schema: { name: 'aot_external_inspection_protocol' },
   controlPoints: [
     'Nykterhet (3:5, 3:8, 8:20)',
     'Ålderskontroll (3:7, 3:8)',

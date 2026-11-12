@@ -37,7 +37,7 @@ import {
   startSupportInvestigation,
   type SupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
-import { jsonParameterObject, supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { jsonParameterObject, schemaIdToWrite } from '@supportmanagement/services/support-json-parameter-service';
 import {
   getSupportMeasures,
   saveSupportMeasures,
@@ -232,7 +232,7 @@ export const InspectionProtocol: FC<{
         }
         if (investigationId && (!data.investigation?.id || templateChanged || !same(draft.values, baseline.values))) {
           await saveSupportInvestigationJsonParameter(errandId, municipalityId, investigationId, template.schema.name, {
-            schemaId: supportSchemaId(municipalityId, template.schema),
+            schemaId: await schemaIdToWrite(municipalityId, template.schema.name, data.investigation?.jsonParameters),
             value: toInspectionProtocolJson(template, draft.values),
           });
         }

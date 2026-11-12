@@ -21,6 +21,13 @@ import { SupportErrandDecisionTab } from './support-errand-decision-tab';
 
 // The form is under test; the basis above it and the premises lookup have tests of their own, but the
 // basis renders the fields the tab hands it for its sections, so the mock hands those through.
+// Latest is 2.0; saved fixtures keep their own version.
+vi.mock('@common/components/json/utils/schema-utils', () => ({
+  getLatestRjsfSchema: vi.fn(async (municipalityId: string, name: string) => ({
+    schemaId: `${municipalityId}_${name}_2.0`,
+  })),
+}));
+
 vi.mock('./support-errand-decision-basis.component', () => ({
   SupportErrandDecisionBasis: ({
     servingPremisesHandling,
@@ -249,7 +256,7 @@ test('saving writes the decision, then what it says of the permit as its JSON', 
     'decision-1',
     'aot_alcohol_decision',
     {
-      schemaId: '2281_aot_alcohol_decision_1.2',
+      schemaId: '2281_aot_alcohol_decision_2.0',
       value: expect.objectContaining({
         servingPermitType: 'PERMANENT_SERVING',
         beverages: ['STRONG_BEER'],
@@ -328,7 +335,7 @@ test('saving again after a failed JSON write updates the new decision, and keeps
   );
 });
 
-test('a decision saved against an older schema version is written against the one the code builds for', async () => {
+test('a decision saved against an older schema version stays on that version, though a newer one is published', async () => {
   vi.mocked(updateSupportDecision)
     .mockReset()
     .mockResolvedValue({ id: 'decision-id', status: 'DRAFT' } as never);
@@ -346,7 +353,7 @@ test('a decision saved against an older schema version is written against the on
   fireEvent.change(input('clauses'), { target: { value: 'att bevilja' } });
   await expect(saveTheTab()).resolves.toBe(true);
 
-  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.2');
+  expect(sentJson().schemaId).toBe('2281_aot_alcohol_decision_1.0');
 });
 
 test('a saved decision fills the fields instead of the application, an empty value included', async () => {
