@@ -82,8 +82,8 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.2' };
-const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision', version: '1.2' };
+const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision' };
+const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision' };
 
 /** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
 export const decisionSchema = (permitType: string): SupportJsonSchema =>

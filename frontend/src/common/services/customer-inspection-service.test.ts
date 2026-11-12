@@ -8,6 +8,13 @@ import { mockEnv } from '../../tests/mock-env';
 import { createInspectionErrand, latestActiveAsset } from './customer-inspection-service';
 import type { CustomerPlace } from './customer-service';
 
+// Latest is 2.0; saved fixtures keep their own version.
+vi.mock('@common/components/json/utils/schema-utils', () => ({
+  getLatestRjsfSchema: vi.fn(async (municipalityId: string, name: string) => ({
+    schemaId: `${municipalityId}_${name}_2.0`,
+  })),
+}));
+
 vi.mock('@common/services/relations-service', () => ({ linkSupportErrands: vi.fn() }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),
@@ -117,7 +124,7 @@ describe('createInspectionErrand', () => {
     expect(prefill?.jsonParameters).toEqual([
       {
         key: 'aot_inspection_internal_inspection',
-        schemaId: '2281_aot_inspection_internal_inspection_1.2',
+        schemaId: '2281_aot_inspection_internal_inspection_2.0',
         value: { premises },
       },
     ]);

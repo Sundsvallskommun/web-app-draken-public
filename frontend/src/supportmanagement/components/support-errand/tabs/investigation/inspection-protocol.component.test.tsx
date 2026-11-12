@@ -25,6 +25,13 @@ import { InspectionProtocol } from './inspection-protocol.component';
 const internal = inspectionProtocolTemplate('internal_inspection')!;
 
 // Translates from the Swedish language file, so the test reads the texts the handler sees.
+// Latest is 2.0; saved fixtures keep their own version.
+vi.mock('@common/components/json/utils/schema-utils', () => ({
+  getLatestRjsfSchema: vi.fn(async (municipalityId: string, name: string) => ({
+    schemaId: `${municipalityId}_${name}_2.0`,
+  })),
+}));
+
 vi.mock('react-i18next', async () => {
   const sv = (await import('../../../../../../public/locales/sv/common.json')).default;
   const lookup = (key: string) =>
@@ -207,7 +214,7 @@ test('an errand with nothing saved asks for a template; picking one seeds its co
     'inv-new',
     'aot_internal_inspection_protocol',
     {
-      schemaId: '2281_aot_internal_inspection_protocol_1.0',
+      schemaId: '2281_aot_internal_inspection_protocol_2.0',
       value: expect.objectContaining({ businessName: 'Exempel AB' }),
     }
   );
@@ -364,7 +371,7 @@ test('a control point can be added beyond the template, and a saved one removed,
   ]);
 });
 
-test('a changed answer is saved in the JSON of the investigation, on the schema version the code writes', async () => {
+test('a changed answer is saved in the JSON of the investigation, on the schema version it was saved with', async () => {
   mount();
   await screen.findByDisplayValue('Ålderskontroll');
 
@@ -471,7 +478,7 @@ test('another template is taken only after the handler confirms, and replaces co
     '2281',
     'inv-1',
     'aot_internal_inspection_protocol',
-    expect.objectContaining({ schemaId: '2281_aot_internal_inspection_protocol_1.0' })
+    expect.objectContaining({ schemaId: '2281_aot_internal_inspection_protocol_2.0' })
   );
   expect(deleteSupportInvestigationJsonParameter).toHaveBeenCalledWith(
     ERRAND_ID,
