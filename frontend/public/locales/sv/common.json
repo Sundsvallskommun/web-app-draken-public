@@ -645,7 +645,10 @@
       "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
       "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
     },
-    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet."
+    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet.",
+    "delegation": "Delegationspunkt",
+    "delegation_help": "Punkten i delegationsordningen beslutet fattas med stöd av. Skrivs ut i beslutet.",
+    "delegation_placeholder": "Till exempel A 4.2"
   },
   "attachments": {
     "edit": "Ändra",

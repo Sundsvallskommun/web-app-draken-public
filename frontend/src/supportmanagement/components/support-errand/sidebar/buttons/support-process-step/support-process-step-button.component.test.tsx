@@ -41,6 +41,8 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   completeSupportDecision: vi.fn(),
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
   supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
+  ACTION_ERRAND_PERMIT_TYPE: 'ATGARD',
+  outcomeWithoutConditions: (outcome: string | undefined) => outcome ?? '',
 }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),

@@ -6,12 +6,17 @@ import type { SupportJsonParameter, SupportJsonParameterWrite } from './support-
 /** A decision as the BFF answers it: with the JSON parameters Support Management keeps beside it. */
 export type SupportDecision = Decision & { jsonParameters?: SupportJsonParameter[] };
 
+/** What Support Management takes as a delegation point. */
+export const SUPPORT_DECISION_DELEGATION_MAX_LENGTH = 64;
+
 export interface SupportDecisionInput {
   outcome: string;
   type: string;
   title?: string;
   decidedByRole?: string;
   legalBasis?: string;
+  /** The delegation point the decision was made under. */
+  delegationReference?: string;
   justification?: string;
   validFrom?: string;
   validTo?: string;
@@ -19,6 +24,9 @@ export interface SupportDecisionInput {
 }
 
 const PERMIT_TYPE_ATTRIBUTE = 'permitType';
+
+/** The permit type of an action errand, which decides sanctions rather than permits. */
+export const ACTION_ERRAND_PERMIT_TYPE = 'ATGARD';
 
 const PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT: Record<string, string> = {
   'alcohol-serving': 'SERVERINGSTILLSTAND',
@@ -34,7 +42,7 @@ const PERMIT_TYPE_OF_PROCESS_UNTIL_THE_LABELS_CARRY_IT: Record<string, string> =
   'e-cigarette-sales': 'ECIGARETTFORSALJNING',
   'internal-inspection': 'TILLSYN',
   'external-inspection': 'TILLSYN',
-  'action-errand': 'TILLSYN',
+  'action-errand': ACTION_ERRAND_PERMIT_TYPE,
 };
 
 const PERMIT_TYPE_OF_AN_UNKNOWN_PROCESS = 'PERMIT';
@@ -65,6 +73,23 @@ export const SUPPORT_DECISION_ROLE_KEYS = [
   'common:decision.roles.namndsordforande',
   'common:decision.roles.namnd',
 ];
+
+/**
+ * The outcomes the process knows, by what the errand decides. The two sets do not overlap, and the engine throws
+ * an error that cannot be retried when it is handed an outcome from the wrong one, so only its own are offered.
+ */
+const ACTION_ERRAND_OUTCOMES = ['NO_ACTION', 'REPRIMAND', 'WARNING', 'REVOCATION'];
+
+const APPLICATION_OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'];
+
+const supportDecisionOutcomeNames = (permitType: string): string[] =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE ? ACTION_ERRAND_OUTCOMES : APPLICATION_OUTCOMES;
+
+/** The registered outcomes the errand may be decided with, in the order the metadata has them. */
+export const supportDecisionOutcomesOf = (outcomes: DecisionOutcome[], permitType: string): DecisionOutcome[] => {
+  const known = supportDecisionOutcomeNames(permitType);
+  return outcomes.filter((outcome) => !!outcome.name && known.includes(outcome.name));
+};
 
 const WITH_CONDITIONS = '_WITH_CONDITIONS';
 

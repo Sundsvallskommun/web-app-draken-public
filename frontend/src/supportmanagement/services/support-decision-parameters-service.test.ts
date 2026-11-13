@@ -4,6 +4,7 @@ import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
   type DecisionParameterInput,
+  decisionRequiresClauses,
   decisionSchema,
   flattenDecisionJson,
   missingDecisionInputs,
@@ -426,8 +427,8 @@ describe('what the permit needs of the errand', () => {
       WITH_CLAUSES
     );
 
-    expect(missingDecisionInputs('SERVERINGSTILLSTAND', complete)).toEqual([]);
-    expect(missingDecisionInputs('SERVERINGSTILLSTAND', undefined)).toEqual([
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', 'APPROVAL', complete)).toEqual([]);
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', 'APPROVAL', undefined)).toEqual([
       'decisionText',
       'decisionMaker',
       'validFrom',
@@ -441,6 +442,7 @@ describe('what the permit needs of the errand', () => {
     expect(
       missingDecisionInputs(
         'SERVERINGSTILLSTAND',
+        'APPROVAL',
         toDecisionJson('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...WITH_CLAUSES, validFrom: '' })
       )
     ).toEqual(['validFrom', 'servingAreaDescription']);
@@ -457,11 +459,11 @@ describe('what the permit needs of the errand', () => {
     const saved = toDecisionJson('FOLKOLSANMALAN', input({ externalCaseRegistrationNumber: '' }), WITH_CLAUSES);
 
     expect(saved).not.toHaveProperty('externalCaseRegistrationNumber');
-    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
   });
 
   test('a tobacco permit waits for the outcome, the dates and the information it prints', () => {
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', undefined)).toEqual([
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', undefined)).toEqual([
       'decisionText',
       'validFrom',
       'executionDate',
@@ -474,21 +476,33 @@ describe('what the permit needs of the errand', () => {
     const withTerms = toDecisionJson('TOBAKSFORSALJNING', input(), WITH_CLAUSES);
     const withoutTerms = toDecisionJson('TOBAKSFORSALJNING', input(), { ...WITH_CLAUSES, terms: [] });
 
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', withTerms)).toEqual([]);
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', withoutTerms)).toEqual(['information']);
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', withTerms)).toEqual([]);
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', withoutTerms)).toEqual(['information']);
   });
 
   test('att-satser are saved on the decision and required, except on an inspection', () => {
     const saved = toDecisionJson('FOLKOLSANMALAN', input(), { ...DECISION, clauses: ' att bevilja\natt servera ' });
 
     expect(saved.decision).toMatchObject({ clauses: 'att bevilja\natt servera' });
-    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
-    expect(missingDecisionInputs('TILLSYN', undefined)).toEqual([]);
-    expect(missingDecisionInputs(supportDecisionPermitType(undefined, 'action-errand'), undefined)).toEqual([]);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
+    expect(missingDecisionInputs('TILLSYN', undefined, undefined)).toEqual([]);
+  });
+
+  test('an action errand needs att-satser for the sanctions it imposes, and none for letting the matter rest', () => {
+    const permitType = supportDecisionPermitType(undefined, 'action-errand');
+
+    expect(permitType).toBe('ATGARD');
+    expect(missingDecisionInputs(permitType, 'REPRIMAND', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'WARNING', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'REVOCATION', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'NO_ACTION', undefined)).toEqual([]);
+    expect(missingDecisionInputs(permitType, undefined, undefined)).toEqual([]);
+    expect(decisionRequiresClauses('TILLSYN', 'WARNING')).toBe(false);
+    expect(decisionRequiresClauses('SERVERINGSTILLSTAND', 'APPROVAL_WITH_CONDITIONS')).toBe(true);
   });
 
   test('a permit that issues no certificate waits for the att-satser alone', () => {
-    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', undefined)).toEqual(['decisionClauses']);
     expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],

@@ -182,6 +182,75 @@ test('a draft is saved as soon as an outcome is chosen, however incomplete it is
   expect(sent).toMatchObject({ decidedByRole: UTSKOTTET, outcome: APPROVAL });
 });
 
+const ACTION_ERRAND_LABELS = [
+  { classification: 'CATEGORY', resourceName: 'INSPECTION' },
+  { classification: 'TYPE', resourceName: 'MEASURES', displayName: 'Åtgärder' },
+];
+
+const actionErrand = (): SupportErrand =>
+  ({
+    ...errand,
+    labels: ACTION_ERRAND_LABELS,
+    process: { processKey: 'action-errand', currentActivityId: 'decision_phase' },
+  } as unknown as SupportErrand);
+
+const offeredOutcomes = (): string[] => [...select('outcome').options].map((option) => option.value).filter(Boolean);
+
+const everyOutcomeIsRegistered = () =>
+  useMetadataStore.setState({
+    supportMetadata: {
+      namespace: 'AOT',
+      decisionOutcomes: [
+        { name: APPROVAL, displayName: 'Bifall' },
+        { name: 'APPROVAL_WITH_CONDITIONS', displayName: 'Bifall med villkor' },
+        { name: 'REJECTED', displayName: 'Avslag' },
+        { name: 'INADMISSIBLE', displayName: 'Ärendet avvisas' },
+        { name: 'DISMISSED', displayName: 'Ärendet avskrivs' },
+        { name: 'REPRIMAND', displayName: 'Erinran' },
+        { name: 'WARNING', displayName: 'Varning' },
+        { name: 'REVOCATION', displayName: 'Återkallelse' },
+        { name: 'NO_ACTION', displayName: 'Ingen åtgärd' },
+      ],
+    } as SupportMetadata,
+  });
+
+test('an action errand is offered the four outcomes its process knows, and an application the five it knows', async () => {
+  everyOutcomeIsRegistered();
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  expect(offeredOutcomes()).toEqual(['REPRIMAND', 'WARNING', 'REVOCATION', 'NO_ACTION']);
+
+  cleanup();
+  useSupportStore.setState({ supportErrand: permanentErrand() });
+  await renderTab();
+
+  expect(offeredOutcomes()).toEqual([APPROVAL, 'REJECTED', 'INADMISSIBLE', 'DISMISSED']);
+});
+
+test('the delegation point is saved with the decision and read back from it', async () => {
+  everyOutcomeIsRegistered();
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  fireEvent.change(select('outcome'), { target: { value: 'WARNING' } });
+  fireEvent.change(input('delegation'), { target: { value: 'A 4.2' } });
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(vi.mocked(createSupportDecision).mock.calls[0][2]).toMatchObject({
+    outcome: 'WARNING',
+    delegationReference: 'A 4.2',
+  });
+
+  cleanup();
+  vi.mocked(getSupportDecisions).mockResolvedValue([
+    { id: 'decision-1', status: 'DRAFT', outcome: 'WARNING', delegationReference: 'A 4.2' } as SupportDecision,
+  ]);
+  await renderTab();
+
+  expect(input('delegation').value).toBe('A 4.2');
+});
+
 test('another decision maker is an unsaved change', async () => {
   const setUnsaved = await renderTab();
 

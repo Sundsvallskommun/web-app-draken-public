@@ -7,6 +7,7 @@ import { useDecisionPremises } from '@supportmanagement/components/premises/use-
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   applicationPremisesPhone,
+  decisionRequiresClauses,
   savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
 import { premisesFromDecisionJson } from '@supportmanagement/services/support-decision-premises-service';
@@ -21,6 +22,7 @@ import {
   isSupportDecisionDraft,
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
+  supportDecisionOutcomesOf,
 } from '@supportmanagement/services/support-decision-service';
 import { typedLinesOf } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
@@ -59,8 +61,11 @@ export const SupportErrandDecisionTab: FC<{
   const [opened, setOpened] = useState(isActive);
   if (isActive && !opened) setOpened(true);
 
-  const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const permit = useMemo(() => decisionPermit(supportErrand), [supportErrand]);
+  const outcomes = useMemo(
+    () => supportDecisionOutcomesOf(supportMetadata?.decisionOutcomes ?? [], permit.type),
+    [supportMetadata?.decisionOutcomes, permit.type]
+  );
   const handlesPremises = appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand);
 
   const premises = useMemo(
@@ -230,7 +235,7 @@ export const SupportErrandDecisionTab: FC<{
             form={form}
             outcomes={outcomes}
             printed={!!permit.certificate}
-            clausesRequired={permit.clausesRequired}
+            clausesRequired={decisionRequiresClauses(permit.type, form.values.outcome)}
             disabled={!canEdit}
           />
 

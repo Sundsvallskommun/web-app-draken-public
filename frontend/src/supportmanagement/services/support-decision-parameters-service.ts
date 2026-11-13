@@ -9,7 +9,7 @@ import {
   servingHoursText,
   toScopeJson,
 } from './support-decision-scope-service';
-import type { SupportDecision } from './support-decision-service';
+import { ACTION_ERRAND_PERMIT_TYPE, outcomeWithoutConditions, type SupportDecision } from './support-decision-service';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import {
   childText,
@@ -470,15 +470,31 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
   TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate', 'information'],
 };
 
-/** An inspection or action errand's decision can be sent without att-satser. */
-export const decisionRequiresClauses = (permitType: string): boolean => permitType !== 'TILLSYN';
+const INSPECTION_PERMIT_TYPE = 'TILLSYN';
+
+/** The sanctions of an action errand are written as numbered att-satser; the decision to let it be is not. */
+const OUTCOMES_WRITTEN_AS_CLAUSES = ['REPRIMAND', 'WARNING', 'REVOCATION'];
+
+/**
+ * Whether the decision needs att-satser before it is sent. An inspection's decision carries none, and on an
+ * action errand it follows the outcome: the three sanctions are written as clauses, "Ingen åtgärd" is not.
+ */
+export const decisionRequiresClauses = (permitType: string, outcome: string | undefined): boolean => {
+  if (permitType === INSPECTION_PERMIT_TYPE) return false;
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return true;
+  return OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
+};
 
 /** The keys the decision's saved JSON leaves without a value. */
-export const missingDecisionInputs = (permitType: string, json: JsonObject | undefined): string[] => {
+export const missingDecisionInputs = (
+  permitType: string,
+  outcome: string | undefined,
+  json: JsonObject | undefined
+): string[] => {
   const flat = flattenDecisionJson(json);
   return [
     ...(PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []),
-    ...(decisionRequiresClauses(permitType) ? ['decisionClauses'] : []),
+    ...(decisionRequiresClauses(permitType, outcome) ? ['decisionClauses'] : []),
   ].filter((key) => !flat[key]);
 };
 

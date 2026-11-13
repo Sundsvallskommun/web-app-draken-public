@@ -20,6 +20,7 @@ import {
   outcomeLabel,
   saveSupportDecisionJsonParameter,
   type SupportDecision,
+  supportDecisionOutcomesOf,
   supportDecisionWithoutBlanks,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
@@ -73,7 +74,8 @@ export const useDecisionSave = ({
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const setDecisionJsonWriter = useSupportStore((s) => s.setDecisionJsonWriter);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
-  const outcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
+  const registeredOutcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
+  const outcomes = supportDecisionOutcomesOf(registeredOutcomes, permit.type);
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   // Survives a failed JSON write, so that saving again updates the new decision instead of creating another.
@@ -157,6 +159,7 @@ export const useDecisionSave = ({
       title: permitName ? t('common:decision.title_for', { permit: permitName.toLocaleLowerCase('sv-SE') }) : undefined,
       decidedByRole: values.decidedByRole,
       legalBasis: values.legalBasis,
+      delegationReference: values.delegationReference,
       justification: values.justification,
       validFrom: values.validFrom,
       validTo: values.validTo,
