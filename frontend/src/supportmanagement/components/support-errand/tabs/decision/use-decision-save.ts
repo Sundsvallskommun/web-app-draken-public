@@ -4,9 +4,10 @@ import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   type CertificateDecision,
+  type DecisionOrigin,
   type DecisionParameterInput,
   decisionSchema,
-  toCertificateParameters,
+  toDecisionDocumentParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
@@ -44,12 +45,14 @@ interface DecisionSaveInput {
   premisesToSend: DecisionPremises | undefined;
   /** The answers filed under the errand type's schema, which several parameters are read off. */
   applicationForm: FormValue | undefined;
+  /** What an action errand decides on, read when the decision is written and then frozen in its JSON. */
+  origin?: DecisionOrigin;
   onSaved: (decisions: SupportDecision[]) => void;
 }
 
 export interface DecisionSave {
-  /** What the preview renders, which is what the certificate will be given. */
-  certificateParameters: Record<string, string>;
+  /** What the preview renders, which is what the document will be given. */
+  documentParameters: Record<string, string | string[]>;
 }
 
 /**
@@ -66,6 +69,7 @@ export const useDecisionSave = ({
   permit,
   premisesToSend,
   applicationForm,
+  origin,
   onSaved,
 }: DecisionSaveInput): DecisionSave => {
   const { t } = useTranslation();
@@ -101,6 +105,7 @@ export const useDecisionSave = ({
     executionDate: values.executionDate,
     premisesPhoneNumber: values.premisesPhoneNumber,
     externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
+    origin,
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
@@ -116,6 +121,11 @@ export const useDecisionSave = ({
     justification: values.justification,
     clauses: values.clauses,
     delegation: values.delegationReference,
+    outcomeHeading: outcomeLabel(outcomes, outcome),
+    outcomeText: values.outcomeText,
+    justificationDeficiencies: values.justificationDeficiencies,
+    justificationStatement: values.justificationStatement,
+    justificationOutcome: values.justificationOutcome,
     terms: writtenTerms,
   };
 
@@ -206,8 +216,8 @@ export const useDecisionSave = ({
   }, [jsonWriter, setDecisionJsonWriter]);
 
   return {
-    certificateParameters: supportErrand
-      ? toCertificateParameters(permit.type, parameterInput(supportErrand), certificateDecision)
+    documentParameters: supportErrand
+      ? toDecisionDocumentParameters(permit.type, parameterInput(supportErrand), certificateDecision)
       : {},
   };
 };

@@ -5,7 +5,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 
 import { mockEnv } from '../../../../../tests/mock-env';
-import { useDecisionForm } from './use-decision-form';
+import { NO_DECISION_PREFILL, useDecisionForm } from './use-decision-form';
 
 const ROLE = 'Handläggare';
 const APPLICATION_PHONE = mockEnv.mockPhoneNumber;
@@ -53,7 +53,7 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
       savedPremises: undefined,
       premisesToSend: undefined,
       applicationPremisesPhone: APPLICATION_PHONE,
-      investigationClauses: '',
+      prefill: NO_DECISION_PREFILL,
       scopeAsSaved: NOTHING_DECIDED,
       defaultRole: ROLE,
       ...input,
@@ -69,14 +69,14 @@ test('a decision not yet saved starts its att-satser from the investigation, als
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
-    investigationClauses: '',
+    prefill: NO_DECISION_PREFILL,
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   };
   const { result, rerender } = form(props);
   expect(result.current.values.clauses).toBe('');
 
-  rerender({ ...props, investigationClauses: 'att bevilja' });
+  rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att bevilja' } });
   expect(result.current.values.clauses).toBe('att bevilja');
   expect(result.current.edited).toBe(false);
 });
@@ -88,18 +88,18 @@ test('a newer investigation changes only att-satser the handler has left as pref
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
-    investigationClauses: 'att bevilja',
+    prefill: { ...NO_DECISION_PREFILL, clauses: 'att bevilja' },
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   };
   const { result, rerender } = form(props);
 
   act(() => result.current.set('justification', 'Motivering'));
-  rerender({ ...props, investigationClauses: 'att bevilja\natt servera' });
+  rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att bevilja\natt servera' } });
   expect(result.current.values).toMatchObject({ clauses: 'att bevilja\natt servera', justification: 'Motivering' });
 
   act(() => result.current.set('clauses', 'egen'));
-  rerender({ ...props, investigationClauses: 'att avslå' });
+  rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att avslå' } });
   expect(result.current.values).toMatchObject({ clauses: 'egen', justification: 'Motivering' });
 });
 
@@ -114,10 +114,12 @@ test('a saved decision keeps its own att-satser, also when they are empty', () =
     ],
   });
 
-  expect(form({ decision: withClauses, investigationClauses: 'annat' }).result.current.values.clauses).toBe(
-    'att bevilja'
-  );
-  expect(form({ decision: saved(), investigationClauses: 'annat' }).result.current.values.clauses).toBe('');
+  expect(
+    form({ decision: withClauses, prefill: { ...NO_DECISION_PREFILL, clauses: 'annat' } }).result.current.values.clauses
+  ).toBe('att bevilja');
+  expect(
+    form({ decision: saved(), prefill: { ...NO_DECISION_PREFILL, clauses: 'annat' } }).result.current.values.clauses
+  ).toBe('');
 });
 
 test('a decision that exists fills the fields, and its conditions come in their order', () => {
@@ -177,7 +179,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
-    investigationClauses: '',
+    prefill: NO_DECISION_PREFILL,
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });
@@ -189,7 +191,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     savedPremises: undefined,
     premisesToSend: undefined,
     applicationPremisesPhone: APPLICATION_PHONE,
-    investigationClauses: '',
+    prefill: NO_DECISION_PREFILL,
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
   });

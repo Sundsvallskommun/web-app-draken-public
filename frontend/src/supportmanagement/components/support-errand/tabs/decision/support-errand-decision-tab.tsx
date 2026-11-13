@@ -4,9 +4,15 @@ import { Divider, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
+import {
+  getSupportActionErrandOrigin,
+  inspectionErrandIdOf,
+} from '@supportmanagement/services/support-action-errand-service';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   applicationPremisesPhone,
+  decisionDocumentTemplate,
+  type DecisionOrigin,
   decisionRequiresClauses,
   savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
@@ -24,7 +30,6 @@ import {
   type SupportDecision,
   supportDecisionOutcomesOf,
 } from '@supportmanagement/services/support-decision-service';
-import { typedLinesOf } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -33,11 +38,12 @@ import { useTranslation } from 'react-i18next';
 import { DecisionCard } from './decision-card.component';
 import { DecisionFields } from './decision-fields.component';
 import { decisionPermit } from './decision-permit';
+import { decisionPrefillOf } from './decision-prefill';
 import { DecisionBeveragesField, DecisionServingHoursFields } from './decision-scope-fields.component';
 import { DecisionServingPremises } from './decision-serving-premises.component';
 import { DecisionSummary } from './decision-summary.component';
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
-import { useDecisionForm } from './use-decision-form';
+import { NO_DECISION_PREFILL, useDecisionForm } from './use-decision-form';
 import { useDecisionSave } from './use-decision-save';
 import { usePremisesText } from './use-premises-text';
 
@@ -54,7 +60,8 @@ export const SupportErrandDecisionTab: FC<{
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
 
   const [decisions, setDecisions] = useState<SupportDecision[]>([]);
-  const [investigationClauses, setInvestigationClauses] = useState('');
+  const [prefill, setPrefill] = useState(NO_DECISION_PREFILL);
+  const [origin, setOrigin] = useState<DecisionOrigin>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   // The premises lookup costs a request, so it waits until the tab has been opened once.
@@ -104,7 +111,7 @@ export const SupportErrandDecisionTab: FC<{
       .then(([result, investigation]) => {
         if (!current) return;
         setDecisions(result);
-        setInvestigationClauses(typedLinesOf(investigation?.summary).join('\n'));
+        setPrefill(decisionPrefillOf(investigation));
         setIsLoading(false);
       })
       .catch(() => {
@@ -130,18 +137,41 @@ export const SupportErrandDecisionTab: FC<{
     [decisionJson, servingHoursSlots, applicationForm, permit.errandType]
   );
 
+  // What the decision says of the inspection and the permit is read now and frozen in the decision's own JSON,
+  // so the document shows what was true the day it was decided.
+  const inspectionErrandId = supportErrand ? inspectionErrandIdOf(supportErrand) : undefined;
+
+  useEffect(() => {
+    if (!inspectionErrandId || !opened) return undefined;
+    let current = true;
+
+    void getSupportActionErrandOrigin(municipalityId, inspectionErrandId).then((read) => {
+      if (!current) return;
+      setOrigin({
+        inspectionDate: read.inspectionDate,
+        inspectionCaseNumber: read.inspectionErrandNumber,
+        permitType: read.permitType,
+        permitCaseNumber: read.permitErrandNumber,
+      });
+    });
+
+    return () => {
+      current = false;
+    };
+  }, [inspectionErrandId, municipalityId, opened]);
+
   const form = useDecisionForm({
     decision,
     editable,
     savedPremises,
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
-    investigationClauses,
+    prefill,
     scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
   });
 
-  const { certificateParameters } = useDecisionSave({
+  const { documentParameters } = useDecisionSave({
     decision,
     values: form.values,
     edited: form.edited,
@@ -149,8 +179,11 @@ export const SupportErrandDecisionTab: FC<{
     permit,
     premisesToSend,
     applicationForm,
+    origin,
     onSaved: setDecisions,
   });
+
+  const documentTemplate = decisionDocumentTemplate(permit.type, form.values.outcome);
 
   useEffect(() => {
     setUnsaved(form.edited);
@@ -243,8 +276,8 @@ export const SupportErrandDecisionTab: FC<{
             <TemplatePdfPreview
               watermarked
               title={t('common:decision.preview')}
-              identifier={permit.certificate}
-              parameters={certificateParameters}
+              identifier={documentTemplate}
+              parameters={documentParameters}
             />
           ) : null}
 
