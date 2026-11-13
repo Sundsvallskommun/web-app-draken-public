@@ -16,6 +16,8 @@ const statusColor = (status?: AssetStatus): string => {
       return 'error';
     case 'BLOCKED':
       return 'error';
+    case 'REVOKED':
+      return 'error';
     case 'TEMPORARY':
       return 'info';
     default:
