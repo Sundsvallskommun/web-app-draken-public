@@ -1045,5 +1045,32 @@
         "DRAFT": "Utkast"
       }
     }
+  },
+  "communications": {
+    "heading": "Kommunicering",
+    "description": "Innan kommunen beslutar om en varning eller en återkallelse ska tillståndshavaren få veta vad som ligger till grund för beslutet och få tillfälle att yttra sig.",
+    "add": "Kommunicera med tillståndshavaren",
+    "title": "Kommunicering {{errandNumber}}",
+    "text": "Vad tillståndshavaren ska få veta",
+    "text_placeholder": "Beskriv vilka brister som kvarstår, vad kommunen överväger att besluta, och att tillståndshavaren får yttra sig.",
+    "due_at": "Svara senast",
+    "send": "Skicka",
+    "remove": "Ta bort kommuniceringen",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall när kommuniceringen är avslutad…",
+    "responded_at": "Svar inkom",
+    "channel": {
+      "minasidor": "Skickas till {{recipient}} i Mina sidor.",
+      "email": "Skickas med e-post till {{recipient}}."
+    },
+    "validation": {
+      "text": "Skriv vad tillståndshavaren ska få veta."
+    },
+    "toast": {
+      "sent": "Kommuniceringen har skickats.",
+      "send_failed": "Kommuniceringen kunde inte skickas.",
+      "remove_failed": "Kommuniceringen kunde inte tas bort.",
+      "create_failed": "Kommuniceringen kunde inte skapas."
+    }
   }
 }
