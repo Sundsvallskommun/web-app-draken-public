@@ -3,9 +3,11 @@ import { appConfig } from '@config/appconfig';
 import { useSupportStore } from '@stores/index';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandCompanySection } from '@supportmanagement/components/support-errand/pbi/support-errand-company-section.component';
+import { SupportErrandPermitSection } from '@supportmanagement/components/support-errand/support-errand-permit-section.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
 import { ApiSupportErrand, isOrganizationExternalIdType } from '@supportmanagement/services/support-errand-service';
+import { isSupportInspectionErrand } from '@supportmanagement/services/support-measure-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 export const SupportErrandBasicsTab: FC<{
   errand: ApiSupportErrand;
@@ -27,6 +29,10 @@ export const SupportErrandBasicsTab: FC<{
       </div>
 
       <SupportErrandBasicsAboutDisclosure errand={props.errand} setUnsaved={props.setUnsaved} update={props.update} />
+
+      {supportErrand && isSupportInspectionErrand(supportErrand) ? (
+        <SupportErrandPermitSection errand={supportErrand} />
+      ) : null}
 
       {supportErrand?.id ? (
         <SupportContactsComponent

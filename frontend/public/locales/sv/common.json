@@ -891,13 +891,34 @@
       "missing": "Välj minst en observation, eller ändra bedömningen."
     }
   },
+  "inspection_permit": {
+    "heading": "Tillståndet tillsynen gäller",
+    "none": "Tillsynen är inte kopplad till något tillstånd.",
+    "link": "Koppla tillstånd",
+    "open": "Öppna tillståndets ärende {{errandNumber}}",
+    "validity": "Gäller {{from}} till {{to}}",
+    "validity_open": "Gäller från {{from}}",
+    "choose_title": "Vilket tillstånd gäller tillsynen?",
+    "choose_description": "Välj bland tillståndshavarens gällande tillstånd.",
+    "linked": "Tillsynen är nu kopplad till tillståndet.",
+    "link_failed": "Kopplingen kunde inte göras. Försök igen."
+  },
   "customer": {
     "overview": {
       "inspection": {
         "create": "Skapa tillsynsärende",
         "INTERNAL_INSPECTION": "Inre tillsyn",
         "EXTERNAL_INSPECTION": "Yttre tillsyn",
-        "error": "Tillsynsärendet kunde inte skapas."
+        "error": "Tillsynsärendet kunde inte skapas.",
+        "unlinked": "Tillsynsärendet skapades, men kopplingen till tillståndets ärende blev inte av. Koppla det på tillsynsärendet.",
+        "choose": {
+          "title": "Vilket tillstånd gäller tillsynen?",
+          "description": "Stället har fler än ett gällande tillstånd. Välj det tillsynen avser.",
+          "validity": "gäller {{from}} till {{to}}",
+          "validity_open": "gäller från {{from}}",
+          "cancel": "Avbryt",
+          "confirm": "Skapa tillsynsärende"
+        }
       }
     },
     "errands": {

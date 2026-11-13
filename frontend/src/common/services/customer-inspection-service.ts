@@ -26,11 +26,22 @@ const assetValue = (asset: Asset) => (asset.jsonParameters?.[0]?.value ?? {}) as
 
 const validFromOf = (asset: Asset) => assetValue(asset).decision?.validFrom ?? asset.issued ?? '';
 
-/** The asset a tillsyn of the place starts from: the active one that took effect last. */
-export const latestActiveAsset = (place: CustomerPlace): Asset | undefined =>
-  place.assets
-    .filter((asset) => asset.status === 'ACTIVE')
-    .sort((a, b) => validFromOf(b).localeCompare(validFromOf(a)))[0];
+/** The permits in effect among the given ones, the one that took effect last first. */
+export const permitsInEffect = (assets: Asset[]): Asset[] =>
+  assets.filter((asset) => asset.status === 'ACTIVE').sort((a, b) => validFromOf(b).localeCompare(validFromOf(a)));
+
+/** The permits a tillsyn of the place can be about. */
+export const activePermits = (place: CustomerPlace): Asset[] => permitsInEffect(place.assets);
+
+/** The permit a tillsyn starts from when the place leaves nothing to choose between. */
+export const latestActiveAsset = (place: CustomerPlace): Asset | undefined => activePermits(place)[0];
+
+/** What names a permit where one is shown or picked. */
+export const permitName = (permit: Asset): string => permit.title ?? permit.type ?? '';
+
+/** The permit a tillsyn is about: the one whose permit errand the tillsyn is linked to. */
+export const permitOfInspection = (assets: Asset[], linkedErrandIds: string[]): Asset | undefined =>
+  assets.find((asset) => !!asset.sourceErrandId && linkedErrandIds.includes(asset.sourceErrandId));
 
 const allLabels = (labels: Label[] = []): Label[] => labels.flatMap((label) => [label, ...allLabels(label.labels)]);
 
@@ -66,16 +77,43 @@ const stakeholderCopy = (stakeholder: CSupportStakeholder): CSupportStakeholder 
 });
 
 /**
+ * Links a tillsyn errand to the permit errand behind the asset. False when the link was not made, which the
+ * handler is told, since the errand stands without it but the decision document does not.
+ */
+export const linkInspectionToPermit = async (
+  municipalityId: string,
+  inspectionErrandId: string,
+  permit: Asset,
+  namespace: string | undefined
+): Promise<boolean> => {
+  if (!permit.sourceErrandId) return false;
+
+  return linkSupportErrands(
+    municipalityId,
+    inspectionErrandId,
+    permit.sourceErrandId,
+    permit.sourceErrandNamespace ?? namespace ?? ''
+  )
+    .then(() => true)
+    .catch(() => false);
+};
+
+export interface CreatedInspection {
+  errandNumber: string;
+  /** False when the errand was created but the link to the permit errand was not, which the handler is told. */
+  linked: boolean;
+}
+
+/**
  * Creates a tillsyn errand for the place of the asset: the owner and the PBI persons of the permit errand, the place
- * in the errand type's form, the municipality the permit names, and a link to the permit errand. Returns the new
- * errand's number.
+ * in the errand type's form, the municipality the permit names, and a link to the permit errand.
  */
 export const createInspectionErrand = async (
   municipalityId: string,
   metadata: SupportMetadata | undefined,
   asset: Asset,
   kind: InspectionKind
-): Promise<string> => {
+): Promise<CreatedInspection> => {
   const value = assetValue(asset);
   const sourceErrandId = asset.sourceErrandId;
   if (!sourceErrandId) throw new Error('The asset names no permit errand');
@@ -106,13 +144,7 @@ export const createInspectionErrand = async (
     ],
   });
 
-  // The errand stands without the link; linkSupportErrands logs the failure.
-  await linkSupportErrands(
-    municipalityId,
-    created.id,
-    sourceErrandId,
-    asset.sourceErrandNamespace ?? metadata?.namespace ?? ''
-  ).catch(() => undefined);
+  const linked = await linkInspectionToPermit(municipalityId, created.id, asset, metadata?.namespace);
 
-  return created.errandNumber;
+  return { errandNumber: created.errandNumber, linked };
 };

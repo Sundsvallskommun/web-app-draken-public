@@ -5,7 +5,14 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../tests/mock-env';
-import { createInspectionErrand, latestActiveAsset } from './customer-inspection-service';
+import {
+  activePermits,
+  createInspectionErrand,
+  latestActiveAsset,
+  linkInspectionToPermit,
+  permitName,
+  permitOfInspection,
+} from './customer-inspection-service';
 import type { CustomerPlace } from './customer-service';
 
 // Latest is 2.0; saved fixtures keep their own version.
@@ -76,6 +83,19 @@ const pbi = {
 };
 const otherContact = { role: 'CONTACT', firstName: mockEnv.mockFirstName, parameters: [] };
 
+describe('activePermits', () => {
+  test('keeps the active assets, the one that took effect last first', () => {
+    const older = asset({ id: 'older', status: 'ACTIVE' }, { decision: { validFrom: '2024-01-01' } });
+    const latest = asset({ id: 'latest', status: 'ACTIVE' }, { decision: { validFrom: '2025-01-01' } });
+    const expired = asset({ id: 'expired', status: 'EXPIRED' }, { decision: { validFrom: '2026-01-01' } });
+
+    expect(activePermits({ assets: [older, expired, latest] } as CustomerPlace).map((a) => a.id)).toEqual([
+      'latest',
+      'older',
+    ]);
+  });
+});
+
 describe('latestActiveAsset', () => {
   test('takes the active asset that took effect last', () => {
     const older = asset({ id: 'older', status: 'ACTIVE' }, { decision: { validFrom: '2024-01-01' } });
@@ -83,6 +103,54 @@ describe('latestActiveAsset', () => {
     const expired = asset({ id: 'expired', status: 'EXPIRED' }, { decision: { validFrom: '2026-01-01' } });
 
     expect(latestActiveAsset({ assets: [older, expired, latest] } as CustomerPlace)).toBe(latest);
+  });
+});
+
+describe('permitOfInspection', () => {
+  test('takes the permit whose errand the tillsyn is linked to', () => {
+    const other = asset({ id: 'other', sourceErrandId: 'other-permit-errand' });
+    const linked = asset({ id: 'linked' });
+
+    expect(permitOfInspection([other, linked], ['unrelated', PERMIT_ERRAND_ID])?.id).toBe('linked');
+    expect(permitOfInspection([other, linked], [])).toBeUndefined();
+  });
+
+  test('passes over a permit that names no errand', () => {
+    expect(permitOfInspection([asset({ sourceErrandId: undefined })], [])).toBeUndefined();
+  });
+});
+
+describe('permitName', () => {
+  test('takes the title, else the type', () => {
+    expect(permitName(asset({ title: 'Stadigvarande servering', type: 'AlcoholServing' }))).toBe(
+      'Stadigvarande servering'
+    );
+    expect(permitName(asset({ title: undefined, type: 'AlcoholServing' }))).toBe('AlcoholServing');
+    expect(permitName(asset({ title: undefined, type: undefined }))).toBe('');
+  });
+});
+
+describe('linkInspectionToPermit', () => {
+  test('links the tillsyn to the errand the permit came from', async () => {
+    vi.mocked(linkSupportErrands).mockResolvedValue({} as never);
+
+    await expect(linkInspectionToPermit(MUNICIPALITY_ID, 'inspection-id', asset({}), 'AOT')).resolves.toBe(true);
+    expect(linkSupportErrands).toHaveBeenCalledWith(MUNICIPALITY_ID, 'inspection-id', PERMIT_ERRAND_ID, 'AOT');
+  });
+
+  test('says no when the permit names no errand, without asking Relations', async () => {
+    vi.mocked(linkSupportErrands).mockReset();
+
+    await expect(
+      linkInspectionToPermit(MUNICIPALITY_ID, 'inspection-id', asset({ sourceErrandId: undefined }), 'AOT')
+    ).resolves.toBe(false);
+    expect(linkSupportErrands).not.toHaveBeenCalled();
+  });
+
+  test('says no when Relations refuses', async () => {
+    vi.mocked(linkSupportErrands).mockRejectedValue(new Error('relations down'));
+
+    await expect(linkInspectionToPermit(MUNICIPALITY_ID, 'inspection-id', asset({}), 'AOT')).resolves.toBe(false);
   });
 });
 
@@ -106,9 +174,9 @@ describe('createInspectionErrand', () => {
   });
 
   test('creates the tillsyn errand from the asset and the permit errand, and links the two', async () => {
-    const errandNumber = await createInspectionErrand(MUNICIPALITY_ID, metadata, asset({}), 'INTERNAL_INSPECTION');
+    const created = await createInspectionErrand(MUNICIPALITY_ID, metadata, asset({}), 'INTERNAL_INSPECTION');
 
-    expect(errandNumber).toBe(mockEnv.mockErrandNumber);
+    expect(created).toEqual({ errandNumber: mockEnv.mockErrandNumber, linked: true });
     expect(getSupportErrandById).toHaveBeenCalledWith(PERMIT_ERRAND_ID, MUNICIPALITY_ID);
     const [, prefill] = vi.mocked(initiateSupportErrand).mock.calls[0];
     expect(prefill?.labels?.map((l) => l.resourcePath)).toEqual([
@@ -158,12 +226,13 @@ describe('createInspectionErrand', () => {
     });
   });
 
-  test('keeps the errand when the link cannot be made', async () => {
+  test('keeps the errand and reports it when the link cannot be made', async () => {
     vi.mocked(linkSupportErrands).mockRejectedValue(new Error('relations down'));
 
-    await expect(createInspectionErrand(MUNICIPALITY_ID, metadata, asset({}), 'INTERNAL_INSPECTION')).resolves.toBe(
-      mockEnv.mockErrandNumber
-    );
+    await expect(createInspectionErrand(MUNICIPALITY_ID, metadata, asset({}), 'INTERNAL_INSPECTION')).resolves.toEqual({
+      errandNumber: mockEnv.mockErrandNumber,
+      linked: false,
+    });
   });
 
   test('creates nothing when Relations has no permit errand for the asset', async () => {
