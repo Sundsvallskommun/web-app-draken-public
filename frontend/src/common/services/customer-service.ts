@@ -2,7 +2,8 @@
 
 import type { Assignment } from '@common/data-contracts/licensed-business/data-contracts';
 import { Asset } from '@common/interfaces/asset';
-import { getPartyServices } from '@common/services/asset-service';
+import { ApiResponse, apiService } from '@common/services/api-service';
+import { getPartyServices, searchPermitAssets } from '@common/services/asset-service';
 import { CaseStatusResponse, getStatusesUsingOrganizationNumber } from '@common/services/casestatus-service';
 import { getCompanyProfileByPartyId, getLegalEntityEngagements } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
@@ -18,7 +19,11 @@ import {
 import { inspectionProtocolDate } from '@supportmanagement/services/support-inspection-protocol-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
-import { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
+import {
+  CLegalEntity2WithId,
+  LegalEntityEngagement,
+  LegalEntityProfile,
+} from 'src/data-contracts/backend/data-contracts';
 
 /**
  * A customer as shown in the customer view (kundbild).
@@ -39,6 +44,22 @@ export interface Customer {
 }
 
 const toTitleCase = (text: string): string => text.toLowerCase().replace(/(^|\s)\S/g, (start) => start.toUpperCase());
+
+export const nameFromAssetsOrErrands = (
+  customerId: string,
+  assets: Asset[],
+  errands: SupportErrand[]
+): string | undefined =>
+  assets
+    .filter((asset) => asset.partyId === customerId)
+    .map((asset) => toPermitAsset(asset).permitHolder?.name)
+    .find(Boolean) ??
+  errands
+    .flatMap((errand) => errand.stakeholders ?? [])
+    .filter((stakeholder) => stakeholder.externalId === customerId)
+    .map((stakeholder) => stakeholder.organizationName)
+    .find(Boolean) ??
+  undefined;
 
 export const getCustomerByCustomerId = async (customerId: string): Promise<Customer> => {
   const companyProfile = await getCompanyProfileByPartyId(customerId);
@@ -86,7 +107,15 @@ export const getCustomerAssets = async (
 
 type PartyAssetPlace = { name?: string; address?: CustomerPlaceAddress; restaurantNumber?: string };
 
+interface PermitHolder {
+  name?: string;
+  organizationNumber?: string;
+  address?: CustomerPlaceAddress;
+  phoneNumber?: string;
+}
+
 export type PartyAssetValue = {
+  permitHolder?: PermitHolder;
   // Alcohol assets have premises, tobacco assets pointOfSale.
   premises?: PartyAssetPlace;
   pointOfSale?: PartyAssetPlace;
@@ -121,6 +150,70 @@ interface CustomerPlaceAddress {
   postalCode?: string;
   city?: string;
 }
+
+/** A permit type the app's permit list shows; the BFF decides which, per app. */
+export interface PermitAssetType {
+  type: string;
+  displayName: string;
+}
+
+export const getPermitAssetTypes = async (): Promise<PermitAssetType[]> => {
+  const res = await apiService.get<ApiResponse<PermitAssetType[]>>('permit-assets/types');
+  return res.data.data ?? [];
+};
+
+export const PERMIT_ASSETS_PAGE_SIZE = 12;
+
+export interface PermitAsset {
+  asset: Asset;
+  permitHolder?: PermitHolder;
+  premises?: PartyAssetPlace;
+  registrationNumber?: string;
+  validFrom?: string;
+}
+
+export interface PermitAssetsPage {
+  permits: PermitAsset[];
+  totalPages: number;
+}
+
+const toPermitAsset = (asset: Asset): PermitAsset => {
+  const value = (asset.jsonParameters?.[0]?.value ?? {}) as unknown as PartyAssetValue;
+  return {
+    asset,
+    permitHolder: value.permitHolder,
+    premises: value.premises ?? value.pointOfSale,
+    registrationNumber: value.caseRegistrationNumber,
+    validFrom: value.decision?.validFrom ?? asset.issued,
+  };
+};
+
+export interface PermitAssetsQuery {
+  term?: string;
+  activeOnly?: boolean;
+  /** Empty means all of the app's permit types. */
+  types?: string[];
+}
+
+/** `page` is 0-based; PartyAssets' is 1-based. */
+export const getPermitAssets = async (page: number, query: PermitAssetsQuery = {}): Promise<PermitAssetsPage> => {
+  const res = await searchPermitAssets({
+    term: query.term?.trim() || undefined,
+    activeOnly: query.activeOnly ?? true,
+    types: query.types?.join(',') || undefined,
+    page: page + 1,
+    limit: PERMIT_ASSETS_PAGE_SIZE,
+    sortDirection: 'ASC',
+  });
+  return { permits: (res.data.assets ?? []).map(toPermitAsset), totalPages: res.data._meta?.totalPages ?? 0 };
+};
+
+export const getCustomerIdByOrganizationNumber = async (organizationNumber: string): Promise<string | undefined> => {
+  const res = await apiService.post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>('organization/', {
+    orgNr: organizationNumber,
+  });
+  return res.data.data?.partyId || undefined;
+};
 
 export interface CustomerPlace {
   /** Identifies the place among the customer's: its restaurant number, else name and street. */

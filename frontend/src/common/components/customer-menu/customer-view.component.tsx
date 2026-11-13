@@ -7,6 +7,7 @@ import {
   CustomerPlace,
   formatOrganizationNumber,
   getCustomerByCustomerId,
+  nameFromAssetsOrErrands,
 } from '@common/services/customer-service';
 import { Breadcrumb, Label, Spinner } from '@sk-web-gui/react';
 import { Building2 } from 'lucide-react';
@@ -19,7 +20,7 @@ const CustomerBreadcrumb: FC<{ current: string }> = ({ current }) => (
   <Breadcrumb className="flex items-center gap-8" data-cy="customer-breadcrumb">
     <Breadcrumb.Item>
       <Breadcrumb.Link as={NextLink} href="/kundbild" className="flex items-center gap-4">
-        <Building2 size={16} aria-hidden /> Organisationer
+        <Building2 size={16} aria-hidden /> Kundbild
       </Breadcrumb.Link>
     </Breadcrumb.Item>
     <Breadcrumb.Item currentPage>
@@ -96,17 +97,26 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
   }
 
   const { customer } = result;
+  // Legal Entity lacks names for some customers, e.g. associations.
+  const name =
+    (!customer.profile.name &&
+      nameFromAssetsOrErrands(
+        customerId,
+        data.assets.status === 'done' ? data.assets.data.map(({ asset }) => asset) : [],
+        data.errands.status === 'done' ? data.errands.data.errands : []
+      )) ||
+    customer.name;
   const details = [customer.form, customer.organizationNumber && formatOrganizationNumber(customer.organizationNumber)]
     .filter((d): d is string => !!d)
     .join(' · ');
 
   return (
     <div className="flex flex-col gap-24" data-cy="customer-view">
-      <CustomerBreadcrumb current={customer.name} />
+      <CustomerBreadcrumb current={name} />
 
       <div className="flex flex-col gap-4">
         <h1 className="p-0 m-0" data-cy="customer-view-name">
-          {customer.name}
+          {name}
         </h1>
         {details && (
           <span className="text-small text-dark-secondary" data-cy="customer-view-details">

@@ -933,7 +933,7 @@
     "assets": {
       "title": "Tillstånd",
       "intro": "Serverings- och tobakstillstånd som rör organisationen. Klicka på ett tillstånd för att öppna ärendet det kommer från.",
-      "source": "Datan kommer från Alkohol och Tobak-Draken.",
+      "source": "Datan kommer från Alkohol- och tobak-Draken.",
       "loading": "Hämtar tillstånd",
       "error": "Tillstånd kunde inte hämtas.",
       "empty": "Inga tillstånd.",
@@ -953,6 +953,51 @@
         "BLOCKED": "Blockerat",
         "REPLACED": "Ersatt",
         "DRAFT": "Utkast"
+      }
+    },
+    "list": {
+      "tabs": {
+        "label": "Kundlistor",
+        "kundlista": "Kunder",
+        "tillstandslista": "Tillstånd"
+      },
+      "search": "Sök",
+      "customers": {
+        "search": "Sök på kund, organisationsnummer m m",
+        "headers": {
+          "name": "Kund",
+          "organizationNumber": "Organisationsnummer",
+          "address": "Adress",
+          "email": "E-post",
+          "phone": "Telefon"
+        },
+        "loading": "Hämtar kunder",
+        "error": "Det gick inte att hämta kunder {{error}}",
+        "empty": "Det finns inga kunder på den här sidan",
+        "open": "Öppna kund {{name}}",
+        "privatePerson": "Privatperson",
+        "errandWithoutCustomer": "Ärende {{errandNumber}} saknar kund"
+      },
+      "permits": {
+        "search": "Sök på tillståndshavare, organisationsnummer eller serveringsställe",
+        "activeOnly": "Enbart aktiva",
+        "removeType": "Rensa typ {{name}}",
+        "headers": {
+          "permitHolder": "Tillståndshavare",
+          "organizationNumber": "Organisationsnummer",
+          "premises": "Serveringsställe",
+          "type": "Typ av tillstånd",
+          "address": "Adress",
+          "registrationNumber": "Diarienummer",
+          "validFrom": "Giltigt från",
+          "status": "Status"
+        },
+        "loading": "Hämtar tillstånd",
+        "error": "Det gick inte att hämta tillstånd",
+        "empty": "Inga tillstånd matchar",
+        "open": "Öppna kund {{name}}",
+        "missingOrganizationNumber": "Tillståndshavaren saknar organisationsnummer",
+        "customerNotFound": "Hittade ingen kund för {{organizationNumber}}"
       }
     }
   }

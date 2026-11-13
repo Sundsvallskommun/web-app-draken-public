@@ -23,7 +23,7 @@ const statusColors: Record<AssetStatus | 'REPLACED', string> = {
   DRAFT: 'tertiary',
 };
 
-const AssetStatusLabel: FC<{ status?: Asset['status'] }> = ({ status }) => {
+export const AssetStatusLabel: FC<{ status?: Asset['status'] }> = ({ status }) => {
   const { t } = useTranslation();
   if (!status) {
     return <span>–</span>;

@@ -78,6 +78,8 @@ export interface ErrandFilterInput {
   /** Party id already resolved from the query (org number or personal number), if any. */
   partyId?: string;
   stakeholders?: string;
+  /** Only errands with a PRIMARY stakeholder. */
+  hasCustomer?: boolean;
   priority?: string;
   category?: string;
   type?: string;
@@ -103,7 +105,7 @@ const orGroup = (field: string, csv: string): string =>
  * Pure: any party-id lookup must be performed by the caller and passed in via `partyId`.
  */
 export const buildErrandFilter = (input: ErrandFilterInput): string => {
-  const { query: queryRaw, partyId, stakeholders, priority, category, type, labelCategory, labelType, labelSubType } = input;
+  const { query: queryRaw, partyId, stakeholders, hasCustomer, priority, category, type, labelCategory, labelType, labelSubType } = input;
   const { channel, status, resolution, start, end } = input;
   const filterList: string[] = [];
 
@@ -135,6 +137,9 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
 
   if (stakeholders) {
     filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
+  }
+  if (hasCustomer) {
+    filterList.push(`exists(stakeholders.role:'PRIMARY')`);
   }
   if (priority) {
     filterList.push(orGroup('priority', priority));

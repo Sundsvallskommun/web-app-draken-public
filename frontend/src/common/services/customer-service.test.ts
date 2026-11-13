@@ -1,4 +1,6 @@
 import type { Asset } from '@common/interfaces/asset';
+import { apiService } from '@common/services/api-service';
+import { searchPermitAssets } from '@common/services/asset-service';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 import { appConfig } from '@config/appconfig';
 import { withAssignments } from '@supportmanagement/services/licensed-business-service';
@@ -18,13 +20,20 @@ import {
   getCustomerByCustomerId,
   getCustomerErrandCounts,
   getCustomerErrands,
+  getCustomerIdByOrganizationNumber,
   getCustomerInspections,
   getCustomerPlaces,
   getLatestInspection,
+  getPermitAssets,
+  getPermitAssetTypes,
   isOtherDrakeCase,
+  nameFromAssetsOrErrands,
+  PERMIT_ASSETS_PAGE_SIZE,
   toCustomerAssets,
 } from './customer-service';
 
+vi.mock('@common/services/asset-service', () => ({ getPartyServices: vi.fn(), searchPermitAssets: vi.fn() }));
+vi.mock('@common/services/api-service', () => ({ apiService: { get: vi.fn(), post: vi.fn() } }));
 vi.mock('@common/services/legal-entity-service', () => ({ getCompanyProfileByPartyId: vi.fn() }));
 vi.mock('@supportmanagement/services/licensed-business-service', () => ({ withAssignments: vi.fn() }));
 vi.mock('@supportmanagement/services/support-investigation-service', () => ({ getSupportInvestigation: vi.fn() }));
@@ -77,6 +86,30 @@ describe('getCustomerByCustomerId', () => {
 
     expect(customer.form).toBe(expected);
     expect(customer.profile.form).toBe(expected);
+  });
+});
+
+describe('nameFromAssetsOrErrands', () => {
+  const OTHER_PARTY = 'other-party-id';
+  const holderAsset = (partyId: string, name: string) =>
+    ({ id: name, partyId, ...assetWith({ permitHolder: { name } }) } as Asset);
+  const errandWith = (externalId: string, organizationName: string) =>
+    ({ stakeholders: [{ externalId, organizationName }] } as unknown as SupportErrand);
+
+  test("is the permit holder of an asset with the customer's partyId", () => {
+    const assets = [holderAsset(OTHER_PARTY, 'Någon annan'), holderAsset(CUSTOMER_ID, 'Föreningen')];
+
+    expect(nameFromAssetsOrErrands(CUSTOMER_ID, assets, [errandWith(CUSTOMER_ID, 'Ärendets namn')])).toBe('Föreningen');
+  });
+
+  test("is the organisation name of an errand stakeholder with the customer's partyId when no asset names it", () => {
+    const errands = [errandWith(OTHER_PARTY, 'Fel'), errandWith(CUSTOMER_ID, 'Föreningen')];
+
+    expect(nameFromAssetsOrErrands(CUSTOMER_ID, [holderAsset(OTHER_PARTY, 'Någon annan')], errands)).toBe('Föreningen');
+  });
+
+  test('is undefined when nothing names the customer', () => {
+    expect(nameFromAssetsOrErrands(CUSTOMER_ID, [], [errandWith(OTHER_PARTY, 'Fel')])).toBeUndefined();
   });
 });
 
@@ -363,5 +396,99 @@ describe('toCustomerAssets', () => {
     const [row] = toCustomerAssets(givenAssetList);
 
     expect(row).toMatchObject({ decisionDate: '2024-02-02', errandNumber: undefined });
+  });
+});
+
+describe('getPermitAssets', () => {
+  const holder = { name: 'Bolaget AB', organizationNumber: mockEnv.mockOrganizationNumber };
+  const premises = { name: 'Baren', address: { street: 'Gatan 1', postalCode: '85230', city: 'Sundsvall' } };
+
+  test('asks for one page of active permits of all types, counting pages from 1', async () => {
+    vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [], _meta: { totalPages: 0 } } } as never);
+
+    await getPermitAssets(2);
+
+    expect(searchPermitAssets).toHaveBeenCalledWith({
+      term: undefined,
+      activeOnly: true,
+      types: undefined,
+      page: 3,
+      limit: PERMIT_ASSETS_PAGE_SIZE,
+      sortDirection: 'ASC',
+    });
+  });
+
+  test('passes the trimmed term, the active choice and the chosen types', async () => {
+    vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [], _meta: { totalPages: 0 } } } as never);
+
+    await getPermitAssets(0, {
+      term: ' Canton ',
+      activeOnly: false,
+      types: ['TobaccoSalesPermit', 'ECigaretteSalesNotification'],
+    });
+
+    expect(searchPermitAssets).toHaveBeenCalledWith(
+      expect.objectContaining({
+        term: 'Canton',
+        activeOnly: false,
+        types: 'TobaccoSalesPermit,ECigaretteSalesNotification',
+        page: 1,
+      })
+    );
+  });
+
+  test('reads the permit holder, premises and decision from the JSON parameters', async () => {
+    const asset = {
+      id: 'asset-1',
+      issued: '2026-01-01',
+      ...assetWith({
+        permitHolder: holder,
+        premises,
+        caseRegistrationNumber: 'AOT-1',
+        decision: { validFrom: '2026-02-02' },
+      }),
+    };
+    vi.mocked(searchPermitAssets).mockResolvedValue({ data: { assets: [asset], _meta: { totalPages: 4 } } } as never);
+
+    const result = await getPermitAssets(0);
+
+    expect(result.totalPages).toBe(4);
+    expect(result.permits[0]).toMatchObject({
+      permitHolder: holder,
+      premises,
+      registrationNumber: 'AOT-1',
+      validFrom: '2026-02-02',
+    });
+  });
+});
+
+describe('getCustomerIdByOrganizationNumber', () => {
+  test('answers the partyId of the organisation', async () => {
+    vi.mocked(apiService.post).mockResolvedValue({ data: { data: { partyId: CUSTOMER_ID } } } as never);
+
+    await expect(getCustomerIdByOrganizationNumber(mockEnv.mockOrganizationNumber)).resolves.toBe(CUSTOMER_ID);
+    expect(apiService.post).toHaveBeenCalledWith('organization/', { orgNr: mockEnv.mockOrganizationNumber });
+  });
+
+  test('answers undefined when the organisation has no partyId', async () => {
+    vi.mocked(apiService.post).mockResolvedValue({ data: { data: { partyId: '' } } } as never);
+
+    await expect(getCustomerIdByOrganizationNumber(mockEnv.mockOrganizationNumber)).resolves.toBeUndefined();
+  });
+});
+
+describe('getPermitAssetTypes', () => {
+  test("answers the app's permit types as the BFF gives them", async () => {
+    const types = [{ type: 'AlcoholServingPermit', displayName: 'Serveringstillstånd' }];
+    vi.mocked(apiService.get).mockResolvedValue({ data: { data: types } } as never);
+
+    await expect(getPermitAssetTypes()).resolves.toEqual(types);
+    expect(apiService.get).toHaveBeenCalledWith('permit-assets/types');
+  });
+
+  test('answers no types when the BFF gives none', async () => {
+    vi.mocked(apiService.get).mockResolvedValue({ data: {} } as never);
+
+    await expect(getPermitAssetTypes()).resolves.toEqual([]);
   });
 });
