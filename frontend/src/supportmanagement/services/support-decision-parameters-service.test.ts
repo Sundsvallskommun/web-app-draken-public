@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
+  decisionDocumentTemplate,
   type DecisionParameterInput,
   decisionRequiresClauses,
   decisionSchema,
@@ -11,6 +12,7 @@ import {
   missingPermitInputs,
   savedDecisionJson,
   toCertificateParameters,
+  toDecisionDocumentParameters,
   toDecisionJson,
 } from './support-decision-parameters-service';
 import { supportDecisionPermitType } from './support-decision-service';
@@ -487,6 +489,96 @@ describe('what the permit needs of the errand', () => {
     expect(saved.decision).toMatchObject({ clauses: 'att bevilja\natt servera' });
     expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
     expect(missingDecisionInputs('TILLSYN', undefined, undefined)).toEqual([]);
+  });
+
+  test('the inspection and the permit it was about are frozen in the decision as it is written', () => {
+    const saved = toDecisionJson(
+      'ATGARD',
+      input({
+        origin: {
+          inspectionDate: '2026-11-04',
+          inspectionCaseNumber: 'AOT-26110188',
+          permitType: 'Stadigvarande serveringstillstand',
+          permitCaseNumber: 'AOT-26100111',
+        },
+      }),
+      { ...DECISION, outcome: 'WARNING' }
+    );
+
+    expect(saved.inspection).toEqual({ date: '2026-11-04', caseNumber: 'AOT-26110188' });
+    expect(saved.permit).toEqual({ type: 'Stadigvarande serveringstillstand', caseNumber: 'AOT-26100111' });
+  });
+
+  test('an action errand without a permit to point at keeps the blocks out rather than writing them empty', () => {
+    const saved = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'NO_ACTION' });
+
+    expect(saved).not.toHaveProperty('permit');
+    expect(saved).not.toHaveProperty('inspection');
+  });
+
+  test('the document reads the decision through the keys its template names', () => {
+    const saved = toDecisionJson(
+      'ATGARD',
+      input({
+        origin: { inspectionDate: '2026-11-04', inspectionCaseNumber: 'AOT-26110188', permitType: 'Tobaksforsaljning' },
+        externalCaseRegistrationNumber: 'KS 2026/9',
+      }),
+      {
+        ...DECISION,
+        outcome: 'REPRIMAND',
+        outcomeHeading: 'Erinran',
+        outcomeText: 'Erinran innebar att tillstandet kan aterkallas.',
+        legalBasis: '9 kap. 17 § alkohollagen',
+        delegation: 'A 4.2',
+        justificationDeficiencies: 'Alderskontroll saknades.',
+        justificationStatement: 'Tillstandshavaren har anfort nyanstalld personal.',
+        justificationOutcome: 'Bristen ar inte upprepad.',
+      }
+    );
+    const flat = flattenDecisionJson(saved, 'AOT-26110233');
+
+    expect(flat).toMatchObject({
+      caseNumber: 'AOT-26110233',
+      externalCaseRegistrationNumber: 'KS 2026/9',
+      permitType: 'Tobaksforsaljning',
+      inspectionDate: '2026-11-04',
+      inspectionCaseNumber: 'AOT-26110188',
+      decisionLegalBasis: '9 kap. 17 § alkohollagen',
+      decisionDelegation: 'A 4.2',
+      decisionOutcomeHeading: 'Erinran',
+      decisionOutcomeText: 'Erinran innebar att tillstandet kan aterkallas.',
+      decisionJustificationDeficiencies: 'Alderskontroll saknades.',
+      decisionJustificationStatement: 'Tillstandshavaren har anfort nyanstalld personal.',
+      decisionJustificationOutcome: 'Bristen ar inte upprepad.',
+    });
+    expect(flat.permitCaseNumber).toBeUndefined();
+  });
+
+  test('the outcome decides which letter an action errand renders, and the permit type decides for the rest', () => {
+    expect(decisionDocumentTemplate('ATGARD', 'NO_ACTION')).toBe('action-errand-closed');
+    expect(decisionDocumentTemplate('ATGARD', 'REPRIMAND')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', 'WARNING')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', 'REVOCATION')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', undefined)).toBeUndefined();
+    expect(decisionDocumentTemplate('ATGARD', 'APPROVAL')).toBeUndefined();
+    expect(decisionDocumentTemplate('SERVERINGSTILLSTAND', 'APPROVAL')).toBe('serving-permit-certificate');
+    expect(decisionDocumentTemplate('TILLSYN', 'WARNING')).toBeUndefined();
+  });
+
+  test('an action errand hands its att-satser to the document as a list, so the template can number them', () => {
+    const clauses = 'att meddela varning\natt beslutet galler omedelbart';
+    const forTheDocument = toDecisionDocumentParameters('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+      clauses,
+    });
+    const forTheCertificate = toDecisionDocumentParameters('SERVERINGSTILLSTAND', input(), {
+      ...WITH_CLAUSES,
+      outcome: 'APPROVAL',
+    });
+
+    expect(forTheDocument.decisionClauses).toEqual(['att meddela varning', 'att beslutet galler omedelbart']);
+    expect(forTheCertificate.decisionClauses).toBe('att bevilja tillstånd');
   });
 
   test('an action errand is filed under its own schema, with the sanction it decides', () => {

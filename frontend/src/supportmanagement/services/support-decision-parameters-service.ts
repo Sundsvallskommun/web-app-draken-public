@@ -63,10 +63,20 @@ export interface DecisionParameterInput {
   externalCaseRegistrationNumber?: string;
   /** The telephone to the premises as the handler has it, which starts as the application's answer. */
   premisesPhoneNumber?: string;
+  /** What the action errand decides on, two hops away: its inspection, and the permit that inspection was about. */
+  origin?: DecisionOrigin;
   /** The handler saving the decision. */
   user: { name: string };
   /** Today, YYYY-MM-DD; the backend stamps decidedAt on the same save. */
   today: string;
+}
+
+/** The permit an inspection was about and the inspection itself, read when the decision is written and then frozen. */
+export interface DecisionOrigin {
+  inspectionDate?: string;
+  inspectionCaseNumber?: string;
+  permitType?: string;
+  permitCaseNumber?: string;
 }
 
 export interface CertificateDecision {
@@ -80,6 +90,14 @@ export interface CertificateDecision {
   clauses?: string;
   /** The point in the delegation order the decision is made under. */
   delegation?: string;
+  /** The outcome as the decision document heads it, which is the outcome's own name. */
+  outcomeHeading?: string;
+  /** What the decision means for the permit holder, as the handler writes it for the errand at hand. */
+  outcomeText?: string;
+  /** The three paragraphs of the justification, which start from the investigation's own examinations. */
+  justificationDeficiencies?: string;
+  justificationStatement?: string;
+  justificationOutcome?: string;
   terms: string[];
 }
 
@@ -286,6 +304,11 @@ const decisionOf = (
   justification: text(decision.justification),
   clauses: clausesOf(permitType, decision.clauses),
   delegation: text(decision.delegation),
+  outcomeHeading: text(decision.outcomeHeading),
+  outcomeText: text(decision.outcomeText),
+  justificationDeficiencies: text(decision.justificationDeficiencies),
+  justificationStatement: text(decision.justificationStatement),
+  justificationOutcome: text(decision.justificationOutcome),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
   executionDate: isoDate(executionDate),
@@ -309,7 +332,15 @@ export const toDecisionJson = (
 
   // An action errand grants nothing, so it keeps the permit holder, the premises and the decision, and no scope.
   if (permitType === ACTION_ERRAND_PERMIT_TYPE) {
-    return withoutBlanks({ ...common, premises: placeOf(input) });
+    return withoutBlanks({
+      ...common,
+      premises: placeOf(input),
+      permit: { type: text(input.origin?.permitType), caseNumber: text(input.origin?.permitCaseNumber) },
+      inspection: {
+        date: isoDate(input.origin?.inspectionDate),
+        caseNumber: text(input.origin?.inspectionCaseNumber),
+      },
+    });
   }
 
   if (TOBACCO_PERMITS.includes(permitType)) {
@@ -386,6 +417,8 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
   const place = objectAt(json?.premises ?? json?.pointOfSale);
   const placeAddress = objectAt(place.address);
   const area = objectAt(json?.servingArea);
+  const permit = objectAt(json?.permit);
+  const inspection = objectAt(json?.inspection);
   const decision = objectAt(json?.decision);
   const issuedBy = objectAt(decision.issuedBy);
   const periods = records(json?.servingPeriods);
@@ -445,6 +478,18 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     decisionMaker: stringAt(decision.decisionMaker),
     decisionDate,
     validFrom: stringAt(decision.validFrom),
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber),
+    permitType: stringAt(permit.type),
+    permitCaseNumber: stringAt(permit.caseNumber),
+    inspectionDate: stringAt(inspection.date),
+    inspectionCaseNumber: stringAt(inspection.caseNumber),
+    decisionLegalBasis: stringAt(decision.legalBasis),
+    decisionOutcomeHeading: stringAt(decision.outcomeHeading),
+    decisionOutcomeText: stringAt(decision.outcomeText),
+    decisionJustificationDeficiencies: stringAt(decision.justificationDeficiencies),
+    decisionJustificationStatement: stringAt(decision.justificationStatement),
+    decisionJustificationOutcome: stringAt(decision.justificationOutcome),
+    decisionIssuedByName: issuer,
     decisionDateAndCaseNumber: join(decisionDate, decisionCaseNumber),
     decisionOfficerAndCaseNumber: join(issuer, decisionCaseNumber),
     replacesDecision: stringAt(decision.replacesDecision),
@@ -458,7 +503,28 @@ const CERTIFICATE_TEMPLATES: Record<string, string> = {
 
 export const certificateTemplate = (permitType: string): string | undefined => CERTIFICATE_TEMPLATES[permitType];
 
-/** What the permit template renders for the decision in hand, blank where nothing is known. */
+/**
+ * Which letter an action errand's outcome calls for: the three sanctions are decisions, "Ingen åtgärd" is the
+ * letter that closes the errand. An outcome the process does not know renders nothing rather than the wrong one.
+ */
+const ACTION_ERRAND_DOCUMENT_OF_OUTCOME: Record<string, string> = {
+  NO_ACTION: 'action-errand-closed',
+  REPRIMAND: 'action-errand-decision',
+  WARNING: 'action-errand-decision',
+  REVOCATION: 'action-errand-decision',
+};
+
+/** What the decision document is called among the errand's attachments. */
+export const decisionDocumentFileName = (errandNumber: string | undefined): string =>
+  `Beslut ${errandNumber ?? ''}.pdf`.replace('  ', ' ');
+
+/** The document the decision renders: the permit's certificate, or the letter the action errand's outcome calls for. */
+export const decisionDocumentTemplate = (permitType: string, outcome: string | undefined): string | undefined =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE
+    ? ACTION_ERRAND_DOCUMENT_OF_OUTCOME[outcomeWithoutConditions(outcome)]
+    : certificateTemplate(permitType);
+
+/** What the document renders for the decision in hand, blank where nothing is known. */
 export const toCertificateParameters = (
   permitType: string,
   input: DecisionParameterInput,
@@ -469,6 +535,20 @@ export const toCertificateParameters = (
       ([key, value]) => [key, value ?? '']
     )
   );
+
+/**
+ * What the document reads. An action errand's decision numbers its att-satser, so they travel as a list rather
+ * than as the one text the certificates print; the flattened text is what the checks before the decision read.
+ */
+export const toDecisionDocumentParameters = (
+  permitType: string,
+  input: DecisionParameterInput,
+  decision: CertificateDecision
+): Record<string, string | string[]> => {
+  const parameters = toCertificateParameters(permitType, input, decision);
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return parameters;
+  return { ...parameters, decisionClauses: clauseLines(decision.clauses) ?? [] };
+};
 
 /**
  * What the permit template demands of the errand, by the party that can supply it. The keys are the
@@ -520,8 +600,16 @@ const OUTCOMES_WRITTEN_AS_CLAUSES = ['REPRIMAND', 'WARNING', 'REVOCATION'];
 export const decisionRequiresClauses = (permitType: string, outcome: string | undefined): boolean => {
   if (permitType === INSPECTION_PERMIT_TYPE) return false;
   if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return true;
-  return OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
+  return decisionIsActionErrandSanction(permitType, outcome);
 };
+
+/**
+ * Whether the decision is one of an action errand's sanctions. Those are written as a decision document, with a
+ * legal basis, a delegation point, numbered att-satser and a justification; "Ingen åtgärd" is a letter with none
+ * of it, and an application's decision has a shape of its own.
+ */
+export const decisionIsActionErrandSanction = (permitType: string, outcome: string | undefined): boolean =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE && OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
 
 /** The keys the decision's saved JSON leaves without a value. */
 export const missingDecisionInputs = (

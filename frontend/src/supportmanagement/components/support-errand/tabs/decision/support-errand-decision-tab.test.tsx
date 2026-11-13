@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { emptyUser } from '@common/services/user-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { getSupportActionErrandOrigin } from '@supportmanagement/services/support-action-errand-service';
+import { saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   createSupportDecision,
   getSupportDecisions,
@@ -11,6 +14,7 @@ import {
 } from '@supportmanagement/services/support-decision-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
+import { objectAt } from '@supportmanagement/services/support-json-parameter-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -56,6 +60,12 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   ...(await importOriginal<typeof import('@supportmanagement/services/support-investigation-service')>()),
   getSupportInvestigation: vi.fn(),
 }));
+vi.mock('@supportmanagement/services/support-action-errand-service', () => ({
+  inspectionErrandIdOf: () => 'inspection-1',
+  getSupportActionErrandOrigin: vi.fn(),
+}));
+vi.mock('@common/services/template-render-service', () => ({ renderTemplatePdf: vi.fn() }));
+vi.mock('@supportmanagement/services/support-attachment-service', () => ({ saveSupportAttachments: vi.fn() }));
 
 const toast = vi.hoisted(() => vi.fn());
 vi.mock('@sk-web-gui/react', async (importOriginal) => ({
@@ -126,6 +136,9 @@ beforeEach(() => {
   toast.mockReset();
   vi.mocked(getSupportDecisions).mockReset().mockResolvedValue([]);
   vi.mocked(getSupportInvestigation).mockReset().mockResolvedValue(undefined);
+  vi.mocked(getSupportActionErrandOrigin).mockReset().mockResolvedValue({});
+  vi.mocked(renderTemplatePdf).mockReset().mockResolvedValue('cGRm');
+  vi.mocked(saveSupportAttachments).mockReset().mockResolvedValue([]);
   vi.mocked(createSupportDecision)
     .mockReset()
     .mockResolvedValue({ id: 'decision-1', status: 'DRAFT' } as never);
@@ -249,6 +262,99 @@ test('the delegation point is saved with the decision and read back from it', as
   await renderTab();
 
   expect(input('delegation').value).toBe('A 4.2');
+});
+
+const investigationWithExaminations = () => ({
+  id: 'investigation-1',
+  summary: 'att meddela varning',
+  sections: [
+    { id: 's1', sectionKey: 'established_faults', text: '<p>Alderskontroll saknades.</p>' },
+    { id: 's2', sectionKey: 'permit_holder_statement', text: '<p>Nyanstalld personal.</p>' },
+    { id: 's3', sectionKey: 'assessment', text: '<p>Bristen ar inte upprepad.</p>' },
+  ],
+});
+
+test('a sanction asks for the paragraphs the decision document prints, and an application does not', async () => {
+  everyOutcomeIsRegistered();
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  expect(input('justification-deficiencies')).toBeNull();
+
+  fireEvent.change(select('outcome'), { target: { value: 'WARNING' } });
+
+  expect(input('justification-deficiencies')).toBeTruthy();
+  expect(input('justification-statement')).toBeTruthy();
+  expect(input('justification-outcome')).toBeTruthy();
+  expect(input('outcome-text')).toBeTruthy();
+  expect(input('permit-type')).toBeTruthy();
+  // The one justification an application writes is replaced by the three, not shown beside them.
+  expect(input('justification')).toBeNull();
+
+  fireEvent.change(select('outcome'), { target: { value: 'NO_ACTION' } });
+  expect(input('justification-deficiencies')).toBeNull();
+});
+
+test('the paragraphs start from the investigation and are saved as the handler leaves them', async () => {
+  everyOutcomeIsRegistered();
+  vi.mocked(getSupportInvestigation).mockResolvedValue(investigationWithExaminations() as never);
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  fireEvent.change(select('outcome'), { target: { value: 'WARNING' } });
+
+  expect(input('justification-deficiencies').value).toBe('Alderskontroll saknades.');
+  expect(input('justification-statement').value).toBe('Nyanstalld personal.');
+  expect(input('justification-outcome').value).toBe('Bristen ar inte upprepad.');
+
+  fireEvent.change(input('justification-outcome'), { target: { value: 'Bristen ar upprepad.' } });
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(objectAt(sentJson().value.decision)).toMatchObject({
+    justificationDeficiencies: 'Alderskontroll saknades.',
+    justificationStatement: 'Nyanstalld personal.',
+    justificationOutcome: 'Bristen ar upprepad.',
+  });
+});
+
+test('the permit starts from what the inspection points at and can be written by hand', async () => {
+  everyOutcomeIsRegistered();
+  vi.mocked(getSupportActionErrandOrigin).mockResolvedValue({
+    inspectionErrandNumber: 'AOT-26110188',
+    inspectionDate: '2026-11-04',
+    permitType: 'Stadigvarande servering',
+    permitErrandNumber: 'AOT-26100111',
+  });
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  fireEvent.change(select('outcome'), { target: { value: 'WARNING' } });
+  await waitFor(() => expect(input('permit-type').value).toBe('Stadigvarande servering'));
+  expect(input('permit-case-number').value).toBe('AOT-26100111');
+
+  fireEvent.change(input('permit-type'), { target: { value: 'Tobaksforsaljning' } });
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(sentJson().value.permit).toEqual({ type: 'Tobaksforsaljning', caseNumber: 'AOT-26100111' });
+  expect(sentJson().value.inspection).toEqual({ date: '2026-11-04', caseNumber: 'AOT-26110188' });
+});
+
+test('the document is filed on the errand once the decision has been concluded', async () => {
+  everyOutcomeIsRegistered();
+  vi.mocked(renderTemplatePdf).mockResolvedValue('cGRm');
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  fireEvent.change(select('outcome'), { target: { value: 'NO_ACTION' } });
+  await useSupportStore.getState().decisionDocumentFiler?.();
+
+  expect(renderTemplatePdf).toHaveBeenCalledWith(
+    'action-errand-closed',
+    expect.objectContaining({ caseNumber: mockEnv.mockErrandNumber })
+  );
+  const filed = vi.mocked(saveSupportAttachments).mock.calls[0];
+  expect(filed[0]).toBe('errand-id');
+  expect((filed[2][0].file as unknown as File[])[0].name).toBe(`Beslut ${mockEnv.mockErrandNumber}.pdf`);
 });
 
 test('another decision maker is an unsaved change', async () => {

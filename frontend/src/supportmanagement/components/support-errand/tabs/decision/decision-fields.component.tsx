@@ -1,5 +1,6 @@
 import type { DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Input, Select, Textarea } from '@sk-web-gui/react';
+import { decisionIsActionErrandSanction } from '@supportmanagement/services/support-decision-parameters-service';
 import {
   selectableSupportDecisionOutcomes,
   SUPPORT_DECISION_DELEGATION_MAX_LENGTH,
@@ -13,6 +14,31 @@ import { DecisionField } from './decision-field.component';
 import { DecisionTerms } from './decision-terms.component';
 import type { DecisionForm } from './use-decision-form';
 
+/** One of the texts an action errand's decision document prints as a paragraph of its own. */
+const WrittenField: FC<{
+  id: string;
+  label: string;
+  help: string;
+  placeholder: string;
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}> = ({ id, label, help, placeholder, value, disabled, onChange }) => (
+  <DecisionCard>
+    <DecisionField id={id} label={label} help={help}>
+      <Textarea
+        className="w-full"
+        rows={4}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        data-cy={id}
+      />
+    </DecisionField>
+  </DecisionCard>
+);
+
 /** The decision as the handler writes it, one card per group of fields. */
 export const DecisionFields: FC<{
   form: DecisionForm;
@@ -20,10 +46,13 @@ export const DecisionFields: FC<{
   /** A permit that is printed needs the dates the certificate carries. */
   printed: boolean;
   clausesRequired: boolean;
+  /** What the errand decides on; the action errand's sanctions ask for things no other decision does. */
+  permitType: string;
   disabled: boolean;
-}> = ({ form, outcomes, printed, clausesRequired, disabled }) => {
+}> = ({ form, outcomes, printed, clausesRequired, permitType, disabled }) => {
   const { t } = useTranslation();
   const { values, set } = form;
+  const sanction = decisionIsActionErrandSanction(permitType, values.outcome);
 
   return (
     <>
@@ -74,23 +103,94 @@ export const DecisionFields: FC<{
         </DecisionField>
       </DecisionCard>
 
-      <DecisionCard>
-        <DecisionField
-          id="decision-justification"
-          label={t('common:decision.justification')}
-          help={t('common:decision.justification_help')}
-        >
-          <Textarea
-            className="w-full"
-            rows={4}
-            value={values.justification}
-            placeholder={t('common:decision.justification_placeholder')}
-            onChange={(event) => set('justification', event.target.value)}
+      {sanction ? null : (
+        <DecisionCard>
+          <DecisionField
+            id="decision-justification"
+            label={t('common:decision.justification')}
+            help={t('common:decision.justification_help')}
+          >
+            <Textarea
+              className="w-full"
+              rows={4}
+              value={values.justification}
+              placeholder={t('common:decision.justification_placeholder')}
+              onChange={(event) => set('justification', event.target.value)}
+              disabled={disabled}
+              data-cy="decision-justification"
+            />
+          </DecisionField>
+        </DecisionCard>
+      )}
+
+      {sanction ? (
+        <>
+          <DecisionCard>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+              <DecisionField
+                id="decision-permit-type"
+                label={t('common:decision.permit_type')}
+                help={t('common:decision.permit_help')}
+              >
+                <Input
+                  className="w-full"
+                  value={values.permitType}
+                  onChange={(event) => set('permitType', event.target.value)}
+                  disabled={disabled}
+                  data-cy="decision-permit-type"
+                />
+              </DecisionField>
+
+              <DecisionField id="decision-permit-case-number" label={t('common:decision.permit_case_number')}>
+                <Input
+                  className="w-full"
+                  value={values.permitCaseNumber}
+                  onChange={(event) => set('permitCaseNumber', event.target.value)}
+                  disabled={disabled}
+                  data-cy="decision-permit-case-number"
+                />
+              </DecisionField>
+            </div>
+          </DecisionCard>
+
+          <WrittenField
+            id="decision-justification-deficiencies"
+            label={t('common:decision.justification_deficiencies')}
+            help={t('common:decision.justification_prefilled')}
+            placeholder={t('common:decision.justification_deficiencies_placeholder')}
+            value={values.justificationDeficiencies}
             disabled={disabled}
-            data-cy="decision-justification"
+            onChange={(value) => set('justificationDeficiencies', value)}
           />
-        </DecisionField>
-      </DecisionCard>
+          <WrittenField
+            id="decision-justification-statement"
+            label={t('common:decision.justification_statement')}
+            help={t('common:decision.justification_prefilled')}
+            placeholder={t('common:decision.justification_statement_placeholder')}
+            value={values.justificationStatement}
+            disabled={disabled}
+            onChange={(value) => set('justificationStatement', value)}
+          />
+          <WrittenField
+            id="decision-justification-outcome"
+            label={t('common:decision.justification_outcome')}
+            help={t('common:decision.justification_prefilled')}
+            placeholder={t('common:decision.justification_outcome_placeholder')}
+            value={values.justificationOutcome}
+            disabled={disabled}
+            onChange={(value) => set('justificationOutcome', value)}
+          />
+          <WrittenField
+            id="decision-outcome-text"
+            label={t('common:decision.outcome_text')}
+            help={t('common:decision.outcome_text_help')}
+            placeholder={t('common:decision.outcome_text_placeholder')}
+            value={values.outcomeText}
+            disabled={disabled}
+            onChange={(value) => set('outcomeText', value)}
+          />
+        </>
+      ) : null}
 
       <DecisionCard>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
