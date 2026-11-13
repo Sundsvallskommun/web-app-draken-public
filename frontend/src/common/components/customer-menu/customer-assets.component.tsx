@@ -14,30 +14,39 @@ import type { CustomerLookup } from './use-customer-lookup';
 
 const formatDate = (date?: string | null): string => (date ? dayjs(date).format('YYYY-MM-DD') : '–');
 
-const statusColors: Record<AssetStatus | 'REPLACED', string> = {
+const statusColors: Record<AssetStatus, string> = {
   ACTIVE: 'gronsta',
   TEMPORARY: 'info',
   EXPIRED: 'tertiary',
   BLOCKED: 'error',
   REPLACED: 'tertiary',
   DRAFT: 'tertiary',
+  REVOKED: 'error',
 };
 
-const AssetStatusLabel: FC<{ status?: Asset['status'] }> = ({ status }) => {
+/** The status as the register has it, and what the register says was behind it where it says anything. */
+const AssetStatusLabel: FC<{ status?: Asset['status']; reason?: string }> = ({ status, reason }) => {
   const { t } = useTranslation();
   if (!status) {
     return <span>–</span>;
   }
   return (
-    <Label
-      rounded
-      inverted
-      color={statusColors[status] ?? 'tertiary'}
-      className="max-h-full h-auto whitespace-nowrap gap-6"
-    >
-      <span className="inline-block w-8 h-8 rounded-full" style={{ backgroundColor: 'currentColor' }} aria-hidden />
-      {t(`common:customer.assets.status.${status}`, status)}
-    </Label>
+    <div className="flex flex-col gap-2">
+      <Label
+        rounded
+        inverted
+        color={statusColors[status] ?? 'tertiary'}
+        className="max-h-full h-auto whitespace-nowrap gap-6 w-fit"
+      >
+        <span className="inline-block w-8 h-8 rounded-full" style={{ backgroundColor: 'currentColor' }} aria-hidden />
+        {t(`common:customer.assets.status.${status}`, status)}
+      </Label>
+      {reason ? (
+        <span className="text-small text-dark-secondary" data-cy="customer-asset-status-reason">
+          {reason}
+        </span>
+      ) : null}
+    </div>
   );
 };
 
@@ -62,7 +71,7 @@ const AssetRow: FC<{ customerAsset: CustomerAsset }> = ({ customerAsset }) => {
   return (
     <Table.Row data-cy={`customer-asset-${asset.id}`} {...opensErrand}>
       <Table.Column>
-        <AssetStatusLabel status={asset.status} />
+        <AssetStatusLabel status={asset.status} reason={asset.statusReason} />
       </Table.Column>
       <Table.Column>{registrationNumber ?? '–'}</Table.Column>
       <Table.Column>
