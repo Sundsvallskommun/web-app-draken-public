@@ -903,6 +903,16 @@
     "linked": "Tillsynen är nu kopplad till tillståndet.",
     "link_failed": "Kopplingen kunde inte göras. Försök igen."
   },
+  "action_errand": {
+    "origin": {
+      "heading": "Kommer från tillsyn",
+      "inspection": "Tillsynsärende",
+      "date": "Tillsynsdatum",
+      "summary": "Summering av tillsynen",
+      "permit": "Tillstånd",
+      "unreadable": "Tillsynen kunde inte läsas."
+    }
+  },
   "customer": {
     "overview": {
       "inspection": {

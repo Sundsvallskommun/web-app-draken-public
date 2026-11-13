@@ -61,10 +61,20 @@ export interface SupportMeasureChanges {
 }
 
 const INSPECTION_CATEGORY = 'INSPECTION';
+const ACTION_ERRAND_TYPE = 'MEASURES';
 
-/** An inspection errand is filed under the INSPECTION category and carries a protocol instead of an investigation. */
+/** An action errand is the MEASURES type of the inspection category, raised from an inspection that found faults. */
+export const isSupportActionErrand = (errand: Pick<SupportErrand, 'labels'> | undefined): boolean =>
+  !!errand?.labels?.some((label) => label.classification === 'TYPE' && label.resourceName === ACTION_ERRAND_TYPE);
+
+/**
+ * An inspection errand is filed under the INSPECTION category and carries a protocol instead of an investigation.
+ * The action errand shares the category without being an inspection, and presents itself as what it is.
+ */
 export const isSupportInspectionErrand = (errand: Pick<SupportErrand, 'labels'> | undefined): boolean =>
-  !!errand?.labels?.some((label) => label.classification === 'CATEGORY' && label.resourceName === INSPECTION_CATEGORY);
+  !!errand?.labels?.some(
+    (label) => label.classification === 'CATEGORY' && label.resourceName === INSPECTION_CATEGORY
+  ) && !isSupportActionErrand(errand);
 
 /** The service lists measures by id; the handler wrote them in order, so they are shown by creation time. */
 export const supportMeasuresOfType = (measures: Measure[] | undefined, type: SupportMeasureTypeName): Measure[] =>
