@@ -174,6 +174,32 @@ test('a tobacco permit is completed with the examinations its own type asks for'
   expect(asked.map((section) => section.sortOrder)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
 });
 
+const actionErrand = (...labels: { classification: string; resourceName: string }[]) => ({
+  id: ERRAND_ID,
+  labels: [
+    { classification: 'CATEGORY', resourceName: 'INSPECTION' },
+    { classification: 'TYPE', resourceName: 'MEASURES' },
+    ...labels,
+  ],
+});
+
+test('an action errand is completed with its own examinations and none of the serving ones', async () => {
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalledTimes(1));
+
+  const asked = vi.mocked(completeSupportInvestigationSections).mock.calls[0][3];
+  expect(asked.map((section) => section.sectionKey)).toEqual([
+    'statements',
+    'established_faults',
+    'permit_holder_statement',
+    'measures_taken',
+    'assessment',
+    'legal_basis',
+  ]);
+});
+
 test('both errand types are offered the underlay their own template renders', async () => {
   useSupportStore.setState({ supportErrand: tobaccoErrand as never, tabSavers: {} });
   const { unmount } = mountTab();

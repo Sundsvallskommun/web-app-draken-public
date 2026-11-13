@@ -103,6 +103,27 @@ test('a variant that examines tells the handler which law the suitability is exa
   );
 });
 
+const ACTION_ERRAND = [
+  'statements',
+  'established_faults',
+  'permit_holder_statement',
+  'measures_taken',
+  'assessment',
+  'legal_basis',
+];
+
+const actionErrandVariant = variantOf(label('CATEGORY', 'INSPECTION'), label('TYPE', 'MEASURES'));
+
+test('an action errand is examined by its own headings and has no serving sections', () => {
+  expect(actionErrandVariant.body).toBe('sections');
+  expect([...examinedSections(actionErrandVariant)]).toEqual(ACTION_ERRAND);
+  expect(examinedSections(actionErrandVariant)).not.toContain('financial_suitability');
+});
+
+test('an action errand is offered no decision basis, since no template is written for one', () => {
+  expect(actionErrandVariant.body === 'sections' && actionErrandVariant.basisTemplate).toBeUndefined();
+});
+
 test('no two variants claim the same errand type', () => {
   const claimed = INVESTIGATION_VARIANTS.flatMap((variant) => [...variant.resourceNames]);
 

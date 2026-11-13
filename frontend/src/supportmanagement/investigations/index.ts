@@ -1,6 +1,7 @@
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { Sections } from '@supportmanagement/services/support-investigation-sections';
 
+import { ACTION_ERRAND_INVESTIGATION } from './action-errand';
 import { INSPECTION_INVESTIGATION } from './inspection';
 import { SERVING_PERMIT_INVESTIGATION } from './serving-permit';
 import { TOBACCO_SALES_INVESTIGATION } from './tobacco-sales';
@@ -11,6 +12,7 @@ export type { ExaminedInvestigation, InvestigationVariant } from './types';
 export const INVESTIGATION_VARIANTS: InvestigationVariant[] = [
   SERVING_PERMIT_INVESTIGATION,
   TOBACCO_SALES_INVESTIGATION,
+  ACTION_ERRAND_INVESTIGATION,
   INSPECTION_INVESTIGATION,
 ];
 
