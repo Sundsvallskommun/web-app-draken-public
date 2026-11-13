@@ -648,7 +648,20 @@
     "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet.",
     "delegation": "Delegationspunkt",
     "delegation_help": "Punkten i delegationsordningen beslutet fattas med stöd av. Skrivs ut i beslutet.",
-    "delegation_placeholder": "Till exempel A 4.2"
+    "delegation_placeholder": "Till exempel A 4.2",
+    "permit_type": "Tillståndstyp",
+    "permit_case_number": "Tillståndets ärendenummer",
+    "permit_help": "Hämtas från tillsynens koppling till tillståndet. Fyll i för hand om kopplingen saknas.",
+    "justification_prefilled": "Förifyllt från utredningen. Ändra texten om beslutet ska formuleras annorlunda.",
+    "justification_deficiencies": "Motivering: konstaterade brister",
+    "justification_deficiencies_placeholder": "Vilka brister som konstaterades och varför de inte har åtgärdats",
+    "justification_statement": "Motivering: tillståndshavarens yttrande",
+    "justification_statement_placeholder": "Hur tillståndshavarens yttrande har bedömts",
+    "justification_outcome": "Motivering: valt utfall",
+    "justification_outcome_placeholder": "Varför kommunen väljer utfallet",
+    "outcome_text": "Vad beslutet innebär",
+    "outcome_text_help": "Skrivs ut i beslutet under en egen rubrik.",
+    "outcome_text_placeholder": "Vad beslutet innebär för tillståndshavaren"
   },
   "attachments": {
     "edit": "Ändra",

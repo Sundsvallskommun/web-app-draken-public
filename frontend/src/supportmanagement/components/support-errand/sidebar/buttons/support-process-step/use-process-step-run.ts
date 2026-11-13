@@ -75,6 +75,7 @@ export const useProcessStepRun = ({
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const setProcessSignal = useSupportStore((s) => s.setProcessSignal);
   const decisionJsonWriter = useSupportStore((s) => s.decisionJsonWriter);
+  const decisionDocumentFiler = useSupportStore((s) => s.decisionDocumentFiler);
   const [running, setRunning] = useState<string>();
   const awaitedMove = useRef<{ from: SupportProcessStepName; tabKey: string; at: number } | undefined>(undefined);
 
@@ -178,6 +179,8 @@ export const useProcessStepRun = ({
 
     await decisionJsonWriter?.(draft.id);
     await completeSupportDecision(errandId, municipalityId, draft.id);
+    // The decision is concluded either way: a document that could not be filed is one the handler can create again.
+    await decisionDocumentFiler?.().catch(() => undefined);
     return true;
   };
 

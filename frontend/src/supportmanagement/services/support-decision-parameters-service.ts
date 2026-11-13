@@ -514,6 +514,10 @@ const ACTION_ERRAND_DOCUMENT_OF_OUTCOME: Record<string, string> = {
   REVOCATION: 'action-errand-decision',
 };
 
+/** What the decision document is called among the errand's attachments. */
+export const decisionDocumentFileName = (errandNumber: string | undefined): string =>
+  `Beslut ${errandNumber ?? ''}.pdf`.replace('  ', ' ');
+
 /** The document the decision renders: the permit's certificate, or the letter the action errand's outcome calls for. */
 export const decisionDocumentTemplate = (permitType: string, outcome: string | undefined): string | undefined =>
   permitType === ACTION_ERRAND_PERMIT_TYPE
@@ -596,8 +600,16 @@ const OUTCOMES_WRITTEN_AS_CLAUSES = ['REPRIMAND', 'WARNING', 'REVOCATION'];
 export const decisionRequiresClauses = (permitType: string, outcome: string | undefined): boolean => {
   if (permitType === INSPECTION_PERMIT_TYPE) return false;
   if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return true;
-  return OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
+  return decisionIsActionErrandSanction(permitType, outcome);
 };
+
+/**
+ * Whether the decision is one of an action errand's sanctions. Those are written as a decision document, with a
+ * legal basis, a delegation point, numbered att-satser and a justification; "Ingen åtgärd" is a letter with none
+ * of it, and an application's decision has a shape of its own.
+ */
+export const decisionIsActionErrandSanction = (permitType: string, outcome: string | undefined): boolean =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE && OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
 
 /** The keys the decision's saved JSON leaves without a value. */
 export const missingDecisionInputs = (

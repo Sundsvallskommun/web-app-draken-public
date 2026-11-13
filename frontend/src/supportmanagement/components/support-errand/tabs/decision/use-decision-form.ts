@@ -33,6 +33,9 @@ export interface DecisionFormValues {
   justificationDeficiencies: string;
   justificationStatement: string;
   justificationOutcome: string;
+  /** The permit the decision is about, which the handler names where the inspection has no relation to it. */
+  permitType: string;
+  permitCaseNumber: string;
   validFrom: string;
   validTo: string;
   /** The day the permit is issued, printed in the certificate's signature block. */
@@ -55,6 +58,9 @@ export interface DecisionPrefill {
   justificationDeficiencies: string;
   justificationStatement: string;
   justificationOutcome: string;
+  /** The permit the inspection was about, where its relation names one. */
+  permitType: string;
+  permitCaseNumber: string;
 }
 
 export const NO_DECISION_PREFILL: DecisionPrefill = {
@@ -62,6 +68,8 @@ export const NO_DECISION_PREFILL: DecisionPrefill = {
   justificationDeficiencies: '',
   justificationStatement: '',
   justificationOutcome: '',
+  permitType: '',
+  permitCaseNumber: '',
 };
 
 const PREFILLED_FIELDS = Object.keys(NO_DECISION_PREFILL) as (keyof DecisionPrefill)[];
@@ -117,6 +125,8 @@ const asSaved = ({
       stringAt(objectAt(json?.decision).justificationStatement)
     ),
     justificationOutcome: written('justificationOutcome', stringAt(objectAt(json?.decision).justificationOutcome)),
+    permitType: written('permitType', stringAt(objectAt(json?.permit).type)),
+    permitCaseNumber: written('permitCaseNumber', stringAt(objectAt(json?.permit).caseNumber)),
     validFrom: decision?.validFrom ?? '',
     validTo: decision?.validTo ?? '',
     executionDate: stringAt(objectAt(json?.decision).executionDate) ?? '',

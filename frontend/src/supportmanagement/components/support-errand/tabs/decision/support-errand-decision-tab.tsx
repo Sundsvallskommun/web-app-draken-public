@@ -11,7 +11,6 @@ import {
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   applicationPremisesPhone,
-  decisionDocumentTemplate,
   type DecisionOrigin,
   decisionRequiresClauses,
   savedDecisionJson,
@@ -30,7 +29,10 @@ import {
   type SupportDecision,
   supportDecisionOutcomesOf,
 } from '@supportmanagement/services/support-decision-service';
-import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
+import {
+  getSupportInvestigation,
+  type SupportInvestigation,
+} from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +45,7 @@ import { DecisionBeveragesField, DecisionServingHoursFields } from './decision-s
 import { DecisionServingPremises } from './decision-serving-premises.component';
 import { DecisionSummary } from './decision-summary.component';
 import { SupportErrandDecisionBasis } from './support-errand-decision-basis.component';
-import { NO_DECISION_PREFILL, useDecisionForm } from './use-decision-form';
+import { useDecisionForm } from './use-decision-form';
 import { useDecisionSave } from './use-decision-save';
 import { usePremisesText } from './use-premises-text';
 
@@ -60,7 +62,7 @@ export const SupportErrandDecisionTab: FC<{
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
 
   const [decisions, setDecisions] = useState<SupportDecision[]>([]);
-  const [prefill, setPrefill] = useState(NO_DECISION_PREFILL);
+  const [investigation, setInvestigation] = useState<SupportInvestigation>();
   const [origin, setOrigin] = useState<DecisionOrigin>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -111,7 +113,7 @@ export const SupportErrandDecisionTab: FC<{
       .then(([result, investigation]) => {
         if (!current) return;
         setDecisions(result);
-        setPrefill(decisionPrefillOf(investigation));
+        setInvestigation(investigation);
         setIsLoading(false);
       })
       .catch(() => {
@@ -160,6 +162,8 @@ export const SupportErrandDecisionTab: FC<{
     };
   }, [inspectionErrandId, municipalityId, opened]);
 
+  const prefill = useMemo(() => decisionPrefillOf(investigation, origin), [investigation, origin]);
+
   const form = useDecisionForm({
     decision,
     editable,
@@ -171,7 +175,7 @@ export const SupportErrandDecisionTab: FC<{
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
   });
 
-  const { documentParameters } = useDecisionSave({
+  const { documentTemplate, documentParameters } = useDecisionSave({
     decision,
     values: form.values,
     edited: form.edited,
@@ -182,8 +186,6 @@ export const SupportErrandDecisionTab: FC<{
     origin,
     onSaved: setDecisions,
   });
-
-  const documentTemplate = decisionDocumentTemplate(permit.type, form.values.outcome);
 
   useEffect(() => {
     setUnsaved(form.edited);
@@ -269,6 +271,7 @@ export const SupportErrandDecisionTab: FC<{
             outcomes={outcomes}
             printed={!!permit.certificate}
             clausesRequired={decisionRequiresClauses(permit.type, form.values.outcome)}
+            permitType={permit.type}
             disabled={!canEdit}
           />
 

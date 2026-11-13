@@ -1,9 +1,13 @@
 'use client';
 
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   type CertificateDecision,
+  decisionDocumentFileName,
+  decisionDocumentTemplate,
   type DecisionOrigin,
   type DecisionParameterInput,
   decisionSchema,
@@ -28,6 +32,7 @@ import {
 import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { FormValue } from '@supportmanagement/services/support-form-value-service';
 import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +56,8 @@ interface DecisionSaveInput {
 }
 
 export interface DecisionSave {
+  /** The document the decision renders, which is the one filed on the errand once it is concluded. */
+  documentTemplate: string | undefined;
   /** What the preview renders, which is what the document will be given. */
   documentParameters: Record<string, string | string[]>;
 }
@@ -77,6 +84,7 @@ export const useDecisionSave = ({
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const setDecisionJsonWriter = useSupportStore((s) => s.setDecisionJsonWriter);
+  const setDecisionDocumentFiler = useSupportStore((s) => s.setDecisionDocumentFiler);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const registeredOutcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
   const outcomes = supportDecisionOutcomesOf(registeredOutcomes, permit.type);
@@ -87,6 +95,8 @@ export const useDecisionSave = ({
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
   const writeJsonLatest = useRef<(decisionId: string) => Promise<SupportDecision | undefined>>(undefined);
+  const fileDocumentLatest = useRef<() => Promise<unknown>>(undefined);
+  const documentFiler = useCallback(() => fileDocumentLatest.current?.() ?? Promise.resolve(undefined), []);
   const jsonWriter = useCallback(
     (decisionId: string) => writeJsonLatest.current?.(decisionId) ?? Promise.resolve(undefined),
     []
@@ -105,12 +115,16 @@ export const useDecisionSave = ({
     executionDate: values.executionDate,
     premisesPhoneNumber: values.premisesPhoneNumber,
     externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
-    origin,
+    origin: {
+      ...origin,
+      permitType: values.permitType,
+      permitCaseNumber: values.permitCaseNumber,
+    },
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
 
-  /** What the certificate says about the decision, outcome and all, whether previewed or sent. */
+  /** What the document says about the decision, outcome and all, whether previewed or filed. */
   const outcome = outcomeForTerms(values.outcome, writtenTerms, outcomes);
   const certificateDecision: CertificateDecision = {
     outcome,
@@ -129,6 +143,11 @@ export const useDecisionSave = ({
     terms: writtenTerms,
   };
 
+  const documentTemplate = decisionDocumentTemplate(permit.type, outcome);
+  const documentParameters = supportErrand
+    ? toDecisionDocumentParameters(permit.type, parameterInput(supportErrand), certificateDecision)
+    : {};
+
   // The JSON copies errand data, so it is rebuilt from the errand as it is now on every write.
   const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
     if (!supportErrand?.id) return undefined;
@@ -138,6 +157,18 @@ export const useDecisionSave = ({
       schemaId: supportSchemaId(municipalityId, schema),
       value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
     });
+  };
+
+  /**
+   * The decision document as the errand stands when the decision is concluded, filed among its attachments. The
+   * parameters are the ones the preview rendered, so what is filed is what the handler saw.
+   */
+  const fileDecisionDocument = async (): Promise<unknown> => {
+    if (!supportErrand?.id || !documentTemplate) return undefined;
+
+    const pdf = await renderTemplatePdf(documentTemplate, documentParameters);
+    const file = pdfFileFromBase64(pdf, decisionDocumentFileName(supportErrand.errandNumber));
+    return saveSupportAttachments(supportErrand.id, municipalityId, [{ file: [file] as unknown as File }]);
   };
 
   const tell = (message: string, status: 'success' | 'error') =>
@@ -203,6 +234,7 @@ export const useDecisionSave = ({
   useEffect(() => {
     saveLatest.current = save;
     writeJsonLatest.current = writeDecisionJson;
+    fileDocumentLatest.current = fileDecisionDocument;
   });
 
   useEffect(() => {
@@ -215,9 +247,10 @@ export const useDecisionSave = ({
     return () => setDecisionJsonWriter(undefined);
   }, [jsonWriter, setDecisionJsonWriter]);
 
-  return {
-    documentParameters: supportErrand
-      ? toDecisionDocumentParameters(permit.type, parameterInput(supportErrand), certificateDecision)
-      : {},
-  };
+  useEffect(() => {
+    setDecisionDocumentFiler(documentFiler);
+    return () => setDecisionDocumentFiler(undefined);
+  }, [documentFiler, setDecisionDocumentFiler]);
+
+  return { documentTemplate, documentParameters };
 };
