@@ -15,6 +15,7 @@ import {
 } from './support-decision-parameters-service';
 import { supportDecisionPermitType } from './support-decision-service';
 import type { SupportErrand } from './support-errand-service';
+import { objectAt } from './support-json-parameter-service';
 
 const HOLDER = mockEnv.mockCompanyAddress;
 const PREMISES = mockEnv.mockPremisesAddress;
@@ -486,6 +487,61 @@ describe('what the permit needs of the errand', () => {
     expect(saved.decision).toMatchObject({ clauses: 'att bevilja\natt servera' });
     expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
     expect(missingDecisionInputs('TILLSYN', undefined, undefined)).toEqual([]);
+  });
+
+  test('an action errand is filed under its own schema, with the sanction it decides', () => {
+    const saved = toDecisionJson('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+      decisionText: 'Varning',
+      delegation: 'A 4.2',
+      clauses: 'att meddela varning\natt beslutet galler omedelbart',
+    });
+
+    expect(decisionSchema('ATGARD')).toEqual({ name: 'aot_action_errand_decision', version: '1.0' });
+    expect(saved.decision).toMatchObject({
+      outcome: 'WARNING',
+      decisionText: 'Varning',
+      delegation: 'A 4.2',
+      clauses: ['att meddela varning', 'att beslutet galler omedelbart'],
+    });
+    expect(saved).not.toHaveProperty('conditions');
+    expect(saved).not.toHaveProperty('servingArea');
+  });
+
+  test('an application outcome on an action errand is left out, and a sanction on an application likewise', () => {
+    const sanctionOnAnApplication = toDecisionJson('SERVERINGSTILLSTAND', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+    });
+    const approvalOnAnActionErrand = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'APPROVAL' });
+
+    expect(objectAt(sanctionOnAnApplication.decision)).not.toHaveProperty('outcome');
+    expect(objectAt(approvalOnAnActionErrand.decision)).not.toHaveProperty('outcome');
+  });
+
+  test('the saved decision is read back whichever schema it was filed under', () => {
+    const underTheActionErrandSchema = {
+      jsonParameters: [{ key: 'aot_action_errand_decision', value: { decision: { outcome: 'REPRIMAND' } } }],
+    };
+
+    expect(objectAt(savedDecisionJson(underTheActionErrandSchema as never)?.decision)).toMatchObject({
+      outcome: 'REPRIMAND',
+    });
+  });
+
+  test('the att-satser of an action errand are read back from the list they are kept in', () => {
+    const saved = toDecisionJson('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'REPRIMAND',
+      clauses: 'att meddela erinran',
+      delegation: 'A 4.2',
+    });
+    const flat = flattenDecisionJson(saved);
+
+    expect(flat.decisionClauses).toBe('att meddela erinran');
+    expect(flat.decisionDelegation).toBe('A 4.2');
+    expect(missingDecisionInputs('ATGARD', 'REPRIMAND', saved)).toEqual([]);
   });
 
   test('an action errand needs att-satser for the sanctions it imposes, and none for letting the matter rest', () => {

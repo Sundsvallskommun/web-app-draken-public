@@ -115,6 +115,7 @@ export const useDecisionSave = ({
     legalBasis: values.legalBasis,
     justification: values.justification,
     clauses: values.clauses,
+    delegation: values.delegationReference,
     terms: writtenTerms,
   };
 

@@ -82,7 +82,7 @@ const ACTION_ERRAND_OUTCOMES = ['NO_ACTION', 'REPRIMAND', 'WARNING', 'REVOCATION
 
 const APPLICATION_OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'];
 
-const supportDecisionOutcomeNames = (permitType: string): string[] =>
+export const supportDecisionOutcomeNames = (permitType: string): string[] =>
   permitType === ACTION_ERRAND_PERMIT_TYPE ? ACTION_ERRAND_OUTCOMES : APPLICATION_OUTCOMES;
 
 /** The registered outcomes the errand may be decided with, in the order the metadata has them. */

@@ -43,6 +43,7 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
   ACTION_ERRAND_PERMIT_TYPE: 'ATGARD',
   outcomeWithoutConditions: (outcome: string | undefined) => outcome ?? '',
+  supportDecisionOutcomeNames: () => ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'],
 }));
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   getSupportErrandById: vi.fn(),

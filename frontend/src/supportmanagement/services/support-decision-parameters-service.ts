@@ -9,7 +9,12 @@ import {
   servingHoursText,
   toScopeJson,
 } from './support-decision-scope-service';
-import { ACTION_ERRAND_PERMIT_TYPE, outcomeWithoutConditions, type SupportDecision } from './support-decision-service';
+import {
+  ACTION_ERRAND_PERMIT_TYPE,
+  outcomeWithoutConditions,
+  type SupportDecision,
+  supportDecisionOutcomeNames,
+} from './support-decision-service';
 import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import {
   childText,
@@ -73,6 +78,8 @@ export interface CertificateDecision {
   justification?: string;
   /** The att-satser, one per line. */
   clauses?: string;
+  /** The point in the delegation order the decision is made under. */
+  delegation?: string;
   terms: string[];
 }
 
@@ -85,9 +92,19 @@ const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.2' };
 const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision', version: '1.2' };
 
+/**
+ * The action errand decides sanctions, which the permit schemas have no outcomes for: filed under one of them
+ * the outcome fails their enum and is left out of the saved decision altogether.
+ */
+const ACTION_ERRAND_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_action_errand_decision', version: '1.0' };
+
+const DECISION_SCHEMAS = [ALCOHOL_DECISION_SCHEMA, TOBACCO_DECISION_SCHEMA, ACTION_ERRAND_DECISION_SCHEMA];
+
 /** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
-export const decisionSchema = (permitType: string): SupportJsonSchema =>
-  TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
+export const decisionSchema = (permitType: string): SupportJsonSchema => {
+  if (permitType === ACTION_ERRAND_PERMIT_TYPE) return ACTION_ERRAND_DECISION_SCHEMA;
+  return TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
+};
 
 // The values the schemas restrict. One that does not fit is left out, so the save is not refused for it
 // and the checks before the decision name it as missing.
@@ -99,12 +116,9 @@ const SERVING_PERMIT_TYPES = [
   'FARM_SALES',
   'TASTING',
 ];
-const OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'];
-
 /** What a saved decision says of the permit; undefined for a decision without it. */
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
-  jsonParameterObject(decision?.jsonParameters, ALCOHOL_DECISION_SCHEMA.name) ??
-  jsonParameterObject(decision?.jsonParameters, TOBACCO_DECISION_SCHEMA.name);
+  DECISION_SCHEMAS.map((schema) => jsonParameterObject(decision?.jsonParameters, schema.name)).find(Boolean);
 
 const matching =
   (pattern: RegExp) =>
@@ -248,15 +262,30 @@ const tobaccoOf = ({ form }: DecisionParameterInput): JsonObject =>
 
 const ISSUING_UNIT = 'Alkohol- och tobaksenheten';
 
+const clauseLines = (clauses: string | undefined): string[] | undefined =>
+  clauses
+    ?.split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean) || undefined;
+
+/** An action errand's att-satser are numbered in its decision document, so they are kept one by one. */
+const clausesOf = (permitType: string, clauses: string | undefined): string | string[] | undefined => {
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return text(clauses);
+  const lines = clauseLines(clauses);
+  return lines?.length ? lines : undefined;
+};
+
 /** The decision as the certificate states it; the decision's root carries the same for Support Management. */
 const decisionOf = (
+  permitType: string,
   { user, executionDate, today }: DecisionParameterInput,
   decision: CertificateDecision
 ): JsonObject => ({
-  outcome: oneOf(OUTCOMES)(decision.outcome),
+  outcome: oneOf(supportDecisionOutcomeNames(permitType))(decision.outcome),
   decisionText: text(decision.decisionText),
   justification: text(decision.justification),
-  clauses: text(decision.clauses),
+  clauses: clausesOf(permitType, decision.clauses),
+  delegation: text(decision.delegation),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
   executionDate: isoDate(executionDate),
@@ -275,8 +304,13 @@ export const toDecisionJson = (
     errandId: input.errand.id,
     externalCaseRegistrationNumber: text(input.externalCaseRegistrationNumber),
     permitHolder: permitHolderOf(input.errand.customer?.[0]),
-    decision: decisionOf(input, decision),
+    decision: decisionOf(permitType, input, decision),
   };
+
+  // An action errand grants nothing, so it keeps the permit holder, the premises and the decision, and no scope.
+  if (permitType === ACTION_ERRAND_PERMIT_TYPE) {
+    return withoutBlanks({ ...common, premises: placeOf(input) });
+  }
 
   if (TOBACCO_PERMITS.includes(permitType)) {
     return withoutBlanks({
@@ -302,6 +336,9 @@ const records = (value: unknown): JsonObject[] | undefined =>
   Array.isArray(value) ? value.filter(isRecord) : undefined;
 
 const box = (list: string[] | undefined, value: string): string | undefined => list && String(list.includes(value));
+
+/** Att-satser are kept as a list where they are numbered, and as one text where they are not. */
+const clausesText = (value: unknown): string | undefined => strings(value)?.join('\n') || stringAt(value);
 
 const postalAddressOf = (address: JsonObject): string | undefined => {
   const zip = stringAt(address.postalCode);
@@ -403,7 +440,8 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     issuedByNameAndTitle: join(issuer, stringAt(issuedBy.title)),
     issuedByUnit: stringAt(issuedBy.unit),
     decisionText: stringAt(decision.decisionText),
-    decisionClauses: stringAt(decision.clauses),
+    decisionClauses: clausesText(decision.clauses),
+    decisionDelegation: stringAt(decision.delegation),
     decisionMaker: stringAt(decision.decisionMaker),
     decisionDate,
     validFrom: stringAt(decision.validFrom),
