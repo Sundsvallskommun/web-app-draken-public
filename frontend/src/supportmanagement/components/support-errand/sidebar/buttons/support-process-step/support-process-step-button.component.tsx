@@ -115,6 +115,7 @@ export const SupportProcessStepButton: FC<{
   const start = async (action: ProcessAction) => {
     if (action.requiresRegistrationInputs && !(await gates.registrationIsComplete())) return;
     if (action.requiresPermitInputs && !(await gates.permitInputsAreInPlace())) return;
+    if (action.requiresInvestigationArea && !(await gates.investigationNamesItsArea())) return;
     if (action.requiresAnsweredStatements && !(await gates.statementsAllowADecision())) return;
 
     if (!action.requiresDecisionOutcome) return carryOut(action);

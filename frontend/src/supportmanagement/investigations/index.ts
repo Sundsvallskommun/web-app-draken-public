@@ -5,9 +5,10 @@ import { ACTION_ERRAND_INVESTIGATION } from './action-errand';
 import { INSPECTION_INVESTIGATION } from './inspection';
 import { SERVING_PERMIT_INVESTIGATION } from './serving-permit';
 import { TOBACCO_SALES_INVESTIGATION } from './tobacco-sales';
-import type { InvestigationVariant } from './types';
+import { InvestigationArea, type InvestigationAreaName, type InvestigationVariant } from './types';
 
-export type { ExaminedInvestigation, InvestigationVariant } from './types';
+export type { ExaminedInvestigation, InvestigationAreaName, InvestigationVariant } from './types';
+export { InvestigationArea } from './types';
 
 export const INVESTIGATION_VARIANTS: InvestigationVariant[] = [
   SERVING_PERMIT_INVESTIGATION,
@@ -35,3 +36,33 @@ export const investigationVariantFor = (errand: ClassifiedErrand | undefined): I
 /** The examinations the errand type has, which an errand examined by protocol has none of. */
 export const examinedSections = (variant: InvestigationVariant): readonly Sections[] =>
   variant.body === 'sections' ? variant.sections : [];
+
+const AREA_OF_RESOURCE_NAME: Record<string, InvestigationAreaName> = {
+  ALCOHOL: InvestigationArea.ALCOHOL,
+  ALCOHOL_INSPECTION: InvestigationArea.ALCOHOL,
+  TOBACCO: InvestigationArea.TOBACCO,
+  TOBACCO_INSPECTION: InvestigationArea.TOBACCO,
+};
+
+/**
+ * The area the errand's own labels name, whether as the subtype it was filed under or as one of the tags a
+ * tillsyn is marked with. An errand registered by hand may name none, and then the handler picks.
+ */
+export const investigationAreaOfErrand = (errand: ClassifiedErrand | undefined): InvestigationAreaName | undefined =>
+  (errand?.labels ?? [])
+    .map((label) => AREA_OF_RESOURCE_NAME[(label as { resourceName?: string }).resourceName ?? ''])
+    .find(Boolean);
+
+export const isInvestigationArea = (area: string | undefined): area is InvestigationAreaName =>
+  Object.values(InvestigationArea).some((candidate) => candidate === area);
+
+/** Whether the handler has to name an area before the investigation can be concluded. */
+export const investigationNeedsAnArea = (variant: InvestigationVariant, area: string | undefined): boolean =>
+  variant.body === 'sections' && !!variant.areas && !isInvestigationArea(area);
+
+/** Where the legal basis of the section is written from: the variant's own source, or the chosen area's. */
+export const legalBasisTemplateOf = (variant: InvestigationVariant, area: string | undefined): string | undefined => {
+  if (variant.body !== 'sections') return undefined;
+  if (!variant.areas) return variant.legalBasisTemplate;
+  return isInvestigationArea(area) ? variant.areas[area].legalBasisTemplate : undefined;
+};

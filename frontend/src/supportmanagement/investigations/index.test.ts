@@ -2,7 +2,15 @@ import { expect, test } from 'vitest';
 
 import sv from '../../../public/locales/sv/common.json';
 import { SUPPORT_INVESTIGATION_SECTIONS } from '../services/support-investigation-sections';
-import { examinedSections, INVESTIGATION_VARIANTS, investigationVariantFor } from './index';
+import {
+  examinedSections,
+  INVESTIGATION_VARIANTS,
+  investigationAreaOfErrand,
+  investigationNeedsAnArea,
+  investigationVariantFor,
+  isInvestigationArea,
+  legalBasisTemplateOf,
+} from './index';
 
 const SERVING = [
   'persons_of_influence',
@@ -122,6 +130,40 @@ test('an action errand is examined by its own headings and has no serving sectio
 
 test('an action errand is offered no decision basis, since no template is written for one', () => {
   expect(actionErrandVariant.body === 'sections' && actionErrandVariant.basisTemplate).toBeUndefined();
+});
+
+test('the area is read off the errand, as a subtype or as the tag a tillsyn is marked with', () => {
+  expect(investigationAreaOfErrand(errandOf(label('SUBTYPE', 'ALCOHOL')))).toBe('ALCOHOL');
+  expect(investigationAreaOfErrand(errandOf(label('TAG', 'TOBACCO_INSPECTION')))).toBe('TOBACCO');
+  expect(investigationAreaOfErrand(errandOf(label('TAG', 'ALCOHOL_INSPECTION')))).toBe('ALCOHOL');
+  expect(investigationAreaOfErrand(errandOf(label('TYPE', 'MEASURES')))).toBeUndefined();
+  expect(investigationAreaOfErrand(undefined)).toBeUndefined();
+});
+
+test('the legal basis follows the chosen area, and an errand type with one area of its own keeps it', () => {
+  expect(legalBasisTemplateOf(actionErrandVariant, 'ALCOHOL')).toBe('serving-permit-legal-basis');
+  expect(legalBasisTemplateOf(actionErrandVariant, 'TOBACCO')).toBe('tobacco-sales-legal-basis');
+  expect(legalBasisTemplateOf(actionErrandVariant, undefined)).toBeUndefined();
+  expect(legalBasisTemplateOf(servingVariant, undefined)).toBe('serving-permit-legal-basis');
+  expect(legalBasisTemplateOf(variantOf(label('CATEGORY', 'INSPECTION')), 'ALCOHOL')).toBeUndefined();
+});
+
+test('an area is asked for only where the errand type covers more than one, and only until it is given', () => {
+  expect(investigationNeedsAnArea(actionErrandVariant, undefined)).toBe(true);
+  expect(investigationNeedsAnArea(actionErrandVariant, '')).toBe(true);
+  expect(investigationNeedsAnArea(actionErrandVariant, 'external_inspection')).toBe(true);
+  expect(investigationNeedsAnArea(actionErrandVariant, 'ALCOHOL')).toBe(false);
+  expect(investigationNeedsAnArea(servingVariant, undefined)).toBe(false);
+  expect(investigationNeedsAnArea(variantOf(label('CATEGORY', 'INSPECTION')), undefined)).toBe(false);
+  expect(isInvestigationArea('ALCOHOL')).toBe(true);
+  expect(isInvestigationArea('SPIRITS')).toBe(false);
+});
+
+test('every area of a variant names a legal basis', () => {
+  for (const variant of INVESTIGATION_VARIANTS) {
+    if (variant.body !== 'sections' || !variant.areas) continue;
+    for (const area of Object.values(variant.areas)) expect(area.legalBasisTemplate).toBeTypeOf('string');
+  }
 });
 
 test('no two variants claim the same errand type', () => {

@@ -264,7 +264,13 @@
     "saving": "Sparar",
     "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
     "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll.",
-    "intro_action_errand": "Utredningen prövar om de brister tillsynen konstaterade är åtgärdade, och vad som ska följa om de inte är det."
+    "intro_action_errand": "Utredningen prövar om de brister tillsynen konstaterade är åtgärdade, och vad som ska följa om de inte är det. Välj område, eftersom det avgör lagrummet och vilka remisser som erbjuds.",
+    "areas": {
+      "label": "Område",
+      "alcohol": "Alkohol",
+      "tobacco": "Tobak",
+      "missing": "Välj område innan utredningen avslutas."
+    }
   },
   "process": {
     "steps": {
@@ -414,7 +420,8 @@
         "errand_form": "ifyllda ärendeuppgifter",
         "attachments": "bilagorna {{labels}}"
       },
-      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund.",
+      "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",

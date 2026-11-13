@@ -1,5 +1,6 @@
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Disclosure } from '@sk-web-gui/react';
+import type { InvestigationAreaName } from '@supportmanagement/investigations';
 import {
   sectionKeyOf,
   type Sections,
@@ -31,7 +32,9 @@ export const SectionDisclosure: React.FC<{
   onEdited: (sectionKey: string, edited: boolean) => void;
   onSaved: (investigation: Investigation) => void;
   saveRef: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ section, investigationId, writable, onEdited, onSaved, saveRef }) => {
+  /** Set where the errand type covers more than one trade; it decides which statements are offered. */
+  area?: InvestigationAreaName;
+}> = ({ section, investigationId, writable, onEdited, onSaved, saveRef, area }) => {
   const { t } = useTranslation();
 
   const sectionKey = sectionKeyOf(section);
@@ -46,7 +49,7 @@ export const SectionDisclosure: React.FC<{
   };
 
   const sectionContent: Record<Sections, JSX.Element> = {
-    statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} />,
+    statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} area={area} />,
     persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: <SupportFinancialSuitabilitySection {...props} />,
     premises: <SupportPremisesSection {...props} />,
