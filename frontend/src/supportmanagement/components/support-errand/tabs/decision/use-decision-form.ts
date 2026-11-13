@@ -15,6 +15,8 @@ export interface DecisionFormValues {
   outcome: string;
   decidedByRole: string;
   legalBasis: string;
+  /** The delegation point the decision is made under, printed in the decision document. */
+  delegationReference: string;
   /** The decision's own registry number. */
   externalCaseRegistrationNumber: string;
   /** The att-satser, one per line. */
@@ -68,6 +70,7 @@ const asSaved = ({
     outcome: outcomeWithoutConditions(decision?.outcome),
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
+    delegationReference: decision?.delegationReference ?? '',
     externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
     clauses: decision?.id ? stringAt(objectAt(json?.decision).clauses) ?? '' : investigationClauses,
     justification: decision?.justification ?? '',

@@ -2,6 +2,7 @@ import type { DecisionOutcome } from '@common/data-contracts/supportmanagement/d
 import { Input, Select, Textarea } from '@sk-web-gui/react';
 import {
   selectableSupportDecisionOutcomes,
+  SUPPORT_DECISION_DELEGATION_MAX_LENGTH,
   SUPPORT_DECISION_ROLE_KEYS,
 } from '@supportmanagement/services/support-decision-service';
 import { FC } from 'react';
@@ -137,6 +138,24 @@ export const DecisionFields: FC<{
 
       <DecisionCard>
         <DecisionTerms terms={values.terms} onChange={(terms) => set('terms', terms)} disabled={disabled} />
+      </DecisionCard>
+
+      <DecisionCard>
+        <DecisionField
+          id="decision-delegation"
+          label={t('common:decision.delegation')}
+          help={t('common:decision.delegation_help')}
+        >
+          <Input
+            className="w-full max-w-[28rem]"
+            value={values.delegationReference}
+            maxLength={SUPPORT_DECISION_DELEGATION_MAX_LENGTH}
+            placeholder={t('common:decision.delegation_placeholder')}
+            onChange={(event) => set('delegationReference', event.target.value)}
+            disabled={disabled}
+            data-cy="decision-delegation"
+          />
+        </DecisionField>
       </DecisionCard>
 
       <DecisionCard>

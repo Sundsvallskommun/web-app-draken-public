@@ -225,7 +225,7 @@ export const useProcessStepGates = (errandId: string | undefined) => {
       supportErrand.process?.processKey
     );
     const decided = decisions.find((decision) => !!decision.outcome);
-    const missing = missingDecisionInputs(permitType, savedDecisionJson(decided));
+    const missing = missingDecisionInputs(permitType, decided?.outcome, savedDecisionJson(decided));
     if (!missing.length) return true;
 
     const goToTheDecision = await confirm.showConfirmation(

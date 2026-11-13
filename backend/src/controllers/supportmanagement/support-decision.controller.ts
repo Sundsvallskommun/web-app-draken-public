@@ -37,6 +37,11 @@ class SupportDecisionFieldsDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(64)
+  delegationReference?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(8192)
   justification?: string;
 
