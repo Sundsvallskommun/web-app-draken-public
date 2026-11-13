@@ -28,6 +28,10 @@
     "premises_municipality": {
       "title": "Kommun",
       "placeholder": "Välj kommun"
+    },
+    "external_case_registration_number": {
+      "title": "Diarienummer",
+      "placeholder": "Ange diarienummer"
     }
   },
   "overview": {
@@ -299,7 +303,8 @@
         "confirm_text": "När du tar ett ansökningsärende vidare till utredning innebär det att du anser att ärendet är tillräckligt komplett. Ett bekräftelsemeddelande skickas då till kunden via Mina sidor.",
         "done": "Ärendet är taget till utredning.",
         "error": "Ärendet kunde inte tas till utredning.",
-        "confirm_yes": "Ja"
+        "confirm_yes": "Ja",
+        "registration_number_required": "Diarienummer från Timrås diarium krävs. Fyll i det under Grundinformation och spara ärendet."
       },
       "ready_for_decision": {
         "label": "Redo för beslut",
@@ -428,6 +433,7 @@
     "decided_at": "Beslutsdatum",
     "legal_basis": "Lagrum",
     "case_number": "Beslutsdiarienummer",
+    "case_number_help": "Förifylls med ärendets diarienummer från Grundinformation.",
     "clauses": "Att-satser",
     "clauses_placeholder": "Skriv en att-sats per rad",
     "justification": "Beslutsmotivering",

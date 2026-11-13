@@ -15,7 +15,7 @@ export interface DecisionFormValues {
   outcome: string;
   decidedByRole: string;
   legalBasis: string;
-  /** The decision's own registry number. */
+  /** The decision's registry number, which starts as the errand's from Grundinformation. */
   externalCaseRegistrationNumber: string;
   /** The att-satser, one per line. */
   clauses: string;
@@ -46,6 +46,8 @@ interface DecisionFormInput {
   /** The decided scope as saved, and the application's where the decision has none saved. */
   scopeAsSaved: DecisionScope;
   defaultRole: string;
+  /** The errand's registry number, which a decision saved without one starts from. */
+  errandCaseRegistrationNumber: string;
 }
 
 export interface DecisionForm {
@@ -62,13 +64,14 @@ const asSaved = ({
   investigationClauses,
   scopeAsSaved,
   defaultRole,
+  errandCaseRegistrationNumber,
 }: DecisionFormInput): DecisionFormValues => {
   const json = savedDecisionJson(decision);
   return {
     outcome: outcomeWithoutConditions(decision?.outcome),
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
-    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? errandCaseRegistrationNumber,
     clauses: decision?.id ? stringAt(objectAt(json?.decision).clauses) ?? '' : investigationClauses,
     justification: decision?.justification ?? '',
     validFrom: decision?.validFrom ?? '',

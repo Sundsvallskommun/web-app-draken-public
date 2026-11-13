@@ -712,9 +712,23 @@ export const getStakeholderOrganizationNumber = (
     ? s.externalId
     : undefined);
 
+/** The errand's registry number, which its decision carries under the same name. */
+export const EXTERNAL_CASE_REGISTRATION_NUMBER_KEY = 'externalCaseRegistrationNumber';
+/** Same parameter key as katla-aot uses when an errand is registered there. */
+export const PREMISES_MUNICIPALITY_KEY = 'premisesMunicipalityId';
+const TIMRA_MUNICIPALITY_ID = '2262';
+
 // Read the first value of an errand parameter by key.
 export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
   parameters?.find((parameter) => parameter.key === key)?.values?.[0] ?? '';
+
+/** Timrå keeps its errands in its own registry, so an errand there needs the registry number. */
+export const requiresExternalCaseRegistrationNumber = (parameters: CParameter[] | undefined): boolean =>
+  getErrandParameterValue(parameters, PREMISES_MUNICIPALITY_KEY) === TIMRA_MUNICIPALITY_ID;
+
+export const lacksRequiredExternalCaseRegistrationNumber = (parameters: CParameter[] | undefined): boolean =>
+  requiresExternalCaseRegistrationNumber(parameters) &&
+  !getErrandParameterValue(parameters, EXTERNAL_CASE_REGISTRATION_NUMBER_KEY).trim();
 
 // Set (or replace) an errand parameter by key while keeping the other parameters intact.
 // An empty value removes the parameter so we don't persist blank entries.

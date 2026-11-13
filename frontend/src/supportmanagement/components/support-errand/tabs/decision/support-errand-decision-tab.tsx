@@ -22,6 +22,11 @@ import {
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
+import {
+  EXTERNAL_CASE_REGISTRATION_NUMBER_KEY,
+  getErrandParameterValue,
+  requiresExternalCaseRegistrationNumber,
+} from '@supportmanagement/services/support-errand-service';
 import { typedLinesOf } from '@supportmanagement/services/support-investigation-basis-service';
 import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
@@ -134,6 +139,10 @@ export const SupportErrandDecisionTab: FC<{
     investigationClauses,
     scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
+    errandCaseRegistrationNumber: getErrandParameterValue(
+      supportErrand?.parameters,
+      EXTERNAL_CASE_REGISTRATION_NUMBER_KEY
+    ).trim(),
   });
 
   const { certificateParameters } = useDecisionSave({
@@ -232,6 +241,7 @@ export const SupportErrandDecisionTab: FC<{
             printed={!!permit.certificate}
             clausesRequired={permit.clausesRequired}
             disabled={!canEdit}
+            caseNumberFromErrand={requiresExternalCaseRegistrationNumber(supportErrand?.parameters)}
           />
 
           {supportErrand ? (

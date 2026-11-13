@@ -8,6 +8,7 @@ import {
   hasVisitedSupportProcessStep,
   processFilesADecisionBasis,
   supportProcessActivityKey,
+  supportProcessIsPastReview,
   supportProcessName,
   supportProcessPhaseKey,
   supportProcessShownStepIndex,
@@ -197,4 +198,16 @@ test('an application process files the decision basis, a closure, an action and 
   expect(processFilesADecisionBasis('action-errand')).toBe(false);
   expect(processFilesADecisionBasis('internal-inspection')).toBe(false);
   expect(processFilesADecisionBasis(undefined)).toBe(false);
+});
+
+test('the review is past once the process stands in a later step or is finished', () => {
+  const at = (currentActivityId: string, processStatus = 'WAITING') =>
+    ({ currentActivityId, processStatus } as ErrandProcess);
+
+  expect(supportProcessIsPastReview(undefined)).toBe(false);
+  expect(supportProcessIsPastReview(at('registration_phase'))).toBe(false);
+  expect(supportProcessIsPastReview(at('review_phase'))).toBe(false);
+  expect(supportProcessIsPastReview(at('investigation_phase'))).toBe(true);
+  expect(supportProcessIsPastReview(at('decision_phase'))).toBe(true);
+  expect(supportProcessIsPastReview(at('anything', 'COMPLETED'))).toBe(true);
 });

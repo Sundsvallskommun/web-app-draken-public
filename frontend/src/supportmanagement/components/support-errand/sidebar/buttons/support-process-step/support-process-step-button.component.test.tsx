@@ -22,7 +22,7 @@ import {
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { FC, PropsWithChildren } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockEnv } from '../../../../../../tests/mock-env';
 import { SupportProcessStepButton } from './support-process-step-button.component';
@@ -42,7 +42,10 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
   supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
 }));
-vi.mock('@supportmanagement/services/support-errand-service', () => ({
+vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
+  lacksRequiredExternalCaseRegistrationNumber: (
+    await importOriginal<typeof import('@supportmanagement/services/support-errand-service')>()
+  ).lacksRequiredExternalCaseRegistrationNumber,
   getSupportErrandById: vi.fn(),
   closeSupportErrand: vi.fn(),
   setSupportErrandAdmin: vi.fn(),
@@ -803,4 +806,55 @@ test('a schema that cannot be read holds the step rather than passing it on a gu
 
   await waitFor(() => expect(toast).toHaveBeenCalled());
   expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+});
+
+describe('the registry number of a Timrå errand', () => {
+  const inReview = (municipality: string, number?: string, processKey?: string): SupportErrand =>
+    ({
+      ...errandAt('review_phase', ['review_completed', 'process_cancelled'], processKey),
+      parameters: [
+        { key: 'premisesMunicipalityId', values: [municipality] },
+        ...(number === undefined ? [] : [{ key: 'externalCaseRegistrationNumber', values: [number] }]),
+      ],
+    } as SupportErrand);
+  const explanation = () => document.querySelector('[data-cy="process-action-registration-number-required"]');
+
+  test.each([
+    ['without a number', undefined],
+    ['with only blanks', '   '],
+  ])('locks the step out of the review %s, and says why', async (_, number) => {
+    useSupportStore.setState({ supportErrand: inReview('2262', number) });
+
+    renderButton();
+
+    expect((await theButton('start_investigation')).disabled).toBe(true);
+    expect(explanation()?.textContent).toBe('common:process.actions.start_investigation.registration_number_required');
+  });
+
+  test('lets the errand out of the review once the number is saved', async () => {
+    useSupportStore.setState({ supportErrand: inReview('2262', 'TK 2026/42') });
+
+    renderButton();
+
+    expect((await theButton('start_investigation')).disabled).toBe(false);
+    expect(explanation()).toBeNull();
+  });
+
+  test('is not asked of a Timrå inspection', async () => {
+    useSupportStore.setState({ supportErrand: inReview('2262', undefined, 'internal-inspection') });
+
+    renderButton();
+
+    expect((await theButton('start_investigation')).disabled).toBe(false);
+    expect(explanation()).toBeNull();
+  });
+
+  test('is not asked of a Sundsvall errand', async () => {
+    useSupportStore.setState({ supportErrand: inReview('2281') });
+
+    renderButton();
+
+    expect((await theButton('start_investigation')).disabled).toBe(false);
+    expect(explanation()).toBeNull();
+  });
 });

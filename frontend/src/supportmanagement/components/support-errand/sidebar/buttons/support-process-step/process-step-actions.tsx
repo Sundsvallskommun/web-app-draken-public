@@ -21,6 +21,8 @@ export interface ProcessAction {
   requiresRegistrationInputs?: boolean;
   /** What the permit certificate prints has to be on the errand before the process needs it. */
   requiresPermitInputs?: boolean;
+  /** A Timrå errand carries its number from Timrå's registry, saved on the errand, before it leaves the review. */
+  requiresExternalCaseRegistrationNumber?: boolean;
   completesDecision?: boolean;
   completesInvestigation?: boolean;
   tabKey?: string;
@@ -63,6 +65,7 @@ export const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>
     needsSignal: true,
     tabKey: 'investigation',
     requiresPermitInputs: true,
+    requiresExternalCaseRegistrationNumber: true,
   },
   [SupportProcessStep.INVESTIGATION]: {
     key: 'ready_for_decision',
