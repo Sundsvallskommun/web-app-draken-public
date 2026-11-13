@@ -22,6 +22,13 @@ export const SUPPORT_INVESTIGATION_SECTIONS = [
   { sectionKey: 'legal_basis', headingKey: 'common:investigation.sections.legal_basis' },
   { sectionKey: 'sales_point', headingKey: 'common:investigation.sections.sales_point' },
   { sectionKey: 'self_monitoring', headingKey: 'common:investigation.sections.self_monitoring' },
+  { sectionKey: 'established_faults', headingKey: 'common:investigation.sections.established_faults' },
+  {
+    sectionKey: 'permit_holder_statement',
+    headingKey: 'common:investigation.sections.permit_holder_statement',
+  },
+  { sectionKey: 'measures_taken', headingKey: 'common:investigation.sections.measures_taken' },
+  { sectionKey: 'assessment', headingKey: 'common:investigation.sections.assessment' },
 ] as const satisfies readonly { sectionKey: string; headingKey: string }[];
 
 export type Sections = (typeof SUPPORT_INVESTIGATION_SECTIONS)[number]['sectionKey'];

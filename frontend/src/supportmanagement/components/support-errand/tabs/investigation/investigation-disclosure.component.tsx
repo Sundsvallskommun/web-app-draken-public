@@ -1,5 +1,6 @@
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Disclosure } from '@sk-web-gui/react';
+import type { InvestigationAreaName } from '@supportmanagement/investigations';
 import {
   sectionKeyOf,
   type Sections,
@@ -10,6 +11,7 @@ import { TOBACCO_SELF_MONITORING_PURPOSES } from '@supportmanagement/services/su
 import { JSX, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportActionPointsSection } from '../../action-points/support-action-points-section.component';
 import { SupportCommunicationSection } from '../../communication/support-communication-section.component';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
 import { type InvestigationSectionProps, InvestigationSectionText } from '../../investigation-section-text.component';
@@ -30,7 +32,9 @@ export const SectionDisclosure: React.FC<{
   onEdited: (sectionKey: string, edited: boolean) => void;
   onSaved: (investigation: Investigation) => void;
   saveRef: React.MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ section, investigationId, writable, onEdited, onSaved, saveRef }) => {
+  /** Set where the errand type covers more than one trade; it decides which statements are offered. */
+  area?: InvestigationAreaName;
+}> = ({ section, investigationId, writable, onEdited, onSaved, saveRef, area }) => {
   const { t } = useTranslation();
 
   const sectionKey = sectionKeyOf(section);
@@ -45,7 +49,7 @@ export const SectionDisclosure: React.FC<{
   };
 
   const sectionContent: Record<Sections, JSX.Element> = {
-    statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} />,
+    statements: <SupportStatementsSection writable={writable} onEdited={noteEdited} saveRef={saveRef} area={area} />,
     persons_of_influence: <SupportPbiExaminationSection writable={writable} />,
     financial_suitability: <SupportFinancialSuitabilitySection {...props} />,
     premises: <SupportPremisesSection {...props} />,
@@ -67,6 +71,10 @@ export const SectionDisclosure: React.FC<{
         factKey="common:investigation.self_monitoring.filed"
       />
     ),
+    established_faults: <SupportActionPointsSection {...props} sectionKey="established_faults" />,
+    permit_holder_statement: writtenSection('permit_holder_statement', props),
+    measures_taken: <SupportActionPointsSection {...props} sectionKey="measures_taken" />,
+    assessment: writtenSection('assessment', props),
   };
 
   const spec = supportInvestigationSectionSpec(section);

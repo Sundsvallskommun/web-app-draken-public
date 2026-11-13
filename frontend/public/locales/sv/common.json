@@ -147,7 +147,11 @@
       "marketing": "Marknadsföring",
       "ownership": "Ägarförhållande",
       "sales_point": "Försäljningsstället",
-      "self_monitoring": "Egenkontroll"
+      "self_monitoring": "Egenkontroll",
+      "established_faults": "Konstaterade brister",
+      "permit_holder_statement": "Tillståndshavarens yttrande",
+      "measures_taken": "Vidtagna åtgärder",
+      "assessment": "Bedömning"
     },
     "section_texts": {
       "lease": {
@@ -193,6 +197,22 @@
       "self_monitoring": {
         "label": "Utredning av egenkontrollen",
         "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
+      },
+      "established_faults": {
+        "label": "Utredning av bristerna",
+        "placeholder": "Beskriv bristerna tillsynen konstaterade och vad de innebär"
+      },
+      "permit_holder_statement": {
+        "label": "Tillståndshavarens yttrande",
+        "placeholder": "Sammanfatta vad tillståndshavaren har anfört"
+      },
+      "measures_taken": {
+        "label": "Utredning av åtgärderna",
+        "placeholder": "Beskriv vilka åtgärder som vidtagits och om bristerna är avhjälpta"
+      },
+      "assessment": {
+        "label": "Bedömning",
+        "placeholder": "Bedöm om åtgärderna är tillräckliga och vad som ska följa"
       }
     },
     "decision_basis": {
@@ -243,7 +263,14 @@
     "unsaved": "Osparade ändringar",
     "saving": "Sparar",
     "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
-    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll."
+    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll.",
+    "intro_action_errand": "Utredningen prövar om de brister tillsynen konstaterade är åtgärdade, och vad som ska följa om de inte är det. Välj område, eftersom det avgör lagrummet och vilka remisser som erbjuds.",
+    "areas": {
+      "label": "Område",
+      "alcohol": "Alkohol",
+      "tobacco": "Tobak",
+      "missing": "Välj område innan utredningen avslutas."
+    }
   },
   "process": {
     "steps": {
@@ -393,7 +420,8 @@
         "errand_form": "ifyllda ärendeuppgifter",
         "attachments": "bilagorna {{labels}}"
       },
-      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund.",
+      "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -853,7 +881,11 @@
       "not_completed": "Ej åtgärdad",
       "not_applicable": "Ej aktuellt"
     },
-    "save_error": "Åtgärdspunkterna kunde inte sparas"
+    "save_error": "Åtgärdspunkterna kunde inte sparas",
+    "loading": "Hämtar åtgärdspunkter",
+    "none": "Inga åtgärdspunkter är registrerade på ärendet.",
+    "due_by": "Frist {{date}}",
+    "result_none": "Inget resultat satt"
   },
   "inspection_protocol": {
     "heading": "Tillsynsprotokoll",

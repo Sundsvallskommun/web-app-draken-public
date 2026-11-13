@@ -17,6 +17,8 @@ export interface ProcessAction {
   takesErrand?: boolean;
   requiresDecisionOutcome?: boolean;
   requiresAnsweredStatements?: boolean;
+  /** Which trade the errand is about, where its type covers more than one. */
+  requiresInvestigationArea?: boolean;
   /** What the process needs on the errand before the handling starts: applicant, form and attachments. */
   requiresRegistrationInputs?: boolean;
   /** What the permit certificate prints has to be on the errand before the process needs it. */
@@ -70,6 +72,7 @@ export const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>
     needsSignal: true,
     tabKey: 'decision',
     requiresAnsweredStatements: true,
+    requiresInvestigationArea: true,
     completesInvestigation: true,
   },
   [SupportProcessStep.DECISION]: {

@@ -4,6 +4,7 @@ import type { Statement } from '@common/data-contracts/supportmanagement/data-co
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import type { InvestigationAreaName } from '@supportmanagement/investigations';
 import {
   getSupportStatements,
   supportStatementEdited,
@@ -44,7 +45,9 @@ export const SupportStatementsSection: FC<{
   writable: boolean;
   onEdited: (edited: boolean) => void;
   saveRef: MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ writable, onEdited, saveRef }) => {
+  /** Set where the errand type covers more than one trade; it decides which templates are offered. */
+  area?: InvestigationAreaName;
+}> = ({ writable, onEdited, saveRef, area }) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -193,6 +196,7 @@ export const SupportStatementsSection: FC<{
               errandNumber={errandNumber}
               municipalityId={municipalityId}
               writable={mayEdit}
+              area={area}
               onFormChange={(changes) => change(card.key, changes)}
               onChanged={(statement) => replace(card.key, statement)}
               onRemoved={() => forget(card.key)}

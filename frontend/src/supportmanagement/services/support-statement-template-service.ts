@@ -1,6 +1,7 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { formatOrgNr, OrgNumberFormat } from '@common/services/helper-service';
 import { engagementRoles } from '@common/services/legal-entity-service';
+import { InvestigationArea, type InvestigationAreaName } from '@supportmanagement/investigations';
 import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 import type { ChosenCompany } from '../components/support-errand/company-engagements/company-engagement-choice.component';
@@ -149,6 +150,15 @@ const SUPPORT_REFERRAL_TEMPLATES: SupportReferralTemplate[] = [
   },
 ];
 
+/**
+ * What an errand type that covers more than one trade offers. An action errand follows the area the handler
+ * named for its investigation, not its process key: both inspection processes raise the same action errand.
+ */
+const PERMIT_KIND_OF_AREA: Record<InvestigationAreaName, PermitKindName> = {
+  [InvestigationArea.ALCOHOL]: PermitKind.SERVING,
+  [InvestigationArea.TOBACCO]: PermitKind.TOBACCO,
+};
+
 const permitKindOfErrand = (errand: SupportErrand | undefined): PermitKindName | undefined => {
   const processKey = errand?.process?.processKey;
   return processKey ? PERMIT_KIND_OF_PROCESS[processKey] : undefined;
@@ -159,10 +169,11 @@ const servesTheErrand = (template: SupportReferralTemplate, kind: PermitKindName
 
 export const supportStatementTemplates = (
   counterpartyName: string | undefined,
-  errand?: SupportErrand
+  errand?: SupportErrand,
+  area?: InvestigationAreaName
 ): SupportStatementTemplate[] => {
   const key = supportStatementCounterpartyKey(counterpartyName);
-  const kind = permitKindOfErrand(errand);
+  const kind = area ? PERMIT_KIND_OF_AREA[area] : permitKindOfErrand(errand);
 
   return SUPPORT_REFERRAL_TEMPLATES.filter(
     (template) => (template.counterpartyKey === key && servesTheErrand(template, kind)) || !template.counterpartyKey

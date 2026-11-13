@@ -3,6 +3,7 @@ import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils'
 import type { RJSFSchema } from '@rjsf/utils';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { investigationNeedsAnArea, investigationVariantFor } from '@supportmanagement/investigations';
 import { missingAttachments } from '@supportmanagement/services/support-attachment-requirement-service';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
@@ -17,6 +18,7 @@ import {
   supportErrandHasAnIdentifiedApplicant,
 } from '@supportmanagement/services/support-errand-service';
 import { isRecord } from '@supportmanagement/services/support-form-value-service';
+import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
 import {
   getSupportStatements,
   isSupportStatementAwaitingAnswer,
@@ -256,8 +258,25 @@ export const useProcessStepGates = (errandId: string | undefined) => {
 
   const complainThatTheDecisionCouldNotBeRead = () => complain(t('common:process.actions.decision_unread'));
 
+  /**
+   * An errand type that covers more than one trade cannot conclude its investigation before the handler has said
+   * which one it is: the legal basis and the statements both follow from it.
+   */
+  const investigationNamesItsArea = async (): Promise<boolean> => {
+    const variant = investigationVariantFor(supportErrand);
+    if (!investigationNeedsAnArea(variant, undefined)) return true;
+
+    const investigation = await getSupportInvestigation(errandId ?? '', municipalityId).catch(() => undefined);
+    if (!investigationNeedsAnArea(variant, investigation?.type)) return true;
+
+    complain(t('common:process.actions.area_needed'));
+    setActiveTabKey('investigation');
+    return false;
+  };
+
   return {
     registrationIsComplete,
+    investigationNamesItsArea,
     statementsAllowADecision,
     permitInputsAreInPlace,
     decisionCarriesWhatThePermitNeeds,
