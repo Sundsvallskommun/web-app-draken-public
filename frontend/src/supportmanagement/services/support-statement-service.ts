@@ -149,6 +149,27 @@ export const supportStatementFields = (form: SupportStatementForm, title: string
   outcome: form.outcome || undefined,
 });
 
+/**
+ * What a communication is written with. It has no counterparty to choose and no underlay to render, so it keeps
+ * the recipient and the title it was created with rather than deriving them from a counterparty.
+ */
+export const supportCommunicationFields = (
+  form: SupportStatementForm,
+  recipient: string,
+  title: string
+): SupportStatementFields => ({
+  type: SUPPORT_COMMUNICATION_TYPE,
+  counterpartyName: recipient,
+  title,
+  description: form.freeText,
+  responseText: form.responseText,
+  dueAt: asTimestamp(form.dueAt),
+  sentAt: asTimestamp(form.sentAt),
+  respondedAt: asTimestamp(form.respondedAt),
+  status: form.status,
+  outcome: form.outcome || undefined,
+});
+
 export const supportStatementEdited = (form: SupportStatementForm, statement: Statement): boolean =>
   JSON.stringify(form) !== JSON.stringify(supportStatementForm(statement));
 
@@ -196,11 +217,30 @@ const problemOfAnAnsweredStatement = (
   return undefined;
 };
 
+/**
+ * What keeps a communication from being saved. It asks for no underlay and no counterparty of its own: the text
+ * is the communication, and the recipient is the permit holder. A deadline is the handler's to leave out.
+ */
+const problemOfACommunication = (
+  form: SupportStatementForm,
+  metadata: SupportMetadata | undefined
+): string | undefined => {
+  if (!form.freeText.trim()) return 'common:communications.validation.text';
+  if (form.outcome && form.status !== SupportStatementStatus.COMPLETED) {
+    return 'common:statements.validation.outcome_needs_completed';
+  }
+  if (form.status !== SupportStatementStatus.COMPLETED) return undefined;
+  if (!form.outcome) return 'common:statements.validation.outcome_required';
+  if (!outcomeMeansResponded(form.outcome, metadata)) return undefined;
+  return form.respondedAt ? undefined : 'common:statements.validation.responded_at';
+};
+
 export const supportStatementProblem = (
   form: SupportStatementForm,
   statement: Statement,
   metadata: SupportMetadata | undefined
 ): string | undefined => {
+  if (isSupportCommunication(statement)) return problemOfACommunication(form, metadata);
   if (!form.counterpartyName) return 'common:statements.validation.counterparty';
   const ofItsOwn = isSupportStatementOtherCounterparty(form.counterpartyName);
 
@@ -220,6 +260,16 @@ export const supportStatementProblem = (
 
 /** What a statement of this namespace is: a referral to an authority. */
 export const SUPPORT_STATEMENT_TYPE = 'REFERRAL';
+
+/**
+ * A communication with the permit holder before a decision goes against them. It is a statement rather than a
+ * message alone, so that it stands among the errand's statements, carries a deadline of its own and gives the
+ * decision's justification something to point at. The type is free text in the service, so it needs no metadata.
+ */
+export const SUPPORT_COMMUNICATION_TYPE = 'COMMUNICATION';
+
+export const isSupportCommunication = (statement: Pick<Statement, 'type'>): boolean =>
+  statement.type === SUPPORT_COMMUNICATION_TYPE;
 
 export interface SupportStatementFields {
   type?: string;
