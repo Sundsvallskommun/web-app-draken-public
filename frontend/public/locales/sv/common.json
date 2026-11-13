@@ -891,6 +891,18 @@
       "missing": "Välj minst en observation, eller ändra bedömningen."
     }
   },
+  "inspection_permit": {
+    "heading": "Tillståndet tillsynen gäller",
+    "none": "Tillsynen är inte kopplad till något tillstånd.",
+    "link": "Koppla tillstånd",
+    "open": "Öppna tillståndets ärende {{errandNumber}}",
+    "validity": "Gäller {{from}} till {{to}}",
+    "validity_open": "Gäller från {{from}}",
+    "choose_title": "Vilket tillstånd gäller tillsynen?",
+    "choose_description": "Välj bland tillståndshavarens gällande tillstånd.",
+    "linked": "Tillsynen är nu kopplad till tillståndet.",
+    "link_failed": "Kopplingen kunde inte göras. Försök igen."
+  },
   "customer": {
     "overview": {
       "inspection": {

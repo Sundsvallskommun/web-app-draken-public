@@ -1,6 +1,7 @@
 'use client';
 
 import type { Asset } from '@common/interfaces/asset';
+import { permitName } from '@common/services/customer-inspection-service';
 import { Button, Modal, RadioButton } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { FC, useState } from 'react';
@@ -8,16 +9,16 @@ import { useTranslation } from 'react-i18next';
 
 const formatDate = (date?: string | null): string => (date ? dayjs(date).format('YYYY-MM-DD') : '');
 
-const permitName = (permit: Asset): string => permit.title ?? permit.type ?? '';
-
-/** Which permit a tillsyn is about, asked when the place has more than one in effect. */
+/** Which permit a tillsyn is about, asked wherever more than one is in effect. */
 export const CustomerPermitChoice: FC<{
   show: boolean;
   permits: Asset[];
   busy: boolean;
   onClose: () => void;
   onChoose: (permit: Asset) => void;
-}> = ({ show, permits, busy, onClose, onChoose }) => {
+  title?: string;
+  description?: string;
+}> = ({ show, permits, busy, onClose, onChoose, title, description }) => {
   const { t } = useTranslation();
   const [chosenId, setChosenId] = useState<string>();
   const chosen = permits.find((permit) => permit.id === chosenId);
@@ -47,10 +48,12 @@ export const CustomerPermitChoice: FC<{
       show={show}
       className="w-[42rem]"
       onClose={close}
-      label={t('common:customer.overview.inspection.choose.title')}
+      label={title ?? t('common:customer.overview.inspection.choose.title')}
     >
       <Modal.Content className="flex flex-col gap-16">
-        <p className="m-0 text-dark-secondary">{t('common:customer.overview.inspection.choose.description')}</p>
+        <p className="m-0 text-dark-secondary">
+          {description ?? t('common:customer.overview.inspection.choose.description')}
+        </p>
 
         <RadioButton.Group>
           {permits.map((permit) => (
