@@ -5,17 +5,21 @@ export interface KpiIndex {
   indexNumber: number;
 }
 
-export const getKpiIndex = (): Promise<KpiIndex> => {
-  const previousYear = new Date().getFullYear() - 1;
-  const period = `${previousYear}-10`;
-  const url = `billingdatacollector/kpi?baseYear=KPI_80&period=${period}`;
+/** The year whose October KPI is used by default: the previous year. */
+export const defaultKpiIndexYear = (): number => new Date().getFullYear() - 1;
+
+/** Fetches the KPI 80 value for October of the given year (default: the previous year) from SCB. */
+export const getKpiIndex = (indexYear: number = defaultKpiIndexYear()): Promise<KpiIndex> => {
+  const url = `billingdatacollector/kpi?baseYear=KPI_80&period=${indexYear}-10`;
 
   return apiService
     .get<{ baseYear: string; period: string; value: number }>(url)
-    .then((res) => ({
-      indexYear: previousYear,
-      indexNumber: res.data.value,
-    }))
+    .then((res) => {
+      if (typeof res.data?.value !== 'number') {
+        throw new Error(`No KPI value for October ${indexYear}`);
+      }
+      return { indexYear, indexNumber: res.data.value };
+    })
     .catch((e) => {
       console.error('Something went wrong when fetching KPI index: ' + e);
       throw e;

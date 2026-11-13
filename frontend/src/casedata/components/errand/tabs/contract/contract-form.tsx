@@ -26,7 +26,7 @@ import {
   toDetailedDescriptionParameters,
   YEARLY_BILLING_MONTHS,
 } from '@casedata/services/contract-service';
-import { getKpiIndex } from '@common/services/billing-data-collector-service';
+import { defaultKpiIndexYear, getKpiIndex } from '@common/services/billing-data-collector-service';
 import {
   Button,
   Checkbox,
@@ -46,7 +46,7 @@ import {
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Plus, Receipt, Trash, Users, Wallet } from 'lucide-react';
-import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
@@ -54,6 +54,16 @@ import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
 
 const MAX_YEAR = 1000;
+const INDEX_TYPE = 'KPI 80';
+/** KPI with base year 1980 (KPI 80) has no values before 1980. */
+const FIRST_KPI_INDEX_YEAR = 1980;
+
+// "Automatisk förlängning av avtalet" has three answers: Ja, Nej and "Ej definierat" (autoExtend not set).
+const AUTO_EXTEND_UNDEFINED = 'undefined';
+const toAutoExtendValue = (autoExtend?: boolean): string =>
+  autoExtend === true ? 'true' : autoExtend === false ? 'false' : AUTO_EXTEND_UNDEFINED;
+const fromAutoExtendValue = (value: string): boolean | undefined =>
+  value === 'true' ? true : value === 'false' ? false : undefined;
 
 export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -103,11 +113,12 @@ export const ContractForm: FC<{
 
   const isDraft = !contractStatus || contractStatus === Status.DRAFT;
 
-  // For non-DRAFT contracts, only billing, lessee, and cancellation fields can be edited
-  const isEditable = (fieldType: 'general' | 'billing' | 'lessee' | 'cancellation') => {
+  // For non-DRAFT contracts (e.g. in an åtgärdsärende) only billing, lessee, cancellation and the
+  // automatic extension can be edited
+  const isEditable = (fieldType: 'general' | 'billing' | 'lessee' | 'cancellation' | 'extension') => {
     if (readOnly) return false;
     if (isDraft) return true;
-    return fieldType === 'billing' || fieldType === 'lessee' || fieldType === 'cancellation';
+    return fieldType !== 'general';
   };
 
   // "Ska detta avtal generera en faktura?" = Nej (invoicing.billingEnabled = false): the fee details stay
@@ -171,13 +182,16 @@ export const ContractForm: FC<{
     [partiesWithSSN, stakeholders]
   );
 
+  // The index ("Indexår") defaults to October of the previous year. Another year can be entered, also on
+  // an existing contract; its October KPI value (indexNumber) is then looked up from SCB.
   const [kpiData, setKpiData] = useState<{ indexYear: number; indexNumber: number } | null>(null);
 
   useEffect(() => {
+    if (readOnly) return;
     getKpiIndex()
       .then((data) => setKpiData(data))
       .catch((e) => console.error('Failed to fetch KPI index:', e));
-  }, []);
+  }, [readOnly]);
 
   const indexAdjusted = watch('indexAdjusted');
   const indexType = watch('fees.indexType');
@@ -188,12 +202,85 @@ export const ContractForm: FC<{
     ? `Indexreglering utgår från index enligt ${indexType} för oktober ${indexYear}: ${indexNumber}`
     : 'Indexreglering baseras på föregående år (oktober månad)';
 
+  const [indexYearInput, setIndexYearInput] = useState<string>(indexYear ? String(indexYear) : '');
+  const [indexLookup, setIndexLookup] = useState<{ loading: boolean; error?: string }>({ loading: false });
+  const indexLookupSeq = useRef(0);
+
+  const setIndex = (year?: number, number?: number) => {
+    const options = { shouldDirty: true, shouldValidate: formState.isSubmitted };
+    setValue('fees.indexYear', year, options);
+    setValue('fees.indexNumber', number, options);
+    setValue('fees.indexType', INDEX_TYPE, options);
+  };
+
+  // Fill in the default index when indexation is on but the contract has no index yet. A contract that
+  // already has an index keeps it: the default never overwrites a chosen (or previously saved) indexår.
   useEffect(() => {
-    if (indexAdjusted !== 'true' || !kpiData) return;
+    if (readOnly || indexAdjusted !== 'true' || !kpiData) return;
+    if (getValues('fees.indexYear') && getValues('fees.indexNumber')) return;
+    // The default replaces whatever was being typed: drop a pending lookup so it cannot overwrite it.
+    indexLookupSeq.current++;
+    setIndexLookup({ loading: false });
     setValue('fees.indexYear', kpiData.indexYear);
     setValue('fees.indexNumber', kpiData.indexNumber);
-    setValue('fees.indexType', 'KPI 80');
-  }, [indexAdjusted, kpiData, setValue]);
+    setValue('fees.indexType', INDEX_TYPE);
+    // getValues is read on purpose: typing a new indexår must not bring the default back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indexAdjusted, kpiData, existingContract, readOnly, setValue]);
+
+  // Show the indexår held by the form, e.g. after a lookup or when the default was filled in. A year in
+  // the form always has its KPI value, so an error from something typed earlier no longer applies.
+  useEffect(() => {
+    if (!indexYear) return;
+    setIndexYearInput(String(indexYear));
+    setIndexLookup((current) => (current.loading ? current : { loading: false }));
+  }, [indexYear]);
+
+  // When another contract is loaded into the form (or the saved one is reset), start over from its index:
+  // an empty input for a contract without one, and no pending lookup or error from the previous contract.
+  useEffect(() => {
+    indexLookupSeq.current++;
+    const year = getValues('fees.indexYear');
+    setIndexYearInput(year ? String(year) : '');
+    setIndexLookup({ loading: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingContract]);
+
+  const onIndexYearChange = (value: string) => {
+    setIndexYearInput(value);
+    const seq = ++indexLookupSeq.current;
+    // Until the entered year has given a KPI value the form holds no index, so an old value is never saved
+    // together with a year it does not belong to.
+    setIndex(undefined, undefined);
+
+    if (!/^\d{4}$/.test(value)) {
+      setIndexLookup({ loading: false, error: value ? 'Ange indexår med fyra siffror, t.ex. 2025' : undefined });
+      return;
+    }
+    const year = Number(value);
+    if (year < FIRST_KPI_INDEX_YEAR) {
+      setIndexLookup({ loading: false, error: `KPI 80 finns från ${FIRST_KPI_INDEX_YEAR}, ange ett senare indexår` });
+      return;
+    }
+    if (year > new Date().getFullYear()) {
+      setIndexLookup({ loading: false, error: 'Indexår kan inte ligga i framtiden' });
+      return;
+    }
+
+    setIndexLookup({ loading: true });
+    getKpiIndex(year)
+      .then((data) => {
+        if (seq !== indexLookupSeq.current) return;
+        setIndex(data.indexYear, data.indexNumber);
+        setIndexLookup({ loading: false });
+      })
+      .catch(() => {
+        if (seq !== indexLookupSeq.current) return;
+        setIndexLookup({ loading: false, error: `Det gick inte att hämta KPI-värde för oktober ${year}` });
+      });
+  };
+
+  const indexError = indexLookup.error ?? formState.errors.fees?.indexNumber?.message;
 
   const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
     []
@@ -484,7 +571,8 @@ export const ContractForm: FC<{
           <Info className="text-primary w-20 h-20 shrink-0" />
           <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
             <p className="mt-0">
-              Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
+              Avtalet är inte längre ett utkast. Endast fakturering, indexår, fakturareferens, fakturamottagare och
+              automatisk förlängning kan ändras.
             </p>
           </span>
         </div>
@@ -841,22 +929,34 @@ export const ContractForm: FC<{
                 <FormControl
                   className="flex-grow"
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    if (!isEditable('general')) return;
-                    setValue('extension.autoExtend', e.target.value === 'true');
-                    trigger();
+                    if (!isEditable('extension')) return;
+                    setValue('extension.autoExtend', fromAutoExtendValue(e.target.value), { shouldDirty: true });
+                    if (formState.isSubmitted) trigger('extension');
                   }}
                 >
                   <FormLabel>Automatisk förlängning av avtalet</FormLabel>
                   <RadioButton.Group
                     inline
                     className="flex gap-24"
-                    value={watch().extension?.autoExtend ? 'true' : 'false'}
+                    name="autoExtend"
+                    value={toAutoExtendValue(watch('extension.autoExtend'))}
                   >
-                    <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={!isEditable('general')}>
+                    <RadioButton data-cy="autoextend-true-radiobutton" value="true" disabled={!isEditable('extension')}>
                       Ja
                     </RadioButton>
-                    <RadioButton value={'false'} disabled={!isEditable('general')}>
+                    <RadioButton
+                      data-cy="autoextend-false-radiobutton"
+                      value="false"
+                      disabled={!isEditable('extension')}
+                    >
                       Nej
+                    </RadioButton>
+                    <RadioButton
+                      data-cy="autoextend-undefined-radiobutton"
+                      value={AUTO_EXTEND_UNDEFINED}
+                      disabled={!isEditable('extension')}
+                    >
+                      Ej definierat
                     </RadioButton>
                   </RadioButton.Group>
                 </FormControl>
@@ -868,7 +968,7 @@ export const ContractForm: FC<{
                     <FormLabel>Enhet</FormLabel>
                     <Select
                       className="w-full"
-                      disabled={!isEditable('general')}
+                      disabled={!isEditable('extension')}
                       {...register('extension.unit')}
                       placeholder="Månad/år"
                       data-cy="extension-unit-selector"
@@ -881,7 +981,7 @@ export const ContractForm: FC<{
                   <FormControl className="w-full">
                     <FormLabel>Antal</FormLabel>
                     <Input
-                      readOnly={!isEditable('general')}
+                      readOnly={!isEditable('extension')}
                       {...register('extension.leaseExtension')}
                       placeholder="Ange tal"
                       data-cy="extension-input"
@@ -972,7 +1072,7 @@ export const ContractForm: FC<{
           <Disclosure.Header>
             <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Löpande avgift</Disclosure.Title>
-            {referenceError ? (
+            {referenceError || formState.errors.fees?.indexNumber ? (
               <Label className="w-[15rem]" rounded inverted color={'error'}>
                 Fel i formulär
               </Label>
@@ -1056,11 +1156,41 @@ export const ContractForm: FC<{
                       Nej
                     </RadioButton>
                   </RadioButton.Group>
-                  {!contractOveriewMode && (
+                  {/* Index information is only shown for an indexed contract. The contract overview only shows
+                      the index the contract actually has. */}
+                  {indexAdjusted === 'true' && (!contractOveriewMode || hasIndexDetails) && (
                     <small data-cy="index-adjustment-help-text">{indexAdjustmentHelpText}</small>
                   )}
                 </FormControl>
               </div>
+              {indexAdjusted === 'true' && !contractOveriewMode && (
+                <div className="flex gap-18 justify-start">
+                  <FormControl className="w-full" invalid={!!indexError}>
+                    <FormLabel>Indexår</FormLabel>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="ÅÅÅÅ"
+                      className="w-full"
+                      readOnly={!isBillingDetailEditable('billing')}
+                      value={indexYearInput}
+                      onChange={(e) => onIndexYearChange(e.target.value.trim())}
+                      data-cy="index-year-input"
+                    />
+                    {indexLookup.loading ? (
+                      <small data-cy="index-year-loading">Hämtar KPI-värde från SCB...</small>
+                    ) : indexError ? (
+                      <FormErrorMessage data-cy="index-year-error">{indexError}</FormErrorMessage>
+                    ) : (
+                      <small>
+                        Indexvärdet för oktober valt år hämtas från SCB. Standard är föregående år (
+                        {defaultKpiIndexYear()}).
+                      </small>
+                    )}
+                  </FormControl>
+                </div>
+              )}
               <div className="flex gap-18 justify-start">
                 <FormControl
                   className="flex-grow"
@@ -1122,7 +1252,7 @@ export const ContractForm: FC<{
                     <FormLabel>När ska fakturaunderlaget skapas?</FormLabel>
                     <Select
                       className="w-full"
-                      disabled={!isBillingDetailEditable('general')}
+                      disabled={!isBillingDetailEditable('billing')}
                       {...register('invoicing.yearlyBillingMonth', { valueAsNumber: true })}
                       data-cy="yearly-billing-month-select"
                     >
