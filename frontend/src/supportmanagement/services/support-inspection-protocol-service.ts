@@ -5,6 +5,7 @@ import { inspectionProtocolTemplate } from '@supportmanagement/inspection-protoc
 import type {
   InspectionProtocolTemplate,
   ProtocolField,
+  ProtocolOption,
   ProtocolPrefill,
   ProtocolTextField,
 } from '@supportmanagement/inspection-protocols/types';
@@ -78,6 +79,21 @@ const protocolAnswer = (investigation: SupportInvestigation | undefined, key: st
 /** The summary chosen in the protocol, e.g. 'approved' or 'actionRequired'. */
 export const inspectionProtocolSummary = (investigation: SupportInvestigation | undefined): string | undefined =>
   protocolAnswer(investigation, 'summary');
+
+const SUMMARY_KEY = 'summary';
+
+const summaryOptionsOf = (investigation: SupportInvestigation | undefined): ProtocolOption[] => {
+  const template = inspectionProtocolTemplate(investigation?.type);
+  const field = template && fieldsOf(template).find((candidate) => candidate.key === SUMMARY_KEY);
+  return field && !isText(field) ? field.options : [];
+};
+
+/** The summary in the words the protocol puts it, falling back to the saved value for an option that is gone. */
+export const inspectionProtocolSummaryLabel = (investigation: SupportInvestigation | undefined): string | undefined => {
+  const summary = inspectionProtocolSummary(investigation);
+  if (!summary) return undefined;
+  return summaryOptionsOf(investigation).find((option) => option.value === summary)?.label ?? summary;
+};
 
 /** The date of the inspection as the protocol has it, YYYY-MM-DD. */
 export const inspectionProtocolDate = (investigation: SupportInvestigation | undefined): string | undefined =>

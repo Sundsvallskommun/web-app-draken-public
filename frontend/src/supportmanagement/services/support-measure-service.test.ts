@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 
 import type { SupportErrand } from './support-errand-service';
 import {
+  isSupportActionErrand,
   isSupportInspectionErrand,
   supportMeasureChanges,
   type SupportMeasureRow,
@@ -17,11 +18,25 @@ const errandInCategory = (resourceName: string) =>
     ],
   } as unknown as SupportErrand);
 
+const actionErrand = {
+  labels: [
+    { classification: 'CATEGORY', resourceName: 'INSPECTION' },
+    { classification: 'TYPE', resourceName: 'MEASURES' },
+  ],
+} as unknown as SupportErrand;
+
 test('an errand is an inspection when it is filed under the INSPECTION category', () => {
   expect(isSupportInspectionErrand(errandInCategory('INSPECTION'))).toBe(true);
   expect(isSupportInspectionErrand(errandInCategory('SERVING_PERMIT'))).toBe(false);
   expect(isSupportInspectionErrand({ labels: [] } as unknown as SupportErrand)).toBe(false);
   expect(isSupportInspectionErrand(undefined)).toBe(false);
+});
+
+test('an action errand shares the inspection category without being an inspection', () => {
+  expect(isSupportActionErrand(actionErrand)).toBe(true);
+  expect(isSupportInspectionErrand(actionErrand)).toBe(false);
+  expect(isSupportActionErrand(errandInCategory('INSPECTION'))).toBe(false);
+  expect(isSupportActionErrand(undefined)).toBe(false);
 });
 
 test('control points and action points are told apart by type, and listed in the order they were written', () => {

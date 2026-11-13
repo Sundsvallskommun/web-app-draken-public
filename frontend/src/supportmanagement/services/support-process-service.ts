@@ -254,13 +254,20 @@ const gateOfSupportProcessStep = (step: SupportProcessStepName): string | undefi
 const gateHasBeenSent = (gate: string | undefined, activities: ProcessActivity[]): boolean =>
   !!gate && activities.some((activity) => activity.activityId === gate);
 
+/**
+ * Whether the errand has been through the step. A phase the model passes on its own has no gate to report - the
+ * action errand's registration is one - so a step the process has already left counts as visited even though no
+ * signal was ever sent for it.
+ */
 export const hasVisitedSupportProcessStep = (
   step: SupportProcessStepName,
   process: ErrandProcess | undefined,
   activities: ProcessActivity[]
 ): boolean =>
   Boolean(process) &&
-  (supportProcessStepName(process) === step || gateHasBeenSent(gateOfSupportProcessStep(step), activities));
+  (supportProcessStepName(process) === step ||
+    hasSupportProcessPassedStep(step, process) ||
+    gateHasBeenSent(gateOfSupportProcessStep(step), activities));
 
 /**
  * What the process waits for from the handler right now. The names come from the process model and
