@@ -842,6 +842,17 @@
     "row": "Åtgärdspunkt {{number}}",
     "remove": "Ta bort åtgärdspunkt {{number}}",
     "add": "Lägg till åtgärdspunkt",
+    "due_at": "Frist",
+    "goal": "Mål",
+    "goal_placeholder": "Vad punkten ska leda till",
+    "overdue": "Fristen har passerat",
+    "deadline_changed": "Frist ändrad {{date}}",
+    "result": {
+      "completed": "Åtgärdad",
+      "partially_completed": "Delvis åtgärdad",
+      "not_completed": "Ej åtgärdad",
+      "not_applicable": "Ej aktuellt"
+    },
     "save_error": "Åtgärdspunkterna kunde inte sparas"
   },
   "inspection_protocol": {

@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import FormData from 'form-data';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -15,7 +15,9 @@ import ApiService from '@/services/api.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiURL } from '@/utils/util';
 
-const MEASURE_RESULTS = ['COMPLETED', 'NOT_COMPLETED', 'NOT_APPLICABLE'];
+// What Support Management accepts. Which of them a measure is offered is the handler's screen to decide: the
+// inspection protocol has no box for a partly addressed control point, so it offers three of the four.
+const MEASURE_RESULTS = ['COMPLETED', 'PARTIALLY_COMPLETED', 'NOT_COMPLETED', 'NOT_APPLICABLE'];
 
 export class CreateSupportMeasureDto {
   @IsString()
@@ -41,6 +43,15 @@ export class CreateSupportMeasureDto {
   @IsString()
   @MaxLength(3000)
   resultText?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  dueAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  goal?: string;
 }
 
 export class UpdateSupportMeasureDto {
@@ -63,6 +74,15 @@ export class UpdateSupportMeasureDto {
   @IsString()
   @MaxLength(3000)
   resultText?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  dueAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  goal?: string;
 }
 
 const ADDED_BY_ROLE = 'PRIMARY';

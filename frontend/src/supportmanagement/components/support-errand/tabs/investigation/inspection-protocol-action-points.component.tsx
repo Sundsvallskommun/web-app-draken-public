@@ -1,12 +1,12 @@
-import { Button, Input } from '@sk-web-gui/react';
-import type { SupportMeasureRow } from '@supportmanagement/services/support-measure-service';
-import { Plus, X } from 'lucide-react';
+import { Button } from '@sk-web-gui/react';
+import { emptySupportMeasureRow, type SupportMeasureRow } from '@supportmanagement/services/support-measure-service';
+import { Plus } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const emptyRow = (): SupportMeasureRow => ({ title: '', result: '', description: '', resultText: '' });
+import { ActionPointCard } from './action-point-card.component';
 
-/** The action points the permit holder gets to address: a list of titles, held in the protocol's draft. */
+/** The action points the permit holder gets to address, held in the protocol's draft until the errand is saved. */
 export const InspectionProtocolActionPoints: FC<{
   rows: SupportMeasureRow[];
   readOnly: boolean;
@@ -14,35 +14,24 @@ export const InspectionProtocolActionPoints: FC<{
 }> = ({ rows, readOnly, onChange }) => {
   const { t } = useTranslation();
 
-  const setTitle = (index: number, title: string) =>
-    onChange(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, title } : row)));
+  const replace = (index: number, row: SupportMeasureRow) =>
+    onChange(rows.map((current, rowIndex) => (rowIndex === index ? row : current)));
 
   return (
-    <section className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12" data-cy="action-point-list">
+    <section className="flex flex-col gap-12" data-cy="action-point-list">
       <h3 className="text-h3-md">{t('common:action_points.heading')}</h3>
       <p className="text-small text-dark-secondary m-0">{t('common:action_points.description')}</p>
       <span className="font-bold">{t('common:action_points.count', { count: rows.length })}</span>
-      <ol className="flex flex-col gap-8 m-0 p-0 list-none">
+      <ol className="flex flex-col gap-12 m-0 p-0 list-none">
         {rows.map((row, index) => (
-          <li key={row.id ?? `new-${index}`} className="flex items-center gap-8">
-            <span className="w-24 text-right text-dark-secondary">{index + 1}.</span>
-            <Input
-              className="w-full"
-              value={row.title}
-              onChange={(event) => setTitle(index, event.target.value)}
-              disabled={readOnly}
-              aria-label={t('common:action_points.row', { number: index + 1 })}
+          <li key={row.id ?? `new-${index}`}>
+            <ActionPointCard
+              index={index}
+              row={row}
+              readOnly={readOnly}
+              onChange={(changed) => replace(index, changed)}
+              onRemove={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
             />
-            <Button
-              iconButton
-              variant="tertiary"
-              showBackground={false}
-              onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
-              disabled={readOnly}
-              aria-label={t('common:action_points.remove', { number: index + 1 })}
-            >
-              <X size={16} className="text-error" />
-            </Button>
           </li>
         ))}
       </ol>
@@ -53,7 +42,7 @@ export const InspectionProtocolActionPoints: FC<{
           color="vattjom"
           size="sm"
           leftIcon={<Plus size={16} />}
-          onClick={() => onChange([...rows, emptyRow()])}
+          onClick={() => onChange([...rows, emptySupportMeasureRow()])}
           disabled={readOnly}
           data-cy="action-point-add"
         >
