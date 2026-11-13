@@ -1,10 +1,15 @@
+import dayjs from 'dayjs';
 import { expect, test } from 'vitest';
 
 import type { SupportErrand } from './support-errand-service';
 import {
+  emptySupportMeasureRow,
   isSupportActionErrand,
   isSupportInspectionErrand,
+  SUPPORT_ACTION_POINT_RESULTS,
+  SUPPORT_MEASURE_RESULTS,
   supportMeasureChanges,
+  supportMeasureIsOverdue,
   type SupportMeasureRow,
   supportMeasureRow,
   supportMeasuresOfType,
@@ -52,28 +57,62 @@ test('control points and action points are told apart by type, and listed in the
 
 test('a row reads the title, result and note, and treats a result Draken does not know as none', () => {
   expect(supportMeasureRow({ id: 'm1', title: 'Nykterhet', result: 'COMPLETED', description: 'ok' })).toEqual({
+    ...emptySupportMeasureRow('Nykterhet'),
     id: 'm1',
-    title: 'Nykterhet',
     result: 'COMPLETED',
     description: 'ok',
-    resultText: '',
   });
-  expect(supportMeasureRow({ id: 'm1', result: 'DONE' })).toEqual({
-    id: 'm1',
-    title: '',
-    result: '',
-    description: '',
-    resultText: '',
-  });
+  expect(supportMeasureRow({ id: 'm1', result: 'DONE' })).toEqual({ ...emptySupportMeasureRow(), id: 'm1' });
   expect(supportMeasureRow({ id: 'm1', result: null })).toMatchObject({ result: '' });
+  expect(supportMeasureRow({ id: 'm1', result: 'PARTIALLY_COMPLETED' })).toMatchObject({
+    result: 'PARTIALLY_COMPLETED',
+  });
+});
+
+test('a row reads the deadline as a date field and the goal as it stands', () => {
+  expect(
+    supportMeasureRow({ id: 'm1', title: 'Sätt upp skylt', dueAt: '2026-12-01T00:00:00+01:00', goal: 'Skylt på plats' })
+  ).toMatchObject({ dueAt: '2026-12-01', goal: 'Skylt på plats' });
+  expect(supportMeasureRow({ id: 'm1', dueAt: 'inte ett datum' })).toMatchObject({ dueAt: '' });
+});
+
+test('a measure changed after it was written says when, and one untouched since says nothing', () => {
+  expect(
+    supportMeasureRow({ id: 'm1', created: '2026-11-01T08:00:00Z', modified: '2026-11-18T13:12:00Z' })
+  ).toMatchObject({ changedAt: '2026-11-18' });
+  expect(
+    supportMeasureRow({ id: 'm1', created: '2026-11-01T08:00:00Z', modified: '2026-11-01T08:00:00Z' })
+  ).toMatchObject({ changedAt: '' });
+  expect(supportMeasureRow({ id: 'm1', created: '2026-11-01T08:00:00Z' })).toMatchObject({ changedAt: '' });
+});
+
+test('a deadline in the past is overdue until the point is addressed or set aside', () => {
+  expect(supportMeasureIsOverdue({ dueAt: '2020-01-01', result: '' })).toBe(true);
+  expect(supportMeasureIsOverdue({ dueAt: '2020-01-01', result: 'PARTIALLY_COMPLETED' })).toBe(true);
+  expect(supportMeasureIsOverdue({ dueAt: '2020-01-01', result: 'NOT_COMPLETED' })).toBe(true);
+  expect(supportMeasureIsOverdue({ dueAt: '2020-01-01', result: 'COMPLETED' })).toBe(false);
+  expect(supportMeasureIsOverdue({ dueAt: '2020-01-01', result: 'NOT_APPLICABLE' })).toBe(false);
+  expect(supportMeasureIsOverdue({ dueAt: '2099-01-01', result: '' })).toBe(false);
+  expect(supportMeasureIsOverdue({ dueAt: '', result: '' })).toBe(false);
+});
+
+test('a control point is not offered a partly addressed result, an action point is', () => {
+  expect(SUPPORT_MEASURE_RESULTS.map((choice) => choice.result)).toEqual([
+    'COMPLETED',
+    'NOT_COMPLETED',
+    'NOT_APPLICABLE',
+  ]);
+  expect(SUPPORT_ACTION_POINT_RESULTS.map((choice) => choice.result)).toEqual([
+    'COMPLETED',
+    'PARTIALLY_COMPLETED',
+    'NOT_COMPLETED',
+    'NOT_APPLICABLE',
+  ]);
 });
 
 const row = (id: string | undefined, title: string, rest: Partial<SupportMeasureRow> = {}): SupportMeasureRow => ({
+  ...emptySupportMeasureRow(title),
   id,
-  title,
-  result: '',
-  description: '',
-  resultText: '',
   ...rest,
 });
 
@@ -124,6 +163,39 @@ test('a saved row is patched with the fields that differ; a result cannot be tak
     update: [{ id: 'm1', patch: { result: 'NOT_COMPLETED' } }],
     remove: [],
   });
+});
+
+test('a deadline and a goal travel with a new point, and a later deadline is patched in', () => {
+  const created = supportMeasureChanges(
+    'EXTERNAL',
+    [row(undefined, 'Sätt upp skylt', { dueAt: '2026-12-01', goal: 'Skylt på plats' })],
+    []
+  );
+  const moved = supportMeasureChanges(
+    'EXTERNAL',
+    [row('m1', 'Sätt upp skylt', { dueAt: '2027-01-15' })],
+    [row('m1', 'Sätt upp skylt', { dueAt: '2026-12-01' })]
+  );
+
+  expect(created.create).toEqual([
+    {
+      type: 'EXTERNAL',
+      title: 'Sätt upp skylt',
+      dueAt: dayjs('2026-12-01').startOf('day').format(),
+      goal: 'Skylt på plats',
+    },
+  ]);
+  expect(moved.update).toEqual([{ id: 'm1', patch: { dueAt: dayjs('2027-01-15').startOf('day').format() } }]);
+});
+
+test('an emptied deadline is left alone, since the service has no way to take one back', () => {
+  const changes = supportMeasureChanges(
+    'EXTERNAL',
+    [row('m1', 'Sätt upp skylt', { dueAt: '' })],
+    [row('m1', 'Sätt upp skylt', { dueAt: '2026-12-01' })]
+  );
+
+  expect(changes.update).toEqual([]);
 });
 
 test('blank rows are dropped, and a saved row that was blanked is removed', () => {

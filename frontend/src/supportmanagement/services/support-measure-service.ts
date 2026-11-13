@@ -1,5 +1,6 @@
 import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+import dayjs from 'dayjs';
 
 import type { SupportErrand } from './support-errand-service';
 
@@ -17,17 +18,32 @@ export type SupportMeasureTypeName = (typeof SupportMeasureType)[keyof typeof Su
 
 export const SupportMeasureResult = {
   COMPLETED: 'COMPLETED',
+  PARTIALLY_COMPLETED: 'PARTIALLY_COMPLETED',
   NOT_COMPLETED: 'NOT_COMPLETED',
   NOT_APPLICABLE: 'NOT_APPLICABLE',
 } as const;
 
 export type SupportMeasureResultName = (typeof SupportMeasureResult)[keyof typeof SupportMeasureResult];
 
-/** The results a handler can set, in the order the protocol shows them. */
+/**
+ * The results a control point can be given, in the order the protocol shows them. A partly addressed point is not
+ * among them: the protocol prints a cross for two of these and "Ej aktuellt" for the third, and has no fourth box.
+ */
 export const SUPPORT_MEASURE_RESULTS: { result: SupportMeasureResultName; translationKey: string }[] = [
   { result: SupportMeasureResult.COMPLETED, translationKey: 'common:inspection_protocol.result.approved' },
   { result: SupportMeasureResult.NOT_COMPLETED, translationKey: 'common:inspection_protocol.result.not_completed' },
   { result: SupportMeasureResult.NOT_APPLICABLE, translationKey: 'common:inspection_protocol.result.not_applicable' },
+];
+
+/** What an action point can end up as. The permit holder may have addressed it in part, which a control point cannot. */
+export const SUPPORT_ACTION_POINT_RESULTS: { result: SupportMeasureResultName; translationKey: string }[] = [
+  { result: SupportMeasureResult.COMPLETED, translationKey: 'common:action_points.result.completed' },
+  {
+    result: SupportMeasureResult.PARTIALLY_COMPLETED,
+    translationKey: 'common:action_points.result.partially_completed',
+  },
+  { result: SupportMeasureResult.NOT_COMPLETED, translationKey: 'common:action_points.result.not_completed' },
+  { result: SupportMeasureResult.NOT_APPLICABLE, translationKey: 'common:action_points.result.not_applicable' },
 ];
 
 /** A measure as the handler edits it. `id` is missing until the row has been written; '' means no result. */
@@ -38,6 +54,11 @@ export interface SupportMeasureRow {
   description: string;
   /** The observations of an area, as keys joined by '|'. */
   resultText: string;
+  /** The deadline as a date field, YYYY-MM-DD. Extending it is writing a later date; it cannot be taken away. */
+  dueAt: string;
+  goal: string;
+  /** The day the measure was last changed, where that is after it was written; blank for one untouched since. */
+  changedAt: string;
 }
 
 /** What a changed row is patched with; whatever is left out stays as it is. A result cannot be cleared. */
@@ -46,6 +67,8 @@ interface SupportMeasurePatch {
   result?: SupportMeasureResultName;
   description?: string;
   resultText?: string;
+  dueAt?: string;
+  goal?: string;
 }
 
 export interface SupportMeasureChanges {
@@ -55,6 +78,8 @@ export interface SupportMeasureChanges {
     result?: SupportMeasureResultName;
     description?: string;
     resultText?: string;
+    dueAt?: string;
+    goal?: string;
   }[];
   update: { id: string; patch: SupportMeasurePatch }[];
   remove: string[];
@@ -87,7 +112,44 @@ export const hasSupportActionPoints = (measures: Measure[] | undefined): boolean
   (measures ?? []).some((measure) => measure.type === SupportMeasureType.EXTERNAL && measure.status === 'ACTIVE');
 
 const isMeasureResult = (value: string | null | undefined): value is SupportMeasureResultName =>
-  SUPPORT_MEASURE_RESULTS.some((candidate) => candidate.result === value);
+  Object.values(SupportMeasureResult).some((candidate) => candidate === value);
+
+const asDateField = (value: string | undefined): string =>
+  value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '';
+
+const asTimestamp = (value: string): string | undefined =>
+  value && dayjs(value).isValid() ? dayjs(value).startOf('day').format() : undefined;
+
+/**
+ * When the measure was last changed, where that is later than when it was written. A change to a measure leaves
+ * neither a revision nor a notification in the service, so a deadline that has been moved has nothing else to go by.
+ */
+const changedAfterItWasWritten = (measure: Measure): string => {
+  if (!measure.modified || !measure.created) return '';
+  return dayjs(measure.modified).isAfter(dayjs(measure.created)) ? asDateField(measure.modified) : '';
+};
+
+const RESULTS_THAT_SETTLE_A_MEASURE: (SupportMeasureResultName | '')[] = [
+  SupportMeasureResult.COMPLETED,
+  SupportMeasureResult.NOT_APPLICABLE,
+];
+
+/** A deadline in the past on a point that is still to be addressed. */
+export const supportMeasureIsOverdue = (row: Pick<SupportMeasureRow, 'dueAt' | 'result'>): boolean =>
+  !!row.dueAt &&
+  !RESULTS_THAT_SETTLE_A_MEASURE.includes(row.result) &&
+  dayjs(row.dueAt).isBefore(dayjs().startOf('day'));
+
+/** A row for a measure that has not been written yet. */
+export const emptySupportMeasureRow = (title = ''): SupportMeasureRow => ({
+  title,
+  result: '',
+  description: '',
+  resultText: '',
+  dueAt: '',
+  goal: '',
+  changedAt: '',
+});
 
 /** A result Draken does not know (written by something else) shows as none, and is kept until the handler picks one. */
 export const supportMeasureRow = (measure: Measure): SupportMeasureRow => ({
@@ -96,6 +158,9 @@ export const supportMeasureRow = (measure: Measure): SupportMeasureRow => ({
   result: isMeasureResult(measure.result) ? measure.result : '',
   description: measure.description ?? '',
   resultText: measure.resultText ?? '',
+  dueAt: asDateField(measure.dueAt),
+  goal: measure.goal ?? '',
+  changedAt: changedAfterItWasWritten(measure),
 });
 
 const patchOf = (before: SupportMeasureRow, row: SupportMeasureRow): SupportMeasurePatch => ({
@@ -103,6 +168,8 @@ const patchOf = (before: SupportMeasureRow, row: SupportMeasureRow): SupportMeas
   ...(row.result && row.result !== before.result && { result: row.result }),
   ...(row.description !== before.description && { description: row.description }),
   ...(row.resultText !== before.resultText && { resultText: row.resultText }),
+  ...(row.dueAt && row.dueAt !== before.dueAt && { dueAt: asTimestamp(row.dueAt) }),
+  ...(row.goal !== before.goal && { goal: row.goal }),
 });
 
 /** Blank rows are dropped; a saved row that was blanked or removed is deleted; a saved row is patched with what differs. */
@@ -117,12 +184,14 @@ export const supportMeasureChanges = (
   return {
     create: kept
       .filter((row) => !row.id)
-      .map(({ title, result, description, resultText }) => ({
+      .map(({ title, result, description, resultText, dueAt, goal }) => ({
         type,
         title,
         ...(result && { result }),
         ...(description && { description }),
         ...(resultText && { resultText }),
+        ...(dueAt && { dueAt: asTimestamp(dueAt) }),
+        ...(goal && { goal }),
       })),
     update: kept.flatMap((row) => {
       const before = row.id ? savedById.get(row.id) : undefined;

@@ -39,6 +39,7 @@ import {
 } from '@supportmanagement/services/support-investigation-service';
 import { jsonParameterObject, supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
 import {
+  emptySupportMeasureRow,
   getSupportMeasures,
   saveSupportMeasures,
   supportMeasureChanges,
@@ -278,7 +279,7 @@ export const InspectionProtocol: FC<{
   const addControlPoint = () =>
     updateDraft((current) => ({
       ...current,
-      controlPoints: [...current.controlPoints, { title: '', result: '', description: '', resultText: '' }],
+      controlPoints: [...current.controlPoints, emptySupportMeasureRow()],
     }));
 
   const removeControlPoint = (index: number) =>
@@ -327,7 +328,7 @@ export const InspectionProtocol: FC<{
       ...current,
       templateKey: next.key,
       values: inspectionProtocolValuesOf(next, useSupportStore.getState().supportErrand, useUserStore.getState().user),
-      controlPoints: next.controlPoints.map((title) => ({ title, result: '', description: '', resultText: '' })),
+      controlPoints: next.controlPoints.map(emptySupportMeasureRow),
       observations: [],
     }));
   };

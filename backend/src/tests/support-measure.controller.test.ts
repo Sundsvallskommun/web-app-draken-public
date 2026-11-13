@@ -159,6 +159,31 @@ describe('the inspection protocol on a measure', () => {
     await expect(validate(update, options)).resolves.toEqual([]);
   });
 
+  it('takes a deadline and a goal on an action point, and a partly addressed result', async () => {
+    const options = { whitelist: true, forbidNonWhitelisted: true };
+    const create = plainToInstance(CreateSupportMeasureDto, {
+      type: 'EXTERNAL',
+      title: 'Sätt upp skylt om åldersgräns',
+      dueAt: '2026-12-01',
+      goal: 'Skylten sitter synlig vid kassan',
+    });
+    const update = plainToInstance(UpdateSupportMeasureDto, {
+      dueAt: '2027-01-15T00:00:00+01:00',
+      result: 'PARTIALLY_COMPLETED',
+    });
+
+    await expect(validate(create, options)).resolves.toEqual([]);
+    await expect(validate(update, options)).resolves.toEqual([]);
+  });
+
+  it('refuses a deadline that is not a date, and a result the service does not know', async () => {
+    const options = { whitelist: true, forbidNonWhitelisted: true };
+    const errors = JSON.stringify(await validate(plainToInstance(UpdateSupportMeasureDto, { dueAt: 'i december', result: 'DELVIS' }), options));
+
+    expect(errors).toMatch(/dueAt/);
+    expect(errors).toMatch(/result/);
+  });
+
   it('unlinks an attachment from the measure and answers 204', async () => {
     const { controller, api } = makeController();
     const res = mockRes();
