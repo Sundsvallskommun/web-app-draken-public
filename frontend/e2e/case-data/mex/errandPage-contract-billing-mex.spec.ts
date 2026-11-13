@@ -155,6 +155,97 @@ test.describe('Contract billing (Löpande avgift)', () => {
     });
   });
 
+  test.describe('indexår', () => {
+    test('looks up the October KPI of another indexår and saves it', async ({ page, dismissCookieConsent }) => {
+      const billing = await openBilling(page, dismissCookieConsent, leaseAgreementWith({ invoicing: billed }));
+      await page.route('**/billingdatacollector/kpi?baseYear=KPI_80&period=2023-10', (route) =>
+        route.fulfill({ json: { baseYear: 'KPI_80', period: '2023-10', value: 408.12 } })
+      );
+
+      await billing.indexed.yes.check({ force: true });
+      await expect(billing.indexYear).toHaveValue(MOCK_KPI.period.slice(0, 4));
+      await billing.indexYear.fill('2023');
+      await expect(billing.indexHelpText).toHaveText(
+        'Indexreglering utgår från index enligt KPI 80 för oktober 2023: 408.12'
+      );
+      await billing.reference.fill('REF');
+      await fillContractPeriod(page);
+
+      const contract = await billing.save();
+
+      expect(contract.fees).toMatchObject({ indexType: 'KPI 80', indexYear: 2023, indexNumber: 408.12 });
+    });
+
+    test('keeps the index an existing contract was set up with', async ({ page, dismissCookieConsent }) => {
+      await openBilling(
+        page,
+        dismissCookieConsent,
+        leaseAgreementWith({
+          invoicing: billed,
+          fees: { yearly: 1000, indexType: 'KPI 80', indexYear: 2020, indexNumber: 340.5, indexationRate: 1 },
+        })
+      );
+      const billing = billingSection(page);
+
+      await expect(billing.indexYear).toHaveValue('2020');
+      await expect(billing.indexHelpText).toHaveText(
+        'Indexreglering utgår från index enligt KPI 80 för oktober 2020: 340.5'
+      );
+    });
+
+    test('checks the entered indexår before looking it up', async ({ page, dismissCookieConsent }) => {
+      const billing = await openBilling(page, dismissCookieConsent, leaseAgreementWith({ invoicing: billed }));
+      let lookups = 0;
+      page.on('request', (req) => {
+        if (req.url().includes('/billingdatacollector/kpi') && !req.url().includes(MOCK_KPI.period)) lookups++;
+      });
+
+      await billing.indexed.yes.check({ force: true });
+      await billing.indexYear.fill('1979');
+      await expect(billing.indexYearError).toHaveText('KPI 80 finns från 1980, ange ett senare indexår');
+      await billing.indexYear.fill('20');
+      await expect(billing.indexYearError).toHaveText('Ange indexår med fyra siffror, t.ex. 2025');
+      expect(lookups).toBe(0);
+
+      // Turning indexation off and on again brings back the default indexår, without the old error.
+      await billing.indexed.no.check({ force: true });
+      await billing.indexed.yes.check({ force: true });
+      await expect(billing.indexYear).toHaveValue(MOCK_KPI.period.slice(0, 4));
+      await expect(billing.indexYearError).toHaveCount(0);
+    });
+
+    test('does not save an active contract with an indexår without a KPI value', async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      const billing = await openBilling(
+        page,
+        dismissCookieConsent,
+        leaseAgreementWith({
+          status: Status.ACTIVE,
+          invoicing: billed,
+          extraParameters: invoiceInfo({ markup: 'REF-1' }),
+          fees: { yearly: 1000, indexType: 'KPI 80', indexYear: 2020, indexNumber: 340.5, indexationRate: 1 },
+        })
+      );
+      await expect(billing.indexYear).not.toHaveAttribute('readonly');
+      await page.route('**/billingdatacollector/kpi?baseYear=KPI_80&period=1985-10', (route) =>
+        route.fulfill({ status: 404, json: {} })
+      );
+
+      await billing.indexYear.fill('1985');
+      await expect(billing.indexYearError).toHaveText('Det gick inte att hämta KPI-värde för oktober 1985');
+
+      let saved = false;
+      page.on('request', (req) => {
+        if (req.url().includes('/contracts/') && req.method() === 'PUT') saved = true;
+      });
+      await billing.saveButton.click();
+      await expect(billing.root.getByText('Fel i formulär')).toBeVisible();
+      expect(saved).toBe(false);
+    });
+  });
+
   test.describe('yearly invoicing', () => {
     test('asks when the invoice is created, December by default, and saves the choice', async ({
       page,
@@ -313,7 +404,7 @@ test.describe('Contract billing (Löpande avgift)', () => {
       await expect(headerError).toHaveCount(0);
     });
 
-    test('lets the case worker turn billing off, while the fee and invoicing stay locked', async ({
+    test('lets the case worker turn billing off and change the billing month, while the fee stays locked', async ({
       page,
       dismissCookieConsent,
     }) => {
@@ -330,10 +421,13 @@ test.describe('Contract billing (Löpande avgift)', () => {
       await expect(billing.billed.yes).toBeEnabled();
       await expect(billing.yearlyFee).toHaveAttribute('readonly');
       await expect(billing.interval.quarterly).toBeDisabled();
-      await expect(billing.yearlyBillingMonth).toBeDisabled();
+      // When a yearly invoice is created can be changed also on an active contract (e.g. in an åtgärdsärende).
+      await expect(billing.yearlyBillingMonth).toBeEnabled();
       await expect(billing.reference).not.toHaveAttribute('readonly');
 
       await billing.setBilled(false);
+      // Not billed: the billing month is locked like the other fee details.
+      await expect(billing.yearlyBillingMonth).toBeDisabled();
       const contract = await billing.save();
 
       expect(contract.invoicing).toEqual({

@@ -183,8 +183,9 @@ export const defaultLagenhetsarrende: ContractData = {
       },
     ],
   },
+  // "Automatisk förlängning av avtalet" starts out unanswered ("Ej definierat"): autoExtend is only
+  // set once the handläggare picks Ja or Nej.
   extension: {
-    autoExtend: false,
     unit: TimeUnit.DAYS,
   },
   extraParameters: [
@@ -206,7 +207,6 @@ export const defaultLagenhetsarrende: ContractData = {
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
-  console.log('Saving contract', contract);
   try {
     let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
     const apiContract: Contract =
@@ -403,7 +403,6 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 };
 
 const lagenhetsArrendeToContract = (data: ContractData): Contract => {
-  console.log('transforming to contract: ', data);
   // Fees are kept also when billing is turned off (invoicing.billingEnabled = false): the contract
   // still describes the fee, it is just not invoiced.
   const feeDescription = getFeeDescription(data.type, data.leaseType);
@@ -433,12 +432,20 @@ const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     ({ personalNumber, stakeholderId, ...rest }) => rest
   );
 
+  // Without an answer on "Automatisk förlängning av avtalet" ("Ej definierat") no extension is sent. The
+  // contract API's PUT replaces the whole contract, so this also clears an earlier Ja/Nej (autoExtend null).
+  const autoExtend = data.extension?.autoExtend;
+  const extension =
+    typeof autoExtend === 'boolean'
+      ? {
+          autoExtend,
+          unit: data.extension?.unit,
+          ...(autoExtend && { leaseExtension: data.extension?.leaseExtension }),
+        }
+      : undefined;
+
   return {
-    extension: {
-      autoExtend: data.extension?.autoExtend,
-      unit: data.extension?.unit,
-      ...(data?.extension?.autoExtend && { leaseExtension: data.extension?.leaseExtension }),
-    },
+    extension,
     fees: fees,
     invoicing: toInvoicing(data),
     currentPeriod: data.currentPeriod,
@@ -455,7 +462,7 @@ const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: data.type,
-    leaseType: data.leaseType,
+    leaseType: toLeaseType(data.type, data.leaseType),
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     stakeholders,
@@ -465,15 +472,25 @@ const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 /**
+ * Only an Arrende (LEASE_AGREEMENT) has a subtype. Every other contract type, e.g. Korttidsarrende
+ * (SHORT_TERM_LEASE_AGREEMENT), must be saved without a leaseType, also when the form still holds one
+ * from a type the contract was first set up as.
+ */
+const toLeaseType = (type: ContractType, leaseType?: LeaseType): LeaseType | undefined =>
+  type === ContractType.LEASE_AGREEMENT ? leaseType : undefined;
+
+/**
  * The invoicing sent to the contract API: "Ska detta avtal generera en faktura?" maps to billingEnabled,
- * and yearlyBillingMonth (mandatory for YEARLY) is only sent for yearly invoicing.
+ * and yearlyBillingMonth (mandatory for YEARLY) is only sent for yearly invoicing. A contract type without
+ * a recurring fee ("Löpande avgift" is not shown for it) is never billed, so that a fee left over from a
+ * type the contract was first set up as cannot be invoiced.
  */
 const toInvoicing = (data: ContractData): NonNullable<Contract['invoicing']> => {
   const invoiceInterval = data.invoicing?.invoiceInterval ?? IntervalType.YEARLY;
   return {
     invoicedIn: data.invoicing?.invoicedIn ?? InvoicedIn.ADVANCE,
     invoiceInterval,
-    billingEnabled: data.generateInvoice === 'true',
+    billingEnabled: data.generateInvoice === 'true' && hasRecurringFee(data.type, data.leaseType),
     ...(invoiceInterval === IntervalType.YEARLY && {
       yearlyBillingMonth: data.invoicing?.yearlyBillingMonth ?? DEFAULT_YEARLY_BILLING_MONTH,
     }),
@@ -491,6 +508,14 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
+    leaseType: toLeaseType(contract.type, contract.leaseType),
+    // A contract without extension details has no answer on "Automatisk förlängning av avtalet": it is
+    // shown as "Ej definierat", not as "Nej".
+    extension: {
+      ...defaultLagenhetsarrende.extension,
+      ...contract.extension,
+      autoExtend: contract.extension?.autoExtend ?? undefined,
+    },
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
     indexAdjusted: hasIndexation ? 'true' : 'false',

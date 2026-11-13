@@ -18,6 +18,9 @@ export const billingSection = (page: Page) => {
     /** "Ska detta avtal indexregleras?" */
     indexed: { yes: radio('indexed-true-radiobutton'), no: radio('indexed-false-radiobutton') },
     indexHelpText: page.locator('[data-cy="index-adjustment-help-text"]'),
+    /** "Indexår" — fees.indexYear, whose October KPI (fees.indexNumber) is looked up from SCB */
+    indexYear: page.locator('[data-cy="index-year-input"]'),
+    indexYearError: page.locator('[data-cy="index-year-error"]'),
     /** "Hur ofta ska avgiften betalas?" — invoicing.invoiceInterval */
     interval: {
       yearly: radio('invoice-interval-yearly-radiobutton'),

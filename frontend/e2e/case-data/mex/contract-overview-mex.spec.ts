@@ -1153,5 +1153,39 @@ test.describe('Contract Overview page', () => {
       await expect(billing.interval.quarterly).toBeChecked();
       await expect(billing.yearlyBillingMonth).toHaveCount(0);
     });
+
+    test('shows the index the contract was set up with, only for an indexed contract', async ({ page, mockRoute }) => {
+      const billing = await openBillingDetails(
+        page,
+        mockRoute,
+        leaseAgreementWithBilling({
+          fees: { yearly: 1500, indexType: 'KPI 80', indexYear: 2025, indexNumber: 419.35, indexationRate: 1 },
+        })
+      );
+
+      await expect(billing.indexed.yes).toBeChecked();
+      await expect(billing.indexHelpText).toHaveText('Indexreglering utgår från index enligt KPI 80 för oktober 2025: 419.35');
+      // The overview shows the index, it does not let it be changed.
+      await expect(billing.indexYear).toHaveCount(0);
+    });
+
+    test('shows no index information for a contract that is not indexed', async ({ page, mockRoute }) => {
+      const billing = await openBillingDetails(
+        page,
+        mockRoute,
+        leaseAgreementWithBilling({ fees: { yearly: 1500, monthly: 0, total: 1500, currency: 'SEK' } })
+      );
+
+      await expect(billing.indexed.no).toBeChecked();
+      await expect(billing.indexHelpText).toHaveCount(0);
+    });
+
+    test('shows "Ej definierat" for a contract without automatic extension details', async ({ page, mockRoute }) => {
+      await openBillingDetails(page, mockRoute, leaseAgreementWithBilling({ extension: undefined }));
+
+      await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeChecked();
+      await expect(page.locator('[data-cy="autoextend-false-radiobutton"]')).not.toBeChecked();
+      await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeDisabled();
+    });
   });
 });

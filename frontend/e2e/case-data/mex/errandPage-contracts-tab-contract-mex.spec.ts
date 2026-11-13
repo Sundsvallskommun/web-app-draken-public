@@ -374,6 +374,27 @@ test.describe('Errand page contracts tab', () => {
     });
   });
 
+  test('lets "Automatisk förlängning av avtalet" be left unanswered', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-12-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('1');
+
+    await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeChecked();
+    await page.locator('[data-cy="autoextend-true-radiobutton"]').check({ force: true });
+    await expect(page.locator('[data-cy="extension-input"]')).toBeVisible();
+    await page.locator('[data-cy="autoextend-undefined-radiobutton"]').check({ force: true });
+    await expect(page.locator('[data-cy="extension-input"]')).toHaveCount(0);
+
+    const putContractRequest = page.waitForRequest(
+      (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
+    );
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
+    expect(leaseAgreement.extension).toBeUndefined();
+  });
+
   // Löpande avgift
   test('shows the KPI index used for index adjustment', async ({ page, mockRoute, dismissCookieConsent }) => {
     const indexYear = new Date().getFullYear() - 1;
@@ -850,8 +871,23 @@ test.describe('Errand page contracts tab', () => {
       test('shows warning banner for ACTIVE contracts', async ({ page }) => {
         await expect(page.locator('[data-cy="non-draft-warning-banner"]')).toBeVisible();
         await expect(page.locator('[data-cy="non-draft-warning-banner"]')).toContainText(
-          'Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.'
+          'Avtalet är inte längre ett utkast. Endast fakturering, indexår, fakturareferens, fakturamottagare och automatisk förlängning kan ändras.'
         );
+      });
+
+      test('allows changing the automatic extension and the yearly billing month for ACTIVE contracts', async ({
+        page,
+      }) => {
+        await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+        // The contract has no extension details: nothing is answered, not "Nej".
+        await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeChecked();
+        await expect(page.locator('[data-cy="autoextend-false-radiobutton"]')).not.toBeChecked();
+        await expect(page.locator('[data-cy="autoextend-true-radiobutton"]')).toBeEnabled();
+        await page.locator('[data-cy="autoextend-false-radiobutton"]').check({ force: true });
+        await expect(page.locator('[data-cy="autoextend-false-radiobutton"]')).toBeChecked();
+
+        await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
+        await expect(page.locator('[data-cy="yearly-billing-month-select"]')).toBeEnabled();
       });
 
       test('restricts editing of general fields for ACTIVE contracts', async ({ page }) => {
