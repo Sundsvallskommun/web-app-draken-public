@@ -88,3 +88,13 @@ test('a permit holder with no address at all stops the communication rather than
   ).rejects.toThrow();
   myPages.on = true;
 });
+
+// sendMessage answers a failed send with false rather than throwing, and a communication that was not
+// delivered must not be recorded as sent.
+test('an e-mail that did not go out is reported as a failure', async () => {
+  myPages.on = false;
+  vi.mocked(sendMessage).mockResolvedValueOnce(false);
+
+  await expect(sendSupportCommunication(MUNICIPALITY_ID, withEmailOnly, TEXT, 'Anna')).rejects.toThrow();
+  myPages.on = true;
+});

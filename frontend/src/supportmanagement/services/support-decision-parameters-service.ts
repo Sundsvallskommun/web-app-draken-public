@@ -138,6 +138,19 @@ const SERVING_PERMIT_TYPES = [
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
   DECISION_SCHEMAS.map((schema) => jsonParameterObject(decision?.jsonParameters, schema.name)).find(Boolean);
 
+/**
+ * What the decision wrote down about the inspection it answers. The inspection is read live while the decision
+ * tab is open; a write that happens without it, such as concluding the decision from the sidebar, keeps what
+ * was written instead of blanking it.
+ */
+export const savedDecisionOrigin = (decision: SupportDecision | undefined): DecisionOrigin => {
+  const inspection = objectAt(savedDecisionJson(decision)?.inspection);
+  return {
+    inspectionDate: stringAt(inspection.date),
+    inspectionCaseNumber: stringAt(inspection.caseNumber),
+  };
+};
+
 const matching =
   (pattern: RegExp) =>
   (value: string | undefined): string | undefined =>
