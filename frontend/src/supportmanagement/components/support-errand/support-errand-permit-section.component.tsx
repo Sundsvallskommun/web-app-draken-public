@@ -9,7 +9,7 @@ import {
   permitsInEffect,
 } from '@common/services/customer-inspection-service';
 import { getCustomerAssets } from '@common/services/customer-service';
-import { getResolvedRelations } from '@common/services/relations-service';
+import { getResolvedRelationsOrThrow } from '@common/services/relations-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Disclosure, Link, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useUserStore } from '@stores/index';
@@ -37,6 +37,7 @@ export const SupportErrandPermitSection: FC<{ errand: SupportErrand }> = ({ erra
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reads, setReads] = useState(0);
+  const [unreadable, setUnreadable] = useState(false);
 
   const errandId = errand.id;
   const partyId = permitHolderPartyId(errand);
@@ -46,14 +47,20 @@ export const SupportErrandPermitSection: FC<{ errand: SupportErrand }> = ({ erra
     let cancelled = false;
 
     void Promise.all([
-      getResolvedRelations('source', municipalityId, errandId, 'ASC'),
-      getCustomerAssets(municipalityId, partyId).catch(() => [] as Asset[]),
-    ]).then(([{ relations }, assets]) => {
-      if (cancelled) return;
-      const linkedErrandIds = relations.map((relation) => relation.target.resourceId);
-      setPermit(permitOfInspection(assets, linkedErrandIds));
-      setCandidates(permitsInEffect(assets));
-    });
+      getResolvedRelationsOrThrow('source', municipalityId, errandId, 'ASC'),
+      getCustomerAssets(municipalityId, partyId),
+    ])
+      .then(([{ relations }, assets]) => {
+        if (cancelled) return;
+        const linkedErrandIds = relations.map((relation) => relation.target.resourceId);
+        setPermit(permitOfInspection(assets, linkedErrandIds));
+        setCandidates(permitsInEffect(assets));
+        setUnreadable(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setUnreadable(true);
+      });
 
     return () => {
       cancelled = true;
@@ -107,9 +114,12 @@ export const SupportErrandPermitSection: FC<{ errand: SupportErrand }> = ({ erra
               ) : null}
             </div>
           ) : (
-            <div className="flex flex-col items-start gap-12" data-cy="inspection-permit-missing">
-              <span>{t('common:inspection_permit.none')}</span>
-              {canEdit && candidates.length > 0 ? (
+            <div
+              className="flex flex-col items-start gap-12"
+              data-cy={unreadable ? 'inspection-permit-unreadable' : 'inspection-permit-missing'}
+            >
+              <span>{t(unreadable ? 'common:inspection_permit.unreadable' : 'common:inspection_permit.none')}</span>
+              {canEdit && !unreadable && candidates.length > 0 ? (
                 <Button
                   size="sm"
                   variant="secondary"

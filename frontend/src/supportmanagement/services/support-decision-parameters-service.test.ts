@@ -612,6 +612,24 @@ describe('what the permit needs of the errand', () => {
     expect(objectAt(approvalOnAnActionErrand.decision)).not.toHaveProperty('outcome');
   });
 
+  test('a decision saved under an earlier key is read from the one it is written under now', () => {
+    const clausesOf = (decision: unknown) => objectAt(savedDecisionJson(decision as never)?.decision).clauses;
+    const underBothKeys = {
+      type: 'ATGARD',
+      jsonParameters: [
+        { key: 'aot_alcohol_decision', value: { decision: { clauses: ['att bevilja tillstand'] } } },
+        { key: 'aot_action_errand_decision', value: { decision: { clauses: ['att meddela varning'] } } },
+      ],
+    };
+    const underTheEarlierKeyOnly = {
+      type: 'ATGARD',
+      jsonParameters: [{ key: 'aot_alcohol_decision', value: { decision: { clauses: ['att bevilja tillstand'] } } }],
+    };
+
+    expect(clausesOf(underBothKeys)).toEqual(['att meddela varning']);
+    expect(clausesOf(underTheEarlierKeyOnly)).toEqual(['att bevilja tillstand']);
+  });
+
   test('the saved decision is read back whichever schema it was filed under', () => {
     const underTheActionErrandSchema = {
       jsonParameters: [{ key: 'aot_action_errand_decision', value: { decision: { outcome: 'REPRIMAND' } } }],
