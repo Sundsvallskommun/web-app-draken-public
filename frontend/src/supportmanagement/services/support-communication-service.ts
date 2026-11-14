@@ -70,7 +70,7 @@ export const sendSupportCommunication = async (
   const emails = emailsOfThePermitHolder(errand);
   if (emails.length === 0) throw new Error('The permit holder has no address to send the communication to');
 
-  await sendMessage({
+  const sent = await sendMessage({
     municipalityId,
     errandId: errand.id,
     contactMeans: SupportCommunicationChannel.EMAIL,
@@ -84,4 +84,6 @@ export const sendSupportCommunication = async (
     headerReplyTo: '',
     headerReferences: '',
   });
+
+  if (!sent) throw new Error('The communication was not sent to the permit holder');
 };
