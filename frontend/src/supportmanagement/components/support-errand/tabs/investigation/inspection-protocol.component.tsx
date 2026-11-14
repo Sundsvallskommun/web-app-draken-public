@@ -51,6 +51,7 @@ import {
   unlinkSupportMeasureAttachment,
   uploadSupportMeasureAttachment,
 } from '@supportmanagement/services/support-measure-service';
+import { inspectionSummaryLeadsOn } from '@supportmanagement/services/support-process-service';
 import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { FileDown, Plus } from 'lucide-react';
@@ -64,6 +65,8 @@ import { InspectionProtocolObservations } from './inspection-protocol-observatio
 
 // The protocol is what the Utredning tab holds for an inspection errand, so it saves under that tab's key.
 const TAB_KEY = 'investigation';
+// The field whose options the process has to have a way out of the decision phase for.
+const SUMMARY_FIELD = 'summary';
 const INSPECTION_SCHEMA_NAMES = INSPECTION_PROTOCOL_TEMPLATES.map(({ schema }) => schema.name);
 
 /** What the errand holds: the measures (control points, action points, observations) and the investigation. */
@@ -121,6 +124,16 @@ export const InspectionProtocol: FC<{
   setHasContent: (hasContent: boolean) => void;
 }> = ({ writable, setHasContent }) => {
   const { t } = useTranslation();
+
+  /**
+   * The protocol offers summaries the process has no gate for. They stay in the protocol and in the rendered PDF,
+   * where they can be filled in on paper, but the handler is told at the option that the errand cannot be taken
+   * on with them and that the revisit or the investigation is documented by hand.
+   */
+  const summaryWithoutAProcessStep = (fieldKey: string, optionValue: string): string | undefined =>
+    fieldKey === SUMMARY_FIELD && !inspectionSummaryLeadsOn(optionValue)
+      ? t('common:inspection_protocol.summary_without_step')
+      : undefined;
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -506,6 +519,7 @@ export const InspectionProtocol: FC<{
                 readOnly={readOnly}
                 onChange={(values) => updateDraft((current) => ({ ...current, values }))}
                 position="after"
+                unavailable={summaryWithoutAProcessStep}
               />
               <div>
                 <Button

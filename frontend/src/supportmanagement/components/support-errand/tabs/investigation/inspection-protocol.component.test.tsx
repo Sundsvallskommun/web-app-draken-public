@@ -256,6 +256,46 @@ test('a result marks the tab unsaved, and the save patches only the measures tha
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
+const summaryOption = (value: string) =>
+  document.querySelector<HTMLInputElement>(`[data-cy="protocol-summary-${value}"]`);
+
+const explanationOf = (value: string) =>
+  document.querySelector(`[data-cy="protocol-summary-${value}-unavailable"]`)?.textContent;
+
+test('a summary the process has no step for cannot be chosen, and says why at the option', async () => {
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(summaryOption('approved')?.disabled).toBe(false);
+  expect(summaryOption('actionRequired')?.disabled).toBe(false);
+  expect(explanationOf('approved')).toBeUndefined();
+
+  expect(summaryOption('revisit')?.disabled).toBe(true);
+  expect(summaryOption('investigation')?.disabled).toBe(true);
+  expect(explanationOf('revisit')).toContain('Saknar processteg');
+  expect(explanationOf('investigation')).toContain('dokumenteras manuellt');
+});
+
+test('a summary already saved is shown as it stands, explanation and all, rather than silently dropped', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({
+    ...investigation,
+    jsonParameters: [
+      {
+        key: 'aot_external_inspection_protocol',
+        schemaId: '2281_aot_external_inspection_protocol_1.0',
+        value: { summary: 'revisit' },
+      },
+    ],
+  } as never);
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(summaryOption('revisit')?.checked).toBe(true);
+  // What is already chosen stays choosable, so the handler can change it rather than being locked out.
+  expect(summaryOption('revisit')?.disabled).toBe(false);
+  expect(explanationOf('revisit')).toContain('kan inte avslutas');
+});
+
 test('the action points are listed in their own accordion and written as EXTERNAL measures by the same save', async () => {
   mount();
 

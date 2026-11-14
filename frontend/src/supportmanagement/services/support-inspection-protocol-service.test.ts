@@ -159,6 +159,9 @@ test('choices become "true" for the template\'s box macro, one per option, and u
     summaryActionRequiredText: 'Åtgärda entrén',
     measures: [{ title: 'Nykterhet', noRemark: 'X', remark: '', comment: '' }],
   });
+  // The summaries the process has no step for are still printed, so they can be filled in on paper.
+  expect(parameters).toHaveProperty('summaryNotApprovedRevisit', '');
+  expect(parameters).toHaveProperty('summaryInvestigationOpened', '');
   expect(Object.values(parameters).every((value) => typeof value === 'string' || Array.isArray(value))).toBe(true);
 });
 

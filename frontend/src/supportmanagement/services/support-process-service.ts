@@ -284,6 +284,14 @@ const INSPECTION_DECISION_GATES: Record<string, string> = {
   actionRequired: 'action_errand_requested',
 };
 
+/**
+ * Whether the process has a way out of the decision phase for the summary the handler chose. The protocol offers
+ * more summaries than the model has gates for, and the ones without a gate are read off the map rather than
+ * written down a second time, so a summary that is given a gate leads on by itself.
+ */
+export const inspectionSummaryLeadsOn = (summary: string | undefined): boolean =>
+  !!summary && !!INSPECTION_DECISION_GATES[summary];
+
 export const requestsSupportActionErrand = (signal: ProcessSignal | undefined): boolean =>
   signal?.name === INSPECTION_DECISION_GATES.actionRequired;
 
