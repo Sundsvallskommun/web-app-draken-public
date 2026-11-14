@@ -9,6 +9,7 @@ import {
   SupportCommunicationChannel,
   supportCommunicationChannel,
 } from '@supportmanagement/services/support-communication-service';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
   deleteSupportStatement,
   selectableSupportStatementOutcomes,
@@ -61,6 +62,7 @@ export const SupportCommunicationCard: FC<{
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const user = useUserStore((s) => s.user);
   const [busy, setBusy] = useState(false);
+  const [messageWentOut, setMessageWentOut] = useState(false);
 
   const unsent = form.status === SupportStatementStatus.DRAFT;
   const settled = supportCommunicationIsSettled(statement);
@@ -71,7 +73,48 @@ export const SupportCommunicationCard: FC<{
 
   const tell = (key: string, status: 'success' | 'error') => toastMessage(getToastOptions({ message: t(key), status }));
 
-  /** Sending is one step: the message leaves the unit and the statement becomes the one awaiting an answer. */
+  /** The message goes out before the statement is written, so a statement that says sent never stands for one that is not. */
+  const sendTheMessage = async (errand: SupportErrand): Promise<boolean> => {
+    if (messageWentOut) return true;
+
+    try {
+      await sendSupportCommunication(municipalityId, errand, form.freeText, user.name);
+      setMessageWentOut(true);
+      return true;
+    } catch {
+      tell('common:communications.toast.send_failed', 'error');
+      return false;
+    }
+  };
+
+  /** The statement as the one awaiting an answer, which is what the deadline and the outcome are read off. */
+  const recordTheMessageAsSent = async (statementId: string): Promise<void> => {
+    const sentAt = dayjs().format('YYYY-MM-DD');
+
+    try {
+      onChanged(
+        await updateSupportStatement(
+          errandId,
+          municipalityId,
+          statementId,
+          supportCommunicationFields(
+            { ...form, status: SupportStatementStatus.ACTIVE, sentAt },
+            recipient,
+            t('common:communications.title', { errandNumber })
+          )
+        )
+      );
+      setMessageWentOut(false);
+      tell('common:communications.toast.sent', 'success');
+    } catch {
+      tell('common:communications.toast.record_failed', 'error');
+    }
+  };
+
+  /**
+   * Sending is two steps: the message leaves the unit, and the statement becomes the one awaiting an answer. A
+   * second attempt takes only the step that failed, so a message that has gone out is never sent again.
+   */
   const send = async () => {
     if (!supportErrand || !statement.id) return;
     if (!form.freeText.trim()) {
@@ -80,27 +123,8 @@ export const SupportCommunicationCard: FC<{
     }
 
     setBusy(true);
-    try {
-      await sendSupportCommunication(municipalityId, supportErrand, form.freeText, user.name);
-      const sentAt = dayjs().format('YYYY-MM-DD');
-      onChanged(
-        await updateSupportStatement(
-          errandId,
-          municipalityId,
-          statement.id,
-          supportCommunicationFields(
-            { ...form, status: SupportStatementStatus.ACTIVE, sentAt },
-            recipient,
-            t('common:communications.title', { errandNumber })
-          )
-        )
-      );
-      tell('common:communications.toast.sent', 'success');
-    } catch {
-      tell('common:communications.toast.send_failed', 'error');
-    } finally {
-      setBusy(false);
-    }
+    if (await sendTheMessage(supportErrand)) await recordTheMessageAsSent(statement.id);
+    setBusy(false);
   };
 
   const remove = async () => {
@@ -155,7 +179,7 @@ export const SupportCommunicationCard: FC<{
           className="w-full"
           rows={6}
           value={form.freeText}
-          disabled={!editable || !unsent}
+          disabled={!editable || !unsent || messageWentOut}
           placeholder={t('common:communications.text_placeholder')}
           data-cy="communication-text"
           onChange={(event) => onFormChange({ freeText: event.currentTarget.value })}
@@ -180,14 +204,20 @@ export const SupportCommunicationCard: FC<{
             variant="primary"
             disabled={!editable || busy}
             loading={busy}
-            rightIcon={<Send size={18} />}
+            rightIcon={messageWentOut ? undefined : <Send size={18} />}
             data-cy="communication-send"
             onClick={() => void send()}
           >
-            {t('common:communications.send')}
+            {t(messageWentOut ? 'common:communications.save_sent' : 'common:communications.send')}
           </Button>
         ) : null}
       </div>
+
+      {messageWentOut ? (
+        <p className="text-error text-small m-0" data-cy="communication-not-recorded">
+          {t('common:communications.not_recorded')}
+        </p>
+      ) : null}
 
       {unsent ? null : (
         <div className="flex flex-wrap items-end gap-16">
