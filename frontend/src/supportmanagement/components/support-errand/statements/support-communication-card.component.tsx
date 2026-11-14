@@ -14,6 +14,7 @@ import {
   selectableSupportStatementOutcomes,
   SUPPORT_STATEMENT_STATUSES,
   supportCommunicationFields,
+  supportCommunicationIsSettled,
   type SupportStatementForm,
   SupportStatementStatus,
   updateSupportStatement,
@@ -62,7 +63,7 @@ export const SupportCommunicationCard: FC<{
   const [busy, setBusy] = useState(false);
 
   const unsent = form.status === SupportStatementStatus.DRAFT;
-  const settled = form.status === SupportStatementStatus.COMPLETED || form.status === SupportStatementStatus.CANCELLED;
+  const settled = supportCommunicationIsSettled(statement);
   const editable = writable && !settled;
   const recipient = statement.counterpartyName ?? '';
   const channel = supportErrand ? supportCommunicationChannel(supportErrand) : SupportCommunicationChannel.EMAIL;

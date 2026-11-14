@@ -11,12 +11,14 @@ import {
   type DecisionOrigin,
   type DecisionParameterInput,
   decisionSchema,
+  savedDecisionOrigin,
   toDecisionDocumentParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import { hasInvalidServingHours } from '@supportmanagement/services/support-decision-scope-service';
 import {
+  ACTION_ERRAND_PERMIT_TYPE,
   createSupportDecision,
   getSupportDecisions,
   isSupportDecisionLockedError,
@@ -103,6 +105,8 @@ export const useDecisionSave = ({
   );
 
   const writtenTerms = values.terms.map((term) => term.trim()).filter(Boolean);
+  const writtenOrigin = savedDecisionOrigin(decision);
+  const documentIsFiledFromHere = permit.type === ACTION_ERRAND_PERMIT_TYPE;
 
   const parameterInput = (errand: SupportErrand): DecisionParameterInput => ({
     errand,
@@ -116,7 +120,8 @@ export const useDecisionSave = ({
     premisesPhoneNumber: values.premisesPhoneNumber,
     externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
     origin: {
-      ...origin,
+      inspectionDate: origin?.inspectionDate || writtenOrigin.inspectionDate,
+      inspectionCaseNumber: origin?.inspectionCaseNumber || writtenOrigin.inspectionCaseNumber,
       permitType: values.permitType,
       permitCaseNumber: values.permitCaseNumber,
     },
@@ -161,10 +166,11 @@ export const useDecisionSave = ({
 
   /**
    * The decision document as the errand stands when the decision is concluded, filed among its attachments. The
-   * parameters are the ones the preview rendered, so what is filed is what the handler saw.
+   * parameters are the ones the preview rendered, so what is filed is what the handler saw. Only an action
+   * errand's letter is filed here; a permit's certificate is the one the process issues and sends.
    */
   const fileDecisionDocument = async (): Promise<unknown> => {
-    if (!supportErrand?.id || !documentTemplate) return undefined;
+    if (!supportErrand?.id || !documentTemplate || !documentIsFiledFromHere) return undefined;
 
     const pdf = await renderTemplatePdf(documentTemplate, documentParameters);
     const file = pdfFileFromBase64(pdf, decisionDocumentFileName(supportErrand.errandNumber));

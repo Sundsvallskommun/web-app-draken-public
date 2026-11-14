@@ -565,3 +565,43 @@ test('a permit without beverages or hours to decide shows no such fields', async
   expect(document.querySelector('[data-cy="decision-beverages"]')).toBeNull();
   expect(document.querySelector('[data-cy="decision-serving-hours"]')).toBeNull();
 });
+
+// The process issues and sends the permit certificate; filing a second copy from the browser would put two
+// documents that can disagree on the same errand.
+test('concluding a permit decision files no document of its own', async () => {
+  await renderTab();
+
+  fillWhatTheCertificatePrints();
+  await useSupportStore.getState().decisionDocumentFiler?.();
+
+  expect(saveSupportAttachments).not.toHaveBeenCalled();
+});
+
+test('the inspection the decision was written for survives a save that cannot read it again', async () => {
+  everyOutcomeIsRegistered();
+  vi.mocked(updateSupportDecision)
+    .mockReset()
+    .mockResolvedValue({ id: 'decision-id', status: 'DRAFT' } as never);
+  vi.mocked(getSupportDecisions).mockResolvedValue([
+    {
+      id: 'decision-id',
+      status: 'DRAFT',
+      outcome: 'WARNING',
+      version: 1,
+      jsonParameters: [
+        {
+          key: 'aot_action_errand_decision',
+          schemaId: '2281_aot_action_errand_decision_1.0',
+          value: { inspection: { date: '2026-11-04', caseNumber: 'AOT-26110188' } },
+        },
+      ],
+    } as SupportDecision,
+  ]);
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  fireEvent.change(input('clauses'), { target: { value: 'att meddela varning' } });
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().value.inspection).toEqual({ date: '2026-11-04', caseNumber: 'AOT-26110188' });
+});

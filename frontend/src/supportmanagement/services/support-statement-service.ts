@@ -271,6 +271,14 @@ export const SUPPORT_COMMUNICATION_TYPE = 'COMMUNICATION';
 export const isSupportCommunication = (statement: Pick<Statement, 'type'>): boolean =>
   statement.type === SUPPORT_COMMUNICATION_TYPE;
 
+/**
+ * Whether the communication is done with, read off the statement as it is saved. The form's own status turns
+ * COMPLETED the moment an outcome is picked, so reading that would lock the outcome and the response date
+ * before the handler has filled them in.
+ */
+export const supportCommunicationIsSettled = (statement: Pick<Statement, 'status'>): boolean =>
+  statement.status === SupportStatementStatus.COMPLETED || statement.status === SupportStatementStatus.CANCELLED;
+
 export interface SupportStatementFields {
   type?: string;
   counterpartyName?: string;
