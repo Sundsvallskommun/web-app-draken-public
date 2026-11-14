@@ -955,6 +955,7 @@
   "inspection_permit": {
     "heading": "Tillståndet tillsynen gäller",
     "none": "Tillsynen är inte kopplad till något tillstånd.",
+    "unreadable": "Tillståndet kunde inte hämtas. Ladda om sidan för att försöka igen.",
     "link": "Koppla tillstånd",
     "open": "Öppna tillståndets ärende {{errandNumber}}",
     "validity": "Gäller {{from}} till {{to}}",

@@ -105,7 +105,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
-  const legalBasisFilled = useRef(false);
+  const legalBasisWrittenForArea = useRef<string | null>(null);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   // The area is kept as the investigation's type, the field that says which kind of investigation this is.
@@ -262,7 +262,6 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
           type: chosen,
         })
       );
-      legalBasisFilled.current = false;
     } catch (failure) {
       reportFailure(failure);
     } finally {
@@ -281,17 +280,24 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       .catch(() => undefined);
   };
 
+  const legalBasisCanBeWritten = !isLoading && !error && !!investigation && !readOnly && !!legalBasisTemplate;
+
   useEffect(() => {
-    if (isLoading || error || !investigation || readOnly || legalBasisFilled.current || !legalBasisTemplate) return;
+    if (!legalBasisCanBeWritten || !investigation) return;
+
+    const writtenForArea = legalBasisWrittenForArea.current;
+    const areaToWriteFor = area ?? '';
+    if (writtenForArea === areaToWriteFor) return;
 
     const section = (investigation.sections ?? []).find((candidate) => sectionKeyOf(candidate) === 'legal_basis');
     if (!section) return;
 
-    legalBasisFilled.current = true;
-    if ((section.text ?? '').trim()) return;
+    const theAreaWasChanged = writtenForArea !== null;
+    legalBasisWrittenForArea.current = areaToWriteFor;
+    if (!theAreaWasChanged && (section.text ?? '').trim()) return;
     void fillTheLegalBasis(section);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, error, investigation, readOnly, legalBasisTemplate]);
+  }, [legalBasisCanBeWritten, investigation, area]);
 
   const reportSaved = () =>
     toastMessage({

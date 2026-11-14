@@ -444,3 +444,39 @@ test('a migrated errand is read through the view for migrated investigations', a
   expect(await screen.findByTestId('migrated-investigation')).toBeTruthy();
   expect(completeSupportInvestigationSections).not.toHaveBeenCalled();
 });
+
+const ALCOHOL_LEGAL_BASIS = '<h3>Alkohollag (2010:1622)</h3>';
+const TOBACCO_LEGAL_BASIS = '<h3>Lag om tobak och liknande produkter (2018:2088)</h3>';
+
+const underTheArea = (type: string) => ({
+  ...investigation,
+  type,
+  sections: [
+    { id: 'section-9', sectionKey: 'legal_basis', heading: 'Lagrum', sortOrder: 6, text: ALCOHOL_LEGAL_BASIS },
+  ],
+});
+
+test('a change of area writes the new area legal basis over the one standing there', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(completeSupportInvestigationSections).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...underTheArea('TOBACCO'), version: 4 } as never);
+  vi.mocked(renderTemplateHtml).mockResolvedValue(TOBACCO_LEGAL_BASIS);
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-TOBACCO')).toBeTruthy());
+  expect(renderTemplateHtml).not.toHaveBeenCalled();
+
+  await act(async () => {
+    fireEvent.click(byCy('investigation-area-TOBACCO')!);
+  });
+
+  await waitFor(() => expect(renderTemplateHtml).toHaveBeenCalledWith('tobacco-sales-legal-basis'));
+  expect(vi.mocked(saveSupportInvestigationSection).mock.calls[0]).toEqual([
+    ERRAND_ID,
+    '2281',
+    'investigation-1',
+    'section-9',
+    { text: TOBACCO_LEGAL_BASIS },
+  ]);
+});

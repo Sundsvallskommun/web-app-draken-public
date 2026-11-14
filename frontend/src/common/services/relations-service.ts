@@ -207,7 +207,8 @@ export const getReferredFromErrands = (
     });
 };
 
-export const getResolvedRelations = (
+/** The relations of a resource, errands resolved, for the callers where a read that failed means something other than one that found nothing. */
+export const getResolvedRelationsOrThrow = (
   direction: 'source' | 'target',
   municipalityId: string,
   resourceId: string,
@@ -215,8 +216,17 @@ export const getResolvedRelations = (
 ): Promise<ResolvedRelationsResponse> => {
   const url = `${municipalityId}/resolvedrelations/${direction}/${sort}/${resourceId}`;
 
-  return apiService
-    .get<ApiResponse<ResolvedRelationsResponse>>(url)
-    .then((res) => res.data.data)
-    .catch(() => ({ relations: [], caseStatuses: [] }));
+  return apiService.get<ApiResponse<ResolvedRelationsResponse>>(url).then((res) => res.data.data);
 };
+
+/** The same read where relations are shown beside other content and a failure is shown as no relations. */
+export const getResolvedRelations = (
+  direction: 'source' | 'target',
+  municipalityId: string,
+  resourceId: string,
+  sort: string
+): Promise<ResolvedRelationsResponse> =>
+  getResolvedRelationsOrThrow(direction, municipalityId, resourceId, sort).catch(() => ({
+    relations: [],
+    caseStatuses: [],
+  }));

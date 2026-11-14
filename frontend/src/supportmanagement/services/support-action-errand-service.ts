@@ -1,8 +1,11 @@
+import { permitOfInspection } from '@common/services/customer-inspection-service';
+import { getCustomerAssets } from '@common/services/customer-service';
 import { getResolvedRelations } from '@common/services/relations-service';
 
 import { getSupportErrandById, type SupportErrand } from './support-errand-service';
 import { inspectionProtocolDate, inspectionProtocolSummaryLabel } from './support-inspection-protocol-service';
 import { getSupportInvestigation } from './support-investigation-service';
+import { getSupportOwnerStakeholder } from './support-stakeholder-service';
 
 const INSPECTION_ERRAND_TAG = 'inspectionErrandId';
 
@@ -21,11 +24,28 @@ export interface SupportActionErrandOrigin {
 
 export const originIsEmpty = (origin: SupportActionErrandOrigin): boolean => !Object.values(origin).some(Boolean);
 
-/** The permit errand the inspection is about, read off the inspection's own relations. */
-const permitOfInspection = async (municipalityId: string, inspectionErrandId: string) => {
-  const { relations, caseStatuses } = await getResolvedRelations('source', municipalityId, inspectionErrandId, 'ASC');
-  const linkedErrandIds = relations.map((relation) => relation.target.resourceId);
-  return caseStatuses.find((status) => !!status.caseId && linkedErrandIds.includes(status.caseId));
+/**
+ * The permit errand the inspection is about: the one among its relations that the permit register knows as the
+ * source of one of the permit holder's permits. A relation says nothing of what it leads to, so a tips errand or
+ * another inspection linked to the inspection would otherwise pass as the permit the sanction is decided on.
+ */
+const permitErrandOfInspection = async (
+  municipalityId: string,
+  inspectionErrandId: string,
+  inspection: SupportErrand | undefined
+) => {
+  const partyId = inspection ? getSupportOwnerStakeholder(inspection)?.externalId : undefined;
+  if (!partyId) return undefined;
+
+  const [{ relations, caseStatuses }, assets] = await Promise.all([
+    getResolvedRelations('source', municipalityId, inspectionErrandId, 'ASC'),
+    getCustomerAssets(municipalityId, partyId),
+  ]);
+  const permit = permitOfInspection(
+    assets,
+    relations.map((relation) => relation.target.resourceId)
+  );
+  return caseStatuses.find((status) => !!permit?.sourceErrandId && status.caseId === permit.sourceErrandId);
 };
 
 /**
@@ -37,11 +57,13 @@ export const getSupportActionErrandOrigin = async (
   municipalityId: string,
   inspectionErrandId: string
 ): Promise<SupportActionErrandOrigin> => {
-  const [inspection, investigation, permit] = await Promise.all([
+  const [inspection, investigation] = await Promise.all([
     getSupportErrandById(inspectionErrandId, municipalityId),
     getSupportInvestigation(inspectionErrandId, municipalityId).catch(() => undefined),
-    permitOfInspection(municipalityId, inspectionErrandId).catch(() => undefined),
   ]);
+  const permit = await permitErrandOfInspection(municipalityId, inspectionErrandId, inspection.errand).catch(
+    () => undefined
+  );
 
   return {
     inspectionErrandNumber: inspection.errand?.errandNumber,

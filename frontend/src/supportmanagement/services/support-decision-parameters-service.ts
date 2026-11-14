@@ -134,9 +134,20 @@ const SERVING_PERMIT_TYPES = [
   'FARM_SALES',
   'TASTING',
 ];
-/** What a saved decision says of the permit; undefined for a decision without it. */
+const decisionSchemasFavouring = (favoured: SupportJsonSchema): SupportJsonSchema[] => [
+  favoured,
+  ...DECISION_SCHEMAS.filter((candidate) => candidate.name !== favoured.name),
+];
+
+/**
+ * What a saved decision says of the permit; undefined for a decision without it. The schema the decision is
+ * written under comes first, so a decision saved under an earlier key, as an action errand's was while it was
+ * filed as an inspection, is read from there until the next write moves it.
+ */
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
-  DECISION_SCHEMAS.map((schema) => jsonParameterObject(decision?.jsonParameters, schema.name)).find(Boolean);
+  decisionSchemasFavouring(decisionSchema(decision?.type ?? ''))
+    .map((schema) => jsonParameterObject(decision?.jsonParameters, schema.name))
+    .find(Boolean);
 
 const matching =
   (pattern: RegExp) =>
