@@ -32,8 +32,9 @@ const Overdue: FC<{ shown: boolean }> = ({ shown }) => {
 };
 
 /**
- * A measure carries no revision and sends no notification when it is changed, so a deadline that has been moved
- * leaves no trace of its own. The day the point was last touched is what there is to show.
+ * A measure carries no revision and sends no notification when it is changed, so what the service can tell is
+ * that the point was touched and when, never what was changed in it. The stamp says that much and no more: a
+ * moved deadline cannot be told from a corrected goal, and claiming either would be a guess.
  */
 const Changed: FC<{ changedAt: string }> = ({ changedAt }) => {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ const Changed: FC<{ changedAt: string }> = ({ changedAt }) => {
 
   return (
     <span className="text-small text-dark-secondary" data-cy="action-point-changed">
-      {t('common:action_points.deadline_changed', { date: changedAt })}
+      {t('common:action_points.changed', { date: changedAt })}
     </span>
   );
 };

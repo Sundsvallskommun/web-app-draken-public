@@ -333,7 +333,7 @@ test('the action points are listed in their own accordion and written as EXTERNA
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
-test('a deadline that has passed is marked, and a point changed since it was written says when', async () => {
+test('a deadline that has passed is marked, and a point changed since it was written says when it was', async () => {
   vi.mocked(getSupportMeasures).mockResolvedValue([
     {
       id: 'x1',
@@ -349,7 +349,7 @@ test('a deadline that has passed is marked, and a point changed since it was wri
 
   await screen.findByDisplayValue('Sätt upp skylt om åldersgräns');
   expect(card('action-point-x1').getByText('Fristen har passerat')).toBeTruthy();
-  expect(card('action-point-x1').getByText('Frist ändrad 2019-12-20')).toBeTruthy();
+  expect(card('action-point-x1').getByText('Ändrad 2019-12-20')).toBeTruthy();
 });
 
 test('an area is assessed in its own card, observations are picked on a deficiency and written as OBSERVATION measures', async () => {

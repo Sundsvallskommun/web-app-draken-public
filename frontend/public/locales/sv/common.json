@@ -891,7 +891,7 @@
     "goal": "Mål",
     "goal_placeholder": "Vad punkten ska leda till",
     "overdue": "Fristen har passerat",
-    "deadline_changed": "Frist ändrad {{date}}",
+    "changed": "Ändrad {{date}}",
     "result": {
       "completed": "Åtgärdad",
       "partially_completed": "Delvis åtgärdad",
@@ -1059,6 +1059,8 @@
     "text_placeholder": "Beskriv vilka brister som kvarstår, vad kommunen överväger att besluta, och att tillståndshavaren får yttra sig.",
     "due_at": "Svara senast",
     "send": "Skicka",
+    "save_sent": "Spara skickat",
+    "not_recorded": "Meddelandet har gått ut till tillståndshavaren men är inte skrivet på ärendet. Spara om, skicka inte om.",
     "remove": "Ta bort kommuniceringen",
     "outcome": "Utfall",
     "outcome_placeholder": "Välj utfall när kommuniceringen är avslutad…",
@@ -1073,6 +1075,7 @@
     "toast": {
       "sent": "Kommuniceringen har skickats.",
       "send_failed": "Kommuniceringen kunde inte skickas.",
+      "record_failed": "Meddelandet skickades, men kunde inte skrivas på ärendet. Försök spara igen.",
       "remove_failed": "Kommuniceringen kunde inte tas bort.",
       "create_failed": "Kommuniceringen kunde inte skapas."
     }
