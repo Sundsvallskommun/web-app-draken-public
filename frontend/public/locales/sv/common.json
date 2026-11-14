@@ -421,7 +421,8 @@
         "attachments": "bilagorna {{labels}}"
       },
       "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund.",
-      "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut."
+      "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut.",
+      "inspection_summary_without_step": "Summeringen du valt har ännu inget processteg, så tillsynen kan inte avslutas med den. Återbesöket eller tillsynsutredningen dokumenteras manuellt."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -948,7 +949,8 @@
       "observed_other": "{{count}} observationer",
       "what": "Vad observerades?",
       "missing": "Välj minst en observation, eller ändra bedömningen."
-    }
+    },
+    "summary_without_step": "Saknar processteg. Tillsynen kan inte avslutas med det här valet, och återbesöket eller tillsynsutredningen dokumenteras manuellt."
   },
   "inspection_permit": {
     "heading": "Tillståndet tillsynen gäller",

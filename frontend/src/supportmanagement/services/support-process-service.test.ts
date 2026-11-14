@@ -6,6 +6,7 @@ import {
   awaitedGateOfStep,
   hasSupportProcessPassedStep,
   hasVisitedSupportProcessStep,
+  inspectionSummaryLeadsOn,
   processFilesADecisionBasis,
   supportProcessActivityKey,
   supportProcessName,
@@ -185,6 +186,15 @@ test('the review is passed once the process shows a later phase, whether the han
   ).toBe(true);
   // A cancellation belongs to no phase, so it has passed none.
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_cancel_process'))).toBe(false);
+});
+
+test('a summary leads on only where the model has a gate for it, which the protocol has more options than', () => {
+  expect(inspectionSummaryLeadsOn('approved')).toBe(true);
+  expect(inspectionSummaryLeadsOn('actionRequired')).toBe(true);
+  expect(inspectionSummaryLeadsOn('revisit')).toBe(false);
+  expect(inspectionSummaryLeadsOn('investigation')).toBe(false);
+  expect(inspectionSummaryLeadsOn('')).toBe(false);
+  expect(inspectionSummaryLeadsOn(undefined)).toBe(false);
 });
 
 test('an application process files the decision basis, a closure, an action and an inspection file none', () => {
