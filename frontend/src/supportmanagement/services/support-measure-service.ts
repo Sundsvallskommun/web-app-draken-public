@@ -57,17 +57,23 @@ export interface SupportMeasureRow {
   /** The deadline as a date field, YYYY-MM-DD. Extending it is writing a later date; it cannot be taken away. */
   dueAt: string;
   goal: string;
+  /** The day the point was settled, as a date field; blank until a result settles it. */
+  completedAt: string;
   /** The day the measure was last changed, where that is after it was written; blank for one untouched since. */
   changedAt: string;
 }
 
-/** What a changed row is patched with; whatever is left out stays as it is. A result cannot be cleared. */
+/**
+ * What a changed row is patched with; whatever is left out stays as it is. The service only writes the fields an
+ * update names, so neither a result nor a completion date can be cleared once it has been set.
+ */
 interface SupportMeasurePatch {
   title?: string;
   result?: SupportMeasureResultName;
   description?: string;
   resultText?: string;
   dueAt?: string;
+  completedAt?: string;
   goal?: string;
 }
 
@@ -134,6 +140,10 @@ const RESULTS_THAT_SETTLE_A_MEASURE: (SupportMeasureResultName | '')[] = [
   SupportMeasureResult.NOT_APPLICABLE,
 ];
 
+/** A point the handler has settled: carried out, or no longer something to carry out. */
+export const supportMeasureIsSettled = (result: SupportMeasureResultName | ''): boolean =>
+  RESULTS_THAT_SETTLE_A_MEASURE.includes(result);
+
 /** A deadline in the past on a point that is still to be addressed. */
 export const supportMeasureIsOverdue = (row: Pick<SupportMeasureRow, 'dueAt' | 'result'>): boolean =>
   !!row.dueAt &&
@@ -148,6 +158,7 @@ export const emptySupportMeasureRow = (title = ''): SupportMeasureRow => ({
   resultText: '',
   dueAt: '',
   goal: '',
+  completedAt: '',
   changedAt: '',
 });
 
@@ -160,6 +171,7 @@ export const supportMeasureRow = (measure: Measure): SupportMeasureRow => ({
   resultText: measure.resultText ?? '',
   dueAt: asDateField(measure.dueAt),
   goal: measure.goal ?? '',
+  completedAt: asDateField(measure.completedAt),
   changedAt: changedAfterItWasWritten(measure),
 });
 
@@ -169,6 +181,7 @@ const patchOf = (before: SupportMeasureRow, row: SupportMeasureRow): SupportMeas
   ...(row.description !== before.description && { description: row.description }),
   ...(row.resultText !== before.resultText && { resultText: row.resultText }),
   ...(row.dueAt && row.dueAt !== before.dueAt && { dueAt: asTimestamp(row.dueAt) }),
+  ...(row.completedAt && row.completedAt !== before.completedAt && { completedAt: asTimestamp(row.completedAt) }),
   ...(row.goal !== before.goal && { goal: row.goal }),
 });
 

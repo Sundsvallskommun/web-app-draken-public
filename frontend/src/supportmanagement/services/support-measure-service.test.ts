@@ -10,6 +10,7 @@ import {
   SUPPORT_MEASURE_RESULTS,
   supportMeasureChanges,
   supportMeasureIsOverdue,
+  supportMeasureIsSettled,
   type SupportMeasureRow,
   supportMeasureRow,
   supportMeasuresOfType,
@@ -233,4 +234,35 @@ test('the observations of an area are written as the result text, and cleared wi
     update: [{ id: 'm3', patch: { result: 'COMPLETED', resultText: '' } }],
     remove: [],
   });
+});
+
+test('a point is settled when it is addressed or set aside, and still open otherwise', () => {
+  expect(supportMeasureIsSettled('COMPLETED')).toBe(true);
+  expect(supportMeasureIsSettled('NOT_APPLICABLE')).toBe(true);
+  expect(supportMeasureIsSettled('PARTIALLY_COMPLETED')).toBe(false);
+  expect(supportMeasureIsSettled('NOT_COMPLETED')).toBe(false);
+  expect(supportMeasureIsSettled('')).toBe(false);
+});
+
+test('the day a point was settled on travels with the result, and is read back as a date field', () => {
+  const patched = supportMeasureChanges(
+    'EXTERNAL',
+    [row('m1', 'Sätt upp skylt', { result: 'COMPLETED', completedAt: '2026-11-16' })],
+    [row('m1', 'Sätt upp skylt')]
+  );
+
+  expect(patched.update).toEqual([
+    { id: 'm1', patch: { result: 'COMPLETED', completedAt: dayjs('2026-11-16').startOf('day').format() } },
+  ]);
+  expect(supportMeasureRow({ id: 'm1', completedAt: '2026-11-16T09:12:00+01:00' }).completedAt).toBe('2026-11-16');
+});
+
+test('a day that was settled on is left alone once it stands, as the service cannot take one back', () => {
+  const changes = supportMeasureChanges(
+    'EXTERNAL',
+    [row('m1', 'Sätt upp skylt', { result: 'NOT_COMPLETED', completedAt: '' })],
+    [row('m1', 'Sätt upp skylt', { result: 'COMPLETED', completedAt: '2026-11-16' })]
+  );
+
+  expect(changes.update).toEqual([{ id: 'm1', patch: { result: 'NOT_COMPLETED' } }]);
 });
