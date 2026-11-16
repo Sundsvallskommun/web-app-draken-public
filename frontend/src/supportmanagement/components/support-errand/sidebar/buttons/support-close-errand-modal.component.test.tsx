@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { appConfig } from '@config/appconfig';
 import { useSupportStore } from '@stores/index';
 import { Resolution, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SupportCloseErrandModal } from './support-close-errand-modal.component';
 
@@ -30,10 +31,10 @@ vi.mock('react-hook-form', async (importOriginal) => ({
   useFormContext: () => ({ formState: { dirtyFields: {} } }),
 }));
 
-const renderModalForErrand = (errand: Partial<SupportErrand>) => {
+const renderModalForErrand = (errand: Partial<SupportErrand>, afterHandover = false) => {
   vi.mocked(useSupportStore).mockImplementation(((selector: (state: object) => unknown) =>
     selector({ supportErrand: errand, setSupportErrand: vi.fn() })) as typeof useSupportStore);
-  render(<SupportCloseErrandModal show onClose={vi.fn()} />);
+  render(<SupportCloseErrandModal show onClose={vi.fn()} afterHandover={afterHandover} />);
 };
 
 afterEach(cleanup);
@@ -64,4 +65,35 @@ test.each([
   renderModalForErrand({ id: 'errand-id', resolution });
 
   expect(screen.getByText(label)).toBeTruthy();
+});
+
+describe('where the contact reason is required', () => {
+  const missingReason = /kan inte avslutas utan orsak till kontakt/;
+
+  beforeEach(() => {
+    appConfig.features.useReasonForContact = true;
+  });
+  afterEach(() => {
+    appConfig.features.useReasonForContact = false;
+  });
+
+  test('an errand without a contact reason cannot be closed', () => {
+    renderModalForErrand({ id: 'errand-id', contactReason: '' });
+
+    expect(screen.getByText(missingReason)).toBeTruthy();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  test('an errand with a contact reason is offered the resolution codes', () => {
+    renderModalForErrand({ id: 'errand-id', contactReason: 'Klagomål' });
+
+    expect(screen.queryByText(missingReason)).toBeNull();
+    expect(screen.getAllByRole('radio').length).toBeGreaterThan(0);
+  });
+
+  test('a handed over errand may still have its resolution confirmed without a contact reason', () => {
+    renderModalForErrand({ id: 'errand-id', contactReason: '', resolution: Resolution.SOLVED }, true);
+
+    expect(screen.queryByText(missingReason)).toBeNull();
+  });
 });
