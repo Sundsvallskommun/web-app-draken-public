@@ -12,6 +12,7 @@ import {
   forwardSupportErrand,
   getLabelCategorizationHeading,
   getStakeholderOrganizationNumber,
+  lacksRequiredExternalCaseRegistrationNumber,
   mapApiSupportErrandToSupportErrand,
   SupportErrand,
   supportErrandHasAnIdentifiedApplicant,
@@ -326,5 +327,24 @@ describe('supportErrandHasAnIdentifiedApplicant', () => {
     const customer = [{ role: 'PRIMARY' }, { role: 'PRIMARY', externalId: PARTY_ID }];
 
     expect(supportErrandHasAnIdentifiedApplicant(errandWith(customer))).toBe(true);
+  });
+});
+
+const parameters = (municipality: string, number?: string) => [
+  { key: 'premisesMunicipalityId', values: [municipality] },
+  ...(number === undefined ? [] : [{ key: 'externalCaseRegistrationNumber', values: [number] }]),
+];
+
+describe('the registry number of an errand', () => {
+  test('is required in Timrå', () => {
+    expect(lacksRequiredExternalCaseRegistrationNumber(parameters('2262'))).toBe(true);
+    expect(lacksRequiredExternalCaseRegistrationNumber(parameters('2262', '  '))).toBe(true);
+    expect(lacksRequiredExternalCaseRegistrationNumber(parameters('2262', 'TK 2026/1'))).toBe(false);
+  });
+
+  test('is optional elsewhere, and where no municipality is chosen', () => {
+    expect(lacksRequiredExternalCaseRegistrationNumber(parameters('2281'))).toBe(false);
+    expect(lacksRequiredExternalCaseRegistrationNumber([])).toBe(false);
+    expect(lacksRequiredExternalCaseRegistrationNumber(undefined)).toBe(false);
   });
 });

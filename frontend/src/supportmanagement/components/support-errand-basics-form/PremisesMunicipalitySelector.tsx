@@ -2,15 +2,22 @@ import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import {
   getErrandParameterValue,
   isSupportErrandLocked,
+  PREMISES_MUNICIPALITY_KEY,
   SupportErrand,
   upsertErrandParameter,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandProcess,
+  supportProcessIsPastReview,
+} from '@supportmanagement/services/support-process-service';
 import { FC } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-/** Same parameter key and municipality codes as katla-aot uses when an errand is registered there. */
-const PREMISES_MUNICIPALITY_KEY = 'premisesMunicipalityId';
+/**
+ * Same municipality codes as katla-aot uses when an errand is registered there. Settled once the review
+ * is over, since it decides whether the errand needed Timrå's registry number to leave the review.
+ */
 const PREMISES_MUNICIPALITIES = [
   { id: '2281', label: 'Sundsvall' },
   { id: '2262', label: 'Timrå' },
@@ -32,7 +39,9 @@ export const PremisesMunicipalitySelector: FC<{ supportErrand: SupportErrand }> 
             { shouldDirty: true }
           );
         }}
-        disabled={isSupportErrandLocked(supportErrand)}
+        disabled={
+          isSupportErrandLocked(supportErrand) || supportProcessIsPastReview(getSupportErrandProcess(supportErrand))
+        }
         data-cy="premises-municipality-input"
         className="w-full text-dark-primary"
         variant="primary"

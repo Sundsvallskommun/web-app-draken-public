@@ -56,6 +56,7 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
       investigationClauses: '',
       scopeAsSaved: NOTHING_DECIDED,
       defaultRole: ROLE,
+      errandCaseRegistrationNumber: '',
       ...input,
     },
   });
@@ -72,6 +73,7 @@ test('a decision not yet saved starts its att-satser from the investigation, als
     investigationClauses: '',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
+    errandCaseRegistrationNumber: '',
   };
   const { result, rerender } = form(props);
   expect(result.current.values.clauses).toBe('');
@@ -91,6 +93,7 @@ test('a newer investigation changes only att-satser the handler has left as pref
     investigationClauses: 'att bevilja',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
+    errandCaseRegistrationNumber: '',
   };
   const { result, rerender } = form(props);
 
@@ -180,6 +183,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     investigationClauses: '',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
+    errandCaseRegistrationNumber: '',
   });
   expect(result.current.values.justification).toBe('Skrivet men inte sparat');
 
@@ -192,6 +196,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     investigationClauses: '',
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
+    errandCaseRegistrationNumber: '',
   });
   expect(result.current.values.justification).toBe('Som beslutet sparades');
   expect(result.current.edited).toBe(false);

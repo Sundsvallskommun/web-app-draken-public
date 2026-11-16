@@ -2,12 +2,16 @@ import type { Decision } from '@common/data-contracts/supportmanagement/data-con
 import { Button, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportDecisions } from '@supportmanagement/services/support-decision-service';
-import { Status } from '@supportmanagement/services/support-errand-service';
+import {
+  lacksRequiredExternalCaseRegistrationNumber,
+  Status,
+} from '@supportmanagement/services/support-errand-service';
 import {
   awaitedGateOfStep,
   getSupportErrandProcess,
   getSupportErrandProcessState,
   hasSupportErrandProcess,
+  isSupportInspectionProcess,
   isSupportProcessCompleted,
   isSupportProcessFailed,
   supportProcessIsStartable,
@@ -48,6 +52,11 @@ export const SupportProcessStepButton: FC<{
 
   const signalIsOutstanding = Boolean(processSignal && errandId && processSignal.errandId === errandId);
   const somethingIsUnsaved = Object.values(unsavedTabs).some(Boolean);
+  // Read off the errand as saved, so a number typed but not yet saved does not open the step.
+  const lacksRegistrationNumber =
+    !!stepAction?.requiresExternalCaseRegistrationNumber &&
+    !isSupportInspectionProcess(process) &&
+    lacksRequiredExternalCaseRegistrationNumber(supportErrand?.parameters);
   const modified = supportErrand?.modified;
 
   const noProcessYet = !hasSupportErrandProcess(supportErrand);
@@ -149,6 +158,7 @@ export const SupportProcessStepButton: FC<{
         !!running ||
         signalIsOutstanding ||
         somethingIsUnsaved ||
+        (action.requiresExternalCaseRegistrationNumber && lacksRegistrationNumber) ||
         (signalIsRequired(action, processIsOver) && !awaitingSignal?.name) ||
         (action.startsProcess && needsAChoice)
       }
@@ -188,6 +198,11 @@ export const SupportProcessStepButton: FC<{
   return (
     <>
       {actionButton(stepAction)}
+      {lacksRegistrationNumber ? (
+        <p className="text-small text-dark-secondary mb-12" data-cy="process-action-registration-number-required">
+          {t('common:process.actions.start_investigation.registration_number_required')}
+        </p>
+      ) : null}
       {somethingIsUnsaved ? (
         <p className="text-small text-dark-secondary mb-12" data-cy="process-action-unsaved">
           {t('common:process.actions.unsaved')}

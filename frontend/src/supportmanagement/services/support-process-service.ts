@@ -196,6 +196,11 @@ export const supportProcessShownStepIndex = (process: ErrandProcess | undefined)
   return onItsWayTo ? SUPPORT_PROCESS_STEPS.findIndex((step) => step.name === onItsWayTo) : -1;
 };
 
+/** True once the process has left the review, on its way to a later step or finished. */
+export const supportProcessIsPastReview = (process: ErrandProcess | undefined): boolean =>
+  supportProcessShownStepIndex(process) >
+  SUPPORT_PROCESS_STEPS.findIndex((step) => step.name === SupportProcessStep.REVIEW);
+
 export const supportProcessPhaseKey = (process: ErrandProcess | undefined): string | undefined =>
   supportProcessStepKeys()[supportProcessShownStepIndex(process)];
 

@@ -17,6 +17,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { ExternalCaseRegistrationNumberInput } from './ExternalCaseRegistrationNumberInput';
 import { LabelCategorization } from './LabelCategorization';
 import { PremisesMunicipalitySelector } from './PremisesMunicipalitySelector';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
@@ -212,6 +213,8 @@ export const SupportErrandBasicsAboutForm: FC<{
           </div>
         ) : null}
       </div>
+
+      {isAOT() ? <ExternalCaseRegistrationNumberInput supportErrand={supportErrand} /> : null}
 
       {appConfig.features.useExplanationOfTheCause ? (
         <div className="w-full mt-md mb-lg">

@@ -20,7 +20,9 @@ export const DecisionFields: FC<{
   printed: boolean;
   clausesRequired: boolean;
   disabled: boolean;
-}> = ({ form, outcomes, printed, clausesRequired, disabled }) => {
+  /** Whether the errand carries a registry number (Timrå) that the decision's number starts from. */
+  caseNumberFromErrand: boolean;
+}> = ({ form, outcomes, printed, clausesRequired, disabled, caseNumberFromErrand }) => {
   const { t } = useTranslation();
   const { values, set } = form;
 
@@ -48,7 +50,11 @@ export const DecisionFields: FC<{
       </DecisionCard>
 
       <DecisionCard>
-        <DecisionField id="decision-case-number" label={t('common:decision.case_number')}>
+        <DecisionField
+          id="decision-case-number"
+          label={t('common:decision.case_number')}
+          help={caseNumberFromErrand ? t('common:decision.case_number_help') : undefined}
+        >
           <Input
             className="w-full max-w-[28rem]"
             value={values.externalCaseRegistrationNumber}
