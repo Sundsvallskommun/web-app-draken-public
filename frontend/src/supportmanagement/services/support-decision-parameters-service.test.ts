@@ -640,7 +640,7 @@ describe('what the permit needs of the errand', () => {
       clauses: 'att meddela varning\natt beslutet galler omedelbart',
     });
 
-    expect(decisionSchema('ATGARD')).toEqual({ name: 'aot_action_errand_decision', version: '1.0' });
+    expect(decisionSchema('ATGARD')).toEqual({ name: 'aot_action_errand_decision' });
     expect(saved.decision).toMatchObject({
       outcome: 'WARNING',
       decisionText: 'Varning',
