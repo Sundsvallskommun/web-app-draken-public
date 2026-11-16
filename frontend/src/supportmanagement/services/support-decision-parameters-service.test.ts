@@ -581,6 +581,46 @@ describe('what the permit needs of the errand', () => {
     expect(forTheCertificate.decisionClauses).toBe('att bevilja tillstånd');
   });
 
+  const inMunicipality = (code: string) =>
+    input({
+      errand: { ...errand(), parameters: [{ key: 'premisesMunicipalityId', values: [code] }] } as SupportErrand,
+    });
+
+  const letterOf = (municipality: DecisionParameterInput) =>
+    toDecisionDocumentParameters('ATGARD', municipality, { ...DECISION, outcome: 'WARNING' });
+
+  const SUNDSVALL_POSTAL_ADDRESS = [
+    'Sundsvalls kommun',
+    'Individ- och arbetsmarknadsförvaltningen',
+    'Alkohol- och tobaksenheten',
+    '851 85 SUNDSVALL',
+  ];
+
+  test('the letter says the authority the decision belongs to, read off the errand', () => {
+    const sundsvall = letterOf(inMunicipality('2281'));
+
+    expect(sundsvall.senderMunicipality).toBe('Sundsvalls kommun');
+    expect(sundsvall.senderPostalAddressLines).toEqual(SUNDSVALL_POSTAL_ADDRESS);
+    expect(sundsvall.appealAuthority).toBe('Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall');
+  });
+
+  test('an errand registered before the e-service asked for a municipality reads as Sundsvall, which it was', () => {
+    expect(letterOf(input())).toMatchObject({
+      senderMunicipality: 'Sundsvalls kommun',
+      senderPostalAddressLines: SUNDSVALL_POSTAL_ADDRESS,
+    });
+  });
+
+  test('a certificate reads no authority, since the action errand letters are the ones that print it', () => {
+    const certificate = toDecisionDocumentParameters('SERVERINGSTILLSTAND', input(), {
+      ...DECISION,
+      outcome: 'APPROVAL',
+    });
+
+    expect(certificate.senderMunicipality).toBeUndefined();
+    expect(certificate.appealAuthority).toBeUndefined();
+  });
+
   test('an action errand is filed under its own schema, with the sanction it decides', () => {
     const saved = toDecisionJson('ATGARD', input(), {
       ...DECISION,

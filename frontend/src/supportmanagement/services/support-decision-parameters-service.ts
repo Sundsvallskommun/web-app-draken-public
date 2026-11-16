@@ -15,7 +15,12 @@ import {
   type SupportDecision,
   supportDecisionOutcomeNames,
 } from './support-decision-service';
-import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
+import {
+  getErrandParameterValue,
+  PREMISES_MUNICIPALITY_KEY,
+  type SupportErrand,
+  type SupportStakeholderFormModel,
+} from './support-errand-service';
 import {
   childText,
   type FormValue,
@@ -44,7 +49,7 @@ import {
  */
 
 export interface DecisionParameterInput {
-  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer'>;
+  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer' | 'parameters'>;
   /** The most specific type label of the errand (its resourceName), e.g. TASTING. */
   errandType?: string;
   /** The answers filed under the errand type's schema name; undefined when there are none. */
@@ -561,8 +566,47 @@ export const toCertificateParameters = (
   );
 
 /**
+ * The authority a decision is made in the name of, as the two action errand letters print it: the sender in the
+ * letterhead, the postal address in the foot, and the authority an appeal is sent to. The unit handles the permits
+ * of every municipality the e-service offers, so the errand is what says which authority a decision belongs to.
+ */
+interface DecisionAuthority {
+  senderMunicipality: string;
+  senderPostalAddressLines: string[];
+  appealAuthority: string;
+}
+
+const SUNDSVALL_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Sundsvalls kommun',
+  senderPostalAddressLines: [
+    'Sundsvalls kommun',
+    'Individ- och arbetsmarknadsförvaltningen',
+    'Alkohol- och tobaksenheten',
+    '851 85 SUNDSVALL',
+  ],
+  appealAuthority: 'Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall',
+};
+
+/**
+ * Timrå (2262) joins once the business has said which board decides there, what the sender is and where an appeal
+ * goes; those words belong in a decision, so they are not guessed here. Until the entry exists, and for an errand
+ * registered before the e-service asked for a municipality, the letters read as Sundsvall's, which is what they
+ * say today and what those errands were.
+ */
+const DECISION_AUTHORITY_OF_MUNICIPALITY: Record<string, DecisionAuthority> = {
+  '2281': SUNDSVALL_AUTHORITY,
+};
+
+const DECISION_AUTHORITY_WITHOUT_A_CODE = SUNDSVALL_AUTHORITY;
+
+const decisionAuthorityOfErrand = (errand: DecisionParameterInput['errand']): DecisionAuthority =>
+  DECISION_AUTHORITY_OF_MUNICIPALITY[getErrandParameterValue(errand.parameters, PREMISES_MUNICIPALITY_KEY)] ??
+  DECISION_AUTHORITY_WITHOUT_A_CODE;
+
+/**
  * What the document reads. An action errand's decision numbers its att-satser, so they travel as a list rather
  * than as the one text the certificates print; the flattened text is what the checks before the decision read.
+ * The letters also read the authority, since the same two templates serve every municipality the unit handles.
  */
 export const toDecisionDocumentParameters = (
   permitType: string,
@@ -571,7 +615,11 @@ export const toDecisionDocumentParameters = (
 ): Record<string, string | string[]> => {
   const parameters = toCertificateParameters(permitType, input, decision);
   if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return parameters;
-  return { ...parameters, decisionClauses: clauseLines(decision.clauses) ?? [] };
+  return {
+    ...parameters,
+    decisionClauses: clauseLines(decision.clauses) ?? [],
+    ...decisionAuthorityOfErrand(input.errand),
+  };
 };
 
 /**
