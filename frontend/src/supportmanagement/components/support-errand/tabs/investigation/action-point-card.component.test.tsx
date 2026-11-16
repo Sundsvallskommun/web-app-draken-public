@@ -15,6 +15,7 @@ const measure = (changes: Partial<SupportMeasureRow> = {}): SupportMeasureRow =>
   resultText: '',
   dueAt: '',
   goal: '',
+  completedAt: '',
   changedAt: '',
   ...changes,
 });

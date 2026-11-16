@@ -4,32 +4,14 @@ import {
   supportMeasureIsOverdue,
   type SupportMeasureRow,
 } from '@supportmanagement/services/support-measure-service';
-import { TriangleAlert, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ACTION_POINT_RESULT_COLOR, ActionPointOverdue } from '../../action-points/action-point-result.component';
+
 // What Support Management takes as a measure goal.
 const GOAL_MAX_LENGTH = 3000;
-
-const RESULT_COLOR: Record<string, 'gronsta' | 'warning' | 'error' | 'primary'> = {
-  COMPLETED: 'gronsta',
-  PARTIALLY_COMPLETED: 'warning',
-  NOT_COMPLETED: 'error',
-  NOT_APPLICABLE: 'primary',
-};
-
-const Overdue: FC<{ shown: boolean }> = ({ shown }) => {
-  const { t } = useTranslation();
-
-  if (!shown) return null;
-
-  return (
-    <span className="flex items-center gap-4 text-small text-error font-bold" data-cy="action-point-overdue">
-      <TriangleAlert size={16} aria-hidden="true" />
-      {t('common:action_points.overdue')}
-    </span>
-  );
-};
 
 /**
  * A measure carries no revision and sends no notification when it is changed, so what the service can tell is
@@ -120,7 +102,7 @@ export const ActionPointCard: FC<{
               size="sm"
               variant={selected ? 'primary' : 'secondary'}
               rounded
-              color={RESULT_COLOR[result]}
+              color={ACTION_POINT_RESULT_COLOR[result]}
               aria-pressed={selected}
               disabled={readOnly}
               onClick={() => onChange({ ...row, result })}
@@ -132,7 +114,7 @@ export const ActionPointCard: FC<{
         })}
       </fieldset>
       <div className="flex flex-wrap items-center gap-16">
-        <Overdue shown={supportMeasureIsOverdue(row)} />
+        <ActionPointOverdue shown={supportMeasureIsOverdue(row)} />
         <Changed changedAt={row.changedAt} />
       </div>
     </section>

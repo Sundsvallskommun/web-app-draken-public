@@ -11,6 +11,7 @@ import { TOBACCO_SELF_MONITORING_PURPOSES } from '@supportmanagement/services/su
 import { JSX, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportActionPointFollowUpSection } from '../../action-points/support-action-point-follow-up-section.component';
 import { SupportActionPointsSection } from '../../action-points/support-action-points-section.component';
 import { SupportCommunicationSection } from '../../communication/support-communication-section.component';
 import { SupportFinancialSuitabilitySection } from '../../financial-suitability/support-financial-suitability-section.component';
@@ -73,7 +74,7 @@ export const SectionDisclosure: React.FC<{
     ),
     established_faults: <SupportActionPointsSection {...props} sectionKey="established_faults" />,
     permit_holder_statement: writtenSection('permit_holder_statement', props),
-    measures_taken: <SupportActionPointsSection {...props} sectionKey="measures_taken" />,
+    measures_taken: <SupportActionPointFollowUpSection {...props} />,
     assessment: writtenSection('assessment', props),
   };
 

@@ -79,6 +79,11 @@ export class UpdateSupportMeasureDto {
   @IsISO8601()
   dueAt?: string;
 
+  // When the point was settled. Support Management only writes the fields an update names, so this cannot be cleared.
+  @IsOptional()
+  @IsISO8601()
+  completedAt?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(3000)

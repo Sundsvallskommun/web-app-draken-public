@@ -902,7 +902,11 @@
     "loading": "Hämtar åtgärdspunkter",
     "none": "Inga åtgärdspunkter är registrerade på ärendet.",
     "due_by": "Frist {{date}}",
-    "result_none": "Inget resultat satt"
+    "result_none": "Inget resultat satt",
+    "follow_up_description": "Vad tillståndshavaren har gjort efter tillsynen. Rubrik, frist och mål är vad tillståndshavaren fick besked om och ändras inte här.",
+    "result_text": "Vad som gjorts",
+    "result_text_placeholder": "Beskriv kort vad tillståndshavaren har gjort",
+    "completed": "Klarmarkerad {{date}}"
   },
   "inspection_protocol": {
     "heading": "Tillsynsprotokoll",
