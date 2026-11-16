@@ -75,6 +75,19 @@ const UnsavedChangesContent: React.FC<{ onOk: () => void }> = ({ onOk }) => (
   </>
 );
 
+const MissingContactReasonContent: React.FC<{ onOk: () => void }> = ({ onOk }) => (
+  <>
+    <Modal.Content>
+      <p>Ärendet kan inte avslutas utan orsak till kontakt. Välj en orsak och spara för att fortsätta.</p>
+    </Modal.Content>
+    <Modal.Footer>
+      <Button onClick={onOk} variant="primary" color="vattjom">
+        Ok
+      </Button>
+    </Modal.Footer>
+  </>
+);
+
 const CurrentResolutionContent: React.FC<{
   resolution: string;
   description: string;
@@ -334,11 +347,16 @@ export const SupportCloseErrandModal: React.FC<{
 
   const hasResolution = !!supportErrand?.resolution && supportErrand?.resolution !== '';
   const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some(Boolean);
+  // After a handover the errand is already closed, so only a fresh close is held back.
+  const lacksContactReason =
+    appConfig.features.useReasonForContact && !afterHandover && !supportErrand?.contactReason;
   const description = afterHandover ? HANDOVER_DESCRIPTION : RESOLUTION_DESCRIPTION;
 
   let label: string | React.ReactElement = 'Avsluta ärendet';
   if (hasUnsavedChanges) {
     label = 'Du har osparade ändringar';
+  } else if (lacksContactReason) {
+    label = 'Orsak till kontakt saknas';
   } else if (changeResolution) {
     label = (
       <div className="flex flex-row gap-8">
@@ -351,6 +369,8 @@ export const SupportCloseErrandModal: React.FC<{
   let content: React.ReactNode;
   if (hasUnsavedChanges) {
     content = <UnsavedChangesContent onOk={closeModal} />;
+  } else if (lacksContactReason) {
+    content = <MissingContactReasonContent onOk={closeModal} />;
   } else if (hasResolution && !changeResolution) {
     // After a handover the errand is already closed; there is nothing to save.
     content = (
