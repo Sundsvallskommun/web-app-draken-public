@@ -382,9 +382,9 @@ test.describe('Errand page contracts tab', () => {
     await page.locator('[data-cy="all-notice-period"]').fill('1');
 
     await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeChecked();
-    await page.locator('[data-cy="autoextend-true-radiobutton"]').check({ force: true });
+    await page.locator('[data-cy="autoextend-true-radiobutton"]').check();
     await expect(page.locator('[data-cy="extension-input"]')).toBeVisible();
-    await page.locator('[data-cy="autoextend-undefined-radiobutton"]').check({ force: true });
+    await page.locator('[data-cy="autoextend-undefined-radiobutton"]').check();
     await expect(page.locator('[data-cy="extension-input"]')).toHaveCount(0);
 
     const putContractRequest = page.waitForRequest(
@@ -883,7 +883,7 @@ test.describe('Errand page contracts tab', () => {
         await expect(page.locator('[data-cy="autoextend-undefined-radiobutton"]')).toBeChecked();
         await expect(page.locator('[data-cy="autoextend-false-radiobutton"]')).not.toBeChecked();
         await expect(page.locator('[data-cy="autoextend-true-radiobutton"]')).toBeEnabled();
-        await page.locator('[data-cy="autoextend-false-radiobutton"]').check({ force: true });
+        await page.locator('[data-cy="autoextend-false-radiobutton"]').check();
         await expect(page.locator('[data-cy="autoextend-false-radiobutton"]')).toBeChecked();
 
         await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();

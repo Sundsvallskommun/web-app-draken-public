@@ -61,9 +61,9 @@ const FIRST_KPI_INDEX_YEAR = 1980;
 // "Automatisk förlängning av avtalet" has three answers: Ja, Nej and "Ej definierat" (autoExtend not set).
 const AUTO_EXTEND_UNDEFINED = 'undefined';
 const toAutoExtendValue = (autoExtend?: boolean): string =>
-  autoExtend === true ? 'true' : autoExtend === false ? 'false' : AUTO_EXTEND_UNDEFINED;
-const fromAutoExtendValue = (value: string): boolean | undefined =>
-  value === 'true' ? true : value === 'false' ? false : undefined;
+  typeof autoExtend === 'boolean' ? String(autoExtend) : AUTO_EXTEND_UNDEFINED;
+const AUTO_EXTEND_BY_VALUE: Record<string, boolean> = { true: true, false: false };
+const fromAutoExtendValue = (value: string): boolean | undefined => AUTO_EXTEND_BY_VALUE[value];
 
 export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -251,7 +251,7 @@ export const ContractForm: FC<{
     const seq = ++indexLookupSeq.current;
     // Until the entered year has given a KPI value the form holds no index, so an old value is never saved
     // together with a year it does not belong to.
-    setIndex(undefined, undefined);
+    setIndex();
 
     if (!/^\d{4}$/.test(value)) {
       setIndexLookup({ loading: false, error: value ? 'Ange indexår med fyra siffror, t.ex. 2025' : undefined });
@@ -281,6 +281,21 @@ export const ContractForm: FC<{
   };
 
   const indexError = indexLookup.error ?? formState.errors.fees?.indexNumber?.message;
+
+  // What is shown under "Indexår": the lookup in progress, an error, or how the year is used.
+  const indexYearStatus = () => {
+    if (indexLookup.loading) {
+      return <small data-cy="index-year-loading">Hämtar KPI-värde från SCB...</small>;
+    }
+    if (indexError) {
+      return <FormErrorMessage data-cy="index-year-error">{indexError}</FormErrorMessage>;
+    }
+    return (
+      <small>
+        Indexvärdet för oktober valt år hämtas från SCB. Standard är föregående år ({defaultKpiIndexYear()}).
+      </small>
+    );
+  };
 
   const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
     []
@@ -1178,16 +1193,7 @@ export const ContractForm: FC<{
                       onChange={(e) => onIndexYearChange(e.target.value.trim())}
                       data-cy="index-year-input"
                     />
-                    {indexLookup.loading ? (
-                      <small data-cy="index-year-loading">Hämtar KPI-värde från SCB...</small>
-                    ) : indexError ? (
-                      <FormErrorMessage data-cy="index-year-error">{indexError}</FormErrorMessage>
-                    ) : (
-                      <small>
-                        Indexvärdet för oktober valt år hämtas från SCB. Standard är föregående år (
-                        {defaultKpiIndexYear()}).
-                      </small>
-                    )}
+                    {indexYearStatus()}
                   </FormControl>
                 </div>
               )}

@@ -16,7 +16,7 @@ export const getKpiIndex = (indexYear: number = defaultKpiIndexYear()): Promise<
     .get<{ baseYear: string; period: string; value: number }>(url)
     .then((res) => {
       if (typeof res.data?.value !== 'number') {
-        throw new Error(`No KPI value for October ${indexYear}`);
+        throw new TypeError(`No KPI value for October ${indexYear}`);
       }
       return { indexYear, indexNumber: res.data.value };
     })
