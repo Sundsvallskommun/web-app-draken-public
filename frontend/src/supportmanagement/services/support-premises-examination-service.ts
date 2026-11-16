@@ -41,10 +41,7 @@ export interface SupportPremisesExamination {
 }
 
 /** The premises section keeps the examination in one JSON parameter, filed under this schema. */
-export const SUPPORT_PREMISES_SECTION_SCHEMA: SupportJsonSchema = {
-  name: 'aot_investigation_premises_section',
-  version: '1.0',
-};
+export const SUPPORT_PREMISES_SECTION_SCHEMA: SupportJsonSchema = { name: 'aot_investigation_premises_section' };
 
 const stringOf = (value: unknown): string => (typeof value === 'string' ? value : '');
 

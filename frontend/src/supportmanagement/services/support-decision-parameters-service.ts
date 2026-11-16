@@ -112,14 +112,14 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision', version: '1.2' };
-const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision', version: '1.2' };
+const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision' };
+const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision' };
 
 /**
  * The action errand decides sanctions, which the permit schemas have no outcomes for: filed under one of them
  * the outcome fails their enum and is left out of the saved decision altogether.
  */
-const ACTION_ERRAND_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_action_errand_decision', version: '1.0' };
+const ACTION_ERRAND_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_action_errand_decision' };
 
 const DECISION_SCHEMAS = [ALCOHOL_DECISION_SCHEMA, TOBACCO_DECISION_SCHEMA, ACTION_ERRAND_DECISION_SCHEMA];
 

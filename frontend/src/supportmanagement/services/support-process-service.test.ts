@@ -9,6 +9,7 @@ import {
   inspectionSummaryLeadsOn,
   processFilesADecisionBasis,
   supportProcessActivityKey,
+  supportProcessIsPastReview,
   supportProcessName,
   supportProcessPhaseKey,
   supportProcessShownStepIndex,
@@ -233,4 +234,16 @@ test('the action errand leaves its decision phase by itself, so there is no gate
 
   expect(supportProcessStepName(decidingAnActionErrand)).toBe(SupportProcessStep.DECISION);
   expect(awaitedGateOfStep(decidingAnActionErrand, SupportProcessStep.DECISION)).toBeUndefined();
+});
+
+test('the review is past once the process stands in a later step or is finished', () => {
+  const at = (currentActivityId: string, processStatus = 'WAITING') =>
+    ({ currentActivityId, processStatus } as ErrandProcess);
+
+  expect(supportProcessIsPastReview(undefined)).toBe(false);
+  expect(supportProcessIsPastReview(at('registration_phase'))).toBe(false);
+  expect(supportProcessIsPastReview(at('review_phase'))).toBe(false);
+  expect(supportProcessIsPastReview(at('investigation_phase'))).toBe(true);
+  expect(supportProcessIsPastReview(at('decision_phase'))).toBe(true);
+  expect(supportProcessIsPastReview(at('anything', 'COMPLETED'))).toBe(true);
 });

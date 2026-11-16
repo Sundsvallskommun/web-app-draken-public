@@ -12,8 +12,8 @@ import {
   type JsonObject,
   jsonParameterObject,
   sameJson,
+  schemaIdToWrite,
   type SupportJsonSchema,
-  supportSchemaId,
 } from '@supportmanagement/services/support-json-parameter-service';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -102,7 +102,10 @@ export const useInvestigationSectionSave = (
           investigationId,
           section.id,
           jsonSchema.name,
-          { schemaId: supportSchemaId(municipalityId, jsonSchema), value: json }
+          {
+            schemaId: await schemaIdToWrite(municipalityId, jsonSchema.name, section.jsonParameters),
+            value: json,
+          }
         );
       }
       if (saved) onSaved(saved);
@@ -123,6 +126,7 @@ export const useInvestigationSectionSave = (
     onSaved,
     saveFailedKey,
     section.id,
+    section.jsonParameters,
     t,
     toastMessage,
     values,

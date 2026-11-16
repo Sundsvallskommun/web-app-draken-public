@@ -33,7 +33,7 @@ import {
 } from '@supportmanagement/services/support-decision-service';
 import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { FormValue } from '@supportmanagement/services/support-form-value-service';
-import { supportSchemaId } from '@supportmanagement/services/support-json-parameter-service';
+import { schemaIdToWrite } from '@supportmanagement/services/support-json-parameter-service';
 import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
@@ -159,7 +159,11 @@ export const useDecisionSave = ({
 
     const schema = decisionSchema(permit.type);
     return saveSupportDecisionJsonParameter(supportErrand.id, municipalityId, decisionId, schema.name, {
-      schemaId: supportSchemaId(municipalityId, schema),
+      schemaId: await schemaIdToWrite(
+        municipalityId,
+        schema.name,
+        decision?.id === decisionId ? decision.jsonParameters : undefined
+      ),
       value: toDecisionJson(permit.type, parameterInput(supportErrand), certificateDecision),
     });
   };

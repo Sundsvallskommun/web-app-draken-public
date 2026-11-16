@@ -442,6 +442,7 @@ const parametersOfTemplate = (facts: SupportStatementTemplateFacts): Record<stri
 
   if (facts.identifier === 'tax-agency-request-serving') {
     return {
+      caseNumber,
       handlerName: facts.handlerName,
       handlerEmail: facts.handlerEmail,
       municipality,

@@ -22,7 +22,7 @@ export interface DecisionFormValues {
   legalBasis: string;
   /** The delegation point the decision is made under, printed in the decision document. */
   delegationReference: string;
-  /** The decision's own registry number. */
+  /** The decision's registry number, which starts as the errand's from Grundinformation. */
   externalCaseRegistrationNumber: string;
   /** The att-satser, one per line. */
   clauses: string;
@@ -87,6 +87,8 @@ interface DecisionFormInput {
   /** The decided scope as saved, and the application's where the decision has none saved. */
   scopeAsSaved: DecisionScope;
   defaultRole: string;
+  /** The errand's registry number, which a decision saved without one starts from. */
+  errandCaseRegistrationNumber: string;
 }
 
 export interface DecisionForm {
@@ -103,6 +105,7 @@ const asSaved = ({
   prefill,
   scopeAsSaved,
   defaultRole,
+  errandCaseRegistrationNumber,
 }: DecisionFormInput): DecisionFormValues => {
   const json = savedDecisionJson(decision);
   const written = (field: keyof DecisionPrefill, saved: string | undefined): string =>
@@ -112,7 +115,7 @@ const asSaved = ({
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
     delegationReference: decision?.delegationReference ?? '',
-    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? '',
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber) ?? errandCaseRegistrationNumber,
     clauses: written('clauses', clausesAsSaved(json)),
     justification: decision?.justification ?? '',
     outcomeText: stringAt(objectAt(json?.decision).outcomeText) ?? '',

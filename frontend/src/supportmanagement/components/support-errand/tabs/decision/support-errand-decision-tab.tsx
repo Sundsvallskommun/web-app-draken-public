@@ -30,6 +30,11 @@ import {
   supportDecisionOutcomesOf,
 } from '@supportmanagement/services/support-decision-service';
 import {
+  EXTERNAL_CASE_REGISTRATION_NUMBER_KEY,
+  getErrandParameterValue,
+  requiresExternalCaseRegistrationNumber,
+} from '@supportmanagement/services/support-errand-service';
+import {
   getSupportInvestigation,
   type SupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
@@ -173,6 +178,10 @@ export const SupportErrandDecisionTab: FC<{
     prefill,
     scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
+    errandCaseRegistrationNumber: getErrandParameterValue(
+      supportErrand?.parameters,
+      EXTERNAL_CASE_REGISTRATION_NUMBER_KEY
+    ).trim(),
   });
 
   const { documentTemplate, documentParameters } = useDecisionSave({
@@ -273,6 +282,7 @@ export const SupportErrandDecisionTab: FC<{
             clausesRequired={decisionRequiresClauses(permit.type, form.values.outcome)}
             permitType={permit.type}
             disabled={!canEdit}
+            caseNumberFromErrand={requiresExternalCaseRegistrationNumber(supportErrand?.parameters)}
           />
 
           {supportErrand ? (

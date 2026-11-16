@@ -6,6 +6,13 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { SupportPremisesSection } from './support-premises-section.component';
 
+// Latest is 2.0; saved fixtures keep their own version.
+vi.mock('@common/components/json/utils/schema-utils', () => ({
+  getLatestRjsfSchema: vi.fn(async (municipalityId: string, name: string) => ({
+    schemaId: `${municipalityId}_${name}_2.0`,
+  })),
+}));
+
 vi.mock('@common/components/dynamic-text-editor', () => ({
   default: ({ value }: { value: { markup?: string } }) => <div data-cy="editor">{value.markup}</div>,
 }));
@@ -144,14 +151,14 @@ test('the inspection date and the right of disposal are saved in the JSON of the
     's1',
     'aot_investigation_premises_section',
     {
-      schemaId: '2281_aot_investigation_premises_section_1.0',
+      schemaId: '2281_aot_investigation_premises_section_2.0',
       value: { inspectedAt: '2026-04-10', rightOfDisposal: { status: 'PROVEN' } },
     }
   );
   expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
 });
 
-test('what the section holds is shown, and an edit keeps the other fields', async () => {
+test('what the section holds is shown, and an edit keeps the other fields and the version it was saved with', async () => {
   mountSection(true, {
     id: 's1',
     sectionKey: 'premises',
