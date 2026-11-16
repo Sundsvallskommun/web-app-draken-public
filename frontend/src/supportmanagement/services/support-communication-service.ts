@@ -36,10 +36,13 @@ const emailsOfThePermitHolder = (errand: SupportErrand): { value: string }[] => 
     .map((value) => ({ value }));
 };
 
+/** What the handler wrote is text, not markup, so the message reads as written even where it carries a bracket. */
+const escaped = (line: string): string => line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const asHtml = (text: string): string =>
   text
     .split('\n')
-    .map((line) => `<p>${line}</p>`)
+    .map((line) => `<p>${escaped(line)}</p>`)
     .join('');
 
 /**

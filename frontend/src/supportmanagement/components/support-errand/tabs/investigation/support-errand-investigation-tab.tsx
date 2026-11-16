@@ -11,6 +11,10 @@ import {
   isInvestigationArea,
   legalBasisTemplateOf,
 } from '@supportmanagement/investigations';
+import {
+  ACTION_ERRAND_PERMIT_TYPE,
+  supportDecisionOutcomesOf,
+} from '@supportmanagement/services/support-decision-service';
 import { isSupportMigratedErrand } from '@supportmanagement/services/support-errand-service';
 import {
   missingSupportInvestigationSections,
@@ -27,6 +31,7 @@ import {
   saveSupportInvestigationSection,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
+import { isSupportActionErrand } from '@supportmanagement/services/support-measure-service';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -93,7 +98,11 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const [isSaving, setIsSaving] = useState(false);
   const { values, set, load, merge, edited } = useUnsavedEdits(conclusionEditsOf(undefined));
 
-  const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const registeredOutcomes = supportMetadata?.decisionOutcomes ?? [];
+  // An action errand is recommended with the outcomes its own process knows, not with the ones a permit is granted by.
+  const outcomes = isSupportActionErrand(supportErrand)
+    ? supportDecisionOutcomesOf(registeredOutcomes, ACTION_ERRAND_PERMIT_TYPE)
+    : registeredOutcomes;
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
 

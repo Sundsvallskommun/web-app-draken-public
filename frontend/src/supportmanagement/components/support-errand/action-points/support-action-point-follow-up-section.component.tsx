@@ -24,11 +24,16 @@ import { type InvestigationSectionProps, InvestigationSectionText } from '../inv
 import { ActionPointFollowUpCard } from './action-point-follow-up-card.component';
 
 /**
- * The day the point was settled. The service writes only the fields an update names and cannot clear one, so the
- * date is written once: a point that is settled again keeps the day it was first settled on.
+ * The day the point was settled, stamped when the result settles a point that was not settled before. A point that
+ * is settled, corrected back and settled again is settled on the later day, and that is the day the letter has to
+ * say. The service cannot clear the date, so a point that is no longer settled keeps the one it has; the card and
+ * the underlay read it only while the result still settles the point.
  */
-const settledOn = (row: SupportMeasureRow, result: SupportMeasureResultName): string =>
-  supportMeasureIsSettled(result) ? row.completedAt || dayjs().format('YYYY-MM-DD') : row.completedAt;
+const settledOn = (row: SupportMeasureRow, result: SupportMeasureResultName): string => {
+  if (!supportMeasureIsSettled(result)) return row.completedAt;
+
+  return supportMeasureIsSettled(row.result) ? row.completedAt : dayjs().format('YYYY-MM-DD');
+};
 
 /**
  * The follow-up of the action points, in the phase where the errand is reviewed. The points were written on the
@@ -67,15 +72,19 @@ export const SupportActionPointFollowUpSection: FC<InvestigationSectionProps> = 
 
   const readOnly = !props.writable || busy;
 
+  /**
+   * Only what changed is written. The follow-up neither adds nor removes a point, and the shared diff treats a point
+   * whose title is blank as one to delete, so a saved point nobody titled would be removed by a click on another.
+   */
   const save = async (next: SupportMeasureRow[]): Promise<void> => {
     if (!errandId || !municipalityId) return;
 
-    const changes = supportMeasureChanges(SupportMeasureType.EXTERNAL, next, saved);
-    if (changes.update.length === 0) return;
+    const changed = supportMeasureChanges(SupportMeasureType.EXTERNAL, next, saved).update;
+    if (changed.length === 0) return;
 
     setBusy(true);
     try {
-      await saveSupportMeasures(errandId, municipalityId, [changes]);
+      await saveSupportMeasures(errandId, municipalityId, [{ create: [], update: changed, remove: [] }]);
       setSaved(next);
     } catch {
       setRows(saved);

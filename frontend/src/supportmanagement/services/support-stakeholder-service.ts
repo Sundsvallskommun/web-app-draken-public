@@ -22,6 +22,16 @@ export const getApplicantName = (r: SupportErrand) => {
 export const getSupportOwnerStakeholder: (e: SupportErrand) => SupportStakeholderFormModel | undefined = (e) =>
   e.customer?.filter((s) => s.role?.includes('PRIMARY'))?.[0];
 
+/**
+ * The permit holder as the errand names them: an organisation by its name, a person by their two. It is what a
+ * communication is addressed to and what the decision underlay prints, so an e-mail address will not do, which is
+ * what primaryStakeholderNameorEmail falls back to for a holder without a last name.
+ */
+export const supportPermitHolderName = (errand: SupportErrand | undefined): string => {
+  const holder = errand ? getSupportOwnerStakeholder(errand) : undefined;
+  return holder?.organizationName || [holder?.firstName, holder?.lastName].filter(Boolean).join(' ') || '';
+};
+
 export const getSupportReporterStakeholder: (e: SupportErrand) => SupportStakeholderFormModel | undefined = (e) =>
   e.contacts?.filter((s) => s.role?.includes('REPORTER'))?.[0];
 

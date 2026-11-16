@@ -6,7 +6,10 @@ import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import type { InvestigationAreaName } from '@supportmanagement/investigations';
 import { isSupportActionErrand } from '@supportmanagement/services/support-measure-service';
-import { primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
+import {
+  primaryStakeholderNameorEmail,
+  supportPermitHolderName,
+} from '@supportmanagement/services/support-stakeholder-service';
 import {
   createSupportStatement,
   getSupportStatements,
@@ -173,7 +176,7 @@ export const SupportStatementsSection: FC<{
     try {
       const statement = await createSupportStatement(errandId, municipalityId, {
         type: SUPPORT_COMMUNICATION_TYPE,
-        counterpartyName: primaryStakeholderNameorEmail(supportErrand),
+        counterpartyName: supportPermitHolderName(supportErrand) || primaryStakeholderNameorEmail(supportErrand),
         title: t('common:communications.title', { errandNumber }),
       });
       setCards((current) => [...current, cardOf(statement)]);

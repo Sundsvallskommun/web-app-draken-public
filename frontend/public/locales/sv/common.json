@@ -422,7 +422,8 @@
       },
       "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund.",
       "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut.",
-      "inspection_summary_without_step": "Summeringen du valt har ännu inget processteg, så tillsynen kan inte avslutas med den. Återbesöket eller tillsynsutredningen dokumenteras manuellt."
+      "inspection_summary_without_step": "Summeringen du valt har ännu inget processteg, så tillsynen kan inte avslutas med den. Återbesöket eller tillsynsutredningen dokumenteras manuellt.",
+      "document_not_filed": "Beslutet är avslutat, men beslutsdokumentet kunde inte filas på ärendet. Kontakta förvaltningen om dokumentet behövs."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",

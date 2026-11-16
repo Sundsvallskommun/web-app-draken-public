@@ -180,8 +180,11 @@ export const useProcessStepRun = ({
 
     await decisionJsonWriter?.(draft.id);
     await completeSupportDecision(errandId, municipalityId, draft.id);
-    // The decision is concluded either way: a document that could not be filed is one the handler can create again.
-    await decisionDocumentFiler?.().catch(() => undefined);
+    // The decision is concluded either way, but the handler is told when the document is missing from the errand:
+    // the decision tab is read-only by then, so nothing in the interface would say that the letter never got filed.
+    await decisionDocumentFiler?.().catch(() =>
+      tellTheHandler(t('common:process.actions.document_not_filed'), 'error')
+    );
     return true;
   };
 
