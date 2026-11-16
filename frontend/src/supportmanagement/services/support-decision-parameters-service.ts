@@ -15,7 +15,12 @@ import {
   type SupportDecision,
   supportDecisionOutcomeNames,
 } from './support-decision-service';
-import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
+import {
+  getErrandParameterValue,
+  PREMISES_MUNICIPALITY_KEY,
+  type SupportErrand,
+  type SupportStakeholderFormModel,
+} from './support-errand-service';
 import {
   childText,
   type FormValue,
@@ -44,7 +49,7 @@ import {
  */
 
 export interface DecisionParameterInput {
-  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer'>;
+  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer' | 'parameters'>;
   /** The most specific type label of the errand (its resourceName), e.g. TASTING. */
   errandType?: string;
   /** The answers filed under the errand type's schema name; undefined when there are none. */
@@ -561,8 +566,61 @@ export const toCertificateParameters = (
   );
 
 /**
+ * The authority a decision is made in the name of, as the two action errand letters print it: the sender in the
+ * letterhead, the postal address in the foot, and the authority an appeal is sent to. The unit handles the permits
+ * of every municipality the e-service offers, so the errand is what says which authority a decision belongs to.
+ */
+interface DecisionAuthority {
+  senderMunicipality: string;
+  /**
+   * The line below the municipality in the letterhead. It names the authority the decision belongs to, which is
+   * not the unit that prepared it; the handler's own unit stands by the signature as issuedByUnit.
+   */
+  senderUnit: string;
+  senderPostalAddressLines: string[];
+  appealAuthority: string;
+}
+
+const SUNDSVALL_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Sundsvalls kommun',
+  senderUnit: 'Alkohol- och tobaksenheten',
+  senderPostalAddressLines: [
+    'Sundsvalls kommun',
+    'Individ- och arbetsmarknadsförvaltningen',
+    'Alkohol- och tobaksenheten',
+    '851 85 SUNDSVALL',
+  ],
+  appealAuthority: 'Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall',
+};
+
+/** Timrå's permits are handled by Sundsvall's unit but belong to Timrå's own office, which is where an appeal goes. */
+const TIMRA_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Timrå kommun',
+  senderUnit: 'Miljö- och byggkontoret',
+  senderPostalAddressLines: ['Timrå kommun', 'Miljö- och byggkontoret', '861 82 TIMRÅ'],
+  appealAuthority: 'Miljö- och byggkontoret, Timrå kommun, 861 82 Timrå',
+};
+
+/**
+ * An errand registered before the e-service asked for a municipality carries no code, and those were all
+ * Sundsvall's own. A code the unit does not handle reads as Sundsvall's too, which is what the letters said
+ * before they could say anything else.
+ */
+const DECISION_AUTHORITY_OF_MUNICIPALITY: Record<string, DecisionAuthority> = {
+  '2281': SUNDSVALL_AUTHORITY,
+  '2262': TIMRA_AUTHORITY,
+};
+
+const DECISION_AUTHORITY_WITHOUT_A_CODE = SUNDSVALL_AUTHORITY;
+
+const decisionAuthorityOfErrand = (errand: DecisionParameterInput['errand']): DecisionAuthority =>
+  DECISION_AUTHORITY_OF_MUNICIPALITY[getErrandParameterValue(errand.parameters, PREMISES_MUNICIPALITY_KEY)] ??
+  DECISION_AUTHORITY_WITHOUT_A_CODE;
+
+/**
  * What the document reads. An action errand's decision numbers its att-satser, so they travel as a list rather
  * than as the one text the certificates print; the flattened text is what the checks before the decision read.
+ * The letters also read the authority, since the same two templates serve every municipality the unit handles.
  */
 export const toDecisionDocumentParameters = (
   permitType: string,
@@ -571,7 +629,11 @@ export const toDecisionDocumentParameters = (
 ): Record<string, string | string[]> => {
   const parameters = toCertificateParameters(permitType, input, decision);
   if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return parameters;
-  return { ...parameters, decisionClauses: clauseLines(decision.clauses) ?? [] };
+  return {
+    ...parameters,
+    decisionClauses: clauseLines(decision.clauses) ?? [],
+    ...decisionAuthorityOfErrand(input.errand),
+  };
 };
 
 /**
