@@ -9,6 +9,7 @@ export const ACTION_ERRAND_INVESTIGATION: ExaminedInvestigation = {
   resourceNames: ['MEASURES'],
   body: 'sections',
   introKey: 'common:investigation.intro_action_errand',
+  basisTemplate: 'action-errand-decision-basis',
   sections: [
     'statements',
     'established_faults',

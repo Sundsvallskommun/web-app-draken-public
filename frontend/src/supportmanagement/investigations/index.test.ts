@@ -128,8 +128,10 @@ test('an action errand is examined by its own headings and has no serving sectio
   expect(examinedSections(actionErrandVariant)).not.toContain('financial_suitability');
 });
 
-test('an action errand is offered no decision basis, since no template is written for one', () => {
-  expect(actionErrandVariant.body === 'sections' && actionErrandVariant.basisTemplate).toBeUndefined();
+test('an action errand reads its underlay from its own template, not from the serving one', () => {
+  expect(actionErrandVariant.body === 'sections' && actionErrandVariant.basisTemplate).toBe(
+    'action-errand-decision-basis'
+  );
 });
 
 test('the area is read off the errand, as a subtype or as the tag a tillsyn is marked with', () => {
