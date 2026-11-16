@@ -348,8 +348,7 @@ export const SupportCloseErrandModal: React.FC<{
   const hasResolution = !!supportErrand?.resolution && supportErrand?.resolution !== '';
   const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some(Boolean);
   // After a handover the errand is already closed, so only a fresh close is held back.
-  const lacksContactReason =
-    appConfig.features.useReasonForContact && !afterHandover && !supportErrand?.contactReason;
+  const lacksContactReason = appConfig.features.useReasonForContact && !afterHandover && !supportErrand?.contactReason;
   const description = afterHandover ? HANDOVER_DESCRIPTION : RESOLUTION_DESCRIPTION;
 
   let label: string | React.ReactElement = 'Avsluta ärendet';

@@ -37,7 +37,6 @@ const renderModalForErrand = (errand: Partial<SupportErrand>, afterHandover = fa
   render(<SupportCloseErrandModal show onClose={vi.fn()} afterHandover={afterHandover} />);
 };
 
-
 afterEach(cleanup);
 
 test('an errand without a contact reason cannot be closed', () => {
