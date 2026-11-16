@@ -10,7 +10,6 @@ import {
 import {
   getSupportMeasures,
   SUPPORT_ACTION_POINT_RESULTS,
-  supportMeasureIsOverdue,
   supportMeasureRow,
   supportMeasuresOfType,
   SupportMeasureType,
@@ -33,12 +32,7 @@ const ActionPointLine: FC<{ measure: Measure }> = ({ measure }) => {
   return (
     <li className="flex flex-col gap-2">
       <span className="font-bold">{row.title}</span>
-      <span className="text-small text-dark-secondary">
-        {[deadline, result].filter(Boolean).join(' · ')}
-        {supportMeasureIsOverdue(row) ? (
-          <span className="text-error font-bold"> · {t('common:action_points.overdue')}</span>
-        ) : null}
-      </span>
+      <span className="text-small text-dark-secondary">{[deadline, result].filter(Boolean).join(' · ')}</span>
       {row.goal ? <span className="text-small">{row.goal}</span> : null}
     </li>
   );
@@ -46,7 +40,9 @@ const ActionPointLine: FC<{ measure: Measure }> = ({ measure }) => {
 
 /**
  * The action points as they stand, above what the handler writes about them. They are read from the errand rather
- * than copied into the text, so a point whose deadline or result changes afterwards reads right here too.
+ * than copied into the text, so a point whose deadline or result changes afterwards reads right here too. A passed
+ * deadline is left unmarked: the result is read-only on this errand and the inspection it was written on is closed,
+ * so a point the permit holder has addressed would otherwise keep reading overdue with nothing able to clear it.
  */
 export const SupportActionPointsSection: FC<InvestigationSectionProps & { sectionKey: Sections }> = ({
   sectionKey,
