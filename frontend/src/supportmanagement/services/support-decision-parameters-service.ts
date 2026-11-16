@@ -572,12 +572,18 @@ export const toCertificateParameters = (
  */
 interface DecisionAuthority {
   senderMunicipality: string;
+  /**
+   * The line below the municipality in the letterhead. It names the authority the decision belongs to, which is
+   * not the unit that prepared it; the handler's own unit stands by the signature as issuedByUnit.
+   */
+  senderUnit: string;
   senderPostalAddressLines: string[];
   appealAuthority: string;
 }
 
 const SUNDSVALL_AUTHORITY: DecisionAuthority = {
   senderMunicipality: 'Sundsvalls kommun',
+  senderUnit: 'Alkohol- och tobaksenheten',
   senderPostalAddressLines: [
     'Sundsvalls kommun',
     'Individ- och arbetsmarknadsförvaltningen',
@@ -587,14 +593,22 @@ const SUNDSVALL_AUTHORITY: DecisionAuthority = {
   appealAuthority: 'Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall',
 };
 
+/** Timrå's permits are handled by Sundsvall's unit but belong to Timrå's own office, which is where an appeal goes. */
+const TIMRA_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Timrå kommun',
+  senderUnit: 'Miljö- och byggkontoret',
+  senderPostalAddressLines: ['Timrå kommun', 'Miljö- och byggkontoret', '861 82 TIMRÅ'],
+  appealAuthority: 'Miljö- och byggkontoret, Timrå kommun, 861 82 Timrå',
+};
+
 /**
- * Timrå (2262) joins once the business has said which board decides there, what the sender is and where an appeal
- * goes; those words belong in a decision, so they are not guessed here. Until the entry exists, and for an errand
- * registered before the e-service asked for a municipality, the letters read as Sundsvall's, which is what they
- * say today and what those errands were.
+ * An errand registered before the e-service asked for a municipality carries no code, and those were all
+ * Sundsvall's own. A code the unit does not handle reads as Sundsvall's too, which is what the letters said
+ * before they could say anything else.
  */
 const DECISION_AUTHORITY_OF_MUNICIPALITY: Record<string, DecisionAuthority> = {
   '2281': SUNDSVALL_AUTHORITY,
+  '2262': TIMRA_AUTHORITY,
 };
 
 const DECISION_AUTHORITY_WITHOUT_A_CODE = SUNDSVALL_AUTHORITY;

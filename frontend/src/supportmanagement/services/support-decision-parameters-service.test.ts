@@ -600,8 +600,18 @@ describe('what the permit needs of the errand', () => {
     const sundsvall = letterOf(inMunicipality('2281'));
 
     expect(sundsvall.senderMunicipality).toBe('Sundsvalls kommun');
+    expect(sundsvall.senderUnit).toBe('Alkohol- och tobaksenheten');
     expect(sundsvall.senderPostalAddressLines).toEqual(SUNDSVALL_POSTAL_ADDRESS);
     expect(sundsvall.appealAuthority).toBe('Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall');
+  });
+
+  test('a decision that concerns Timrå names Timrås own office, and sends an appeal there', () => {
+    const timra = letterOf(inMunicipality('2262'));
+
+    expect(timra.senderMunicipality).toBe('Timrå kommun');
+    expect(timra.senderUnit).toBe('Miljö- och byggkontoret');
+    expect(timra.senderPostalAddressLines).toEqual(['Timrå kommun', 'Miljö- och byggkontoret', '861 82 TIMRÅ']);
+    expect(timra.appealAuthority).toBe('Miljö- och byggkontoret, Timrå kommun, 861 82 Timrå');
   });
 
   test('an errand registered before the e-service asked for a municipality reads as Sundsvall, which it was', () => {
