@@ -285,6 +285,13 @@ export enum Resolution {
   HANDED_OVER = 'HANDED_OVER',
   SOLVED_FEEDBACK_VIA_PHONE = 'SOLVED_FEEDBACK_VIA_PHONE',
   SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX',
+  CLOSED_MISSING_FEEDBACK = 'CLOSED_MISSING_FEEDBACK',
+  SERVICE_CALL = 'SERVICE_CALL',
+  NO_DIGITAL_SOLUTION = 'NO_DIGITAL_SOLUTION',
+  MANUAL_DOCUMENT_HANDLING = 'MANUAL_DOCUMENT_HANDLING',
+  UNKNOWN = 'UNKNOWN',
+  ERRAND_STATUS = 'ERRAND_STATUS',
+  SUPPLEMENT = 'SUPPLEMENT',
 }
 
 export enum ResolutionLabelLOP {
@@ -312,6 +319,12 @@ export enum ResolutionLabelKS {
   PREPARED = 'Förberett',
   REFERRED = 'Hänvisat',
   HANDED_OVER = 'Överlämnat',
+  SERVICE_CALL = 'Tjänstesamtal',
+  NO_DIGITAL_SOLUTION = 'Ingen digital lösning',
+  MANUAL_DOCUMENT_HANDLING = 'Manuell hantering av handling',
+  UNKNOWN = 'Okänt',
+  ERRAND_STATUS = 'Ärendestatus',
+  SUPPLEMENT = 'Komplettering',
 }
 
 /** KS codes retired 2026-10-21. Display only, for errands closed before that. */
@@ -326,8 +339,8 @@ export enum ResolutionLabelKSLegacy {
   SECURE_APPBOX = 'SecureAppbox',
 }
 
-/** When to use each KS code; shown on demand in the close modal. */
-export const ResolutionDescriptionKS: Record<keyof typeof ResolutionLabelKS, string> = {
+/** When to use a KS code; shown on demand in the close modal. Codes without one get no info button. */
+export const ResolutionDescriptionKS: Partial<Record<keyof typeof ResolutionLabelKS, string>> = {
   INFORMED:
     'Jag har gett kunden den allmänna fakta som behövdes för att ärendet ska anses avslutat direkt vid första kontakt.',
   GUIDED:
@@ -375,6 +388,7 @@ export enum ResolutionLabelSE {
   SOLVED = 'Löst',
   SOLVED_FEEDBACK_VIA_PHONE = 'Löst och återkopplat via telefon',
   SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX = 'Löst och återkopplat via funktionsbrevlåda',
+  CLOSED_MISSING_FEEDBACK = 'Stängt pga saknad återkoppling',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
 }
 

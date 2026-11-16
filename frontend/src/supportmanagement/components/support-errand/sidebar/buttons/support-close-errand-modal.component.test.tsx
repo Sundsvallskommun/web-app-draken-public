@@ -48,11 +48,13 @@ test('SE picks from its own resolution codes', () => {
       Resolution.SOLVED,
       Resolution.SOLVED_FEEDBACK_VIA_PHONE,
       Resolution.SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX,
+      Resolution.CLOSED_MISSING_FEEDBACK,
       Resolution.BACK_TO_CONTACT_SUNDSVALL,
     ].sort()
   );
   expect(screen.getByText('Löst och återkopplat via telefon')).toBeTruthy();
   expect(screen.getByText('Löst och återkopplat via funktionsbrevlåda')).toBeTruthy();
+  expect(screen.getByText('Stängt pga saknad återkoppling')).toBeTruthy();
 });
 
 test.each([
