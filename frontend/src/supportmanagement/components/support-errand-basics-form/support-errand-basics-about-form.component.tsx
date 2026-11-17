@@ -145,6 +145,7 @@ export const SupportErrandBasicsAboutForm: FC<{
                   `common:basics_tab.contactReason.${process.env.NEXT_PUBLIC_APPLICATION}`,
                   t('common:basics_tab.contactReason.default')
                 )}
+                *
               </FormLabel>
               <Select
                 {...register('contactReason')}
@@ -165,9 +166,9 @@ export const SupportErrandBasicsAboutForm: FC<{
                     );
                   })}
               </Select>
-              {errors.category && (
+              {errors.contactReason && (
                 <div className="my-sm text-error">
-                  <FormErrorMessage>{errors.category?.message}</FormErrorMessage>
+                  <FormErrorMessage>{errors.contactReason?.message}</FormErrorMessage>
                 </div>
               )}
             </FormControl>

@@ -45,6 +45,7 @@ let formSchema = yup
         typeIsOptional(category) ? schema : schema.required('Välj ärendetyp')
       ),
     channel: yup.string().required('Välj kanal'),
+    contactReason: appConfig.features.useReasonForContact ? yup.string().required('Välj orsak') : yup.string(),
     description: yup.string(),
     parameters: yup.array(),
     // A person of significant influence may not carry a comment without a verdict; the card shows the message.
