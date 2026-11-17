@@ -52,6 +52,7 @@ import { ContractForm } from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
 const LESSEE_BILLING_PARTY_MESSAGE = 'En arrendator måste också vara fakturamottagare';
+const INDEX_REQUIRED_MESSAGE = 'Ange ett indexår som det finns ett KPI-värde för (oktober)';
 
 interface CasedataContractProps {
   update: () => void;
@@ -158,26 +159,54 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
             }),
           }),
       }),
-      extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
-        if (status !== Status.ACTIVE) return schema;
+      // With indexation on, an active contract must have an indexår that gave an October KPI value from SCB,
+      // or the index would silently be dropped when it is saved (index fields are sent all-or-nothing). A
+      // draft can still be saved, e.g. while SCB cannot be reached.
+      fees: yup
+        .object()
+        .when(
+          ['indexAdjusted', 'generateInvoice', 'type', 'leaseType', 'status'],
+          ([indexAdjusted, generateInvoice, type, leaseType, status], schema) =>
+            status === Status.ACTIVE &&
+            indexAdjusted === 'true' &&
+            generateInvoice === 'true' &&
+            hasRecurringFee(type, leaseType)
+              ? schema.shape({
+                  indexNumber: yup
+                    .number()
+                    .transform((value, original) => (original === '' || original == null ? undefined : value))
+                    .required(INDEX_REQUIRED_MESSAGE),
+                })
+              : schema
+        ),
+      extraParameters: yup
+        .array()
+        .when(
+          ['generateInvoice', 'status', 'type', 'leaseType'],
+          ([generateInvoice, status, type, leaseType], schema) => {
+            if (status !== Status.ACTIVE) return schema;
+            // The reference is entered under "Löpande avgift", which a type without a recurring fee (e.g.
+            // Korttidsarrende) does not show: requiring it there would block the contract from being activated.
+            if (!hasRecurringFee(type, leaseType)) return schema;
 
-        const baseSchema = schema.of(
-          yup.object({
-            name: yup.string().required(),
-            parameters: yup.object(),
-          })
-        );
+            const baseSchema = schema.of(
+              yup.object({
+                name: yup.string().required(),
+                parameters: yup.object(),
+              })
+            );
 
-        const hasReferens =
-          () => (extraParameters: { name: string; parameters: Record<string, unknown> }[] | undefined) =>
-            extraParameters?.some((s) => s.parameters?.markup) ?? false;
+            const hasReferens =
+              () => (extraParameters: { name: string; parameters: Record<string, unknown> }[] | undefined) =>
+                extraParameters?.some((s) => s.parameters?.markup) ?? false;
 
-        if (generateInvoice === 'true') {
-          return baseSchema.test('has-referens', 'Referens måste anges', hasReferens());
-        }
+            if (generateInvoice === 'true') {
+              return baseSchema.test('has-referens', 'Referens måste anges', hasReferens());
+            }
 
-        return schema;
-      }),
+            return schema;
+          }
+        ),
       stakeholders: yup
         .array()
         .when(['type', 'leaseType', 'status', 'invoicing'], ([type, leaseType, status, invoicing], schema) => {
@@ -407,6 +436,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
   // API Validation differs by contract type, so we need to handle type changes
   const handleContractTypeChange = (newType: ContractType) => {
+    // Only an Arrende has a subtype (leaseType); clear it right away so no other type keeps one.
+    if (newType !== ContractType.LEASE_AGREEMENT) {
+      contractForm.setValue('leaseType', undefined);
+    }
     if (newType === ContractType.PURCHASE_AGREEMENT) {
       contractForm.setValue('invoicing', undefined);
       contractForm.setValue('generateInvoice', 'false');
@@ -420,7 +453,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       if (!contractForm.getValues('extension')) {
         contractForm.setValue('extension', defaultLagenhetsarrende.extension);
       }
-      contractForm.setValue('generateInvoice', 'true');
+      // A type without a recurring fee (no "Löpande avgift") is not billed.
+      contractForm.setValue(
+        'generateInvoice',
+        hasRecurringFee(newType, contractForm.getValues('leaseType')) ? 'true' : 'false'
+      );
     }
     contractForm.trigger(['invoicing', 'notice']);
   };
