@@ -13,6 +13,7 @@ import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-
 import { useRouter } from 'next/navigation';
 import { FC, KeyboardEvent, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 interface CustomerRow {
   customerId: string;
@@ -44,13 +45,14 @@ const customerName = (stakeholder: SupportStakeholderFormModel): string =>
 const formatAddress = ({ address, zipCode, city }: SupportStakeholderFormModel): string =>
   [address, [zipCode, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
-const headers = ['Kund', 'Organisationsnummer', 'Adress', 'E-post', 'Telefon'];
+const headers = ['name', 'organizationNumber', 'address', 'email', 'phone'];
 
 /**
  * Customers (PRIMARY stakeholders) of the errands in the support store.
  * Pages through errands, so a page can show fewer rows than its size and a customer can recur on another page.
  */
 export const SupportStakeholdersTable: FC = () => {
+  const { t } = useTranslation();
   const { watch, setValue } = useFormContext<TableForm>();
   const data = useSupportStore((s) => s.supportErrands);
   const router = useRouter();
@@ -61,20 +63,22 @@ export const SupportStakeholdersTable: FC = () => {
   const openCustomer = (customerId: string) => router.push(`/kundbild/${customerId}`);
 
   if (data.isLoading) {
-    return <Spinner size={4} aria-label="Hämtar kunder" />;
+    return <Spinner size={4} aria-label={t('common:customer.list.customers.loading')} />;
   }
 
   return (
     <Table data-cy="stakeholders-table" scrollable>
       {data.error ? (
-        <caption className="my-32">Det gick inte att hämta kunder {data.error}</caption>
+        <caption className="my-32">{t('common:customer.list.customers.error', { error: data.error })}</caption>
       ) : rows.length === 0 ? (
-        <caption className="my-32">Det finns inga kunder på den här sidan</caption>
+        <caption className="my-32">{t('common:customer.list.customers.empty')}</caption>
       ) : (
         <>
           <Table.Header>
             {headers.map((header) => (
-              <Table.HeaderColumn key={header}>{header}</Table.HeaderColumn>
+              <Table.HeaderColumn key={header}>
+                {t(`common:customer.list.customers.headers.${header}`)}
+              </Table.HeaderColumn>
             ))}
           </Table.Header>
           <Table.Body>
@@ -84,7 +88,7 @@ export const SupportStakeholdersTable: FC = () => {
                 {...(isOrganization(stakeholder) && {
                   tabIndex: 0,
                   role: 'button',
-                  'aria-label': `Öppna kund ${customerName(stakeholder)}`,
+                  'aria-label': t('common:customer.list.customers.open', { name: customerName(stakeholder) }),
                   onKeyDown: (e: KeyboardEvent) => (e.key === 'Enter' ? openCustomer(customerId) : null),
                   onClick: () => openCustomer(customerId),
                   className: 'cursor-pointer',
@@ -94,7 +98,7 @@ export const SupportStakeholdersTable: FC = () => {
                 <Table.Column>
                   {isOrganization(stakeholder)
                     ? stakeholder.organizationNumber && formatOrganizationNumber(stakeholder.organizationNumber)
-                    : 'Privatperson'}
+                    : t('common:customer.list.customers.privatePerson')}
                 </Table.Column>
                 <Table.Column>{formatAddress(stakeholder)}</Table.Column>
                 <Table.Column>{stakeholder.emails[0]?.value}</Table.Column>
