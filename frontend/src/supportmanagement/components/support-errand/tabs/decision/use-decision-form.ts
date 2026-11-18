@@ -4,7 +4,9 @@ import { savedDecisionJson } from '@supportmanagement/services/support-decision-
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
 import type { DecisionScope } from '@supportmanagement/services/support-decision-scope-service';
 import {
+  ACTION_ERRAND_PERMIT_TYPE,
   decisionTermTexts,
+  isSupportDecisionDraft,
   outcomeWithoutConditions,
   type SupportDecision,
 } from '@supportmanagement/services/support-decision-service';
@@ -54,6 +56,8 @@ export interface DecisionFormValues {
  * any of it, and a field that has been written over stops following the investigation.
  */
 export interface DecisionPrefill {
+  /** The outcome the investigation recommends, where the decision offers it as a choice. */
+  outcome: string;
   clauses: string;
   justificationDeficiencies: string;
   justificationStatement: string;
@@ -64,6 +68,7 @@ export interface DecisionPrefill {
 }
 
 export const NO_DECISION_PREFILL: DecisionPrefill = {
+  outcome: '',
   clauses: '',
   justificationDeficiencies: '',
   justificationStatement: '',
@@ -89,29 +94,68 @@ interface DecisionFormInput {
   defaultRole: string;
   /** The errand's registry number, which a decision saved without one starts from. */
   errandCaseRegistrationNumber: string;
+  /** What the errand decides on; only the action errand keeps filling a draft in from the investigation. */
+  permitType: string;
 }
 
 export interface DecisionForm {
   values: DecisionFormValues;
   set: <K extends keyof DecisionFormValues>(key: K, value: DecisionFormValues[K]) => void;
-  /** True while a field, or the choice of premises, holds something other than what was saved. */
+  /** True while a field, or the choice of premises, holds something other than what the form started from. */
   edited: boolean;
+  /**
+   * True while the form holds anything the saved decision does not, the texts taken from the investigation
+   * included. What is prefilled is not a change the handler made, so it does not warn about leaving the tab, but
+   * it is still something to write, so a save has to go through.
+   */
+  unwritten: boolean;
 }
 
-/** What the decision was saved with, which is also what an unsaved form starts from. */
-const asSaved = ({
-  decision,
-  applicationPremisesPhone,
-  prefill,
-  scopeAsSaved,
-  defaultRole,
-  errandCaseRegistrationNumber,
-}: DecisionFormInput): DecisionFormValues => {
+/**
+ * Only the action errand's decision keeps filling itself in from the investigation once it has been saved. A permit
+ * decision is the handler's from its first save, as it has always been.
+ */
+const followsWhileDraft = (permitType: string): boolean => permitType === ACTION_ERRAND_PERMIT_TYPE;
+
+/**
+ * Whether a field still starts from the investigation.
+ *
+ * A decision that has never been saved always does. An action errand's draft does for a field it has nothing saved
+ * in, since a blank field is left out of the saved JSON altogether and a draft saved before the paragraphs were
+ * written would otherwise lose them for good. A decided decision never does; it says what was decided.
+ */
+const followsTheInvestigation = (
+  decision: SupportDecision | undefined,
+  saved: string | undefined,
+  whileDraft: boolean
+): boolean => {
+  if (!decision?.id) return true;
+  return whileDraft && isSupportDecisionDraft(decision) && !saved?.trim();
+};
+
+/**
+ * The fields as they stand, either as the form starts them, with the investigation filling in what the decision
+ * has nothing saved in, or as the decision alone has them, which is what a save is measured against.
+ */
+const valuesOf = (
+  {
+    decision,
+    applicationPremisesPhone,
+    prefill,
+    scopeAsSaved,
+    defaultRole,
+    errandCaseRegistrationNumber,
+    permitType,
+  }: DecisionFormInput,
+  fromTheInvestigation: boolean
+): DecisionFormValues => {
   const json = savedDecisionJson(decision);
   const written = (field: keyof DecisionPrefill, saved: string | undefined): string =>
-    decision?.id ? saved ?? '' : prefill[field];
+    fromTheInvestigation && followsTheInvestigation(decision, saved, followsWhileDraft(permitType))
+      ? prefill[field]
+      : saved ?? '';
   return {
-    outcome: outcomeWithoutConditions(decision?.outcome),
+    outcome: written('outcome', outcomeWithoutConditions(decision?.outcome)),
     decidedByRole: decision?.decidedByRole || defaultRole,
     legalBasis: decision?.legalBasis ?? '',
     delegationReference: decision?.delegationReference ?? '',
@@ -154,7 +198,7 @@ const comparable = (values: DecisionFormValues, premises: DecisionPremises | und
  * The fields of the decision while it is being written. The decision behind them is read again
  * whenever the errand changes, and the fields follow it only when it is a different decision or a
  * newer version of it, so a reload does not wipe what the handler is in the middle of writing.
- * A new decision's att-satser follow the investigation for as long as the handler leaves them as prefilled.
+ * A decision still being drafted follows the investigation for as long as the handler leaves a field as prefilled.
  */
 /** A field the handler has not written in follows the investigation; one that has been written in stays put. */
 const stillFollowingThePrefill = (
@@ -168,8 +212,9 @@ const stillFollowingThePrefill = (
   );
 
 export const useDecisionForm = (input: DecisionFormInput): DecisionForm => {
-  const saved = asSaved(input);
-  const [values, setValues] = useState(saved);
+  const start = valuesOf(input, true);
+  const asSaved = valuesOf(input, false);
+  const [values, setValues] = useState(start);
 
   const version = input.decision?.id ? `${input.decision.id}:${input.decision.version ?? ''}` : 'new';
   const [filledFrom, setFilledFrom] = useState(version);
@@ -177,10 +222,10 @@ export const useDecisionForm = (input: DecisionFormInput): DecisionForm => {
   if (version !== filledFrom) {
     setFilledFrom(version);
     setPrefilled(input.prefill);
-    setValues(saved);
+    setValues(start);
   } else if (!sameJson(input.prefill, prefilled)) {
     setPrefilled(input.prefill);
-    if (!input.decision?.id) {
+    if (!input.decision?.id || (followsWhileDraft(input.permitType) && isSupportDecisionDraft(input.decision))) {
       setValues((current) => stillFollowingThePrefill(current, prefilled, input.prefill));
     }
   }
@@ -191,7 +236,11 @@ export const useDecisionForm = (input: DecisionFormInput): DecisionForm => {
     []
   );
 
-  const edited = input.editable && comparable(values, input.premisesToSend) !== comparable(saved, input.savedPremises);
+  const held = comparable(values, input.premisesToSend);
+  const edited = input.editable && held !== comparable(start, input.savedPremises);
+  // A decision that does not exist yet is created by what the handler does, never by what the investigation
+  // filled in; one that does is written with the texts it has nothing saved in.
+  const unwritten = input.decision?.id ? input.editable && held !== comparable(asSaved, input.savedPremises) : edited;
 
-  return { values, set, edited };
+  return { values, set, edited, unwritten };
 };

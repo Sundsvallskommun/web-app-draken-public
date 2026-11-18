@@ -45,7 +45,8 @@ import type { DecisionFormValues } from './use-decision-form';
 interface DecisionSaveInput {
   decision: SupportDecision | undefined;
   values: DecisionFormValues;
-  edited: boolean;
+  /** True while the form holds anything the saved decision does not, so that there is something to write. */
+  unwritten: boolean;
   editable: boolean;
   permit: DecisionPermit;
   /** The premises the handler has settled on, written in the decision for the process to read. */
@@ -73,7 +74,7 @@ export interface DecisionSave {
 export const useDecisionSave = ({
   decision,
   values,
-  edited,
+  unwritten,
   editable,
   permit,
   premisesToSend,
@@ -194,7 +195,7 @@ export const useDecisionSave = ({
 
   // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
-    if (!supportErrand?.id || !editable || !edited) return true;
+    if (!supportErrand?.id || !editable || !unwritten) return true;
 
     if (hasInvalidServingHours(values.scope)) {
       tell(t('common:decision.scope.serving_hours.half_filled'), 'error');

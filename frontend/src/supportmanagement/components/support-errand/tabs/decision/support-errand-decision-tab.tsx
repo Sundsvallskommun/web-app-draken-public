@@ -167,11 +167,15 @@ export const SupportErrandDecisionTab: FC<{
     };
   }, [inspectionErrandId, municipalityId, opened]);
 
-  const prefill = useMemo(() => decisionPrefillOf(investigation, origin), [investigation, origin]);
+  const prefill = useMemo(
+    () => decisionPrefillOf(investigation, origin, outcomes, permit.type),
+    [investigation, origin, outcomes, permit.type]
+  );
 
   const form = useDecisionForm({
     decision,
     editable,
+    permitType: permit.type,
     savedPremises,
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
@@ -187,7 +191,7 @@ export const SupportErrandDecisionTab: FC<{
   const { documentTemplate, documentParameters } = useDecisionSave({
     decision,
     values: form.values,
-    edited: form.edited,
+    unwritten: form.unwritten,
     editable,
     permit,
     premisesToSend,
