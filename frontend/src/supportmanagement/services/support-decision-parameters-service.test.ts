@@ -798,3 +798,33 @@ describe('every permit', () => {
     );
   });
 });
+
+// The permit schemas define none of the action errand's fields and allow nothing they do not define, so a permit
+// decision that carried any of them was refused by the service with a constraint violation.
+const SANCTION_FIELDS = {
+  delegation: 'A 4.2',
+  outcomeHeading: 'Bifall med villkor',
+  outcomeText: 'Vad beslutet innebär',
+  justificationDeficiencies: 'Konstaterade brister',
+  justificationStatement: 'Tillståndshavarens yttrande',
+  justificationOutcome: 'Bedömning',
+};
+
+test('a permit decision carries none of the fields only an action errand decides with', () => {
+  const saved = toDecisionJson('SERVERINGSTILLSTAND', input(), {
+    ...WITH_CLAUSES,
+    outcome: 'APPROVAL',
+    ...SANCTION_FIELDS,
+  });
+
+  for (const field of Object.keys(SANCTION_FIELDS)) {
+    expect(saved.decision).not.toHaveProperty(field);
+  }
+  expect(saved.decision).toMatchObject({ outcome: 'APPROVAL', clauses: 'att bevilja tillstånd' });
+});
+
+test('an action errand decision carries them all, since its own schema is the one that knows them', () => {
+  const saved = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'WARNING', ...SANCTION_FIELDS });
+
+  expect(saved.decision).toMatchObject(SANCTION_FIELDS);
+});

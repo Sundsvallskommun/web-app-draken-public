@@ -246,23 +246,25 @@ export const DecisionFields: FC<{
         <DecisionTerms terms={values.terms} onChange={(terms) => set('terms', terms)} disabled={disabled} />
       </DecisionCard>
 
-      <DecisionCard>
-        <DecisionField
-          id="decision-delegation"
-          label={t('common:decision.delegation')}
-          help={t('common:decision.delegation_help')}
-        >
-          <Input
-            className="w-full max-w-[28rem]"
-            value={values.delegationReference}
-            maxLength={SUPPORT_DECISION_DELEGATION_MAX_LENGTH}
-            placeholder={t('common:decision.delegation_placeholder')}
-            onChange={(event) => set('delegationReference', event.target.value)}
-            disabled={disabled}
-            data-cy="decision-delegation"
-          />
-        </DecisionField>
-      </DecisionCard>
+      {sanction ? (
+        <DecisionCard>
+          <DecisionField
+            id="decision-delegation"
+            label={t('common:decision.delegation')}
+            help={t('common:decision.delegation_help')}
+          >
+            <Input
+              className="w-full max-w-[28rem]"
+              value={values.delegationReference}
+              maxLength={SUPPORT_DECISION_DELEGATION_MAX_LENGTH}
+              placeholder={t('common:decision.delegation_placeholder')}
+              onChange={(event) => set('delegationReference', event.target.value)}
+              disabled={disabled}
+              data-cy="decision-delegation"
+            />
+          </DecisionField>
+        </DecisionCard>
+      ) : null}
 
       <DecisionCard>
         <DecisionField id="decision-role" label={t('common:decision.role')} help={t('common:decision.role_help')}>

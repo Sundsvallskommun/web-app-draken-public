@@ -322,6 +322,20 @@ const clausesOf = (permitType: string, clauses: string | undefined): string | st
   return lines?.length ? lines : undefined;
 };
 
+/**
+ * What only an action errand's decision carries. The permit schemas define none of it and allow nothing they do
+ * not define, so a permit decision that sent any of it would be refused with a constraint violation. The outcome
+ * heading always has a value, which is why every field here is kept to the one schema that knows them.
+ */
+const sanctionFieldsOf = (decision: CertificateDecision): JsonObject => ({
+  delegation: text(decision.delegation),
+  outcomeHeading: text(decision.outcomeHeading),
+  outcomeText: text(decision.outcomeText),
+  justificationDeficiencies: text(decision.justificationDeficiencies),
+  justificationStatement: text(decision.justificationStatement),
+  justificationOutcome: text(decision.justificationOutcome),
+});
+
 /** The decision as the certificate states it; the decision's root carries the same for Support Management. */
 const decisionOf = (
   permitType: string,
@@ -332,12 +346,7 @@ const decisionOf = (
   decisionText: text(decision.decisionText),
   justification: text(decision.justification),
   clauses: clausesOf(permitType, decision.clauses),
-  delegation: text(decision.delegation),
-  outcomeHeading: text(decision.outcomeHeading),
-  outcomeText: text(decision.outcomeText),
-  justificationDeficiencies: text(decision.justificationDeficiencies),
-  justificationStatement: text(decision.justificationStatement),
-  justificationOutcome: text(decision.justificationOutcome),
+  ...(permitType === ACTION_ERRAND_PERMIT_TYPE ? sanctionFieldsOf(decision) : {}),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
   executionDate: isoDate(executionDate),
