@@ -88,13 +88,14 @@ const makeController = () => {
   return { controller, api, organization, citizen };
 };
 
-/** All 15 query params of `errands`, in declaration order, so tests can override just one. */
+/** All query params of `errands`, in declaration order, so tests can override just one. */
 const errandsArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
   const q = {
     page: undefined,
     size: undefined,
     query: undefined,
     stakeholders: undefined,
+    hasCustomer: undefined,
     priority: undefined,
     category: undefined,
     type: undefined,
@@ -114,6 +115,7 @@ const errandsArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
     q.size,
     q.query,
     q.stakeholders,
+    q.hasCustomer,
     q.priority,
     q.category,
     q.type,
@@ -126,13 +128,13 @@ const errandsArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
     q.start,
     q.end,
     q.sort,
-  ] as [any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any];
+  ] as [any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any];
 };
 
-/** The same params minus `page`/`size`/`sort`, matching `countErrands`. */
+/** The same params minus `page`/`size`/`hasCustomer`/`sort`, matching `countErrands`. */
 const countArgs = (overrides: Partial<Record<string, unknown>> = {}) => {
-  const [, , ...rest] = errandsArgs(overrides);
-  return rest.slice(0, 13) as [any, any, any, any, any, any, any, any, any, any, any, any, any];
+  const [, , query, stakeholders, , ...rest] = errandsArgs(overrides);
+  return [query, stakeholders, ...rest.slice(0, 11)] as [any, any, any, any, any, any, any, any, any, any, any, any, any];
 };
 
 beforeEach(() => {
