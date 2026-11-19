@@ -273,7 +273,8 @@
       "label": "Område",
       "alcohol": "Alkohol",
       "tobacco": "Tobak",
-      "missing": "Välj område innan utredningen avslutas."
+      "missing": "Välj område innan utredningen avslutas.",
+      "legal_basis_failed": "Lagrummet för det valda området kunde inte hämtas. Lagrummet står kvar oförändrat, så kontrollera det innan beslut."
     }
   },
   "process": {

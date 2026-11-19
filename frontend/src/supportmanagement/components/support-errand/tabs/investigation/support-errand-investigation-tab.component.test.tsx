@@ -15,9 +15,10 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { SupportErrandInvestigationTab } from './support-errand-investigation-tab';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+const snackbar = vi.hoisted(() => vi.fn());
 vi.mock('@sk-web-gui/react', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useSnackbar: () => vi.fn(),
+  useSnackbar: () => snackbar,
 }));
 vi.mock('@supportmanagement/services/support-investigation-service', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -479,4 +480,49 @@ test('a change of area writes the new area legal basis over the one standing the
     'section-9',
     { text: TOBACCO_LEGAL_BASIS },
   ]);
+});
+
+test('a legal basis that cannot be fetched is not written, and the handler is told', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...underTheArea('TOBACCO'), version: 4 } as never);
+  vi.mocked(renderTemplateHtml).mockRejectedValue(new Error('the template is not published'));
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-TOBACCO')).toBeTruthy());
+
+  await act(async () => {
+    fireEvent.click(byCy('investigation-area-TOBACCO')!);
+  });
+
+  await waitFor(() => expect(renderTemplateHtml).toHaveBeenCalledWith('tobacco-sales-legal-basis'));
+  expect(saveSupportInvestigationSection).not.toHaveBeenCalled();
+  expect(snackbar).toHaveBeenCalledWith(
+    expect.objectContaining({ message: 'common:investigation.areas.legal_basis_failed' })
+  );
+});
+
+test('a legal basis the service refuses to store is tried again on the next read of the investigation', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...underTheArea('TOBACCO'), version: 4 } as never);
+  vi.mocked(renderTemplateHtml).mockResolvedValue(TOBACCO_LEGAL_BASIS);
+  vi.mocked(saveSupportInvestigationSection).mockRejectedValue(new Error('conflict'));
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-TOBACCO')).toBeTruthy());
+
+  await act(async () => {
+    fireEvent.click(byCy('investigation-area-TOBACCO')!);
+  });
+
+  await waitFor(() => expect(saveSupportInvestigationSection).toHaveBeenCalledTimes(1));
+
+  // The area was left unmarked, so the next investigation the tab receives makes it try once more.
+  sectionStub.handsBack = { ...underTheArea('TOBACCO'), version: 5 };
+  await act(async () => {
+    await useSupportStore.getState().tabSavers.investigation?.();
+  });
+
+  await waitFor(() => expect(saveSupportInvestigationSection).toHaveBeenCalledTimes(2));
 });

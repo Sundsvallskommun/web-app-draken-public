@@ -278,16 +278,32 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     }
   };
 
-  const fillTheLegalBasis = async (section: InvestigationSection): Promise<void> => {
-    if (!errandId || !investigation?.id || !section.id || !legalBasisTemplate) return;
+  /** Writes the legal basis of the chosen area, and answers whether it was written. */
+  const fillTheLegalBasis = async (section: InvestigationSection): Promise<boolean> => {
+    if (!errandId || !investigation?.id || !section.id || !legalBasisTemplate) return false;
 
     const text = await renderTemplateHtml(legalBasisTemplate).catch(() => '');
-    if (!text.trim()) return;
+    if (!text.trim()) return false;
 
-    await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, { text })
-      .then(receiveFromSection)
-      .catch(() => undefined);
+    const saved = await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, {
+      text,
+    })
+      .then((result) => {
+        receiveFromSection(result);
+        return true;
+      })
+      .catch(() => false);
+
+    return saved;
   };
+
+  const reportTheLegalBasisWasNotWritten = () =>
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: t('common:investigation.areas.legal_basis_failed'),
+      status: 'error',
+    });
 
   const legalBasisCanBeWritten = !isLoading && !error && !!investigation && !readOnly && !!legalBasisTemplate;
 
@@ -304,7 +320,14 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     const theAreaWasChanged = writtenForArea !== null;
     legalBasisWrittenForArea.current = areaToWriteFor;
     if (!theAreaWasChanged && (section.text ?? '').trim()) return;
-    void fillTheLegalBasis(section);
+
+    // A write that does not go through leaves the area unmarked, so that it is tried again and the handler is not
+    // left with the legal basis of the area they just changed away from without being told.
+    void fillTheLegalBasis(section).then((written) => {
+      if (written) return;
+      legalBasisWrittenForArea.current = writtenForArea;
+      if (theAreaWasChanged) reportTheLegalBasisWasNotWritten();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [legalBasisCanBeWritten, investigation, area]);
 
