@@ -1,10 +1,17 @@
-export type AssetStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'BLOCKED' | 'TEMPORARY';
+/**
+ * The statuses the permit register keeps. REVOKED is the municipality taking the permit, which is not the same
+ * thing as EXPIRED, where it ran its time out; the next inspection has to be able to tell them apart.
+ */
+export type AssetStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'BLOCKED' | 'TEMPORARY' | 'REPLACED' | 'REVOKED';
+
 export enum assetStatusLabels {
   DRAFT = 'Utkast',
   ACTIVE = 'Aktivt',
   EXPIRED = 'Utgånget',
   BLOCKED = 'Blockerat',
   TEMPORARY = 'Tillfälligt',
+  REPLACED = 'Ersatt',
+  REVOKED = 'Återkallat',
 }
 
 interface JsonParameter {

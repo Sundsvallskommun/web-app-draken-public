@@ -16,6 +16,11 @@ import { examinedSections, investigationVariantFor } from '@supportmanagement/in
 import dayjs from 'dayjs';
 import type { LegalEntityEngagement, LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
+import {
+  getSupportActionErrandOrigin,
+  inspectionErrandIdOf,
+  type SupportActionErrandOrigin,
+} from './support-action-errand-service';
 import type { SupportAttachment } from './support-attachment-service';
 import {
   FLOOR_PLAN_PURPOSES,
@@ -42,6 +47,16 @@ import { supportApplicationCompleteAt } from './support-investigation-processing
 import { sectionKeyOf, type Sections } from './support-investigation-sections';
 import type { SupportInvestigation } from './support-investigation-service';
 import { jsonParameterObject } from './support-json-parameter-service';
+import {
+  getSupportMeasures,
+  isSupportActionErrand,
+  SUPPORT_ACTION_POINT_RESULTS,
+  supportMeasureIsSettled,
+  type SupportMeasureRow,
+  supportMeasureRow,
+  supportMeasuresOfType,
+  SupportMeasureType,
+} from './support-measure-service';
 import type { SupportMetadata } from './support-metadata-service';
 import {
   engagementIsPerson,
@@ -136,6 +151,15 @@ interface InvestigationBasisStaff {
   personalNumber: string;
 }
 
+/** One action point as the underlay of an action errand prints it: what was asked for, and what came of it. */
+interface InvestigationBasisActionPoint {
+  title: string;
+  goal: string;
+  dueAt: string;
+  result: string;
+  completedAt: string;
+}
+
 export interface InvestigationBasisParameters {
   documentDate: string;
   caseNumber: string;
@@ -208,6 +232,16 @@ export interface InvestigationBasisParameters {
   };
   personsOfInfluence: InvestigationBasisPerson[];
   statements: InvestigationBasisStatement[];
+  /** What an action errand's underlay reads beyond this: the faults, the points, and where they came from. */
+  faultsHtml: string;
+  measuresTakenHtml: string;
+  permitHolderStatementHtml: string;
+  assessmentHtml: string;
+  actionPoints: InvestigationBasisActionPoint[];
+  inspectionDate: string;
+  inspectionCaseNumber: string;
+  permitType: string;
+  permitCaseNumber: string;
   investigation: {
     recommendationLabel: string;
     financialAssessmentHtml: string;
@@ -231,6 +265,10 @@ export interface InvestigationBasisInput {
   companyEngagements: LegalEntityEngagement[];
   /** Every company read for the people of influence; it names the companies they chose. */
   personEngagements: LegalEntityPersonEngagement[];
+  /** The action points of an action errand, empty for every other errand type. */
+  actionPoints: SupportMeasureRow[];
+  /** The inspection and the permit an action errand came from, undefined for every other errand type. */
+  origin: SupportActionErrandOrigin | undefined;
   metadata: SupportMetadata | undefined;
   handlerName: string;
   today: string;
@@ -586,6 +624,24 @@ const basisStatements = (
     responseText: plainTextOf(statement.responseText),
   }));
 
+const actionPointResultLabel = (result: SupportMeasureRow['result'], translate: (key: string) => string): string => {
+  const choice = SUPPORT_ACTION_POINT_RESULTS.find((candidate) => candidate.result === result);
+  return choice ? translate(choice.translationKey) : '';
+};
+
+/** The day a point was settled is carried only while the result still settles it, since the service cannot clear it. */
+const actionPointsOf = (
+  rows: SupportMeasureRow[],
+  translate: (key: string) => string
+): InvestigationBasisActionPoint[] =>
+  rows.map((row) => ({
+    title: row.title,
+    goal: row.goal,
+    dueAt: row.dueAt,
+    result: actionPointResultLabel(row.result, translate),
+    completedAt: supportMeasureIsSettled(row.result) ? row.completedAt : '',
+  }));
+
 const proposalParameters = (investigation: Investigation | undefined): { html: string; points: string[] } => ({
   html: htmlOf(investigation?.summary),
   points: linesOf(investigation?.summary),
@@ -617,6 +673,10 @@ const WRITTEN_EXAMINATIONS: Record<string, Sections> = {
   'premises.fireSafetyHtml': 'fire_safety',
   'investigation.premisesRemarksHtml': 'premises',
   'investigation.financialAssessmentHtml': 'financial_suitability',
+  faultsHtml: 'established_faults',
+  measuresTakenHtml: 'measures_taken',
+  permitHolderStatementHtml: 'permit_holder_statement',
+  assessmentHtml: 'assessment',
 };
 
 /** What the handler wrote about the premises, under whichever examination the errand type puts it. */
@@ -735,6 +795,15 @@ export const investigationBasisParameters = (input: InvestigationBasisInput): In
     },
     personsOfInfluence: people,
     statements: basisStatements(input.statements, metadata),
+    faultsHtml: texts.established_faults ?? '',
+    measuresTakenHtml: texts.measures_taken ?? '',
+    permitHolderStatementHtml: texts.permit_holder_statement ?? '',
+    assessmentHtml: texts.assessment ?? '',
+    actionPoints: actionPointsOf(input.actionPoints, translate),
+    inspectionDate: input.origin?.inspectionDate ?? '',
+    inspectionCaseNumber: input.origin?.inspectionErrandNumber ?? '',
+    permitType: input.origin?.permitType ?? '',
+    permitCaseNumber: input.origin?.permitErrandNumber ?? '',
     investigation: {
       recommendationLabel: outcomeLabelOf(investigation?.recommendation, metadata),
       financialAssessmentHtml: texts.financial_suitability ?? '',
@@ -779,16 +848,23 @@ export const collectInvestigationBasisParameters = async (
     .map((stakeholder) => stakeholder.externalId)
     .filter((partyId): partyId is string => !!partyId);
   const companyPartyId = errand?.customer?.[0]?.externalId;
+  const isActionErrand = isSupportActionErrand(errand);
+  const inspectionErrandId = isActionErrand ? inspectionErrandIdOf(errand) : undefined;
 
-  const [statements, companyProfile, companyEngagements, personEngagements, schema] = await Promise.all([
-    getSupportStatements(errand?.id ?? '', municipalityId).catch(() => []),
-    companyPartyId ? getCompanyProfileByPartyId(companyPartyId).catch(() => undefined) : undefined,
-    companyPartyId ? getLegalEntityEngagements(companyPartyId).catch(() => []) : [],
-    Promise.all(partyIdsOfInfluence.map((partyId) => getLegalEntityPersonEngagements(partyId).catch(() => []))).then(
-      (read) => read.flat()
-    ),
-    form?.schemaId ? getRjsfSchema(municipalityId, form.schemaId).catch(() => null) : null,
-  ]);
+  const [statements, companyProfile, companyEngagements, personEngagements, schema, measures, origin] =
+    await Promise.all([
+      getSupportStatements(errand?.id ?? '', municipalityId).catch(() => []),
+      companyPartyId ? getCompanyProfileByPartyId(companyPartyId).catch(() => undefined) : undefined,
+      companyPartyId ? getLegalEntityEngagements(companyPartyId).catch(() => []) : [],
+      Promise.all(partyIdsOfInfluence.map((partyId) => getLegalEntityPersonEngagements(partyId).catch(() => []))).then(
+        (read) => read.flat()
+      ),
+      form?.schemaId ? getRjsfSchema(municipalityId, form.schemaId).catch(() => null) : null,
+      isActionErrand ? getSupportMeasures(errand?.id ?? '', municipalityId).catch(() => []) : [],
+      inspectionErrandId
+        ? getSupportActionErrandOrigin(municipalityId, inspectionErrandId).catch(() => undefined)
+        : undefined,
+    ]);
 
   return investigationBasisParameters({
     errand,
@@ -801,6 +877,8 @@ export const collectInvestigationBasisParameters = async (
     companyProfile,
     companyEngagements,
     personEngagements,
+    actionPoints: supportMeasuresOfType(measures, SupportMeasureType.EXTERNAL).map(supportMeasureRow),
+    origin,
     metadata,
     handlerName: facts.handlerName,
     today: facts.today,

@@ -17,6 +17,7 @@ import {
   uploadSupportMeasureAttachment,
 } from '@supportmanagement/services/support-measure-service';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import dayjs from 'dayjs';
 import { act } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -262,16 +263,58 @@ test('a result marks the tab unsaved, and the save patches only the measures tha
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
 });
 
+const summaryOption = (value: string) =>
+  document.querySelector<HTMLInputElement>(`[data-cy="protocol-summary-${value}"]`);
+
+const explanationOf = (value: string) =>
+  document.querySelector(`[data-cy="protocol-summary-${value}-unavailable"]`)?.textContent;
+
+test('a summary the process has no step for cannot be chosen, and says why at the option', async () => {
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(summaryOption('approved')?.disabled).toBe(false);
+  expect(summaryOption('actionRequired')?.disabled).toBe(false);
+  expect(explanationOf('approved')).toBeUndefined();
+
+  expect(summaryOption('revisit')?.disabled).toBe(true);
+  expect(summaryOption('investigation')?.disabled).toBe(true);
+  expect(explanationOf('revisit')).toContain('Saknar processteg');
+  expect(explanationOf('investigation')).toContain('dokumenteras manuellt');
+});
+
+test('a summary already saved is shown as it stands, explanation and all, rather than silently dropped', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue({
+    ...investigation,
+    jsonParameters: [
+      {
+        key: 'aot_external_inspection_protocol',
+        schemaId: '2281_aot_external_inspection_protocol_1.0',
+        value: { summary: 'revisit' },
+      },
+    ],
+  } as never);
+  mount();
+  await screen.findByDisplayValue('Ålderskontroll');
+
+  expect(summaryOption('revisit')?.checked).toBe(true);
+  // What is already chosen stays choosable, so the handler can change it rather than being locked out.
+  expect(summaryOption('revisit')?.disabled).toBe(false);
+  expect(explanationOf('revisit')).toContain('kan inte avslutas');
+});
+
 test('the action points are listed in their own accordion and written as EXTERNAL measures by the same save', async () => {
   mount();
 
   expect(await screen.findByText('Skapa åtgärdspunkter')).toBeTruthy();
   expect(screen.getByDisplayValue('Sätt upp skylt om åldersgräns')).toBeTruthy();
-  expect(screen.queryByText('Sätt upp skylt om åldersgräns')).toBeNull();
+  expect(card('action-point-x1').getByRole('button', { name: 'Delvis åtgärdad', hidden: true })).toBeTruthy();
 
   // The accordion starts closed, so its controls are there but not exposed to assistive technology.
   fireEvent.click(screen.getByRole('button', { name: 'Lägg till åtgärdspunkt', hidden: true }));
   fireEvent.change(screen.getByLabelText('Åtgärdspunkt 2'), { target: { value: 'Byt ut prislistan' } });
+  fireEvent.change(card('action-point-new-1').getByLabelText('Frist'), { target: { value: '2026-12-01' } });
+  fireEvent.change(card('action-point-new-1').getByLabelText('Mål'), { target: { value: 'Skylt vid kassan' } });
   expect(state().unsavedTabs.investigation).toBe(true);
 
   await act(async () => {
@@ -280,10 +323,40 @@ test('the action points are listed in their own accordion and written as EXTERNA
 
   expect(saveSupportMeasures).toHaveBeenCalledWith(ERRAND_ID, '2281', [
     nothing,
-    { create: [{ type: 'EXTERNAL', title: 'Byt ut prislistan' }], update: [], remove: [] },
+    {
+      create: [
+        {
+          type: 'EXTERNAL',
+          title: 'Byt ut prislistan',
+          dueAt: dayjs('2026-12-01').startOf('day').format(),
+          goal: 'Skylt vid kassan',
+        },
+      ],
+      update: [],
+      remove: [],
+    },
     nothing,
   ]);
   expect(saveSupportInvestigation).not.toHaveBeenCalled();
+});
+
+test('a deadline that has passed is marked, and a point changed since it was written says when it was', async () => {
+  vi.mocked(getSupportMeasures).mockResolvedValue([
+    {
+      id: 'x1',
+      type: 'EXTERNAL',
+      title: 'Sätt upp skylt om åldersgräns',
+      dueAt: '2020-01-01T00:00:00+01:00',
+      created: '2019-12-01T08:00:00Z',
+      modified: '2019-12-20T09:30:00Z',
+      attachments: [],
+    },
+  ]);
+  mount();
+
+  await screen.findByDisplayValue('Sätt upp skylt om åldersgräns');
+  expect(card('action-point-x1').getByText('Fristen har passerat')).toBeTruthy();
+  expect(card('action-point-x1').getByText('Ändrad 2019-12-20')).toBeTruthy();
 });
 
 test('an area is assessed in its own card, observations are picked on a deficiency and written as OBSERVATION measures', async () => {

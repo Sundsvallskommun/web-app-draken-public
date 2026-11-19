@@ -75,6 +75,7 @@ export const useProcessStepRun = ({
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const setProcessSignal = useSupportStore((s) => s.setProcessSignal);
   const decisionJsonWriter = useSupportStore((s) => s.decisionJsonWriter);
+  const decisionDocumentFiler = useSupportStore((s) => s.decisionDocumentFiler);
   const [running, setRunning] = useState<string>();
   const awaitedMove = useRef<{ from: SupportProcessStepName; tabKey: string; at: number } | undefined>(undefined);
 
@@ -120,17 +121,18 @@ export const useProcessStepRun = ({
   const processAsItStands = async (): Promise<ErrandProcess | undefined> =>
     (await getSupportErrandProcessState(errandId, municipalityId).catch(() => undefined))?.process ?? process;
 
+  /** The gate the step is left by, and the inspection summary it was read from where the step has one. */
   const gateToLeaveTheStep = async (
     action: ProcessAction,
     current?: ErrandProcess
-  ): Promise<ProcessSignal | undefined> => {
-    if (!action.needsSignal) return undefined;
+  ): Promise<{ gate: ProcessSignal | undefined; summary?: string }> => {
+    if (!action.needsSignal) return { gate: undefined };
     current ??= await processAsItStands();
     const summary =
       step === SupportProcessStep.DECISION && isSupportInspectionProcess(current)
         ? inspectionProtocolSummary(await getSupportInvestigation(errandId, municipalityId))
         : undefined;
-    return awaitedGateOfStep(current, step, summary);
+    return { gate: awaitedGateOfStep(current, step, summary), summary };
   };
 
   const takeErrand = async () => {
@@ -178,6 +180,11 @@ export const useProcessStepRun = ({
 
     await decisionJsonWriter?.(draft.id);
     await completeSupportDecision(errandId, municipalityId, draft.id);
+    // The decision is concluded either way, but the handler is told when the document is missing from the errand:
+    // the decision tab is read-only by then, so nothing in the interface would say that the letter never got filed.
+    await decisionDocumentFiler?.().catch(() =>
+      tellTheHandler(t('common:process.actions.document_not_filed'), 'error')
+    );
     return true;
   };
 
@@ -189,7 +196,7 @@ export const useProcessStepRun = ({
   };
 
   const leaveTheStep = async (action: ProcessAction): Promise<boolean | typeof NO_GATE_TO_LEAVE_BY> => {
-    const gate = await gateToLeaveTheStep(action);
+    const { gate } = await gateToLeaveTheStep(action);
     if (!gate?.name) return signalIsRequired(action, processIsOver) ? NO_GATE_TO_LEAVE_BY : false;
 
     const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
@@ -247,9 +254,17 @@ export const useProcessStepRun = ({
       const current =
         action.completesDecision && isSupportInspectionProcess(process) ? await processAsItStands() : undefined;
       if (current && supportProcessStepName(current) === step) {
-        const gate = await gateToLeaveTheStep(action, current);
+        const { gate, summary } = await gateToLeaveTheStep(action, current);
         if (!gate?.name) {
-          tellTheHandler(t('common:process.actions.inspection_summary_needed'), 'error');
+          // A summary that is chosen but has no gate is not the same thing as no summary at all.
+          tellTheHandler(
+            t(
+              summary
+                ? 'common:process.actions.inspection_summary_without_step'
+                : 'common:process.actions.inspection_summary_needed'
+            ),
+            'error'
+          );
           return;
         }
         if (

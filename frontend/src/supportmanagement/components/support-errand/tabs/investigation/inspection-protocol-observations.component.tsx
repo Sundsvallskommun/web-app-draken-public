@@ -2,6 +2,7 @@ import { Button, cx, Disclosure } from '@sk-web-gui/react';
 import type { ProtocolObservations } from '@supportmanagement/inspection-protocols';
 import { observedItems } from '@supportmanagement/services/support-inspection-protocol-service';
 import {
+  emptySupportMeasureRow,
   SUPPORT_MEASURE_RESULTS,
   SupportMeasureResult,
   type SupportMeasureResultName,
@@ -32,7 +33,7 @@ export const InspectionProtocolObservations: FC<{
 
   // Leaving Brist drops what was observed, so an approved area never carries observations.
   const setResult = (title: string, result: SupportMeasureResultName) => {
-    const row = rowOf(title) ?? { title, result: '', description: '', resultText: '' };
+    const row = rowOf(title) ?? emptySupportMeasureRow(title);
     setRow({ ...row, result, resultText: result === SupportMeasureResult.NOT_COMPLETED ? row.resultText : '' });
   };
 

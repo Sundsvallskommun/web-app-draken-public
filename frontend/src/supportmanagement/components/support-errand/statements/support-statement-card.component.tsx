@@ -18,6 +18,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import type { InvestigationAreaName } from '@supportmanagement/investigations';
 import { getSupportAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { isOrganizationExternalIdType, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
@@ -258,6 +259,8 @@ export const SupportStatementCard: FC<{
   errandNumber: string;
   municipalityId: string;
   writable: boolean;
+  /** Set where the errand type covers more than one trade; it decides which templates are offered. */
+  area?: InvestigationAreaName;
   onFormChange: (changes: Partial<SupportStatementForm>) => void;
   onChanged: (statement: Statement) => void;
   onRemoved: () => void;
@@ -269,6 +272,7 @@ export const SupportStatementCard: FC<{
   errandNumber,
   municipalityId,
   writable,
+  area,
   onFormChange,
   onChanged,
   onRemoved,
@@ -320,7 +324,7 @@ export const SupportStatementCard: FC<{
   const templateIdentifier = supportStatementTemplateOfQuestion(form.question)?.identifier ?? '';
   const counterpartyChosen = form.counterpartyName.length > 0;
   const ofItsOwn = isSupportStatementOtherCounterparty(form.counterpartyName);
-  const templates = supportStatementTemplates(form.counterpartyName, supportErrand);
+  const templates = supportStatementTemplates(form.counterpartyName, supportErrand, area);
   const peopleNeeded = supportStatementTemplatePersons(templateIdentifier);
   const companiesNeeded = supportStatementTemplateAsksForCompanies(templateIdentifier);
   const chosenPeople = people.filter((person) => chosenPartyIds.includes(person.partyId));

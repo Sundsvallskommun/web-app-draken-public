@@ -1,9 +1,10 @@
 'use client';
 
+import type { Asset } from '@common/interfaces/asset';
 import {
+  activePermits,
   createInspectionErrand,
   type InspectionKind,
-  latestActiveAsset,
 } from '@common/services/customer-inspection-service';
 import { Customer, CustomerInspection, CustomerPlace, getLatestInspection } from '@common/services/customer-service';
 import { companyAddressLines, engagementRoles } from '@common/services/legal-entity-service';
@@ -17,6 +18,7 @@ import { ChevronDown, CircleAlert, Store } from 'lucide-react';
 import { FC, PropsWithChildren, ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { CustomerPermitChoice } from './customer-permit-choice.component';
 import type { CustomerData, CustomerLookup } from './use-customer-lookup';
 
 const INSPECTION_MAX_AGE_MONTHS = 12;
@@ -65,7 +67,7 @@ export const lookupContent = <T,>(lookup: CustomerLookup<T>, failure: string, re
 
 const INSPECTION_KINDS: InspectionKind[] = ['INTERNAL_INSPECTION', 'EXTERNAL_INSPECTION'];
 
-/** Creates a tillsyn errand from the place's latest active asset and opens it in a new tab. */
+/** Creates a tillsyn errand from one of the place's permits and opens it in a new tab. */
 const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
@@ -73,17 +75,24 @@ const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
   const metadata = useMetadataStore((s) => s.supportMetadata);
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const [creating, setCreating] = useState(false);
-  const asset = latestActiveAsset(place);
+  const [kindToChooseFor, setKindToChooseFor] = useState<InspectionKind>();
+  const permits = activePermits(place);
 
-  if (!canEdit || !asset) return null;
+  if (!canEdit || permits.length === 0) return null;
 
-  const create = async (kind: InspectionKind) => {
+  const create = async (kind: InspectionKind, asset: Asset) => {
     // Opened before the request, since a tab opened after it is taken for a popup.
     const tab = window.open('', '_blank');
     setCreating(true);
     try {
-      const errandNumber = await createInspectionErrand(municipalityId, metadata, asset, kind);
-      if (tab) tab.location.href = `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errandNumber}`;
+      const created = await createInspectionErrand(municipalityId, metadata, asset, kind);
+      if (tab) tab.location.href = `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${created.errandNumber}`;
+      setKindToChooseFor(undefined);
+      if (!created.linked) {
+        toastMessage(
+          getToastOptions({ message: t('common:customer.overview.inspection.unlinked'), status: 'warning' })
+        );
+      }
     } catch (e) {
       console.error('Something went wrong when creating the tillsyn errand', e);
       tab?.close();
@@ -91,6 +100,14 @@ const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
     } finally {
       setCreating(false);
     }
+  };
+
+  const start = (kind: InspectionKind) => {
+    if (permits.length === 1) {
+      void create(kind, permits[0]);
+      return;
+    }
+    setKindToChooseFor(kind);
   };
 
   return (
@@ -111,7 +128,7 @@ const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
           <PopupMenu.Items>
             {INSPECTION_KINDS.map((kind) => (
               <PopupMenu.Item key={kind}>
-                <Button onClick={() => void create(kind)} data-cy={`customer-overview-create-inspection-${kind}`}>
+                <Button onClick={() => start(kind)} data-cy={`customer-overview-create-inspection-${kind}`}>
                   {t(`common:customer.overview.inspection.${kind}`)}
                 </Button>
               </PopupMenu.Item>
@@ -119,6 +136,13 @@ const CreateInspectionMenu: FC<{ place: CustomerPlace }> = ({ place }) => {
           </PopupMenu.Items>
         </PopupMenu.Panel>
       </PopupMenu>
+      <CustomerPermitChoice
+        show={!!kindToChooseFor}
+        permits={permits}
+        busy={creating}
+        onClose={() => setKindToChooseFor(undefined)}
+        onChoose={(permit) => void create(kindToChooseFor!, permit)}
+      />
     </div>
   );
 };

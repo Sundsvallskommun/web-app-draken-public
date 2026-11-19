@@ -151,7 +151,11 @@
       "marketing": "Marknadsföring",
       "ownership": "Ägarförhållande",
       "sales_point": "Försäljningsstället",
-      "self_monitoring": "Egenkontroll"
+      "self_monitoring": "Egenkontroll",
+      "established_faults": "Konstaterade brister",
+      "permit_holder_statement": "Tillståndshavarens yttrande",
+      "measures_taken": "Vidtagna åtgärder",
+      "assessment": "Bedömning"
     },
     "section_texts": {
       "lease": {
@@ -197,6 +201,22 @@
       "self_monitoring": {
         "label": "Utredning av egenkontrollen",
         "placeholder": "Beskriv vad egenkontrollprogrammet omfattar, när det är daterat och hur det hålls tillgängligt för personalen"
+      },
+      "established_faults": {
+        "label": "Utredning av bristerna",
+        "placeholder": "Beskriv bristerna tillsynen konstaterade och vad de innebär"
+      },
+      "permit_holder_statement": {
+        "label": "Tillståndshavarens yttrande",
+        "placeholder": "Sammanfatta vad tillståndshavaren har anfört"
+      },
+      "measures_taken": {
+        "label": "Utredning av åtgärderna",
+        "placeholder": "Beskriv vilka åtgärder som vidtagits och om bristerna är avhjälpta"
+      },
+      "assessment": {
+        "label": "Bedömning",
+        "placeholder": "Bedöm om åtgärderna är tillräckliga och vad som ska följa"
       }
     },
     "decision_basis": {
@@ -247,7 +267,14 @@
     "unsaved": "Osparade ändringar",
     "saving": "Sparar",
     "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här.",
-    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll."
+    "intro_tobacco": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas enligt lagen om tobak och liknande produkter (LTLP) utifrån sökandens personliga och ekonomiska förhållanden samt egenkontroll.",
+    "intro_action_errand": "Utredningen prövar om de brister tillsynen konstaterade är åtgärdade, och vad som ska följa om de inte är det. Välj område, eftersom det avgör lagrummet och vilka remisser som erbjuds.",
+    "areas": {
+      "label": "Område",
+      "alcohol": "Alkohol",
+      "tobacco": "Tobak",
+      "missing": "Välj område innan utredningen avslutas."
+    }
   },
   "process": {
     "steps": {
@@ -398,7 +425,10 @@
         "errand_form": "ifyllda ärendeuppgifter",
         "attachments": "bilagorna {{labels}}"
       },
-      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund."
+      "registration_unread": "Ärendetypens uppgifter kunde inte läsas just nu. Försök igen om en stund.",
+      "area_needed": "Välj område för utredningen innan ärendet går vidare till beslut.",
+      "inspection_summary_without_step": "Summeringen du valt har ännu inget processteg, så tillsynen kan inte avslutas med den. Återbesöket eller tillsynsutredningen dokumenteras manuellt.",
+      "document_not_filed": "Beslutet är avslutat, men beslutsdokumentet kunde inte filas på ärendet. Kontakta förvaltningen om dokumentet behövs."
     },
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
@@ -623,7 +653,23 @@
       "not_built": "Den här delen av beslutsunderlaget är inte byggd än.",
       "investigation": "Utredningens bedömning och rekommendation visas här när de fyllts i under Utredning-fliken (vandel, ekonomisk skötsamhet, samlad bedömning och förslag till beslut)."
     },
-    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet."
+    "awaits_outcome": "Beslutet sparas först när du har valt ett utfall. Det du skriver dessförinnan ligger kvar i formuläret, men inte på ärendet.",
+    "delegation": "Delegationspunkt",
+    "delegation_help": "Punkten i delegationsordningen beslutet fattas med stöd av. Skrivs ut i beslutet.",
+    "delegation_placeholder": "Till exempel A 4.2",
+    "permit_type": "Tillståndstyp",
+    "permit_case_number": "Tillståndets ärendenummer",
+    "permit_help": "Hämtas från tillsynens koppling till tillståndet. Fyll i för hand om kopplingen saknas.",
+    "justification_prefilled": "Förifyllt från utredningen. Ändra texten om beslutet ska formuleras annorlunda.",
+    "justification_deficiencies": "Motivering: konstaterade brister",
+    "justification_deficiencies_placeholder": "Vilka brister som konstaterades och varför de inte har åtgärdats",
+    "justification_statement": "Motivering: tillståndshavarens yttrande",
+    "justification_statement_placeholder": "Hur tillståndshavarens yttrande har bedömts",
+    "justification_outcome": "Motivering: valt utfall",
+    "justification_outcome_placeholder": "Varför kommunen väljer utfallet",
+    "outcome_text": "Vad beslutet innebär",
+    "outcome_text_help": "Skrivs ut i beslutet under en egen rubrik.",
+    "outcome_text_placeholder": "Vad beslutet innebär för tillståndshavaren"
   },
   "attachments": {
     "edit": "Ändra",
@@ -848,7 +894,26 @@
     "row": "Åtgärdspunkt {{number}}",
     "remove": "Ta bort åtgärdspunkt {{number}}",
     "add": "Lägg till åtgärdspunkt",
-    "save_error": "Åtgärdspunkterna kunde inte sparas"
+    "due_at": "Frist",
+    "goal": "Mål",
+    "goal_placeholder": "Vad punkten ska leda till",
+    "overdue": "Fristen har passerat",
+    "changed": "Ändrad {{date}}",
+    "result": {
+      "completed": "Åtgärdad",
+      "partially_completed": "Delvis åtgärdad",
+      "not_completed": "Ej åtgärdad",
+      "not_applicable": "Ej aktuellt"
+    },
+    "save_error": "Åtgärdspunkterna kunde inte sparas",
+    "loading": "Hämtar åtgärdspunkter",
+    "none": "Inga åtgärdspunkter är registrerade på ärendet.",
+    "due_by": "Frist {{date}}",
+    "result_none": "Inget resultat satt",
+    "follow_up_description": "Vad tillståndshavaren har gjort efter tillsynen. Rubrik, frist och mål är vad tillståndshavaren fick besked om och ändras inte här.",
+    "result_text": "Vad som gjorts",
+    "result_text_placeholder": "Beskriv kort vad tillståndshavaren har gjort",
+    "completed": "Klarmarkerad {{date}}"
   },
   "inspection_protocol": {
     "heading": "Tillsynsprotokoll",
@@ -895,6 +960,30 @@
       "observed_other": "{{count}} observationer",
       "what": "Vad observerades?",
       "missing": "Välj minst en observation, eller ändra bedömningen."
+    },
+    "summary_without_step": "Saknar processteg. Tillsynen kan inte avslutas med det här valet, och återbesöket eller tillsynsutredningen dokumenteras manuellt."
+  },
+  "inspection_permit": {
+    "heading": "Tillståndet tillsynen gäller",
+    "none": "Tillsynen är inte kopplad till något tillstånd.",
+    "unreadable": "Tillståndet kunde inte hämtas. Ladda om sidan för att försöka igen.",
+    "link": "Koppla tillstånd",
+    "open": "Öppna tillståndets ärende {{errandNumber}}",
+    "validity": "Gäller {{from}} till {{to}}",
+    "validity_open": "Gäller från {{from}}",
+    "choose_title": "Vilket tillstånd gäller tillsynen?",
+    "choose_description": "Välj bland tillståndshavarens gällande tillstånd.",
+    "linked": "Tillsynen är nu kopplad till tillståndet.",
+    "link_failed": "Kopplingen kunde inte göras. Försök igen."
+  },
+  "action_errand": {
+    "origin": {
+      "heading": "Kommer från tillsyn",
+      "inspection": "Tillsynsärende",
+      "date": "Tillsynsdatum",
+      "summary": "Summering av tillsynen",
+      "permit": "Tillstånd",
+      "unreadable": "Tillsynen kunde inte läsas."
     }
   },
   "customer": {
@@ -903,7 +992,16 @@
         "create": "Skapa tillsynsärende",
         "INTERNAL_INSPECTION": "Inre tillsyn",
         "EXTERNAL_INSPECTION": "Yttre tillsyn",
-        "error": "Tillsynsärendet kunde inte skapas."
+        "error": "Tillsynsärendet kunde inte skapas.",
+        "unlinked": "Tillsynsärendet skapades, men kopplingen till tillståndets ärende blev inte av. Koppla det på tillsynsärendet.",
+        "choose": {
+          "title": "Vilket tillstånd gäller tillsynen?",
+          "description": "Stället har fler än ett gällande tillstånd. Välj det tillsynen avser.",
+          "validity": "gäller {{from}} till {{to}}",
+          "validity_open": "gäller från {{from}}",
+          "cancel": "Avbryt",
+          "confirm": "Skapa tillsynsärende"
+        }
       }
     },
     "errands": {
@@ -958,7 +1056,8 @@
         "EXPIRED": "Utgånget",
         "BLOCKED": "Blockerat",
         "REPLACED": "Ersatt",
-        "DRAFT": "Utkast"
+        "DRAFT": "Utkast",
+        "REVOKED": "Återkallat"
       }
     },
     "list": {
@@ -1005,6 +1104,36 @@
         "missingOrganizationNumber": "Tillståndshavaren saknar organisationsnummer",
         "customerNotFound": "Hittade ingen kund för {{organizationNumber}}"
       }
+    }
+  },
+  "communications": {
+    "heading": "Kommunicering",
+    "description": "Innan kommunen beslutar om en varning eller en återkallelse ska tillståndshavaren få veta vad som ligger till grund för beslutet och få tillfälle att yttra sig.",
+    "add": "Kommunicera med tillståndshavaren",
+    "title": "Kommunicering {{errandNumber}}",
+    "text": "Vad tillståndshavaren ska få veta",
+    "text_placeholder": "Beskriv vilka brister som kvarstår, vad kommunen överväger att besluta, och att tillståndshavaren får yttra sig.",
+    "due_at": "Svara senast",
+    "send": "Skicka",
+    "save_sent": "Spara skickat",
+    "not_recorded": "Meddelandet har gått ut till tillståndshavaren men är inte skrivet på ärendet. Spara om, skicka inte om.",
+    "remove": "Ta bort kommuniceringen",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall när kommuniceringen är avslutad…",
+    "responded_at": "Svar inkom",
+    "channel": {
+      "minasidor": "Skickas till {{recipient}} i Mina sidor.",
+      "email": "Skickas med e-post till {{recipient}}."
+    },
+    "validation": {
+      "text": "Skriv vad tillståndshavaren ska få veta."
+    },
+    "toast": {
+      "sent": "Kommuniceringen har skickats.",
+      "send_failed": "Kommuniceringen kunde inte skickas.",
+      "record_failed": "Meddelandet skickades, men kunde inte skrivas på ärendet. Försök spara igen.",
+      "remove_failed": "Kommuniceringen kunde inte tas bort.",
+      "create_failed": "Kommuniceringen kunde inte skapas."
     }
   }
 }

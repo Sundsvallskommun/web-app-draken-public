@@ -56,6 +56,7 @@ describe('CreateSupportDecisionDto', () => {
       type: 'SERVERINGSTILLSTAND',
       title: 'Beslut om serveringstillstånd',
       decidedByRole: 'Handläggare',
+      delegationReference: 'A 4.2',
       justification: 'Motivering',
       validFrom: '2026-10-02',
       validTo: '2027-10-01',
@@ -69,6 +70,17 @@ describe('CreateSupportDecisionDto', () => {
     // The status, method and decider are the controller's to set, never the client's.
     expect(serializedErrors).toMatch(/status/);
     expect(serializedErrors).toMatch(/decidedBy/);
+  });
+
+  it('refuses a delegation point longer than the service takes', async () => {
+    const tooLong = plainToInstance(CreateSupportDecisionDto, {
+      type: 'ATGARD',
+      outcome: 'WARNING',
+      delegationReference: 'A'.repeat(65),
+    });
+
+    const errors = JSON.stringify(await validate(tooLong, { whitelist: true, forbidNonWhitelisted: true }));
+    expect(errors).toMatch(/delegationReference/);
   });
 
   it('accepts a draft without an outcome, which is required only when the decision is concluded', async () => {

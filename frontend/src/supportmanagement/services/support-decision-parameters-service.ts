@@ -9,8 +9,18 @@ import {
   servingHoursText,
   toScopeJson,
 } from './support-decision-scope-service';
-import type { SupportDecision } from './support-decision-service';
-import type { SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
+import {
+  ACTION_ERRAND_PERMIT_TYPE,
+  outcomeWithoutConditions,
+  type SupportDecision,
+  supportDecisionOutcomeNames,
+} from './support-decision-service';
+import {
+  getErrandParameterValue,
+  PREMISES_MUNICIPALITY_KEY,
+  type SupportErrand,
+  type SupportStakeholderFormModel,
+} from './support-errand-service';
 import {
   childText,
   type FormValue,
@@ -39,7 +49,7 @@ import {
  */
 
 export interface DecisionParameterInput {
-  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer'>;
+  errand: Pick<SupportErrand, 'id' | 'errandNumber' | 'customer' | 'parameters'>;
   /** The most specific type label of the errand (its resourceName), e.g. TASTING. */
   errandType?: string;
   /** The answers filed under the errand type's schema name; undefined when there are none. */
@@ -58,10 +68,20 @@ export interface DecisionParameterInput {
   externalCaseRegistrationNumber?: string;
   /** The telephone to the premises as the handler has it, which starts as the application's answer. */
   premisesPhoneNumber?: string;
+  /** What the action errand decides on, two hops away: its inspection, and the permit that inspection was about. */
+  origin?: DecisionOrigin;
   /** The handler saving the decision. */
   user: { name: string };
   /** Today, YYYY-MM-DD; the backend stamps decidedAt on the same save. */
   today: string;
+}
+
+/** The permit an inspection was about and the inspection itself, read when the decision is written and then frozen. */
+export interface DecisionOrigin {
+  inspectionDate?: string;
+  inspectionCaseNumber?: string;
+  permitType?: string;
+  permitCaseNumber?: string;
 }
 
 export interface CertificateDecision {
@@ -73,6 +93,16 @@ export interface CertificateDecision {
   justification?: string;
   /** The att-satser, one per line. */
   clauses?: string;
+  /** The point in the delegation order the decision is made under. */
+  delegation?: string;
+  /** The outcome as the decision document heads it, which is the outcome's own name. */
+  outcomeHeading?: string;
+  /** What the decision means for the permit holder, as the handler writes it for the errand at hand. */
+  outcomeText?: string;
+  /** The three paragraphs of the justification, which start from the investigation's own examinations. */
+  justificationDeficiencies?: string;
+  justificationStatement?: string;
+  justificationOutcome?: string;
   terms: string[];
 }
 
@@ -85,9 +115,19 @@ const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision' };
 const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision' };
 
+/**
+ * The action errand decides sanctions, which the permit schemas have no outcomes for: filed under one of them
+ * the outcome fails their enum and is left out of the saved decision altogether.
+ */
+const ACTION_ERRAND_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_action_errand_decision' };
+
+const DECISION_SCHEMAS = [ALCOHOL_DECISION_SCHEMA, TOBACCO_DECISION_SCHEMA, ACTION_ERRAND_DECISION_SCHEMA];
+
 /** The decision keeps what the permit says in one JSON parameter, filed under the schema of its permit area. */
-export const decisionSchema = (permitType: string): SupportJsonSchema =>
-  TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
+export const decisionSchema = (permitType: string): SupportJsonSchema => {
+  if (permitType === ACTION_ERRAND_PERMIT_TYPE) return ACTION_ERRAND_DECISION_SCHEMA;
+  return TOBACCO_PERMITS.includes(permitType) ? TOBACCO_DECISION_SCHEMA : ALCOHOL_DECISION_SCHEMA;
+};
 
 // The values the schemas restrict. One that does not fit is left out, so the save is not refused for it
 // and the checks before the decision name it as missing.
@@ -99,12 +139,33 @@ const SERVING_PERMIT_TYPES = [
   'FARM_SALES',
   'TASTING',
 ];
-const OUTCOMES = ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'];
+const decisionSchemasFavouring = (favoured: SupportJsonSchema): SupportJsonSchema[] => [
+  favoured,
+  ...DECISION_SCHEMAS.filter((candidate) => candidate.name !== favoured.name),
+];
 
-/** What a saved decision says of the permit; undefined for a decision without it. */
+/**
+ * What a saved decision says of the permit; undefined for a decision without it. The schema the decision is
+ * written under comes first, so a decision saved under an earlier key, as an action errand's was while it was
+ * filed as an inspection, is read from there until the next write moves it.
+ */
 export const savedDecisionJson = (decision: SupportDecision | undefined): JsonObject | undefined =>
-  jsonParameterObject(decision?.jsonParameters, ALCOHOL_DECISION_SCHEMA.name) ??
-  jsonParameterObject(decision?.jsonParameters, TOBACCO_DECISION_SCHEMA.name);
+  decisionSchemasFavouring(decisionSchema(decision?.type ?? ''))
+    .map((schema) => jsonParameterObject(decision?.jsonParameters, schema.name))
+    .find(Boolean);
+
+/**
+ * What the decision wrote down about the inspection it answers. The inspection is read live while the decision
+ * tab is open; a write that happens without it, such as concluding the decision from the sidebar, keeps what
+ * was written instead of blanking it.
+ */
+export const savedDecisionOrigin = (decision: SupportDecision | undefined): DecisionOrigin => {
+  const inspection = objectAt(savedDecisionJson(decision)?.inspection);
+  return {
+    inspectionDate: stringAt(inspection.date),
+    inspectionCaseNumber: stringAt(inspection.caseNumber),
+  };
+};
 
 const matching =
   (pattern: RegExp) =>
@@ -248,15 +309,44 @@ const tobaccoOf = ({ form }: DecisionParameterInput): JsonObject =>
 
 const ISSUING_UNIT = 'Alkohol- och tobaksenheten';
 
+const clauseLines = (clauses: string | undefined): string[] | undefined =>
+  clauses
+    ?.split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean) || undefined;
+
+/** An action errand's att-satser are numbered in its decision document, so they are kept one by one. */
+const clausesOf = (permitType: string, clauses: string | undefined): string | string[] | undefined => {
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return text(clauses);
+  const lines = clauseLines(clauses);
+  return lines?.length ? lines : undefined;
+};
+
+/**
+ * What only an action errand's decision carries. The permit schemas define none of it and allow nothing they do
+ * not define, so a permit decision that sent any of it would be refused with a constraint violation. The outcome
+ * heading always has a value, which is why every field here is kept to the one schema that knows them.
+ */
+const sanctionFieldsOf = (decision: CertificateDecision): JsonObject => ({
+  delegation: text(decision.delegation),
+  outcomeHeading: text(decision.outcomeHeading),
+  outcomeText: text(decision.outcomeText),
+  justificationDeficiencies: text(decision.justificationDeficiencies),
+  justificationStatement: text(decision.justificationStatement),
+  justificationOutcome: text(decision.justificationOutcome),
+});
+
 /** The decision as the certificate states it; the decision's root carries the same for Support Management. */
 const decisionOf = (
+  permitType: string,
   { user, executionDate, today }: DecisionParameterInput,
   decision: CertificateDecision
 ): JsonObject => ({
-  outcome: oneOf(OUTCOMES)(decision.outcome),
+  outcome: oneOf(supportDecisionOutcomeNames(permitType))(decision.outcome),
   decisionText: text(decision.decisionText),
   justification: text(decision.justification),
-  clauses: text(decision.clauses),
+  clauses: clausesOf(permitType, decision.clauses),
+  ...(permitType === ACTION_ERRAND_PERMIT_TYPE ? sanctionFieldsOf(decision) : {}),
   decisionMaker: text(decision.decisionMaker),
   decisionDate: isoDate(today),
   executionDate: isoDate(executionDate),
@@ -275,8 +365,21 @@ export const toDecisionJson = (
     errandId: input.errand.id,
     externalCaseRegistrationNumber: text(input.externalCaseRegistrationNumber),
     permitHolder: permitHolderOf(input.errand.customer?.[0]),
-    decision: decisionOf(input, decision),
+    decision: decisionOf(permitType, input, decision),
   };
+
+  // An action errand grants nothing, so it keeps the permit holder, the premises and the decision, and no scope.
+  if (permitType === ACTION_ERRAND_PERMIT_TYPE) {
+    return withoutBlanks({
+      ...common,
+      premises: placeOf(input),
+      permit: { type: text(input.origin?.permitType), caseNumber: text(input.origin?.permitCaseNumber) },
+      inspection: {
+        date: isoDate(input.origin?.inspectionDate),
+        caseNumber: text(input.origin?.inspectionCaseNumber),
+      },
+    });
+  }
 
   if (TOBACCO_PERMITS.includes(permitType)) {
     return withoutBlanks({
@@ -302,6 +405,9 @@ const records = (value: unknown): JsonObject[] | undefined =>
   Array.isArray(value) ? value.filter(isRecord) : undefined;
 
 const box = (list: string[] | undefined, value: string): string | undefined => list && String(list.includes(value));
+
+/** Att-satser are kept as a list where they are numbered, and as one text where they are not. */
+const clausesText = (value: unknown): string | undefined => strings(value)?.join('\n') || stringAt(value);
 
 const postalAddressOf = (address: JsonObject): string | undefined => {
   const zip = stringAt(address.postalCode);
@@ -349,6 +455,8 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
   const place = objectAt(json?.premises ?? json?.pointOfSale);
   const placeAddress = objectAt(place.address);
   const area = objectAt(json?.servingArea);
+  const permit = objectAt(json?.permit);
+  const inspection = objectAt(json?.inspection);
   const decision = objectAt(json?.decision);
   const issuedBy = objectAt(decision.issuedBy);
   const periods = records(json?.servingPeriods);
@@ -403,10 +511,23 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
     issuedByNameAndTitle: join(issuer, stringAt(issuedBy.title)),
     issuedByUnit: stringAt(issuedBy.unit),
     decisionText: stringAt(decision.decisionText),
-    decisionClauses: stringAt(decision.clauses),
+    decisionClauses: clausesText(decision.clauses),
+    decisionDelegation: stringAt(decision.delegation),
     decisionMaker: stringAt(decision.decisionMaker),
     decisionDate,
     validFrom: stringAt(decision.validFrom),
+    externalCaseRegistrationNumber: stringAt(json?.externalCaseRegistrationNumber),
+    permitType: stringAt(permit.type),
+    permitCaseNumber: stringAt(permit.caseNumber),
+    inspectionDate: stringAt(inspection.date),
+    inspectionCaseNumber: stringAt(inspection.caseNumber),
+    decisionLegalBasis: stringAt(decision.legalBasis),
+    decisionOutcomeHeading: stringAt(decision.outcomeHeading),
+    decisionOutcomeText: stringAt(decision.outcomeText),
+    decisionJustificationDeficiencies: stringAt(decision.justificationDeficiencies),
+    decisionJustificationStatement: stringAt(decision.justificationStatement),
+    decisionJustificationOutcome: stringAt(decision.justificationOutcome),
+    decisionIssuedByName: issuer,
     decisionDateAndCaseNumber: join(decisionDate, decisionCaseNumber),
     decisionOfficerAndCaseNumber: join(issuer, decisionCaseNumber),
     replacesDecision: stringAt(decision.replacesDecision),
@@ -420,7 +541,28 @@ const CERTIFICATE_TEMPLATES: Record<string, string> = {
 
 export const certificateTemplate = (permitType: string): string | undefined => CERTIFICATE_TEMPLATES[permitType];
 
-/** What the permit template renders for the decision in hand, blank where nothing is known. */
+/**
+ * Which letter an action errand's outcome calls for: the three sanctions are decisions, "Ingen åtgärd" is the
+ * letter that closes the errand. An outcome the process does not know renders nothing rather than the wrong one.
+ */
+const ACTION_ERRAND_DOCUMENT_OF_OUTCOME: Record<string, string> = {
+  NO_ACTION: 'action-errand-closed',
+  REPRIMAND: 'action-errand-decision',
+  WARNING: 'action-errand-decision',
+  REVOCATION: 'action-errand-decision',
+};
+
+/** What the decision document is called among the errand's attachments. */
+export const decisionDocumentFileName = (errandNumber: string | undefined): string =>
+  `Beslut ${errandNumber ?? ''}.pdf`.replace('  ', ' ');
+
+/** The document the decision renders: the permit's certificate, or the letter the action errand's outcome calls for. */
+export const decisionDocumentTemplate = (permitType: string, outcome: string | undefined): string | undefined =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE
+    ? ACTION_ERRAND_DOCUMENT_OF_OUTCOME[outcomeWithoutConditions(outcome)]
+    : certificateTemplate(permitType);
+
+/** What the document renders for the decision in hand, blank where nothing is known. */
 export const toCertificateParameters = (
   permitType: string,
   input: DecisionParameterInput,
@@ -431,6 +573,77 @@ export const toCertificateParameters = (
       ([key, value]) => [key, value ?? '']
     )
   );
+
+/**
+ * The authority a decision is made in the name of, as the two action errand letters print it: the sender in the
+ * letterhead, the postal address in the foot, and the authority an appeal is sent to. The unit handles the permits
+ * of every municipality the e-service offers, so the errand is what says which authority a decision belongs to.
+ */
+interface DecisionAuthority {
+  senderMunicipality: string;
+  /**
+   * The line below the municipality in the letterhead. It names the authority the decision belongs to, which is
+   * not the unit that prepared it; the handler's own unit stands by the signature as issuedByUnit.
+   */
+  senderUnit: string;
+  senderPostalAddressLines: string[];
+  appealAuthority: string;
+}
+
+const SUNDSVALL_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Sundsvalls kommun',
+  senderUnit: 'Alkohol- och tobaksenheten',
+  senderPostalAddressLines: [
+    'Sundsvalls kommun',
+    'Individ- och arbetsmarknadsförvaltningen',
+    'Alkohol- och tobaksenheten',
+    '851 85 SUNDSVALL',
+  ],
+  appealAuthority: 'Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall',
+};
+
+/** Timrå's permits are handled by Sundsvall's unit but belong to Timrå's own office, which is where an appeal goes. */
+const TIMRA_AUTHORITY: DecisionAuthority = {
+  senderMunicipality: 'Timrå kommun',
+  senderUnit: 'Miljö- och byggkontoret',
+  senderPostalAddressLines: ['Timrå kommun', 'Miljö- och byggkontoret', '861 82 TIMRÅ'],
+  appealAuthority: 'Miljö- och byggkontoret, Timrå kommun, 861 82 Timrå',
+};
+
+/**
+ * An errand registered before the e-service asked for a municipality carries no code, and those were all
+ * Sundsvall's own. A code the unit does not handle reads as Sundsvall's too, which is what the letters said
+ * before they could say anything else.
+ */
+const DECISION_AUTHORITY_OF_MUNICIPALITY: Record<string, DecisionAuthority> = {
+  '2281': SUNDSVALL_AUTHORITY,
+  '2262': TIMRA_AUTHORITY,
+};
+
+const DECISION_AUTHORITY_WITHOUT_A_CODE = SUNDSVALL_AUTHORITY;
+
+const decisionAuthorityOfErrand = (errand: DecisionParameterInput['errand']): DecisionAuthority =>
+  DECISION_AUTHORITY_OF_MUNICIPALITY[getErrandParameterValue(errand.parameters, PREMISES_MUNICIPALITY_KEY)] ??
+  DECISION_AUTHORITY_WITHOUT_A_CODE;
+
+/**
+ * What the document reads. An action errand's decision numbers its att-satser, so they travel as a list rather
+ * than as the one text the certificates print; the flattened text is what the checks before the decision read.
+ * The letters also read the authority, since the same two templates serve every municipality the unit handles.
+ */
+export const toDecisionDocumentParameters = (
+  permitType: string,
+  input: DecisionParameterInput,
+  decision: CertificateDecision
+): Record<string, string | string[]> => {
+  const parameters = toCertificateParameters(permitType, input, decision);
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return parameters;
+  return {
+    ...parameters,
+    decisionClauses: clauseLines(decision.clauses) ?? [],
+    ...decisionAuthorityOfErrand(input.errand),
+  };
+};
 
 /**
  * What the permit template demands of the errand, by the party that can supply it. The keys are the
@@ -470,15 +683,39 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
   TOBAKSFORSALJNING: ['decisionText', 'validFrom', 'executionDate', 'information'],
 };
 
-/** An inspection or action errand's decision can be sent without att-satser. */
-export const decisionRequiresClauses = (permitType: string): boolean => permitType !== 'TILLSYN';
+const INSPECTION_PERMIT_TYPE = 'TILLSYN';
+
+/** The sanctions of an action errand are written as numbered att-satser; the decision to let it be is not. */
+const OUTCOMES_WRITTEN_AS_CLAUSES = ['REPRIMAND', 'WARNING', 'REVOCATION'];
+
+/**
+ * Whether the decision needs att-satser before it is sent. An inspection's decision carries none, and on an
+ * action errand it follows the outcome: the three sanctions are written as clauses, "Ingen åtgärd" is not.
+ */
+export const decisionRequiresClauses = (permitType: string, outcome: string | undefined): boolean => {
+  if (permitType === INSPECTION_PERMIT_TYPE) return false;
+  if (permitType !== ACTION_ERRAND_PERMIT_TYPE) return true;
+  return decisionIsActionErrandSanction(permitType, outcome);
+};
+
+/**
+ * Whether the decision is one of an action errand's sanctions. Those are written as a decision document, with a
+ * legal basis, a delegation point, numbered att-satser and a justification; "Ingen åtgärd" is a letter with none
+ * of it, and an application's decision has a shape of its own.
+ */
+export const decisionIsActionErrandSanction = (permitType: string, outcome: string | undefined): boolean =>
+  permitType === ACTION_ERRAND_PERMIT_TYPE && OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
 
 /** The keys the decision's saved JSON leaves without a value. */
-export const missingDecisionInputs = (permitType: string, json: JsonObject | undefined): string[] => {
+export const missingDecisionInputs = (
+  permitType: string,
+  outcome: string | undefined,
+  json: JsonObject | undefined
+): string[] => {
   const flat = flattenDecisionJson(json);
   return [
     ...(PERMIT_INPUTS_OF_THE_DECISION[permitType] ?? []),
-    ...(decisionRequiresClauses(permitType) ? ['decisionClauses'] : []),
+    ...(decisionRequiresClauses(permitType, outcome) ? ['decisionClauses'] : []),
   ].filter((key) => !flat[key]);
 };
 

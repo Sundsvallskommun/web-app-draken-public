@@ -24,6 +24,8 @@ interface SupportState {
   tabSavers: Record<string, () => Promise<boolean>>;
   /** Rewrites a draft decision's JSON from the decision tab, so concluding sends what the errand says now. */
   decisionJsonWriter: ((decisionId: string) => Promise<unknown>) | undefined;
+  /** Files the decision document on the errand from the decision tab, once the decision has been concluded. */
+  decisionDocumentFiler: (() => Promise<unknown>) | undefined;
   showCloseModalAfterHandover: boolean;
 }
 
@@ -41,6 +43,7 @@ interface SupportActions {
   setProcessSignal: (processSignal: { errandId: string; at: number } | undefined) => void;
   setTabSaver: (key: string, saver: (() => Promise<boolean>) | undefined) => void;
   setDecisionJsonWriter: (writer: ((decisionId: string) => Promise<unknown>) | undefined) => void;
+  setDecisionDocumentFiler: (filer: (() => Promise<unknown>) | undefined) => void;
   setShowCloseModalAfterHandover: (show: boolean) => void;
   reset: () => void;
 }
@@ -61,6 +64,7 @@ const initialState: SupportState = {
   processSignal: undefined,
   tabSavers: {},
   decisionJsonWriter: undefined,
+  decisionDocumentFiler: undefined,
   showCloseModalAfterHandover: false,
 };
 
@@ -82,6 +86,7 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   setProcessSignal: (processSignal) => set({ processSignal }),
   setDecisionJsonWriter: (decisionJsonWriter) => set({ decisionJsonWriter }),
+  setDecisionDocumentFiler: (decisionDocumentFiler) => set({ decisionDocumentFiler }),
   setTabSaver: (key, saver) =>
     set((state) => {
       if (state.tabSavers[key] === saver) return state;

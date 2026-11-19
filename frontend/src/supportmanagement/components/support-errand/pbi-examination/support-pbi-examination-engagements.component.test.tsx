@@ -61,6 +61,20 @@ const chipFor = (organizationNumber: string) =>
 const boxFor = (organizationNumber: string) =>
   document.querySelector(`[data-cy="pbi-engagements-${EDWIN}-option-${organizationNumber}"]`) as HTMLInputElement;
 
+/**
+ * The list keeps the options it rendered until it is opened, so it is opened as the handler would before a company
+ * is ticked. A tick that reaches no option leaves the choice as it was, which the component passes over in silence,
+ * so the call is what the wait is on rather than the click.
+ */
+const tickCompany = async (organizationNumber: string) => {
+  fireEvent.click(searchFieldOf());
+  await waitFor(() => expect(boxFor(organizationNumber)?.disabled).toBe(false));
+
+  fireEvent.click(boxFor(organizationNumber));
+
+  await waitFor(() => expect(onChange).toHaveBeenCalled());
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   getLegalEntityPersonEngagements.mockResolvedValue(ENGAGEMENTS);
@@ -92,7 +106,7 @@ test('a company ticked is written onto the stakeholder, where Spara ärende pick
   mountBlock();
   await waitFor(() => expect(boxFor(DRIVEN)).toBeTruthy());
 
-  fireEvent.click(boxFor(DRIVEN));
+  await tickCompany(DRIVEN);
 
   expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual([DRIVEN]);
 });
@@ -103,7 +117,7 @@ test('a company already chosen is ticked, and ticking it again takes it off the 
 
   await waitFor(() => expect(boxFor(DRIVEN).checked).toBe(true));
 
-  fireEvent.click(boxFor(DRIVEN));
+  await tickCompany(DRIVEN);
 
   expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual([]);
 });
@@ -139,6 +153,7 @@ test('the chosen companies stand under the combobox as chips, named and nothing 
 
   fireEvent.click(chip);
 
+  await waitFor(() => expect(onChange).toHaveBeenCalled());
   expect(pbiOf(onChange.mock.lastCall?.[0]).engagements).toEqual([]);
 });
 

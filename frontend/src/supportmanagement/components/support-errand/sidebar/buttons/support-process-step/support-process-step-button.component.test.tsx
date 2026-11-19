@@ -41,6 +41,9 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   completeSupportDecision: vi.fn(),
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
   supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
+  ACTION_ERRAND_PERMIT_TYPE: 'ATGARD',
+  outcomeWithoutConditions: (outcome: string | undefined) => outcome ?? '',
+  supportDecisionOutcomeNames: () => ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'],
 }));
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   lacksRequiredExternalCaseRegistrationNumber: (
@@ -310,6 +313,41 @@ test('an approved inspection needs no action points', async () => {
 
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inspection_approved'));
   expect(getSupportMeasures).not.toHaveBeenCalled();
+});
+
+test('a summary the process has no step for is told apart from no summary at all', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('revisit');
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.inspection_summary_without_step', status: 'error' })
+    )
+  );
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+});
+
+test('an inspection without a summary at all is asked for one', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue(undefined);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.inspection_summary_needed', status: 'error' })
+    )
+  );
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });
 
 test('an inspection the process has already moved on from concludes the draft instead of asking for a summary', async () => {

@@ -3,17 +3,21 @@ import { describe, expect, test } from 'vitest';
 import { mockEnv } from '../../tests/mock-env';
 import {
   certificateTemplate,
+  decisionDocumentTemplate,
   type DecisionParameterInput,
+  decisionRequiresClauses,
   decisionSchema,
   flattenDecisionJson,
   missingDecisionInputs,
   missingPermitInputs,
   savedDecisionJson,
   toCertificateParameters,
+  toDecisionDocumentParameters,
   toDecisionJson,
 } from './support-decision-parameters-service';
 import { supportDecisionPermitType } from './support-decision-service';
 import type { SupportErrand } from './support-errand-service';
+import { objectAt } from './support-json-parameter-service';
 
 const HOLDER = mockEnv.mockCompanyAddress;
 const PREMISES = mockEnv.mockPremisesAddress;
@@ -426,8 +430,8 @@ describe('what the permit needs of the errand', () => {
       WITH_CLAUSES
     );
 
-    expect(missingDecisionInputs('SERVERINGSTILLSTAND', complete)).toEqual([]);
-    expect(missingDecisionInputs('SERVERINGSTILLSTAND', undefined)).toEqual([
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', 'APPROVAL', complete)).toEqual([]);
+    expect(missingDecisionInputs('SERVERINGSTILLSTAND', 'APPROVAL', undefined)).toEqual([
       'decisionText',
       'decisionMaker',
       'validFrom',
@@ -441,6 +445,7 @@ describe('what the permit needs of the errand', () => {
     expect(
       missingDecisionInputs(
         'SERVERINGSTILLSTAND',
+        'APPROVAL',
         toDecisionJson('SERVERINGSTILLSTAND', input({ form: servingForm }), { ...WITH_CLAUSES, validFrom: '' })
       )
     ).toEqual(['validFrom', 'servingAreaDescription']);
@@ -457,11 +462,11 @@ describe('what the permit needs of the errand', () => {
     const saved = toDecisionJson('FOLKOLSANMALAN', input({ externalCaseRegistrationNumber: '' }), WITH_CLAUSES);
 
     expect(saved).not.toHaveProperty('externalCaseRegistrationNumber');
-    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
   });
 
   test('a tobacco permit waits for the outcome, the dates and the information it prints', () => {
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', undefined)).toEqual([
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', undefined)).toEqual([
       'decisionText',
       'validFrom',
       'executionDate',
@@ -474,21 +479,246 @@ describe('what the permit needs of the errand', () => {
     const withTerms = toDecisionJson('TOBAKSFORSALJNING', input(), WITH_CLAUSES);
     const withoutTerms = toDecisionJson('TOBAKSFORSALJNING', input(), { ...WITH_CLAUSES, terms: [] });
 
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', withTerms)).toEqual([]);
-    expect(missingDecisionInputs('TOBAKSFORSALJNING', withoutTerms)).toEqual(['information']);
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', withTerms)).toEqual([]);
+    expect(missingDecisionInputs('TOBAKSFORSALJNING', 'APPROVAL', withoutTerms)).toEqual(['information']);
   });
 
   test('att-satser are saved on the decision and required, except on an inspection', () => {
     const saved = toDecisionJson('FOLKOLSANMALAN', input(), { ...DECISION, clauses: ' att bevilja\natt servera ' });
 
     expect(saved.decision).toMatchObject({ clauses: 'att bevilja\natt servera' });
-    expect(missingDecisionInputs('FOLKOLSANMALAN', saved)).toEqual([]);
-    expect(missingDecisionInputs('TILLSYN', undefined)).toEqual([]);
-    expect(missingDecisionInputs(supportDecisionPermitType(undefined, 'action-errand'), undefined)).toEqual([]);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', saved)).toEqual([]);
+    expect(missingDecisionInputs('TILLSYN', undefined, undefined)).toEqual([]);
+  });
+
+  test('the inspection and the permit it was about are frozen in the decision as it is written', () => {
+    const saved = toDecisionJson(
+      'ATGARD',
+      input({
+        origin: {
+          inspectionDate: '2026-11-04',
+          inspectionCaseNumber: 'AOT-26110188',
+          permitType: 'Stadigvarande serveringstillstand',
+          permitCaseNumber: 'AOT-26100111',
+        },
+      }),
+      { ...DECISION, outcome: 'WARNING' }
+    );
+
+    expect(saved.inspection).toEqual({ date: '2026-11-04', caseNumber: 'AOT-26110188' });
+    expect(saved.permit).toEqual({ type: 'Stadigvarande serveringstillstand', caseNumber: 'AOT-26100111' });
+  });
+
+  test('an action errand without a permit to point at keeps the blocks out rather than writing them empty', () => {
+    const saved = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'NO_ACTION' });
+
+    expect(saved).not.toHaveProperty('permit');
+    expect(saved).not.toHaveProperty('inspection');
+  });
+
+  test('the document reads the decision through the keys its template names', () => {
+    const saved = toDecisionJson(
+      'ATGARD',
+      input({
+        origin: { inspectionDate: '2026-11-04', inspectionCaseNumber: 'AOT-26110188', permitType: 'Tobaksforsaljning' },
+        externalCaseRegistrationNumber: 'KS 2026/9',
+      }),
+      {
+        ...DECISION,
+        outcome: 'REPRIMAND',
+        outcomeHeading: 'Erinran',
+        outcomeText: 'Erinran innebar att tillstandet kan aterkallas.',
+        legalBasis: '9 kap. 17 § alkohollagen',
+        delegation: 'A 4.2',
+        justificationDeficiencies: 'Alderskontroll saknades.',
+        justificationStatement: 'Tillstandshavaren har anfort nyanstalld personal.',
+        justificationOutcome: 'Bristen ar inte upprepad.',
+      }
+    );
+    const flat = flattenDecisionJson(saved, 'AOT-26110233');
+
+    expect(flat).toMatchObject({
+      caseNumber: 'AOT-26110233',
+      externalCaseRegistrationNumber: 'KS 2026/9',
+      permitType: 'Tobaksforsaljning',
+      inspectionDate: '2026-11-04',
+      inspectionCaseNumber: 'AOT-26110188',
+      decisionLegalBasis: '9 kap. 17 § alkohollagen',
+      decisionDelegation: 'A 4.2',
+      decisionOutcomeHeading: 'Erinran',
+      decisionOutcomeText: 'Erinran innebar att tillstandet kan aterkallas.',
+      decisionJustificationDeficiencies: 'Alderskontroll saknades.',
+      decisionJustificationStatement: 'Tillstandshavaren har anfort nyanstalld personal.',
+      decisionJustificationOutcome: 'Bristen ar inte upprepad.',
+    });
+    expect(flat.permitCaseNumber).toBeUndefined();
+  });
+
+  test('the outcome decides which letter an action errand renders, and the permit type decides for the rest', () => {
+    expect(decisionDocumentTemplate('ATGARD', 'NO_ACTION')).toBe('action-errand-closed');
+    expect(decisionDocumentTemplate('ATGARD', 'REPRIMAND')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', 'WARNING')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', 'REVOCATION')).toBe('action-errand-decision');
+    expect(decisionDocumentTemplate('ATGARD', undefined)).toBeUndefined();
+    expect(decisionDocumentTemplate('ATGARD', 'APPROVAL')).toBeUndefined();
+    expect(decisionDocumentTemplate('SERVERINGSTILLSTAND', 'APPROVAL')).toBe('serving-permit-certificate');
+    expect(decisionDocumentTemplate('TILLSYN', 'WARNING')).toBeUndefined();
+  });
+
+  test('an action errand hands its att-satser to the document as a list, so the template can number them', () => {
+    const clauses = 'att meddela varning\natt beslutet galler omedelbart';
+    const forTheDocument = toDecisionDocumentParameters('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+      clauses,
+    });
+    const forTheCertificate = toDecisionDocumentParameters('SERVERINGSTILLSTAND', input(), {
+      ...WITH_CLAUSES,
+      outcome: 'APPROVAL',
+    });
+
+    expect(forTheDocument.decisionClauses).toEqual(['att meddela varning', 'att beslutet galler omedelbart']);
+    expect(forTheCertificate.decisionClauses).toBe('att bevilja tillstånd');
+  });
+
+  const inMunicipality = (code: string) =>
+    input({
+      errand: { ...errand(), parameters: [{ key: 'premisesMunicipalityId', values: [code] }] } as SupportErrand,
+    });
+
+  const letterOf = (municipality: DecisionParameterInput) =>
+    toDecisionDocumentParameters('ATGARD', municipality, { ...DECISION, outcome: 'WARNING' });
+
+  const SUNDSVALL_POSTAL_ADDRESS = [
+    'Sundsvalls kommun',
+    'Individ- och arbetsmarknadsförvaltningen',
+    'Alkohol- och tobaksenheten',
+    '851 85 SUNDSVALL',
+  ];
+
+  test('the letter says the authority the decision belongs to, read off the errand', () => {
+    const sundsvall = letterOf(inMunicipality('2281'));
+
+    expect(sundsvall.senderMunicipality).toBe('Sundsvalls kommun');
+    expect(sundsvall.senderUnit).toBe('Alkohol- och tobaksenheten');
+    expect(sundsvall.senderPostalAddressLines).toEqual(SUNDSVALL_POSTAL_ADDRESS);
+    expect(sundsvall.appealAuthority).toBe('Individ- och arbetsmarknadsnämnden, Sundsvalls kommun, 851 85 Sundsvall');
+  });
+
+  test('a decision that concerns Timrå names Timrås own office, and sends an appeal there', () => {
+    const timra = letterOf(inMunicipality('2262'));
+
+    expect(timra.senderMunicipality).toBe('Timrå kommun');
+    expect(timra.senderUnit).toBe('Miljö- och byggkontoret');
+    expect(timra.senderPostalAddressLines).toEqual(['Timrå kommun', 'Miljö- och byggkontoret', '861 82 TIMRÅ']);
+    expect(timra.appealAuthority).toBe('Miljö- och byggkontoret, Timrå kommun, 861 82 Timrå');
+  });
+
+  test('an errand registered before the e-service asked for a municipality reads as Sundsvall, which it was', () => {
+    expect(letterOf(input())).toMatchObject({
+      senderMunicipality: 'Sundsvalls kommun',
+      senderPostalAddressLines: SUNDSVALL_POSTAL_ADDRESS,
+    });
+  });
+
+  test('a certificate reads no authority, since the action errand letters are the ones that print it', () => {
+    const certificate = toDecisionDocumentParameters('SERVERINGSTILLSTAND', input(), {
+      ...DECISION,
+      outcome: 'APPROVAL',
+    });
+
+    expect(certificate.senderMunicipality).toBeUndefined();
+    expect(certificate.appealAuthority).toBeUndefined();
+  });
+
+  test('an action errand is filed under its own schema, with the sanction it decides', () => {
+    const saved = toDecisionJson('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+      decisionText: 'Varning',
+      delegation: 'A 4.2',
+      clauses: 'att meddela varning\natt beslutet galler omedelbart',
+    });
+
+    expect(decisionSchema('ATGARD')).toEqual({ name: 'aot_action_errand_decision' });
+    expect(saved.decision).toMatchObject({
+      outcome: 'WARNING',
+      decisionText: 'Varning',
+      delegation: 'A 4.2',
+      clauses: ['att meddela varning', 'att beslutet galler omedelbart'],
+    });
+    expect(saved).not.toHaveProperty('conditions');
+    expect(saved).not.toHaveProperty('servingArea');
+  });
+
+  test('an application outcome on an action errand is left out, and a sanction on an application likewise', () => {
+    const sanctionOnAnApplication = toDecisionJson('SERVERINGSTILLSTAND', input(), {
+      ...DECISION,
+      outcome: 'WARNING',
+    });
+    const approvalOnAnActionErrand = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'APPROVAL' });
+
+    expect(objectAt(sanctionOnAnApplication.decision)).not.toHaveProperty('outcome');
+    expect(objectAt(approvalOnAnActionErrand.decision)).not.toHaveProperty('outcome');
+  });
+
+  test('a decision saved under an earlier key is read from the one it is written under now', () => {
+    const clausesOf = (decision: unknown) => objectAt(savedDecisionJson(decision as never)?.decision).clauses;
+    const underBothKeys = {
+      type: 'ATGARD',
+      jsonParameters: [
+        { key: 'aot_alcohol_decision', value: { decision: { clauses: ['att bevilja tillstand'] } } },
+        { key: 'aot_action_errand_decision', value: { decision: { clauses: ['att meddela varning'] } } },
+      ],
+    };
+    const underTheEarlierKeyOnly = {
+      type: 'ATGARD',
+      jsonParameters: [{ key: 'aot_alcohol_decision', value: { decision: { clauses: ['att bevilja tillstand'] } } }],
+    };
+
+    expect(clausesOf(underBothKeys)).toEqual(['att meddela varning']);
+    expect(clausesOf(underTheEarlierKeyOnly)).toEqual(['att bevilja tillstand']);
+  });
+
+  test('the saved decision is read back whichever schema it was filed under', () => {
+    const underTheActionErrandSchema = {
+      jsonParameters: [{ key: 'aot_action_errand_decision', value: { decision: { outcome: 'REPRIMAND' } } }],
+    };
+
+    expect(objectAt(savedDecisionJson(underTheActionErrandSchema as never)?.decision)).toMatchObject({
+      outcome: 'REPRIMAND',
+    });
+  });
+
+  test('the att-satser of an action errand are read back from the list they are kept in', () => {
+    const saved = toDecisionJson('ATGARD', input(), {
+      ...DECISION,
+      outcome: 'REPRIMAND',
+      clauses: 'att meddela erinran',
+      delegation: 'A 4.2',
+    });
+    const flat = flattenDecisionJson(saved);
+
+    expect(flat.decisionClauses).toBe('att meddela erinran');
+    expect(flat.decisionDelegation).toBe('A 4.2');
+    expect(missingDecisionInputs('ATGARD', 'REPRIMAND', saved)).toEqual([]);
+  });
+
+  test('an action errand needs att-satser for the sanctions it imposes, and none for letting the matter rest', () => {
+    const permitType = supportDecisionPermitType(undefined, 'action-errand');
+
+    expect(permitType).toBe('ATGARD');
+    expect(missingDecisionInputs(permitType, 'REPRIMAND', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'WARNING', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'REVOCATION', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs(permitType, 'NO_ACTION', undefined)).toEqual([]);
+    expect(missingDecisionInputs(permitType, undefined, undefined)).toEqual([]);
+    expect(decisionRequiresClauses('TILLSYN', 'WARNING')).toBe(false);
+    expect(decisionRequiresClauses('SERVERINGSTILLSTAND', 'APPROVAL_WITH_CONDITIONS')).toBe(true);
   });
 
   test('a permit that issues no certificate waits for the att-satser alone', () => {
-    expect(missingDecisionInputs('FOLKOLSANMALAN', undefined)).toEqual(['decisionClauses']);
+    expect(missingDecisionInputs('FOLKOLSANMALAN', 'APPROVAL', undefined)).toEqual(['decisionClauses']);
     expect(missingPermitInputs('FOLKOLSANMALAN', undefined, errand(), undefined, [])).toEqual({
       fromTheErrand: [],
       fromTheApplication: [],
@@ -567,4 +797,34 @@ describe('every permit', () => {
       ])
     );
   });
+});
+
+// The permit schemas define none of the action errand's fields and allow nothing they do not define, so a permit
+// decision that carried any of them was refused by the service with a constraint violation.
+const SANCTION_FIELDS = {
+  delegation: 'A 4.2',
+  outcomeHeading: 'Bifall med villkor',
+  outcomeText: 'Vad beslutet innebär',
+  justificationDeficiencies: 'Konstaterade brister',
+  justificationStatement: 'Tillståndshavarens yttrande',
+  justificationOutcome: 'Bedömning',
+};
+
+test('a permit decision carries none of the fields only an action errand decides with', () => {
+  const saved = toDecisionJson('SERVERINGSTILLSTAND', input(), {
+    ...WITH_CLAUSES,
+    outcome: 'APPROVAL',
+    ...SANCTION_FIELDS,
+  });
+
+  for (const field of Object.keys(SANCTION_FIELDS)) {
+    expect(saved.decision).not.toHaveProperty(field);
+  }
+  expect(saved.decision).toMatchObject({ outcome: 'APPROVAL', clauses: 'att bevilja tillstånd' });
+});
+
+test('an action errand decision carries them all, since its own schema is the one that knows them', () => {
+  const saved = toDecisionJson('ATGARD', input(), { ...DECISION, outcome: 'WARNING', ...SANCTION_FIELDS });
+
+  expect(saved.decision).toMatchObject(SANCTION_FIELDS);
 });

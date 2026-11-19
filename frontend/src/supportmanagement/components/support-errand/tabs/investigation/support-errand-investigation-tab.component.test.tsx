@@ -6,6 +6,7 @@ import {
   getSupportInvestigation,
   saveSupportInvestigation,
   saveSupportInvestigationSection,
+  startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
@@ -172,6 +173,90 @@ test('a tobacco permit is completed with the examinations its own type asks for'
     'legal_basis',
   ]);
   expect(asked.map((section) => section.sortOrder)).toEqual([1, 2, 3, 5, 6, 7, 8, 9]);
+});
+
+const byCy = (dataCy: string): HTMLElement | null => document.querySelector<HTMLElement>(`[data-cy="${dataCy}"]`);
+
+const actionErrand = (...labels: { classification: string; resourceName: string }[]) => ({
+  id: ERRAND_ID,
+  labels: [
+    { classification: 'CATEGORY', resourceName: 'INSPECTION' },
+    { classification: 'TYPE', resourceName: 'MEASURES' },
+    ...labels,
+  ],
+});
+
+test('an action errand is completed with its own examinations and none of the serving ones', async () => {
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalledTimes(1));
+
+  const asked = vi.mocked(completeSupportInvestigationSections).mock.calls[0][3];
+  expect(asked.map((section) => section.sectionKey)).toEqual([
+    'statements',
+    'established_faults',
+    'permit_holder_statement',
+    'measures_taken',
+    'assessment',
+    'legal_basis',
+  ]);
+});
+
+test('the area is asked for on an action errand, and the chosen one is written as the investigation type', async () => {
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-missing')).toBeTruthy());
+
+  await act(async () => {
+    fireEvent.click(byCy('investigation-area-TOBACCO')!);
+  });
+
+  expect(saveSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation-1', {
+    version: 3,
+    type: 'TOBACCO',
+  });
+});
+
+test('an action errand filed under an area starts its investigation with that area already named', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(undefined as never);
+  vi.mocked(startSupportInvestigation).mockResolvedValue(investigation as never);
+  useSupportStore.setState({
+    supportErrand: actionErrand({ classification: 'TAG', resourceName: 'ALCOHOL_INSPECTION' }) as never,
+    tabSavers: {},
+  });
+  mountTab();
+
+  await waitFor(() => expect(startSupportInvestigation).toHaveBeenCalledTimes(1));
+
+  expect(vi.mocked(startSupportInvestigation).mock.calls[0][4]).toEqual({ type: 'ALCOHOL' });
+});
+
+test('the legal basis of an action errand is written from the area, and from nothing until one is chosen', async () => {
+  const withLegalBasis = {
+    ...investigation,
+    type: 'TOBACCO',
+    sections: [{ id: 'section-9', sectionKey: 'legal_basis', heading: 'Lagrum', sortOrder: 6 }],
+  };
+  vi.mocked(getSupportInvestigation).mockResolvedValue(withLegalBasis as never);
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(renderTemplateHtml).toHaveBeenCalledWith('tobacco-sales-legal-basis'));
+});
+
+test('an action errand with no area yet asks no template for its legal basis', async () => {
+  const withLegalBasis = {
+    ...investigation,
+    sections: [{ id: 'section-9', sectionKey: 'legal_basis', heading: 'Lagrum', sortOrder: 6 }],
+  };
+  vi.mocked(getSupportInvestigation).mockResolvedValue(withLegalBasis as never);
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-missing')).toBeTruthy());
+  expect(renderTemplateHtml).not.toHaveBeenCalled();
 });
 
 test('both errand types are offered the underlay their own template renders', async () => {
@@ -358,4 +443,40 @@ test('a migrated errand is read through the view for migrated investigations', a
 
   expect(await screen.findByTestId('migrated-investigation')).toBeTruthy();
   expect(completeSupportInvestigationSections).not.toHaveBeenCalled();
+});
+
+const ALCOHOL_LEGAL_BASIS = '<h3>Alkohollag (2010:1622)</h3>';
+const TOBACCO_LEGAL_BASIS = '<h3>Lag om tobak och liknande produkter (2018:2088)</h3>';
+
+const underTheArea = (type: string) => ({
+  ...investigation,
+  type,
+  sections: [
+    { id: 'section-9', sectionKey: 'legal_basis', heading: 'Lagrum', sortOrder: 6, text: ALCOHOL_LEGAL_BASIS },
+  ],
+});
+
+test('a change of area writes the new area legal basis over the one standing there', async () => {
+  vi.mocked(getSupportInvestigation).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(completeSupportInvestigationSections).mockResolvedValue(underTheArea('ALCOHOL') as never);
+  vi.mocked(saveSupportInvestigation).mockResolvedValue({ ...underTheArea('TOBACCO'), version: 4 } as never);
+  vi.mocked(renderTemplateHtml).mockResolvedValue(TOBACCO_LEGAL_BASIS);
+  useSupportStore.setState({ supportErrand: actionErrand() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(byCy('investigation-area-TOBACCO')).toBeTruthy());
+  expect(renderTemplateHtml).not.toHaveBeenCalled();
+
+  await act(async () => {
+    fireEvent.click(byCy('investigation-area-TOBACCO')!);
+  });
+
+  await waitFor(() => expect(renderTemplateHtml).toHaveBeenCalledWith('tobacco-sales-legal-basis'));
+  expect(vi.mocked(saveSupportInvestigationSection).mock.calls[0]).toEqual([
+    ERRAND_ID,
+    '2281',
+    'investigation-1',
+    'section-9',
+    { text: TOBACCO_LEGAL_BASIS },
+  ]);
 });
