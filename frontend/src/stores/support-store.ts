@@ -1,17 +1,30 @@
 import { NotificationView } from '@common/components/notifications/notification-view';
 import { Subscription } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
+import { ConversationReadByCount } from '@supportmanagement/services/support-conversation-service';
 import {
   SupportErrand,
   SupportErrandsData,
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
+import { Message, MessageNode } from '@supportmanagement/services/support-message-service';
 import { create } from 'zustand';
+
+/** The errand's messages: the older message API and the conversations, each as a list and as a tree. */
+export interface SupportMessages {
+  errandId: string;
+  messages: Message[];
+  messageTree: MessageNode[];
+  conversationMessages: Message[];
+  conversationMessageTree: MessageNode[];
+  conversationReadByCounts: ConversationReadByCount[];
+}
 
 interface SupportState {
   supportErrand: SupportErrand | undefined;
   supportErrands: SupportErrandsData;
   supportAttachments: SupportAttachment[] | undefined;
+  supportMessages: SupportMessages | undefined;
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: NotificationView[];
@@ -31,6 +44,7 @@ interface SupportActions {
   setSupportErrand: (errand: SupportErrand | undefined) => void;
   setSupportErrands: (errands: SupportErrandsData) => void;
   setSupportAttachments: (attachments: SupportAttachment[]) => void;
+  setSupportMessages: (messages: SupportMessages | undefined) => void;
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
   setNotifications: (notifications: NotificationView[]) => void;
@@ -51,6 +65,7 @@ const initialState: SupportState = {
   supportErrand: undefined,
   supportErrands: { errands: [], labels: [] },
   supportAttachments: undefined,
+  supportMessages: undefined,
   stakeholderContacts: [],
   stakeholderCustomers: [],
   notifications: [],
@@ -75,6 +90,7 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setSupportErrand: (supportErrand) => set({ supportErrand }),
   setSupportErrands: (supportErrands) => set({ supportErrands }),
   setSupportAttachments: (supportAttachments) => set({ supportAttachments }),
+  setSupportMessages: (supportMessages) => set({ supportMessages }),
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),

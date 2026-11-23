@@ -37,33 +37,34 @@ export const SupportErrandSummary: React.FC<{}> = () => {
             </div>
           </div>
 
-          <div className="pr-sm">
+          {/* <div className="pr-sm">
             <div data-cy="errandRegisteredLabel" className="font-bold">
               Inkom via {(Channels as Record<string, string>)[supportErrand?.channel!]?.toLowerCase()}
             </div>
             <div data-cy="errandRegistered">{prettyTime(supportErrand?.created!)}</div>
-          </div>
+          </div> */}
           <div className="pr-sm">
             <div className="font-bold" data-cy="errandStakeholderLabel">
-              Rapportör
+              Ansvarig
             </div>
-            <div className="underline" data-cy="errandStakeholder">
-              {(() => {
+            <div data-cy="errandStakeholder">
+              {/* {(() => {
                 const reporter = getSupportReporterStakeholder(supportErrand!);
                 if (reporter?.firstName && reporter?.lastName) {
                   return `${reporter.firstName} ${reporter.lastName}`;
                 } else {
                   return '(saknas)';
                 }
-              })()}
+              })()} */}
+              Urban Edlund
             </div>
           </div>
-          <div className="pr-sm">
+          {/* <div className="pr-sm">
             <div data-cy="errandRegisteredLabel" className="font-bold">
               Kommun
             </div>
             <div data-cy="errandRegistered">Sundsvalls kommun</div>
-          </div>
+          </div> */}
         </div>
       </div>
     </>

@@ -6,21 +6,9 @@ import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import {
-  ConversationReadByCount,
-  getConversationMessageCountSummary,
-  getSupportConversationMessages,
-  getSupportConversationReadByCounts,
-  getSupportConversations,
-} from '@supportmanagement/services/support-conversation-service';
+import { getConversationMessageCountSummary } from '@supportmanagement/services/support-conversation-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import {
-  buildTree,
-  countUnreadMessages,
-  fetchSupportMessages,
-  groupByConversationIdSortedTree,
-  MessageNode,
-} from '@supportmanagement/services/support-message-service';
+import { countUnreadMessages } from '@supportmanagement/services/support-message-service';
 import {
   getSupportErrandProcess,
   getSupportProcessActivities,
@@ -45,11 +33,6 @@ import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
-  const [messages, setMessages] = useState<any>([]);
-  const [supportConversations, setSupportConversations] = useState<any>([]);
-  const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
-  const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
@@ -107,50 +90,35 @@ export const SupportTabsWrapper: FC<{
 
   useEffect(readProcessLog, [readProcessLog, supportErrand?.modified, stepTheProcessReports, processStatus]);
 
-  const getMessagesAndConversations = () => {
+  // Messages are read by the messages block itself; see useSupportMessages.
+  const getAttachments = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
-    fetchSupportMessages(supportErrand!.id!, municipalityId).then((res) => {
-      const tree = buildTree(res);
-      setMessageTree(tree);
-      setMessages(res);
-    });
-    getSupportConversationReadByCounts(municipalityId, supportErrand!.id!)
-      .then(setConversationReadByCounts)
-      .catch(() => setConversationReadByCounts([]));
-    getSupportConversations(municipalityId, supportErrand!.id!).then((res) => {
-      Promise.all(
-        res.data.map((conversation: any) =>
-          getSupportConversationMessages(municipalityId, supportErrand!.id!, conversation.id).then((messages) => {
-            return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
-          })
-        )
-      ).then((allMessageGroups) => {
-        const allMessages = allMessageGroups.flat();
-        const conversationTree = groupByConversationIdSortedTree(allMessages);
-
-        setConversationMessageTree(conversationTree);
-        setSupportConversations(allMessages);
-      });
-    });
   };
 
   const update = () => {
     if (supportErrand?.id) {
       getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-      getMessagesAndConversations();
+      getAttachments();
     }
   };
 
   useEffect(() => {
     if (supportErrand?.id) {
-      getMessagesAndConversations();
+      getAttachments();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand?.id, supportErrand?.modified]);
 
+  const storedMessages = useSupportStore((s) => s.supportMessages);
+  const supportMessages = storedMessages?.errandId === supportErrand?.id ? storedMessages : undefined;
+  const messages = supportMessages?.messages ?? [];
   const conversationMessageCountSummary = useMemo(
-    () => getConversationMessageCountSummary(conversationReadByCounts, supportErrand?.errandNumber ?? ''),
-    [conversationReadByCounts, supportErrand?.errandNumber]
+    () =>
+      getConversationMessageCountSummary(
+        supportMessages?.conversationReadByCounts ?? [],
+        supportErrand?.errandNumber ?? ''
+      ),
+    [supportMessages?.conversationReadByCounts, supportErrand?.errandNumber]
   );
   const totalMessageCount = messages.length + conversationMessageCountSummary.total;
   const unreadMessageCount = countUnreadMessages(messages) + conversationMessageCountSummary.unread;
@@ -225,26 +193,16 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'messages',
         label: messageTabLabel,
-        content: supportErrand && (
-          <SupportMessagesTab
-            messages={messages}
-            messageTree={messageTree}
-            supportConversations={supportConversations}
-            conversationMessageTree={conversationMessageTree}
-            setUnsaved={setUnsavedChanges}
-            update={update}
-            municipalityId={municipalityId}
-          />
-        ),
+        content: supportErrand && <SupportMessagesTab />,
         disabled: false,
-        visibleFor: true,
+        visibleFor: !appConfig.features.useMessagesSection,
       },
       {
         key: 'attachments',
         label: attachmentTabLabel,
-        content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
+        content: supportErrand && <SupportErrandAttachmentsTab />,
         disabled: false,
-        visibleFor: true,
+        visibleFor: !appConfig.features.useAttachmentsSection,
       },
       {
         key: 'investigation',
@@ -311,15 +269,11 @@ export const SupportTabsWrapper: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       attachmentTabLabel,
-      conversationMessageTree,
       messageTabLabel,
-      messageTree,
-      messages,
       municipalityId,
       processActivities,
       props.setUnsavedFacility,
       supportAttachments,
-      supportConversations,
       supportErrand,
       t,
       tabsWithContent,

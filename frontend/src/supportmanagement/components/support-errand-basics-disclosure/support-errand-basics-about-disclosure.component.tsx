@@ -1,4 +1,4 @@
-import { Disclosure } from '@sk-web-gui/react';
+import { ErrandSection } from '@common/components/errand-section/errand-section.component';
 import { useSupportStore } from '@stores/index';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Info } from 'lucide-react';
@@ -21,15 +21,8 @@ export const SupportErrandBasicsAboutDisclosure: FC<{
     setValue('id', supportErrand?.id, { shouldDirty: false });
   }, [setValue, supportErrand]);
   return (
-    <Disclosure variant="alt" initalOpen>
-      <Disclosure.Header>
-        <Disclosure.Icon icon={<Info />} />
-        <Disclosure.Title>Om ärendet</Disclosure.Title>
-        <Disclosure.Button />
-      </Disclosure.Header>
-      <Disclosure.Content>
-        <SupportErrandBasicsAboutForm supportErrand={supportErrand!} />
-      </Disclosure.Content>
-    </Disclosure>
+    <ErrandSection icon={<Info />} title="Om ärendet" initialOpen>
+      <SupportErrandBasicsAboutForm supportErrand={supportErrand!} />
+    </ErrandSection>
   );
 };

@@ -9,13 +9,50 @@ interface LocaleLayoutProps {
   params: Promise<{ locale: string }>;
 }
 
+/** Lies across every page, above dialogs too, so nobody mistakes the prototype for the real thing. Clicks go through. */
+const ConceptWatermark = () => (
+  <div
+    aria-hidden
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 2147483647,
+      pointerEvents: 'none',
+      userSelect: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    }}
+  >
+    <span
+      style={{
+        transform: 'rotate(-20deg)',
+        fontSize: '14vw',
+        fontWeight: 900,
+        letterSpacing: '0.1em',
+        color: 'red',
+        opacity: 0.06,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      PROTOTYP
+    </span>
+  </div>
+);
+
 const namespaces = ['common', 'paths', 'layout', 'login', 'example', 'oversikt', 'registrera', 'messages'];
 
 const LocaleLayout = async ({ children, params }: LocaleLayoutProps) => {
   const { locale } = await params;
   const { resources } = await initLocalization(locale, namespaces);
 
-  return <LocalizationProvider {...{ locale, resources, namespaces }}>{children}</LocalizationProvider>;
+  return (
+    <LocalizationProvider {...{ locale, resources, namespaces }}>
+      {children}
+      <ConceptWatermark />
+    </LocalizationProvider>
+  );
 };
 
 export const generateMetadata = async ({ params }: LocaleLayoutProps) => {

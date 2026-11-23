@@ -1,6 +1,7 @@
 import { useAceCallerPrefill } from '@common/ace/use-ace-caller-prefill';
+import { ErrandSection } from '@common/components/errand-section/errand-section.component';
 import { appConfig } from '@config/appconfig';
-import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { Avatar, Button, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandPremisesSection } from '@supportmanagement/components/premises/support-errand-premises-section.component';
 import {
@@ -476,91 +477,77 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   return (
     <>
       <div className="mt-md">
-        <Disclosure variant="alt" initalOpen>
-          <Disclosure.Header>
-            <Disclosure.Icon icon={<Users />} />
-            <Disclosure.Title>Ärendeägare</Disclosure.Title>
-            <Disclosure.Button />
-          </Disclosure.Header>
-          <Disclosure.Content>
-            <div data-cy="registered-applicants">
-              {stakeholderCustomers.length === 0 && appConfig.features.useMyPages && (
-                <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
-                  <Info className="text-primary w-20 h-20 shrink-0" />
-                  <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
-                    <p className="mt-0">
-                      Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
-                    </p>
-                    <p className="mt-sm mb-0">Undvik personnummer för VOF-ärenden, t ex anmälningar.</p>
+        <ErrandSection icon={<Users />} title="Ärendeägare" initialOpen>
+          <div data-cy="registered-applicants">
+            {stakeholderCustomers.length === 0 && appConfig.features.useMyPages && (
+              <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
+                <Info className="text-primary w-20 h-20 shrink-0" />
+                <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
+                  <p className="mt-0">
+                    Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
+                  </p>
+                  <p className="mt-sm mb-0">Undvik personnummer för VOF-ärenden, t ex anmälningar.</p>
+                </span>
+              </div>
+            )}
+            <div className="flex flex-row gap-12 flex-wrap">
+              {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
+            </div>
+            <div className="w-full">
+              {stakeholderCustomers.length === 0 ? (
+                <SupportSimplifiedContactForm
+                  // The form reads contact once, so it starts over when ACE fills in the search.
+                  key={ownerSearch?.personNumber ?? 'owner'}
+                  disabled={isSupportErrandLocked(supportErrand!)}
+                  setUnsaved={props.setUnsaved}
+                  onSave={(contact) => addStakeholder(contact)}
+                  contact={{ ...emptyContact, role: 'PRIMARY', ...ownerSearch }}
+                  initialQuery={ownerSearch?.personNumber}
+                  editing={false}
+                  label="Ärendeägare"
+                  id="owner"
+                />
+              ) : null}
+            </div>
+          </div>
+        </ErrandSection>
+      </div>
+      <div className="mt-md">
+        <ErrandSection icon={<Users />} title="Övriga parter" initialOpen>
+          <div data-cy="registered-contacts">
+            <div className="w-full mt-md">
+              {appConfig.features.useMyPages && (
+                <div className="pb-[2.5rem]">
+                  <span className="text-dark-secondary">
+                    Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se
+                    ärendet på Mina sidor.
                   </span>
                 </div>
               )}
-              <div className="flex flex-row gap-12 flex-wrap">
-                {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
-              </div>
-              <div className="w-full">
-                {stakeholderCustomers.length === 0 ? (
-                  <SupportSimplifiedContactForm
-                    // The form reads contact once, so it starts over when ACE fills in the search.
-                    key={ownerSearch?.personNumber ?? 'owner'}
-                    disabled={isSupportErrandLocked(supportErrand!)}
-                    setUnsaved={props.setUnsaved}
-                    onSave={(contact) => addStakeholder(contact)}
-                    contact={{ ...emptyContact, role: 'PRIMARY', ...ownerSearch }}
-                    initialQuery={ownerSearch?.personNumber}
-                    editing={false}
-                    label="Ärendeägare"
-                    id="owner"
-                  />
-                ) : null}
-              </div>
+              <SupportSimplifiedContactForm
+                disabled={isSupportErrandLocked(supportErrand!)}
+                setUnsaved={props.setUnsaved}
+                contact={{ ...emptyContact, role: 'CONTACT' }}
+                editing={false}
+                onSave={(contact) => addStakeholder(contact)}
+                label="Övrig part"
+                id="person"
+              />
             </div>
-          </Disclosure.Content>
-        </Disclosure>
-      </div>
-      <div className="mt-md">
-        <Disclosure variant="alt" initalOpen>
-          <Disclosure.Header>
-            <Disclosure.Icon icon={<Users />} />
-            <Disclosure.Title>Övriga parter</Disclosure.Title>
-            <Disclosure.Button />
-          </Disclosure.Header>
-          <Disclosure.Content>
-            <div data-cy="registered-contacts">
-              <div className="w-full mt-md">
-                {appConfig.features.useMyPages && (
-                  <div className="pb-[2.5rem]">
-                    <span className="text-dark-secondary">
-                      Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se
-                      ärendet på Mina sidor.
-                    </span>
-                  </div>
-                )}
-                <SupportSimplifiedContactForm
-                  disabled={isSupportErrandLocked(supportErrand!)}
-                  setUnsaved={props.setUnsaved}
-                  contact={{ ...emptyContact, role: 'CONTACT' }}
-                  editing={false}
-                  onSave={(contact) => addStakeholder(contact)}
-                  label="Övrig part"
-                  id="person"
-                />
-              </div>
 
-              {contactsFields.length !== 0 ? (
-                <FormControl className="mt-40 w-full">
-                  <FormLabel>Tillagda parter</FormLabel>
-                  <div className="flex flex-row gap-12 flex-wrap">
-                    {stakeholderContacts.map((stakeholder, idx) => {
-                      const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
-                      return role ? renderContact(stakeholder, idx, role) : null;
-                    })}
-                  </div>
-                </FormControl>
-              ) : null}
-            </div>
-          </Disclosure.Content>
-        </Disclosure>
+            {contactsFields.length !== 0 ? (
+              <FormControl className="mt-40 w-full">
+                <FormLabel>Tillagda parter</FormLabel>
+                <div className="flex flex-row gap-12 flex-wrap">
+                  {stakeholderContacts.map((stakeholder, idx) => {
+                    const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
+                    return role ? renderContact(stakeholder, idx, role) : null;
+                  })}
+                </div>
+              </FormControl>
+            ) : null}
+          </div>
+        </ErrandSection>
       </div>
     </>
   );

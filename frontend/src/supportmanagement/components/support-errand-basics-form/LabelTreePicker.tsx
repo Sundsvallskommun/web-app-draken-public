@@ -190,7 +190,7 @@ const getPivotBoxes = (
     {
       id: 'labelCategory',
       dataCy: 'labelCategory',
-      label: getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true),
+      label: 'Nivå 1', //getBoxLabel(getLabelsAtDepth(structure, pivot + 1), fallbackLabels.first, true),
       addon: labelAddons?.first,
       note: notes?.first,
       placeholder: firstSelection
@@ -207,7 +207,7 @@ const getPivotBoxes = (
     {
       id: 'labelType',
       dataCy: 'labelType',
-      label: getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf),
+      label: 'Nivå 2', // getBoxLabel(getLabelsAtDepth(structure, pivot + 2), fallbackLabels.second, !firstIsLeaf),
       addon: labelAddons?.second,
       note: notes?.second,
       placeholder: secondPlaceholder,

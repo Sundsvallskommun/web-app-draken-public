@@ -49,12 +49,12 @@ export const SidebarWrapper: FC<{
       icon: 'history',
       component: <SidebarHistory />,
     },
-    {
-      label: 'Exportera ärende',
-      key: 'supportexport',
-      icon: 'file-output',
-      component: <SidebarSupportExport />,
-    },
+    // {
+    //   label: 'Exportera ärende',
+    //   key: 'supportexport',
+    //   icon: 'file-output',
+    //   component: <SidebarSupportExport />,
+    // },
   ];
 
   // Notifications deep link into a specific panel, e.g. /arende/KC-1?tab=history. Only keys that

@@ -214,7 +214,7 @@ export const SupportErrandComponent: FC = () => {
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>
-                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          <SupportErrandSummary />
                         </>
                       ) : (
                         <div className="flex justify-between items-center pt-8">

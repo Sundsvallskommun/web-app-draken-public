@@ -26,7 +26,7 @@ export type SupportMeasureResultName = (typeof SupportMeasureResult)[keyof typeo
 /** The results a handler can set, in the order the protocol shows them. */
 export const SUPPORT_MEASURE_RESULTS: { result: SupportMeasureResultName; translationKey: string }[] = [
   { result: SupportMeasureResult.COMPLETED, translationKey: 'common:inspection_protocol.result.approved' },
-  { result: SupportMeasureResult.NOT_COMPLETED, translationKey: 'common:inspection_protocol.result.not_completed' },
+  // { result: SupportMeasureResult.NOT_COMPLETED, translationKey: 'common:inspection_protocol.result.not_completed' },
   { result: SupportMeasureResult.NOT_APPLICABLE, translationKey: 'common:inspection_protocol.result.not_applicable' },
 ];
 

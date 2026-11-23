@@ -556,7 +556,7 @@ export const SidebarInfo: FC<{
               </div>
             ) : (
               <div className="flex flex-col gap-8">
-                {allowed && !supportErrandIsEmpty(supportErrand!) && (
+                {false && allowed && !supportErrandIsEmpty(supportErrand!) && (
                   <>
                     <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
                     <SupportStartProcessButtonComponent
@@ -580,14 +580,14 @@ export const SidebarInfo: FC<{
                     <Divider className="mt-8 mb-16" />
                   </>
                 )}
-                <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                {/* <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} /> */}
                 <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
               </div>
             )}
             {/* Following is about notifications, not about edit rights, so it is available on every
                 status and to handlers who are not assigned to the errand. */}
-            <Divider className="mt-16 mb-16" />
-            <SupportFollowErrandButtonComponent />
+            {/* <Divider className="mt-16 mb-16" />
+            <SupportFollowErrandButtonComponent /> */}
           </>
         </div>
       </div>

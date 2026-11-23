@@ -32,6 +32,10 @@ interface AppConfigFeatures {
   useCompanyInformation: boolean;
   useSingleErrandTypeLabel: boolean;
   useDetailsTab: boolean;
+  /** Attachments as a section on Grundinformation instead of a tab of their own. */
+  useAttachmentsSection: boolean;
+  /** Messages as a section on Grundinformation instead of a tab of their own. */
+  useMessagesSection: boolean;
   useInvestigationTab: boolean;
   useDecisionTab: boolean;
   useFollowUpTab: boolean;
@@ -93,6 +97,8 @@ export const appConfig: AppConfig = {
     useCompanyInformation: envBool(process.env.NEXT_PUBLIC_USE_COMPANY_INFORMATION),
     useSingleErrandTypeLabel: envBool(process.env.NEXT_PUBLIC_USE_SINGLE_ERRAND_TYPE_LABEL),
     useDetailsTab: envBool(process.env.NEXT_PUBLIC_USE_DETAILS_TAB),
+    useAttachmentsSection: envBool(process.env.NEXT_PUBLIC_USE_ATTACHMENTS_SECTION),
+    useMessagesSection: envBool(process.env.NEXT_PUBLIC_USE_MESSAGES_SECTION),
     useInvestigationTab: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION_TAB),
     useDecisionTab: envBool(process.env.NEXT_PUBLIC_USE_DECISION_TAB),
     useFollowUpTab: envBool(process.env.NEXT_PUBLIC_USE_FOLLOWUP_TAB),

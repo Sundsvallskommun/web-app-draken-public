@@ -1,6 +1,6 @@
+import { ErrandSection } from '@common/components/errand-section/errand-section.component';
 import Facilities from '@common/components/facilities/facilities';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { Disclosure } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { MapPin } from 'lucide-react';
@@ -45,16 +45,14 @@ export const SupportErrandBasicsRealEstateDisclosure: FC<{
 
   return (
     <div className="mt-md">
-      <Disclosure disabled={supportErrandIsEmpty(supportErrand!)} variant="alt" data-cy={`facility-disclosure`}>
-        <Disclosure.Header>
-          <Disclosure.Icon icon={<MapPin />} />
-          <Disclosure.Title>Fastigheter</Disclosure.Title>
-          <Disclosure.Button />
-        </Disclosure.Header>
-        <Disclosure.Content>
-          <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
-        </Disclosure.Content>
-      </Disclosure>
+      <ErrandSection
+        icon={<MapPin />}
+        title="Plats"
+        disabled={supportErrandIsEmpty(supportErrand!)}
+        data-cy="facility-disclosure"
+      >
+        <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
+      </ErrandSection>
     </div>
   );
 };

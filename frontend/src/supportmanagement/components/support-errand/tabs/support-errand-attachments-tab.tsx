@@ -1,3 +1,4 @@
+import { ErrandSection } from '@common/components/errand-section/errand-section.component';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import { imageMimeTypes } from '@common/components/file-upload/mime-types';
@@ -23,6 +24,7 @@ import {
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
+  countAttachment,
   deleteSupportAttachment,
   documentMimeTypes,
   getSupportAttachment,
@@ -42,13 +44,14 @@ import {
   supportStatementAttachmentIds,
 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
-import { Ellipsis, Eye, Pencil, Trash, Upload } from 'lucide-react';
+import { Ellipsis, Eye, Paperclip, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 import { UnlinkedStatementAttachmentFlag } from '../statements/unlinked-statement-attachment-flag.component';
+import { useSupportAttachments } from '../use-support-attachments';
 import { SupportErrandRequiredAttachments } from './support-errand-required-attachments.component';
 
 interface SingleAttachment {
@@ -69,12 +72,14 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-export const SupportErrandAttachmentsTab: FC<{
-  update: () => void;
-}> = (props) => {
+/**
+ * The errand's attachments. As a tab it fills the tab panel; as a section it is a
+ * collapsible block that can be placed among the other sections of a tab.
+ */
+export const SupportErrandAttachmentsTab: FC<{ variant?: 'tab' | 'section' }> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
-  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const { attachments: supportAttachments, refresh } = useSupportAttachments();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const attachmentPurposes = useMetadataStore((s) => s.supportMetadata?.attachmentPurposes);
   const purposes = (attachmentPurposes ?? [])
@@ -297,7 +302,7 @@ export const SupportErrandAttachmentsTab: FC<{
       if (confirmed) {
         return deleteSupportAttachment(supportErrand!.id!.toString(), municipalityId, selectedAttachment!.id!)
           ?.then(() => {
-            props.update();
+            refresh();
             reset();
           })
           .then(() => {
@@ -340,7 +345,7 @@ export const SupportErrandAttachmentsTab: FC<{
     if (!confirmed) return;
     try {
       await updateSupportAttachmentPurpose(supportErrand!.id!.toString(), municipalityId, attachment.id, purposeId);
-      props.update();
+      refresh();
     } catch {
       toastMessage({
         position: 'bottom',
@@ -374,136 +379,138 @@ export const SupportErrandAttachmentsTab: FC<{
     </Modal>
   );
 
-  return (
-    <div className="w-full py-40 px-48 gap-32">
-      <div className="w-full flex justify-between items-center flex-wrap h-40">
-        <h2 className="text-h2-md max-medium-device:text-h4-md">Bilagor</h2>
-        <div>
-          <Input type="hidden" {...register('id')} />
-          <Modal
-            show={addAttachmentWindowIsOpen}
-            className="w-[43rem]"
-            onClose={() => {
-              closeHandler();
-              setSelectedAttachment(undefined);
-              setAddNewAttachment(false);
-              reset();
-            }}
-            label={'Ladda upp bilaga'}
-          >
-            <FileUploadWrapper>
-              <Modal.Content>
-                <FormControl id="attachment" className="w-full">
-                  <FileUpload
-                    key="attachments-tab"
-                    fieldName="attachments"
-                    fields={attachmentFields}
-                    items={attachments}
-                    uniqueFileUploaderKey="supporterrand-attachments-tab"
-                    register={register}
-                    setValue={setValue}
-                    watch={watch}
-                    errors={errors}
-                    append={appendAttachment}
-                    remove={removeAttachment}
-                    editing={false}
-                    accept={ACCEPTED_UPLOAD_FILETYPES}
-                    helperText="Maximal filstorlek: 10 MB"
-                    dragDrop={dragDrop}
-                    allowMultiple={isKC() ? true : false}
-                    purposes={purposes}
-                  />
-                </FormControl>
+  const attachmentTitle = `Bilagor (${countAttachment(supportAttachments ?? [])})`;
 
-                {attachmentTypeExists ? (
-                  <FormErrorMessage className="my-sm text-error">
-                    En bilaga av denna typ finns redan. För att lägga till en ny, ta först bort den gamla.
-                  </FormErrorMessage>
-                ) : null}
-              </Modal.Content>
+  const uploadControls = (
+    <div>
+      <Input type="hidden" {...register('id')} />
+      <Modal
+        show={addAttachmentWindowIsOpen}
+        className="w-[43rem]"
+        onClose={() => {
+          closeHandler();
+          setSelectedAttachment(undefined);
+          setAddNewAttachment(false);
+          reset();
+        }}
+        label={'Ladda upp bilaga'}
+      >
+        <FileUploadWrapper>
+          <Modal.Content>
+            <FormControl id="attachment" className="w-full">
+              <FileUpload
+                key="attachments-tab"
+                fieldName="attachments"
+                fields={attachmentFields}
+                items={attachments}
+                uniqueFileUploaderKey="supporterrand-attachments-tab"
+                register={register}
+                setValue={setValue}
+                watch={watch}
+                errors={errors}
+                append={appendAttachment}
+                remove={removeAttachment}
+                editing={false}
+                accept={ACCEPTED_UPLOAD_FILETYPES}
+                helperText="Maximal filstorlek: 10 MB"
+                dragDrop={dragDrop}
+                allowMultiple={isKC() ? true : false}
+                purposes={purposes}
+              />
+            </FormControl>
 
-              <Modal.Footer>
-                <Button
-                  className="w-full"
-                  disabled={!formState.isValid}
-                  type="submit"
-                  variant="primary"
-                  color="primary"
-                  loading={isLoading}
-                  loadingText="Laddar upp"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const vals: SupportAttachmentFormModel = getValues();
-                    const attachmentsData: { file: File; purposeId?: string }[] = vals.attachments.map((a) => ({
-                      file: a.file!,
-                      purposeId: a.purposeId || undefined,
-                    }));
-                    setIsLoading(true);
-                    saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
-                      .then(() => props.update())
-                      .then(() => setAddNewAttachment(false))
-                      .then(() => setSelectedAttachment(undefined))
-                      .then(() => setIsLoading(false))
-                      .then(() => setError(false))
-                      .then(() => setSizeError(false))
-                      .then(() => {
-                        reset();
-                        setAddAttachmentWindowIsOpen(false);
-                        setDragDrop(false);
-                        toastMessage(
-                          getToastOptions({
-                            message: 'Bilagan sparades',
-                            status: 'success',
-                          })
-                        );
+            {attachmentTypeExists ? (
+              <FormErrorMessage className="my-sm text-error">
+                En bilaga av denna typ finns redan. För att lägga till en ny, ta först bort den gamla.
+              </FormErrorMessage>
+            ) : null}
+          </Modal.Content>
+
+          <Modal.Footer>
+            <Button
+              className="w-full"
+              disabled={!formState.isValid}
+              type="submit"
+              variant="primary"
+              color="primary"
+              loading={isLoading}
+              loadingText="Laddar upp"
+              onClick={(e) => {
+                e.preventDefault();
+                const vals: SupportAttachmentFormModel = getValues();
+                const attachmentsData: { file: File; purposeId?: string }[] = vals.attachments.map((a) => ({
+                  file: a.file!,
+                  purposeId: a.purposeId || undefined,
+                }));
+                setIsLoading(true);
+                saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
+                  .then(() => refresh())
+                  .then(() => setAddNewAttachment(false))
+                  .then(() => setSelectedAttachment(undefined))
+                  .then(() => setIsLoading(false))
+                  .then(() => setError(false))
+                  .then(() => setSizeError(false))
+                  .then(() => {
+                    reset();
+                    setAddAttachmentWindowIsOpen(false);
+                    setDragDrop(false);
+                    toastMessage(
+                      getToastOptions({
+                        message: 'Bilagan sparades',
+                        status: 'success',
                       })
-                      .catch((e) => {
-                        if (e.message === 'MAX_SIZE') {
-                          toastMessage({
-                            position: 'bottom',
-                            closeable: false,
-                            message: 'Max filstorlek överskreds',
-                            status: 'error',
-                          });
-                          setSizeError(true);
-                          setIsLoading(false);
-                        } else {
-                          toastMessage({
-                            position: 'bottom',
-                            closeable: false,
-                            message: 'Bilagan gick inte att spara',
-                            status: 'error',
-                          });
-                          setError(true);
-                          setIsLoading(false);
-                        }
+                    );
+                  })
+                  .catch((e) => {
+                    if (e.message === 'MAX_SIZE') {
+                      toastMessage({
+                        position: 'bottom',
+                        closeable: false,
+                        message: 'Max filstorlek överskreds',
+                        status: 'error',
                       });
-                  }}
-                >
-                  Ladda upp
-                </Button>
-              </Modal.Footer>
-            </FileUploadWrapper>
-          </Modal>
-          <Button
-            data-cy="add-attachment-button"
-            disabled={isSupportErrandLocked(supportErrand!) || supportErrandIsEmpty(supportErrand!)}
-            color="vattjom"
-            rightIcon={<Upload size={16} />}
-            inverted
-            size="sm"
-            onClick={() => {
-              setSizeError(false);
-              setAddNewAttachment(true);
-              setAttachmentTypeExists(false);
-              reset();
-              openHandler();
-            }}
-          >
-            Ladda upp bilaga
-          </Button>
-        </div>
-      </div>
+                      setSizeError(true);
+                      setIsLoading(false);
+                    } else {
+                      toastMessage({
+                        position: 'bottom',
+                        closeable: false,
+                        message: 'Bilagan gick inte att spara',
+                        status: 'error',
+                      });
+                      setError(true);
+                      setIsLoading(false);
+                    }
+                  });
+              }}
+            >
+              Ladda upp
+            </Button>
+          </Modal.Footer>
+        </FileUploadWrapper>
+      </Modal>
+      <Button
+        data-cy="add-attachment-button"
+        disabled={isSupportErrandLocked(supportErrand!) || supportErrandIsEmpty(supportErrand!)}
+        color="vattjom"
+        rightIcon={<Upload size={16} />}
+        inverted
+        size="sm"
+        onClick={() => {
+          setSizeError(false);
+          setAddNewAttachment(true);
+          setAttachmentTypeExists(false);
+          reset();
+          openHandler();
+        }}
+      >
+        Ladda upp bilaga
+      </Button>
+    </div>
+  );
+
+  const attachmentList = (
+    <>
       <div>
         <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
         <SupportErrandRequiredAttachments />
@@ -664,6 +671,25 @@ export const SupportErrandAttachmentsTab: FC<{
         <Spinner />
       )}
       {editAttachmentModal}
+    </>
+  );
+
+  if (props.variant === 'section') {
+    return (
+      <ErrandSection icon={<Paperclip />} title={attachmentTitle} initialOpen data-cy="attachments-disclosure">
+        <div className="flex justify-end">{uploadControls}</div>
+        {attachmentList}
+      </ErrandSection>
+    );
+  }
+
+  return (
+    <div className="w-full py-40 px-48 gap-32">
+      <div className="w-full flex justify-between items-center flex-wrap h-40">
+        <h2 className="text-h2-md max-medium-device:text-h4-md">Bilagor</h2>
+        {uploadControls}
+      </div>
+      {attachmentList}
     </div>
   );
 };

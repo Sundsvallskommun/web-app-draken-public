@@ -454,13 +454,13 @@ export const InspectionProtocol: FC<{
           <Disclosure variant="alt" className="w-full" initalOpen data-cy="control-points">
             <Disclosure.Header>
               <Disclosure.Title>{t('common:inspection_protocol.control_points')}</Disclosure.Title>
-              {rows.length > 0 ? (
+              {/* {rows.length > 0 ? (
                 <span className="text-small font-bold" data-cy="measures-assessed">
                   {t('common:inspection_protocol.assessed', { assessed, total: rows.length })}
                   {' - '}
                   {t('common:inspection_protocol.deficient', { count: deficient })}
                 </span>
-              ) : null}
+              ) : null} */}
               <Disclosure.Button />
             </Disclosure.Header>
             <Disclosure.Content>

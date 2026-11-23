@@ -1,3 +1,4 @@
+import { ErrandSection } from '@common/components/errand-section/errand-section.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
@@ -5,22 +6,20 @@ import { SupportCommunicationType } from '@supportmanagement/services/support-co
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
-import { Mail } from 'lucide-react';
+import { Mail, MessageSquare } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
+import { useSupportMessages } from '../../use-support-messages';
 import MessageTreeComponent from './support-messages-tree.component';
 
-export const SupportMessagesTab: FC<{
-  messages: Message[];
-  messageTree: Message[];
-  supportConversations: Message[];
-  conversationMessageTree: Message[];
-  setUnsaved: (unsaved: boolean) => void;
-  update: () => void;
-  municipalityId: string;
-}> = (props) => {
+/**
+ * The errand's messages. As a tab it fills the tab panel; as a section it is a
+ * collapsible block that can be placed among the other sections of a tab.
+ */
+export const SupportMessagesTab: FC<{ variant?: 'tab' | 'section' }> = (props) => {
+  const { messages, messageTree, conversationMessages, conversationMessageTree, refresh } = useSupportMessages();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const user = useUserStore((s) => s.user);
@@ -30,14 +29,11 @@ export const SupportMessagesTab: FC<{
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const { t } = useTranslation();
 
-  const allMessages = useMemo(
-    () => [...(props.messages || []), ...(props.supportConversations || [])],
-    [props.messages, props.supportConversations]
-  );
+  const allMessages = useMemo(() => [...messages, ...conversationMessages], [messages, conversationMessages]);
 
   const allMessagesTree = useMemo(
-    () => [...(props.messageTree || []), ...(props.conversationMessageTree || [])],
-    [props.messageTree, props.conversationMessageTree]
+    () => [...messageTree, ...conversationMessageTree],
+    [messageTree, conversationMessageTree]
   );
 
   const allowed = useMemo(() => (supportErrand ? validateAction(supportErrand, user) : false), [user, supportErrand]);
@@ -47,11 +43,11 @@ export const SupportMessagesTab: FC<{
       markSupportConversationMessagesAsRead(municipalityId, supportErrand!.id!, message.conversationId, [
         message.messageId,
       ])
-        .then(() => props.update())
+        .then(() => refresh())
         .catch((error) => console.error('Could not mark conversation message as read', error));
     } else if (!message.viewed && supportErrand?.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand!.id!, municipalityId, message.communicationID, true).then(() => {
-        props.update();
+        refresh();
       });
     }
 
@@ -92,104 +88,117 @@ export const SupportMessagesTab: FC<{
     return allMessagesTree;
   }, [allMessages, allMessagesTree, sortSendingTypeMessages, sortChannelMessages]);
 
-  return (
+  const newMessageButton = (
+    <Button
+      data-cy="new-message-button"
+      type="button"
+      disabled={isSupportErrandLocked(supportErrand!) || !allowed || supportErrand?.status === Status.NEW}
+      size="sm"
+      variant="primary"
+      color="vattjom"
+      inverted={!(isSupportErrandLocked(supportErrand!) || !allowed)}
+      rightIcon={<Icon icon={<Mail />} size={18} />}
+      onClick={() => {
+        setSelectedMessage(undefined);
+        setShowMessageForm(true);
+      }}
+    >
+      Nytt meddelande
+    </Button>
+  );
+
+  const messageList = (
     <>
-      <div className="w-full py-40 px-48 gap-32">
-        <div className="w-full flex justify-between items-center flex-wrap h-40">
-          <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
-            <h2 className="text-h2-md">Meddelanden</h2>
-          </div>
-          <Button
-            data-cy="new-message-button"
-            type="button"
-            disabled={isSupportErrandLocked(supportErrand!) || !allowed || supportErrand?.status === Status.NEW}
-            size="sm"
-            variant="primary"
-            color="vattjom"
-            inverted={!(isSupportErrandLocked(supportErrand!) || !allowed)}
-            rightIcon={<Icon icon={<Mail />} size={18} />}
-            onClick={() => {
-              setSelectedMessage(undefined);
-              setShowMessageForm(true);
-            }}
-          >
-            Nytt meddelande
-          </Button>
-        </div>
-
-        <div className="py-8 w-full gap-24">
-          <p className="w-4/5 pr-16 pb-16">
-            På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med
-            ärendets olika intressenter.
-          </p>
-        </div>
-        <div className="flex gap-24">
-          <FormControl id={`show-sending-type-messages`} size="sm">
-            <FormLabel>Visa</FormLabel>
-            <Select onChange={(e) => setSortSendingTypeMessages(e.currentTarget.value)}>
-              <Select.Option defaultChecked={true} value={'ALL_SEND_TYPES'}>
-                Alla
-              </Select.Option>
-              <Select.Option value={'INBOUND'}>Mottagna</Select.Option>
-              <Select.Option value={'OUTBOUND'}>Skickade</Select.Option>
-            </Select>
-          </FormControl>
-          <FormControl id={`show-channel-messages`} size="sm">
-            <FormLabel>Inkom via</FormLabel>
-            <Select onChange={(e) => setSortChannelMessages(e.currentTarget.value)}>
-              <Select.Option defaultChecked={true} value={'allchannels'}>
-                Alla kanaler
-              </Select.Option>
-              <Select.Option value={SupportCommunicationType.Draken}>Draken</Select.Option>
-              <Select.Option value={SupportCommunicationType.WebMessage}>E-tjänst</Select.Option>
-              <Select.Option value={SupportCommunicationType.Email}>E-post</Select.Option>
-              <Select.Option value={SupportCommunicationType.MinaSidor}>Mina sidor</Select.Option>
-              <Select.Option value={SupportCommunicationType.Sms}>SMS</Select.Option>
-            </Select>
-          </FormControl>
-        </div>
-
-        {sortedMessages?.length ? (
-          <div data-cy="message-container">
-            <MessageTreeComponent
-              update={props.update}
-              setShowMessageForm={setShowMessageForm}
-              nodes={sortedMessages}
-              selected={selectedMessage?.communicationID ?? ''}
-              onSelect={(msg: Message) => {
-                onSelect(msg);
-              }}
-            />
-          </div>
-        ) : (
-          <>
-            <Divider className="pt-16" />
-            <p className="py-24 text-dark-disabled">Inga meddelanden</p>
-          </>
-        )}
-
-        <MessageWrapper
-          show={showMessageForm}
-          label="Nytt meddelande"
-          closeHandler={() => {
-            setSelectedMessage(undefined);
-            setShowMessageForm(false);
-          }}
-        >
-          <SupportMessageForm
-            locked={isSupportErrandLocked(supportErrand!)}
-            showMessageForm={showMessageForm}
-            setShowMessageForm={setShowMessageForm}
-            prefillEmail={supportErrand?.customer?.[0]?.emails?.[0]?.value}
-            prefillPhone={supportErrand?.customer?.[0]?.phoneNumbers?.[0]?.value}
-            setUnsaved={(val) => {
-              props.setUnsaved(val);
-            }}
-            message={selectedMessage!}
-            update={props.update}
-          />
-        </MessageWrapper>
+      <div className="py-8 w-full gap-24">
+        <p className="w-4/5 pr-16 pb-16">
+          På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med ärendets
+          olika intressenter.
+        </p>
       </div>
+      <div className="flex gap-24">
+        <FormControl id={`show-sending-type-messages`} size="sm">
+          <FormLabel>Visa</FormLabel>
+          <Select onChange={(e) => setSortSendingTypeMessages(e.currentTarget.value)}>
+            <Select.Option defaultChecked={true} value={'ALL_SEND_TYPES'}>
+              Alla
+            </Select.Option>
+            <Select.Option value={'INBOUND'}>Mottagna</Select.Option>
+            <Select.Option value={'OUTBOUND'}>Skickade</Select.Option>
+          </Select>
+        </FormControl>
+        <FormControl id={`show-channel-messages`} size="sm">
+          <FormLabel>Inkom via</FormLabel>
+          <Select onChange={(e) => setSortChannelMessages(e.currentTarget.value)}>
+            <Select.Option defaultChecked={true} value={'allchannels'}>
+              Alla kanaler
+            </Select.Option>
+            <Select.Option value={SupportCommunicationType.Draken}>Draken</Select.Option>
+            <Select.Option value={SupportCommunicationType.WebMessage}>E-tjänst</Select.Option>
+            <Select.Option value={SupportCommunicationType.Email}>E-post</Select.Option>
+            <Select.Option value={SupportCommunicationType.MinaSidor}>Mina sidor</Select.Option>
+            <Select.Option value={SupportCommunicationType.Sms}>SMS</Select.Option>
+          </Select>
+        </FormControl>
+      </div>
+
+      {sortedMessages?.length ? (
+        <div data-cy="message-container">
+          <MessageTreeComponent
+            update={refresh}
+            setShowMessageForm={setShowMessageForm}
+            nodes={sortedMessages}
+            selected={selectedMessage?.communicationID ?? ''}
+            onSelect={(msg: Message) => {
+              onSelect(msg);
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          <Divider className="pt-16" />
+          <p className="py-24 text-dark-disabled">Inga meddelanden</p>
+        </>
+      )}
+
+      <MessageWrapper
+        show={showMessageForm}
+        label="Nytt meddelande"
+        closeHandler={() => {
+          setSelectedMessage(undefined);
+          setShowMessageForm(false);
+        }}
+      >
+        <SupportMessageForm
+          locked={isSupportErrandLocked(supportErrand!)}
+          showMessageForm={showMessageForm}
+          setShowMessageForm={setShowMessageForm}
+          prefillEmail={supportErrand?.customer?.[0]?.emails?.[0]?.value}
+          prefillPhone={supportErrand?.customer?.[0]?.phoneNumbers?.[0]?.value}
+          message={selectedMessage!}
+          update={refresh}
+        />
+      </MessageWrapper>
     </>
+  );
+
+  if (props.variant === 'section') {
+    return (
+      <ErrandSection icon={<MessageSquare />} title="Meddelanden" initialOpen data-cy="messages-disclosure">
+        <div className="flex justify-end">{newMessageButton}</div>
+        {messageList}
+      </ErrandSection>
+    );
+  }
+
+  return (
+    <div className="w-full py-40 px-48 gap-32">
+      <div className="w-full flex justify-between items-center flex-wrap h-40">
+        <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
+          <h2 className="text-h2-md">Meddelanden</h2>
+        </div>
+        {newMessageButton}
+      </div>
+      {messageList}
+    </div>
   );
 };

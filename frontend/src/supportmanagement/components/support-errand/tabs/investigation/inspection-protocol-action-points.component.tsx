@@ -11,17 +11,22 @@ export const InspectionProtocolActionPoints: FC<{
   rows: SupportMeasureRow[];
   readOnly: boolean;
   onChange: (rows: SupportMeasureRow[]) => void;
-}> = ({ rows, readOnly, onChange }) => {
+  /** Without its own border and heading, for when whatever holds the list already gives it both. */
+  bare?: boolean;
+}> = ({ rows, readOnly, onChange, bare }) => {
   const { t } = useTranslation();
 
   const setTitle = (index: number, title: string) =>
     onChange(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, title } : row)));
 
   return (
-    <section className="border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12" data-cy="action-point-list">
-      <h3 className="text-h3-md">{t('common:action_points.heading')}</h3>
+    <section
+      className={bare ? 'flex flex-col gap-12' : 'border-1 rounded-12 px-16 pt-12 pb-16 flex flex-col gap-12'}
+      data-cy="action-point-list"
+    >
+      {/* {bare ? null : <h3 className="text-h3-md">{t('common:action_points.heading')}</h3>}
       <p className="text-small text-dark-secondary m-0">{t('common:action_points.description')}</p>
-      <span className="font-bold">{t('common:action_points.count', { count: rows.length })}</span>
+      <span className="font-bold">{t('common:action_points.count', { count: rows.length })}</span> */}
       <ol className="flex flex-col gap-8 m-0 p-0 list-none">
         {rows.map((row, index) => (
           <li key={row.id ?? `new-${index}`} className="flex items-center gap-8">
