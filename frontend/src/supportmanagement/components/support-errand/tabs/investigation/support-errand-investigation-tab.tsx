@@ -42,6 +42,8 @@ import { InvestigationConclusionDisclosure } from './investigation-conclusion-di
 import { SectionDisclosure } from './investigation-disclosure.component';
 import { asInvestigationDate, InvestigationMetaItem } from './investigation-meta.component';
 import { MigratedInvestigation } from './migrated-investigation.component';
+import { useFillTheLegalBasis } from './use-investigation-legal-basis';
+import { useGetSupportInvestigation } from './use-investigation-read';
 
 const conclusionEditsOf = (investigation: Investigation | undefined) => ({
   proposal: investigation?.summary ?? '',
@@ -110,11 +112,11 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     setTabSaver('investigation', saver);
     return () => setTabSaver('investigation', undefined);
   }, [saver, setTabSaver]);
+
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
-  const legalBasisWrittenForArea = useRef<string | null>(null);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
 
   // The area is kept as the investigation's type, the field that says which kind of investigation this is.
@@ -161,24 +163,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     return allSaved;
   };
 
-  useEffect(() => {
-    if (!errandId) return undefined;
-    let current = true;
-    getSupportInvestigation(errandId, municipalityId)
-      .then((result) => {
-        if (!current) return;
-        receiveKeepingUnsavedEdits(result);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        if (!current) return;
-        setError(true);
-        setIsLoading(false);
-      });
-    return () => {
-      current = false;
-    };
-  }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
+  useGetSupportInvestigation(errandId, municipalityId, receiveKeepingUnsavedEdits, setIsLoading, setError, modified);
 
   useEffect(() => {
     setUnsaved(edited || someSectionEdited);
@@ -307,29 +292,13 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
 
   const legalBasisCanBeWritten = !isLoading && !error && !!investigation && !readOnly && !!legalBasisTemplate;
 
-  useEffect(() => {
-    if (!legalBasisCanBeWritten || !investigation) return;
-
-    const writtenForArea = legalBasisWrittenForArea.current;
-    const areaToWriteFor = area ?? '';
-    if (writtenForArea === areaToWriteFor) return;
-
-    const section = (investigation.sections ?? []).find((candidate) => sectionKeyOf(candidate) === 'legal_basis');
-    if (!section) return;
-
-    const theAreaWasChanged = writtenForArea !== null;
-    legalBasisWrittenForArea.current = areaToWriteFor;
-    if (!theAreaWasChanged && (section.text ?? '').trim()) return;
-
-    // A write that does not go through leaves the area unmarked, so that it is tried again and the handler is not
-    // left with the legal basis of the area they just changed away from without being told.
-    void fillTheLegalBasis(section).then((written) => {
-      if (written) return;
-      legalBasisWrittenForArea.current = writtenForArea;
-      if (theAreaWasChanged) reportTheLegalBasisWasNotWritten();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legalBasisCanBeWritten, investigation, area]);
+  useFillTheLegalBasis(
+    legalBasisCanBeWritten,
+    investigation,
+    area,
+    fillTheLegalBasis,
+    reportTheLegalBasisWasNotWritten
+  );
 
   const reportSaved = () =>
     toastMessage({
@@ -380,6 +349,8 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     [investigation, variant]
   );
 
+  const isInvestigationNotReady = (isInStep: boolean) => !isLoading && !error && !investigation && isInStep;
+
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <div>
@@ -390,15 +361,13 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}
       {error ? <p>{t('common:investigation.error')}</p> : null}
 
-      {!isLoading && !error && !investigation && inStep ? (
-        <Spinner size={3} aria-label={t('common:investigation.starting')} />
-      ) : null}
+      {isInvestigationNotReady(inStep) ? <Spinner size={3} aria-label={t('common:investigation.starting')} /> : null}
 
-      {!isLoading && !error && !investigation && !inStep && !writable ? (
+      {isInvestigationNotReady(!inStep) && !writable ? (
         <p className="m-0">{t('common:investigation.step_passed')}</p>
       ) : null}
 
-      {!isLoading && !error && !investigation && !inStep && writable ? (
+      {isInvestigationNotReady(!inStep) && writable ? (
         <div className="flex flex-col gap-16 max-w-[48rem]">
           <p className="m-0">{t('common:investigation.not_started')}</p>
           <div>
