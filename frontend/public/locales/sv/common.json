@@ -558,7 +558,8 @@
         "address": "Besöksadress",
         "address_from": {
           "FORM": "Besöksadress (ansökan)",
-          "OWNER": "Besöksadress (ärendeägare)"
+          "OWNER": "Besöksadress (ärendeägare)",
+          "PERMIT": "Besöksadress (tillståndet)"
         },
         "contact": "Kontakt",
         "responsible": "Serveringsansvariga",

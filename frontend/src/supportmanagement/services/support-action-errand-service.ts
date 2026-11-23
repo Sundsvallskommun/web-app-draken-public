@@ -1,10 +1,15 @@
+import type { Asset } from '@common/interfaces/asset';
+import type { CaseStatusResponse } from '@common/services/casestatus-service';
 import { permitOfInspection } from '@common/services/customer-inspection-service';
-import { getCustomerAssets } from '@common/services/customer-service';
+import { getCustomerAssets, type PartyAssetValue } from '@common/services/customer-service';
 import { getResolvedRelations } from '@common/services/relations-service';
 
+import { type DecisionPremisesAddress, premisesAddressOf } from './support-decision-premises-service';
 import { getSupportErrandById, type SupportErrand } from './support-errand-service';
+import { text } from './support-form-value-service';
 import { inspectionProtocolDate, inspectionProtocolSummaryLabel } from './support-inspection-protocol-service';
 import { getSupportInvestigation } from './support-investigation-service';
+import { formatPostalCode } from './support-premises-address-service';
 import { getSupportOwnerStakeholder } from './support-stakeholder-service';
 
 const INSPECTION_ERRAND_TAG = 'inspectionErrandId';
@@ -20,6 +25,13 @@ export interface SupportActionErrandOrigin {
   summary?: string;
   permitType?: string;
   permitErrandNumber?: string;
+  /**
+   * The premises the permit concerns, which the decision document states. Read from the permit errand's own
+   * application, since an action errand has none of its own and the inspection protocol writes the address as one
+   * line. Its decision assigns no restaurant number, so there is nothing for the handler to pick.
+   */
+  premisesName?: string;
+  premisesAddress?: DecisionPremisesAddress;
 }
 
 export const originIsEmpty = (origin: SupportActionErrandOrigin): boolean => !Object.values(origin).some(Boolean);
@@ -33,9 +45,9 @@ const permitErrandOfInspection = async (
   municipalityId: string,
   inspectionErrandId: string,
   inspection: SupportErrand | undefined
-) => {
+): Promise<{ errand?: CaseStatusResponse; asset?: Asset }> => {
   const partyId = inspection ? getSupportOwnerStakeholder(inspection)?.externalId : undefined;
-  if (!partyId) return undefined;
+  if (!partyId) return {};
 
   const [{ relations, caseStatuses }, assets] = await Promise.all([
     getResolvedRelations('source', municipalityId, inspectionErrandId, 'ASC'),
@@ -45,7 +57,36 @@ const permitErrandOfInspection = async (
     assets,
     relations.map((relation) => relation.target.resourceId)
   );
-  return caseStatuses.find((status) => !!permit?.sourceErrandId && status.caseId === permit.sourceErrandId);
+  return {
+    errand: caseStatuses.find((status) => !!permit?.sourceErrandId && status.caseId === permit.sourceErrandId),
+    asset: permit,
+  };
+};
+
+/** The serving place a set of JSON parameters carries, in the shape the permit register writes it. */
+const placeIn = (parameters: { value?: unknown }[] | undefined) =>
+  (parameters ?? [])
+    .map((parameter) => (parameter.value ?? {}) as PartyAssetValue)
+    .map((value) => value.premises ?? value.pointOfSale)
+    .find((place) => !!place?.name || !!place?.address);
+
+/**
+ * The premises the decision states: the serving place the inspection was carried out at, with its name and
+ * address. The inspection carries its own copy, written when it was raised from the permit, so the premises are
+ * there whether or not the permit can be reached; the permit's own entry in the register answers for an
+ * inspection registered by hand.
+ */
+const premisesOfInspection = (
+  inspection: SupportErrand | undefined,
+  asset: Asset | undefined
+): Pick<SupportActionErrandOrigin, 'premisesName' | 'premisesAddress'> => {
+  const place = placeIn(inspection?.jsonParameters) ?? placeIn(asset?.jsonParameters);
+
+  return {
+    premisesName: text(place?.name),
+    // The register keeps the postal code without its space; the decision states it as it is written.
+    premisesAddress: premisesAddressOf({ ...place?.address, postalCode: formatPostalCode(place?.address?.postalCode) }),
+  };
 };
 
 /**
@@ -61,15 +102,18 @@ export const getSupportActionErrandOrigin = async (
     getSupportErrandById(inspectionErrandId, municipalityId),
     getSupportInvestigation(inspectionErrandId, municipalityId).catch(() => undefined),
   ]);
-  const permit = await permitErrandOfInspection(municipalityId, inspectionErrandId, inspection.errand).catch(
-    () => undefined
-  );
+  const permit: { errand?: CaseStatusResponse; asset?: Asset } = await permitErrandOfInspection(
+    municipalityId,
+    inspectionErrandId,
+    inspection.errand
+  ).catch(() => ({}));
 
   return {
     inspectionErrandNumber: inspection.errand?.errandNumber,
     inspectionDate: inspectionProtocolDate(investigation),
     summary: inspectionProtocolSummaryLabel(investigation),
-    permitType: permit?.caseType,
-    permitErrandNumber: permit?.errandNumber,
+    permitType: permit.errand?.caseType,
+    permitErrandNumber: permit.errand?.errandNumber,
+    ...premisesOfInspection(inspection.errand, permit.asset),
   };
 };

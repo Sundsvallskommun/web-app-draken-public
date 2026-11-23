@@ -15,7 +15,11 @@ import {
   decisionRequiresClauses,
   savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import { premisesFromDecisionJson } from '@supportmanagement/services/support-decision-premises-service';
+import {
+  type DecisionPremisesAddress,
+  premisesAddressFromDecisionJson,
+  premisesFromDecisionJson,
+} from '@supportmanagement/services/support-decision-premises-service';
 import {
   resolveScope,
   scopeFromDecision,
@@ -23,6 +27,7 @@ import {
   servingHoursSlotsFor,
 } from '@supportmanagement/services/support-decision-scope-service';
 import {
+  ACTION_ERRAND_PERMIT_TYPE,
   getSupportDecisions,
   isSupportDecisionDraft,
   SUPPORT_DECISION_ROLE_KEYS,
@@ -69,6 +74,8 @@ export const SupportErrandDecisionTab: FC<{
   const [decisions, setDecisions] = useState<SupportDecision[]>([]);
   const [investigation, setInvestigation] = useState<SupportInvestigation>();
   const [origin, setOrigin] = useState<DecisionOrigin>();
+  /** The premises of the permit an action errand answers; it has no application of its own to read them from. */
+  const [permitPremises, setPermitPremises] = useState<DecisionPremisesAddress>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   // The premises lookup costs a request, so it waits until the tab has been opened once.
@@ -80,7 +87,11 @@ export const SupportErrandDecisionTab: FC<{
     () => supportDecisionOutcomesOf(supportMetadata?.decisionOutcomes ?? [], permit.type),
     [supportMetadata?.decisionOutcomes, permit.type]
   );
-  const handlesPremises = appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand);
+  // An action errand decides on a permit already granted and assigns no restaurant number, so there is nothing for
+  // the handler to pick: its decision states the premises of the permit it answers, read from that errand.
+  const assignsARestaurantNumber = permit.type !== ACTION_ERRAND_PERMIT_TYPE;
+  const handlesPremises =
+    appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand) && assignsARestaurantNumber;
 
   const premises = useMemo(
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
@@ -94,7 +105,8 @@ export const SupportErrandDecisionTab: FC<{
     premises,
     savedPremises
   );
-  const premisesToSend = decisionPremisesState.decided ?? savedPremises;
+  const chosenPremises = assignsARestaurantNumber ? decisionPremisesState.decided ?? savedPremises : undefined;
+  const premisesToSend = assignsARestaurantNumber ? chosenPremises : permitPremises;
   const premisesText = usePremisesText();
 
   const applicationForm = useMemo(
@@ -159,7 +171,9 @@ export const SupportErrandDecisionTab: FC<{
         inspectionCaseNumber: read.inspectionErrandNumber,
         permitType: read.permitType,
         permitCaseNumber: read.permitErrandNumber,
+        premisesName: read.premisesName,
       });
+      setPermitPremises(read.premisesAddress);
     });
 
     return () => {
@@ -175,8 +189,9 @@ export const SupportErrandDecisionTab: FC<{
   const form = useDecisionForm({
     decision,
     editable,
-    permitType: permit.type,
-    savedPremises,
+    // A decision that assigns no restaurant number keeps the address alone, so that is what a save of it settles
+    // and all there is to read back; comparing the choice as well would say it was unsaved however often it was saved.
+    savedPremises: assignsARestaurantNumber ? savedPremises : premisesAddressFromDecisionJson(decisionJson),
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
     prefill,
@@ -191,7 +206,7 @@ export const SupportErrandDecisionTab: FC<{
   const { documentTemplate, documentParameters } = useDecisionSave({
     decision,
     values: form.values,
-    unwritten: form.unwritten,
+    unsaved: form.unsaved,
     editable,
     permit,
     premisesToSend,
@@ -201,8 +216,8 @@ export const SupportErrandDecisionTab: FC<{
   });
 
   useEffect(() => {
-    setUnsaved(form.edited);
-  }, [form.edited, setUnsaved]);
+    setUnsaved(form.unsaved);
+  }, [form.unsaved, setUnsaved]);
 
   useEffect(() => {
     setHasContent(decisions.length > 0);
@@ -217,6 +232,7 @@ export const SupportErrandDecisionTab: FC<{
           <SupportErrandDecisionBasis
             supportErrand={supportErrand}
             supportMetadata={supportMetadata}
+            permitPremises={{ name: origin?.premisesName, address: permitPremises }}
             premisesHandling={
               handlesPremises ? (
                 <DecisionPremises state={decisionPremisesState} readOnly={premisesReadOnly} />
@@ -300,8 +316,8 @@ export const SupportErrandDecisionTab: FC<{
 
           {handlesPremises ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-premises-to-send">
-              {premisesToSend
-                ? t('common:decision.premises.sent', { premises: premisesText(premisesToSend) })
+              {chosenPremises
+                ? t('common:decision.premises.sent', { premises: premisesText(chosenPremises) })
                 : t('common:decision.premises.not_chosen')}
             </p>
           ) : null}
@@ -312,7 +328,7 @@ export const SupportErrandDecisionTab: FC<{
             </p>
           ) : null}
 
-          {form.edited ? (
+          {form.unsaved ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-unsaved">
               {t('common:decision.unsaved_hint')}
             </p>

@@ -18,6 +18,14 @@ export interface DecisionPremises extends DecisionPremisesAddress {
   choice: PremisesChoice;
 }
 
+/**
+ * What a decision states of its premises: the address, and the choice of restaurant number only where the
+ * decision assigns one. An action errand's does not, so it states the address alone.
+ */
+export interface DecisionPremisesToState extends DecisionPremisesAddress {
+  choice?: PremisesChoice;
+}
+
 const complete = (
   street: string | undefined,
   postalCode: string | undefined,
@@ -54,12 +62,30 @@ const choiceOf = (restaurantNumber: string | undefined, newRestaurantNumber: unk
 /** The premises the decision's JSON carries; undefined without a complete address and a choice. */
 export const premisesFromDecisionJson = (json: JsonObject | undefined): DecisionPremises | undefined => {
   const premises = objectAt(json?.premises);
-  const address = objectAt(premises.address);
-  const settled = complete(stringAt(address.street), stringAt(address.postalCode), stringAt(address.city));
+  const settled = premisesAddressFromDecisionJson(json);
   const choice = choiceOf(stringAt(premises.restaurantNumber), premises.newRestaurantNumber);
 
   return settled && choice ? { ...settled, choice } : undefined;
 };
+
+/**
+ * The address alone, for a decision that keeps the premises without assigning a restaurant number. An action
+ * errand's decision is one: it holds the address its document prints and no choice, so the address is all a save
+ * of it settles, and all there is to read back.
+ */
+export const premisesAddressFromDecisionJson = (json: JsonObject | undefined): DecisionPremisesAddress | undefined => {
+  const address = objectAt(objectAt(json?.premises).address);
+  return complete(stringAt(address.street), stringAt(address.postalCode), stringAt(address.city));
+};
+
+/**
+ * The address alone, where it is complete enough for a decision to state it. Takes the address off a settled
+ * premises, leaving the choice a decision may not keep, and takes an errand's own premises address, whose postal
+ * code and city are not always there.
+ */
+export const premisesAddressOf = (
+  premises: { street?: string; postalCode?: string; city?: string } | undefined
+): DecisionPremisesAddress | undefined => complete(premises?.street, premises?.postalCode, premises?.city);
 
 /** What the process does with the choice. */
 export type PremisesChoiceEffect = 'NEW_NUMBER' | 'REPLACE_ASSIGNMENT' | 'NEW_ASSIGNMENT';

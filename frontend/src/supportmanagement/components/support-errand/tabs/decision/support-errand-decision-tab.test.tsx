@@ -612,3 +612,71 @@ test('the inspection the decision was written for survives a save that cannot re
 
   expect(sentJson().value.inspection).toEqual({ date: '2026-11-04', caseNumber: 'AOT-26110188' });
 });
+
+test('an action errand states the premises of the permit it answers, and asks the handler for none', async () => {
+  // Its decision assigns no restaurant number, and the schema of its JSON keeps none, so there is nothing to pick:
+  // the premises are read off the permit errand and written as the address the document states.
+  vi.mocked(getSupportActionErrandOrigin).mockResolvedValue({
+    premisesName: 'Testkrogen',
+    premisesAddress: {
+      street: mockEnv.mockCompanyAddress.street,
+      postalCode: mockEnv.mockCompanyAddress.postalCode,
+      city: mockEnv.mockCompanyAddress.city,
+    },
+  });
+  vi.mocked(getSupportDecisions).mockResolvedValue([
+    {
+      id: 'decision-id',
+      status: 'DRAFT',
+      outcome: 'WARNING',
+      version: 1,
+      jsonParameters: [
+        { key: 'aot_action_errand_decision', schemaId: '2281_aot_action_errand_decision_1.0', value: {} },
+      ],
+    } as unknown as SupportDecision,
+  ]);
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  expect(document.querySelector('[data-cy="decision-premises-to-send"]')).toBeNull();
+  await expect(saveTheTab()).resolves.toBe(true);
+
+  expect(sentJson().value).toMatchObject({
+    premises: {
+      name: 'Testkrogen',
+      address: {
+        street: mockEnv.mockCompanyAddress.street,
+        postalCode: mockEnv.mockCompanyAddress.postalCode,
+        city: mockEnv.mockCompanyAddress.city,
+      },
+    },
+  });
+});
+
+test('an action errand whose premises are already written has nothing left to save', async () => {
+  const address = {
+    street: mockEnv.mockCompanyAddress.street,
+    postalCode: mockEnv.mockCompanyAddress.postalCode,
+    city: mockEnv.mockCompanyAddress.city,
+  };
+  vi.mocked(getSupportActionErrandOrigin).mockResolvedValue({ premisesAddress: address });
+  vi.mocked(getSupportDecisions).mockResolvedValue([
+    {
+      id: 'decision-id',
+      status: 'DRAFT',
+      outcome: 'WARNING',
+      version: 1,
+      jsonParameters: [
+        {
+          key: 'aot_action_errand_decision',
+          schemaId: '2281_aot_action_errand_decision_1.0',
+          value: { premises: { address } },
+        },
+      ],
+    } as unknown as SupportDecision,
+  ]);
+  useSupportStore.setState({ supportErrand: actionErrand() });
+  await renderTab();
+
+  expect(unsavedHint()).toBeNull();
+});

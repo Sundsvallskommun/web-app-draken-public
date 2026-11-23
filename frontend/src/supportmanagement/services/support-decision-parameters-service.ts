@@ -1,5 +1,5 @@
 import { FLOOR_PLAN_PURPOSES } from './support-decision-basis-service';
-import type { DecisionPremises } from './support-decision-premises-service';
+import type { DecisionPremisesToState } from './support-decision-premises-service';
 import {
   type DecisionScope,
   scopeFromForm,
@@ -55,7 +55,7 @@ export interface DecisionParameterInput {
   /** The answers filed under the errand type's schema name; undefined when there are none. */
   form?: FormValue;
   /** The premises the decision concerns, once chosen. */
-  premises?: DecisionPremises;
+  premises?: DecisionPremisesToState;
   /** The beverages and serving hours the handler decided (prefilled from the form). */
   scope?: DecisionScope;
   /** The premises within which serving is allowed, as the handler wrote it. */
@@ -82,6 +82,8 @@ export interface DecisionOrigin {
   inspectionCaseNumber?: string;
   permitType?: string;
   permitCaseNumber?: string;
+  /** The name of the premises the permit concerns; an action errand has no application of its own to state it. */
+  premisesName?: string;
 }
 
 export interface CertificateDecision {
@@ -160,10 +162,12 @@ export const savedDecisionJson = (decision: SupportDecision | undefined): JsonOb
  * was written instead of blanking it.
  */
 export const savedDecisionOrigin = (decision: SupportDecision | undefined): DecisionOrigin => {
-  const inspection = objectAt(savedDecisionJson(decision)?.inspection);
+  const json = savedDecisionJson(decision);
+  const inspection = objectAt(json?.inspection);
   return {
     inspectionDate: stringAt(inspection.date),
     inspectionCaseNumber: stringAt(inspection.caseNumber),
+    premisesName: stringAt(objectAt(json?.premises).name),
   };
 };
 
@@ -224,17 +228,17 @@ const permitHolderOf = (holder: SupportStakeholderFormModel | undefined): JsonOb
 });
 
 /** The telephone is the handler's, since the application asks for it but does not insist. */
-const placeOf = ({ form, premises, premisesPhoneNumber }: DecisionParameterInput): JsonObject => ({
-  name: text(premisesValue(form, 'Name')),
+const placeOf = ({ form, premises, premisesPhoneNumber, origin }: DecisionParameterInput): JsonObject => ({
+  name: text(premisesValue(form, 'Name')) ?? text(origin?.premisesName),
   address: premises && addressOf(premises.street, premises.postalCode, premises.city),
   phoneNumber: text(premisesPhoneNumber) ?? text(applicationPremisesPhone(form)),
 });
 
 /** The process reads the choice to resolve the restaurant number: an existing one, or a new one to create. */
-const restaurantChoiceOf = (premises: DecisionPremises | undefined): JsonObject => ({
+const restaurantChoiceOf = (premises: DecisionPremisesToState | undefined): JsonObject => ({
   restaurantNumber:
-    premises?.choice.kind === 'EXISTING' ? restaurantNumber(premises.choice.restaurantNumber) : undefined,
-  newRestaurantNumber: premises?.choice.kind === 'NEW' || undefined,
+    premises?.choice?.kind === 'EXISTING' ? restaurantNumber(premises.choice.restaurantNumber) : undefined,
+  newRestaurantNumber: premises?.choice?.kind === 'NEW' || undefined,
 });
 
 // Permanent serving asks the period per audience; farm sales asks it once; temporary permits give dates.

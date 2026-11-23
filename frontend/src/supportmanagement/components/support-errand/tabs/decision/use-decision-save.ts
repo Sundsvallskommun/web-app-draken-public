@@ -15,7 +15,7 @@ import {
   toDecisionDocumentParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import type { DecisionPremisesToState } from '@supportmanagement/services/support-decision-premises-service';
 import { hasInvalidServingHours } from '@supportmanagement/services/support-decision-scope-service';
 import {
   ACTION_ERRAND_PERMIT_TYPE,
@@ -46,11 +46,11 @@ interface DecisionSaveInput {
   decision: SupportDecision | undefined;
   values: DecisionFormValues;
   /** True while the form holds anything the saved decision does not, so that there is something to write. */
-  unwritten: boolean;
+  unsaved: boolean;
   editable: boolean;
   permit: DecisionPermit;
   /** The premises the handler has settled on, written in the decision for the process to read. */
-  premisesToSend: DecisionPremises | undefined;
+  premisesToSend: DecisionPremisesToState | undefined;
   /** The answers filed under the errand type's schema, which several parameters are read off. */
   applicationForm: FormValue | undefined;
   /** What an action errand decides on, read when the decision is written and then frozen in its JSON. */
@@ -74,7 +74,7 @@ export interface DecisionSave {
 export const useDecisionSave = ({
   decision,
   values,
-  unwritten,
+  unsaved,
   editable,
   permit,
   premisesToSend,
@@ -125,6 +125,7 @@ export const useDecisionSave = ({
       inspectionCaseNumber: origin?.inspectionCaseNumber || writtenOrigin.inspectionCaseNumber,
       permitType: values.permitType,
       permitCaseNumber: values.permitCaseNumber,
+      premisesName: origin?.premisesName || writtenOrigin.premisesName,
     },
     user,
     today: dayjs().format('YYYY-MM-DD'),
@@ -195,7 +196,7 @@ export const useDecisionSave = ({
 
   // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
-    if (!supportErrand?.id || !editable || !unwritten) return true;
+    if (!supportErrand?.id || !editable || !unsaved) return true;
 
     if (hasInvalidServingHours(values.scope)) {
       tell(t('common:decision.scope.serving_hours.half_filled'), 'error');

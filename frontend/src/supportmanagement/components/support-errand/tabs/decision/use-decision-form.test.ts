@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
-import { ACTION_ERRAND_PERMIT_TYPE, type SupportDecision } from '@supportmanagement/services/support-decision-service';
+import type { SupportDecision } from '@supportmanagement/services/support-decision-service';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 
@@ -57,7 +57,6 @@ const form = (input: Partial<Parameters<typeof useDecisionForm>[0]> = {}) =>
       scopeAsSaved: NOTHING_DECIDED,
       defaultRole: ROLE,
       errandCaseRegistrationNumber: '',
-      permitType: ACTION_ERRAND_PERMIT_TYPE,
       ...input,
     },
   });
@@ -75,14 +74,13 @@ test('a decision not yet saved starts its att-satser from the investigation, als
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   };
   const { result, rerender } = form(props);
   expect(result.current.values.clauses).toBe('');
 
   rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att bevilja' } });
   expect(result.current.values.clauses).toBe('att bevilja');
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
 
 test('a newer investigation changes only att-satser the handler has left as prefilled', () => {
@@ -96,7 +94,6 @@ test('a newer investigation changes only att-satser the handler has left as pref
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   };
   const { result, rerender } = form(props);
 
@@ -120,14 +117,14 @@ test('a decision not yet saved starts its outcome from the recommended one, and 
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   };
   const { result, rerender } = form(props);
   expect(result.current.values.outcome).toBe('');
 
   rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, outcome: 'WARNING' } });
   expect(result.current.values.outcome).toBe('WARNING');
-  expect(result.current.edited).toBe(false);
+  // With an outcome the decision can be created, so what the investigation filled in is there to be saved.
+  expect(result.current.unsaved).toBe(true);
 
   act(() => result.current.set('outcome', 'REVOCATION'));
   rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, outcome: 'REPRIMAND' } });
@@ -138,7 +135,7 @@ test('a decision not yet saved starts its outcome from the recommended one, and 
   ).toBe('APPROVAL');
 });
 
-test('a saved decision keeps the att-satser it has, and a draft without any takes the investigation', () => {
+test('a saved decision says what it says, and the investigation does not fill it in again', () => {
   const withClauses = saved({
     jsonParameters: [
       {
@@ -152,9 +149,10 @@ test('a saved decision keeps the att-satser it has, and a draft without any take
   expect(
     form({ decision: withClauses, prefill: { ...NO_DECISION_PREFILL, clauses: 'annat' } }).result.current.values.clauses
   ).toBe('att bevilja');
+  // A saved decision without att-satser is a decision the handler left without them, not one to fill in again.
   expect(
     form({ decision: saved(), prefill: { ...NO_DECISION_PREFILL, clauses: 'annat' } }).result.current.values.clauses
-  ).toBe('annat');
+  ).toBe('');
 });
 
 test('a decision that is no longer a draft keeps its empty fields, whatever the investigation says', () => {
@@ -173,7 +171,7 @@ test('a decision that is no longer a draft keeps its empty fields, whatever the 
   });
 });
 
-test('a draft saved before the paragraphs were written takes them from the investigation', () => {
+test('a draft shows what it has saved, so a field left empty stays empty', () => {
   const draft = saved({ outcome: undefined, jsonParameters: [] });
   const prefill = {
     ...NO_DECISION_PREFILL,
@@ -184,12 +182,14 @@ test('a draft saved before the paragraphs were written takes them from the inves
     outcome: 'REPRIMAND',
   };
 
+  // A blank field is left out of the saved JSON, so an empty one the investigation filled in again could never be
+  // left empty: the save would write nothing and the text would come back on the next read.
   expect(form({ decision: draft, prefill }).result.current.values).toMatchObject({
-    clauses: 'att meddela erinran',
-    justificationDeficiencies: 'Bristerna',
-    justificationStatement: 'Yttrandet',
-    justificationOutcome: 'Bedömningen',
-    outcome: 'REPRIMAND',
+    clauses: '',
+    justificationDeficiencies: '',
+    justificationStatement: '',
+    justificationOutcome: '',
+    outcome: '',
   });
 });
 
@@ -204,46 +204,50 @@ test('what the investigation filled in is there to write, without counting as a 
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   };
   const { result, rerender } = form(props);
-  expect(result.current).toMatchObject({ edited: false, unwritten: false });
+  expect(result.current).toMatchObject({ unsaved: false });
 
-  // Nothing is created from a prefill alone, so a decision that does not exist yet waits for the handler.
+  // The service cannot create a decision without an outcome, so until the investigation names one there is
+  // nothing to save and nothing to warn about.
+  rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att meddela erinran' } });
+  expect(result.current).toMatchObject({ unsaved: false });
+
+  // With an outcome there is a decision to create, and what the investigation filled in is part of it.
   rerender({
     ...props,
     prefill: { ...NO_DECISION_PREFILL, outcome: 'REPRIMAND', clauses: 'att meddela erinran' },
   });
-  expect(result.current).toMatchObject({ edited: false, unwritten: false });
-
-  act(() => result.current.set('clauses', 'att meddela varning'));
-  expect(result.current).toMatchObject({ edited: true, unwritten: true });
-
-  const draft = saved({ outcome: 'REPRIMAND', jsonParameters: [] });
-  const onTheDraft = form({
-    decision: draft,
-    prefill: { ...NO_DECISION_PREFILL, outcome: 'REPRIMAND', justificationDeficiencies: 'Bristerna' },
-  });
-  expect(onTheDraft.result.current).toMatchObject({ edited: false, unwritten: true });
+  expect(result.current).toMatchObject({ unsaved: true });
 
   const concluded = form({ decision: saved({ status: 'COMPLETED' }), editable: false });
-  expect(concluded.result.current).toMatchObject({ edited: false, unwritten: false });
+  expect(concluded.result.current).toMatchObject({ unsaved: false });
 });
 
-test('a permit decision belongs to the handler from its first save, whatever the investigation says', () => {
-  const draft = saved({ outcome: undefined, jsonParameters: [] });
-  const prefill = {
-    ...NO_DECISION_PREFILL,
-    clauses: 'att bevilja',
-    outcome: 'APPROVAL',
-  };
+test('emptying a field of a draft is a change to save, and the investigation does not put it back', () => {
+  const withText = saved({
+    outcome: 'REPRIMAND',
+    jsonParameters: [
+      {
+        key: 'aot_action_errand_decision',
+        schemaId: '2281_aot_action_errand_decision_1.2',
+        value: { decision: { justificationDeficiencies: 'Bristerna' } },
+      },
+    ],
+  });
+  const prefill = { ...NO_DECISION_PREFILL, outcome: 'REPRIMAND', justificationDeficiencies: 'Ur utredningen' };
+  const { result } = form({ decision: withText, prefill });
 
-  const permitDraft = form({ decision: draft, prefill, permitType: 'PERMANENT_SERVING' });
-  expect(permitDraft.result.current).toMatchObject({ edited: false, unwritten: false });
-  expect(permitDraft.result.current.values).toMatchObject({ clauses: '', outcome: '' });
+  expect(result.current.values.justificationDeficiencies).toBe('Bristerna');
+  expect(result.current.unsaved).toBe(false);
 
-  const actionErrandDraft = form({ decision: draft, prefill });
-  expect(actionErrandDraft.result.current.values).toMatchObject({ clauses: 'att bevilja', outcome: 'APPROVAL' });
+  act(() => result.current.set('justificationDeficiencies', ''));
+  expect(result.current.unsaved).toBe(true);
+
+  // Once the draft holds nothing there either the question is settled, so a save cannot be undone by the next read.
+  const emptied = form({ decision: saved({ outcome: 'REPRIMAND', jsonParameters: [] }), prefill });
+  expect(emptied.result.current.values.justificationDeficiencies).toBe('');
+  expect(emptied.result.current.unsaved).toBe(false);
 });
 
 test('a permit decision not yet saved still starts its att-satser from the investigation', () => {
@@ -257,13 +261,12 @@ test('a permit decision not yet saved still starts its att-satser from the inves
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: 'PERMANENT_SERVING',
   };
   const { result, rerender } = form(props);
 
   rerender({ ...props, prefill: { ...NO_DECISION_PREFILL, clauses: 'att bevilja' } });
   expect(result.current.values.clauses).toBe('att bevilja');
-  expect(result.current).toMatchObject({ edited: false, unwritten: false });
+  expect(result.current).toMatchObject({ unsaved: false });
 });
 
 test('a draft keeps what is written in it, and the outcome it was saved with', () => {
@@ -286,7 +289,7 @@ test('a draft keeps what is written in it, and the outcome it was saved with', (
 
   expect(form({ decision: draft, prefill }).result.current.values).toMatchObject({
     justificationDeficiencies: 'Egen text',
-    justificationStatement: 'Yttrandet',
+    justificationStatement: '',
     outcome: 'REVOCATION',
   });
 });
@@ -304,7 +307,7 @@ test('a decision that exists fills the fields, and its conditions come in their 
     externalCaseRegistrationNumber: 'KS 2026/123',
     terms: ['Villkor A', 'Villkor B'],
   });
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
 
 test('without a decision the telephone starts as the one the application gave', () => {
@@ -312,30 +315,30 @@ test('without a decision the telephone starts as the one the application gave', 
 
   expect(result.current.values.premisesPhoneNumber).toBe(APPLICATION_PHONE);
   expect(result.current.values.decidedByRole).toBe(ROLE);
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
 
-test('a field that is written counts as edited, and counts again as saved when it is written back', () => {
+test('a field that is written counts as unsaved, and stops counting when it is written back', () => {
   const { result } = form();
 
   act(() => result.current.set('justification', 'Motivering'));
-  expect(result.current.edited).toBe(true);
+  expect(result.current.unsaved).toBe(true);
 
   act(() => result.current.set('justification', ''));
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
 
 test('choosing premises the errand does not carry is an unsaved change of its own', () => {
   const { result } = form({ premisesToSend: PREMISES });
 
-  expect(result.current.edited).toBe(true);
+  expect(result.current.unsaved).toBe(true);
 });
 
-test('a concluded decision is read, so nothing counts as edited', () => {
+test('a concluded decision is read, so nothing counts as unsaved', () => {
   const { result } = form({ decision: saved(), editable: false });
 
   act(() => result.current.set('justification', 'Motivering'));
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
 
 test('the fields follow a newer version of the decision, and keep what is written until then', () => {
@@ -352,7 +355,6 @@ test('the fields follow a newer version of the decision, and keep what is writte
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   });
   expect(result.current.values.justification).toBe('Skrivet men inte sparat');
 
@@ -366,8 +368,7 @@ test('the fields follow a newer version of the decision, and keep what is writte
     scopeAsSaved: NOTHING_DECIDED,
     defaultRole: ROLE,
     errandCaseRegistrationNumber: '',
-    permitType: ACTION_ERRAND_PERMIT_TYPE,
   });
   expect(result.current.values.justification).toBe('Som beslutet sparades');
-  expect(result.current.edited).toBe(false);
+  expect(result.current.unsaved).toBe(false);
 });
