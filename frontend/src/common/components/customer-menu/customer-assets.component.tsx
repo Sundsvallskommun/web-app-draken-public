@@ -25,7 +25,7 @@ const statusColors: Record<AssetStatus, string> = {
 };
 
 /** The status as the register has it, and what the register says was behind it where it says anything. */
-export const AssetStatusLabel: FC<{ status?: Asset['status']; reason?: string }> = ({ status, reason }) => {
+export const AssetStatusLabel: FC<{ status?: AssetStatus; reason?: string }> = ({ status, reason }) => {
   const { t } = useTranslation();
   if (!status) {
     return <span>–</span>;

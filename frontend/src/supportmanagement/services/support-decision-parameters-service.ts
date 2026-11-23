@@ -686,7 +686,7 @@ const PERMIT_INPUTS_OF_THE_DECISION: Record<string, string[]> = {
 const INSPECTION_PERMIT_TYPE = 'TILLSYN';
 
 /** The sanctions of an action errand are written as numbered att-satser; the decision to let it be is not. */
-const OUTCOMES_WRITTEN_AS_CLAUSES = ['REPRIMAND', 'WARNING', 'REVOCATION'];
+const OUTCOMES_WRITTEN_AS_CLAUSES = new Set(['REPRIMAND', 'WARNING', 'REVOCATION']);
 
 /**
  * Whether the decision needs att-satser before it is sent. An inspection's decision carries none, and on an
@@ -704,7 +704,7 @@ export const decisionRequiresClauses = (permitType: string, outcome: string | un
  * of it, and an application's decision has a shape of its own.
  */
 export const decisionIsActionErrandSanction = (permitType: string, outcome: string | undefined): boolean =>
-  permitType === ACTION_ERRAND_PERMIT_TYPE && OUTCOMES_WRITTEN_AS_CLAUSES.includes(outcomeWithoutConditions(outcome));
+  permitType === ACTION_ERRAND_PERMIT_TYPE && OUTCOMES_WRITTEN_AS_CLAUSES.has(outcomeWithoutConditions(outcome));
 
 /** The keys the decision's saved JSON leaves without a value. */
 export const missingDecisionInputs = (

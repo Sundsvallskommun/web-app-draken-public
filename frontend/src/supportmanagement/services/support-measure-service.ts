@@ -135,20 +135,18 @@ const changedAfterItWasWritten = (measure: Measure): string => {
   return dayjs(measure.modified).isAfter(dayjs(measure.created)) ? asDateField(measure.modified) : '';
 };
 
-const RESULTS_THAT_SETTLE_A_MEASURE: (SupportMeasureResultName | '')[] = [
+const RESULTS_THAT_SETTLE_A_MEASURE = new Set<SupportMeasureResultName | ''>([
   SupportMeasureResult.COMPLETED,
   SupportMeasureResult.NOT_APPLICABLE,
-];
+]);
 
 /** A point the handler has settled: carried out, or no longer something to carry out. */
 export const supportMeasureIsSettled = (result: SupportMeasureResultName | ''): boolean =>
-  RESULTS_THAT_SETTLE_A_MEASURE.includes(result);
+  RESULTS_THAT_SETTLE_A_MEASURE.has(result);
 
 /** A deadline in the past on a point that is still to be addressed. */
 export const supportMeasureIsOverdue = (row: Pick<SupportMeasureRow, 'dueAt' | 'result'>): boolean =>
-  !!row.dueAt &&
-  !RESULTS_THAT_SETTLE_A_MEASURE.includes(row.result) &&
-  dayjs(row.dueAt).isBefore(dayjs().startOf('day'));
+  !!row.dueAt && !RESULTS_THAT_SETTLE_A_MEASURE.has(row.result) && dayjs(row.dueAt).isBefore(dayjs().startOf('day'));
 
 /** A row for a measure that has not been written yet. */
 export const emptySupportMeasureRow = (title = ''): SupportMeasureRow => ({

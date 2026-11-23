@@ -80,13 +80,13 @@ const stakeholderCopy = (stakeholder: CSupportStakeholder): CSupportStakeholder 
  * Links a tillsyn errand to the permit errand behind the asset. False when the link was not made, which the
  * handler is told, since the errand stands without it but the decision document does not.
  */
-export const linkInspectionToPermit = async (
+export const linkInspectionToPermit = (
   municipalityId: string,
   inspectionErrandId: string,
   permit: Asset,
   namespace: string | undefined
 ): Promise<boolean> => {
-  if (!permit.sourceErrandId) return false;
+  if (!permit.sourceErrandId) return Promise.resolve(false);
 
   return linkSupportErrands(
     municipalityId,
