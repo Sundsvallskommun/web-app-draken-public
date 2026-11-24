@@ -680,3 +680,20 @@ test('an action errand whose premises are already written has nothing left to sa
 
   expect(unsavedHint()).toBeNull();
 });
+
+test('an outcome taken from the investigation is reported as unsaved, so the step asks for a save and not an outcome', async () => {
+  // The process step reads the decisions the service has. An outcome standing in the form alone would make it
+  // say that none was chosen, although one is shown, so the tab has to report that there is something to save.
+  everyOutcomeIsRegistered();
+  vi.mocked(getSupportInvestigation).mockResolvedValue({ recommendation: 'WARNING' } as never);
+  useSupportStore.setState({ supportErrand: actionErrand() });
+
+  const setUnsaved = await renderTab();
+
+  await waitFor(() => expect(select('outcome').value).toBe('WARNING'));
+  expect(setUnsaved).toHaveBeenLastCalledWith(true);
+  expect(awaitsOutcomeHint()).toBeNull();
+
+  await expect(saveTheTab()).resolves.toBe(true);
+  expect(createSupportDecision).toHaveBeenCalled();
+});
