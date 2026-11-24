@@ -11,8 +11,9 @@ const AREA_KEYS: Record<InvestigationAreaName, string> = {
 };
 
 /**
- * Which trade the errand is about. It is preselected from the errand's own labels, but a tillsyn registered by
- * hand carries none, so the handler can always say. The choice decides the legal basis and the statements offered.
+ * Which trade the errand is about. It is preselected from the errand's own labels, or from the inspection an
+ * action errand was raised from, but an errand registered by hand names none, so the handler can always say. The
+ * choice decides the legal basis and the statements offered.
  */
 export const InvestigationAreaChoice: FC<{
   area: InvestigationAreaName | undefined;

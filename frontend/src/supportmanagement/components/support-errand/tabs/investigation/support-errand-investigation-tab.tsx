@@ -11,6 +11,7 @@ import {
   isInvestigationArea,
   legalBasisTemplateOf,
 } from '@supportmanagement/investigations';
+import { inspectionErrandIdOf } from '@supportmanagement/services/support-action-errand-service';
 import {
   ACTION_ERRAND_PERMIT_TYPE,
   supportDecisionOutcomesOf,
@@ -42,6 +43,7 @@ import { InvestigationConclusionDisclosure } from './investigation-conclusion-di
 import { SectionDisclosure } from './investigation-disclosure.component';
 import { asInvestigationDate, InvestigationMetaItem } from './investigation-meta.component';
 import { MigratedInvestigation } from './migrated-investigation.component';
+import { useNameTheAreaOfTheInspection } from './use-investigation-area';
 import { useFillTheLegalBasis } from './use-investigation-legal-basis';
 import { useGetSupportInvestigation } from './use-investigation-read';
 
@@ -262,6 +264,10 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       setIsSaving(false);
     }
   };
+
+  const theAreaCanBeNamed = !isLoading && !error && !!investigation && !readOnly && !!variant.areas && !area;
+
+  useNameTheAreaOfTheInspection(theAreaCanBeNamed, inspectionErrandIdOf(supportErrand), municipalityId, chooseTheArea);
 
   /** Writes the legal basis of the chosen area, and answers whether it was written. */
   const fillTheLegalBasis = async (section: InvestigationSection): Promise<boolean> => {

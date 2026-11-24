@@ -3,6 +3,7 @@ import type { CaseStatusResponse } from '@common/services/casestatus-service';
 import { permitOfInspection } from '@common/services/customer-inspection-service';
 import { getCustomerAssets, type PartyAssetValue } from '@common/services/customer-service';
 import { getResolvedRelations } from '@common/services/relations-service';
+import { type InvestigationAreaName, investigationAreaOfErrand } from '@supportmanagement/investigations';
 
 import { type DecisionPremisesAddress, premisesAddressOf } from './support-decision-premises-service';
 import { getSupportErrandById, type SupportErrand } from './support-errand-service';
@@ -116,4 +117,16 @@ export const getSupportActionErrandOrigin = async (
     permitErrandNumber: permit.errand?.errandNumber,
     ...premisesOfInspection(inspection.errand, permit.asset),
   };
+};
+
+/**
+ * The trade the action errand is about, which only the inspection it was raised from is marked with. The process
+ * creates the errand with the measures label alone, so nothing on the errand itself says alcohol or tobacco.
+ */
+export const getSupportActionErrandArea = async (
+  municipalityId: string,
+  inspectionErrandId: string
+): Promise<InvestigationAreaName | undefined> => {
+  const inspection = await getSupportErrandById(inspectionErrandId, municipalityId);
+  return investigationAreaOfErrand(inspection.errand);
 };

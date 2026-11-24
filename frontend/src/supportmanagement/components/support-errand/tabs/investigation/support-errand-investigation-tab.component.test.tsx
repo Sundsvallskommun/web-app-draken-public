@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { renderTemplateHtml } from '@common/services/template-render-service';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { getSupportActionErrandArea } from '@supportmanagement/services/support-action-errand-service';
 import {
   completeSupportInvestigationSections,
   getSupportInvestigation,
@@ -29,6 +30,10 @@ vi.mock('@supportmanagement/services/support-investigation-service', async (impo
   saveSupportInvestigationSection: vi.fn(),
 }));
 vi.mock('@common/services/template-render-service', () => ({ renderTemplateHtml: vi.fn() }));
+vi.mock('@supportmanagement/services/support-action-errand-service', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getSupportActionErrandArea: vi.fn(),
+}));
 const sectionStub = vi.hoisted(() => ({
   handsBack: null as object | null,
   saved: [] as string[],
@@ -86,6 +91,7 @@ vi.mock('./investigation-conclusion-disclosure.component', () => ({
 }));
 
 const ERRAND_ID = 'errand-1';
+const INSPECTION_ERRAND_ID = 'inspection-1';
 
 const investigation = {
   id: 'investigation-1',
@@ -119,6 +125,7 @@ beforeEach(() => {
   vi.mocked(completeSupportInvestigationSections).mockResolvedValue(investigation as never);
   vi.mocked(saveSupportInvestigationSection).mockResolvedValue(investigation as never);
   vi.mocked(renderTemplateHtml).mockResolvedValue('<h3>Alkohollag (2010:1622)</h3>');
+  vi.mocked(getSupportActionErrandArea).mockResolvedValue(undefined);
 });
 
 afterEach(cleanup);
@@ -232,6 +239,36 @@ test('an action errand filed under an area starts its investigation with that ar
   await waitFor(() => expect(startSupportInvestigation).toHaveBeenCalledTimes(1));
 
   expect(vi.mocked(startSupportInvestigation).mock.calls[0][4]).toEqual({ type: 'ALCOHOL' });
+});
+
+const raisedFromTheInspection = () => ({
+  ...actionErrand(),
+  externalTags: [{ key: 'inspectionErrandId', value: INSPECTION_ERRAND_ID }],
+});
+
+test('an action errand is given the area the inspection it was raised from is marked with', async () => {
+  vi.mocked(getSupportActionErrandArea).mockResolvedValue('TOBACCO');
+  useSupportStore.setState({ supportErrand: raisedFromTheInspection() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() =>
+    expect(saveSupportInvestigation).toHaveBeenCalledWith(ERRAND_ID, '2281', 'investigation-1', {
+      version: 3,
+      type: 'TOBACCO',
+    })
+  );
+  expect(getSupportActionErrandArea).toHaveBeenCalledWith('2281', INSPECTION_ERRAND_ID);
+});
+
+test('an investigation that already names its area asks the inspection nothing', async () => {
+  const named = { ...investigation, type: 'ALCOHOL' };
+  vi.mocked(getSupportInvestigation).mockResolvedValue(named as never);
+  vi.mocked(completeSupportInvestigationSections).mockResolvedValue(named as never);
+  useSupportStore.setState({ supportErrand: raisedFromTheInspection() as never, tabSavers: {} });
+  mountTab();
+
+  await waitFor(() => expect(completeSupportInvestigationSections).toHaveBeenCalled());
+  expect(getSupportActionErrandArea).not.toHaveBeenCalled();
 });
 
 test('the legal basis of an action errand is written from the area, and from nothing until one is chosen', async () => {

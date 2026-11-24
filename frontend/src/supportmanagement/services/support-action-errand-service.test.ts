@@ -2,7 +2,12 @@ import { getCustomerAssets } from '@common/services/customer-service';
 import { getResolvedRelations } from '@common/services/relations-service';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { getSupportActionErrandOrigin, inspectionErrandIdOf, originIsEmpty } from './support-action-errand-service';
+import {
+  getSupportActionErrandArea,
+  getSupportActionErrandOrigin,
+  inspectionErrandIdOf,
+  originIsEmpty,
+} from './support-action-errand-service';
 import { getSupportErrandById, type SupportErrand } from './support-errand-service';
 import { getSupportInvestigation } from './support-investigation-service';
 
@@ -193,4 +198,25 @@ test('the premises survive a relation lookup that fails, since the inspection ca
 
   expect(origin.premisesName).toBe('Testkrogen');
   expect(origin.permitErrandNumber).toBeUndefined();
+});
+
+test('the area is the trade the inspection is marked with, since the action errand is marked with none', async () => {
+  vi.mocked(getSupportErrandById).mockResolvedValue({
+    errand: {
+      labels: [
+        { classification: 'TYPE', resourceName: 'INSPECTION' },
+        { classification: 'TAG', resourceName: 'TOBACCO_INSPECTION' },
+      ],
+    } as unknown as SupportErrand,
+  });
+
+  await expect(getSupportActionErrandArea(MUNICIPALITY_ID, INSPECTION_ERRAND_ID)).resolves.toBe('TOBACCO');
+});
+
+test('an inspection that cannot be read, or names no trade, leaves the area to the handler', async () => {
+  vi.mocked(getSupportErrandById).mockResolvedValue({ errand: undefined as unknown as SupportErrand });
+  await expect(getSupportActionErrandArea(MUNICIPALITY_ID, INSPECTION_ERRAND_ID)).resolves.toBeUndefined();
+
+  theInspectionIs('AOT-26110233');
+  await expect(getSupportActionErrandArea(MUNICIPALITY_ID, INSPECTION_ERRAND_ID)).resolves.toBeUndefined();
 });
