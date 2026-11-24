@@ -896,3 +896,54 @@ describe('the registry number of a Timrå errand', () => {
     expect(explanation()).toBeNull();
   });
 });
+
+test('the decision document is filed before the decision is concluded, so a letter that failed can be tried again', async () => {
+  const order: string[] = [];
+  const filer = vi.fn(async () => order.push('file'));
+  vi.mocked(completeSupportDecision).mockImplementation(async () => order.push('complete') as never);
+  useSupportStore.setState({ decisionDocumentFiler: filer });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  (await theButton()).click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  expect(order).toEqual(['file', 'complete']);
+  useSupportStore.setState({ decisionDocumentFiler: undefined });
+});
+
+test('a decision document that cannot be rendered leaves the decision a draft and the errand where it stands', async () => {
+  // Concluding it would lock the decision and move the step on, and the letter could then never be filed at all.
+  useSupportStore.setState({
+    decisionDocumentFiler: vi.fn(async () => {
+      throw new Error('the template could not be rendered');
+    }),
+  });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  (await theButton()).click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.document_not_filed', status: 'error' })
+    )
+  );
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+  useSupportStore.setState({ decisionDocumentFiler: undefined });
+});

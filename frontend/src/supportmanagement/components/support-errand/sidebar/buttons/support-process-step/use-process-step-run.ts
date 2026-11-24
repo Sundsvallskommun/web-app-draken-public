@@ -44,6 +44,7 @@ import { errandOnNextStep } from './process-step-progress';
 const A_MOVE_IS_FORGOTTEN_AFTER = 120000;
 
 const NO_GATE_TO_LEAVE_BY = 'no gate to leave by';
+const THE_DOCUMENT_WAS_NOT_FILED = 'the document was not filed';
 
 interface StepContext {
   supportErrand: SupportErrand;
@@ -174,17 +175,29 @@ export const useProcessStepRun = ({
     return (await getSupportErrandById(errandId, municipalityId)).errand;
   };
 
-  const concludeAnyDraftDecision = async (decisionsInHand: Decision[] | undefined): Promise<boolean> => {
+  /**
+   * The document is filed before the decision is concluded, and the step is given up when it cannot be: a
+   * concluded decision is read-only and the step has moved on by then, so a letter that failed to render could
+   * never be filed at all. Left this way the decision stays a draft and the handler can try again.
+   *
+   * The price is that a document filed by an attempt the conclusion then failed is filed again by the next one.
+   * An attachment too many can be removed; a concluded decision without its letter cannot be mended.
+   */
+  const concludeAnyDraftDecision = async (
+    decisionsInHand: Decision[] | undefined
+  ): Promise<boolean | typeof THE_DOCUMENT_WAS_NOT_FILED> => {
     const draft = decisionsInHand?.find(isSupportDecisionDraft);
     if (!draft?.id) return false;
 
     await decisionJsonWriter?.(draft.id);
-    await completeSupportDecision(errandId, municipalityId, draft.id);
-    // The decision is concluded either way, but the handler is told when the document is missing from the errand:
-    // the decision tab is read-only by then, so nothing in the interface would say that the letter never got filed.
-    await decisionDocumentFiler?.().catch(() =>
-      tellTheHandler(t('common:process.actions.document_not_filed'), 'error')
+
+    const filed = await (decisionDocumentFiler?.() ?? Promise.resolve()).then(
+      () => true,
+      () => false
     );
+    if (!filed) return THE_DOCUMENT_WAS_NOT_FILED;
+
+    await completeSupportDecision(errandId, municipalityId, draft.id);
     return true;
   };
 
@@ -278,7 +291,12 @@ export const useProcessStepRun = ({
 
       let decisionWasConcluded = false;
       if (action.completesDecision) {
-        decisionWasConcluded = await concludeAnyDraftDecision(decisionsInHand);
+        const concluded = await concludeAnyDraftDecision(decisionsInHand);
+        if (concluded === THE_DOCUMENT_WAS_NOT_FILED) {
+          tellTheHandler(t('common:process.actions.document_not_filed'), 'error');
+          return;
+        }
+        decisionWasConcluded = concluded;
       }
 
       const signalWasSent = await leaveTheStep(action);
