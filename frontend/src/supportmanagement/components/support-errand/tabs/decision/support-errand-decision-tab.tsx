@@ -4,12 +4,22 @@ import { Divider, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { DecisionPremises } from '@supportmanagement/components/premises/decision-premises.component';
 import { useDecisionPremises } from '@supportmanagement/components/premises/use-decision-premises';
+import {
+  getSupportActionErrandOrigin,
+  inspectionErrandIdOf,
+} from '@supportmanagement/services/support-action-errand-service';
 import { getDecisionBasisForm } from '@supportmanagement/services/support-decision-basis-service';
 import {
   applicationPremisesPhone,
+  type DecisionOrigin,
+  decisionRequiresClauses,
   savedDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import { premisesFromDecisionJson } from '@supportmanagement/services/support-decision-premises-service';
+import {
+  type DecisionPremisesAddress,
+  premisesAddressFromDecisionJson,
+  premisesFromDecisionJson,
+} from '@supportmanagement/services/support-decision-premises-service';
 import {
   resolveScope,
   scopeFromDecision,
@@ -17,18 +27,22 @@ import {
   servingHoursSlotsFor,
 } from '@supportmanagement/services/support-decision-scope-service';
 import {
+  ACTION_ERRAND_PERMIT_TYPE,
   getSupportDecisions,
   isSupportDecisionDraft,
   SUPPORT_DECISION_ROLE_KEYS,
   type SupportDecision,
+  supportDecisionOutcomesOf,
 } from '@supportmanagement/services/support-decision-service';
 import {
   EXTERNAL_CASE_REGISTRATION_NUMBER_KEY,
   getErrandParameterValue,
   requiresExternalCaseRegistrationNumber,
 } from '@supportmanagement/services/support-errand-service';
-import { typedLinesOf } from '@supportmanagement/services/support-investigation-basis-service';
-import { getSupportInvestigation } from '@supportmanagement/services/support-investigation-service';
+import {
+  getSupportInvestigation,
+  type SupportInvestigation,
+} from '@supportmanagement/services/support-investigation-service';
 import { getPremisesAddress, hasServingPremises } from '@supportmanagement/services/support-premises-address-service';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +50,7 @@ import { useTranslation } from 'react-i18next';
 import { DecisionCard } from './decision-card.component';
 import { DecisionFields } from './decision-fields.component';
 import { decisionPermit } from './decision-permit';
+import { decisionPrefillOf } from './decision-prefill';
 import { DecisionBeveragesField, DecisionServingHoursFields } from './decision-scope-fields.component';
 import { DecisionServingPremises } from './decision-serving-premises.component';
 import { DecisionSummary } from './decision-summary.component';
@@ -57,16 +72,26 @@ export const SupportErrandDecisionTab: FC<{
   const isActive = useSupportStore((s) => s.activeTabKey) === 'decision';
 
   const [decisions, setDecisions] = useState<SupportDecision[]>([]);
-  const [investigationClauses, setInvestigationClauses] = useState('');
+  const [investigation, setInvestigation] = useState<SupportInvestigation>();
+  const [origin, setOrigin] = useState<DecisionOrigin>();
+  /** The premises of the permit an action errand answers; it has no application of its own to read them from. */
+  const [permitPremises, setPermitPremises] = useState<DecisionPremisesAddress>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   // The premises lookup costs a request, so it waits until the tab has been opened once.
   const [opened, setOpened] = useState(isActive);
   if (isActive && !opened) setOpened(true);
 
-  const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const permit = useMemo(() => decisionPermit(supportErrand), [supportErrand]);
-  const handlesPremises = appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand);
+  const outcomes = useMemo(
+    () => supportDecisionOutcomesOf(supportMetadata?.decisionOutcomes ?? [], permit.type),
+    [supportMetadata?.decisionOutcomes, permit.type]
+  );
+  // An action errand decides on a permit already granted and assigns no restaurant number, so there is nothing for
+  // the handler to pick: its decision states the premises of the permit it answers, read from that errand.
+  const assignsARestaurantNumber = permit.type !== ACTION_ERRAND_PERMIT_TYPE;
+  const handlesPremises =
+    appConfig.features.useLicensedBusiness && hasServingPremises(supportErrand) && assignsARestaurantNumber;
 
   const premises = useMemo(
     () => getPremisesAddress(supportErrand, supportMetadata?.namespace),
@@ -80,7 +105,8 @@ export const SupportErrandDecisionTab: FC<{
     premises,
     savedPremises
   );
-  const premisesToSend = decisionPremisesState.decided ?? savedPremises;
+  const chosenPremises = assignsARestaurantNumber ? decisionPremisesState.decided ?? savedPremises : undefined;
+  const premisesToSend = assignsARestaurantNumber ? chosenPremises : permitPremises;
   const premisesText = usePremisesText();
 
   const applicationForm = useMemo(
@@ -104,7 +130,7 @@ export const SupportErrandDecisionTab: FC<{
       .then(([result, investigation]) => {
         if (!current) return;
         setDecisions(result);
-        setInvestigationClauses(typedLinesOf(investigation?.summary).join('\n'));
+        setInvestigation(investigation);
         setIsLoading(false);
       })
       .catch(() => {
@@ -130,13 +156,45 @@ export const SupportErrandDecisionTab: FC<{
     [decisionJson, servingHoursSlots, applicationForm, permit.errandType]
   );
 
+  // What the decision says of the inspection and the permit is read now and frozen in the decision's own JSON,
+  // so the document shows what was true the day it was decided.
+  const inspectionErrandId = supportErrand ? inspectionErrandIdOf(supportErrand) : undefined;
+
+  useEffect(() => {
+    if (!inspectionErrandId || !opened) return undefined;
+    let current = true;
+
+    void getSupportActionErrandOrigin(municipalityId, inspectionErrandId).then((read) => {
+      if (!current) return;
+      setOrigin({
+        inspectionDate: read.inspectionDate,
+        inspectionCaseNumber: read.inspectionErrandNumber,
+        permitType: read.permitType,
+        permitCaseNumber: read.permitErrandNumber,
+        premisesName: read.premisesName,
+      });
+      setPermitPremises(read.premisesAddress);
+    });
+
+    return () => {
+      current = false;
+    };
+  }, [inspectionErrandId, municipalityId, opened]);
+
+  const prefill = useMemo(
+    () => decisionPrefillOf(investigation, origin, outcomes, permit.type),
+    [investigation, origin, outcomes, permit.type]
+  );
+
   const form = useDecisionForm({
     decision,
     editable,
-    savedPremises,
+    // A decision that assigns no restaurant number keeps the address alone, so that is what a save of it settles
+    // and all there is to read back; comparing the choice as well would say it was unsaved however often it was saved.
+    savedPremises: assignsARestaurantNumber ? savedPremises : premisesAddressFromDecisionJson(decisionJson),
     premisesToSend,
     applicationPremisesPhone: applicationPremisesPhone(applicationForm),
-    investigationClauses,
+    prefill,
     scopeAsSaved,
     defaultRole: t(SUPPORT_DECISION_ROLE_KEYS[0]),
     errandCaseRegistrationNumber: getErrandParameterValue(
@@ -145,20 +203,21 @@ export const SupportErrandDecisionTab: FC<{
     ).trim(),
   });
 
-  const { certificateParameters } = useDecisionSave({
+  const { documentTemplate, documentParameters } = useDecisionSave({
     decision,
     values: form.values,
-    edited: form.edited,
+    unsaved: form.unsaved,
     editable,
     permit,
     premisesToSend,
     applicationForm,
+    origin,
     onSaved: setDecisions,
   });
 
   useEffect(() => {
-    setUnsaved(form.edited);
-  }, [form.edited, setUnsaved]);
+    setUnsaved(form.unsaved);
+  }, [form.unsaved, setUnsaved]);
 
   useEffect(() => {
     setHasContent(decisions.length > 0);
@@ -173,6 +232,7 @@ export const SupportErrandDecisionTab: FC<{
           <SupportErrandDecisionBasis
             supportErrand={supportErrand}
             supportMetadata={supportMetadata}
+            permitPremises={{ name: origin?.premisesName, address: permitPremises }}
             premisesHandling={
               handlesPremises ? (
                 <DecisionPremises state={decisionPremisesState} readOnly={premisesReadOnly} />
@@ -239,7 +299,8 @@ export const SupportErrandDecisionTab: FC<{
             form={form}
             outcomes={outcomes}
             printed={!!permit.certificate}
-            clausesRequired={permit.clausesRequired}
+            clausesRequired={decisionRequiresClauses(permit.type, form.values.outcome)}
+            permitType={permit.type}
             disabled={!canEdit}
             caseNumberFromErrand={requiresExternalCaseRegistrationNumber(supportErrand?.parameters)}
           />
@@ -248,15 +309,15 @@ export const SupportErrandDecisionTab: FC<{
             <TemplatePdfPreview
               watermarked
               title={t('common:decision.preview')}
-              identifier={permit.certificate}
-              parameters={certificateParameters}
+              identifier={documentTemplate}
+              parameters={documentParameters}
             />
           ) : null}
 
           {handlesPremises ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-premises-to-send">
-              {premisesToSend
-                ? t('common:decision.premises.sent', { premises: premisesText(premisesToSend) })
+              {chosenPremises
+                ? t('common:decision.premises.sent', { premises: premisesText(chosenPremises) })
                 : t('common:decision.premises.not_chosen')}
             </p>
           ) : null}
@@ -267,7 +328,7 @@ export const SupportErrandDecisionTab: FC<{
             </p>
           ) : null}
 
-          {form.edited ? (
+          {form.unsaved ? (
             <p className="text-small text-dark-secondary m-0" data-cy="decision-unsaved">
               {t('common:decision.unsaved_hint')}
             </p>

@@ -2,8 +2,11 @@ import { jsonParameterForSchema, schemaNameForErrand } from './support-errand-sc
 import type { SupportErrand } from './support-errand-service';
 import { premisesValue } from './support-form-value-service';
 
-/** Where the premises address was read from: the errand form, or the owner (PRIMARY) stakeholder. */
-type PremisesAddressSource = 'FORM' | 'OWNER';
+/**
+ * Where the premises address was read from: the errand form, the owner (PRIMARY) stakeholder, or the permit the
+ * errand answers, which is all an errand without an application of its own has.
+ */
+type PremisesAddressSource = 'FORM' | 'OWNER' | 'PERMIT';
 
 export interface PremisesAddress {
   street: string;

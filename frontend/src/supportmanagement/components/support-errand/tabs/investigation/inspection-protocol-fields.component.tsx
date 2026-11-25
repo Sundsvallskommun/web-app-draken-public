@@ -28,7 +28,9 @@ export const InspectionProtocolFields: FC<{
   readOnly: boolean;
   onChange: (values: InspectionProtocolValues) => void;
   position: ProtocolSection['position'];
-}> = ({ template, values, readOnly, onChange, position }) => {
+  /** Why an option cannot be chosen, where something outside the protocol stands in its way. */
+  unavailable?: (fieldKey: string, optionValue: string) => string | undefined;
+}> = ({ template, values, readOnly, onChange, position, unavailable }) => {
   const set = (key: string, value: string | string[]) => onChange({ ...values, [key]: value });
 
   const text = (field: TextField) => {
@@ -73,26 +75,39 @@ export const InspectionProtocolFields: FC<{
       const list = Array.isArray(value) ? value : [];
       set(field.key, chosen(option) ? list.filter((candidate) => candidate !== option.value) : [...list, option.value]);
     };
+    // An explanation under an option needs a row of its own; the other choices stay on one line, as they were.
+    const explained = field.options.some((option) => !!unavailable?.(field.key, option.value));
     return (
       <div key={field.key} className="col-span-full flex flex-col gap-12">
         <FormControl id={`protocol-${field.key}`} fieldset className="w-full">
           <FormLabel>{field.label}</FormLabel>
           {field.kind === 'choice' ? (
-            <RadioButton.Group inline>
-              {field.options.map((option) => (
-                <RadioButton
-                  key={option.value}
-                  size="sm"
-                  name={`protocol-${field.key}`}
-                  value={option.value}
-                  checked={chosen(option)}
-                  disabled={readOnly}
-                  onChange={() => set(field.key, option.value)}
-                  data-cy={`protocol-${field.key}-${option.value}`}
-                >
-                  {option.label}
-                </RadioButton>
-              ))}
+            <RadioButton.Group inline={!explained}>
+              {field.options.map((option) => {
+                const blocked = unavailable?.(field.key, option.value);
+                return (
+                  <RadioButton
+                    key={option.value}
+                    size="sm"
+                    name={`protocol-${field.key}`}
+                    value={option.value}
+                    checked={chosen(option)}
+                    disabled={readOnly || (!!blocked && !chosen(option))}
+                    onChange={() => set(field.key, option.value)}
+                    data-cy={`protocol-${field.key}-${option.value}`}
+                  >
+                    {option.label}
+                    {blocked ? (
+                      <span
+                        className="block text-small text-dark-secondary"
+                        data-cy={`protocol-${field.key}-${option.value}-unavailable`}
+                      >
+                        {blocked}
+                      </span>
+                    ) : null}
+                  </RadioButton>
+                );
+              })}
             </RadioButton.Group>
           ) : (
             <div className="flex flex-wrap gap-16">

@@ -714,8 +714,9 @@ export const getStakeholderOrganizationNumber = (
 
 /** The errand's registry number, which its decision carries under the same name. */
 export const EXTERNAL_CASE_REGISTRATION_NUMBER_KEY = 'externalCaseRegistrationNumber';
-/** Same parameter key as katla-aot uses when an errand is registered there. */
+/** Same parameter key and name as katla-aot uses when an errand is registered there. */
 export const PREMISES_MUNICIPALITY_KEY = 'premisesMunicipalityId';
+export const PREMISES_MUNICIPALITY_DISPLAY_NAME = 'Kommun';
 const TIMRA_MUNICIPALITY_ID = '2262';
 
 // Read the first value of an errand parameter by key.
@@ -882,7 +883,10 @@ export const getSupportErrandsCount: (
 };
 
 /** What a new errand can be created with instead of the defaults. */
-export type NewSupportErrandPrefill = Pick<Partial<SupportErrandDto>, 'labels' | 'stakeholders' | 'jsonParameters'>;
+export type NewSupportErrandPrefill = Pick<
+  Partial<SupportErrandDto>,
+  'labels' | 'stakeholders' | 'jsonParameters' | 'parameters'
+>;
 
 export const initiateSupportErrand: (
   municipalityId: string,

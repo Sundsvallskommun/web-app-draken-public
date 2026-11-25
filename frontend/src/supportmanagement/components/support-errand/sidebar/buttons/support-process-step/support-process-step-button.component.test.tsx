@@ -41,6 +41,9 @@ vi.mock('@supportmanagement/services/support-decision-service', () => ({
   completeSupportDecision: vi.fn(),
   isSupportDecisionDraft: (decision: { decisionType?: string }) => decision.decisionType === 'PROPOSED',
   supportDecisionPermitType: () => 'SERVERINGSTILLSTAND',
+  ACTION_ERRAND_PERMIT_TYPE: 'ATGARD',
+  outcomeWithoutConditions: (outcome: string | undefined) => outcome ?? '',
+  supportDecisionOutcomeNames: () => ['APPROVAL', 'APPROVAL_WITH_CONDITIONS', 'REJECTED', 'INADMISSIBLE', 'DISMISSED'],
 }));
 vi.mock('@supportmanagement/services/support-errand-service', async (importOriginal) => ({
   lacksRequiredExternalCaseRegistrationNumber: (
@@ -310,6 +313,41 @@ test('an approved inspection needs no action points', async () => {
 
   await waitFor(() => expect(sendSupportProcessSignal).toHaveBeenCalledWith(ERRAND_ID, '2281', 'inspection_approved'));
   expect(getSupportMeasures).not.toHaveBeenCalled();
+});
+
+test('a summary the process has no step for is told apart from no summary at all', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue('revisit');
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.inspection_summary_without_step', status: 'error' })
+    )
+  );
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+});
+
+test('an inspection without a summary at all is asked for one', async () => {
+  anInspectionInDecision();
+  vi.mocked(inspectionProtocolSummary).mockReturnValue(undefined);
+
+  renderButton();
+
+  const button = await theButton();
+  button.click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.inspection_summary_needed', status: 'error' })
+    )
+  );
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
 });
 
 test('an inspection the process has already moved on from concludes the draft instead of asking for a summary', async () => {
@@ -857,4 +895,55 @@ describe('the registry number of a Timrå errand', () => {
     expect((await theButton('start_investigation')).disabled).toBe(false);
     expect(explanation()).toBeNull();
   });
+});
+
+test('the decision document is filed before the decision is concluded, so a letter that failed can be tried again', async () => {
+  const order: string[] = [];
+  const filer = vi.fn(async () => order.push('file'));
+  vi.mocked(completeSupportDecision).mockImplementation(async () => order.push('complete') as never);
+  useSupportStore.setState({ decisionDocumentFiler: filer });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  (await theButton()).click();
+
+  await waitFor(() => expect(completeSupportDecision).toHaveBeenCalled());
+  expect(order).toEqual(['file', 'complete']);
+  useSupportStore.setState({ decisionDocumentFiler: undefined });
+});
+
+test('a decision document that cannot be rendered leaves the decision a draft and the errand where it stands', async () => {
+  // Concluding it would lock the decision and move the step on, and the letter could then never be filed at all.
+  useSupportStore.setState({
+    decisionDocumentFiler: vi.fn(async () => {
+      throw new Error('the template could not be rendered');
+    }),
+  });
+  vi.mocked(getSupportErrandProcessState).mockResolvedValue({
+    process: {
+      processStatus: 'WAITING',
+      currentActivityId: 'decision_phase',
+      awaitingSignals: [{ name: 'decision_completed' }, { name: 'process_cancelled' }],
+    },
+    startability: 'LIVE_INSTANCE',
+  } as never);
+
+  renderButton();
+  (await theButton()).click();
+
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'common:process.actions.document_not_filed', status: 'error' })
+    )
+  );
+  expect(completeSupportDecision).not.toHaveBeenCalled();
+  expect(sendSupportProcessSignal).not.toHaveBeenCalled();
+  useSupportStore.setState({ decisionDocumentFiler: undefined });
 });

@@ -1,17 +1,24 @@
 'use client';
 
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { saveSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   type CertificateDecision,
+  decisionDocumentFileName,
+  decisionDocumentTemplate,
+  type DecisionOrigin,
   type DecisionParameterInput,
   decisionSchema,
-  toCertificateParameters,
+  savedDecisionOrigin,
+  toDecisionDocumentParameters,
   toDecisionJson,
 } from '@supportmanagement/services/support-decision-parameters-service';
-import type { DecisionPremises } from '@supportmanagement/services/support-decision-premises-service';
+import type { DecisionPremisesToState } from '@supportmanagement/services/support-decision-premises-service';
 import { hasInvalidServingHours } from '@supportmanagement/services/support-decision-scope-service';
 import {
+  ACTION_ERRAND_PERMIT_TYPE,
   createSupportDecision,
   getSupportDecisions,
   isSupportDecisionLockedError,
@@ -20,12 +27,14 @@ import {
   outcomeLabel,
   saveSupportDecisionJsonParameter,
   type SupportDecision,
+  supportDecisionOutcomesOf,
   supportDecisionWithoutBlanks,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import { getLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { FormValue } from '@supportmanagement/services/support-form-value-service';
 import { schemaIdToWrite } from '@supportmanagement/services/support-json-parameter-service';
+import { pdfFileFromBase64 } from '@supportmanagement/services/support-statement-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,19 +45,24 @@ import type { DecisionFormValues } from './use-decision-form';
 interface DecisionSaveInput {
   decision: SupportDecision | undefined;
   values: DecisionFormValues;
-  edited: boolean;
+  /** True while the form holds anything the saved decision does not, so that there is something to write. */
+  unsaved: boolean;
   editable: boolean;
   permit: DecisionPermit;
   /** The premises the handler has settled on, written in the decision for the process to read. */
-  premisesToSend: DecisionPremises | undefined;
+  premisesToSend: DecisionPremisesToState | undefined;
   /** The answers filed under the errand type's schema, which several parameters are read off. */
   applicationForm: FormValue | undefined;
+  /** What an action errand decides on, read when the decision is written and then frozen in its JSON. */
+  origin?: DecisionOrigin;
   onSaved: (decisions: SupportDecision[]) => void;
 }
 
 export interface DecisionSave {
-  /** What the preview renders, which is what the certificate will be given. */
-  certificateParameters: Record<string, string>;
+  /** The document the decision renders, which is the one filed on the errand once it is concluded. */
+  documentTemplate: string | undefined;
+  /** What the preview renders, which is what the document will be given. */
+  documentParameters: Record<string, string | string[]>;
 }
 
 /**
@@ -60,11 +74,12 @@ export interface DecisionSave {
 export const useDecisionSave = ({
   decision,
   values,
-  edited,
+  unsaved,
   editable,
   permit,
   premisesToSend,
   applicationForm,
+  origin,
   onSaved,
 }: DecisionSaveInput): DecisionSave => {
   const { t } = useTranslation();
@@ -72,8 +87,10 @@ export const useDecisionSave = ({
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const setDecisionJsonWriter = useSupportStore((s) => s.setDecisionJsonWriter);
+  const setDecisionDocumentFiler = useSupportStore((s) => s.setDecisionDocumentFiler);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
-  const outcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
+  const registeredOutcomes = useMetadataStore((s) => s.supportMetadata)?.decisionOutcomes ?? [];
+  const outcomes = supportDecisionOutcomesOf(registeredOutcomes, permit.type);
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   // Survives a failed JSON write, so that saving again updates the new decision instead of creating another.
@@ -81,12 +98,16 @@ export const useDecisionSave = ({
   const saveLatest = useRef<() => Promise<boolean>>(undefined);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
   const writeJsonLatest = useRef<(decisionId: string) => Promise<SupportDecision | undefined>>(undefined);
+  const fileDocumentLatest = useRef<() => Promise<unknown>>(undefined);
+  const documentFiler = useCallback(() => fileDocumentLatest.current?.() ?? Promise.resolve(undefined), []);
   const jsonWriter = useCallback(
     (decisionId: string) => writeJsonLatest.current?.(decisionId) ?? Promise.resolve(undefined),
     []
   );
 
   const writtenTerms = values.terms.map((term) => term.trim()).filter(Boolean);
+  const writtenOrigin = savedDecisionOrigin(decision);
+  const documentIsFiledFromHere = permit.type === ACTION_ERRAND_PERMIT_TYPE;
 
   const parameterInput = (errand: SupportErrand): DecisionParameterInput => ({
     errand,
@@ -99,11 +120,18 @@ export const useDecisionSave = ({
     executionDate: values.executionDate,
     premisesPhoneNumber: values.premisesPhoneNumber,
     externalCaseRegistrationNumber: values.externalCaseRegistrationNumber,
+    origin: {
+      inspectionDate: origin?.inspectionDate || writtenOrigin.inspectionDate,
+      inspectionCaseNumber: origin?.inspectionCaseNumber || writtenOrigin.inspectionCaseNumber,
+      permitType: values.permitType,
+      permitCaseNumber: values.permitCaseNumber,
+      premisesName: origin?.premisesName || writtenOrigin.premisesName,
+    },
     user,
     today: dayjs().format('YYYY-MM-DD'),
   });
 
-  /** What the certificate says about the decision, outcome and all, whether previewed or sent. */
+  /** What the document says about the decision, outcome and all, whether previewed or filed. */
   const outcome = outcomeForTerms(values.outcome, writtenTerms, outcomes);
   const certificateDecision: CertificateDecision = {
     outcome,
@@ -113,8 +141,19 @@ export const useDecisionSave = ({
     legalBasis: values.legalBasis,
     justification: values.justification,
     clauses: values.clauses,
+    delegation: values.delegationReference,
+    outcomeHeading: outcomeLabel(outcomes, outcome),
+    outcomeText: values.outcomeText,
+    justificationDeficiencies: values.justificationDeficiencies,
+    justificationStatement: values.justificationStatement,
+    justificationOutcome: values.justificationOutcome,
     terms: writtenTerms,
   };
+
+  const documentTemplate = decisionDocumentTemplate(permit.type, outcome);
+  const documentParameters = supportErrand
+    ? toDecisionDocumentParameters(permit.type, parameterInput(supportErrand), certificateDecision)
+    : {};
 
   // The JSON copies errand data, so it is rebuilt from the errand as it is now on every write.
   const writeDecisionJson = async (decisionId: string): Promise<SupportDecision | undefined> => {
@@ -131,6 +170,19 @@ export const useDecisionSave = ({
     });
   };
 
+  /**
+   * The decision document as the errand stands when the decision is concluded, filed among its attachments. The
+   * parameters are the ones the preview rendered, so what is filed is what the handler saw. Only an action
+   * errand's letter is filed here; a permit's certificate is the one the process issues and sends.
+   */
+  const fileDecisionDocument = async (): Promise<unknown> => {
+    if (!supportErrand?.id || !documentTemplate || !documentIsFiledFromHere) return undefined;
+
+    const pdf = await renderTemplatePdf(documentTemplate, documentParameters);
+    const file = pdfFileFromBase64(pdf, decisionDocumentFileName(supportErrand.errandNumber));
+    return saveSupportAttachments(supportErrand.id, municipalityId, [{ file: [file] as unknown as File }]);
+  };
+
   const tell = (message: string, status: 'success' | 'error') =>
     toastMessage({ position: 'bottom', closeable: false, message, status });
 
@@ -144,7 +196,7 @@ export const useDecisionSave = ({
 
   // A draft is saved however incomplete; what the permit needs is checked when the decision is concluded.
   const save = async (): Promise<boolean> => {
-    if (!supportErrand?.id || !editable || !edited) return true;
+    if (!supportErrand?.id || !editable || !unsaved) return true;
 
     if (hasInvalidServingHours(values.scope)) {
       tell(t('common:decision.scope.serving_hours.half_filled'), 'error');
@@ -161,6 +213,7 @@ export const useDecisionSave = ({
       title: permitName ? t('common:decision.title_for', { permit: permitName.toLocaleLowerCase('sv-SE') }) : undefined,
       decidedByRole: values.decidedByRole,
       legalBasis: values.legalBasis,
+      delegationReference: values.delegationReference,
       justification: values.justification,
       validFrom: values.validFrom,
       validTo: values.validTo,
@@ -193,6 +246,7 @@ export const useDecisionSave = ({
   useEffect(() => {
     saveLatest.current = save;
     writeJsonLatest.current = writeDecisionJson;
+    fileDocumentLatest.current = fileDecisionDocument;
   });
 
   useEffect(() => {
@@ -205,9 +259,10 @@ export const useDecisionSave = ({
     return () => setDecisionJsonWriter(undefined);
   }, [jsonWriter, setDecisionJsonWriter]);
 
-  return {
-    certificateParameters: supportErrand
-      ? toCertificateParameters(permit.type, parameterInput(supportErrand), certificateDecision)
-      : {},
-  };
+  useEffect(() => {
+    setDecisionDocumentFiler(documentFiler);
+    return () => setDecisionDocumentFiler(undefined);
+  }, [documentFiler, setDecisionDocumentFiler]);
+
+  return { documentTemplate, documentParameters };
 };

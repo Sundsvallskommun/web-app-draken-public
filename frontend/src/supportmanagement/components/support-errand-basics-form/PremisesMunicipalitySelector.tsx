@@ -2,6 +2,7 @@ import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import {
   getErrandParameterValue,
   isSupportErrandLocked,
+  PREMISES_MUNICIPALITY_DISPLAY_NAME,
   PREMISES_MUNICIPALITY_KEY,
   SupportErrand,
   upsertErrandParameter,
@@ -35,7 +36,12 @@ export const PremisesMunicipalitySelector: FC<{ supportErrand: SupportErrand }> 
         onChange={(e) => {
           setValue(
             'parameters',
-            upsertErrandParameter(getValues('parameters'), PREMISES_MUNICIPALITY_KEY, e.target.value, 'Kommun'),
+            upsertErrandParameter(
+              getValues('parameters'),
+              PREMISES_MUNICIPALITY_KEY,
+              e.target.value,
+              PREMISES_MUNICIPALITY_DISPLAY_NAME
+            ),
             { shouldDirty: true }
           );
         }}

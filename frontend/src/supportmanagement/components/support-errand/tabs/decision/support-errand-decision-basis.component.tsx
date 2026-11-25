@@ -10,6 +10,7 @@ import {
   buildDecisionBasisSections,
   getDecisionBasisForm,
 } from '@supportmanagement/services/support-decision-basis-service';
+import type { DecisionPremisesAddress } from '@supportmanagement/services/support-decision-premises-service';
 import { getMostSpecificLabelType, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -119,6 +120,11 @@ export const SupportErrandDecisionBasis: FC<{
   servingHoursHandling?: ReactNode;
   /** Rendered in the serving section. */
   servingHandling?: ReactNode;
+  /**
+   * The premises of the permit the errand answers, for an errand with no application of its own to state them.
+   * An action errand is one: its premises are the serving place the register keeps for the permit.
+   */
+  permitPremises?: { name?: string; address?: DecisionPremisesAddress };
 }> = ({
   supportErrand,
   supportMetadata,
@@ -126,6 +132,7 @@ export const SupportErrandDecisionBasis: FC<{
   servingPremisesHandling,
   servingHoursHandling,
   servingHandling,
+  permitPremises,
 }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -209,16 +216,24 @@ export const SupportErrandDecisionBasis: FC<{
       ]
     : [];
 
+  // The errand's own answers where it has them, and otherwise the permit's, which is all an action errand has.
+  const statedPremises = premises ?? (permitPremises?.address && { ...permitPremises.address, source: 'PERMIT' });
+
   const addressRow: DisplayRow = {
     key: 'address',
-    label: premises
-      ? t(`common:decision.basis.premises.address_from.${premises.source}`)
+    label: statedPremises
+      ? t(`common:decision.basis.premises.address_from.${statedPremises.source}`)
       : t('common:decision.basis.premises.address'),
-    value: premises ? formatPremisesAddress(premises) : null,
+    value: statedPremises ? formatPremisesAddress(statedPremises) : null,
   };
+  const permitNameRow: DisplayRow[] =
+    premisesFormRows.some((row) => row.key === 'name') || !permitPremises?.name
+      ? []
+      : [{ key: 'name', label: t('common:decision.basis.premises.name'), value: permitPremises.name }];
   // The address follows the name, the rest of the premises rows come after.
   const premisesRows = [
     ...premisesFormRows.filter((row) => row.key === 'name'),
+    ...permitNameRow,
     addressRow,
     ...premisesFormRows.filter((row) => row.key !== 'name'),
   ];

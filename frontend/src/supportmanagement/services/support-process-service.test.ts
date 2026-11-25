@@ -6,6 +6,7 @@ import {
   awaitedGateOfStep,
   hasSupportProcessPassedStep,
   hasVisitedSupportProcessStep,
+  inspectionSummaryLeadsOn,
   processFilesADecisionBasis,
   supportProcessActivityKey,
   supportProcessIsPastReview,
@@ -134,7 +135,6 @@ test('a step the process runs by itself is not a step the handler stands in', ()
   expect(supportProcessStepName(creatingTheDecision)).toBeUndefined();
   expect(supportProcessStepIndex(creatingTheDecision)).toBe(-1);
   expect(hasVisitedSupportProcessStep(SupportProcessStep.DECISION, creatingTheDecision, [])).toBe(false);
-  expect(hasVisitedSupportProcessStep(SupportProcessStep.INVESTIGATION, creatingTheDecision, [])).toBe(false);
 });
 
 test('the decision phase itself is a step the handler stands in', () => {
@@ -189,6 +189,15 @@ test('the review is passed once the process shows a later phase, whether the han
   expect(hasSupportProcessPassedStep(SupportProcessStep.REVIEW, at('external_task_cancel_process'))).toBe(false);
 });
 
+test('a summary leads on only where the model has a gate for it, which the protocol has more options than', () => {
+  expect(inspectionSummaryLeadsOn('approved')).toBe(true);
+  expect(inspectionSummaryLeadsOn('actionRequired')).toBe(true);
+  expect(inspectionSummaryLeadsOn('revisit')).toBe(false);
+  expect(inspectionSummaryLeadsOn('investigation')).toBe(false);
+  expect(inspectionSummaryLeadsOn('')).toBe(false);
+  expect(inspectionSummaryLeadsOn(undefined)).toBe(false);
+});
+
 test('an application process files the decision basis, a closure, an action and an inspection file none', () => {
   expect(processFilesADecisionBasis('alcohol-serving')).toBe(true);
   expect(processFilesADecisionBasis('alcohol-serving-change')).toBe(true);
@@ -198,6 +207,33 @@ test('an application process files the decision basis, a closure, an action and 
   expect(processFilesADecisionBasis('action-errand')).toBe(false);
   expect(processFilesADecisionBasis('internal-inspection')).toBe(false);
   expect(processFilesADecisionBasis(undefined)).toBe(false);
+});
+
+test('a phase the model passes on its own counts as visited once the process stands in a later one', () => {
+  const anActionErrandInReview = processAt('review_phase');
+
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.REGISTRATION, anActionErrandInReview, [])).toBe(true);
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.REVIEW, anActionErrandInReview, [])).toBe(true);
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.INVESTIGATION, anActionErrandInReview, [])).toBe(false);
+});
+
+test('a step stays visited after the process has left it, whether or not a gate reported it', () => {
+  const afterTheDecision = processAt('follow_up_phase');
+  const onItsWayToTheDecision = processAt('external_task_create_decision');
+
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.DECISION, afterTheDecision, [])).toBe(true);
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.CLOSING, afterTheDecision, [])).toBe(false);
+  expect(hasVisitedSupportProcessStep(SupportProcessStep.INVESTIGATION, onItsWayToTheDecision, [])).toBe(true);
+});
+
+test('the action errand leaves its decision phase by itself, so there is no gate to offer', () => {
+  const decidingAnActionErrand = {
+    ...processAt('decision_phase', ['decision_updated', 'decision_not_needed', 'process_cancelled']),
+    processKey: 'action-errand',
+  } as ErrandProcess;
+
+  expect(supportProcessStepName(decidingAnActionErrand)).toBe(SupportProcessStep.DECISION);
+  expect(awaitedGateOfStep(decidingAnActionErrand, SupportProcessStep.DECISION)).toBeUndefined();
 });
 
 test('the review is past once the process stands in a later step or is finished', () => {

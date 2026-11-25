@@ -11,6 +11,7 @@ import {
   type InvestigationBasisInput,
   investigationBasisParameters,
 } from './support-investigation-basis-service';
+import { emptySupportMeasureRow, type SupportMeasureRow } from './support-measure-service';
 import { withAssessment, withEngagements, withKnowledgeTests, withMotivation, withPbi } from './support-pbi-service';
 
 vi.mock('@common/components/json/utils/schema-utils', () => ({ getRjsfSchema: vi.fn(async () => null) }));
@@ -248,6 +249,8 @@ const input = (over: Partial<InvestigationBasisInput> = {}): InvestigationBasisI
   companyProfile: { form: 'Aktiebolag' },
   companyEngagements: COMPANY_ENGAGEMENTS,
   personEngagements: [ASSOCIATED_COMPANY],
+  actionPoints: [],
+  origin: undefined,
   metadata: METADATA as never,
   handlerName: 'Annika Jansson',
   today: '2026-06-05',
@@ -535,6 +538,8 @@ test('an investigation that has only been started says what is missing instead o
     attachments: [],
     companyProfile: undefined,
     companyEngagements: [],
+    actionPoints: [],
+    origin: undefined,
     personEngagements: [],
     metadata: undefined,
     handlerName: '',
@@ -572,6 +577,8 @@ test('what the template itself has a word for is sent empty, so no note lands in
     attachments: [],
     companyProfile: undefined,
     companyEngagements: [],
+    actionPoints: [],
+    origin: undefined,
     personEngagements: [],
     metadata: undefined,
     handlerName: '',
@@ -686,6 +693,8 @@ test('an investigation with nothing filled in still sends every field the templa
     attachments: [],
     companyProfile: undefined,
     companyEngagements: [],
+    actionPoints: [],
+    origin: undefined,
     personEngagements: [],
     metadata: undefined,
     handlerName: '',
@@ -858,4 +867,84 @@ test('a serving permit still has every examination of its own noted when it is u
   expect(parameters.childPerspectiveHtml).toBe('Information saknas');
   expect(parameters.premises.fireSafetyHtml).toBe('Information saknas');
   expect(parameters.selfMonitoringHtml).toBe('');
+});
+
+const actionErrand = { ...errand, labels: [{ classification: 'TYPE', resourceName: 'MEASURES' }] } as never;
+
+const actionPoint = (over: Partial<SupportMeasureRow> = {}): SupportMeasureRow => ({
+  ...emptySupportMeasureRow('Sätt upp prislista'),
+  ...over,
+});
+
+const actionErrandInput = (over: Partial<InvestigationBasisInput> = {}) =>
+  input({
+    errand: actionErrand,
+    investigation: {
+      sections: [
+        { sectionKey: 'established_faults', text: 'Prislista saknades i serveringslokalen.' },
+        { sectionKey: 'measures_taken', text: 'Prislistan är uppsatt.' },
+        { sectionKey: 'permit_holder_statement', text: 'Bolaget har yttrat sig.' },
+        { sectionKey: 'assessment', text: 'En varning är proportionerlig.' },
+      ],
+    } as never,
+    actionPoints: [
+      actionPoint({ goal: 'Synlig i baren', dueAt: '2026-11-10', result: 'COMPLETED', completedAt: '2026-11-12' }),
+      actionPoint({
+        title: 'Komplettera med lättdryck',
+        dueAt: '2026-11-10',
+        result: 'NOT_COMPLETED',
+        completedAt: '2026-11-12',
+      }),
+    ],
+    origin: {
+      inspectionDate: '2026-10-28',
+      inspectionErrandNumber: 'AOT-26100232',
+      permitType: 'Stadigvarande serveringstillstånd',
+      permitErrandNumber: 'AOT-26050044',
+    },
+    ...over,
+  });
+
+test('an action errand underlay reads the faults, the points and where the errand came from', () => {
+  const parameters = investigationBasisParameters(actionErrandInput());
+
+  expect(parameters.faultsHtml).toContain('Prislista saknades');
+  expect(parameters.measuresTakenHtml).toContain('Prislistan är uppsatt');
+  expect(parameters.permitHolderStatementHtml).toContain('Bolaget har yttrat sig');
+  expect(parameters.assessmentHtml).toContain('En varning är proportionerlig');
+  expect(parameters.inspectionDate).toBe('2026-10-28');
+  expect(parameters.inspectionCaseNumber).toBe('AOT-26100232');
+  expect(parameters.permitType).toBe('Stadigvarande serveringstillstånd');
+  expect(parameters.permitCaseNumber).toBe('AOT-26050044');
+});
+
+// The service keeps the day a point was settled on and cannot clear it, so the date is carried only while the
+// result still settles the point; otherwise it would contradict the result printed beside it.
+test('a point carries its result as the handler reads it, and its date only while it is settled', () => {
+  const parameters = investigationBasisParameters(actionErrandInput());
+
+  expect(parameters.actionPoints).toEqual([
+    {
+      title: 'Sätt upp prislista',
+      goal: 'Synlig i baren',
+      dueAt: '2026-11-10',
+      result: 'common:action_points.result.completed',
+      completedAt: '2026-11-12',
+    },
+    {
+      title: 'Komplettera med lättdryck',
+      goal: '',
+      dueAt: '2026-11-10',
+      result: 'common:action_points.result.not_completed',
+      completedAt: '',
+    },
+  ]);
+});
+
+test('an examination of an action errand that nobody wrote is noted as missing', () => {
+  const parameters = investigationBasisParameters(actionErrandInput({ investigation: { sections: [] } as never }));
+
+  expect(parameters.faultsHtml).toBe('Information saknas');
+  expect(parameters.assessmentHtml).toBe('Information saknas');
+  expect(parameters.childPerspectiveHtml).toBe('');
 });

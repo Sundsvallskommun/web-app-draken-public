@@ -4,8 +4,18 @@ import type { Statement } from '@common/data-contracts/supportmanagement/data-co
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import type { InvestigationAreaName } from '@supportmanagement/investigations';
+import { isSupportActionErrand } from '@supportmanagement/services/support-measure-service';
 import {
+  primaryStakeholderNameorEmail,
+  supportPermitHolderName,
+} from '@supportmanagement/services/support-stakeholder-service';
+import {
+  createSupportStatement,
   getSupportStatements,
+  isSupportCommunication,
+  SUPPORT_COMMUNICATION_TYPE,
+  supportCommunicationFields,
   supportStatementEdited,
   supportStatementFields,
   type SupportStatementForm,
@@ -17,6 +27,7 @@ import { Plus } from 'lucide-react';
 import { FC, MutableRefObject, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportCommunicationCard } from './support-communication-card.component';
 import { SupportStatementCard } from './support-statement-card.component';
 
 /**
@@ -44,7 +55,9 @@ export const SupportStatementsSection: FC<{
   writable: boolean;
   onEdited: (edited: boolean) => void;
   saveRef: MutableRefObject<(() => Promise<boolean>) | undefined>;
-}> = ({ writable, onEdited, saveRef }) => {
+  /** Set where the errand type covers more than one trade; it decides which templates are offered. */
+  area?: InvestigationAreaName;
+}> = ({ writable, onEdited, saveRef, area }) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -123,7 +136,13 @@ export const SupportStatementsSection: FC<{
             errandId,
             municipalityId,
             card.statement.id ?? '',
-            supportStatementFields(card.form, titleOf(card.form))
+            isSupportCommunication(card.statement)
+              ? supportCommunicationFields(
+                  card.form,
+                  card.statement.counterpartyName ?? '',
+                  card.statement.title ?? t('common:communications.title', { errandNumber })
+                )
+              : supportStatementFields(card.form, titleOf(card.form))
           )
         )
       );
@@ -138,7 +157,7 @@ export const SupportStatementsSection: FC<{
       toastMessage(getToastOptions({ message: t('common:statements.toast.save_failed'), status: 'error' }));
       return false;
     }
-  }, [cards, errandId, municipalityId, supportMetadata, t, titleOf, toastMessage]);
+  }, [cards, errandId, errandNumber, municipalityId, supportMetadata, t, titleOf, toastMessage]);
 
   useEffect(() => {
     saveRef.current = saveAll;
@@ -146,6 +165,25 @@ export const SupportStatementsSection: FC<{
 
   const add = () =>
     setCards((current) => [...current, { key: `new-${Date.now()}`, statement: {}, form: supportStatementForm({}) }]);
+
+  /**
+   * A communication has nothing to choose before it exists: the recipient is the permit holder and the text is
+   * the communication itself, so the statement is written at once and the handler fills it in.
+   */
+  const addCommunication = async () => {
+    if (!supportErrand) return;
+
+    try {
+      const statement = await createSupportStatement(errandId, municipalityId, {
+        type: SUPPORT_COMMUNICATION_TYPE,
+        counterpartyName: supportPermitHolderName(supportErrand) || primaryStakeholderNameorEmail(supportErrand),
+        title: t('common:communications.title', { errandNumber }),
+      });
+      setCards((current) => [...current, cardOf(statement)]);
+    } catch {
+      toastMessage(getToastOptions({ message: t('common:communications.toast.create_failed'), status: 'error' }));
+    }
+  };
 
   const change = (key: string, changes: Partial<SupportStatementForm>) => {
     setProblems((current) => ({ ...current, [key]: '' }));
@@ -183,21 +221,38 @@ export const SupportStatementsSection: FC<{
       ) : null}
 
       {!loading
-        ? cards.map((card) => (
-            <SupportStatementCard
-              key={card.key}
-              statement={card.statement}
-              form={card.form}
-              problem={problems[card.key] || undefined}
-              errandId={errandId}
-              errandNumber={errandNumber}
-              municipalityId={municipalityId}
-              writable={mayEdit}
-              onFormChange={(changes) => change(card.key, changes)}
-              onChanged={(statement) => replace(card.key, statement)}
-              onRemoved={() => forget(card.key)}
-            />
-          ))
+        ? cards.map((card) =>
+            isSupportCommunication(card.statement) ? (
+              <SupportCommunicationCard
+                key={card.key}
+                statement={card.statement}
+                form={card.form}
+                problem={problems[card.key] || undefined}
+                errandId={errandId}
+                errandNumber={errandNumber}
+                municipalityId={municipalityId}
+                writable={mayEdit}
+                onFormChange={(changes) => change(card.key, changes)}
+                onChanged={(statement) => replace(card.key, statement)}
+                onRemoved={() => forget(card.key)}
+              />
+            ) : (
+              <SupportStatementCard
+                key={card.key}
+                statement={card.statement}
+                form={card.form}
+                problem={problems[card.key] || undefined}
+                errandId={errandId}
+                errandNumber={errandNumber}
+                municipalityId={municipalityId}
+                writable={mayEdit}
+                area={area}
+                onFormChange={(changes) => change(card.key, changes)}
+                onChanged={(statement) => replace(card.key, statement)}
+                onRemoved={() => forget(card.key)}
+              />
+            )
+          )
         : null}
 
       <div>
@@ -211,6 +266,20 @@ export const SupportStatementsSection: FC<{
         >
           {t('common:statements.add')}
         </Button>
+
+        {isSupportActionErrand(supportErrand) ? (
+          <Button
+            type="button"
+            variant="secondary"
+            className="ml-16"
+            disabled={!mayEdit}
+            data-cy="communications-add"
+            leftIcon={<Plus size={18} />}
+            onClick={() => void addCommunication()}
+          >
+            {t('common:communications.add')}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

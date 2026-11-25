@@ -330,3 +330,22 @@ test('handling follows the rows of its section when the form has them', () => {
   expect(value('serving-drinks')).toBe('Starköl, Vin');
   expect(section.querySelector('dl + [data-cy="serving-handling"]')).toBeTruthy();
 });
+
+test('an errand with no application of its own states the premises of the permit it answers', async () => {
+  // An action errand has no application, so the row would otherwise stand empty while the decision it belongs to
+  // carries the address. The label says where the address came from.
+  render(
+    <SupportErrandDecisionBasis
+      supportErrand={{ id: 'errand-id', customer: [] } as unknown as SupportErrand}
+      supportMetadata={undefined}
+      permitPremises={{
+        name: 'Testkrogen',
+        address: { street: 'Storgatan 1', postalCode: '852 30', city: 'Sundsvall' },
+      }}
+    />
+  );
+
+  expect(await screen.findByText('common:decision.basis.premises.address_from.PERMIT')).toBeTruthy();
+  expect(screen.getByText('Storgatan 1, 852 30 Sundsvall')).toBeTruthy();
+  expect(screen.getByText('Testkrogen')).toBeTruthy();
+});

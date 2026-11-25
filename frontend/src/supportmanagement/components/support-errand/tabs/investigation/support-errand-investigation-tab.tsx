@@ -3,7 +3,19 @@ import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { renderTemplateHtml } from '@common/services/template-render-service';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { type ExaminedInvestigation, investigationVariantFor } from '@supportmanagement/investigations';
+import {
+  type ExaminedInvestigation,
+  type InvestigationAreaName,
+  investigationAreaOfErrand,
+  investigationVariantFor,
+  isInvestigationArea,
+  legalBasisTemplateOf,
+} from '@supportmanagement/investigations';
+import { inspectionErrandIdOf } from '@supportmanagement/services/support-action-errand-service';
+import {
+  ACTION_ERRAND_PERMIT_TYPE,
+  supportDecisionOutcomesOf,
+} from '@supportmanagement/services/support-decision-service';
 import { isSupportMigratedErrand } from '@supportmanagement/services/support-errand-service';
 import {
   missingSupportInvestigationSections,
@@ -20,15 +32,20 @@ import {
   saveSupportInvestigationSection,
   startSupportInvestigation,
 } from '@supportmanagement/services/support-investigation-service';
+import { isSupportActionErrand } from '@supportmanagement/services/support-measure-service';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InspectionProtocol } from './inspection-protocol.component';
+import { InvestigationAreaChoice } from './investigation-area-choice.component';
 import { InvestigationBasis } from './investigation-basis.component';
 import { InvestigationConclusionDisclosure } from './investigation-conclusion-disclosure.component';
 import { SectionDisclosure } from './investigation-disclosure.component';
 import { asInvestigationDate, InvestigationMetaItem } from './investigation-meta.component';
 import { MigratedInvestigation } from './migrated-investigation.component';
+import { useNameTheAreaOfTheInspection } from './use-investigation-area';
+import { useFillTheLegalBasis } from './use-investigation-legal-basis';
+import { useGetSupportInvestigation } from './use-investigation-read';
 
 const conclusionEditsOf = (investigation: Investigation | undefined) => ({
   proposal: investigation?.summary ?? '',
@@ -85,7 +102,11 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
   const [isSaving, setIsSaving] = useState(false);
   const { values, set, load, merge, edited } = useUnsavedEdits(conclusionEditsOf(undefined));
 
-  const outcomes = supportMetadata?.decisionOutcomes ?? [];
+  const registeredOutcomes = supportMetadata?.decisionOutcomes ?? [];
+  // An action errand is recommended with the outcomes its own process knows, not with the ones a permit is granted by.
+  const outcomes = isSupportActionErrand(supportErrand)
+    ? supportDecisionOutcomesOf(registeredOutcomes, ACTION_ERRAND_PERMIT_TYPE)
+    : registeredOutcomes;
   const setTabSaver = useSupportStore((s) => s.setTabSaver);
   const saver = useCallback(() => saveLatest.current?.() ?? Promise.resolve(true), []);
 
@@ -93,12 +114,16 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     setTabSaver('investigation', saver);
     return () => setTabSaver('investigation', undefined);
   }, [saver, setTabSaver]);
+
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
   const startedAutomatically = useRef(false);
   const examinationsCompleted = useRef(false);
-  const legalBasisFilled = useRef(false);
   const readOnly = !canEdit || !writable || isSupportInvestigationCompleted(investigation);
+
+  // The area is kept as the investigation's type, the field that says which kind of investigation this is.
+  const area = isInvestigationArea(investigation?.type) ? investigation.type : undefined;
+  const legalBasisTemplate = legalBasisTemplateOf(variant, area);
 
   const receive = (result: Investigation | undefined) => {
     setInvestigation(result);
@@ -140,24 +165,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     return allSaved;
   };
 
-  useEffect(() => {
-    if (!errandId) return undefined;
-    let current = true;
-    getSupportInvestigation(errandId, municipalityId)
-      .then((result) => {
-        if (!current) return;
-        receiveKeepingUnsavedEdits(result);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        if (!current) return;
-        setError(true);
-        setIsLoading(false);
-      });
-    return () => {
-      current = false;
-    };
-  }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
+  useGetSupportInvestigation(errandId, municipalityId, receiveKeepingUnsavedEdits, setIsLoading, setError, modified);
 
   useEffect(() => {
     setUnsaved(edited || someSectionEdited);
@@ -195,7 +203,8 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       errandId,
       municipalityId,
       t('common:investigation.title'),
-      supportInvestigationSectionInputs(t, variant.sections)
+      supportInvestigationSectionInputs(t, variant.sections),
+      variant.areas ? { type: investigationAreaOfErrand(supportErrand) } : undefined
     )
       .then((result) => {
         receive(result);
@@ -238,28 +247,64 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, readOnly]);
 
-  const fillTheLegalBasis = async (section: InvestigationSection): Promise<void> => {
-    if (!errandId || !investigation?.id || !section.id || !variant.legalBasisTemplate) return;
+  const chooseTheArea = async (chosen: InvestigationAreaName): Promise<void> => {
+    if (!errandId || !investigation?.id) return;
 
-    const text = await renderTemplateHtml(variant.legalBasisTemplate).catch(() => '');
-    if (!text.trim()) return;
-
-    await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, { text })
-      .then(receiveFromSection)
-      .catch(() => undefined);
+    setIsSaving(true);
+    try {
+      receiveKeepingUnsavedEdits(
+        await saveSupportInvestigation(errandId, municipalityId, investigation.id, {
+          version: investigation.version ?? 0,
+          type: chosen,
+        })
+      );
+    } catch (failure) {
+      reportFailure(failure);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  useEffect(() => {
-    if (isLoading || error || !investigation || readOnly || legalBasisFilled.current) return;
+  const theAreaCanBeNamed = !isLoading && !error && !!investigation && !readOnly && !!variant.areas && !area;
 
-    const section = (investigation.sections ?? []).find((candidate) => sectionKeyOf(candidate) === 'legal_basis');
-    if (!section) return;
+  useNameTheAreaOfTheInspection(theAreaCanBeNamed, inspectionErrandIdOf(supportErrand), municipalityId, chooseTheArea);
 
-    legalBasisFilled.current = true;
-    if ((section.text ?? '').trim()) return;
-    void fillTheLegalBasis(section);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, error, investigation, readOnly]);
+  /** Writes the legal basis of the chosen area, and answers whether it was written. */
+  const fillTheLegalBasis = async (section: InvestigationSection): Promise<boolean> => {
+    if (!errandId || !investigation?.id || !section.id || !legalBasisTemplate) return false;
+
+    const text = await renderTemplateHtml(legalBasisTemplate).catch(() => '');
+    if (!text.trim()) return false;
+
+    const saved = await saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, {
+      text,
+    })
+      .then((result) => {
+        receiveFromSection(result);
+        return true;
+      })
+      .catch(() => false);
+
+    return saved;
+  };
+
+  const reportTheLegalBasisWasNotWritten = () =>
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: t('common:investigation.areas.legal_basis_failed'),
+      status: 'error',
+    });
+
+  const legalBasisCanBeWritten = !isLoading && !error && !!investigation && !readOnly && !!legalBasisTemplate;
+
+  useFillTheLegalBasis(
+    legalBasisCanBeWritten,
+    investigation,
+    area,
+    fillTheLegalBasis,
+    reportTheLegalBasisWasNotWritten
+  );
 
   const reportSaved = () =>
     toastMessage({
@@ -310,6 +355,8 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
     [investigation, variant]
   );
 
+  const isInvestigationNotReady = (isInStep: boolean) => !isLoading && !error && !investigation && isInStep;
+
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <div>
@@ -320,15 +367,13 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}
       {error ? <p>{t('common:investigation.error')}</p> : null}
 
-      {!isLoading && !error && !investigation && inStep ? (
-        <Spinner size={3} aria-label={t('common:investigation.starting')} />
-      ) : null}
+      {isInvestigationNotReady(inStep) ? <Spinner size={3} aria-label={t('common:investigation.starting')} /> : null}
 
-      {!isLoading && !error && !investigation && !inStep && !writable ? (
+      {isInvestigationNotReady(!inStep) && !writable ? (
         <p className="m-0">{t('common:investigation.step_passed')}</p>
       ) : null}
 
-      {!isLoading && !error && !investigation && !inStep && writable ? (
+      {isInvestigationNotReady(!inStep) && writable ? (
         <div className="flex flex-col gap-16 max-w-[48rem]">
           <p className="m-0">{t('common:investigation.not_started')}</p>
           <div>
@@ -367,6 +412,9 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
               />
             ) : null}
           </div>
+          {variant.areas ? (
+            <InvestigationAreaChoice area={area} readOnly={readOnly} busy={isSaving} onChoose={chooseTheArea} />
+          ) : null}
           <p className="text-small text-dark-secondary italic m-0">{t('common:investigation.processing_time')}</p>
           <div className="flex flex-col gap-8">
             {sections.map((section) => (
@@ -378,6 +426,7 @@ const ExaminedInvestigationBody: React.FC<InvestigationTabProps & { variant: Exa
                 onSaved={receiveFromSection}
                 saveRef={saveRefOfSection(sectionKeyOf(section))}
                 investigationId={investigation.id}
+                area={area}
               />
             ))}
             <InvestigationConclusionDisclosure values={values} readOnly={readOnly} set={set} outcomes={outcomes} />

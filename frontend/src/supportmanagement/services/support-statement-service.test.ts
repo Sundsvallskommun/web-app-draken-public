@@ -4,9 +4,11 @@ import type { SupportMetadata } from './support-metadata-service';
 import {
   attachmentsOfKind,
   isStatementAttachmentWithoutItsStatement,
+  isSupportCommunication,
   isSupportStatementAwaitingAnswer,
   isSupportStatementRemovable,
   isSupportStatementUnsent,
+  supportCommunicationFields,
   supportStatementAttachmentIds,
   supportStatementAttachmentPurpose,
   supportStatementEdited,
@@ -35,6 +37,75 @@ const filledIn = (changes: Partial<SupportStatementForm> = {}): SupportStatement
   status: 'ACTIVE',
   outcome: '',
   ...changes,
+});
+
+const COMMUNICATION = { type: 'COMMUNICATION', counterpartyName: 'Krogen Exempel AB' };
+
+const communication = (changes: Partial<SupportStatementForm> = {}): SupportStatementForm =>
+  filledIn({
+    counterpartyName: 'Krogen Exempel AB',
+    label: '',
+    question: '',
+    freeText: 'Bristerna kvarstår och kommunen överväger en varning.',
+    status: 'ACTIVE',
+    ...changes,
+  });
+
+test('a communication is told from a referral by its type, whatever it is named after', () => {
+  expect(isSupportCommunication(COMMUNICATION)).toBe(true);
+  expect(isSupportCommunication({ type: 'REFERRAL' })).toBe(false);
+  expect(isSupportCommunication({})).toBe(false);
+});
+
+test('a communication asks for its text, and for none of what a referral needs', () => {
+  expect(supportStatementProblem(communication(), COMMUNICATION, metadata)).toBeUndefined();
+  expect(supportStatementProblem(communication({ freeText: '   ' }), COMMUNICATION, metadata)).toBe(
+    'common:communications.validation.text'
+  );
+  // A referral would be stopped here by its missing template and its underlay; a communication has neither.
+  expect(supportStatementProblem(communication({ question: '' }), COMMUNICATION, metadata)).toBeUndefined();
+});
+
+test('a communication is settled with an outcome, and a responded one says when the answer came', () => {
+  expect(supportStatementProblem(communication({ status: 'COMPLETED' }), COMMUNICATION, metadata)).toBe(
+    'common:statements.validation.outcome_required'
+  );
+  expect(
+    supportStatementProblem(communication({ outcome: 'SUPPORTS', status: 'ACTIVE' }), COMMUNICATION, metadata)
+  ).toBe('common:statements.validation.outcome_needs_completed');
+  expect(
+    supportStatementProblem(communication({ outcome: 'SUPPORTS', status: 'COMPLETED' }), COMMUNICATION, metadata)
+  ).toBe('common:statements.validation.responded_at');
+  expect(
+    supportStatementProblem(
+      communication({ outcome: 'SUPPORTS', status: 'COMPLETED', respondedAt: '2026-11-20' }),
+      COMMUNICATION,
+      metadata
+    )
+  ).toBeUndefined();
+  // The deadline passed without an answer, so there is no answer to date.
+  expect(
+    supportStatementProblem(communication({ outcome: 'NO_RESPONSE', status: 'COMPLETED' }), COMMUNICATION, metadata)
+  ).toBeUndefined();
+});
+
+test('a communication is written with the recipient and title it was created with', () => {
+  const fields = supportCommunicationFields(
+    communication({ dueAt: '2026-12-01', sentAt: '2026-11-10' }),
+    'Krogen Exempel AB',
+    'Kommunicering AOT-26110233'
+  );
+
+  expect(fields).toMatchObject({
+    type: 'COMMUNICATION',
+    counterpartyName: 'Krogen Exempel AB',
+    title: 'Kommunicering AOT-26110233',
+    description: 'Bristerna kvarstår och kommunen överväger en varning.',
+    status: 'ACTIVE',
+  });
+  expect(fields.dueAt).toContain('2026-12-01');
+  expect(fields.outcome).toBeUndefined();
+  expect(fields).not.toHaveProperty('question');
 });
 
 test('a statement without a counterparty cannot be saved', () => {

@@ -17,6 +17,7 @@ import { type PremisesRestaurantNumbers, usePremisesRestaurantNumbers } from './
 const SOURCE_LABELS: Record<PremisesAddress['source'], string> = {
   FORM: 'Adress i ansökan',
   OWNER: 'Ärendeägarens adress',
+  PERMIT: 'Tillståndets adress',
 };
 
 const NUMBER_STATUS: Record<string, { label: string; color: 'gronsta' | 'tertiary' }> = {

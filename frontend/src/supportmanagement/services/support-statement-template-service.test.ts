@@ -126,6 +126,36 @@ test('a tobacco permit is referred to the police, the enforcement authority and 
   expect(offered('Medelpads Räddningstjänstförbund')).toEqual(['referral-general']);
 });
 
+test('an action errand is referred by the area its investigation names, not by the process that raised it', () => {
+  const actionErrand = errandOf({ process: { processKey: 'action-errand' } });
+  const offered = (counterparty: string, area?: 'ALCOHOL' | 'TOBACCO') =>
+    supportStatementTemplates(counterparty, actionErrand, area).map((template) => template.identifier);
+
+  expect(offered('Skatteverket', 'ALCOHOL')).toEqual(['tax-agency-request-serving', 'referral-general']);
+  expect(offered('Skatteverket', 'TOBACCO')).toEqual([
+    'tax-agency-request-tobacco-company',
+    'tax-agency-request-tobacco-pbi',
+    'referral-general',
+  ]);
+  expect(offered('Medelpads Räddningstjänstförbund', 'ALCOHOL')).toEqual([
+    'referral-rescue-service',
+    'referral-general',
+  ]);
+  expect(offered('Medelpads Räddningstjänstförbund', 'TOBACCO')).toEqual(['referral-general']);
+});
+
+test('an action errand without an area yet is offered every tax agency form, as it was before the area existed', () => {
+  const actionErrand = errandOf({ process: { processKey: 'action-errand' } });
+
+  expect(supportStatementTemplates('Skatteverket', actionErrand).map((template) => template.identifier)).toEqual([
+    'tax-agency-request-serving',
+    'tax-agency-request-serving-inspection',
+    'tax-agency-request-tobacco-company',
+    'tax-agency-request-tobacco-pbi',
+    'referral-general',
+  ]);
+});
+
 test('a serving permit still asks the rescue service about the premises', () => {
   const asksTheRescueService = (processKey: string) =>
     supportStatementTemplates('Medelpads Räddningstjänstförbund', errandOf({ process: { processKey } })).map(
