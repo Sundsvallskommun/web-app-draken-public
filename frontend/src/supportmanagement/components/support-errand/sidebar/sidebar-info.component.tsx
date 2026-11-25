@@ -363,6 +363,27 @@ export const SidebarInfo: FC<{
       case Resolution.SOLVED_FEEDBACK_VIA_FUNCTION_MAILBOX: {
         return solutionComponent('Löst', 'löste ärendet och återkopplade via funktionsbrevlåda.', 'check');
       }
+      case Resolution.CLOSED_MISSING_FEEDBACK: {
+        return solutionComponent('Stängt', 'stängde ärendet pga saknad återkoppling.', 'check');
+      }
+      case Resolution.SERVICE_CALL: {
+        return solutionComponent('Tjänstesamtal', 'avslutade ärendet som tjänstesamtal.', 'check');
+      }
+      case Resolution.NO_DIGITAL_SOLUTION: {
+        return solutionComponent('Ingen digital lösning', 'avslutade ärendet, ingen digital lösning fanns.', 'check');
+      }
+      case Resolution.MANUAL_DOCUMENT_HANDLING: {
+        return solutionComponent('Manuell hantering av handling', 'hanterade handlingen manuellt.', 'check');
+      }
+      case Resolution.UNKNOWN: {
+        return solutionComponent('Okänt', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.ERRAND_STATUS: {
+        return solutionComponent('Ärendestatus', 'gav besked om ärendestatus.', 'check');
+      }
+      case Resolution.SUPPLEMENT: {
+        return solutionComponent('Komplettering', 'hanterade en komplettering.', 'check');
+      }
       default: {
         // An unmapped code still gets a label instead of nothing.
         return solutionComponent(resolution, 'avslutade ärendet.', 'check');

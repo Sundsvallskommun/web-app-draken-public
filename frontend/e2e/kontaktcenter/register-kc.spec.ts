@@ -85,6 +85,10 @@ test.describe('register page', () => {
     await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
     await page.keyboard.type('Mock description');
 
+    // Contact reason is required, so the errand cannot be saved without one.
+    await expect(page.locator('[data-cy="save-button"]')).toBeDisabled();
+    await page.locator('[data-cy="contactReason-input"]').selectOption('Klagomål');
+
     const [request] = await Promise.all([
       page.waitForRequest(
         (req) => req.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && req.method() === 'PATCH'
@@ -95,6 +99,7 @@ test.describe('register page', () => {
     expect(body).toEqual({
       assignedUserId: mockEmptySupportErrand.assignedUserId,
       businessRelated: false,
+      contactReason: 'Klagomål',
       description: '<p>Mock description</p>',
       externalTags: mockEmptySupportErrand.externalTags,
       labels: mockLabelPath('BOU/CHILDCARE/INVOICES'),

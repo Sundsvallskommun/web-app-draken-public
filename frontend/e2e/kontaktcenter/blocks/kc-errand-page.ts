@@ -13,8 +13,8 @@ export const errandOwner = (page: Page) => {
 };
 
 /**
- * Fills in what the register form requires before the errand can be saved: category, type and a
- * description. Works with both the label pickers (NEXT_PUBLIC_USE_LABEL_CATEGORIZATION, label names
+ * Fills in what the register form requires before the errand can be saved: category, type, contact
+ * reason (when NEXT_PUBLIC_USE_REASON_FOR_CONTACT shows it) and a description. Works with both the label pickers (NEXT_PUBLIC_USE_LABEL_CATEGORIZATION, label names
  * from fixtures/mockMetadata) and the older category/type selects, which pick their first option.
  */
 export const fillRequiredErrandFields = async (
@@ -33,6 +33,10 @@ export const fillRequiredErrandFields = async (
   } else {
     await categorySelect.selectOption({ index: 1 });
     await page.locator('[data-cy="type-input"]').selectOption({ index: 1 });
+  }
+  const contactReason = page.locator('[data-cy="contactReason-input"]');
+  if (await contactReason.isVisible()) {
+    await contactReason.selectOption('Klagomål');
   }
   await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
   await page.keyboard.type('E2E description');

@@ -316,6 +316,12 @@ test.describe('errand page', () => {
       { label: 'Förberett', id: 'PREPARED' },
       { label: 'Hänvisat', id: 'REFERRED' },
       { label: 'Överlämnat', id: 'HANDED_OVER' },
+      { label: 'Tjänstesamtal', id: 'SERVICE_CALL' },
+      { label: 'Ingen digital lösning', id: 'NO_DIGITAL_SOLUTION' },
+      { label: 'Manuell hantering av handling', id: 'MANUAL_DOCUMENT_HANDLING' },
+      { label: 'Okänt', id: 'UNKNOWN' },
+      { label: 'Ärendestatus', id: 'ERRAND_STATUS' },
+      { label: 'Komplettering', id: 'SUPPLEMENT' },
     ];
 
     //can change supportErrand to solved
