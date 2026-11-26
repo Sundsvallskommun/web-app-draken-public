@@ -9,7 +9,7 @@ interface LocaleLayoutProps {
   params: Promise<{ locale: string }>;
 }
 
-const namespaces = ['common', 'paths', 'layout', 'login', 'example', 'oversikt', 'registrera', 'messages'];
+const namespaces = ['common', 'paths', 'layout', 'login', 'example', 'oversikt', 'registrera', 'messages', 'map'];
 
 const LocaleLayout = async ({ children, params }: LocaleLayoutProps) => {
   const { locale } = await params;

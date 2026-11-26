@@ -1,0 +1,17 @@
+{
+  "loading": "Laddar karta...",
+  "use_my_position": "Använd min position",
+  "open_large_map": "Visa stor karta",
+  "large_map_label": "Välj fastigheter på karta",
+  "location_heading": "Vald plats",
+  "location_wgs84": "WGS 84",
+  "error_outside_municipality": "Platsen ligger utanför kommunens gränser. Markera en plats inom kommunen.",
+  "properties_heading": "Valda fastigheter ({{count}})",
+  "properties_empty": "Inga fastigheter valda. Klicka på en fastighet i kartan, eller använd verktygen under \"Markera i kartan\".",
+  "property_designation": "Fastighet",
+  "property_tract": "Trakt",
+  "property_area": "Area",
+  "property_report": "Rapport",
+  "property_report_link": "Fastighetsrapport",
+  "property_add": "Lägg till"
+}

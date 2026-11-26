@@ -1,0 +1,34 @@
+// Origo's UI (popups, multiselect, controls) is light-only. Keep the app's dark-mode text
+// colour from leaking in, or popup text turns white on Origo's white cards.
+.origo-map {
+  color-scheme: light;
+  color: rgb(31 31 37);
+}
+
+// Feature info is shown in "Valda fastigheter" under the map; Origo's popup only duplicates it.
+// Hidden rather than disabled: the popup mode is what fires the selection events we listen to.
+.origo-map .o-popup {
+  display: none;
+}
+
+// Origo marks its collapsible panels (e.g. the legend's layer list) with `.collapse`, which is also a
+// Tailwind utility (visibility: collapse) and hides them. Origo opens/closes them by height, not visibility.
+.origo-map .collapse {
+  visibility: visible;
+}
+
+// Origo's stylesheets are loaded with rem converted to px (see `remToPx` in origo-loader.ts), but Origo
+// also sets some sizes in rem inline, which only a rule with !important can override. The legend's layer
+// icons are sized `calc(1.5rem + 2px)` inline, too small for their 24px icon.
+.origo-map .o-legend li > button.compact.icon-small {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+// Origo map controls are sized by the Origo stylesheet; don't apply touch-target minimums to them
+.origo-map button,
+.origo-map a,
+.origo-map [role='button'] {
+  min-height: unset;
+  min-width: unset;
+}
