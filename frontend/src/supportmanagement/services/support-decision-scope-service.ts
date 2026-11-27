@@ -181,7 +181,7 @@ export const scopeFromDecision = (
         })
       )
     : undefined,
-  categoryCode: typeof stringAt(json?.categoryCode) === 'string' ? stringAt(json?.categoryCode) : undefined,
+  categoryCode: stringAt(json?.categoryCode),
 });
 
 /** The saved value where the decision has one, the application's elsewhere. */
