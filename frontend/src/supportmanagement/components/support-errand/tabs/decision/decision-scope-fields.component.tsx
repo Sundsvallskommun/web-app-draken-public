@@ -29,12 +29,13 @@ const ScopeBlock: FC<{ id: string; heading: string; children: ReactNode }> = ({ 
 
 /** The beverages the permit grants; what the application asked for until the handler changes it. */
 export const DecisionBeveragesField: FC<{
-  value: string[];
   onChangeBeverages: (beverages: string[]) => void;
+  beveragesValue: string[];
   onChangeCategoryCode: (categoryCode: string) => void;
+  categoryCodeValue: string;
   disabled: boolean;
   municipalityId: string;
-}> = ({ value, onChangeBeverages, onChangeCategoryCode, disabled, municipalityId }) => {
+}> = ({ onChangeBeverages, beveragesValue, onChangeCategoryCode, categoryCodeValue, disabled, municipalityId }) => {
   const { t } = useTranslation();
 
   const { schema } = useJsonSchemaByName(municipalityId, ALCOHOL_DECISION_SCHEMA.name);
@@ -44,7 +45,7 @@ export const DecisionBeveragesField: FC<{
     <ScopeBlock id="beverages" heading={t('common:decision.scope.beverages.heading')}>
       <FormControl id="decision-beverages" fieldset>
         <FormLabel>{t(BEVERAGES_LABEL_KEY)}</FormLabel>
-        <Checkbox.Group value={value} onChange={(chosen) => onChangeBeverages(chosen.map(String))}>
+        <Checkbox.Group value={beveragesValue} onChange={(chosen) => onChangeBeverages(chosen.map(String))}>
           {BEVERAGES.map((beverage) => (
             <Checkbox key={beverage} value={beverage} disabled={disabled} data-cy={`decision-beverages-${beverage}`}>
               {t(`common:decision.scope.beverages.${beverage}`)}
@@ -60,6 +61,7 @@ export const DecisionBeveragesField: FC<{
           disabled={disabled}
           className="mt-8 max-w-[28rem]"
           onChange={(chosen) => onChangeCategoryCode(chosen.target.value)}
+          value={categoryCodeValue}
         >
           <Select.Option key="" value="">
             {t('common:decision.scope.beverages.categoryCode.defaultValue')}
