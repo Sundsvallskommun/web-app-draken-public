@@ -133,8 +133,7 @@ const EMPTY_TIME_RANGE: TimeRange = { from: '', to: '' };
 
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 
-/** Beverages are decided on every serving permit, whatever the application asked. */
-export const decidesBeverages = (permitType: string): boolean => permitType === SERVING_PERMIT;
+export const decidesPermitServingType = (permitType: string): boolean => permitType === SERVING_PERMIT;
 
 /** The slots an errand type gets, narrowed to the audiences applied for when there is an application. */
 export const servingHoursSlotsFor = (errandType: string | undefined, form: FormValue | undefined): SlotSpec[] =>
@@ -217,7 +216,7 @@ export const toScopeJson = (
   scope: DecisionScope,
   permitType: string
 ): { beverages?: string[]; servingHours?: JsonObject[]; categoryCode?: string } => ({
-  beverages: decidesBeverages(permitType) ? scope.beverages : undefined,
+  beverages: decidesPermitServingType(permitType) ? scope.beverages : undefined,
   servingHours:
     Object.keys(scope.servingHours).length > 0
       ? SLOTS.flatMap((slot) => {
@@ -227,5 +226,5 @@ export const toScopeJson = (
             : [];
         })
       : undefined,
-  categoryCode: decidesBeverages(permitType) ? scope.categoryCode : undefined,
+  categoryCode: decidesPermitServingType(permitType) ? scope.categoryCode : undefined,
 });

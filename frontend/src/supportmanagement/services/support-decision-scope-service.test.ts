@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  decidesBeverages,
+  decidesPermitServingType,
   hasInvalidServingHours,
   resolveScope,
   scopeFromDecision,
@@ -51,9 +51,9 @@ describe('which slots an errand type gets', () => {
   });
 
   test('beverages are decided on serving permits only', () => {
-    expect(decidesBeverages('SERVERINGSTILLSTAND')).toBe(true);
-    expect(decidesBeverages('TOBAKSFORSALJNING')).toBe(false);
-    expect(decidesBeverages('FOLKOLSANMALAN')).toBe(false);
+    expect(decidesPermitServingType('SERVERINGSTILLSTAND')).toBe(true);
+    expect(decidesPermitServingType('TOBAKSFORSALJNING')).toBe(false);
+    expect(decidesPermitServingType('FOLKOLSANMALAN')).toBe(false);
   });
 });
 
