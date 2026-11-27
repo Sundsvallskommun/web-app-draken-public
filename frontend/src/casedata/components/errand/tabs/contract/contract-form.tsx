@@ -236,22 +236,23 @@ export const ContractForm: FC<{
     setIndexLookup((current) => (current.loading ? current : { loading: false }));
   }, [indexYear]);
 
-  // When another contract is loaded into the form (or the saved one is reset), start over from its index:
-  // an empty input for a contract without one, and no pending lookup or error from the previous contract.
+  // When another contract is loaded into the form (or the saved one is reset), or indexation is turned off
+  // or on, start over from the index in the form: an empty input when there is none, and no pending lookup
+  // or error from a year that was being typed.
   useEffect(() => {
     indexLookupSeq.current++;
     const year = getValues('fees.indexYear');
     setIndexYearInput(year ? String(year) : '');
     setIndexLookup({ loading: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingContract]);
+  }, [existingContract, indexAdjusted]);
 
   const onIndexYearChange = (value: string) => {
     setIndexYearInput(value);
     const seq = ++indexLookupSeq.current;
-    // Until the entered year has given a KPI value the form holds no index, so an old value is never saved
-    // together with a year it does not belong to.
-    setIndex();
+    // The form keeps its current index (year and KPI value together) until the entered year has given a
+    // KPI value, so a year being typed, or one that cannot be looked up, never clears the saved index.
+    // Saving is blocked while the entered year differs from the index in the form (see indexYearUnresolved).
 
     if (!/^\d{4}$/.test(value)) {
       setIndexLookup({ loading: false, error: value ? 'Ange indexår med fyra siffror, t.ex. 2025' : undefined });
@@ -280,7 +281,22 @@ export const ContractForm: FC<{
       });
   };
 
+  // The entered indexår has not (yet) replaced the index in the form: it is being looked up, invalid, failed,
+  // or was cleared. Saving then would keep the old index while the field shows another year, so it is blocked.
+  const indexYearUnresolved =
+    indexAdjusted === 'true' &&
+    isBillingDetailEditable('billing') &&
+    (indexLookup.loading || indexYearInput !== (indexYear ? String(indexYear) : ''));
+
   const indexError = indexLookup.error ?? formState.errors.fees?.indexNumber?.message;
+
+  const blockSaveOnUnresolvedIndexYear = () => {
+    if (!indexYearUnresolved) return false;
+    if (!indexLookup.loading && !indexLookup.error) {
+      setIndexLookup({ loading: false, error: 'Ange ett indexår som det finns ett KPI-värde för (oktober)' });
+    }
+    return true;
+  };
 
   // What is shown under "Indexår": the lookup in progress, an error, or how the year is used.
   const indexYearStatus = () => {
@@ -394,9 +410,10 @@ export const ContractForm: FC<{
           <div>
             <Button
               data-cy="save-contract-button"
-              disabled={!allowed}
+              disabled={!allowed || indexLookup.loading}
               onClick={handleSubmit(
                 () => {
+                  if (blockSaveOnUnresolvedIndexYear()) return;
                   setLoading(true);
                   onSave?.({ ...getValues() }).then(() => {
                     setLoading(false);
@@ -1087,7 +1104,7 @@ export const ContractForm: FC<{
           <Disclosure.Header>
             <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Löpande avgift</Disclosure.Title>
-            {referenceError || formState.errors.fees?.indexNumber ? (
+            {referenceError || indexError ? (
               <Label className="w-[15rem]" rounded inverted color={'error'}>
                 Fel i formulär
               </Label>

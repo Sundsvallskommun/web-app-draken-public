@@ -244,6 +244,42 @@ test.describe('Contract billing (Löpande avgift)', () => {
       await expect(billing.root.getByText('Fel i formulär')).toBeVisible();
       expect(saved).toBe(false);
     });
+
+    test('keeps the saved index while another indexår is being entered', async ({ page, dismissCookieConsent }) => {
+      const billing = await openBilling(
+        page,
+        dismissCookieConsent,
+        leaseAgreementWith({
+          invoicing: billed,
+          extraParameters: invoiceInfo({ markup: 'REF-1' }),
+          fees: { yearly: 1000, indexType: 'KPI 80', indexYear: 2020, indexNumber: 340.5, indexationRate: 1 },
+        })
+      );
+      await page.route('**/billingdatacollector/kpi?baseYear=KPI_80&period=2020-10', (route) =>
+        route.fulfill({ json: { baseYear: 'KPI_80', period: '2020-10', value: 340.5 } })
+      );
+      let saved = false;
+      page.on('request', (req) => {
+        if (req.url().includes('/contracts/') && req.method() === 'PUT') saved = true;
+      });
+
+      // A half-typed indexår blocks the save instead of dropping the index the draft has.
+      await billing.indexYear.fill('202');
+      await billing.saveButton.click();
+      await expect(billing.indexYearError).toHaveText('Ange indexår med fyra siffror, t.ex. 2025');
+      expect(saved).toBe(false);
+      await expect(billing.indexHelpText).toHaveText(
+        'Indexreglering utgår från index enligt KPI 80 för oktober 2020: 340.5'
+      );
+
+      // Going back to the saved year saves the index unchanged, with indexation still on.
+      await billing.indexYear.fill('2020');
+      await expect(billing.indexYearError).toHaveCount(0);
+      await fillContractPeriod(page);
+      const contract = await billing.save();
+
+      expect(contract.fees).toMatchObject({ indexType: 'KPI 80', indexYear: 2020, indexNumber: 340.5 });
+    });
   });
 
   test.describe('yearly invoicing', () => {
