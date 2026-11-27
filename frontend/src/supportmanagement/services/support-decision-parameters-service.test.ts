@@ -60,6 +60,7 @@ const input = (overrides: Partial<DecisionParameterInput> = {}): DecisionParamet
 /** What the handler decided, as the tab prefills it from the serving form below. */
 const servingScope = {
   beverages: ['STRONG_BEER', 'WINE', 'SPIRITS'],
+  categoryCode: '21',
   servingHours: {
     indoorPublic: { from: '11:00', to: '01:00' },
     outdoorPublic: { from: '11:00', to: '23:00' },
@@ -87,6 +88,7 @@ const servingForm = {
   // The schema asks for an RFC 3339 time, so an application carries the offset; the hours read the same.
   closedCompanyServingHoursIndoor: { from: '18:00:00+02:00', to: '02:00:00+02:00' },
   beverages: ['STRONG_BEER', 'WINE', 'SPIRITS'],
+  categoryCode: '21',
   seating: { seatsIndoor: '60', seatsOutdoor: '30' },
   maxPersonsInPremises: { maxPersons: '90' },
 };
@@ -193,7 +195,7 @@ describe('a serving permit', () => {
   test('a decided preparation ticks a box of its own, and leaves the four beverages alone', () => {
     const withPreparations = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
-      scope: { beverages: ['WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'], servingHours: {} },
+      scope: { beverages: ['WINE', 'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS'], categoryCode: '', servingHours: {} },
     });
 
     expect(withPreparations).toMatchObject({
@@ -209,7 +211,7 @@ describe('a serving permit', () => {
   test('the beverages and hours follow the decision even where the form says otherwise', () => {
     const decidedLess = sent('SERVERINGSTILLSTAND', {
       form: servingForm,
-      scope: { beverages: ['WINE'], servingHours: { single: { from: '12:00', to: '22:00' } } },
+      scope: { beverages: ['WINE'], categoryCode: '', servingHours: { single: { from: '12:00', to: '22:00' } } },
     });
 
     expect(decidedLess).toMatchObject({
@@ -302,7 +304,7 @@ describe('the JSON of a serving permit', () => {
   test('a cleared choice is kept as an empty list, so it wins over the application', () => {
     const cleared = json('SERVERINGSTILLSTAND', {
       form: servingForm,
-      scope: { beverages: [], servingHours: { single: { from: '', to: '' } } },
+      scope: { beverages: [], categoryCode: '', servingHours: { single: { from: '', to: '' } } },
     });
 
     expect(cleared).toMatchObject({ beverages: [], servingHours: [] });

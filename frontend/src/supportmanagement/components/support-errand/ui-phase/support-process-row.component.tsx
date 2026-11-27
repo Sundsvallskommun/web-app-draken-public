@@ -94,10 +94,12 @@ export const SupportProcessRow: FC<{ working: boolean }> = ({ working }) => {
           activityId={process.currentActivityId}
         />
       )}
-      <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
-        {working ? <Spinner size={1} className="mr-8" aria-hidden="true" /> : null}
-        {t(statusKey, { defaultValue: process.processStatus })}
-      </Label>
+      {statusKey !== 'common:process.status.waiting' && (
+        <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
+          {working ? <Spinner size={1} className="mr-8" aria-hidden="true" /> : null}
+          {t(statusKey, { defaultValue: process.processStatus })}
+        </Label>
+      )}
       {failed && errorMessage ? (
         <span className="text-small text-dark-secondary" title={errorMessage.detail} data-cy="process-error">
           {t(errorMessage.key, errorMessage.values)}

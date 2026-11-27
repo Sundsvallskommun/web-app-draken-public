@@ -1,8 +1,12 @@
-import { Checkbox, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
+import { useJsonSchemaByName } from '@common/components/json/hooks/useJsonSchemaByName';
+import { Checkbox, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { ALCOHOL_DECISION_SCHEMA } from '@supportmanagement/services/support-decision-parameters-service';
 import {
   BEVERAGES,
   BEVERAGES_LABEL_KEY,
+  CATEGORY_CODE_LABEL_KEY,
   type DecisionScope,
+  getCategoryCodeOptions,
   isHalfFilled,
   type ServingHoursSlot,
   type SlotSpec,
@@ -25,23 +29,51 @@ const ScopeBlock: FC<{ id: string; heading: string; children: ReactNode }> = ({ 
 
 /** The beverages the permit grants; what the application asked for until the handler changes it. */
 export const DecisionBeveragesField: FC<{
-  value: string[];
-  onChange: (beverages: string[]) => void;
+  onChangeBeverages: (beverages: string[]) => void;
+  beveragesValue: string[];
+  onChangeCategoryCode: (categoryCode: string) => void;
+  categoryCodeValue: string;
   disabled: boolean;
-}> = ({ value, onChange, disabled }) => {
+  municipalityId: string;
+}> = ({ onChangeBeverages, beveragesValue, onChangeCategoryCode, categoryCodeValue, disabled, municipalityId }) => {
   const { t } = useTranslation();
+
+  const { schema } = useJsonSchemaByName(municipalityId, ALCOHOL_DECISION_SCHEMA.name);
+  const categoryCodeOptions = getCategoryCodeOptions(schema);
 
   return (
     <ScopeBlock id="beverages" heading={t('common:decision.scope.beverages.heading')}>
       <FormControl id="decision-beverages" fieldset>
         <FormLabel>{t(BEVERAGES_LABEL_KEY)}</FormLabel>
-        <Checkbox.Group value={value} onChange={(chosen) => onChange(chosen.map(String))}>
+        <Checkbox.Group value={beveragesValue} onChange={(chosen) => onChangeBeverages(chosen.map(String))}>
           {BEVERAGES.map((beverage) => (
             <Checkbox key={beverage} value={beverage} disabled={disabled} data-cy={`decision-beverages-${beverage}`}>
               {t(`common:decision.scope.beverages.${beverage}`)}
             </Checkbox>
           ))}
         </Checkbox.Group>
+      </FormControl>
+
+      <FormControl id="decision-category-code">
+        <FormLabel>{t(CATEGORY_CODE_LABEL_KEY)}</FormLabel>
+        <FormHelperText>{t('common:decision.scope.beverages.categoryCode.description')}</FormHelperText>
+        <Select
+          disabled={disabled}
+          className="mt-8 max-w-[28rem]"
+          onChange={(chosen) => onChangeCategoryCode(chosen.target.value)}
+          value={categoryCodeValue}
+        >
+          <Select.Option key="" value="">
+            {t('common:decision.scope.beverages.categoryCode.defaultValue')}
+          </Select.Option>
+          {categoryCodeOptions.map((cat) => {
+            return (
+              <Select.Option key={cat.value} value={cat.value}>
+                {`${cat.value} - ${cat.title}`}
+              </Select.Option>
+            );
+          })}
+        </Select>
       </FormControl>
     </ScopeBlock>
   );
