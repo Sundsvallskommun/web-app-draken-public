@@ -1,3 +1,5 @@
+import { RJSFSchema } from '@rjsf/utils';
+
 import { type FormValue, isRecord, servesPrivate, servesPublic, timeRangeClocks } from './support-form-value-service';
 import { type JsonObject, stringAt } from './support-json-parameter-service';
 
@@ -22,7 +24,21 @@ export const BEVERAGES = [
   'ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS',
 ] as const;
 
+const isCategoryCodeOption = (option: unknown): option is CategoryCodeOption =>
+  isRecord(option) && typeof option.value === 'string' && typeof option.title === 'string';
+
+export const getCategoryCodeOptions = (schema: RJSFSchema | null): CategoryCodeOption[] => {
+  const options = (schema as any)?.properties?.categoryCode?.['x-options'];
+  return Array.isArray(options) ? options.filter(isCategoryCodeOption) : [];
+};
+
 export type ServingHoursSlot = 'indoorPublic' | 'outdoorPublic' | 'indoorPrivate' | 'outdoorPrivate' | 'single';
+
+type CategoryCodeOption = {
+  group: string;
+  title: string;
+  value: string;
+};
 
 /** HH:mm, or '' while unset. */
 export interface TimeRange {
@@ -33,6 +49,7 @@ export interface TimeRange {
 export interface DecisionScope {
   beverages: string[];
   servingHours: Partial<Record<ServingHoursSlot, TimeRange>>;
+  categoryCode: string;
 }
 
 export interface SlotSpec {
@@ -95,6 +112,7 @@ export const SERVING_HOURS_SLOTS: SlotSpec[] = [
 ];
 
 export const BEVERAGES_LABEL_KEY = 'common:decision.scope.beverages.label';
+export const CATEGORY_CODE_LABEL_KEY = 'common:decision.scope.beverages.categoryCode.label';
 
 /** Where on the premises and for whom each slot's hours apply, as the permit's servingHours say it. */
 const SLOT_PLACES: Record<ServingHoursSlot, { audience?: string; location?: string }> = {
@@ -142,12 +160,17 @@ export const scopeFromForm = (
       form ? timeRangeFromForm(form, errandType && spec.field[errandType]) : EMPTY_TIME_RANGE,
     ])
   ),
+  categoryCode: '',
 });
 
 /** What a saved decision's JSON carries; a list it lacks is left undefined, and a slot it lacks has no hours. */
 export const scopeFromDecision = (
   json: JsonObject | undefined
-): { beverages?: string[]; servingHours?: Partial<Record<ServingHoursSlot, TimeRange>> } => ({
+): {
+  beverages?: string[];
+  servingHours?: Partial<Record<ServingHoursSlot, TimeRange>>;
+  categoryCode: string | undefined;
+} => ({
   beverages: Array.isArray(json?.beverages)
     ? json.beverages.filter((beverage): beverage is string => typeof beverage === 'string')
     : undefined,
@@ -159,6 +182,7 @@ export const scopeFromDecision = (
         })
       )
     : undefined,
+  categoryCode: typeof stringAt(json?.categoryCode) === 'string' ? stringAt(json?.categoryCode) : undefined,
 });
 
 /** The saved value where the decision has one, the application's elsewhere. */
@@ -174,6 +198,7 @@ export const resolveScope = (
       (saved.servingHours ? saved.servingHours[spec.slot] : defaults.servingHours[spec.slot]) ?? EMPTY_TIME_RANGE,
     ])
   ),
+  categoryCode: saved.categoryCode ?? defaults.categoryCode,
 });
 
 /** A range with one end only cannot be saved and is not a decision. */
@@ -191,7 +216,7 @@ const CLOCK_TIME = /^(([01][0-9]|2[0-3]):[0-5][0-9]|24:00)$/;
 export const toScopeJson = (
   scope: DecisionScope,
   permitType: string
-): { beverages?: string[]; servingHours?: JsonObject[] } => ({
+): { beverages?: string[]; servingHours?: JsonObject[]; categoryCode?: string } => ({
   beverages: decidesBeverages(permitType) ? scope.beverages : undefined,
   servingHours:
     Object.keys(scope.servingHours).length > 0
@@ -202,4 +227,5 @@ export const toScopeJson = (
             : [];
         })
       : undefined,
+  categoryCode: decidesBeverages(permitType) ? scope.categoryCode : undefined,
 });

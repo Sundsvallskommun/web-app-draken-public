@@ -260,8 +260,10 @@ export const SupportErrandDecisionTab: FC<{
               permit.serving ? (
                 <DecisionBeveragesField
                   value={form.values.scope.beverages}
-                  onChange={(beverages) => form.set('scope', { ...form.values.scope, beverages })}
+                  onChangeBeverages={(beverages) => form.set('scope', { ...form.values.scope, beverages })}
+                  onChangeCategoryCode={(categoryCode) => form.set('scope', { ...form.values.scope, categoryCode })}
                   disabled={premisesReadOnly}
+                  municipalityId={municipalityId}
                 />
               ) : undefined
             }

@@ -518,7 +518,12 @@
         "WINE": "Vin",
         "SPIRITS": "Spritdrycker",
         "OTHER_FERMENTED_BEVERAGES": "Cider eller andra jästa alkoholdrycker",
-        "ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS": "Alkoholdrycksliknande preparat"
+        "ALCOHOLIC_BEVERAGE_LIKE_PREPARATIONS": "Alkoholdrycksliknande preparat",
+        "categoryCode": {
+          "label": "Kategorikod",
+          "description": "Kategorikoden enligt Folkhälsomyndighetens föreskrifter om tillståndsbevis (FoHMFS 2014:6) som nämnden beslutar. Visar till vem servering får ske, vilka drycker som ingår och om tillståndet gäller året runt eller en viss period.",
+          "defaultValue": "Välj kod"
+        }
       },
       "serving_hours": {
         "heading": "Beslutade serveringstider",
