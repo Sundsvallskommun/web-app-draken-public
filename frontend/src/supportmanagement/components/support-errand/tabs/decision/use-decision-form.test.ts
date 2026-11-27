@@ -16,7 +16,7 @@ const PREMISES: DecisionPremises = {
   choice: { kind: 'EXISTING', restaurantNumber: '00000000' },
 };
 
-const NOTHING_DECIDED = { beverages: [], servingHours: {} };
+const NOTHING_DECIDED = { beverages: [], categoryCode: '', servingHours: {} };
 
 const saved = (overrides: Partial<SupportDecision> = {}): SupportDecision =>
   ({
