@@ -114,7 +114,7 @@ type Parameters = Record<string, string | undefined>;
 const SERVING_PERMIT = 'SERVERINGSTILLSTAND';
 const TOBACCO_PERMITS = ['TOBAKSFORSALJNING', 'ECIGARETTFORSALJNING'];
 
-const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision' };
+export const ALCOHOL_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_alcohol_decision' };
 const TOBACCO_DECISION_SCHEMA: SupportJsonSchema = { name: 'aot_tobacco_decision' };
 
 /**
@@ -470,8 +470,10 @@ export const flattenDecisionJson = (json: JsonObject | undefined, errandNumber?:
   const decisionCaseNumber = stringAt(json?.externalCaseRegistrationNumber) ?? errandNumber;
   const decisionDate = stringAt(decision.decisionDate);
   const issuer = stringAt(issuedBy.name);
+  const categoryCode = stringAt(json?.categoryCode);
 
   return {
+    categoryCode,
     permitHolderName: stringAt(holder.name),
     permitHolderOrgNumber: stringAt(holder.organizationNumber),
     permitHolderCareOf: stringAt(holderAddress.careOf),

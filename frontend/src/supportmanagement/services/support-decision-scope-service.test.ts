@@ -63,6 +63,7 @@ describe('the application as the starting point', () => {
 
     expect(scopeFromForm(permanentForm, PERMANENT, slots)).toEqual({
       beverages: ['STRONG_BEER', 'WINE'],
+      categoryCode: '',
       servingHours: {
         indoorPublic: { from: '11:00', to: '01:00' },
         outdoorPublic: { from: '11:00', to: '23:00' },
@@ -89,6 +90,7 @@ describe('the application as the starting point', () => {
   test('without an application everything starts empty', () => {
     expect(scopeFromForm(undefined, PERMANENT, servingHoursSlotsFor(PERMANENT, undefined))).toEqual({
       beverages: [],
+      categoryCode: '',
       servingHours: {
         indoorPublic: { from: '', to: '' },
         outdoorPublic: { from: '', to: '' },
@@ -106,11 +108,13 @@ describe('what the decision carries', () => {
   test('a saved list wins over the application, even when it is empty, and a slot it lacks has no hours', () => {
     const saved = scopeFromDecision({
       beverages: [],
+      categoryCode: '',
       servingHours: [{ audience: 'PUBLIC', location: 'INDOOR', from: '10:00', to: '00:00' }],
     });
 
     expect(resolveScope(saved, defaults, slots)).toEqual({
       beverages: [],
+      categoryCode: '',
       servingHours: {
         indoorPublic: { from: '10:00', to: '00:00' },
         outdoorPublic: { from: '', to: '' },
@@ -128,6 +132,7 @@ describe('what the decision carries', () => {
   test('the hours are written as the permit has them, a slot without both ends left out', () => {
     expect(toScopeJson(defaults, 'SERVERINGSTILLSTAND')).toEqual({
       beverages: ['STRONG_BEER', 'WINE'],
+      categoryCode: '',
       servingHours: [
         { audience: 'PUBLIC', location: 'INDOOR', from: '11:00', to: '01:00' },
         { audience: 'PUBLIC', location: 'OUTDOOR', from: '11:00', to: '23:00' },
@@ -138,7 +143,7 @@ describe('what the decision carries', () => {
   test('a permit that does not decide beverages writes only its hours, a single slot with no place', () => {
     expect(
       toScopeJson(
-        { beverages: ['WINE'], servingHours: { single: { from: '10:00', to: '18:00' } } },
+        { beverages: ['WINE'], categoryCode: '21', servingHours: { single: { from: '10:00', to: '18:00' } } },
         'TOBAKSFORSALJNING'
       )
     ).toEqual({ beverages: undefined, servingHours: [{ from: '10:00', to: '18:00' }] });
@@ -147,7 +152,7 @@ describe('what the decision carries', () => {
   test('what was written reads back as it was', () => {
     const readBack = resolveScope(
       scopeFromDecision(toScopeJson(defaults, 'SERVERINGSTILLSTAND')),
-      { beverages: [], servingHours: {} },
+      { beverages: [], categoryCode: '', servingHours: {} },
       slots
     );
 
@@ -161,13 +166,23 @@ describe('what the decision carries', () => {
 
 describe('validity and text', () => {
   test('a range with one end only is invalid, with both or none it is not', () => {
-    expect(hasInvalidServingHours({ beverages: [], servingHours: { single: { from: '10:00', to: '' } } })).toBe(true);
-    expect(hasInvalidServingHours({ beverages: [], servingHours: { single: { from: '', to: '18:00' } } })).toBe(true);
-    expect(hasInvalidServingHours({ beverages: [], servingHours: { single: { from: '', to: '' } } })).toBe(false);
-    expect(hasInvalidServingHours({ beverages: [], servingHours: { single: { from: '10:00', to: '18:00' } } })).toBe(
-      false
-    );
-    expect(hasInvalidServingHours({ beverages: [], servingHours: {} })).toBe(false);
+    expect(
+      hasInvalidServingHours({ beverages: [], categoryCode: '', servingHours: { single: { from: '10:00', to: '' } } })
+    ).toBe(true);
+    expect(
+      hasInvalidServingHours({ beverages: [], categoryCode: '', servingHours: { single: { from: '', to: '18:00' } } })
+    ).toBe(true);
+    expect(
+      hasInvalidServingHours({ beverages: [], categoryCode: '', servingHours: { single: { from: '', to: '' } } })
+    ).toBe(false);
+    expect(
+      hasInvalidServingHours({
+        beverages: [],
+        categoryCode: '',
+        servingHours: { single: { from: '10:00', to: '18:00' } },
+      })
+    ).toBe(false);
+    expect(hasInvalidServingHours({ beverages: [], categoryCode: '', servingHours: {} })).toBe(false);
   });
 
   test('a complete range reads as the certificate shows it', () => {
